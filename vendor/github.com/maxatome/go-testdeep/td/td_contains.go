@@ -34,6 +34,7 @@ var _ TestDeep = &tdContains{}
 // strings. It tries to be as smarter as possible.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // If expectedValue is a [TestDeep] operator, each item of data
 // array/slice/map/string (rune for strings) is compared to it. The
 // use of a [TestDeep] operator as expectedValue works only in this
@@ -779,87 +780,94 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // If "expectedValue" is a TestDeep operator, each item of data
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// If "expectedValue" is a TestDeep operator, each item of data
+=======
+// If expectedValue is a [TestDeep] operator, each item of data
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // array/slice/map/string (rune for strings) is compared to it. The
-// use of a TestDeep operator as "expectedValue" works only in this
+// use of a [TestDeep] operator as expectedValue works only in this
 // way: item per item.
 //
-// If data is a slice, and "expectedValue" has the same type, then
-// "expectedValue" is searched as a sub-slice, otherwise
-// "expectedValue" is compared to each slice value.
+// If data is a slice, and expectedValue has the same type, then
+// expectedValue is searched as a sub-slice, otherwise
+// expectedValue is compared to each slice value.
 //
-//   list := []int{12, 34, 28}
-//   td.Cmp(t, list, td.Contains(34))                 // succeeds
-//   td.Cmp(t, list, td.Contains(td.Between(30, 35))) // succeeds too
-//   td.Cmp(t, list, td.Contains(35))                 // fails
-//   td.Cmp(t, list, td.Contains([]int{34, 28}))      // succeeds
+//	list := []int{12, 34, 28}
+//	td.Cmp(t, list, td.Contains(34))                 // succeeds
+//	td.Cmp(t, list, td.Contains(td.Between(30, 35))) // succeeds too
+//	td.Cmp(t, list, td.Contains(35))                 // fails
+//	td.Cmp(t, list, td.Contains([]int{34, 28}))      // succeeds
 //
 // If data is an array or a map, each value is compared to
-// "expectedValue". Map keys are not checked: see ContainsKey to check
+// expectedValue. Map keys are not checked: see [ContainsKey] to check
 // map keys existence.
 //
-//   hash := map[string]int{"foo": 12, "bar": 34, "zip": 28}
-//   td.Cmp(t, hash, td.Contains(34))                 // succeeds
-//   td.Cmp(t, hash, td.Contains(td.Between(30, 35))) // succeeds too
-//   td.Cmp(t, hash, td.Contains(35))                 // fails
+//	hash := map[string]int{"foo": 12, "bar": 34, "zip": 28}
+//	td.Cmp(t, hash, td.Contains(34))                 // succeeds
+//	td.Cmp(t, hash, td.Contains(td.Between(30, 35))) // succeeds too
+//	td.Cmp(t, hash, td.Contains(35))                 // fails
 //
-//   array := [...]int{12, 34, 28}
-//   td.Cmp(t, array, td.Contains(34))                 // succeeds
-//   td.Cmp(t, array, td.Contains(td.Between(30, 35))) // succeeds too
-//   td.Cmp(t, array, td.Contains(35))                 // fails
+//	array := [...]int{12, 34, 28}
+//	td.Cmp(t, array, td.Contains(34))                 // succeeds
+//	td.Cmp(t, array, td.Contains(td.Between(30, 35))) // succeeds too
+//	td.Cmp(t, array, td.Contains(35))                 // fails
 //
 // If data is a string (or convertible), []byte (or convertible),
-// error or fmt.Stringer interface (error interface is tested before
-// fmt.Stringer), "expectedValue" can be a string, a []byte, a rune or
+// error or [fmt.Stringer] interface (error interface is tested before
+// [fmt.Stringer]), expectedValue can be a string, a []byte, a rune or
 // a byte. In this case, it tests if the got string contains this
 // expected string, []byte, rune or byte.
 //
-//   got := "foo bar"
-//   td.Cmp(t, got, td.Contains('o'))                  // succeeds
-//   td.Cmp(t, got, td.Contains(rune('o')))            // succeeds
-//   td.Cmp(t, got, td.Contains(td.Between('n', 'p'))) // succeeds
-//   td.Cmp(t, got, td.Contains("bar"))                // succeeds
-//   td.Cmp(t, got, td.Contains([]byte("bar")))        // succeeds
+//	got := "foo bar"
+//	td.Cmp(t, got, td.Contains('o'))                  // succeeds
+//	td.Cmp(t, got, td.Contains(rune('o')))            // succeeds
+//	td.Cmp(t, got, td.Contains(td.Between('n', 'p'))) // succeeds
+//	td.Cmp(t, got, td.Contains("bar"))                // succeeds
+//	td.Cmp(t, got, td.Contains([]byte("bar")))        // succeeds
 //
-//   td.Cmp(t, []byte("foobar"), td.Contains("ooba")) // succeeds
+//	td.Cmp(t, []byte("foobar"), td.Contains("ooba")) // succeeds
 //
-//   type Foobar string
-//   td.Cmp(t, Foobar("foobar"), td.Contains("ooba")) // succeeds
+//	type Foobar string
+//	td.Cmp(t, Foobar("foobar"), td.Contains("ooba")) // succeeds
 //
-//   err := errors.New("error!")
-//   td.Cmp(t, err, td.Contains("ror")) // succeeds
+//	err := errors.New("error!")
+//	td.Cmp(t, err, td.Contains("ror")) // succeeds
 //
-//   bstr := bytes.NewBufferString("fmt.Stringer!")
-//   td.Cmp(t, bstr, td.Contains("String")) // succeeds
+//	bstr := bytes.NewBufferString("fmt.Stringer!")
+//	td.Cmp(t, bstr, td.Contains("String")) // succeeds
 //
 // Pitfall: if you want to check if 2 words are contained in got, don't do:
 //
-//   td.Cmp(t, "foobar", td.Contains(td.All("foo", "bar"))) // Bad!
+//	td.Cmp(t, "foobar", td.Contains(td.All("foo", "bar"))) // Bad!
 //
-// as TestDeep operator All in Contains operates on each rune, so it
+// as [TestDeep] operator [All] in Contains operates on each rune, so it
 // does not work as expected, but do::
 //
-//   td.Cmp(t, "foobar", td.All(td.Contains("foo"), td.Contains("bar")))
+//	td.Cmp(t, "foobar", td.All(td.Contains("foo"), td.Contains("bar")))
 //
 // When Contains(nil) is used, nil is automatically converted to a
 // typed nil on the fly to avoid confusion (if the array/slice/map
-// item type allows it of course.) So all following Cmp calls
+// item type allows it of course.) So all following [Cmp] calls
 // are equivalent (except the (*byte)(nil) one):
 //
-//   num := 123
-//   list := []*int{&num, nil}
-//   td.Cmp(t, list, td.Contains(nil))         // succeeds → (*int)(nil)
-//   td.Cmp(t, list, td.Contains((*int)(nil))) // succeeds
-//   td.Cmp(t, list, td.Contains(td.Nil()))    // succeeds
-//   // But...
-//   td.Cmp(t, list, td.Contains((*byte)(nil))) // fails: (*byte)(nil) ≠ (*int)(nil)
+//	num := 123
+//	list := []*int{&num, nil}
+//	td.Cmp(t, list, td.Contains(nil))         // succeeds → (*int)(nil)
+//	td.Cmp(t, list, td.Contains((*int)(nil))) // succeeds
+//	td.Cmp(t, list, td.Contains(td.Nil()))    // succeeds
+//	// But...
+//	td.Cmp(t, list, td.Contains((*byte)(nil))) // fails: (*byte)(nil) ≠ (*int)(nil)
 //
 // As well as these ones:
 //
-//   hash := map[string]*int{"foo": nil, "bar": &num}
-//   td.Cmp(t, hash, td.Contains(nil))         // succeeds → (*int)(nil)
-//   td.Cmp(t, hash, td.Contains((*int)(nil))) // succeeds
-//   td.Cmp(t, hash, td.Contains(td.Nil()))    // succeeds
-func Contains(expectedValue interface{}) TestDeep {
+//	hash := map[string]*int{"foo": nil, "bar": &num}
+//	td.Cmp(t, hash, td.Contains(nil))         // succeeds → (*int)(nil)
+//	td.Cmp(t, hash, td.Contains((*int)(nil))) // succeeds
+//	td.Cmp(t, hash, td.Contains(td.Nil()))    // succeeds
+//
+// See also [ContainsKey].
+func Contains(expectedValue any) TestDeep {
 	c := tdContains{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 	}
@@ -870,7 +878,7 @@ func Contains(expectedValue interface{}) TestDeep {
 	return &c
 }
 
-func (c *tdContains) doesNotContainErr(ctx ctxerr.Context, got interface{}) *ctxerr.Error {
+func (c *tdContains) doesNotContainErr(ctx ctxerr.Context, got any) *ctxerr.Error {
 	if ctx.BooleanError {
 		return ctxerr.BooleanError
 	}
@@ -884,7 +892,7 @@ func (c *tdContains) doesNotContainErr(ctx ctxerr.Context, got interface{}) *ctx
 // getExpectedValue returns the expected value handling the
 // Contains(nil) case: in this case it returns a typed nil (same type
 // as the items of got).
-// got is an array, a slice or a map (it's the caller responsibility to check)
+// got is an array, a slice or a map (it's the caller responsibility to check).
 func (c *tdContains) getExpectedValue(got reflect.Value) reflect.Value {
 	// If the expectValue is non-typed nil
 	if !c.expectedValue.IsValid() {
@@ -904,7 +912,7 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 	case reflect.Slice:
 		if !c.isTestDeeper && c.expectedValue.IsValid() {
 			// Special case for []byte & expected []byte or string
-			if got.Type().Elem() == uint8Type {
+			if got.Type().Elem() == types.Uint8 {
 				switch c.expectedValue.Kind() {
 				case reflect.String:
 					if bytes.Contains(got.Bytes(), []byte(c.expectedValue.String())) {
@@ -913,7 +921,7 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 					return c.doesNotContainErr(ctx, got)
 
 				case reflect.Slice:
-					if c.expectedValue.Type().Elem() == uint8Type {
+					if c.expectedValue.Type().Elem() == types.Uint8 {
 						if bytes.Contains(got.Bytes(), c.expectedValue.Bytes()) {
 							return nil
 						}
@@ -953,7 +961,7 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 					return c.doesNotContainErr(ctx, got)
 				}
 
-				for i := 0; i < gotLen-expectedLen; i++ {
+				for i := 0; i <= gotLen-expectedLen; i++ {
 					if deepValueEqualOK(got.Slice(i, i+expectedLen), c.expectedValue) {
 						return nil
 					}
@@ -965,7 +973,7 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 	case reflect.Array:
 		expectedValue := c.getExpectedValue(got)
 		for index := got.Len() - 1; index >= 0; index-- {
-			if deepValueEqualOK(got.Index(index), expectedValue) {
+			if deepValueEqualFinalOK(ctx, got.Index(index), expectedValue) {
 				return nil
 			}
 		}
@@ -974,7 +982,7 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 	case reflect.Map:
 		expectedValue := c.getExpectedValue(got)
 		if !tdutil.MapEachValue(got, func(v reflect.Value) bool {
-			return !deepValueEqualOK(v, expectedValue)
+			return !deepValueEqualFinalOK(ctx, v, expectedValue)
 		}) {
 			return nil
 		}
@@ -992,19 +1000,20 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 		// If the type behind the operator is known *and* is not rune,
 		// then no need to go further, but return an explicit error to
 		// help our user to fix his probably bogus code
-		if typeBehind := c.expectedValue.Interface().(TestDeep).TypeBehind(); typeBehind != nil && typeBehind != runeType {
+		op := c.expectedValue.Interface().(TestDeep)
+		if typeBehind := op.TypeBehind(); typeBehind != nil && typeBehind != types.Rune && !ctx.BeLax {
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}
 			return ctx.CollectError(&ctxerr.Error{
-				Message:  "TestDeep operator can only match rune in string",
+				Message:  op.GetLocation().Func + " operator has to match rune in string, but it does not",
 				Got:      types.RawString(typeBehind.String()),
 				Expected: types.RawString("rune"),
 			})
 		}
 
 		for _, chr := range str {
-			if deepValueEqualOK(reflect.ValueOf(chr), c.expectedValue) {
+			if deepValueEqualFinalOK(ctx, reflect.ValueOf(chr), c.expectedValue) {
 				return nil
 			}
 		}
@@ -1026,7 +1035,7 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 
 	case reflect.Slice:
 		// Only []byte
-		if c.expectedValue.Type().Elem() == uint8Type {
+		if c.expectedValue.Type().Elem() == types.Uint8 {
 			contains = strings.Contains(str, string(c.expectedValue.Bytes()))
 			break
 		}
@@ -1036,8 +1045,14 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
+<<<<<<< HEAD
 		var expectedType interface{}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		var expectedType interface{}
+=======
+		var expectedType any
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		if c.expectedValue.IsValid() {
 			expectedType = types.RawString(c.expectedValue.Type().String())
 		} else {

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build windows
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -95,6 +96,11 @@ func BytePtrToString(p *byte) string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build windows
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build windows
+=======
+//go:build windows
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Package windows contains an interface to the low-level operating system
 // primitives. OS details vary depending on the underlying system, and
@@ -121,8 +127,6 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
-
-	"golang.org/x/sys/internal/unsafeheader"
 )
 
 // ByteSliceFromString returns a NUL-terminated slice of bytes
@@ -174,6 +178,7 @@ func BytePtrToString(p *byte) string {
 		ptr = unsafe.Pointer(uintptr(ptr) + 1)
 	}
 
+<<<<<<< HEAD
 	var s []byte
 	h := (*unsafeheader.Slice)(unsafe.Pointer(&s))
 	h.Data = unsafe.Pointer(p)
@@ -182,6 +187,17 @@ func BytePtrToString(p *byte) string {
 
 	return string(s)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	var s []byte
+	h := (*unsafeheader.Slice)(unsafe.Pointer(&s))
+	h.Data = unsafe.Pointer(p)
+	h.Len = n
+	h.Cap = n
+
+	return string(s)
+=======
+	return string(unsafe.Slice(p, n))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // Single-word zero for use when we need a valid pointer to 0 bytes.

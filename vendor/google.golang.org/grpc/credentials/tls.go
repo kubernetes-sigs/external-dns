@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net"
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -916,15 +917,24 @@ var cipherSuiteLookup = map[uint16]string{
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"io/ioutil"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"io/ioutil"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net"
+	"net/url"
+	"os"
 
-	"google.golang.org/grpc/credentials/internal"
+	credinternal "google.golang.org/grpc/internal/credentials"
 )
 
 // TLSInfo contains the auth information for a TLS authenticated connection.
 // It implements the AuthInfo interface.
 type TLSInfo struct {
 	State tls.ConnectionState
+	CommonAuthInfo
+	// This API is experimental.
+	SPIFFEID *url.URL
 }
 
 // AuthType returns the type of TLSInfo as a string.
@@ -932,10 +942,25 @@ func (t TLSInfo) AuthType() string {
 	return "tls"
 }
 
+// cipherSuiteLookup returns the string version of a TLS cipher suite ID.
+func cipherSuiteLookup(cipherSuiteID uint16) string {
+	for _, s := range tls.CipherSuites() {
+		if s.ID == cipherSuiteID {
+			return s.Name
+		}
+	}
+	for _, s := range tls.InsecureCipherSuites() {
+		if s.ID == cipherSuiteID {
+			return s.Name
+		}
+	}
+	return fmt.Sprintf("unknown ID: %v", cipherSuiteID)
+}
+
 // GetSecurityValue returns security info requested by channelz.
 func (t TLSInfo) GetSecurityValue() ChannelzSecurityValue {
 	v := &TLSChannelzSecurityValue{
-		StandardName: cipherSuiteLookup[t.State.CipherSuite],
+		StandardName: cipherSuiteLookup(t.State.CipherSuite),
 	}
 	// Currently there's no way to get LocalCertificate info from tls package.
 	if len(t.State.PeerCertificates) > 0 {
@@ -960,7 +985,7 @@ func (c tlsCreds) Info() ProtocolInfo {
 
 func (c *tlsCreds) ClientHandshake(ctx context.Context, authority string, rawConn net.Conn) (_ net.Conn, _ AuthInfo, err error) {
 	// use local cfg to avoid clobbering ServerName if using multiple endpoints
-	cfg := cloneTLSConfig(c.config)
+	cfg := credinternal.CloneTLSConfig(c.config)
 	if cfg.ServerName == "" {
 		serverName, _, err := net.SplitHostPort(authority)
 		if err != nil {
@@ -973,24 +998,48 @@ func (c *tlsCreds) ClientHandshake(ctx context.Context, authority string, rawCon
 	errChannel := make(chan error, 1)
 	go func() {
 		errChannel <- conn.Handshake()
+		close(errChannel)
 	}()
 	select {
 	case err := <-errChannel:
 		if err != nil {
+			conn.Close()
 			return nil, nil, err
 		}
 	case <-ctx.Done():
+		conn.Close()
 		return nil, nil, ctx.Err()
 	}
-	return internal.WrapSyscallConn(rawConn, conn), TLSInfo{conn.ConnectionState()}, nil
+	tlsInfo := TLSInfo{
+		State: conn.ConnectionState(),
+		CommonAuthInfo: CommonAuthInfo{
+			SecurityLevel: PrivacyAndIntegrity,
+		},
+	}
+	id := credinternal.SPIFFEIDFromState(conn.ConnectionState())
+	if id != nil {
+		tlsInfo.SPIFFEID = id
+	}
+	return credinternal.WrapSyscallConn(rawConn, conn), tlsInfo, nil
 }
 
 func (c *tlsCreds) ServerHandshake(rawConn net.Conn) (net.Conn, AuthInfo, error) {
 	conn := tls.Server(rawConn, c.config)
 	if err := conn.Handshake(); err != nil {
+		conn.Close()
 		return nil, nil, err
 	}
-	return internal.WrapSyscallConn(rawConn, conn), TLSInfo{conn.ConnectionState()}, nil
+	tlsInfo := TLSInfo{
+		State: conn.ConnectionState(),
+		CommonAuthInfo: CommonAuthInfo{
+			SecurityLevel: PrivacyAndIntegrity,
+		},
+	}
+	id := credinternal.SPIFFEIDFromState(conn.ConnectionState())
+	if id != nil {
+		tlsInfo.SPIFFEID = id
+	}
+	return credinternal.WrapSyscallConn(rawConn, conn), tlsInfo, nil
 }
 
 func (c *tlsCreds) Clone() TransportCredentials {
@@ -1002,38 +1051,64 @@ func (c *tlsCreds) OverrideServerName(serverNameOverride string) error {
 	return nil
 }
 
-const alpnProtoStrH2 = "h2"
-
-func appendH2ToNextProtos(ps []string) []string {
-	for _, p := range ps {
-		if p == alpnProtoStrH2 {
-			return ps
-		}
-	}
-	ret := make([]string, 0, len(ps)+1)
-	ret = append(ret, ps...)
-	return append(ret, alpnProtoStrH2)
+// The following cipher suites are forbidden for use with HTTP/2 by
+// https://datatracker.ietf.org/doc/html/rfc7540#appendix-A
+var tls12ForbiddenCipherSuites = map[uint16]struct{}{
+	tls.TLS_RSA_WITH_AES_128_CBC_SHA:         {},
+	tls.TLS_RSA_WITH_AES_256_CBC_SHA:         {},
+	tls.TLS_RSA_WITH_AES_128_GCM_SHA256:      {},
+	tls.TLS_RSA_WITH_AES_256_GCM_SHA384:      {},
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA: {},
+	tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA: {},
+	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:   {},
+	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:   {},
 }
 
 // NewTLS uses c to construct a TransportCredentials based on TLS.
 func NewTLS(c *tls.Config) TransportCredentials {
-	tc := &tlsCreds{cloneTLSConfig(c)}
-	tc.config.NextProtos = appendH2ToNextProtos(tc.config.NextProtos)
+	tc := &tlsCreds{credinternal.CloneTLSConfig(c)}
+	tc.config.NextProtos = credinternal.AppendH2ToNextProtos(tc.config.NextProtos)
+	// If the user did not configure a MinVersion and did not configure a
+	// MaxVersion < 1.2, use MinVersion=1.2, which is required by
+	// https://datatracker.ietf.org/doc/html/rfc7540#section-9.2
+	if tc.config.MinVersion == 0 && (tc.config.MaxVersion == 0 || tc.config.MaxVersion >= tls.VersionTLS12) {
+		tc.config.MinVersion = tls.VersionTLS12
+	}
+	// If the user did not configure CipherSuites, use all "secure" cipher
+	// suites reported by the TLS package, but remove some explicitly forbidden
+	// by https://datatracker.ietf.org/doc/html/rfc7540#appendix-A
+	if tc.config.CipherSuites == nil {
+		for _, cs := range tls.CipherSuites() {
+			if _, ok := tls12ForbiddenCipherSuites[cs.ID]; !ok {
+				tc.config.CipherSuites = append(tc.config.CipherSuites, cs.ID)
+			}
+		}
+	}
 	return tc
 }
 
-// NewClientTLSFromCert constructs TLS credentials from the input certificate for client.
+// NewClientTLSFromCert constructs TLS credentials from the provided root
+// certificate authority certificate(s) to validate server connections. If
+// certificates to establish the identity of the client need to be included in
+// the credentials (eg: for mTLS), use NewTLS instead, where a complete
+// tls.Config can be specified.
 // serverNameOverride is for testing only. If set to a non empty string,
-// it will override the virtual host name of authority (e.g. :authority header field) in requests.
+// it will override the virtual host name of authority (e.g. :authority header
+// field) in requests.
 func NewClientTLSFromCert(cp *x509.CertPool, serverNameOverride string) TransportCredentials {
 	return NewTLS(&tls.Config{ServerName: serverNameOverride, RootCAs: cp})
 }
 
-// NewClientTLSFromFile constructs TLS credentials from the input certificate file for client.
+// NewClientTLSFromFile constructs TLS credentials from the provided root
+// certificate authority certificate file(s) to validate server connections. If
+// certificates to establish the identity of the client need to be included in
+// the credentials (eg: for mTLS), use NewTLS instead, where a complete
+// tls.Config can be specified.
 // serverNameOverride is for testing only. If set to a non empty string,
-// it will override the virtual host name of authority (e.g. :authority header field) in requests.
+// it will override the virtual host name of authority (e.g. :authority header
+// field) in requests.
 func NewClientTLSFromFile(certFile, serverNameOverride string) (TransportCredentials, error) {
-	b, err := ioutil.ReadFile(certFile)
+	b, err := os.ReadFile(certFile)
 	if err != nil {
 		return nil, err
 	}
@@ -1062,13 +1137,17 @@ func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error
 // TLSChannelzSecurityValue defines the struct that TLS protocol should return
 // from GetSecurityValue(), containing security info like cipher and certificate used.
 //
-// This API is EXPERIMENTAL.
+// # Experimental
+//
+// Notice: This type is EXPERIMENTAL and may be changed or removed in a
+// later release.
 type TLSChannelzSecurityValue struct {
 	ChannelzSecurityValue
 	StandardName      string
 	LocalCertificate  []byte
 	RemoteCertificate []byte
 }
+<<<<<<< HEAD
 
 var cipherSuiteLookup = map[uint16]string{
 	tls.TLS_RSA_WITH_RC4_128_SHA:                "TLS_RSA_WITH_RC4_128_SHA",
@@ -1111,3 +1190,47 @@ func cloneTLSConfig(cfg *tls.Config) *tls.Config {
 	return cfg.Clone()
 }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+var cipherSuiteLookup = map[uint16]string{
+	tls.TLS_RSA_WITH_RC4_128_SHA:                "TLS_RSA_WITH_RC4_128_SHA",
+	tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA:           "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+	tls.TLS_RSA_WITH_AES_128_CBC_SHA:            "TLS_RSA_WITH_AES_128_CBC_SHA",
+	tls.TLS_RSA_WITH_AES_256_CBC_SHA:            "TLS_RSA_WITH_AES_256_CBC_SHA",
+	tls.TLS_RSA_WITH_AES_128_GCM_SHA256:         "TLS_RSA_WITH_AES_128_GCM_SHA256",
+	tls.TLS_RSA_WITH_AES_256_GCM_SHA384:         "TLS_RSA_WITH_AES_256_GCM_SHA384",
+	tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA:        "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA:    "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+	tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA:    "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+	tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA:          "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+	tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA:     "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:   "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:   "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384: "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+	tls.TLS_FALLBACK_SCSV:                       "TLS_FALLBACK_SCSV",
+	tls.TLS_RSA_WITH_AES_128_CBC_SHA256:         "TLS_RSA_WITH_AES_128_CBC_SHA256",
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256: "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256:   "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+	tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305:    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
+	tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305:  "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+}
+
+// cloneTLSConfig returns a shallow clone of the exported
+// fields of cfg, ignoring the unexported sync.Once, which
+// contains a mutex and must not be copied.
+//
+// If cfg is nil, a new zero tls.Config is returned.
+//
+// TODO: inline this function if possible.
+func cloneTLSConfig(cfg *tls.Config) *tls.Config {
+	if cfg == nil {
+		return &tls.Config{}
+	}
+
+	return cfg.Clone()
+}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

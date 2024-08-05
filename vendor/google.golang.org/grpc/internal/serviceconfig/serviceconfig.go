@@ -80,6 +80,7 @@ func (bc *BalancerConfig) UnmarshalJSON(b []byte) error {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	for i, lbcfg := range ir {
 		if len(lbcfg) != 1 {
 			return fmt.Errorf("invalid loadBalancingConfig: entry %v does not contain exactly 1 policy/config pair: %q", i, lbcfg)
@@ -219,6 +220,54 @@ func (bc *BalancerConfig) UnmarshalJSON(b []byte) error {
 	// case.
 	return fmt.Errorf("invalid loadBalancingConfig: no supported policies found in %v", names)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	var names []string
+	for i, lbcfg := range ir {
+		if len(lbcfg) != 1 {
+			return fmt.Errorf("invalid loadBalancingConfig: entry %v does not contain exactly 1 policy/config pair: %q", i, lbcfg)
+		}
+
+		var (
+			name    string
+			jsonCfg json.RawMessage
+		)
+		// Get the key:value pair from the map. We have already made sure that
+		// the map contains a single entry.
+		for name, jsonCfg = range lbcfg {
+		}
+
+		names = append(names, name)
+		builder := balancer.Get(name)
+		if builder == nil {
+			// If the balancer is not registered, move on to the next config.
+			// This is not an error.
+			continue
+		}
+		bc.Name = name
+
+		parser, ok := builder.(balancer.ConfigParser)
+		if !ok {
+			if string(jsonCfg) != "{}" {
+				logger.Warningf("non-empty balancer configuration %q, but balancer does not implement ParseConfig", string(jsonCfg))
+			}
+			// Stop at this, though the builder doesn't support parsing config.
+			return nil
+		}
+
+		cfg, err := parser.ParseConfig(jsonCfg)
+		if err != nil {
+			return fmt.Errorf("error parsing loadBalancingConfig for policy %q: %v", name, err)
+		}
+		bc.Config = cfg
+		return nil
+	}
+	// This is reached when the for loop iterates over all entries, but didn't
+	// return. This means we had a loadBalancingConfig slice but did not
+	// encounter a registered policy. The config is considered invalid in this
+	// case.
+	return fmt.Errorf("invalid loadBalancingConfig: no supported policies found in %v", names)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // MethodConfig defines the configuration recommended by the service providers for a

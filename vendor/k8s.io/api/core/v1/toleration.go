@@ -28,6 +28,7 @@ func (t *Toleration) MatchToleration(tolerationToMatch *Toleration) bool {
 
 // ToleratesTaint checks if the toleration tolerates the taint.
 // The matching follows the rules below:
+<<<<<<< HEAD
 // (1) Empty toleration.effect means to match all taint effects,
 <<<<<<< HEAD
 //
@@ -40,9 +41,15 @@ func (t *Toleration) MatchToleration(tolerationToMatch *Toleration) bool {
 //	this combination means to match all taint values and all taint keys.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// (1) Empty toleration.effect means to match all taint effects,
+=======
+//
+//  1. Empty toleration.effect means to match all taint effects,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //     otherwise taint effect must equal to toleration.effect.
-// (2) If toleration.operator is 'Exists', it means to match all taint values.
-// (3) Empty toleration.key means to match all taint keys.
+//  2. If toleration.operator is 'Exists', it means to match all taint values.
+//  3. Empty toleration.key means to match all taint keys.
 //     If toleration.key is empty, toleration.operator must be 'Exists';
 //     this combination means to match all taint values and all taint keys.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

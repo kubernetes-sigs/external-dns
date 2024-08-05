@@ -29,6 +29,7 @@ type ServerError struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	RespHeaders map[string][]string
 	httpStatus  int
 	requestId   string
@@ -100,6 +101,25 @@ func (err *ServerError) Error() string {
 	recommend  string
 	message    string
 	comment    string
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	httpStatus int
+	requestId  string
+	hostId     string
+	errorCode  string
+	recommend  string
+	message    string
+	comment    string
+=======
+	RespHeaders        map[string][]string
+	httpStatus         int
+	requestId          string
+	hostId             string
+	errorCode          string
+	recommend          string
+	message            string
+	comment            string
+	accessDeniedDetail map[string]interface{}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 type ServerErrorWrapper interface {
@@ -107,9 +127,21 @@ type ServerErrorWrapper interface {
 }
 
 func (err *ServerError) Error() string {
+<<<<<<< HEAD
 	return fmt.Sprintf("SDK.ServerError\nErrorCode: %s\nRecommend: %s\nRequestId: %s\nMessage: %s",
 		err.errorCode, err.comment+err.recommend, err.requestId, err.message)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return fmt.Sprintf("SDK.ServerError\nErrorCode: %s\nRecommend: %s\nRequestId: %s\nMessage: %s",
+		err.errorCode, err.comment+err.recommend, err.requestId, err.message)
+=======
+	if err.accessDeniedDetail != nil {
+		return fmt.Sprintf("SDK.ServerError\nErrorCode: %s\nRecommend: %s\nRequestId: %s\nMessage: %s\nRespHeaders: %s\nAccessDeniedDetail: %s",
+			err.errorCode, err.comment+err.recommend, err.requestId, err.message, err.RespHeaders, err.accessDeniedDetail)
+	}
+	return fmt.Sprintf("SDK.ServerError\nErrorCode: %s\nRecommend: %s\nRequestId: %s\nMessage: %s\nRespHeaders: %s",
+		err.errorCode, err.comment+err.recommend, err.requestId, err.message, err.RespHeaders)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func NewServerError(httpStatus int, responseContent, comment string) Error {
@@ -127,6 +159,7 @@ func NewServerError(httpStatus int, responseContent, comment string) Error {
 		errorCode, _ := jmespath.Search("Code", data)
 		recommend, _ := jmespath.Search("Recommend", data)
 		message, _ := jmespath.Search("Message", data)
+		accessDeniedDetail, _ := jmespath.Search("AccessDeniedDetail", data)
 
 		if requestId != nil {
 			result.requestId = requestId.(string)
@@ -142,6 +175,9 @@ func NewServerError(httpStatus int, responseContent, comment string) Error {
 		}
 		if message != nil {
 			result.message = message.(string)
+		}
+		if accessDeniedDetail != nil {
+			result.accessDeniedDetail = accessDeniedDetail.(map[string]interface{})
 		}
 	}
 
@@ -188,4 +224,8 @@ func (err *ServerError) Recommend() string {
 
 func (err *ServerError) Comment() string {
 	return err.comment
+}
+
+func (err *ServerError) AccessDeniedDetail() map[string]interface{} {
+	return err.accessDeniedDetail
 }

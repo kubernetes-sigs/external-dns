@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build freebsd || netbsd
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -306,6 +307,11 @@ func LlistxattrNS(link string, nsid int, dest []byte) (sz int, err error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build freebsd netbsd
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build freebsd netbsd
+=======
+//go:build freebsd || netbsd
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -338,9 +344,14 @@ func xattrnamespace(fullattr string) (ns int, attr string, err error) {
 func initxattrdest(dest []byte, idx int) (d unsafe.Pointer) {
 	if len(dest) > idx {
 		return unsafe.Pointer(&dest[idx])
-	} else {
-		return unsafe.Pointer(_zero)
 	}
+	if dest != nil {
+		// extattr_get_file and extattr_list_file treat NULL differently from
+		// a non-NULL pointer of length zero. Preserve the property of nilness,
+		// even if we can't use dest directly.
+		return unsafe.Pointer(&_zero)
+	}
+	return nil
 }
 
 // FreeBSD and NetBSD implement their own syscalls to handle extended attributes
@@ -462,13 +473,12 @@ func Lremovexattr(link string, attr string) (err error) {
 }
 
 func Listxattr(file string, dest []byte) (sz int, err error) {
-	d := initxattrdest(dest, 0)
 	destsiz := len(dest)
 
 	// FreeBSD won't allow you to list xattrs from multiple namespaces
-	s := 0
+	s, pos := 0, 0
 	for _, nsid := range [...]int{EXTATTR_NAMESPACE_USER, EXTATTR_NAMESPACE_SYSTEM} {
-		stmp, e := ExtattrListFile(file, nsid, uintptr(d), destsiz)
+		stmp, e := ListxattrNS(file, nsid, dest[pos:])
 
 		/* Errors accessing system attrs are ignored so that
 		 * we can implement the Linux-like behavior of omitting errors that
@@ -477,67 +487,109 @@ func Listxattr(file string, dest []byte) (sz int, err error) {
 		 * Linux will still error if we ask for user attributes on a file that
 		 * we don't have read permissions on, so don't ignore those errors
 		 */
-		if e != nil && e == EPERM && nsid != EXTATTR_NAMESPACE_USER {
-			continue
-		} else if e != nil {
+		if e != nil {
+			if e == EPERM && nsid != EXTATTR_NAMESPACE_USER {
+				continue
+			}
 			return s, e
 		}
 
 		s += stmp
-		destsiz -= s
-		if destsiz < 0 {
-			destsiz = 0
+		pos = s
+		if pos > destsiz {
+			pos = destsiz
 		}
-		d = initxattrdest(dest, s)
+	}
+
+	return s, nil
+}
+
+func ListxattrNS(file string, nsid int, dest []byte) (sz int, err error) {
+	d := initxattrdest(dest, 0)
+	destsiz := len(dest)
+
+	s, e := ExtattrListFile(file, nsid, uintptr(d), destsiz)
+	if e != nil {
+		return 0, err
 	}
 
 	return s, nil
 }
 
 func Flistxattr(fd int, dest []byte) (sz int, err error) {
-	d := initxattrdest(dest, 0)
 	destsiz := len(dest)
 
-	s := 0
+	s, pos := 0, 0
 	for _, nsid := range [...]int{EXTATTR_NAMESPACE_USER, EXTATTR_NAMESPACE_SYSTEM} {
-		stmp, e := ExtattrListFd(fd, nsid, uintptr(d), destsiz)
-		if e != nil && e == EPERM && nsid != EXTATTR_NAMESPACE_USER {
-			continue
-		} else if e != nil {
+		stmp, e := FlistxattrNS(fd, nsid, dest[pos:])
+
+		if e != nil {
+			if e == EPERM && nsid != EXTATTR_NAMESPACE_USER {
+				continue
+			}
 			return s, e
 		}
 
 		s += stmp
-		destsiz -= s
-		if destsiz < 0 {
-			destsiz = 0
+		pos = s
+		if pos > destsiz {
+			pos = destsiz
 		}
-		d = initxattrdest(dest, s)
+	}
+
+	return s, nil
+}
+
+func FlistxattrNS(fd int, nsid int, dest []byte) (sz int, err error) {
+	d := initxattrdest(dest, 0)
+	destsiz := len(dest)
+
+	s, e := ExtattrListFd(fd, nsid, uintptr(d), destsiz)
+	if e != nil {
+		return 0, err
 	}
 
 	return s, nil
 }
 
 func Llistxattr(link string, dest []byte) (sz int, err error) {
-	d := initxattrdest(dest, 0)
 	destsiz := len(dest)
 
-	s := 0
+	s, pos := 0, 0
 	for _, nsid := range [...]int{EXTATTR_NAMESPACE_USER, EXTATTR_NAMESPACE_SYSTEM} {
-		stmp, e := ExtattrListLink(link, nsid, uintptr(d), destsiz)
-		if e != nil && e == EPERM && nsid != EXTATTR_NAMESPACE_USER {
-			continue
-		} else if e != nil {
+		stmp, e := LlistxattrNS(link, nsid, dest[pos:])
+
+		if e != nil {
+			if e == EPERM && nsid != EXTATTR_NAMESPACE_USER {
+				continue
+			}
 			return s, e
 		}
 
 		s += stmp
-		destsiz -= s
-		if destsiz < 0 {
-			destsiz = 0
+		pos = s
+		if pos > destsiz {
+			pos = destsiz
 		}
+<<<<<<< HEAD
 		d = initxattrdest(dest, s)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		d = initxattrdest(dest, s)
+=======
+	}
+
+	return s, nil
+}
+
+func LlistxattrNS(link string, nsid int, dest []byte) (sz int, err error) {
+	d := initxattrdest(dest, 0)
+	destsiz := len(dest)
+
+	s, e := ExtattrListLink(link, nsid, uintptr(d), destsiz)
+	if e != nil {
+		return 0, err
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return s, nil

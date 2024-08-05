@@ -41,6 +41,7 @@ const (
 //
 // Example:
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 //	mySession := session.Must(session.NewSession())
 //
@@ -132,23 +133,34 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //     mySession := session.Must(session.NewSession())
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//     mySession := session.Must(session.NewSession())
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
-//     // Create a ServiceDiscovery client from just a session.
-//     svc := servicediscovery.New(mySession)
+//	mySession := session.Must(session.NewSession())
 //
-//     // Create a ServiceDiscovery client with additional configuration
-//     svc := servicediscovery.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
+//	// Create a ServiceDiscovery client from just a session.
+//	svc := servicediscovery.New(mySession)
+//
+//	// Create a ServiceDiscovery client with additional configuration
+//	svc := servicediscovery.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
 func New(p client.ConfigProvider, cfgs ...*aws.Config) *ServiceDiscovery {
 	c := p.ClientConfig(EndpointsID, cfgs...)
-	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+	if c.SigningNameDerived || len(c.SigningName) == 0 {
+		c.SigningName = EndpointsID
+		// No Fallback
+	}
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName, c.ResolvedRegion)
 }
 
 // newClient creates, initializes and returns a new service client instance.
-func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName string) *ServiceDiscovery {
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName, resolvedRegion string) *ServiceDiscovery {
 	svc := &ServiceDiscovery{
 		Client: client.New(
 			cfg,
 			metadata.ClientInfo{
+<<<<<<< HEAD
 				ServiceName:   ServiceName,
 				ServiceID:     ServiceID,
 				SigningName:   signingName,
@@ -159,6 +171,28 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				JSONVersion:   "1.1",
 				TargetPrefix:  "Route53AutoNaming_v20170314",
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				ServiceName:   ServiceName,
+				ServiceID:     ServiceID,
+				SigningName:   signingName,
+				SigningRegion: signingRegion,
+				PartitionID:   partitionID,
+				Endpoint:      endpoint,
+				APIVersion:    "2017-03-14",
+				JSONVersion:   "1.1",
+				TargetPrefix:  "Route53AutoNaming_v20170314",
+=======
+				ServiceName:    ServiceName,
+				ServiceID:      ServiceID,
+				SigningName:    signingName,
+				SigningRegion:  signingRegion,
+				PartitionID:    partitionID,
+				Endpoint:       endpoint,
+				APIVersion:     "2017-03-14",
+				ResolvedRegion: resolvedRegion,
+				JSONVersion:    "1.1",
+				TargetPrefix:   "Route53AutoNaming_v20170314",
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			},
 			handlers,
 		),

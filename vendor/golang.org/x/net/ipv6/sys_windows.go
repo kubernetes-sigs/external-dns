@@ -17,6 +17,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"golang.org/x/sys/windows"
 )
@@ -261,18 +262,14 @@ var (
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	"golang.org/x/sys/windows"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 const (
-	// See ws2tcpip.h.
-	sysIPV6_UNICAST_HOPS   = 0x4
-	sysIPV6_MULTICAST_IF   = 0x9
-	sysIPV6_MULTICAST_HOPS = 0xa
-	sysIPV6_MULTICAST_LOOP = 0xb
-	sysIPV6_JOIN_GROUP     = 0xc
-	sysIPV6_LEAVE_GROUP    = 0xd
-	sysIPV6_PKTINFO        = 0x13
-
 	sizeofSockaddrInet6 = 0x1c
 
 	sizeofIPv6Mreq     = 0x14
@@ -306,6 +303,7 @@ var (
 	ctlOpts = [ctlMax]ctlOpt{}
 
 	sockOpts = map[int]*sockOpt{
+<<<<<<< HEAD
 		ssoHopLimit:           {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_UNICAST_HOPS, Len: 4}},
 		ssoMulticastInterface: {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_MULTICAST_IF, Len: 4}},
 		ssoMulticastHopLimit:  {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_MULTICAST_HOPS, Len: 4}},
@@ -313,6 +311,21 @@ var (
 		ssoJoinGroup:          {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_JOIN_GROUP, Len: sizeofIPv6Mreq}, typ: ssoTypeIPMreq},
 		ssoLeaveGroup:         {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_LEAVE_GROUP, Len: sizeofIPv6Mreq}, typ: ssoTypeIPMreq},
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		ssoHopLimit:           {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_UNICAST_HOPS, Len: 4}},
+		ssoMulticastInterface: {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_MULTICAST_IF, Len: 4}},
+		ssoMulticastHopLimit:  {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_MULTICAST_HOPS, Len: 4}},
+		ssoMulticastLoopback:  {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_MULTICAST_LOOP, Len: 4}},
+		ssoJoinGroup:          {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_JOIN_GROUP, Len: sizeofIPv6Mreq}, typ: ssoTypeIPMreq},
+		ssoLeaveGroup:         {Option: socket.Option{Level: iana.ProtocolIPv6, Name: sysIPV6_LEAVE_GROUP, Len: sizeofIPv6Mreq}, typ: ssoTypeIPMreq},
+=======
+		ssoHopLimit:           {Option: socket.Option{Level: iana.ProtocolIPv6, Name: windows.IPV6_UNICAST_HOPS, Len: 4}},
+		ssoMulticastInterface: {Option: socket.Option{Level: iana.ProtocolIPv6, Name: windows.IPV6_MULTICAST_IF, Len: 4}},
+		ssoMulticastHopLimit:  {Option: socket.Option{Level: iana.ProtocolIPv6, Name: windows.IPV6_MULTICAST_HOPS, Len: 4}},
+		ssoMulticastLoopback:  {Option: socket.Option{Level: iana.ProtocolIPv6, Name: windows.IPV6_MULTICAST_LOOP, Len: 4}},
+		ssoJoinGroup:          {Option: socket.Option{Level: iana.ProtocolIPv6, Name: windows.IPV6_JOIN_GROUP, Len: sizeofIPv6Mreq}, typ: ssoTypeIPMreq},
+		ssoLeaveGroup:         {Option: socket.Option{Level: iana.ProtocolIPv6, Name: windows.IPV6_LEAVE_GROUP, Len: sizeofIPv6Mreq}, typ: ssoTypeIPMreq},
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 )
 

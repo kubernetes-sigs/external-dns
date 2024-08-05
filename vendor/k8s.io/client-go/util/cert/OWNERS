@@ -2,6 +2,7 @@
 
 approvers:
 <<<<<<< HEAD
+<<<<<<< HEAD
   - sig-auth-certificates-approvers
 reviewers:
   - sig-auth-certificates-reviewers
@@ -10,9 +11,21 @@ labels:
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 - sig-auth-certificates-approvers
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- sig-auth-certificates-approvers
+=======
+  - sig-auth-certificates-approvers
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 reviewers:
-- sig-auth-certificates-reviewers
+  - sig-auth-certificates-reviewers
 labels:
+<<<<<<< HEAD
 - sig/auth
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- sig/auth
+
+=======
+  - sig/auth
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

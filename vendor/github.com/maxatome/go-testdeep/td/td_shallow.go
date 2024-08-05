@@ -36,6 +36,7 @@ func stringPointer(s string) uintptr {
 // pointers, slices and strings.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // During a match, the compared data must be the same as expectedPtr
 // to succeed.
 //
@@ -358,31 +359,38 @@ func (s *tdShallow) String() string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // During a match, the compared data must be the same as "expectedPtr"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// During a match, the compared data must be the same as "expectedPtr"
+=======
+// During a match, the compared data must be the same as expectedPtr
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // to succeed.
 //
-//   a, b := 123, 123
-//   td.Cmp(t, &a, td.Shallow(&a)) // succeeds
-//   td.Cmp(t, &a, td.Shallow(&b)) // fails even if a == b as &a != &b
+//	a, b := 123, 123
+//	td.Cmp(t, &a, td.Shallow(&a)) // succeeds
+//	td.Cmp(t, &a, td.Shallow(&b)) // fails even if a == b as &a != &b
 //
-//   back := "foobarfoobar"
-//   a, b := back[:6], back[6:]
-//   // a == b but...
-//   td.Cmp(t, &a, td.Shallow(&b)) // fails
+//	back := "foobarfoobar"
+//	a, b := back[:6], back[6:]
+//	// a == b but...
+//	td.Cmp(t, &a, td.Shallow(&b)) // fails
 //
 // Be careful for slices and strings! Shallow can succeed but the
 // slices/strings not be identical because of their different
 // lengths. For example:
 //
-//   a := "foobar yes!"
-//   b := a[:1]                    // aka "f"
-//   td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both strings point to the same area, even if len() differ
+//	a := "foobar yes!"
+//	b := a[:1]                    // aka "f"
+//	td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both strings point to the same area, even if len() differ
 //
 // The same behavior occurs for slices:
 //
-//   a := []int{1, 2, 3, 4, 5, 6}
-//   b := a[:2]                    // aka []int{1, 2}
-//   td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both slices point to the same area, even if len() differ
-func Shallow(expectedPtr interface{}) TestDeep {
+//	a := []int{1, 2, 3, 4, 5, 6}
+//	b := a[:2]                    // aka []int{1, 2}
+//	td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both slices point to the same area, even if len() differ
+//
+// See also [Ptr].
+func Shallow(expectedPtr any) TestDeep {
 	vptr := reflect.ValueOf(expectedPtr)
 
 	shallow := tdShallow{
@@ -404,28 +412,30 @@ func Shallow(expectedPtr interface{}) TestDeep {
 		reflect.Slice,
 		reflect.UnsafePointer:
 		shallow.expectedPointer = vptr.Pointer()
-		return &shallow
 
 	case reflect.String:
 		shallow.expectedStr = vptr.String()
 		shallow.expectedPointer = stringPointer(shallow.expectedStr)
-		return &shallow
 
 	default:
-		panic("usage: Shallow(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)")
+		shallow.err = ctxerr.OpBadUsage(
+			"Shallow", "(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)",
+			expectedPtr, 1, true)
 	}
+
+	return &shallow
 }
 
 func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if s.err != nil {
+		return ctx.CollectError(s.err)
+	}
+
 	if got.Kind() != s.expectedKind {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
-		return ctx.CollectError(&ctxerr.Error{
-			Message:  "bad kind",
-			Got:      types.RawString(got.Kind().String()),
-			Expected: types.RawString(s.expectedKind.String()),
-		})
+		return ctx.CollectError(ctxerr.BadKind(got, s.expectedKind.String()))
 	}
 
 	var ptr uintptr
@@ -451,6 +461,14 @@ func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (s *tdShallow) String() string {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if s.err != nil {
+		return s.stringError()
+	}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return fmt.Sprintf("(%s) 0x%x", s.expectedKind, s.expectedPointer)
 }

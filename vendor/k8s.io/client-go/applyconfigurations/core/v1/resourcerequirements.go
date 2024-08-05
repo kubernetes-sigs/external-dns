@@ -25,6 +25,7 @@ import (
 // ResourceRequirementsApplyConfiguration represents an declarative configuration of the ResourceRequirements type for use
 // with apply.
 type ResourceRequirementsApplyConfiguration struct {
+<<<<<<< HEAD
 	Limits   *v1.ResourceList `json:"limits,omitempty"`
 	Requests *v1.ResourceList `json:"requests,omitempty"`
 }
@@ -48,5 +49,45 @@ func (b *ResourceRequirementsApplyConfiguration) WithLimits(value v1.ResourceLis
 // If called multiple times, the Requests field is set to the value of the last call.
 func (b *ResourceRequirementsApplyConfiguration) WithRequests(value v1.ResourceList) *ResourceRequirementsApplyConfiguration {
 	b.Requests = &value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Limits   *v1.ResourceList                  `json:"limits,omitempty"`
+	Requests *v1.ResourceList                  `json:"requests,omitempty"`
+	Claims   []ResourceClaimApplyConfiguration `json:"claims,omitempty"`
+}
+
+// ResourceRequirementsApplyConfiguration constructs an declarative configuration of the ResourceRequirements type for use with
+// apply.
+func ResourceRequirements() *ResourceRequirementsApplyConfiguration {
+	return &ResourceRequirementsApplyConfiguration{}
+}
+
+// WithLimits sets the Limits field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Limits field is set to the value of the last call.
+func (b *ResourceRequirementsApplyConfiguration) WithLimits(value v1.ResourceList) *ResourceRequirementsApplyConfiguration {
+	b.Limits = &value
+	return b
+}
+
+// WithRequests sets the Requests field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Requests field is set to the value of the last call.
+func (b *ResourceRequirementsApplyConfiguration) WithRequests(value v1.ResourceList) *ResourceRequirementsApplyConfiguration {
+	b.Requests = &value
+	return b
+}
+
+// WithClaims adds the given value to the Claims field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Claims field.
+func (b *ResourceRequirementsApplyConfiguration) WithClaims(values ...*ResourceClaimApplyConfiguration) *ResourceRequirementsApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithClaims")
+		}
+		b.Claims = append(b.Claims, *values[i])
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

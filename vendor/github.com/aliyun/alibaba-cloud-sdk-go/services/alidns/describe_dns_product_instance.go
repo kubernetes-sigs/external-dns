@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDnsProductInstance(request *DescribeDnsProductInstanceRequest) (response *DescribeDnsProductInstanceResponse, err error) {
 	response = CreateDescribeDnsProductInstanceResponse()
 	err = client.DoAction(request, response)
@@ -243,6 +244,10 @@ func CreateDescribeDnsProductInstanceRequest() (request *DescribeDnsProductInsta
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeDnsProductInstance(request *DescribeDnsProductInstanceRequest) (response *DescribeDnsProductInstanceResponse, err error) {
 	response = CreateDescribeDnsProductInstanceResponse()
 	err = client.DoAction(request, response)
@@ -250,8 +255,6 @@ func (client *Client) DescribeDnsProductInstance(request *DescribeDnsProductInst
 }
 
 // DescribeDnsProductInstanceWithChan invokes the alidns.DescribeDnsProductInstance API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDnsProductInstanceWithChan(request *DescribeDnsProductInstanceRequest) (<-chan *DescribeDnsProductInstanceResponse, <-chan error) {
 	responseChan := make(chan *DescribeDnsProductInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -274,8 +277,6 @@ func (client *Client) DescribeDnsProductInstanceWithChan(request *DescribeDnsPro
 }
 
 // DescribeDnsProductInstanceWithCallback invokes the alidns.DescribeDnsProductInstance API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDnsProductInstanceWithCallback(request *DescribeDnsProductInstanceRequest, callback func(response *DescribeDnsProductInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -305,38 +306,40 @@ type DescribeDnsProductInstanceRequest struct {
 // DescribeDnsProductInstanceResponse is the response struct for api DescribeDnsProductInstance
 type DescribeDnsProductInstanceResponse struct {
 	*responses.BaseResponse
-	RequestId             string                                 `json:"RequestId" xml:"RequestId"`
-	InstanceId            string                                 `json:"InstanceId" xml:"InstanceId"`
-	VersionCode           string                                 `json:"VersionCode" xml:"VersionCode"`
-	VersionName           string                                 `json:"VersionName" xml:"VersionName"`
-	StartTime             string                                 `json:"StartTime" xml:"StartTime"`
-	StartTimestamp        int64                                  `json:"StartTimestamp" xml:"StartTimestamp"`
-	EndTime               string                                 `json:"EndTime" xml:"EndTime"`
-	EndTimestamp          int64                                  `json:"EndTimestamp" xml:"EndTimestamp"`
-	Domain                string                                 `json:"Domain" xml:"Domain"`
-	BindCount             int64                                  `json:"BindCount" xml:"BindCount"`
-	BindUsedCount         int64                                  `json:"BindUsedCount" xml:"BindUsedCount"`
-	TTLMinValue           int64                                  `json:"TTLMinValue" xml:"TTLMinValue"`
-	SubDomainLevel        int64                                  `json:"SubDomainLevel" xml:"SubDomainLevel"`
-	DnsSLBCount           int64                                  `json:"DnsSLBCount" xml:"DnsSLBCount"`
-	URLForwardCount       int64                                  `json:"URLForwardCount" xml:"URLForwardCount"`
-	DDosDefendFlow        int64                                  `json:"DDosDefendFlow" xml:"DDosDefendFlow"`
-	DDosDefendQuery       int64                                  `json:"DDosDefendQuery" xml:"DDosDefendQuery"`
-	OverseaDDosDefendFlow int64                                  `json:"OverseaDDosDefendFlow" xml:"OverseaDDosDefendFlow"`
-	SearchEngineLines     string                                 `json:"SearchEngineLines" xml:"SearchEngineLines"`
-	ISPLines              string                                 `json:"ISPLines" xml:"ISPLines"`
-	ISPRegionLines        string                                 `json:"ISPRegionLines" xml:"ISPRegionLines"`
-	OverseaLine           string                                 `json:"OverseaLine" xml:"OverseaLine"`
 	MonitorNodeCount      int64                                  `json:"MonitorNodeCount" xml:"MonitorNodeCount"`
-	MonitorFrequency      int64                                  `json:"MonitorFrequency" xml:"MonitorFrequency"`
-	MonitorTaskCount      int64                                  `json:"MonitorTaskCount" xml:"MonitorTaskCount"`
-	RegionLines           bool                                   `json:"RegionLines" xml:"RegionLines"`
-	Gslb                  bool                                   `json:"Gslb" xml:"Gslb"`
-	InClean               bool                                   `json:"InClean" xml:"InClean"`
 	InBlackHole           bool                                   `json:"InBlackHole" xml:"InBlackHole"`
 	BindDomainCount       int64                                  `json:"BindDomainCount" xml:"BindDomainCount"`
-	BindDomainUsedCount   int64                                  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
+	RegionLines           bool                                   `json:"RegionLines" xml:"RegionLines"`
+	BindCount             int64                                  `json:"BindCount" xml:"BindCount"`
+	EndTime               string                                 `json:"EndTime" xml:"EndTime"`
+	StartTimestamp        int64                                  `json:"StartTimestamp" xml:"StartTimestamp"`
+	ISPLines              string                                 `json:"ISPLines" xml:"ISPLines"`
+	EndTimestamp          int64                                  `json:"EndTimestamp" xml:"EndTimestamp"`
+	DDosDefendQuery       int64                                  `json:"DDosDefendQuery" xml:"DDosDefendQuery"`
 	DnsSecurity           string                                 `json:"DnsSecurity" xml:"DnsSecurity"`
+	DomainType            string                                 `json:"DomainType" xml:"DomainType"`
+	URLForwardCount       int64                                  `json:"URLForwardCount" xml:"URLForwardCount"`
+	TTLMinValue           int64                                  `json:"TTLMinValue" xml:"TTLMinValue"`
+	PaymentType           string                                 `json:"PaymentType" xml:"PaymentType"`
+	VersionName           string                                 `json:"VersionName" xml:"VersionName"`
+	OverseaLine           string                                 `json:"OverseaLine" xml:"OverseaLine"`
+	ISPRegionLines        string                                 `json:"ISPRegionLines" xml:"ISPRegionLines"`
+	Gslb                  bool                                   `json:"Gslb" xml:"Gslb"`
+	BindUsedCount         int64                                  `json:"BindUsedCount" xml:"BindUsedCount"`
+	RequestId             string                                 `json:"RequestId" xml:"RequestId"`
+	DnsSLBCount           int64                                  `json:"DnsSLBCount" xml:"DnsSLBCount"`
+	InstanceId            string                                 `json:"InstanceId" xml:"InstanceId"`
+	MonitorTaskCount      int64                                  `json:"MonitorTaskCount" xml:"MonitorTaskCount"`
+	StartTime             string                                 `json:"StartTime" xml:"StartTime"`
+	DDosDefendFlow        int64                                  `json:"DDosDefendFlow" xml:"DDosDefendFlow"`
+	MonitorFrequency      int64                                  `json:"MonitorFrequency" xml:"MonitorFrequency"`
+	SearchEngineLines     string                                 `json:"SearchEngineLines" xml:"SearchEngineLines"`
+	BindDomainUsedCount   int64                                  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
+	VersionCode           string                                 `json:"VersionCode" xml:"VersionCode"`
+	OverseaDDosDefendFlow int64                                  `json:"OverseaDDosDefendFlow" xml:"OverseaDDosDefendFlow"`
+	InClean               bool                                   `json:"InClean" xml:"InClean"`
+	SubDomainLevel        int64                                  `json:"SubDomainLevel" xml:"SubDomainLevel"`
+	Domain                string                                 `json:"Domain" xml:"Domain"`
 	DnsServers            DnsServersInDescribeDnsProductInstance `json:"DnsServers" xml:"DnsServers"`
 }
 
@@ -346,7 +349,12 @@ func CreateDescribeDnsProductInstanceRequest() (request *DescribeDnsProductInsta
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDnsProductInstance", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

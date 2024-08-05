@@ -15,6 +15,7 @@ import (
 
 // ULID represents a ulid string format
 // ref:
+<<<<<<< HEAD
 //   https://github.com/ulid/spec
 // impl:
 //   https://github.com/oklog/ulid
@@ -91,6 +92,94 @@ func NewULIDZero() ULID {
 // NewULID generates new unique ULID value and a error if any
 func NewULID() (u ULID, err error) {
 	entropy := ulidEntropyPool.Get().(io.Reader)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+//	https://github.com/ulid/spec
+//
+// impl:
+//
+//	https://github.com/oklog/ulid
+//
+// swagger:strfmt ulid
+type ULID struct {
+	ulid.ULID
+}
+
+var (
+	ulidEntropyPool = sync.Pool{
+		New: func() interface{} {
+			return cryptorand.Reader
+		},
+	}
+
+	ULIDScanDefaultFunc = func(raw interface{}) (ULID, error) {
+		u := NewULIDZero()
+		switch x := raw.(type) {
+		case nil:
+			// zerp ulid
+			return u, nil
+		case string:
+			if x == "" {
+				// zero ulid
+				return u, nil
+			}
+			return u, u.UnmarshalText([]byte(x))
+		case []byte:
+			return u, u.UnmarshalText(x)
+		}
+
+		return u, fmt.Errorf("cannot sql.Scan() strfmt.ULID from: %#v: %w", raw, ulid.ErrScanValue)
+	}
+
+	// ULIDScanOverrideFunc allows you to override the Scan method of the ULID type
+	ULIDScanOverrideFunc = ULIDScanDefaultFunc
+
+	ULIDValueDefaultFunc = func(u ULID) (driver.Value, error) {
+		return driver.Value(u.String()), nil
+	}
+
+	// ULIDValueOverrideFunc allows you to override the Value method of the ULID type
+	ULIDValueOverrideFunc = ULIDValueDefaultFunc
+)
+
+func init() {
+	// register formats in the default registry:
+	//   - ulid
+	ulid := ULID{}
+	Default.Add("ulid", &ulid, IsULID)
+}
+
+// IsULID checks if provided string is ULID format
+// Be noticed that this function considers overflowed ULID as non-ulid.
+// For more details see https://github.com/ulid/spec
+func IsULID(str string) bool {
+	_, err := ulid.ParseStrict(str)
+	return err == nil
+}
+
+// ParseULID parses a string that represents an valid ULID
+func ParseULID(str string) (ULID, error) {
+	var u ULID
+
+	return u, u.UnmarshalText([]byte(str))
+}
+
+// NewULIDZero returns a zero valued ULID type
+func NewULIDZero() ULID {
+	return ULID{}
+}
+
+// NewULID generates new unique ULID value and a error if any
+func NewULID() (ULID, error) {
+	var u ULID
+
+	obj := ulidEntropyPool.Get()
+	entropy, ok := obj.(io.Reader)
+	if !ok {
+		return u, fmt.Errorf("failed to cast %+v to io.Reader", obj)
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	id, err := ulid.New(ulid.Now(), entropy)
 	if err != nil {

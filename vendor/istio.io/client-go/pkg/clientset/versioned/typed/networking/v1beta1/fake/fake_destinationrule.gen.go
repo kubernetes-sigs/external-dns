@@ -18,11 +18,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	networkingv1beta1 "istio.io/client-go/pkg/applyconfiguration/networking/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,9 +36,9 @@ type FakeDestinationRules struct {
 	ns   string
 }
 
-var destinationrulesResource = schema.GroupVersionResource{Group: "networking.istio.io", Version: "v1beta1", Resource: "destinationrules"}
+var destinationrulesResource = v1beta1.SchemeGroupVersion.WithResource("destinationrules")
 
-var destinationrulesKind = schema.GroupVersionKind{Group: "networking.istio.io", Version: "v1beta1", Kind: "DestinationRule"}
+var destinationrulesKind = v1beta1.SchemeGroupVersion.WithKind("DestinationRule")
 
 // Get takes name of the destinationRule, and returns the corresponding destinationRule object, and an error if there is any.
 func (c *FakeDestinationRules) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.DestinationRule, err error) {
@@ -115,7 +117,7 @@ func (c *FakeDestinationRules) UpdateStatus(ctx context.Context, destinationRule
 // Delete takes name of the destinationRule and deletes it. Returns an error if one occurs.
 func (c *FakeDestinationRules) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(destinationrulesResource, c.ns, name), &v1beta1.DestinationRule{})
+		Invokes(testing.NewDeleteActionWithOptions(destinationrulesResource, c.ns, name, opts), &v1beta1.DestinationRule{})
 
 	return err
 }
@@ -132,6 +134,51 @@ func (c *FakeDestinationRules) DeleteCollection(ctx context.Context, opts v1.Del
 func (c *FakeDestinationRules) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.DestinationRule, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(destinationrulesResource, c.ns, name, pt, data, subresources...), &v1beta1.DestinationRule{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.DestinationRule), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied destinationRule.
+func (c *FakeDestinationRules) Apply(ctx context.Context, destinationRule *networkingv1beta1.DestinationRuleApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.DestinationRule, err error) {
+	if destinationRule == nil {
+		return nil, fmt.Errorf("destinationRule provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(destinationRule)
+	if err != nil {
+		return nil, err
+	}
+	name := destinationRule.Name
+	if name == nil {
+		return nil, fmt.Errorf("destinationRule.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(destinationrulesResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.DestinationRule{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.DestinationRule), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeDestinationRules) ApplyStatus(ctx context.Context, destinationRule *networkingv1beta1.DestinationRuleApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.DestinationRule, err error) {
+	if destinationRule == nil {
+		return nil, fmt.Errorf("destinationRule provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(destinationRule)
+	if err != nil {
+		return nil, err
+	}
+	name := destinationRule.Name
+	if name == nil {
+		return nil, fmt.Errorf("destinationRule.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(destinationrulesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.DestinationRule{})
 
 	if obj == nil {
 		return nil, err

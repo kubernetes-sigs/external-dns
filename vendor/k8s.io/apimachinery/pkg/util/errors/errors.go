@@ -170,6 +170,7 @@ func matchesError(err error, fns ...Matcher) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // remain a nil list is returned. The resulting slice will have all
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -202,6 +203,11 @@ func matchesError(err error, fns ...Matcher) bool {
 =======
 // remain a nil list is returned. The resulting silec will have all
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// remain a nil list is returned. The resulting silec will have all
+=======
+// remain a nil list is returned. The resulting slice will have all
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // nested slices flattened as a side effect.
 func filterErrors(list []error, fns ...Matcher) []error {
 	result := []error{}
@@ -252,7 +258,7 @@ func CreateAggregateFromMessageCountMap(m MessageCountMap) Aggregate {
 	return NewAggregate(result)
 }
 
-// Reduce will return err or, if err is an Aggregate and only has one item,
+// Reduce will return err or nil, if err is an Aggregate and only has one item,
 // the first item in the aggregate.
 func Reduce(err error) error {
 	if agg, ok := err.(Aggregate); ok && err != nil {

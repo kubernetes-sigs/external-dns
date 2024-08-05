@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfigRequest) (response *DescribeGtmMonitorConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorConfigResponse()
 	err = client.DoAction(request, response)
@@ -197,6 +198,10 @@ func CreateDescribeGtmMonitorConfigRequest() (request *DescribeGtmMonitorConfigR
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfigRequest) (response *DescribeGtmMonitorConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorConfigResponse()
 	err = client.DoAction(request, response)
@@ -204,8 +209,6 @@ func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfig
 }
 
 // DescribeGtmMonitorConfigWithChan invokes the alidns.DescribeGtmMonitorConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorConfigWithChan(request *DescribeGtmMonitorConfigRequest) (<-chan *DescribeGtmMonitorConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmMonitorConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -228,8 +231,6 @@ func (client *Client) DescribeGtmMonitorConfigWithChan(request *DescribeGtmMonit
 }
 
 // DescribeGtmMonitorConfigWithCallback invokes the alidns.DescribeGtmMonitorConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorConfigWithCallback(request *DescribeGtmMonitorConfigRequest, callback func(response *DescribeGtmMonitorConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -260,16 +261,16 @@ type DescribeGtmMonitorConfigRequest struct {
 type DescribeGtmMonitorConfigResponse struct {
 	*responses.BaseResponse
 	RequestId         string                                 `json:"RequestId" xml:"RequestId"`
-	MonitorConfigId   string                                 `json:"MonitorConfigId" xml:"MonitorConfigId"`
-	CreateTime        string                                 `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp   int64                                  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime        string                                 `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp   int64                                  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	ProtocolType      string                                 `json:"ProtocolType" xml:"ProtocolType"`
-	Interval          int                                    `json:"Interval" xml:"Interval"`
-	EvaluationCount   int                                    `json:"EvaluationCount" xml:"EvaluationCount"`
 	Timeout           int                                    `json:"Timeout" xml:"Timeout"`
+	ProtocolType      string                                 `json:"ProtocolType" xml:"ProtocolType"`
+	CreateTime        string                                 `json:"CreateTime" xml:"CreateTime"`
+	UpdateTime        string                                 `json:"UpdateTime" xml:"UpdateTime"`
+	EvaluationCount   int                                    `json:"EvaluationCount" xml:"EvaluationCount"`
+	UpdateTimestamp   int64                                  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	MonitorExtendInfo string                                 `json:"MonitorExtendInfo" xml:"MonitorExtendInfo"`
+	MonitorConfigId   string                                 `json:"MonitorConfigId" xml:"MonitorConfigId"`
+	CreateTimestamp   int64                                  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Interval          int                                    `json:"Interval" xml:"Interval"`
 	IspCityNodes      IspCityNodesInDescribeGtmMonitorConfig `json:"IspCityNodes" xml:"IspCityNodes"`
 }
 
@@ -279,7 +280,12 @@ func CreateDescribeGtmMonitorConfigRequest() (request *DescribeGtmMonitorConfigR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorConfig", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

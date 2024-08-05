@@ -29,6 +29,7 @@ type LoadConfigOptions struct {
 	SkipLoadProfile bool
 }
 
+<<<<<<< HEAD
 // LoadConfig loads a Linode config according to the options argument.
 // If no options are specified, the following defaults will be used:
 // Path: ~/.config/linode
@@ -87,6 +88,67 @@ func (c *Client) LoadConfig(options *LoadConfigOptions) error {
 	if !options.SkipLoadProfile {
 		if err := c.UseProfile(profileOption); err != nil {
 			return fmt.Errorf("unable to use profile %s: %s", profileOption, err)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// LoadConfig loads a Linode config according to the option's argument.
+// If no options are specified, the following defaults will be used:
+// Path: ~/.config/linode
+// Profile: default
+func (c *Client) LoadConfig(options *LoadConfigOptions) error {
+	path, err := resolveValidConfigPath()
+	if err != nil {
+		return err
+	}
+
+	profileOption := DefaultConfigProfile
+
+	if options != nil {
+		if options.Path != "" {
+			path = options.Path
+		}
+
+		if options.Profile != "" {
+			profileOption = options.Profile
+		}
+	}
+
+	cfg, err := ini.Load(path)
+	if err != nil {
+		return err
+	}
+
+	defaultConfig := ConfigProfile{
+		APIToken:   "",
+		APIURL:     APIHost,
+		APIVersion: APIVersion,
+	}
+
+	if cfg.HasSection("default") {
+		err := cfg.Section("default").MapTo(&defaultConfig)
+		if err != nil {
+			return fmt.Errorf("failed to map default profile: %w", err)
+		}
+	}
+
+	result := make(map[string]ConfigProfile)
+
+	for _, profile := range cfg.Sections() {
+		name := strings.ToLower(profile.Name())
+
+		f := defaultConfig
+		if err := profile.MapTo(&f); err != nil {
+			return fmt.Errorf("failed to map values: %w", err)
+		}
+
+		result[name] = f
+	}
+
+	c.configProfiles = result
+
+	if !options.SkipLoadProfile {
+		if err := c.UseProfile(profileOption); err != nil {
+			return fmt.Errorf("unable to use profile %s: %w", profileOption, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 

@@ -25,6 +25,7 @@ type VolumeProjectionApplyConfiguration struct {
 	DownwardAPI         *DownwardAPIProjectionApplyConfiguration         `json:"downwardAPI,omitempty"`
 	ConfigMap           *ConfigMapProjectionApplyConfiguration           `json:"configMap,omitempty"`
 	ServiceAccountToken *ServiceAccountTokenProjectionApplyConfiguration `json:"serviceAccountToken,omitempty"`
+<<<<<<< HEAD
 }
 
 // VolumeProjectionApplyConfiguration constructs an declarative configuration of the VolumeProjection type for use with
@@ -62,5 +63,54 @@ func (b *VolumeProjectionApplyConfiguration) WithConfigMap(value *ConfigMapProje
 // If called multiple times, the ServiceAccountToken field is set to the value of the last call.
 func (b *VolumeProjectionApplyConfiguration) WithServiceAccountToken(value *ServiceAccountTokenProjectionApplyConfiguration) *VolumeProjectionApplyConfiguration {
 	b.ServiceAccountToken = value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ClusterTrustBundle  *ClusterTrustBundleProjectionApplyConfiguration  `json:"clusterTrustBundle,omitempty"`
+}
+
+// VolumeProjectionApplyConfiguration constructs an declarative configuration of the VolumeProjection type for use with
+// apply.
+func VolumeProjection() *VolumeProjectionApplyConfiguration {
+	return &VolumeProjectionApplyConfiguration{}
+}
+
+// WithSecret sets the Secret field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Secret field is set to the value of the last call.
+func (b *VolumeProjectionApplyConfiguration) WithSecret(value *SecretProjectionApplyConfiguration) *VolumeProjectionApplyConfiguration {
+	b.Secret = value
+	return b
+}
+
+// WithDownwardAPI sets the DownwardAPI field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DownwardAPI field is set to the value of the last call.
+func (b *VolumeProjectionApplyConfiguration) WithDownwardAPI(value *DownwardAPIProjectionApplyConfiguration) *VolumeProjectionApplyConfiguration {
+	b.DownwardAPI = value
+	return b
+}
+
+// WithConfigMap sets the ConfigMap field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ConfigMap field is set to the value of the last call.
+func (b *VolumeProjectionApplyConfiguration) WithConfigMap(value *ConfigMapProjectionApplyConfiguration) *VolumeProjectionApplyConfiguration {
+	b.ConfigMap = value
+	return b
+}
+
+// WithServiceAccountToken sets the ServiceAccountToken field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ServiceAccountToken field is set to the value of the last call.
+func (b *VolumeProjectionApplyConfiguration) WithServiceAccountToken(value *ServiceAccountTokenProjectionApplyConfiguration) *VolumeProjectionApplyConfiguration {
+	b.ServiceAccountToken = value
+	return b
+}
+
+// WithClusterTrustBundle sets the ClusterTrustBundle field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClusterTrustBundle field is set to the value of the last call.
+func (b *VolumeProjectionApplyConfiguration) WithClusterTrustBundle(value *ClusterTrustBundleProjectionApplyConfiguration) *VolumeProjectionApplyConfiguration {
+	b.ClusterTrustBundle = value
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

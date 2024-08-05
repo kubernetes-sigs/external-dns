@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDomainRecords(request *DescribeDomainRecordsRequest) (response *DescribeDomainRecordsResponse, err error) {
 	response = CreateDescribeDomainRecordsResponse()
 	err = client.DoAction(request, response)
@@ -209,6 +210,10 @@ func CreateDescribeDomainRecordsRequest() (request *DescribeDomainRecordsRequest
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeDomainRecords(request *DescribeDomainRecordsRequest) (response *DescribeDomainRecordsResponse, err error) {
 	response = CreateDescribeDomainRecordsResponse()
 	err = client.DoAction(request, response)
@@ -216,8 +221,6 @@ func (client *Client) DescribeDomainRecords(request *DescribeDomainRecordsReques
 }
 
 // DescribeDomainRecordsWithChan invokes the alidns.DescribeDomainRecords API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainRecordsWithChan(request *DescribeDomainRecordsRequest) (<-chan *DescribeDomainRecordsResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainRecordsResponse, 1)
 	errChan := make(chan error, 1)
@@ -240,8 +243,6 @@ func (client *Client) DescribeDomainRecordsWithChan(request *DescribeDomainRecor
 }
 
 // DescribeDomainRecordsWithCallback invokes the alidns.DescribeDomainRecords API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainRecordsWithCallback(request *DescribeDomainRecordsRequest, callback func(response *DescribeDomainRecordsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -284,10 +285,10 @@ type DescribeDomainRecordsRequest struct {
 // DescribeDomainRecordsResponse is the response struct for api DescribeDomainRecords
 type DescribeDomainRecordsResponse struct {
 	*responses.BaseResponse
-	RequestId     string                               `json:"RequestId" xml:"RequestId"`
 	TotalCount    int64                                `json:"TotalCount" xml:"TotalCount"`
-	PageNumber    int64                                `json:"PageNumber" xml:"PageNumber"`
 	PageSize      int64                                `json:"PageSize" xml:"PageSize"`
+	RequestId     string                               `json:"RequestId" xml:"RequestId"`
+	PageNumber    int64                                `json:"PageNumber" xml:"PageNumber"`
 	DomainRecords DomainRecordsInDescribeDomainRecords `json:"DomainRecords" xml:"DomainRecords"`
 }
 
@@ -297,7 +298,12 @@ func CreateDescribeDomainRecordsRequest() (request *DescribeDomainRecordsRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainRecords", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

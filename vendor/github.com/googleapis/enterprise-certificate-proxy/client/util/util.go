@@ -22,6 +22,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+<<<<<<< HEAD
 )
 
 const configFileName = "certificate_config.json"
@@ -88,4 +89,82 @@ func getDefaultConfigFileDirectory() (directory string) {
 // GetDefaultConfigFilePath returns the default path of the enterprise certificate config file created by gCloud.
 func GetDefaultConfigFilePath() (path string) {
 	return filepath.Join(getDefaultConfigFileDirectory(), configFileName)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"strings"
+)
+
+const configFileName = "certificate_config.json"
+
+// EnterpriseCertificateConfig contains parameters for initializing signer.
+type EnterpriseCertificateConfig struct {
+	Libs Libs `json:"libs"`
+}
+
+// Libs specifies the locations of helper libraries.
+type Libs struct {
+	ECP string `json:"ecp"`
+}
+
+// ErrConfigUnavailable is a sentinel error that indicates ECP config is unavailable,
+// possibly due to entire config missing or missing binary path.
+var ErrConfigUnavailable = errors.New("Config is unavailable")
+
+// LoadSignerBinaryPath retrieves the path of the signer binary from the config file.
+func LoadSignerBinaryPath(configFilePath string) (path string, err error) {
+	jsonFile, err := os.Open(configFilePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", ErrConfigUnavailable
+		}
+		return "", err
+	}
+
+	byteValue, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return "", err
+	}
+	var config EnterpriseCertificateConfig
+	err = json.Unmarshal(byteValue, &config)
+	if err != nil {
+		return "", err
+	}
+	signerBinaryPath := config.Libs.ECP
+	if signerBinaryPath == "" {
+		return "", ErrConfigUnavailable
+	}
+
+	signerBinaryPath = strings.ReplaceAll(signerBinaryPath, "~", guessHomeDir())
+	signerBinaryPath = strings.ReplaceAll(signerBinaryPath, "$HOME", guessHomeDir())
+	return signerBinaryPath, nil
+}
+
+func guessHomeDir() string {
+	// Prefer $HOME over user.Current due to glibc bug: golang.org/issue/13470
+	if v := os.Getenv("HOME"); v != "" {
+		return v
+	}
+	// Else, fall back to user.Current:
+	if u, err := user.Current(); err == nil {
+		return u.HomeDir
+	}
+	return ""
+}
+
+func getDefaultConfigFileDirectory() (directory string) {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(os.Getenv("APPDATA"), "gcloud")
+	}
+	return filepath.Join(guessHomeDir(), ".config/gcloud")
+}
+
+// GetDefaultConfigFilePath returns the default path of the enterprise certificate config file created by gCloud.
+func GetDefaultConfigFilePath() (path string) {
+	return filepath.Join(getDefaultConfigFileDirectory(), configFileName)
+}
+
+// GetConfigFilePathFromEnv returns the path associated with environment variable GOOGLE_API_CERTIFICATE_CONFIG
+func GetConfigFilePathFromEnv() (path string) {
+	return os.Getenv("GOOGLE_API_CERTIFICATE_CONFIG")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

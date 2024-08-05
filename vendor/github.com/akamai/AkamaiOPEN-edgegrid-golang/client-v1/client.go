@@ -4,8 +4,6 @@ package client
 import (
 	"bytes"
 	"errors"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/jsonhooks-v1"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -16,6 +14,9 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/jsonhooks-v1"
 )
 
 var (

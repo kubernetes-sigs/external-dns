@@ -139,6 +139,7 @@ type inFlow struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (f *inFlow) newLimit(n uint32) {
 	f.mu.Lock()
 	f.limit = n
@@ -164,12 +165,21 @@ func (f *inFlow) newLimit(n uint32) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (f *inFlow) newLimit(n uint32) uint32 {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (f *inFlow) newLimit(n uint32) uint32 {
+=======
+func (f *inFlow) newLimit(n uint32) {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	f.mu.Lock()
-	d := n - f.limit
 	f.limit = n
 	f.mu.Unlock()
+<<<<<<< HEAD
 	return d
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return d
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (f *inFlow) maybeAdjust(n uint32) uint32 {

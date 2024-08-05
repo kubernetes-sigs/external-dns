@@ -1,5 +1,7 @@
 package monitor
 
+import "time"
+
 // Job wraps an NS1 /monitoring/jobs resource
 type Job struct {
 	ID string `json:"id,omitempty"`
@@ -22,7 +24,7 @@ type Job struct {
 	Status map[string]*Status `json:"status,omitempty"`
 
 	// Rules for determining failure conditions.
-	Rules []*Rule `json:"rules,omitempty"`
+	Rules []*Rule `json:"rules"`
 
 	// List of regions in which to run the monitor.
 	// eg, ["dal", "sin", "sjc", "lga", "ams"]
@@ -67,6 +69,9 @@ type Job struct {
 	// If true, notifications are sent for any regional failure (and failback if desired),
 	// in addition to global state notifications.
 	NotifyRegional bool `json:"notify_regional"`
+
+	// If true the notification will be off
+	Mute bool `json:"mute"`
 
 	// If true, a notification is sent when a job returns to an "up" state.
 	NotifyFailback bool `json:"notify_failback"`
@@ -130,6 +135,28 @@ func NewHTTPConfig(url, method, ua, auth string, connTimeout int) *Config {
 		"connect_timeout": connTimeout,
 	}
 
+}
+
+// NewHTTPV3Config constructs/returns a job configuration for HTTP type jobs, with additional V3 fields.
+// v3 must be enabled in customer configuration
+// url is the URL to query. (Required)
+// method is the HTTP method(valid methods are HEAD, GET, and POST).
+// ua is the user agent text in the request header.
+// auth is the authorization header to use in request.
+// connTimeout is the timeout(in sec) to wait for query output.
+func NewHTTPV3Config(url, method, ua, auth string, connTimeout int, it time.Duration, reqIPV4 bool, vhost string, tlsSkipVerify bool, followRedir bool) *Config {
+	return &Config{
+		"url":             url, // Required
+		"method":          method,
+		"user_agent":      ua,
+		"authorization":   auth,
+		"connect_timeout": connTimeout,
+		"idle_timeout":    it,
+		"require_ipv4":    reqIPV4,
+		"virtual_host":    vhost,
+		"tls_skip_verify": tlsSkipVerify,
+		"follow_redirect": followRedir,
+	}
 }
 
 // NewDNSConfig constructs/returns a job configuration for DNS type jobs.

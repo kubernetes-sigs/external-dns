@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
 	response = CreateSetZoneRecordStatusResponse()
 	err = client.DoAction(request, response)
@@ -181,6 +182,10 @@ func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
 	response = CreateSetZoneRecordStatusResponse()
 	err = client.DoAction(request, response)
@@ -188,8 +193,6 @@ func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (
 }
 
 // SetZoneRecordStatusWithChan invokes the pvtz.SetZoneRecordStatus API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetZoneRecordStatusWithChan(request *SetZoneRecordStatusRequest) (<-chan *SetZoneRecordStatusResponse, <-chan error) {
 	responseChan := make(chan *SetZoneRecordStatusResponse, 1)
 	errChan := make(chan error, 1)
@@ -212,8 +215,6 @@ func (client *Client) SetZoneRecordStatusWithChan(request *SetZoneRecordStatusRe
 }
 
 // SetZoneRecordStatusWithCallback invokes the pvtz.SetZoneRecordStatus API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetZoneRecordStatusWithCallback(request *SetZoneRecordStatusRequest, callback func(response *SetZoneRecordStatusResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -255,7 +256,12 @@ func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "SetZoneRecordStatus", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

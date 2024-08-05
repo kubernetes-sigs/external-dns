@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
@@ -146,6 +147,10 @@ func CheckCodec(c Codec, internalType Object, externalTypes ...schema.GroupVersi
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"k8s.io/apimachinery/pkg/util/json"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // CheckCodec makes sure that the codec can encode objects like internalType,
@@ -154,11 +159,24 @@ func CheckCodec(c Codec, internalType Object, externalTypes ...schema.GroupVersi
 // TODO: verify that the correct external version is chosen on encode...
 func CheckCodec(c Codec, internalType Object, externalTypes ...schema.GroupVersionKind) error {
 	if _, err := Encode(c, internalType); err != nil {
-		return fmt.Errorf("Internal type not encodable: %v", err)
+		return fmt.Errorf("internal type not encodable: %v", err)
 	}
 	for _, et := range externalTypes {
+<<<<<<< HEAD
 		exBytes := []byte(fmt.Sprintf(`{"kind":"%v","apiVersion":"%v"}`, et.Kind, et.GroupVersion().String()))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		exBytes := []byte(fmt.Sprintf(`{"kind":"%v","apiVersion":"%v"}`, et.Kind, et.GroupVersion().String()))
+=======
+		typeMeta := TypeMeta{
+			Kind:       et.Kind,
+			APIVersion: et.GroupVersion().String(),
+		}
+		exBytes, err := json.Marshal(&typeMeta)
+		if err != nil {
+			return err
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		obj, err := Decode(c, exBytes)
 		if err != nil {
 			return fmt.Errorf("external type %s not interpretable: %v", et, err)

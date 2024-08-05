@@ -28,10 +28,13 @@ type RateLimitServiceSpec struct {
 	// Common to all Ambassador objects.
 	AmbassadorID AmbassadorID `json:"ambassador_id,omitempty"`
 
-	Service   string       `json:"service,omitempty"`
-	TimeoutMs int          `json:"timeout_ms,omitempty"`
-	Domain    string       `json:"domain,omitempty"`
-	TLS       BoolOrString `json:"tls,omitempty"`
+	// +kubebuilder:validation:Required
+	Service   string        `json:"service,omitempty"`
+	TimeoutMs *int          `json:"timeout_ms,omitempty"`
+	Domain    string        `json:"domain,omitempty"`
+	TLS       *BoolOrString `json:"tls,omitempty"`
+	// +kubebuilder:validation:Enum={"v2","v2alpha"}
+	ProtocolVersion string `json:"protocol_version,omitempty"`
 }
 
 // RateLimitService is the Schema for the ratelimitservices API

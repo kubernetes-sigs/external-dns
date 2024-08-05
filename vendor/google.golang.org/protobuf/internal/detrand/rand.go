@@ -33,6 +33,7 @@ func Bool() bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Intn returns a deterministically random integer between 0 and n-1, inclusive.
 func Intn(n int) int {
 	if n <= 0 {
@@ -86,6 +87,17 @@ func Intn(n int) int {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Intn returns a deterministically random integer between 0 and n-1, inclusive.
+func Intn(n int) int {
+	if n <= 0 {
+		panic("must be positive")
+	}
+	return int(randSeed % uint64(n))
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // randSeed is a best-effort at an approximate hash of the Go binary.
 var randSeed = binaryHash()
 

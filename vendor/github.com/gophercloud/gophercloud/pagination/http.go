@@ -44,8 +44,9 @@ func PageResultFrom(resp *http.Response) (PageResult, error) {
 func PageResultFromParsed(resp *http.Response, body interface{}) PageResult {
 	return PageResult{
 		Result: gophercloud.Result{
-			Body:   body,
-			Header: resp.Header,
+			Body:       body,
+			StatusCode: resp.StatusCode,
+			Header:     resp.Header,
 		},
 		URL: *resp.Request.URL,
 	}
@@ -54,6 +55,7 @@ func PageResultFromParsed(resp *http.Response, body interface{}) PageResult {
 // Request performs an HTTP request and extracts the http.Response from the result.
 func Request(client *gophercloud.ServiceClient, headers map[string]string, url string) (*http.Response, error) {
 	return client.Get(url, nil, &gophercloud.RequestOpts{
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -108,5 +110,13 @@ func Request(client *gophercloud.ServiceClient, headers map[string]string, url s
 		MoreHeaders: headers,
 		OkCodes:     []int{200, 204, 300},
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		MoreHeaders: headers,
+		OkCodes:     []int{200, 204, 300},
+=======
+		MoreHeaders:      headers,
+		OkCodes:          []int{200, 204, 300},
+		KeepResponseBody: true,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	})
 }

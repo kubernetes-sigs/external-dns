@@ -9,6 +9,7 @@ import "context"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Account associated with the token in use.
 type Account struct {
 	FirstName         string      `json:"first_name"`
@@ -186,6 +187,11 @@ func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Account associated with the token in use
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Account associated with the token in use
+=======
+// Account associated with the token in use.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type Account struct {
 	FirstName         string      `json:"first_name"`
 	LastName          string      `json:"last_name"`
@@ -202,6 +208,7 @@ type Account struct {
 	TaxID             string      `json:"tax_id"`
 	Phone             string      `json:"phone"`
 	CreditCard        *CreditCard `json:"credit_card"`
+	EUUID             string      `json:"euuid"`
 }
 
 // CreditCard information associated with the Account.
@@ -210,8 +217,9 @@ type CreditCard struct {
 	Expiry   string `json:"expiry"`
 }
 
-// GetAccount gets the contact and billing information related to the Account
+// GetAccount gets the contact and billing information related to the Account.
 func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
+<<<<<<< HEAD
 	e, err := c.Account.Endpoint()
 	if err != nil {
 		return nil, err
@@ -220,6 +228,19 @@ func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Account{}).Get(e))
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	e, err := c.Account.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Account{}).Get(e))
+
+=======
+	e := "account"
+	req := c.R(ctx).SetResult(&Account{})
+	r, err := coupleAPIErrors(req.Get(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

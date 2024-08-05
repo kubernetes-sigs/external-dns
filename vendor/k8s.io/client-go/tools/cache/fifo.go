@@ -25,7 +25,7 @@ import (
 
 // PopProcessFunc is passed to Pop() method of Queue interface.
 // It is supposed to process the accumulator popped from the queue.
-type PopProcessFunc func(interface{}) error
+type PopProcessFunc func(obj interface{}, isInInitialList bool) error
 
 // ErrRequeue may be returned by a PopProcessFunc to safely requeue
 // the current item. The value of Err will be returned from Pop.
@@ -71,6 +71,7 @@ type Queue interface {
 
 	// HasSynced returns true if the first batch of keys have all been
 	// popped.  The first batch of keys are those of the first Replace
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -971,6 +972,13 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 =======
 	// operation if that happened before any Add, Update, or Delete;
 	// otherwise the first batch is empty.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// operation if that happened before any Add, Update, or Delete;
+	// otherwise the first batch is empty.
+=======
+	// operation if that happened before any Add, AddIfNotPresent,
+	// Update, or Delete; otherwise the first batch is empty.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	HasSynced() bool
 
 	// Close the queue
@@ -980,9 +988,12 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 // Pop is helper function for popping from Queue.
 // WARNING: Do NOT use this function in non-test code to avoid races
 // unless you really really really really know what you are doing.
+//
+// NOTE: This function is deprecated and may be removed in the future without
+// additional warning.
 func Pop(queue Queue) interface{} {
 	var result interface{}
-	queue.Pop(func(obj interface{}) error {
+	queue.Pop(func(obj interface{}, isInInitialList bool) error {
 		result = obj
 		return nil
 	})
@@ -1001,10 +1012,11 @@ func Pop(queue Queue) interface{} {
 // recent version will be processed. This can't be done with a channel
 //
 // FIFO solves this use case:
-//  * You want to process every object (exactly) once.
-//  * You want to process the most recent version of the object when you process it.
-//  * You do not want to process deleted objects, they should be removed from the queue.
-//  * You do not want to periodically reprocess objects.
+//   - You want to process every object (exactly) once.
+//   - You want to process the most recent version of the object when you process it.
+//   - You do not want to process deleted objects, they should be removed from the queue.
+//   - You do not want to periodically reprocess objects.
+//
 // Compare with DeltaFIFO for other use cases.
 type FIFO struct {
 	lock sync.RWMutex
@@ -1025,9 +1037,8 @@ type FIFO struct {
 
 	// Indication the queue is closed.
 	// Used to indicate a queue is closed so a control loop can exit when a queue is empty.
-	// Currently, not used to gate any of CRED operations.
-	closed     bool
-	closedLock sync.Mutex
+	// Currently, not used to gate any of CRUD operations.
+	closed bool
 }
 
 var (
@@ -1036,17 +1047,21 @@ var (
 
 // Close the queue.
 func (f *FIFO) Close() {
-	f.closedLock.Lock()
-	defer f.closedLock.Unlock()
+	f.lock.Lock()
+	defer f.lock.Unlock()
 	f.closed = true
 	f.cond.Broadcast()
 }
 
 // HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
-// or an Update called first but the first batch of items inserted by Replace() has been popped
+// or the first batch of items inserted by Replace() has been popped.
 func (f *FIFO) HasSynced() bool {
 	f.lock.Lock()
 	defer f.lock.Unlock()
+	return f.hasSynced_locked()
+}
+
+func (f *FIFO) hasSynced_locked() bool {
 	return f.populated && f.initialPopulationCount == 0
 }
 
@@ -1160,12 +1175,9 @@ func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
 
 // IsClosed checks if the queue is closed
 func (f *FIFO) IsClosed() bool {
-	f.closedLock.Lock()
-	defer f.closedLock.Unlock()
-	if f.closed {
-		return true
-	}
-	return false
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	return f.closed
 }
 
 // Pop waits until an item is ready and processes it. If multiple items are
@@ -1182,13 +1194,20 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
 			// When Close() is called, the f.closed is set and the condition is broadcasted.
 			// Which causes this loop to continue and return from the Pop().
+<<<<<<< HEAD
 			if f.IsClosed() {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			if f.IsClosed() {
+=======
+			if f.closed {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				return nil, ErrFIFOClosed
 			}
 
 			f.cond.Wait()
 		}
+		isInInitialList := !f.hasSynced_locked()
 		id := f.queue[0]
 		f.queue = f.queue[1:]
 		if f.initialPopulationCount > 0 {
@@ -1200,7 +1219,7 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 			continue
 		}
 		delete(f.items, id)
-		err := process(item)
+		err := process(item, isInInitialList)
 		if e, ok := err.(ErrRequeue); ok {
 			f.addIfNotPresent(id, item)
 			err = e.Err

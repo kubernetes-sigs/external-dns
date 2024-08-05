@@ -26,6 +26,7 @@ var _ TestDeep = &tdNaN{}
 // NaN operator checks that data is a float and is not-a-number.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	got := math.NaN()
 //	td.Cmp(t, got, td.NaN()) // succeeds
 //	td.Cmp(t, 4.2, td.NaN()) // fails
@@ -84,6 +85,17 @@ var _ TestDeep = &tdNotNaN{}
 //   got := math.NaN()
 //   td.Cmp(t, got, td.NaN()) // succeeds
 //   td.Cmp(t, 4.2, td.NaN()) // fails
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   got := math.NaN()
+//   td.Cmp(t, got, td.NaN()) // succeeds
+//   td.Cmp(t, 4.2, td.NaN()) // fails
+=======
+//	got := math.NaN()
+//	td.Cmp(t, got, td.NaN()) // succeeds
+//	td.Cmp(t, 4.2, td.NaN()) // fails
+//
+// See also [NotNaN].
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NaN() TestDeep {
 	return &tdNaN{
 		base: newBase(3),
@@ -126,11 +138,25 @@ var _ TestDeep = &tdNotNaN{}
 
 // NotNaN operator checks that data is a float and is not not-a-number.
 //
+<<<<<<< HEAD
 //   got := math.NaN()
 //   td.Cmp(t, got, td.NotNaN()) // fails
 //   td.Cmp(t, 4.2, td.NotNaN()) // succeeds
 //   td.Cmp(t, 4, td.NotNaN())   // fails, as 4 is not a float
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   got := math.NaN()
+//   td.Cmp(t, got, td.NotNaN()) // fails
+//   td.Cmp(t, 4.2, td.NotNaN()) // succeeds
+//   td.Cmp(t, 4, td.NotNaN())   // fails, as 4 is not a float
+=======
+//	got := math.NaN()
+//	td.Cmp(t, got, td.NotNaN()) // fails
+//	td.Cmp(t, 4.2, td.NotNaN()) // succeeds
+//	td.Cmp(t, 4, td.NotNaN())   // fails, as 4 is not a float
+//
+// See also [NaN].
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NotNaN() TestDeep {
 	return &tdNotNaN{
 		base: newBase(3),

@@ -17,8 +17,6 @@ import "analysis/v1alpha1/message.proto";
 
 import "google/protobuf/timestamp.proto";
 
-import "google/api/field_behavior.proto";
-
 // $title: Istio Status
 // $description: Common status field for all istio collections.
 // $location: https://istio.io/docs/reference/config/meta/v1beta1/istio-status.html
@@ -40,6 +38,12 @@ message IstioStatus {
   // +patchMergeKey=type
   // +patchStrategy=merge
   repeated analysis.v1alpha1.AnalysisMessageBase validation_messages = 2;
+
+  // Resource Generation to which the Reconciled Condition refers.
+  // When this value is not equal to the object's metadata generation, reconciled condition  calculation for the current
+  // generation is still in progress.  See https://istio.io/latest/docs/reference/config/config-status/ for more info.
+  // +optional
+  int64 observed_generation = 3;
 }
 
 message IstioCondition {

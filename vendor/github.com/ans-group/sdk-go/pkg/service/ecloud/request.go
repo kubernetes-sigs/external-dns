@@ -179,6 +179,7 @@ func (c *CreateVirtualMachineTemplateRequest) Validate() *connection.ValidationE
 type CreateVPCRequest struct {
 	Name               string `json:"name,omitempty"`
 	RegionID           string `json:"region_id"`
+<<<<<<< HEAD
 	AdvancedNetworking *bool  `json:"advanced_networking,omitempty"`
 }
 
@@ -614,4 +615,467 @@ type UpdateImageRequest struct {
 	LogoURI          string `json:"logo_uri,omitempty"`
 	DocumentationURI string `json:"documentation_uri,omitempty"`
 	Description      string `json:"description,omitempty"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ClientID           int    `json:"client_id,omitempty"`
+	AdvancedNetworking *bool  `json:"advanced_networking,omitempty"`
+}
+
+// PatchVPCRequest represents a request to patch a VPC
+type PatchVPCRequest struct {
+	Name     string `json:"name,omitempty"`
+	ClientID *int   `json:"client_id,omitempty"`
+}
+
+// CreateNetworkRequest represents a request to create a network
+type CreateNetworkRequest struct {
+	Name     string `json:"name,omitempty"`
+	RouterID string `json:"router_id"`
+	Subnet   string `json:"subnet"`
+}
+
+// PatchNetworkRequest represents a request to patch a network
+type PatchNetworkRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateRouterRequest represents a request to create a router
+type CreateRouterRequest struct {
+	Name               string `json:"name,omitempty"`
+	VPCID              string `json:"vpc_id"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+	RouterThroughputID string `json:"router_throughput_id,omitempty"`
+}
+
+// PatchRouterRequest represents a request to patch a router
+type PatchRouterRequest struct {
+	Name               string `json:"name,omitempty"`
+	RouterThroughputID string `json:"router_throughput_id,omitempty"`
+}
+
+// CreateVPNRequest represents a request to create a VPN
+type CreateVPNRequest struct {
+	RouterID string `json:"router_id"`
+}
+
+// CreateLoadBalancerClusterRequest represents a request to create a load balancer cluster
+type CreateLoadBalancerClusterRequest struct {
+	Name               string `json:"name,omitempty"`
+	VPCID              string `json:"vpc_id"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+	Nodes              int    `json:"nodes"`
+}
+
+// PatchLoadBalancerClusterRequest represents a request to patch a load balancer cluster
+type PatchLoadBalancerClusterRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateInstanceRequest represents a request to create an instance
+type CreateInstanceRequest struct {
+	Name               string                 `json:"name,omitempty"`
+	VPCID              string                 `json:"vpc_id"`
+	ImageID            string                 `json:"image_id"`
+	ImageData          map[string]interface{} `json:"image_data"`
+	VCPUCores          int                    `json:"vcpu_cores,omitempty"`
+	VCPUSockets        int                    `json:"vcpu_sockets,omitempty"`
+	VCPUCoresPerSocket int                    `json:"vcpu_cores_per_socket,omitempty"`
+	RAMCapacity        int                    `json:"ram_capacity"`
+	Locked             bool                   `json:"locked"`
+	VolumeCapacity     int                    `json:"volume_capacity"`
+	VolumeIOPS         int                    `json:"volume_iops,omitempty"`
+	BackupEnabled      bool                   `json:"backup_enabled"`
+	IsEncrypted        bool                   `json:"is_encrypted"`
+	NetworkID          string                 `json:"network_id,omitempty"`
+	FloatingIPID       string                 `json:"floating_ip_id,omitempty"`
+	RequiresFloatingIP bool                   `json:"requires_floating_ip,omitempty"`
+	UserScript         string                 `json:"user_script,omitempty"`
+	SSHKeyPairIDs      []string               `json:"ssh_key_pair_ids,omitempty"`
+	HostGroupID        string                 `json:"host_group_id,omitempty"`
+	ResourceTierID     string                 `json:"resource_tier_id,omitempty"`
+	CustomIPAddress    connection.IPAddress   `json:"custom_ip_address,omitempty"`
+}
+
+// PatchInstanceRequest represents a request to patch an instance
+type PatchInstanceRequest struct {
+	Name               string  `json:"name,omitempty"`
+	VCPUCores          int     `json:"vcpu_cores,omitempty"`
+	VCPUSockets        int     `json:"vcpu_sockets,omitempty"`
+	VCPUCoresPerSocket int     `json:"vcpu_cores_per_socket,omitempty"`
+	RAMCapacity        int     `json:"ram_capacity,omitempty"`
+	VolumeGroupID      *string `json:"volume_group_id,omitempty"`
+}
+
+// CreateFirewallPolicyRequest represents a request to create a firewall policy
+type CreateFirewallPolicyRequest struct {
+	RouterID string `json:"router_id"`
+	Name     string `json:"name,omitempty"`
+	Sequence int    `json:"sequence"`
+}
+
+// PatchFirewallPolicyRequest represents a request to patch a firewall policy
+type PatchFirewallPolicyRequest struct {
+	Name     string `json:"name,omitempty"`
+	Sequence *int   `json:"sequence,omitempty"`
+}
+
+// CreateVolumeRequest represents a request to create a volume
+type CreateVolumeRequest struct {
+	Name               string `json:"name,omitempty"`
+	VPCID              string `json:"vpc_id"`
+	Capacity           int    `json:"capacity"`
+	IOPS               int    `json:"iops,omitempty"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+	VolumeGroupID      string `json:"volume_group_id,omitempty"`
+	IsShared           bool   `json:"is_shared,omitempty"`
+}
+
+// PatchVolumeRequest represents a request to patch a volume
+type PatchVolumeRequest struct {
+	Name          string  `json:"name,omitempty"`
+	Capacity      int     `json:"capacity,omitempty"`
+	IOPS          int     `json:"iops,omitempty"`
+	VolumeGroupID *string `json:"volume_group_id,omitempty"`
+}
+
+// CreateFirewallRuleRequest represents a request to create a firewall rule
+type CreateFirewallRuleRequest struct {
+	Name             string                          `json:"name,omitempty"`
+	FirewallPolicyID string                          `json:"firewall_policy_id"`
+	Sequence         int                             `json:"sequence"`
+	Source           string                          `json:"source"`
+	Destination      string                          `json:"destination"`
+	Ports            []CreateFirewallRulePortRequest `json:"ports,omitempty"`
+	Action           FirewallRuleAction              `json:"action"`
+	Direction        FirewallRuleDirection           `json:"direction"`
+	Enabled          bool                            `json:"enabled"`
+}
+
+// PatchFirewallRuleRequest represents a request to patch a firewall rule
+type PatchFirewallRuleRequest struct {
+	Name        string                         `json:"name,omitempty"`
+	Sequence    *int                           `json:"sequence,omitempty"`
+	Source      string                         `json:"source,omitempty"`
+	Destination string                         `json:"destination,omitempty"`
+	Ports       []PatchFirewallRulePortRequest `json:"ports,omitempty"`
+	Action      FirewallRuleAction             `json:"action,omitempty"`
+	Direction   FirewallRuleDirection          `json:"direction,omitempty"`
+	Enabled     *bool                          `json:"enabled,omitempty"`
+}
+
+// CreateFirewallRulePortRequest represents a request to create a firewall rule port
+type CreateFirewallRulePortRequest struct {
+	Name           string                   `json:"name,omitempty"`
+	FirewallRuleID string                   `json:"firewall_rule_id"`
+	Protocol       FirewallRulePortProtocol `json:"protocol"`
+	Source         string                   `json:"source,omitempty"`
+	Destination    string                   `json:"destination,omitempty"`
+}
+
+// PatchFirewallRulePortRequest represents a request to patch a firewall rule port
+type PatchFirewallRulePortRequest struct {
+	Name        string                   `json:"name,omitempty"`
+	Protocol    FirewallRulePortProtocol `json:"protocol,omitempty"`
+	Source      string                   `json:"source,omitempty"`
+	Destination string                   `json:"destination,omitempty"`
+}
+
+// CreateFloatingIPRequest represents a request to create a floating IP
+type CreateFloatingIPRequest struct {
+	Name               string `json:"name,omitempty"`
+	VPCID              string `json:"vpc_id"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+}
+
+// PatchFloatingIPRequest represents a request to patch a floating IP
+type PatchFloatingIPRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// AssignFloatingIPRequest represents a request to assign a floating IP to a resource
+type AssignFloatingIPRequest struct {
+	ResourceID string `json:"resource_id"`
+}
+
+// CreateHostGroupRequest represents a request to create a host group
+type CreateHostGroupRequest struct {
+	Name               string `json:"name,omitempty"`
+	VPCID              string `json:"vpc_id"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+	HostSpecID         string `json:"host_spec_id"`
+	WindowsEnabled     bool   `json:"windows_enabled"`
+}
+
+// PatchHostGroupRequest represents a request to patch a host group
+type PatchHostGroupRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateSSHKeyPairRequest represents a request to create a SSH key pair
+type CreateSSHKeyPairRequest struct {
+	Name      string `json:"name,omitempty"`
+	PublicKey string `json:"public_key"`
+}
+
+// PatchSSHKeyPairRequest represents a request to patch a SSH key pair
+type PatchSSHKeyPairRequest struct {
+	Name      string `json:"name,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+}
+
+// AttachDetachInstanceVolumeRequest represents a request to attach / detach a volume to/from an instance
+type AttachDetachInstanceVolumeRequest struct {
+	VolumeID string `json:"volume_id"`
+}
+
+// CreateHostRequest represents a request to create a host
+type CreateHostRequest struct {
+	Name        string `json:"name,omitempty"`
+	HostGroupID string `json:"host_group_id"`
+}
+
+// PatchHostRequest represents a request to patch a host
+type PatchHostRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+type NetworkPolicyCatchallRuleAction string
+
+const (
+	NetworkPolicyCatchallRuleActionAllow  NetworkPolicyCatchallRuleAction = "ALLOW"
+	NetworkPolicyCatchallRuleActionDrop   NetworkPolicyCatchallRuleAction = "DROP"
+	NetworkPolicyCatchallRuleActionReject NetworkPolicyCatchallRuleAction = "REJECT"
+)
+
+var NetworkPolicyCatchallRuleActionEnum connection.EnumSlice = []connection.Enum{
+	NetworkPolicyCatchallRuleActionAllow,
+	NetworkPolicyCatchallRuleActionDrop,
+	NetworkPolicyCatchallRuleActionReject,
+}
+
+// ParseNetworkPolicyCatchallRuleAction attempts to parse a NetworkPolicyCatchallRuleAction from string
+func ParseNetworkPolicyCatchallRuleAction(s string) (NetworkPolicyCatchallRuleAction, error) {
+	e, err := connection.ParseEnum(s, NetworkPolicyCatchallRuleActionEnum)
+	if err != nil {
+		return "", err
+	}
+
+	return e.(NetworkPolicyCatchallRuleAction), err
+}
+
+func (s NetworkPolicyCatchallRuleAction) String() string {
+	return string(s)
+}
+
+// CreateNetworkPolicyRequest represents a request to create a network policy
+type CreateNetworkPolicyRequest struct {
+	Name               string                          `json:"name,omitempty"`
+	NetworkID          string                          `json:"network_id"`
+	CatchallRuleAction NetworkPolicyCatchallRuleAction `json:"catchall_rule_action,omitempty"`
+}
+
+// PatchNetworkPolicyRequest represents a request to patch a network policy
+type PatchNetworkPolicyRequest struct {
+	Name               string                          `json:"name,omitempty"`
+	CatchallRuleAction NetworkPolicyCatchallRuleAction `json:"catchall_rule_action,omitempty"`
+}
+
+// CreateNetworkRuleRequest represents a request to create a network rule
+type CreateNetworkRuleRequest struct {
+	Name            string                         `json:"name,omitempty"`
+	NetworkPolicyID string                         `json:"network_policy_id"`
+	Sequence        int                            `json:"sequence"`
+	Source          string                         `json:"source"`
+	Destination     string                         `json:"destination"`
+	Ports           []CreateNetworkRulePortRequest `json:"ports,omitempty"`
+	Action          NetworkRuleAction              `json:"action"`
+	Direction       NetworkRuleDirection           `json:"direction"`
+	Enabled         bool                           `json:"enabled"`
+}
+
+// PatchNetworkRuleRequest represents a request to patch a network rule
+type PatchNetworkRuleRequest struct {
+	Name        string                        `json:"name,omitempty"`
+	Sequence    *int                          `json:"sequence,omitempty"`
+	Source      string                        `json:"source,omitempty"`
+	Destination string                        `json:"destination,omitempty"`
+	Ports       []PatchNetworkRulePortRequest `json:"ports,omitempty"`
+	Action      NetworkRuleAction             `json:"action,omitempty"`
+	Direction   NetworkRuleDirection          `json:"direction,omitempty"`
+	Enabled     *bool                         `json:"enabled,omitempty"`
+}
+
+// CreateNetworkRulePortRequest represents a request to create a network rule port
+type CreateNetworkRulePortRequest struct {
+	Name          string                  `json:"name,omitempty"`
+	NetworkRuleID string                  `json:"network_rule_id"`
+	Protocol      NetworkRulePortProtocol `json:"protocol"`
+	Source        string                  `json:"source,omitempty"`
+	Destination   string                  `json:"destination,omitempty"`
+}
+
+// PatchNetworkRulePortRequest represents a request to patch a network rule port
+type PatchNetworkRulePortRequest struct {
+	Name        string                  `json:"name,omitempty"`
+	Protocol    NetworkRulePortProtocol `json:"protocol,omitempty"`
+	Source      string                  `json:"source,omitempty"`
+	Destination string                  `json:"destination,omitempty"`
+}
+
+// CreateVPNEndpointRequest represents a request to create a VPN endpoint
+type CreateVPNEndpointRequest struct {
+	Name         string `json:"name,omitempty"`
+	VPNServiceID string `json:"vpn_service_id"`
+	FloatingIPID string `json:"floating_ip_id,omitempty"`
+}
+
+// PatchVPNEndpointRequest represents a request to patch a VPN endpoint
+type PatchVPNEndpointRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateVPNSessionRequest represents a request to create a VPN session
+type CreateVPNSessionRequest struct {
+	Name              string               `json:"name,omitempty"`
+	VPNProfileGroupID string               `json:"vpn_profile_group_id"`
+	VPNServiceID      string               `json:"vpn_service_id"`
+	VPNEndpointID     string               `json:"vpn_endpoint_id"`
+	RemoteIP          connection.IPAddress `json:"remote_ip"`
+	RemoteNetworks    string               `json:"remote_networks,omitempty"`
+	LocalNetworks     string               `json:"local_networks,omitempty"`
+}
+
+// PatchVPNSessionRequest represents a request to patch a VPN session
+type PatchVPNSessionRequest struct {
+	Name              string               `json:"name,omitempty"`
+	VPNProfileGroupID string               `json:"vpn_profile_group_id,omitempty"`
+	RemoteIP          connection.IPAddress `json:"remote_ip,omitempty"`
+	RemoteNetworks    string               `json:"remote_networks,omitempty"`
+	LocalNetworks     string               `json:"local_networks,omitempty"`
+}
+
+// CreateVPNServiceRequest represents a request to create a VPN service
+type CreateVPNServiceRequest struct {
+	Name     string `json:"name,omitempty"`
+	RouterID string `json:"router_id"`
+}
+
+// PatchVPNServiceRequest represents a request to patch a VPN service
+type PatchVPNServiceRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// MigrateInstanceRequest represents a request to migrate an instance
+type MigrateInstanceRequest struct {
+	HostGroupID    string `json:"host_group_id,omitempty"`
+	ResourceTierID string `json:"resource_tier_id,omitempty"`
+}
+
+// CreateVolumeGroupRequest represents a request to create a volume group
+type CreateVolumeGroupRequest struct {
+	Name               string `json:"name,omitempty"`
+	VPCID              string `json:"vpc_id"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+}
+
+// PatchVolumeGroupRequest represents a request to patch a volume group
+type PatchVolumeGroupRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateLoadBalancerRequest represents a request to create a load balancer
+type CreateLoadBalancerRequest struct {
+	Name               string `json:"name,omitempty"`
+	AvailabilityZoneID string `json:"availability_zone_id"`
+	VPCID              string `json:"vpc_id"`
+	LoadBalancerSpecID string `json:"load_balancer_spec_id"`
+	NetworkID          string `json:"network_id"`
+}
+
+// CreateLoadBalancerRequest represents a request to patch a load balancer
+type PatchLoadBalancerRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateVIPRequest represents a request to create a load balancer VIP
+type CreateVIPRequest struct {
+	Name               string `json:"name,omitempty"`
+	LoadBalancerID     string `json:"load_balancer_id"`
+	AllocateFloatingIP bool   `json:"allocate_floating_ip"`
+}
+
+// PatchVIPRequest represents a request to patch a load balancer VIP
+type PatchVIPRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateIPAddressRequest represents a request to create a network IP Address
+type CreateIPAddressRequest struct {
+	Name      string               `json:"name,omitempty"`
+	IPAddress connection.IPAddress `json:"ip_address,omitempty"`
+	NetworkID string               `json:"network_id"`
+}
+
+// PatchIPAddressRequest represents a request to patch a network IP Address
+type PatchIPAddressRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// AssignIPAddressRequest represents a request to assign an IP Address to a NIC
+type AssignIPAddressRequest struct {
+	IPAddressID string `json:"ip_address_id"`
+}
+
+// CreateAffinityRuleRequest represents a request to create an Affinity Rule
+type CreateAffinityRuleRequest struct {
+	Name               string           `json:"name,omitempty"`
+	VPCID              string           `json:"vpc_id"`
+	AvailabilityZoneID string           `json:"availability_zone_id"`
+	Type               AffinityRuleType `json:"type"`
+}
+
+// PatchAffinityRuleRequest represents a request to patch an Affinity Rule
+type PatchAffinityRuleRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// CreateAffinityRuleMemberRequest represents a request to create an Affinity Rule Member
+type CreateAffinityRuleMemberRequest struct {
+	InstanceID     string `json:"instance_id"`
+	AffinityRuleID string `json:"affinity_rule_id"`
+}
+
+// UpdateVPNSessionPreSharedKeyRequest represents a request to update a VPN session PSK
+type UpdateVPNSessionPreSharedKeyRequest struct {
+	PSK string `json:"psk"`
+}
+
+// CreateInstanceImageRequest represents a request to create an instance image
+type CreateInstanceImageRequest struct {
+	Name string `json:"name,omitempty"`
+}
+
+// UpdateImageRequest represents a request to update an image
+type UpdateImageRequest struct {
+	Name             string `json:"name,omitempty"`
+	LogoURI          string `json:"logo_uri,omitempty"`
+	DocumentationURI string `json:"documentation_uri,omitempty"`
+	Description      string `json:"description,omitempty"`
+}
+
+// NATOverloadRule represents an eCloud NAT overload rule
+type CreateNATOverloadRuleRequest struct {
+	Name         string                `json:"name,omitempty"`
+	NetworkID    string                `json:"network_id"`
+	FloatingIPID string                `json:"floating_ip_id"`
+	Subnet       string                `json:"subnet"`
+	Action       NATOverloadRuleAction `json:"action"`
+}
+
+// NATOverloadRule represents an eCloud NAT overload rule
+type PatchNATOverloadRuleRequest struct {
+	Name   string                `json:"name,omitempty"`
+	Subnet string                `json:"subnet,omitempty"`
+	Action NATOverloadRuleAction `json:"action,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

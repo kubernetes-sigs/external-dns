@@ -37,3 +37,15 @@ type HTTPRouteListerExpansion interface{}
 // HTTPRouteNamespaceListerExpansion allows custom methods to be added to
 // HTTPRouteNamespaceLister.
 type HTTPRouteNamespaceListerExpansion interface{}
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+// ReferenceGrantListerExpansion allows custom methods to be added to
+// ReferenceGrantLister.
+type ReferenceGrantListerExpansion interface{}
+
+// ReferenceGrantNamespaceListerExpansion allows custom methods to be added to
+// ReferenceGrantNamespaceLister.
+type ReferenceGrantNamespaceListerExpansion interface{}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

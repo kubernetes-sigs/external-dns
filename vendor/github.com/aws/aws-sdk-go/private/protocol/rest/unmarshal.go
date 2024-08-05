@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -143,6 +144,7 @@ func unmarshalLocationElements(resp *http.Response, v reflect.Value, lowerCaseHe
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 					return awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -226,6 +228,11 @@ func unmarshalHeader(v reflect.Value, header string, tag reflect.StructTag) erro
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 					awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+					awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
+=======
+					return awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				}
 			}
 		}
@@ -289,7 +296,18 @@ func unmarshalHeader(v reflect.Value, header string, tag reflect.StructTag) erro
 
 	switch v.Interface().(type) {
 	case *string:
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		if tag.Get("suppressedJSONValue") == "true" && tag.Get("location") == "header" {
+			b, err := base64.StdEncoding.DecodeString(header)
+			if err != nil {
+				return fmt.Errorf("failed to decode JSONValue, %v", err)
+			}
+			header = string(b)
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		v.Set(reflect.ValueOf(&header))
 	case []byte:
 		b, err := base64.StdEncoding.DecodeString(header)
@@ -310,9 +328,20 @@ func unmarshalHeader(v reflect.Value, header string, tag reflect.StructTag) erro
 		}
 		v.Set(reflect.ValueOf(&i))
 	case *float64:
-		f, err := strconv.ParseFloat(header, 64)
-		if err != nil {
-			return err
+		var f float64
+		switch {
+		case strings.EqualFold(header, floatNaN):
+			f = math.NaN()
+		case strings.EqualFold(header, floatInf):
+			f = math.Inf(1)
+		case strings.EqualFold(header, floatNegInf):
+			f = math.Inf(-1)
+		default:
+			var err error
+			f, err = strconv.ParseFloat(header, 64)
+			if err != nil {
+				return err
+			}
 		}
 		v.Set(reflect.ValueOf(&f))
 	case *time.Time:

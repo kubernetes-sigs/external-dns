@@ -5,7 +5,11 @@
 // license that can be found in the LICENSE file.
 
 //go:build !go1.16
+<<<<<<< HEAD
 // +build !go1.16
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package idna
 

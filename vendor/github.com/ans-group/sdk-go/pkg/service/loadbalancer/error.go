@@ -82,3 +82,16 @@ type ACLNotFoundError struct {
 func (e *ACLNotFoundError) Error() string {
 	return fmt.Sprintf("ACL not found with ID [%d]", e.ID)
 }
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+// DeploymentNotFoundError indicates a deployment was not found
+type DeploymentNotFoundError struct {
+	ID int
+}
+
+func (e *DeploymentNotFoundError) Error() string {
+	return fmt.Sprintf("Deployment not found with ID [%d]", e.ID)
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

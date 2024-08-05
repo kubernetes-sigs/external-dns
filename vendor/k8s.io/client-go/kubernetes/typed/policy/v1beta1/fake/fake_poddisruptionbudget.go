@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -695,13 +696,18 @@ func (c *FakePodDisruptionBudgets) ApplyStatus(ctx context.Context, podDisruptio
 		Invokes(testing.NewPatchSubresourceAction(poddisruptionbudgetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.PodDisruptionBudget{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	v1beta1 "k8s.io/api/policy/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	policyv1beta1 "k8s.io/client-go/applyconfigurations/policy/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -711,9 +717,9 @@ type FakePodDisruptionBudgets struct {
 	ns   string
 }
 
-var poddisruptionbudgetsResource = schema.GroupVersionResource{Group: "policy", Version: "v1beta1", Resource: "poddisruptionbudgets"}
+var poddisruptionbudgetsResource = v1beta1.SchemeGroupVersion.WithResource("poddisruptionbudgets")
 
-var poddisruptionbudgetsKind = schema.GroupVersionKind{Group: "policy", Version: "v1beta1", Kind: "PodDisruptionBudget"}
+var poddisruptionbudgetsKind = v1beta1.SchemeGroupVersion.WithKind("PodDisruptionBudget")
 
 // Get takes name of the podDisruptionBudget, and returns the corresponding podDisruptionBudget object, and an error if there is any.
 func (c *FakePodDisruptionBudgets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.PodDisruptionBudget, err error) {
@@ -792,7 +798,7 @@ func (c *FakePodDisruptionBudgets) UpdateStatus(ctx context.Context, podDisrupti
 // Delete takes name of the podDisruptionBudget and deletes it. Returns an error if one occurs.
 func (c *FakePodDisruptionBudgets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(poddisruptionbudgetsResource, c.ns, name), &v1beta1.PodDisruptionBudget{})
+		Invokes(testing.NewDeleteActionWithOptions(poddisruptionbudgetsResource, c.ns, name, opts), &v1beta1.PodDisruptionBudget{})
 
 	return err
 }
@@ -810,6 +816,51 @@ func (c *FakePodDisruptionBudgets) Patch(ctx context.Context, name string, pt ty
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(poddisruptionbudgetsResource, c.ns, name, pt, data, subresources...), &v1beta1.PodDisruptionBudget{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PodDisruptionBudget), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied podDisruptionBudget.
+func (c *FakePodDisruptionBudgets) Apply(ctx context.Context, podDisruptionBudget *policyv1beta1.PodDisruptionBudgetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.PodDisruptionBudget, err error) {
+	if podDisruptionBudget == nil {
+		return nil, fmt.Errorf("podDisruptionBudget provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(podDisruptionBudget)
+	if err != nil {
+		return nil, err
+	}
+	name := podDisruptionBudget.Name
+	if name == nil {
+		return nil, fmt.Errorf("podDisruptionBudget.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(poddisruptionbudgetsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.PodDisruptionBudget{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PodDisruptionBudget), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakePodDisruptionBudgets) ApplyStatus(ctx context.Context, podDisruptionBudget *policyv1beta1.PodDisruptionBudgetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.PodDisruptionBudget, err error) {
+	if podDisruptionBudget == nil {
+		return nil, fmt.Errorf("podDisruptionBudget provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(podDisruptionBudget)
+	if err != nil {
+		return nil, err
+	}
+	name := podDisruptionBudget.Name
+	if name == nil {
+		return nil, fmt.Errorf("podDisruptionBudget.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(poddisruptionbudgetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.PodDisruptionBudget{})
 
 	if obj == nil {
 		return nil, err

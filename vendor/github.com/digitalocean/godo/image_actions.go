@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // ImageActionsService is an interface for interfacing with the image actions
 // endpoints of the DigitalOcean API
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -66,14 +68,26 @@ type ImageActionsService interface {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#image-actions
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2#image-actions
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Image-Actions
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ImageActionsService interface {
 	Get(context.Context, int, int) (*Action, *Response, error)
+	GetByURI(context.Context, string) (*Action, *Response, error)
 	Transfer(context.Context, int, *ActionRequest) (*Action, *Response, error)
 	Convert(context.Context, int) (*Action, *Response, error)
 }
 
+<<<<<<< HEAD
 // ImageActionsServiceOp handles communition with the image action related methods of the
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// ImageActionsServiceOp handles communition with the image action related methods of the
+=======
+// ImageActionsServiceOp handles communication with the image action related methods of the
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // DigitalOcean API.
 type ImageActionsServiceOp struct {
 	client *Client
@@ -144,7 +158,20 @@ func (i *ImageActionsServiceOp) Get(ctx context.Context, imageID, actionID int) 
 	}
 
 	path := fmt.Sprintf("v2/images/%d/actions/%d", imageID, actionID)
+	return i.get(ctx, path)
+}
 
+// GetByURI gets an action for a particular image by URI.
+func (i *ImageActionsServiceOp) GetByURI(ctx context.Context, rawurl string) (*Action, *Response, error) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return i.get(ctx, u.Path)
+}
+
+func (i *ImageActionsServiceOp) get(ctx context.Context, path string) (*Action, *Response, error) {
 	req, err := i.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err

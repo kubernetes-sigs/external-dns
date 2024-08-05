@@ -24,29 +24,8 @@ type ScalewayRequest struct {
 	ctx      context.Context
 	auth     auth.Auth
 	allPages bool
-}
-
-// getAllHeaders constructs a http.Header object and aggregates all headers into the object.
-func (req *ScalewayRequest) getAllHeaders(token auth.Auth, userAgent string, anonymized bool) http.Header {
-	var allHeaders http.Header
-	if anonymized {
-		allHeaders = token.AnonymizedHeaders()
-	} else {
-		allHeaders = token.Headers()
-	}
-
-	allHeaders.Set("User-Agent", userAgent)
-	if req.Body != nil {
-		allHeaders.Set("Content-Type", "application/json")
-	}
-	for key, value := range req.Headers {
-		allHeaders.Del(key)
-		for _, v := range value {
-			allHeaders.Add(key, v)
-		}
-	}
-
-	return allHeaders
+	zones    []Zone
+	regions  []Region
 }
 
 // getURL constructs a URL based on the base url and the client.
@@ -101,4 +80,20 @@ func (req *ScalewayRequest) apply(opts []RequestOption) {
 func (req *ScalewayRequest) validate() error {
 	// nothing so far
 	return nil
+}
+
+func (req *ScalewayRequest) clone() *ScalewayRequest {
+	clonedReq := &ScalewayRequest{
+		Method:   req.Method,
+		Path:     req.Path,
+		Headers:  req.Headers.Clone(),
+		ctx:      req.ctx,
+		auth:     req.auth,
+		allPages: req.allPages,
+		zones:    req.zones,
+	}
+	if req.Query != nil {
+		clonedReq.Query = url.Values(http.Header(req.Query).Clone())
+	}
+	return clonedReq
 }

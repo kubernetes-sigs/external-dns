@@ -28,6 +28,7 @@ var _ TestDeep = &tdTruncTime{}
 // input(TruncTime): struct(time.Time),ptr(todo)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // TruncTime operator compares [time.Time] (or assignable) values
 // after truncating them to the optional trunc duration. See
 // [time.Time.Truncate] for details about the truncation.
@@ -478,60 +479,81 @@ func (t *tdTruncTime) String() string {
 // TruncTime operator compares time.Time (or assignable) values after
 // truncating them to the optional "trunc" duration. See time.Truncate
 // for details about the truncation.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// TruncTime operator compares time.Time (or assignable) values after
+// truncating them to the optional "trunc" duration. See time.Truncate
+// for details about the truncation.
+=======
+// TruncTime operator compares [time.Time] (or assignable) values
+// after truncating them to the optional trunc duration. See
+// [time.Time.Truncate] for details about the truncation.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
-// If "trunc" is missing, it defaults to 0.
+// If trunc is missing, it defaults to 0.
 //
-// During comparison, location does not matter as time.Equal method is
-// used behind the scenes: a time instant in two different locations
-// is the same time instant.
+// During comparison, location does not matter as [time.Time.Equal]
+// method is used behind the scenes: a time instant in two different
+// locations is the same time instant.
 //
-// Whatever the "trunc" value is, the monotonic clock is stripped
-// before the comparison against "expectedTime".
+// Whatever the trunc value is, the monotonic clock is stripped
+// before the comparison against expectedTime.
 //
-//   gotDate := time.Date(2018, time.March, 9, 1, 2, 3, 999999999, time.UTC).
-//     In(time.FixedZone("UTC+2", 2))
+//	gotDate := time.Date(2018, time.March, 9, 1, 2, 3, 999999999, time.UTC).
+//	  In(time.FixedZone("UTC+2", 2))
 //
-//   expected := time.Date(2018, time.March, 9, 1, 2, 3, 0, time.UTC)
+//	expected := time.Date(2018, time.March, 9, 1, 2, 3, 0, time.UTC)
 //
-//   td.Cmp(t, gotDate, td.TruncTime(expected))              // fails, ns differ
-//   td.Cmp(t, gotDate, td.TruncTime(expected, time.Second)) // succeeds
+//	td.Cmp(t, gotDate, td.TruncTime(expected))              // fails, ns differ
+//	td.Cmp(t, gotDate, td.TruncTime(expected, time.Second)) // succeeds
 //
-// TypeBehind method returns the reflect.Type of "expectedTime".
-func TruncTime(expectedTime interface{}, trunc ...time.Duration) TestDeep {
-	if len(trunc) <= 1 {
-		t := tdTruncTime{
-			tdExpectedType: tdExpectedType{
-				base: newBase(3),
-			},
-		}
+// TypeBehind method returns the [reflect.Type] of expectedTime.
+func TruncTime(expectedTime any, trunc ...time.Duration) TestDeep {
+	const usage = "(time.Time[, time.Duration])"
 
-		if len(trunc) == 1 {
-			t.trunc = trunc[0]
-		}
-
-		vval := reflect.ValueOf(expectedTime)
-
-		t.expectedType = vval.Type()
-		if t.expectedType == timeType {
-			t.expectedTime = expectedTime.(time.Time).Truncate(t.trunc)
-			return &t
-		}
-		if t.expectedType.ConvertibleTo(timeType) {
-			t.expectedTime = vval.Convert(timeType).
-				Interface().(time.Time).Truncate(t.trunc)
-			return &t
-		}
+	t := tdTruncTime{
+		tdExpectedType: tdExpectedType{
+			base: newBase(3),
+		},
 	}
-	panic("usage: TruncTime(time.Time[, time.Duration])")
+
+	if len(trunc) > 1 {
+		t.err = ctxerr.OpTooManyParams("TruncTime", usage)
+		return &t
+	}
+
+	if len(trunc) == 1 {
+		t.trunc = trunc[0]
+	}
+
+	vval := reflect.ValueOf(expectedTime)
+
+	t.expectedType = vval.Type()
+	if t.expectedType == types.Time {
+		t.expectedTime = expectedTime.(time.Time).Truncate(t.trunc)
+		return &t
+	}
+	if !t.expectedType.ConvertibleTo(types.Time) { // 1.17 ok as time.Time is a struct
+		t.err = ctxerr.OpBad("TruncTime", "usage: TruncTime%s, 1st parameter must be time.Time or convertible to time.Time, but not %T",
+			usage, expectedTime)
+		return &t
+	}
+
+	t.expectedTime = vval.Convert(types.Time).
+		Interface().(time.Time).Truncate(t.trunc)
+	return &t
 }
 
 func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if t.err != nil {
+		return ctx.CollectError(t.err)
+	}
+
 	err := t.checkType(ctx, got)
 	if err != nil {
 		return ctx.CollectError(err)
 	}
 
-	gotTime, err := getTime(ctx, got, got.Type() != timeType)
+	gotTime, err := getTime(ctx, got, got.Type() != types.Time)
 	if err != nil {
 		return ctx.CollectError(err)
 	}
@@ -547,8 +569,8 @@ func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error
 	}
 
 	var gotRawStr, gotTruncStr string
-	if t.expectedType != timeType &&
-		t.expectedType.Implements(stringerInterface) {
+	if t.expectedType != types.Time &&
+		t.expectedType.Implements(types.FmtStringer) {
 		gotRawStr = got.Interface().(fmt.Stringer).String()
 		gotTruncStr = reflect.ValueOf(gotTimeTrunc).Convert(t.expectedType).
 			Interface().(fmt.Stringer).String()
@@ -565,8 +587,18 @@ func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error
 }
 
 func (t *tdTruncTime) String() string {
+<<<<<<< HEAD
 	if t.expectedType.Implements(stringerInterface) {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if t.expectedType.Implements(stringerInterface) {
+=======
+	if t.err != nil {
+		return t.stringError()
+	}
+
+	if t.expectedType.Implements(types.FmtStringer) {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return reflect.ValueOf(t.expectedTime).Convert(t.expectedType).
 			Interface().(fmt.Stringer).String()
 	}

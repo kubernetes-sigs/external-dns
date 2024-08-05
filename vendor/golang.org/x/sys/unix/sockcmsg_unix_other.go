@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin freebsd linux netbsd openbsd solaris zos
 
@@ -204,6 +205,11 @@ func cmsgAlignOf(salen int) int {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin freebsd linux netbsd openbsd solaris
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build aix darwin freebsd linux netbsd openbsd solaris
+=======
+//go:build aix || darwin || freebsd || linux || netbsd || openbsd || solaris || zos
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -237,7 +243,15 @@ func cmsgAlignOf(salen int) int {
 		if runtime.GOOS == "netbsd" && runtime.GOARCH == "arm64" {
 			salign = 16
 		}
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	case "zos":
+		// z/OS socket macros use [32-bit] sizeof(int) alignment,
+		// not pointer width.
+		salign = SizeofInt
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return (salen + salign - 1) & ^(salign - 1)

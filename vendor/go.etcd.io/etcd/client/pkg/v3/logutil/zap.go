@@ -16,6 +16,7 @@ package logutil
 
 import (
 	"sort"
+<<<<<<< HEAD
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -55,6 +56,54 @@ var DefaultZapLoggerConfig = zap.Config{
 		LineEnding:     zapcore.DefaultLineEnding,
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// CreateDefaultZapLogger creates a logger with default zap configuration
+func CreateDefaultZapLogger(level zapcore.Level) (*zap.Logger, error) {
+	lcfg := DefaultZapLoggerConfig
+	lcfg.Level = zap.NewAtomicLevelAt(level)
+	c, err := lcfg.Build()
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+// DefaultZapLoggerConfig defines default zap logger configuration.
+var DefaultZapLoggerConfig = zap.Config{
+	Level: zap.NewAtomicLevelAt(ConvertToZapLevel(DefaultLogLevel)),
+
+	Development: false,
+	Sampling: &zap.SamplingConfig{
+		Initial:    100,
+		Thereafter: 100,
+	},
+
+	Encoding: "json",
+
+	// copied from "zap.NewProductionEncoderConfig" with some updates
+	EncoderConfig: zapcore.EncoderConfig{
+		TimeKey:       "ts",
+		LevelKey:      "level",
+		NameKey:       "logger",
+		CallerKey:     "caller",
+		MessageKey:    "msg",
+		StacktraceKey: "stacktrace",
+		LineEnding:    zapcore.DefaultLineEnding,
+		EncodeLevel:   zapcore.LowercaseLevelEncoder,
+
+		// Custom EncodeTime function to ensure we match format and precision of historic capnslog timestamps
+		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(t.Format("2006-01-02T15:04:05.999999Z0700"))
+		},
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	},

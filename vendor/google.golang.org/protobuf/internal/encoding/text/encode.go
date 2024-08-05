@@ -39,6 +39,7 @@ type Encoder struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	delims      [2]byte
 	outputASCII bool
 }
@@ -1006,6 +1007,10 @@ func AppendString(b []byte, s string) []byte {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	newline     string // set to "\n" if len(indent) > 0
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	newline     string // set to "\n" if len(indent) > 0
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	delims      [2]byte
 	outputASCII bool
 }
@@ -1027,14 +1032,15 @@ type encoderState struct {
 // If outputASCII is true, strings will be serialized in such a way that
 // multi-byte UTF-8 sequences are escaped. This property ensures that the
 // overall output is ASCII (as opposed to UTF-8).
-func NewEncoder(indent string, delims [2]byte, outputASCII bool) (*Encoder, error) {
-	e := &Encoder{}
+func NewEncoder(buf []byte, indent string, delims [2]byte, outputASCII bool) (*Encoder, error) {
+	e := &Encoder{
+		encoderState: encoderState{out: buf},
+	}
 	if len(indent) > 0 {
 		if strings.Trim(indent, " \t") != "" {
 			return nil, errors.New("indent may only be composed of space and tab characters")
 		}
 		e.indent = indent
-		e.newline = "\n"
 	}
 	switch delims {
 	case [2]byte{0, 0}:
@@ -1099,7 +1105,7 @@ func appendString(out []byte, in string, outputASCII bool) []byte {
 			// are used to represent both the proto string and bytes type.
 			r = rune(in[0])
 			fallthrough
-		case r < ' ' || r == '"' || r == '\\':
+		case r < ' ' || r == '"' || r == '\\' || r == 0x7f:
 			out = append(out, '\\')
 			switch r {
 			case '"', '\\':
@@ -1116,7 +1122,7 @@ func appendString(out []byte, in string, outputASCII bool) []byte {
 				out = strconv.AppendUint(out, uint64(r), 16)
 			}
 			in = in[n:]
-		case outputASCII && r >= utf8.RuneSelf:
+		case r >= utf8.RuneSelf && (outputASCII || r <= 0x009f):
 			out = append(out, '\\')
 			if r <= math.MaxUint16 {
 				out = append(out, 'u')
@@ -1141,7 +1147,7 @@ func appendString(out []byte, in string, outputASCII bool) []byte {
 // escaping. If no characters need escaping, this returns the input length.
 func indexNeedEscapeInString(s string) int {
 	for i := 0; i < len(s); i++ {
-		if c := s[i]; c < ' ' || c == '"' || c == '\'' || c == '\\' || c >= utf8.RuneSelf {
+		if c := s[i]; c < ' ' || c == '"' || c == '\'' || c == '\\' || c >= 0x7f {
 			return i
 		}
 	}
@@ -1170,13 +1176,13 @@ func appendFloat(out []byte, n float64, bitSize int) []byte {
 // WriteInt writes out the given signed integer value.
 func (e *Encoder) WriteInt(n int64) {
 	e.prepareNext(scalar)
-	e.out = append(e.out, strconv.FormatInt(n, 10)...)
+	e.out = strconv.AppendInt(e.out, n, 10)
 }
 
 // WriteUint writes out the given unsigned integer value.
 func (e *Encoder) WriteUint(n uint64) {
 	e.prepareNext(scalar)
-	e.out = append(e.out, strconv.FormatUint(n, 10)...)
+	e.out = strconv.AppendUint(e.out, n, 10)
 }
 
 // WriteLiteral writes out the given string as a literal value without quotes.
@@ -1238,4 +1244,9 @@ func (e *Encoder) Snapshot() encoderState {
 func (e *Encoder) Reset(es encoderState) {
 	e.encoderState = es
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// AppendString appends the escaped form of the input string to b.
+func AppendString(b []byte, s string) []byte {
+	return appendString(b, s, false)
 }

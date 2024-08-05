@@ -16,6 +16,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/aws/aws-sdk-go/aws/credentials/ssocreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
@@ -714,11 +715,29 @@ func resolveSSOCredentials(cfg *aws.Config, sharedCfg sharedConfig, handlers req
 	), nil
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"github.com/aws/aws-sdk-go/aws/credentials/ssocreds"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/internal/shareddefaults"
+	"github.com/aws/aws-sdk-go/service/ssooidc"
+	"github.com/aws/aws-sdk-go/service/sts"
 )
+
+// CredentialsProviderOptions specifies additional options for configuring
+// credentials providers.
+type CredentialsProviderOptions struct {
+	// WebIdentityRoleProviderOptions configures a WebIdentityRoleProvider,
+	// such as setting its ExpiryWindow.
+	WebIdentityRoleProviderOptions func(*stscreds.WebIdentityRoleProvider)
+
+	// ProcessProviderOptions configures a ProcessProvider,
+	// such as setting its Timeout.
+	ProcessProviderOptions func(*processcreds.ProcessProvider)
+}
 
 func resolveCredentials(cfg *aws.Config,
 	envCfg envConfig, sharedCfg sharedConfig,
@@ -728,7 +747,7 @@ func resolveCredentials(cfg *aws.Config,
 
 	switch {
 	case len(sessOpts.Profile) != 0:
-		// User explicitly provided an Profile in the session's configuration
+		// User explicitly provided a Profile in the session's configuration
 		// so load that profile from shared config first.
 		// Github(aws/aws-sdk-go#2727)
 		return resolveCredsFromProfile(cfg, envCfg, sharedCfg, handlers, sessOpts)
@@ -744,6 +763,7 @@ func resolveCredentials(cfg *aws.Config,
 			envCfg.WebIdentityTokenFilePath,
 			envCfg.RoleARN,
 			envCfg.RoleSessionName,
+			sessOpts.CredentialsProviderOptions,
 		)
 
 	default:
@@ -763,6 +783,7 @@ var WebIdentityEmptyTokenFilePathErr = awserr.New(stscreds.ErrCodeWebIdentity, "
 func assumeWebIdentity(cfg *aws.Config, handlers request.Handlers,
 	filepath string,
 	roleARN, sessionName string,
+	credOptions *CredentialsProviderOptions,
 ) (*credentials.Credentials, error) {
 
 	if len(filepath) == 0 {
@@ -773,17 +794,18 @@ func assumeWebIdentity(cfg *aws.Config, handlers request.Handlers,
 		return nil, WebIdentityEmptyRoleARNErr
 	}
 
-	creds := stscreds.NewWebIdentityCredentials(
-		&Session{
-			Config:   cfg,
-			Handlers: handlers.Copy(),
-		},
-		roleARN,
-		sessionName,
-		filepath,
-	)
+	svc := sts.New(&Session{
+		Config:   cfg,
+		Handlers: handlers.Copy(),
+	})
 
-	return creds, nil
+	var optFns []func(*stscreds.WebIdentityRoleProvider)
+	if credOptions != nil && credOptions.WebIdentityRoleProviderOptions != nil {
+		optFns = append(optFns, credOptions.WebIdentityRoleProviderOptions)
+	}
+
+	p := stscreds.NewWebIdentityRoleProviderWithOptions(svc, roleARN, sessionName, stscreds.FetchTokenPath(filepath), optFns...)
+	return credentials.NewCredentials(p), nil
 }
 
 func resolveCredsFromProfile(cfg *aws.Config,
@@ -805,10 +827,6 @@ func resolveCredsFromProfile(cfg *aws.Config,
 			sharedCfg.Creds,
 		)
 
-	case len(sharedCfg.CredentialProcess) != 0:
-		// Get credentials from CredentialProcess
-		creds = processcreds.NewCredentials(sharedCfg.CredentialProcess)
-
 	case len(sharedCfg.CredentialSource) != 0:
 		creds, err = resolveCredsFromSource(cfg, envCfg,
 			sharedCfg, handlers, sessOpts,
@@ -822,7 +840,19 @@ func resolveCredsFromProfile(cfg *aws.Config,
 			sharedCfg.WebIdentityTokenFile,
 			sharedCfg.RoleARN,
 			sharedCfg.RoleSessionName,
+			sessOpts.CredentialsProviderOptions,
 		)
+
+	case sharedCfg.hasSSOConfiguration():
+		creds, err = resolveSSOCredentials(cfg, sharedCfg, handlers)
+
+	case len(sharedCfg.CredentialProcess) != 0:
+		// Get credentials from CredentialProcess
+		var optFns []func(*processcreds.ProcessProvider)
+		if sessOpts.CredentialsProviderOptions != nil && sessOpts.CredentialsProviderOptions.ProcessProviderOptions != nil {
+			optFns = append(optFns, sessOpts.CredentialsProviderOptions.ProcessProviderOptions)
+		}
+		creds = processcreds.NewCredentials(sharedCfg.CredentialProcess, optFns...)
 
 	default:
 		// Fallback to default credentials provider, include mock errors for
@@ -855,6 +885,46 @@ func resolveCredsFromProfile(cfg *aws.Config,
 
 	return creds, nil
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func resolveSSOCredentials(cfg *aws.Config, sharedCfg sharedConfig, handlers request.Handlers) (*credentials.Credentials, error) {
+	if err := sharedCfg.validateSSOConfiguration(); err != nil {
+		return nil, err
+	}
+
+	var optFns []func(provider *ssocreds.Provider)
+	cfgCopy := cfg.Copy()
+
+	if sharedCfg.SSOSession != nil {
+		cfgCopy.Region = &sharedCfg.SSOSession.SSORegion
+		cachedPath, err := ssocreds.StandardCachedTokenFilepath(sharedCfg.SSOSession.Name)
+		if err != nil {
+			return nil, err
+		}
+		// create oidcClient with AnonymousCredentials to avoid recursively resolving credentials
+		mySession := Must(NewSession(&aws.Config{
+			Credentials: credentials.AnonymousCredentials,
+		}))
+		oidcClient := ssooidc.New(mySession, cfgCopy)
+		tokenProvider := ssocreds.NewSSOTokenProvider(oidcClient, cachedPath)
+		optFns = append(optFns, func(p *ssocreds.Provider) {
+			p.TokenProvider = tokenProvider
+			p.CachedTokenFilepath = cachedPath
+		})
+	} else {
+		cfgCopy.Region = &sharedCfg.SSORegion
+	}
+
+	return ssocreds.NewCredentials(
+		&Session{
+			Config:   cfgCopy,
+			Handlers: handlers.Copy(),
+		},
+		sharedCfg.SSOAccountID,
+		sharedCfg.SSORoleName,
+		sharedCfg.SSOStartURL,
+		optFns...,
+	), nil
 }
 
 // valid credential source values

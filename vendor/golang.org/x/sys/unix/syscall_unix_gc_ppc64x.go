@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build linux && (ppc64le || ppc64) && gc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -37,6 +38,13 @@
 // +build linux
 // +build ppc64le ppc64
 // +build gc
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build linux
+// +build ppc64le ppc64
+// +build gc
+=======
+//go:build linux && (ppc64le || ppc64) && gc
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 

@@ -4,10 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/linode/linodego/internal/parseabletime"
 )
 
 // User represents a User object
 type User struct {
+<<<<<<< HEAD
 	Username   string   `json:"username"`
 	Email      string   `json:"email"`
 	Restricted bool     `json:"restricted"`
@@ -585,21 +591,53 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	SSHKeys    []string `json:"ssh_keys"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Username   string   `json:"username"`
+	Email      string   `json:"email"`
+	Restricted bool     `json:"restricted"`
+	SSHKeys    []string `json:"ssh_keys"`
+=======
+	Username            string     `json:"username"`
+	Email               string     `json:"email"`
+	Restricted          bool       `json:"restricted"`
+	TFAEnabled          bool       `json:"tfa_enabled"`
+	SSHKeys             []string   `json:"ssh_keys"`
+	PasswordCreated     *time.Time `json:"-"`
+	VerifiedPhoneNumber *string    `json:"verified_phone_number"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // UserCreateOptions fields are those accepted by CreateUser
 type UserCreateOptions struct {
 	Username   string `json:"username"`
 	Email      string `json:"email"`
-	Restricted bool   `json:"restricted,omitempty"`
+	Restricted bool   `json:"restricted"`
 }
 
 // UserUpdateOptions fields are those accepted by UpdateUser
 type UserUpdateOptions struct {
-	Username   string    `json:"username,omitempty"`
-	Email      string    `json:"email,omitempty"`
-	Restricted *bool     `json:"restricted,omitempty"`
-	SSHKeys    *[]string `json:"ssh_keys,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Restricted *bool  `json:"restricted,omitempty"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (i *User) UnmarshalJSON(b []byte) error {
+	type Mask User
+
+	p := struct {
+		*Mask
+		PasswordCreated *parseabletime.ParseableTime `json:"password_created"`
+	}{
+		Mask: (*Mask)(i),
+	}
+
+	if err := json.Unmarshal(b, &p); err != nil {
+		return err
+	}
+
+	i.PasswordCreated = (*time.Time)(p.PasswordCreated)
+
+	return nil
 }
 
 // GetCreateOptions converts a User to UserCreateOptions for use in CreateUser
@@ -614,7 +652,6 @@ func (i User) GetCreateOptions() (o UserCreateOptions) {
 // GetUpdateOptions converts a User to UserUpdateOptions for use in UpdateUser
 func (i User) GetUpdateOptions() (o UserUpdateOptions) {
 	o.Username = i.Username
-	o.Email = i.Email
 	o.Restricted = copyBool(&i.Restricted)
 
 	return
@@ -627,25 +664,24 @@ type UsersPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for User
-func (UsersPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.Users.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-
-	return endpoint
+func (UsersPagedResponse) endpoint(_ ...any) string {
+	return "account/users"
 }
 
-// appendData appends Users when processing paginated User responses
-func (resp *UsersPagedResponse) appendData(r *UsersPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *UsersPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(UsersPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*UsersPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListUsers lists Users on the account
 func (c *Client) ListUsers(ctx context.Context, opts *ListOptions) ([]User, error) {
 	response := UsersPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -654,15 +690,11 @@ func (c *Client) ListUsers(ctx context.Context, opts *ListOptions) ([]User, erro
 }
 
 // GetUser gets the user with the provided ID
-func (c *Client) GetUser(ctx context.Context, id string) (*User, error) {
-	e, err := c.Users.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%s", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&User{}).Get(e))
-
+func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
+	userID = url.PathEscape(userID)
+	e := fmt.Sprintf("account/users/%s", userID)
+	req := c.R(ctx).SetResult(&User{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -672,27 +704,15 @@ func (c *Client) GetUser(ctx context.Context, id string) (*User, error) {
 
 // CreateUser creates a User.  The email address must be confirmed before the
 // User account can be accessed.
-func (c *Client) CreateUser(ctx context.Context, createOpts UserCreateOptions) (*User, error) {
-	var body string
-
-	e, err := c.Users.Endpoint()
-
+func (c *Client) CreateUser(ctx context.Context, opts UserCreateOptions) (*User, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&User{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
+	e := "account/users"
+	req := c.R(ctx).SetResult(&User{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -701,15 +721,13 @@ func (c *Client) CreateUser(ctx context.Context, createOpts UserCreateOptions) (
 }
 
 // UpdateUser updates the User with the specified id
-func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdateOptions) (*User, error) {
-	var body string
-
-	e, err := c.Users.Endpoint()
-
+func (c *Client) UpdateUser(ctx context.Context, userID string, opts UserUpdateOptions) (*User, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	e = fmt.Sprintf("%s/%s", e, id)
 
 	req := c.R(ctx).SetResult(&User{})
@@ -725,6 +743,27 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 		Put(e))
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	e = fmt.Sprintf("%s/%s", e, id)
+
+	req := c.R(ctx).SetResult(&User{})
+
+	if bodyData, err := json.Marshal(updateOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+=======
+	userID = url.PathEscape(userID)
+	e := fmt.Sprintf("account/users/%s", userID)
+	req := c.R(ctx).SetResult(&User{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -733,15 +772,9 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 }
 
 // DeleteUser deletes the User with the specified id
-func (c *Client) DeleteUser(ctx context.Context, id string) error {
-	e, err := c.Users.Endpoint()
-	if err != nil {
-		return err
-	}
-
-	e = fmt.Sprintf("%s/%s", e, id)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
-
+func (c *Client) DeleteUser(ctx context.Context, userID string) error {
+	userID = url.PathEscape(userID)
+	e := fmt.Sprintf("account/users/%s", userID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 }

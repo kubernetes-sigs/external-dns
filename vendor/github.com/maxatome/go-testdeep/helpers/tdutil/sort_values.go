@@ -14,6 +14,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // SortableValues is used to allow the sorting of a [][reflect.Value]
 // slice. It is used with the standard sort package:
 //
@@ -26,14 +27,26 @@ import (
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // SortableValues is used to allow the sorting of a []reflect.Value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// SortableValues is used to allow the sorting of a []reflect.Value
+=======
+// SortableValues is used to allow the sorting of a [][reflect.Value]
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // slice. It is used with the standard sort package:
 //
-//   vals := []reflect.Value{a, b, c, d}
-//   sort.Sort(SortableValues(vals))
-//   // vals contents now sorted
+//	vals := []reflect.Value{a, b, c, d}
+//	sort.Sort(SortableValues(vals))
+//	// vals contents now sorted
 //
+<<<<<<< HEAD
 // Replace sort.Sort by sort.Stable for a stable sort. See sort documentation.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Replace sort.Sort by sort.Stable for a stable sort. See sort documentation.
+=======
+// Replace [sort.Sort] by [sort.Stable] for a stable sort. See [sort]
+// documentation.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Sorting rules are as follows:
 //   - nil is always lower

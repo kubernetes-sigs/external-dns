@@ -18,7 +18,7 @@ import (
 const maxTCPQueries = 128
 
 // aLongTimeAgo is a non-zero time, far in the past, used for
-// immediate cancelation of network operations.
+// immediate cancellation of network operations.
 var aLongTimeAgo = time.Unix(1, 0)
 
 // Handler is implemented by any value that implements ServeDNS.
@@ -71,6 +71,7 @@ type response struct {
 	tsigTimersOnly bool
 	tsigStatus     error
 	tsigRequestMAC string
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1502,6 +1503,21 @@ func (w *response) Write(m []byte) (int, error) {
 	udpSession     *SessionUDP       // oob data to get egress interface right
 	pcSession      net.Addr          // address to use when writing to a generic net.PacketConn
 	writer         Writer            // writer to output the raw DNS bits
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	tsigSecret     map[string]string // the tsig secrets
+	udp            net.PacketConn    // i/o connection if UDP was used
+	tcp            net.Conn          // i/o connection if TCP was used
+	udpSession     *SessionUDP       // oob data to get egress interface right
+	pcSession      net.Addr          // address to use when writing to a generic net.PacketConn
+	writer         Writer            // writer to output the raw DNS bits
+=======
+	tsigProvider   TsigProvider
+	udp            net.PacketConn // i/o connection if UDP was used
+	tcp            net.Conn       // i/o connection if TCP was used
+	udpSession     *SessionUDP    // oob data to get egress interface right
+	pcSession      net.Addr       // address to use when writing to a generic net.PacketConn
+	writer         Writer         // writer to output the raw DNS bits
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // handleRefused returns a HandlerFunc that returns REFUSED for every request it gets.
@@ -1636,6 +1652,8 @@ type Server struct {
 	WriteTimeout time.Duration
 	// TCP idle timeout for multiple queries, if nil, defaults to 8 * time.Second (RFC 5966).
 	IdleTimeout func() time.Duration
+	// An implementation of the TsigProvider interface. If defined it replaces TsigSecret and is used for all TSIG operations.
+	TsigProvider TsigProvider
 	// Secret(s) for Tsig map[<zonename>]<base64 secret>. The zonename must be in canonical form (lowercase, fqdn, see RFC 4034 Section 6.2).
 	TsigSecret map[string]string
 	// If NotifyStartedFunc is set it is called once the server has started listening.
@@ -1647,8 +1665,12 @@ type Server struct {
 	// Maximum number of TCP queries before we close the socket. Default is maxTCPQueries (unlimited if -1).
 	MaxTCPQueries int
 	// Whether to set the SO_REUSEPORT socket option, allowing multiple listeners to be bound to a single address.
-	// It is only supported on go1.11+ and when using ListenAndServe.
+	// It is only supported on certain GOOSes and when using ListenAndServe.
 	ReusePort bool
+	// Whether to set the SO_REUSEADDR socket option, allowing multiple listeners to be bound to a single address.
+	// Crucially this allows binding when an existing server is listening on `0.0.0.0` or `::`.
+	// It is only supported on certain GOOSes and when using ListenAndServe.
+	ReuseAddr bool
 	// AcceptMsgFunc will check the incoming message and will reject it early in the process.
 	// By default DefaultMsgAcceptFunc will be used.
 	MsgAcceptFunc MsgAcceptFunc
@@ -1661,6 +1683,16 @@ type Server struct {
 
 	// A pool for UDP message buffers.
 	udpPool sync.Pool
+}
+
+func (srv *Server) tsigProvider() TsigProvider {
+	if srv.TsigProvider != nil {
+		return srv.TsigProvider
+	}
+	if srv.TsigSecret != nil {
+		return tsigSecretProvider(srv.TsigSecret)
+	}
+	return nil
 }
 
 func (srv *Server) isStarted() bool {
@@ -1717,7 +1749,7 @@ func (srv *Server) ListenAndServe() error {
 
 	switch srv.Net {
 	case "tcp", "tcp4", "tcp6":
-		l, err := listenTCP(srv.Net, addr, srv.ReusePort)
+		l, err := listenTCP(srv.Net, addr, srv.ReusePort, srv.ReuseAddr)
 		if err != nil {
 			return err
 		}
@@ -1730,7 +1762,7 @@ func (srv *Server) ListenAndServe() error {
 			return errors.New("dns: neither Certificates nor GetCertificate set in Config")
 		}
 		network := strings.TrimSuffix(srv.Net, "-tls")
-		l, err := listenTCP(network, addr, srv.ReusePort)
+		l, err := listenTCP(network, addr, srv.ReusePort, srv.ReuseAddr)
 		if err != nil {
 			return err
 		}
@@ -1740,12 +1772,13 @@ func (srv *Server) ListenAndServe() error {
 		unlock()
 		return srv.serveTCP(l)
 	case "udp", "udp4", "udp6":
-		l, err := listenUDP(srv.Net, addr, srv.ReusePort)
+		l, err := listenUDP(srv.Net, addr, srv.ReusePort, srv.ReuseAddr)
 		if err != nil {
 			return err
 		}
 		u := l.(*net.UDPConn)
 		if e := setUDPSocketOptions(u); e != nil {
+			u.Close()
 			return e
 		}
 		srv.PacketConn = l
@@ -1950,7 +1983,7 @@ func (srv *Server) serveUDP(l net.PacketConn) error {
 
 // Serve a new TCP connection.
 func (srv *Server) serveTCPConn(wg *sync.WaitGroup, rw net.Conn) {
-	w := &response{tsigSecret: srv.TsigSecret, tcp: rw}
+	w := &response{tsigProvider: srv.tsigProvider(), tcp: rw}
 	if srv.DecorateWriter != nil {
 		w.writer = srv.DecorateWriter(w)
 	} else {
@@ -2005,7 +2038,7 @@ func (srv *Server) serveTCPConn(wg *sync.WaitGroup, rw net.Conn) {
 
 // Serve a new UDP request.
 func (srv *Server) serveUDPPacket(wg *sync.WaitGroup, m []byte, u net.PacketConn, udpSession *SessionUDP, pcSession net.Addr) {
-	w := &response{tsigSecret: srv.TsigSecret, udp: u, udpSession: udpSession, pcSession: pcSession}
+	w := &response{tsigProvider: srv.tsigProvider(), udp: u, udpSession: udpSession, pcSession: pcSession}
 	if srv.DecorateWriter != nil {
 		w.writer = srv.DecorateWriter(w)
 	} else {
@@ -2056,15 +2089,11 @@ func (srv *Server) serveDNS(m []byte, w *response) {
 	}
 
 	w.tsigStatus = nil
-	if w.tsigSecret != nil {
+	if w.tsigProvider != nil {
 		if t := req.IsTsig(); t != nil {
-			if secret, ok := w.tsigSecret[t.Hdr.Name]; ok {
-				w.tsigStatus = TsigVerify(m, secret, "", false)
-			} else {
-				w.tsigStatus = ErrSecret
-			}
+			w.tsigStatus = TsigVerifyWithProvider(m, w.tsigProvider, "", false)
 			w.tsigTimersOnly = false
-			w.tsigRequestMAC = req.Extra[len(req.Extra)-1].(*TSIG).MAC
+			w.tsigRequestMAC = t.MAC
 		}
 	}
 
@@ -2142,9 +2171,9 @@ func (w *response) WriteMsg(m *Msg) (err error) {
 	}
 
 	var data []byte
-	if w.tsigSecret != nil { // if no secrets, dont check for the tsig (which is a longer check)
+	if w.tsigProvider != nil { // if no provider, dont check for the tsig (which is a longer check)
 		if t := m.IsTsig(); t != nil {
-			data, w.tsigRequestMAC, err = TsigGenerate(m, w.tsigSecret[t.Hdr.Name], w.tsigRequestMAC, w.tsigTimersOnly)
+			data, w.tsigRequestMAC, err = TsigGenerateWithProvider(m, w.tsigProvider, w.tsigRequestMAC, w.tsigTimersOnly)
 			if err != nil {
 				return err
 			}
@@ -2177,12 +2206,25 @@ func (w *response) Write(m []byte) (int, error) {
 			return 0, &Error{err: "message too large"}
 		}
 
+<<<<<<< HEAD
 		l := make([]byte, 2)
 		binary.BigEndian.PutUint16(l, uint16(len(m)))
 
 		n, err := (&net.Buffers{l, m}).WriteTo(w.tcp)
 		return int(n), err
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		l := make([]byte, 2)
+		binary.BigEndian.PutUint16(l, uint16(len(m)))
+
+		n, err := (&net.Buffers{l, m}).WriteTo(w.tcp)
+		return int(n), err
+=======
+		msg := make([]byte, 2+len(m))
+		binary.BigEndian.PutUint16(msg, uint16(len(m)))
+		copy(msg[2:], m)
+		return w.tcp.Write(msg)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	default:
 		panic("dns: internal error: udp and tcp both nil")
 	}

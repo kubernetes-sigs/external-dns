@@ -9,6 +9,7 @@ import (
 )
 
 type Account struct {
+<<<<<<< HEAD
 	BackgroundColor    *string          `json:"backgroundColor"`
 	BillingCustomerID  *string          `json:"billingCustomerId"`
 	DomainMappings     []*DomainMapping `json:"domainMappings"`
@@ -4065,6 +4066,4936 @@ var AllWebhookLogState = []WebhookLogState{
 func (e WebhookLogState) IsValid() bool {
 	switch e {
 	case WebhookLogStateDelivered, WebhookLogStateFailed, WebhookLogStateSending:
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ID                 string                   `json:"id"`
+	Name               *string                  `json:"name"`
+	BillingCustomerID  *string                  `json:"billingCustomerId"`
+	WorkosConnectionID *string                  `json:"workosConnectionId"`
+	ClusterCount       *string                  `json:"clusterCount"`
+	UserCount          *string                  `json:"userCount"`
+	DelinquentAt       *string                  `json:"delinquentAt"`
+	GrandfatheredUntil *string                  `json:"grandfatheredUntil"`
+	BillingAddress     *Address                 `json:"billingAddress"`
+	Trialed            *bool                    `json:"trialed"`
+	Icon               *string                  `json:"icon"`
+	PaymentMethods     *PaymentMethodConnection `json:"paymentMethods"`
+	RootUser           *User                    `json:"rootUser"`
+	DomainMappings     []*DomainMapping         `json:"domainMappings"`
+	Subscription       *PlatformSubscription    `json:"subscription"`
+	BackgroundColor    *string                  `json:"backgroundColor"`
+	AvailableFeatures  *PlanFeatures            `json:"availableFeatures"`
+	InsertedAt         *string                  `json:"insertedAt"`
+	UpdatedAt          *string                  `json:"updatedAt"`
+}
+
+type AccountAttributes struct {
+	Name           *string               `json:"name,omitempty"`
+	Icon           *string               `json:"icon,omitempty"`
+	DomainMappings []*DomainMappingInput `json:"domainMappings,omitempty"`
+	BillingAddress *AddressAttributes    `json:"billingAddress,omitempty"`
+}
+
+type ActionItem struct {
+	Type ActionItemType `json:"type"`
+	Link string         `json:"link"`
+}
+
+type ActionItemAttributes struct {
+	Type ActionItemType `json:"type"`
+	Link string         `json:"link"`
+}
+
+type Address struct {
+	Name    *string `json:"name"`
+	Line1   *string `json:"line1"`
+	Line2   *string `json:"line2"`
+	City    *string `json:"city"`
+	State   *string `json:"state"`
+	Country *string `json:"country"`
+	Zip     *string `json:"zip"`
+}
+
+type AddressAttributes struct {
+	Name    *string `json:"name,omitempty"`
+	Line1   string  `json:"line1"`
+	Line2   *string `json:"line2,omitempty"`
+	City    string  `json:"city"`
+	State   *string `json:"state,omitempty"`
+	Country string  `json:"country"`
+	Zip     string  `json:"zip"`
+}
+
+type AppLink struct {
+	URL         *string `json:"url"`
+	Description *string `json:"description"`
+}
+
+type ApplicationComponent struct {
+	Group  *string `json:"group"`
+	Name   *string `json:"name"`
+	Kind   *string `json:"kind"`
+	Status *string `json:"status"`
+}
+
+type ApplicationInformation struct {
+	Name            string                  `json:"name"`
+	Ready           *bool                   `json:"ready"`
+	ComponentsReady *string                 `json:"componentsReady"`
+	Components      []*ApplicationComponent `json:"components"`
+	Spec            *ApplicationSpec        `json:"spec"`
+}
+
+type ApplicationSpec struct {
+	Description *string    `json:"description"`
+	Version     *string    `json:"version"`
+	Links       []*AppLink `json:"links"`
+}
+
+type ApplyLock struct {
+	ID         string      `json:"id"`
+	Lock       *string     `json:"lock"`
+	Repository *Repository `json:"repository"`
+	Owner      *User       `json:"owner"`
+	InsertedAt *string     `json:"insertedAt"`
+	UpdatedAt  *string     `json:"updatedAt"`
+}
+
+type Artifact struct {
+	ID         *string           `json:"id"`
+	Name       *string           `json:"name"`
+	Readme     *string           `json:"readme"`
+	Type       *ArtifactType     `json:"type"`
+	Platform   *ArtifactPlatform `json:"platform"`
+	Filesize   *int64            `json:"filesize"`
+	Sha        *string           `json:"sha"`
+	Arch       *string           `json:"arch"`
+	Blob       *string           `json:"blob"`
+	InsertedAt *string           `json:"insertedAt"`
+	UpdatedAt  *string           `json:"updatedAt"`
+}
+
+type ArtifactAttributes struct {
+	Name     string  `json:"name"`
+	Readme   string  `json:"readme"`
+	Type     string  `json:"type"`
+	Platform string  `json:"platform"`
+	Arch     *string `json:"arch,omitempty"`
+	Blob     *string `json:"blob,omitempty"`
+}
+
+type Audit struct {
+	ID                 string              `json:"id"`
+	Action             string              `json:"action"`
+	IP                 *string             `json:"ip"`
+	City               *string             `json:"city"`
+	Country            *string             `json:"country"`
+	Latitude           *string             `json:"latitude"`
+	Longitude          *string             `json:"longitude"`
+	Actor              *User               `json:"actor"`
+	Group              *Group              `json:"group"`
+	Role               *Role               `json:"role"`
+	User               *User               `json:"user"`
+	IntegrationWebhook *IntegrationWebhook `json:"integrationWebhook"`
+	Repository         *Repository         `json:"repository"`
+	Version            *Version            `json:"version"`
+	Image              *DockerImage        `json:"image"`
+	InsertedAt         *string             `json:"insertedAt"`
+	UpdatedAt          *string             `json:"updatedAt"`
+}
+
+type AuditConnection struct {
+	PageInfo PageInfo     `json:"pageInfo"`
+	Edges    []*AuditEdge `json:"edges"`
+}
+
+type AuditEdge struct {
+	Node   *Audit  `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type AuthorizationURL struct {
+	Provider ScmProvider `json:"provider"`
+	URL      string      `json:"url"`
+}
+
+type AwsShellCredentialsAttributes struct {
+	AccessKeyID     string `json:"accessKeyId"`
+	SecretAccessKey string `json:"secretAccessKey"`
+}
+
+type AzureShellCredentialsAttributes struct {
+	TenantID       string `json:"tenantId"`
+	ClientID       string `json:"clientId"`
+	ClientSecret   string `json:"clientSecret"`
+	StorageAccount string `json:"storageAccount"`
+	SubscriptionID string `json:"subscriptionId"`
+}
+
+type BindingAttributes struct {
+	ID      *string `json:"id,omitempty"`
+	UserID  *string `json:"userId,omitempty"`
+	GroupID *string `json:"groupId,omitempty"`
+}
+
+type Card struct {
+	ID       string  `json:"id"`
+	Last4    string  `json:"last4"`
+	ExpMonth int64   `json:"expMonth"`
+	ExpYear  int64   `json:"expYear"`
+	Brand    string  `json:"brand"`
+	Name     *string `json:"name"`
+}
+
+type CardConnection struct {
+	PageInfo PageInfo    `json:"pageInfo"`
+	Edges    []*CardEdge `json:"edges"`
+}
+
+type CardEdge struct {
+	Node   *Card   `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type CategoryInfo struct {
+	Category *Category             `json:"category"`
+	Count    *int64                `json:"count"`
+	Tags     *GroupedTagConnection `json:"tags"`
+}
+
+type ChangeInstructions struct {
+	Script       *string `json:"script"`
+	Instructions *string `json:"instructions"`
+}
+
+type Chart struct {
+	ID            *string            `json:"id"`
+	Name          string             `json:"name"`
+	Description   *string            `json:"description"`
+	LatestVersion *string            `json:"latestVersion"`
+	Repository    *Repository        `json:"repository"`
+	Dependencies  *Dependencies      `json:"dependencies"`
+	Tags          []*VersionTag      `json:"tags"`
+	Installation  *ChartInstallation `json:"installation"`
+	InsertedAt    *string            `json:"insertedAt"`
+	UpdatedAt     *string            `json:"updatedAt"`
+}
+
+type ChartAttributes struct {
+	Tags []*VersionTagAttributes `json:"tags,omitempty"`
+}
+
+type ChartConnection struct {
+	PageInfo PageInfo     `json:"pageInfo"`
+	Edges    []*ChartEdge `json:"edges"`
+}
+
+type ChartEdge struct {
+	Node   *Chart  `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type ChartInstallation struct {
+	ID           *string       `json:"id"`
+	Chart        *Chart        `json:"chart"`
+	Version      *Version      `json:"version"`
+	Installation *Installation `json:"installation"`
+	InsertedAt   *string       `json:"insertedAt"`
+	UpdatedAt    *string       `json:"updatedAt"`
+}
+
+type ChartInstallationAttributes struct {
+	ChartID   *string `json:"chartId,omitempty"`
+	VersionID *string `json:"versionId,omitempty"`
+}
+
+type ChartInstallationConnection struct {
+	PageInfo PageInfo                 `json:"pageInfo"`
+	Edges    []*ChartInstallationEdge `json:"edges"`
+}
+
+type ChartInstallationEdge struct {
+	Node   *ChartInstallation `json:"node"`
+	Cursor *string            `json:"cursor"`
+}
+
+type ChartName struct {
+	Repo  *string `json:"repo,omitempty"`
+	Chart *string `json:"chart,omitempty"`
+}
+
+type ChatMessage struct {
+	Role    string  `json:"role"`
+	Content string  `json:"content"`
+	Name    *string `json:"name"`
+}
+
+type ChatMessageAttributes struct {
+	Role    string  `json:"role"`
+	Content string  `json:"content"`
+	Name    *string `json:"name,omitempty"`
+}
+
+type ClosureItem struct {
+	Helm      *Chart      `json:"helm"`
+	Terraform *Terraform  `json:"terraform"`
+	Dep       *Dependency `json:"dep"`
+}
+
+type CloudShell struct {
+	ID         string       `json:"id"`
+	Provider   Provider     `json:"provider"`
+	GitURL     string       `json:"gitUrl"`
+	AesKey     string       `json:"aesKey"`
+	Missing    []*string    `json:"missing"`
+	Cluster    string       `json:"cluster"`
+	Subdomain  string       `json:"subdomain"`
+	Alive      bool         `json:"alive"`
+	Status     *ShellStatus `json:"status"`
+	Region     string       `json:"region"`
+	InsertedAt *string      `json:"insertedAt"`
+	UpdatedAt  *string      `json:"updatedAt"`
+}
+
+type CloudShellAttributes struct {
+	Provider    *Provider                  `json:"provider,omitempty"`
+	Workspace   WorkspaceAttributes        `json:"workspace"`
+	Credentials ShellCredentialsAttributes `json:"credentials"`
+	Scm         *ScmAttributes             `json:"scm,omitempty"`
+	DemoID      *string                    `json:"demoId,omitempty"`
+}
+
+// A Kubernetes cluster that can be used to deploy applications on with Plural.
+type Cluster struct {
+	// The ID of the cluster.
+	ID string `json:"id"`
+	// The name of the cluster.
+	Name string `json:"name"`
+	// The cluster's cloud provider.
+	Provider Provider `json:"provider"`
+	// The source of the cluster.
+	Source *Source `json:"source"`
+	// The git repository URL for the cluster.
+	GitURL *string `json:"gitUrl"`
+	// The URL of the console running on the cluster.
+	ConsoleURL *string `json:"consoleUrl"`
+	// The domain name used for applications deployed on the cluster.
+	Domain *string `json:"domain"`
+	// The last time the cluster was pinged.
+	PingedAt *string `json:"pingedAt"`
+	// pending upgrades for each installed app
+	UpgradeInfo []*UpgradeInfo `json:"upgradeInfo"`
+	// whether all installations in the cluster have been synced
+	Synced *bool `json:"synced"`
+	// whether any installation in the cluster has been locked
+	Locked *bool `json:"locked"`
+	// CPU/Memory history for this cluster
+	UsageHistory []*ClusterUsageHistory `json:"usageHistory"`
+	// the dependencies a cluster has
+	Dependency *ClusterDependency `json:"dependency"`
+	// The user that owns the cluster.
+	Owner *User `json:"owner"`
+	// The account that the cluster belongs to.
+	Account *Account `json:"account"`
+	// The upgrade queue for applications running on the cluster.
+	Queue      *UpgradeQueue `json:"queue"`
+	InsertedAt *string       `json:"insertedAt"`
+	UpdatedAt  *string       `json:"updatedAt"`
+}
+
+// Input for creating or updating a cluster.
+type ClusterAttributes struct {
+	// The name of the cluster.
+	Name string `json:"name"`
+	// The cluster's cloud provider.
+	Provider Provider `json:"provider"`
+	// The source of the cluster.
+	Source *Source `json:"source,omitempty"`
+	// The git repository URL for the cluster.
+	GitURL *string `json:"gitUrl,omitempty"`
+	// The URL of the console running on the cluster.
+	ConsoleURL *string `json:"consoleUrl,omitempty"`
+	// The domain name used for applications deployed on the cluster.
+	Domain *string `json:"domain,omitempty"`
+}
+
+type ClusterConnection struct {
+	PageInfo PageInfo       `json:"pageInfo"`
+	Edges    []*ClusterEdge `json:"edges"`
+}
+
+// A dependncy reference between clusters
+type ClusterDependency struct {
+	ID string `json:"id"`
+	// the cluster holding this dependency
+	Cluster *Cluster `json:"cluster"`
+	// the source cluster of this dependency
+	Dependency *Cluster `json:"dependency"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type ClusterEdge struct {
+	Node   *Cluster `json:"node"`
+	Cursor *string  `json:"cursor"`
+}
+
+type ClusterInformation struct {
+	ID         string  `json:"id"`
+	Version    *string `json:"version"`
+	GitCommit  *string `json:"gitCommit"`
+	Platform   *string `json:"platform"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type ClusterInformationAttributes struct {
+	GitCommit *string `json:"gitCommit,omitempty"`
+	Version   *string `json:"version,omitempty"`
+	Platform  *string `json:"platform,omitempty"`
+}
+
+// A record of the utilization in a given cluster
+type ClusterUsageHistory struct {
+	CPU        *int64   `json:"cpu"`
+	Memory     *int64   `json:"memory"`
+	Cluster    *Cluster `json:"cluster"`
+	Account    *Account `json:"account"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type Community struct {
+	Discord  *string   `json:"discord"`
+	Slack    *string   `json:"slack"`
+	Twitter  *string   `json:"twitter"`
+	Homepage *string   `json:"homepage"`
+	GitURL   *string   `json:"gitUrl"`
+	Videos   []*string `json:"videos"`
+}
+
+// Input for creating or updating the community links of an application.
+type CommunityAttributes struct {
+	// The application's Discord server.
+	Discord *string `json:"discord,omitempty"`
+	// The application's Slack channel.
+	Slack *string `json:"slack,omitempty"`
+	// The application's Twitter account.
+	Twitter *string `json:"twitter,omitempty"`
+	// The application's homepage.
+	Homepage *string `json:"homepage,omitempty"`
+	// The application's git URL.
+	GitURL *string `json:"gitUrl,omitempty"`
+	// The videos of the application.
+	Videos []*string `json:"videos,omitempty"`
+}
+
+type ConsentRequest struct {
+	RequestedScope []*string `json:"requestedScope"`
+	Skip           *bool     `json:"skip"`
+}
+
+type ContextAttributes struct {
+	Configuration map[string]interface{} `json:"configuration"`
+	Buckets       []*string              `json:"buckets,omitempty"`
+	Domains       []*string              `json:"domains,omitempty"`
+}
+
+// An external repository contributor
+type Contributor struct {
+	ID         string  `json:"id"`
+	User       *User   `json:"user"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type Crd struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Blob       *string `json:"blob"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type CrdAttributes struct {
+	Name string  `json:"name"`
+	Blob *string `json:"blob,omitempty"`
+}
+
+type Cvss struct {
+	AttackVector       *VulnVector      `json:"attackVector"`
+	AttackComplexity   *VulnGrade       `json:"attackComplexity"`
+	PrivilegesRequired *VulnGrade       `json:"privilegesRequired"`
+	UserInteraction    *VulnRequirement `json:"userInteraction"`
+	Confidentiality    *VulnGrade       `json:"confidentiality"`
+	Integrity          *VulnGrade       `json:"integrity"`
+	Availability       *VulnGrade       `json:"availability"`
+}
+
+type DeferredReason struct {
+	Message    *string `json:"message"`
+	Package    *string `json:"package"`
+	Repository *string `json:"repository"`
+}
+
+type DeferredUpdate struct {
+	ID                    string                 `json:"id"`
+	DequeueAt             *string                `json:"dequeueAt"`
+	Attempts              *int64                 `json:"attempts"`
+	Pending               *bool                  `json:"pending"`
+	Messages              []*DeferredReason      `json:"messages"`
+	ChartInstallation     *ChartInstallation     `json:"chartInstallation"`
+	TerraformInstallation *TerraformInstallation `json:"terraformInstallation"`
+	Version               *Version               `json:"version"`
+	InsertedAt            *string                `json:"insertedAt"`
+	UpdatedAt             *string                `json:"updatedAt"`
+}
+
+type DeferredUpdateConnection struct {
+	PageInfo PageInfo              `json:"pageInfo"`
+	Edges    []*DeferredUpdateEdge `json:"edges"`
+}
+
+type DeferredUpdateEdge struct {
+	Node   *DeferredUpdate `json:"node"`
+	Cursor *string         `json:"cursor"`
+}
+
+type DemoProject struct {
+	ID          string            `json:"id"`
+	ProjectID   string            `json:"projectId"`
+	Credentials *string           `json:"credentials"`
+	Ready       *bool             `json:"ready"`
+	State       *DemoProjectState `json:"state"`
+	InsertedAt  *string           `json:"insertedAt"`
+	UpdatedAt   *string           `json:"updatedAt"`
+}
+
+type Dependencies struct {
+	Dependencies    []*Dependency          `json:"dependencies"`
+	Providers       []*Provider            `json:"providers"`
+	Secrets         []*string              `json:"secrets"`
+	ProviderVsn     *string                `json:"providerVsn"`
+	CliVsn          *string                `json:"cliVsn"`
+	Application     *bool                  `json:"application"`
+	ProviderWirings map[string]interface{} `json:"providerWirings"`
+	Outputs         map[string]interface{} `json:"outputs"`
+	Wirings         *Wirings               `json:"wirings"`
+	Breaking        *bool                  `json:"breaking"`
+	Wait            *bool                  `json:"wait"`
+	Instructions    *ChangeInstructions    `json:"instructions"`
+}
+
+type Dependency struct {
+	Type     *DependencyType `json:"type"`
+	Name     *string         `json:"name"`
+	Repo     *string         `json:"repo"`
+	Version  *string         `json:"version"`
+	Optional *bool           `json:"optional"`
+}
+
+type DeviceLogin struct {
+	LoginURL    string `json:"loginUrl"`
+	DeviceToken string `json:"deviceToken"`
+}
+
+type DNSAccessPolicy struct {
+	ID         string           `json:"id"`
+	Bindings   []*PolicyBinding `json:"bindings"`
+	InsertedAt *string          `json:"insertedAt"`
+	UpdatedAt  *string          `json:"updatedAt"`
+}
+
+type DNSAccessPolicyAttributes struct {
+	ID       *string              `json:"id,omitempty"`
+	Bindings []*BindingAttributes `json:"bindings,omitempty"`
+}
+
+type DNSDomain struct {
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	AccessPolicy *DNSAccessPolicy     `json:"accessPolicy"`
+	Creator      *User                `json:"creator"`
+	Account      *Account             `json:"account"`
+	DNSRecords   *DNSRecordConnection `json:"dnsRecords"`
+	InsertedAt   *string              `json:"insertedAt"`
+	UpdatedAt    *string              `json:"updatedAt"`
+}
+
+type DNSDomainAttributes struct {
+	Name         *string                    `json:"name,omitempty"`
+	AccessPolicy *DNSAccessPolicyAttributes `json:"accessPolicy,omitempty"`
+}
+
+type DNSDomainConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*DNSDomainEdge `json:"edges"`
+}
+
+type DNSDomainEdge struct {
+	Node   *DNSDomain `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type DNSRecord struct {
+	ID         string        `json:"id"`
+	Type       DNSRecordType `json:"type"`
+	Name       string        `json:"name"`
+	Cluster    string        `json:"cluster"`
+	Provider   Provider      `json:"provider"`
+	Records    []*string     `json:"records"`
+	Creator    *User         `json:"creator"`
+	Domain     *DNSDomain    `json:"domain"`
+	InsertedAt *string       `json:"insertedAt"`
+	UpdatedAt  *string       `json:"updatedAt"`
+}
+
+type DNSRecordAttributes struct {
+	Name    string        `json:"name"`
+	Type    DNSRecordType `json:"type"`
+	Records []*string     `json:"records,omitempty"`
+}
+
+type DNSRecordConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*DNSRecordEdge `json:"edges"`
+}
+
+type DNSRecordEdge struct {
+	Node   *DNSRecord `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type DockerImage struct {
+	ID               string            `json:"id"`
+	Tag              *string           `json:"tag"`
+	Digest           string            `json:"digest"`
+	ScannedAt        *string           `json:"scannedAt"`
+	ScanCompletedAt  *string           `json:"scanCompletedAt"`
+	Grade            *ImageGrade       `json:"grade"`
+	DockerRepository *DockerRepository `json:"dockerRepository"`
+	Vulnerabilities  []*Vulnerability  `json:"vulnerabilities"`
+	InsertedAt       *string           `json:"insertedAt"`
+	UpdatedAt        *string           `json:"updatedAt"`
+}
+
+type DockerImageConnection struct {
+	PageInfo PageInfo           `json:"pageInfo"`
+	Edges    []*DockerImageEdge `json:"edges"`
+}
+
+type DockerImageEdge struct {
+	Node   *DockerImage `json:"node"`
+	Cursor *string      `json:"cursor"`
+}
+
+type DockerRepository struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Public     *bool       `json:"public"`
+	Repository *Repository `json:"repository"`
+	Metrics    []*Metric   `json:"metrics"`
+	InsertedAt *string     `json:"insertedAt"`
+	UpdatedAt  *string     `json:"updatedAt"`
+}
+
+type DockerRepositoryAttributes struct {
+	Public bool `json:"public"`
+}
+
+type DockerRepositoryConnection struct {
+	PageInfo PageInfo                `json:"pageInfo"`
+	Edges    []*DockerRepositoryEdge `json:"edges"`
+}
+
+type DockerRepositoryEdge struct {
+	Node   *DockerRepository `json:"node"`
+	Cursor *string           `json:"cursor"`
+}
+
+type DomainMapping struct {
+	ID         string   `json:"id"`
+	Domain     string   `json:"domain"`
+	EnableSso  *bool    `json:"enableSso"`
+	Account    *Account `json:"account"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type DomainMappingInput struct {
+	ID        *string `json:"id,omitempty"`
+	Domain    *string `json:"domain,omitempty"`
+	EnableSso *bool   `json:"enableSso,omitempty"`
+}
+
+type EabCredential struct {
+	ID         string   `json:"id"`
+	Cluster    string   `json:"cluster"`
+	Provider   Provider `json:"provider"`
+	KeyID      string   `json:"keyId"`
+	HmacKey    string   `json:"hmacKey"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type EntityAttributes struct {
+	Type       MessageEntityType `json:"type"`
+	Text       *string           `json:"text,omitempty"`
+	UserID     *string           `json:"userId,omitempty"`
+	StartIndex *int64            `json:"startIndex,omitempty"`
+	EndIndex   *int64            `json:"endIndex,omitempty"`
+}
+
+type File struct {
+	ID          string          `json:"id"`
+	MediaType   *MediaType      `json:"mediaType"`
+	Filename    *string         `json:"filename"`
+	Filesize    *int64          `json:"filesize"`
+	Width       *int64          `json:"width"`
+	Height      *int64          `json:"height"`
+	ContentType *string         `json:"contentType"`
+	Blob        string          `json:"blob"`
+	Message     IncidentMessage `json:"message"`
+	InsertedAt  *string         `json:"insertedAt"`
+	UpdatedAt   *string         `json:"updatedAt"`
+}
+
+type FileAttributes struct {
+	Blob *string `json:"blob,omitempty"`
+}
+
+type FileConnection struct {
+	PageInfo PageInfo    `json:"pageInfo"`
+	Edges    []*FileEdge `json:"edges"`
+}
+
+type FileContent struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+type FileEdge struct {
+	Node   *File   `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type Follower struct {
+	ID          string                   `json:"id"`
+	User        User                     `json:"user"`
+	Incident    *Incident                `json:"incident"`
+	Preferences *NotificationPreferences `json:"preferences"`
+	InsertedAt  *string                  `json:"insertedAt"`
+	UpdatedAt   *string                  `json:"updatedAt"`
+}
+
+type FollowerAttributes struct {
+	Preferences *NotificationPreferencesAttributes `json:"preferences,omitempty"`
+}
+
+type FollowerConnection struct {
+	PageInfo PageInfo        `json:"pageInfo"`
+	Edges    []*FollowerEdge `json:"edges"`
+}
+
+type FollowerEdge struct {
+	Node   *Follower `json:"node"`
+	Cursor *string   `json:"cursor"`
+}
+
+type GcpShellCredentialsAttributes struct {
+	ApplicationCredentials string `json:"applicationCredentials"`
+}
+
+type GeoMetric struct {
+	Country *string `json:"country"`
+	Count   *int64  `json:"count"`
+}
+
+type GitConfiguration struct {
+	URL    *string `json:"url"`
+	Name   *string `json:"name"`
+	Root   *string `json:"root"`
+	Branch *string `json:"branch"`
+}
+
+type Group struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Global      *bool   `json:"global"`
+	Description *string `json:"description"`
+	InsertedAt  *string `json:"insertedAt"`
+	UpdatedAt   *string `json:"updatedAt"`
+}
+
+type GroupAttributes struct {
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	Global      *bool   `json:"global,omitempty"`
+}
+
+type GroupConnection struct {
+	PageInfo PageInfo     `json:"pageInfo"`
+	Edges    []*GroupEdge `json:"edges"`
+}
+
+type GroupEdge struct {
+	Node   *Group  `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type GroupMember struct {
+	ID         string  `json:"id"`
+	User       *User   `json:"user"`
+	Group      *Group  `json:"group"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type GroupMemberConnection struct {
+	PageInfo PageInfo           `json:"pageInfo"`
+	Edges    []*GroupMemberEdge `json:"edges"`
+}
+
+type GroupMemberEdge struct {
+	Node   *GroupMember `json:"node"`
+	Cursor *string      `json:"cursor"`
+}
+
+type GroupedTag struct {
+	Tag   string `json:"tag"`
+	Count int64  `json:"count"`
+}
+
+type GroupedTagConnection struct {
+	PageInfo PageInfo          `json:"pageInfo"`
+	Edges    []*GroupedTagEdge `json:"edges"`
+}
+
+type GroupedTagEdge struct {
+	Node   *GroupedTag `json:"node"`
+	Cursor *string     `json:"cursor"`
+}
+
+type ImageDependency struct {
+	ID         string      `json:"id"`
+	Image      DockerImage `json:"image"`
+	Version    Version     `json:"version"`
+	InsertedAt *string     `json:"insertedAt"`
+	UpdatedAt  *string     `json:"updatedAt"`
+}
+
+type ImageLayer struct {
+	Digest *string `json:"digest"`
+	DiffID *string `json:"diffId"`
+}
+
+type ImpersonationPolicy struct {
+	ID         string                        `json:"id"`
+	Bindings   []*ImpersonationPolicyBinding `json:"bindings"`
+	InsertedAt *string                       `json:"insertedAt"`
+	UpdatedAt  *string                       `json:"updatedAt"`
+}
+
+type ImpersonationPolicyAttributes struct {
+	ID       *string                                 `json:"id,omitempty"`
+	Bindings []*ImpersonationPolicyBindingAttributes `json:"bindings,omitempty"`
+}
+
+type ImpersonationPolicyBinding struct {
+	ID         string  `json:"id"`
+	User       *User   `json:"user"`
+	Group      *Group  `json:"group"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type ImpersonationPolicyBindingAttributes struct {
+	ID      *string `json:"id,omitempty"`
+	UserID  *string `json:"userId,omitempty"`
+	GroupID *string `json:"groupId,omitempty"`
+}
+
+type Incident struct {
+	ID                 string                     `json:"id"`
+	Title              string                     `json:"title"`
+	Description        *string                    `json:"description"`
+	Severity           int64                      `json:"severity"`
+	Status             IncidentStatus             `json:"status"`
+	NextResponseAt     *string                    `json:"nextResponseAt"`
+	Repository         Repository                 `json:"repository"`
+	Creator            User                       `json:"creator"`
+	Owner              *User                      `json:"owner"`
+	Tags               []*Tag                     `json:"tags"`
+	Postmortem         *Postmortem                `json:"postmortem"`
+	ClusterInformation *ClusterInformation        `json:"clusterInformation"`
+	Subscription       *SlimSubscription          `json:"subscription"`
+	NotificationCount  *int64                     `json:"notificationCount"`
+	Follower           *Follower                  `json:"follower"`
+	Messages           *IncidentMessageConnection `json:"messages"`
+	Files              *FileConnection            `json:"files"`
+	History            *IncidentHistoryConnection `json:"history"`
+	Followers          *FollowerConnection        `json:"followers"`
+	InsertedAt         *string                    `json:"insertedAt"`
+	UpdatedAt          *string                    `json:"updatedAt"`
+}
+
+type IncidentAttributes struct {
+	Title              *string                       `json:"title,omitempty"`
+	Severity           *int64                        `json:"severity,omitempty"`
+	Description        *string                       `json:"description,omitempty"`
+	Status             *IncidentStatus               `json:"status,omitempty"`
+	Tags               []*TagAttributes              `json:"tags,omitempty"`
+	ClusterInformation *ClusterInformationAttributes `json:"clusterInformation,omitempty"`
+}
+
+type IncidentChange struct {
+	Key  string  `json:"key"`
+	Prev *string `json:"prev"`
+	Next *string `json:"next"`
+}
+
+type IncidentConnection struct {
+	PageInfo PageInfo        `json:"pageInfo"`
+	Edges    []*IncidentEdge `json:"edges"`
+}
+
+type IncidentDelta struct {
+	Delta   *Delta    `json:"delta"`
+	Payload *Incident `json:"payload"`
+}
+
+type IncidentEdge struct {
+	Node   *Incident `json:"node"`
+	Cursor *string   `json:"cursor"`
+}
+
+type IncidentFilter struct {
+	Type     IncidentFilterType `json:"type"`
+	Value    *string            `json:"value,omitempty"`
+	Statuses []*IncidentStatus  `json:"statuses,omitempty"`
+}
+
+type IncidentHistory struct {
+	ID         string            `json:"id"`
+	Action     IncidentAction    `json:"action"`
+	Changes    []*IncidentChange `json:"changes"`
+	Actor      User              `json:"actor"`
+	Incident   Incident          `json:"incident"`
+	InsertedAt *string           `json:"insertedAt"`
+	UpdatedAt  *string           `json:"updatedAt"`
+}
+
+type IncidentHistoryConnection struct {
+	PageInfo PageInfo               `json:"pageInfo"`
+	Edges    []*IncidentHistoryEdge `json:"edges"`
+}
+
+type IncidentHistoryEdge struct {
+	Node   *IncidentHistory `json:"node"`
+	Cursor *string          `json:"cursor"`
+}
+
+type IncidentMessage struct {
+	ID         string           `json:"id"`
+	Text       string           `json:"text"`
+	Incident   Incident         `json:"incident"`
+	Creator    User             `json:"creator"`
+	Reactions  []*Reaction      `json:"reactions"`
+	File       *File            `json:"file"`
+	Entities   []*MessageEntity `json:"entities"`
+	InsertedAt *string          `json:"insertedAt"`
+	UpdatedAt  *string          `json:"updatedAt"`
+}
+
+type IncidentMessageAttributes struct {
+	Text     string              `json:"text"`
+	File     *FileAttributes     `json:"file,omitempty"`
+	Entities []*EntityAttributes `json:"entities,omitempty"`
+}
+
+type IncidentMessageConnection struct {
+	PageInfo PageInfo               `json:"pageInfo"`
+	Edges    []*IncidentMessageEdge `json:"edges"`
+}
+
+type IncidentMessageDelta struct {
+	Delta   *Delta           `json:"delta"`
+	Payload *IncidentMessage `json:"payload"`
+}
+
+type IncidentMessageEdge struct {
+	Node   *IncidentMessage `json:"node"`
+	Cursor *string          `json:"cursor"`
+}
+
+// An installation of an application.
+type Installation struct {
+	// The installation's ID.
+	ID string `json:"id"`
+	// A YAML object of context.
+	Context map[string]interface{} `json:"context"`
+	// Whether the application should auto upgrade.
+	AutoUpgrade *bool `json:"autoUpgrade"`
+	// The application that was installed.
+	Repository *Repository `json:"repository"`
+	// The user that installed the application.
+	User *User `json:"user"`
+	// The subscription for the application.
+	Subscription *RepositorySubscription `json:"subscription"`
+	// The OIDC provider for the application.
+	OidcProvider *OidcProvider `json:"oidcProvider"`
+	// The license key for the application.
+	LicenseKey *string `json:"licenseKey"`
+	// The tag to track for auto upgrades.
+	TrackTag string `json:"trackTag"`
+	// The last ping time of an installed application.
+	PingedAt   *string `json:"pingedAt"`
+	AcmeKeyID  *string `json:"acmeKeyId"`
+	AcmeSecret *string `json:"acmeSecret"`
+	Locked     *bool   `json:"locked"`
+	Synced     *bool   `json:"synced"`
+	License    *string `json:"license"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+// Input for creating or updating the tag attributes of an application installation.
+type InstallationAttributes struct {
+	// A YAML object of context.
+	Context *string `json:"context,omitempty"`
+	// Whether the application should auto upgrade.
+	AutoUpgrade *bool `json:"autoUpgrade,omitempty"`
+	// The tag to track for auto upgrades.
+	TrackTag *string `json:"trackTag,omitempty"`
+}
+
+type InstallationConnection struct {
+	PageInfo PageInfo            `json:"pageInfo"`
+	Edges    []*InstallationEdge `json:"edges"`
+}
+
+type InstallationEdge struct {
+	Node   *Installation `json:"node"`
+	Cursor *string       `json:"cursor"`
+}
+
+type Integration struct {
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	SourceURL   *string                `json:"sourceUrl"`
+	Description *string                `json:"description"`
+	Type        *string                `json:"type"`
+	Spec        map[string]interface{} `json:"spec"`
+	Icon        *string                `json:"icon"`
+	Repository  *Repository            `json:"repository"`
+	Publisher   *Publisher             `json:"publisher"`
+	Tags        []*Tag                 `json:"tags"`
+	InsertedAt  *string                `json:"insertedAt"`
+	UpdatedAt   *string                `json:"updatedAt"`
+}
+
+type IntegrationAttributes struct {
+	Name        string           `json:"name"`
+	Icon        *string          `json:"icon,omitempty"`
+	SourceURL   *string          `json:"sourceUrl,omitempty"`
+	Description *string          `json:"description,omitempty"`
+	Type        *string          `json:"type,omitempty"`
+	Spec        *string          `json:"spec,omitempty"`
+	Tags        []*TagAttributes `json:"tags,omitempty"`
+}
+
+type IntegrationConnection struct {
+	PageInfo PageInfo           `json:"pageInfo"`
+	Edges    []*IntegrationEdge `json:"edges"`
+}
+
+type IntegrationEdge struct {
+	Node   *Integration `json:"node"`
+	Cursor *string      `json:"cursor"`
+}
+
+type IntegrationWebhook struct {
+	ID         string                `json:"id"`
+	Name       string                `json:"name"`
+	URL        string                `json:"url"`
+	Actions    []*string             `json:"actions"`
+	Secret     string                `json:"secret"`
+	Account    *Account              `json:"account"`
+	Logs       *WebhookLogConnection `json:"logs"`
+	InsertedAt *string               `json:"insertedAt"`
+	UpdatedAt  *string               `json:"updatedAt"`
+}
+
+type IntegrationWebhookAttributes struct {
+	Name    string    `json:"name"`
+	URL     string    `json:"url"`
+	Actions []*string `json:"actions,omitempty"`
+}
+
+type IntegrationWebhookConnection struct {
+	PageInfo PageInfo                  `json:"pageInfo"`
+	Edges    []*IntegrationWebhookEdge `json:"edges"`
+}
+
+type IntegrationWebhookEdge struct {
+	Node   *IntegrationWebhook `json:"node"`
+	Cursor *string             `json:"cursor"`
+}
+
+type Invite struct {
+	ID         string   `json:"id"`
+	Admin      *bool    `json:"admin"`
+	SecureID   *string  `json:"secureId"`
+	Existing   bool     `json:"existing"`
+	Email      *string  `json:"email"`
+	ExpiresAt  *string  `json:"expiresAt"`
+	Account    *Account `json:"account"`
+	User       *User    `json:"user"`
+	Groups     []*Group `json:"groups"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type InviteAttributes struct {
+	Email            *string              `json:"email,omitempty"`
+	Admin            *bool                `json:"admin,omitempty"`
+	OidcProviderID   *string              `json:"oidcProviderId,omitempty"`
+	ServiceAccountID *string              `json:"serviceAccountId,omitempty"`
+	InviteGroups     []*BindingAttributes `json:"inviteGroups,omitempty"`
+}
+
+type InviteConnection struct {
+	PageInfo PageInfo      `json:"pageInfo"`
+	Edges    []*InviteEdge `json:"edges"`
+}
+
+type InviteEdge struct {
+	Node   *Invite `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type Invoice struct {
+	Number           string         `json:"number"`
+	AmountDue        int64          `json:"amountDue"`
+	AmountPaid       int64          `json:"amountPaid"`
+	Currency         string         `json:"currency"`
+	Status           *string        `json:"status"`
+	HostedInvoiceURL *string        `json:"hostedInvoiceUrl"`
+	PaymentIntent    *PaymentIntent `json:"paymentIntent"`
+	CreatedAt        *string        `json:"createdAt"`
+	Lines            []*InvoiceItem `json:"lines"`
+}
+
+type InvoiceConnection struct {
+	PageInfo PageInfo       `json:"pageInfo"`
+	Edges    []*InvoiceEdge `json:"edges"`
+}
+
+type InvoiceEdge struct {
+	Node   *Invoice `json:"node"`
+	Cursor *string  `json:"cursor"`
+}
+
+type InvoiceItem struct {
+	Amount      int64   `json:"amount"`
+	Currency    string  `json:"currency"`
+	Description *string `json:"description"`
+}
+
+type KeyBackup struct {
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Repositories []string `json:"repositories"`
+	Digest       string   `json:"digest"`
+	Value        string   `json:"value"`
+	User         User     `json:"user"`
+	InsertedAt   *string  `json:"insertedAt"`
+	UpdatedAt    *string  `json:"updatedAt"`
+}
+
+type KeyBackupAttributes struct {
+	Name         string    `json:"name"`
+	Repositories []*string `json:"repositories,omitempty"`
+	Key          string    `json:"key"`
+}
+
+type KeyBackupConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*KeyBackupEdge `json:"edges"`
+}
+
+type KeyBackupEdge struct {
+	Node   *KeyBackup `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type License struct {
+	Name *string `json:"name"`
+	URL  *string `json:"url"`
+}
+
+type Limit struct {
+	Dimension string `json:"dimension"`
+	Quantity  int64  `json:"quantity"`
+}
+
+type LimitAttributes struct {
+	Dimension string `json:"dimension"`
+	Quantity  int64  `json:"quantity"`
+}
+
+type LineItem struct {
+	Name      string    `json:"name"`
+	Dimension string    `json:"dimension"`
+	Cost      int64     `json:"cost"`
+	Period    *string   `json:"period"`
+	Type      *PlanType `json:"type"`
+}
+
+type LineItemAttributes struct {
+	Name      string    `json:"name"`
+	Dimension string    `json:"dimension"`
+	Cost      int64     `json:"cost"`
+	Period    string    `json:"period"`
+	Type      *PlanType `json:"type,omitempty"`
+}
+
+type LockAttributes struct {
+	Lock string `json:"lock"`
+}
+
+type LoginMethodResponse struct {
+	LoginMethod  LoginMethod `json:"loginMethod"`
+	Token        *string     `json:"token"`
+	AuthorizeURL *string     `json:"authorizeUrl"`
+}
+
+type LoginRequest struct {
+	RequestedScope []*string `json:"requestedScope"`
+	Subject        *string   `json:"subject"`
+}
+
+type MeetingAttributes struct {
+	Topic      string  `json:"topic"`
+	IncidentID *string `json:"incidentId,omitempty"`
+}
+
+type MessageEntity struct {
+	ID         string            `json:"id"`
+	Type       MessageEntityType `json:"type"`
+	Text       *string           `json:"text"`
+	StartIndex *int64            `json:"startIndex"`
+	EndIndex   *int64            `json:"endIndex"`
+	User       *User             `json:"user"`
+	InsertedAt *string           `json:"insertedAt"`
+	UpdatedAt  *string           `json:"updatedAt"`
+}
+
+type Metric struct {
+	Name   string         `json:"name"`
+	Tags   []*MetricTag   `json:"tags"`
+	Values []*MetricValue `json:"values"`
+}
+
+type MetricTag struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type MetricValue struct {
+	Time  *string `json:"time"`
+	Value *int64  `json:"value"`
+}
+
+type NetworkConfiguration struct {
+	PluralDNS *bool   `json:"pluralDns"`
+	Subdomain *string `json:"subdomain"`
+}
+
+type NextAction struct {
+	Type          *string        `json:"type"`
+	RedirectToURL *RedirectToURL `json:"redirectToUrl"`
+}
+
+type Notification struct {
+	ID         string           `json:"id"`
+	Type       NotificationType `json:"type"`
+	Msg        *string          `json:"msg"`
+	User       User             `json:"user"`
+	Actor      User             `json:"actor"`
+	Incident   *Incident        `json:"incident"`
+	Message    *IncidentMessage `json:"message"`
+	Repository *Repository      `json:"repository"`
+	InsertedAt *string          `json:"insertedAt"`
+	UpdatedAt  *string          `json:"updatedAt"`
+}
+
+type NotificationConnection struct {
+	PageInfo PageInfo            `json:"pageInfo"`
+	Edges    []*NotificationEdge `json:"edges"`
+}
+
+type NotificationEdge struct {
+	Node   *Notification `json:"node"`
+	Cursor *string       `json:"cursor"`
+}
+
+type NotificationPreferences struct {
+	Message        *bool `json:"message"`
+	IncidentUpdate *bool `json:"incidentUpdate"`
+	Mention        *bool `json:"mention"`
+}
+
+type NotificationPreferencesAttributes struct {
+	Message        bool `json:"message"`
+	IncidentUpdate bool `json:"incidentUpdate"`
+	Mention        bool `json:"mention"`
+}
+
+type OauthAttributes struct {
+	Service     *OauthService `json:"service,omitempty"`
+	Code        *string       `json:"code,omitempty"`
+	RedirectURI *string       `json:"redirectUri,omitempty"`
+}
+
+type OauthInfo struct {
+	Provider     OauthProvider `json:"provider"`
+	AuthorizeURL string        `json:"authorizeUrl"`
+}
+
+type OauthIntegration struct {
+	ID         string       `json:"id"`
+	Service    OauthService `json:"service"`
+	Account    *Account     `json:"account"`
+	InsertedAt *string      `json:"insertedAt"`
+	UpdatedAt  *string      `json:"updatedAt"`
+}
+
+type OauthResponse struct {
+	RedirectTo string `json:"redirectTo"`
+}
+
+type OauthSettings struct {
+	URIFormat  string         `json:"uriFormat"`
+	AuthMethod OidcAuthMethod `json:"authMethod"`
+}
+
+// Input for the application's OAuth settings.
+type OauthSettingsAttributes struct {
+	// The URI format for the OAuth provider.
+	URIFormat string `json:"uriFormat"`
+	// The authentication method for the OAuth provider.
+	AuthMethod OidcAuthMethod `json:"authMethod"`
+}
+
+// Input for creating or updating the OIDC attributes of an application installation.
+type OidcAttributes struct {
+	// The redirect URIs for the OIDC provider.
+	RedirectUris []*string `json:"redirectUris,omitempty"`
+	// The authentication method for the OIDC provider.
+	AuthMethod OidcAuthMethod `json:"authMethod"`
+	// The users or groups that can login through the OIDC provider.
+	Bindings []*BindingAttributes `json:"bindings,omitempty"`
+}
+
+type OidcLogin struct {
+	ID         string      `json:"id"`
+	IP         *string     `json:"ip"`
+	Country    *string     `json:"country"`
+	City       *string     `json:"city"`
+	Latitude   *string     `json:"latitude"`
+	Longitude  *string     `json:"longitude"`
+	User       *User       `json:"user"`
+	Owner      *User       `json:"owner"`
+	Repository *Repository `json:"repository"`
+	InsertedAt *string     `json:"insertedAt"`
+	UpdatedAt  *string     `json:"updatedAt"`
+}
+
+type OidcLoginConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*OidcLoginEdge `json:"edges"`
+}
+
+type OidcLoginEdge struct {
+	Node   *OidcLogin `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type OidcProvider struct {
+	ID            string                 `json:"id"`
+	ClientSecret  string                 `json:"clientSecret"`
+	ClientID      string                 `json:"clientId"`
+	RedirectUris  []*string              `json:"redirectUris"`
+	AuthMethod    OidcAuthMethod         `json:"authMethod"`
+	Configuration *OuathConfiguration    `json:"configuration"`
+	Consent       *ConsentRequest        `json:"consent"`
+	Invites       []*Invite              `json:"invites"`
+	Bindings      []*OidcProviderBinding `json:"bindings"`
+	InsertedAt    *string                `json:"insertedAt"`
+	UpdatedAt     *string                `json:"updatedAt"`
+}
+
+type OidcProviderBinding struct {
+	ID         string  `json:"id"`
+	User       *User   `json:"user"`
+	Group      *Group  `json:"group"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type OidcSettings struct {
+	URIFormat  *string        `json:"uriFormat"`
+	URIFormats []*string      `json:"uriFormats"`
+	AuthMethod OidcAuthMethod `json:"authMethod"`
+	DomainKey  *string        `json:"domainKey"`
+	Subdomain  *bool          `json:"subdomain"`
+}
+
+type OidcSettingsAttributes struct {
+	URIFormat  *string        `json:"uriFormat,omitempty"`
+	AuthMethod OidcAuthMethod `json:"authMethod"`
+	URIFormats []*string      `json:"uriFormats,omitempty"`
+	DomainKey  *string        `json:"domainKey,omitempty"`
+	Subdomain  *bool          `json:"subdomain,omitempty"`
+}
+
+type OidcStepResponse struct {
+	Repository *Repository     `json:"repository"`
+	Login      *LoginRequest   `json:"login"`
+	Consent    *ConsentRequest `json:"consent"`
+}
+
+type OidcTrustRelationship struct {
+	ID         string   `json:"id"`
+	Issuer     string   `json:"issuer"`
+	Trust      string   `json:"trust"`
+	Scopes     []string `json:"scopes"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type OnboardingChecklist struct {
+	Status    *OnboardingChecklistState `json:"status"`
+	Dismissed *bool                     `json:"dismissed"`
+}
+
+type OnboardingChecklistAttributes struct {
+	Status    *OnboardingChecklistState `json:"status,omitempty"`
+	Dismissed *bool                     `json:"dismissed,omitempty"`
+}
+
+type OuathConfiguration struct {
+	Issuer                *string `json:"issuer"`
+	AuthorizationEndpoint *string `json:"authorizationEndpoint"`
+	TokenEndpoint         *string `json:"tokenEndpoint"`
+	JwksURI               *string `json:"jwksUri"`
+	UserinfoEndpoint      *string `json:"userinfoEndpoint"`
+}
+
+type PackageScan struct {
+	ID         string           `json:"id"`
+	Grade      *ImageGrade      `json:"grade"`
+	Violations []*ScanViolation `json:"violations"`
+	Errors     []*ScanError     `json:"errors"`
+	InsertedAt *string          `json:"insertedAt"`
+	UpdatedAt  *string          `json:"updatedAt"`
+}
+
+type PageInfo struct {
+	// When paginating backwards, are there more items?
+	HasPreviousPage bool `json:"hasPreviousPage"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+	// When paginating backwards, the cursor to continue.
+	StartCursor *string `json:"startCursor"`
+	// When paginating forwards, the cursor to continue.
+	EndCursor *string `json:"endCursor"`
+}
+
+type PaymentIntent struct {
+	ID            *string     `json:"id"`
+	Description   *string     `json:"description"`
+	ClientSecret  *string     `json:"clientSecret"`
+	Amount        *int64      `json:"amount"`
+	CaptureMethod *string     `json:"captureMethod"`
+	Currency      *string     `json:"currency"`
+	NextAction    *NextAction `json:"nextAction"`
+	Status        *string     `json:"status"`
+}
+
+type PaymentMethod struct {
+	ID        *string `json:"id"`
+	Card      *Card   `json:"card"`
+	Type      *string `json:"type"`
+	IsDefault *bool   `json:"isDefault"`
+}
+
+type PaymentMethodConnection struct {
+	PageInfo PageInfo             `json:"pageInfo"`
+	Edges    []*PaymentMethodEdge `json:"edges"`
+}
+
+type PaymentMethodEdge struct {
+	Node   *PaymentMethod `json:"node"`
+	Cursor *string        `json:"cursor"`
+}
+
+type PersistedToken struct {
+	ID         *string                        `json:"id"`
+	Token      *string                        `json:"token"`
+	Audits     *PersistedTokenAuditConnection `json:"audits"`
+	Metrics    []*GeoMetric                   `json:"metrics"`
+	InsertedAt *string                        `json:"insertedAt"`
+	UpdatedAt  *string                        `json:"updatedAt"`
+}
+
+type PersistedTokenAudit struct {
+	ID         *string `json:"id"`
+	IP         *string `json:"ip"`
+	Timestamp  *string `json:"timestamp"`
+	Count      *int64  `json:"count"`
+	City       *string `json:"city"`
+	Country    *string `json:"country"`
+	Latitude   *string `json:"latitude"`
+	Longitude  *string `json:"longitude"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type PersistedTokenAuditConnection struct {
+	PageInfo PageInfo                   `json:"pageInfo"`
+	Edges    []*PersistedTokenAuditEdge `json:"edges"`
+}
+
+type PersistedTokenAuditEdge struct {
+	Node   *PersistedTokenAudit `json:"node"`
+	Cursor *string              `json:"cursor"`
+}
+
+type PersistedTokenConnection struct {
+	PageInfo PageInfo              `json:"pageInfo"`
+	Edges    []*PersistedTokenEdge `json:"edges"`
+}
+
+type PersistedTokenEdge struct {
+	Node   *PersistedToken `json:"node"`
+	Cursor *string         `json:"cursor"`
+}
+
+type Plan struct {
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	Default       *bool           `json:"default"`
+	Visible       bool            `json:"visible"`
+	Cost          int64           `json:"cost"`
+	Period        *string         `json:"period"`
+	LineItems     *PlanLineItems  `json:"lineItems"`
+	Metadata      *PlanMetadata   `json:"metadata"`
+	ServiceLevels []*ServiceLevel `json:"serviceLevels"`
+	InsertedAt    *string         `json:"insertedAt"`
+	UpdatedAt     *string         `json:"updatedAt"`
+}
+
+type PlanAttributes struct {
+	Name          string                    `json:"name"`
+	Cost          int64                     `json:"cost"`
+	Period        string                    `json:"period"`
+	Default       *bool                     `json:"default,omitempty"`
+	LineItems     *PlanLineItemAttributes   `json:"lineItems,omitempty"`
+	Metadata      *PlanMetadataAttributes   `json:"metadata,omitempty"`
+	ServiceLevels []*ServiceLevelAttributes `json:"serviceLevels,omitempty"`
+}
+
+type PlanFeature struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type PlanFeatureAttributes struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type PlanFeatures struct {
+	Vpn                *bool `json:"vpn"`
+	UserManagement     *bool `json:"userManagement"`
+	Audit              *bool `json:"audit"`
+	DatabaseManagement *bool `json:"databaseManagement"`
+	Cd                 *bool `json:"cd"`
+}
+
+type PlanLineItemAttributes struct {
+	Included []*LimitAttributes    `json:"included,omitempty"`
+	Items    []*LineItemAttributes `json:"items,omitempty"`
+}
+
+type PlanLineItems struct {
+	Included []*Limit    `json:"included"`
+	Items    []*LineItem `json:"items"`
+}
+
+type PlanMetadata struct {
+	Freeform map[string]interface{} `json:"freeform"`
+	Features []*PlanFeature         `json:"features"`
+}
+
+type PlanMetadataAttributes struct {
+	Freeform *string                  `json:"freeform,omitempty"`
+	Features []*PlanFeatureAttributes `json:"features,omitempty"`
+}
+
+type PlatformMetrics struct {
+	Repositories *int64 `json:"repositories"`
+	Rollouts     *int64 `json:"rollouts"`
+	Clusters     *int64 `json:"clusters"`
+	Publishers   *int64 `json:"publishers"`
+}
+
+type PlatformPlan struct {
+	ID         string              `json:"id"`
+	Name       string              `json:"name"`
+	Visible    bool                `json:"visible"`
+	Cost       int64               `json:"cost"`
+	Period     PaymentPeriod       `json:"period"`
+	Enterprise *bool               `json:"enterprise"`
+	Trial      *bool               `json:"trial"`
+	Features   *PlanFeatures       `json:"features"`
+	LineItems  []*PlatformPlanItem `json:"lineItems"`
+	InsertedAt *string             `json:"insertedAt"`
+	UpdatedAt  *string             `json:"updatedAt"`
+}
+
+type PlatformPlanItem struct {
+	Name       string            `json:"name"`
+	Dimension  LineItemDimension `json:"dimension"`
+	ExternalID *string           `json:"externalId"`
+	Cost       int64             `json:"cost"`
+	Period     PaymentPeriod     `json:"period"`
+}
+
+type PlatformSubscription struct {
+	ID            string                           `json:"id"`
+	ExternalID    *string                          `json:"externalId"`
+	LineItems     []*PlatformSubscriptionLineItems `json:"lineItems"`
+	Plan          *PlatformPlan                    `json:"plan"`
+	TrialUntil    *string                          `json:"trialUntil"`
+	LatestInvoice *Invoice                         `json:"latestInvoice"`
+	InsertedAt    *string                          `json:"insertedAt"`
+	UpdatedAt     *string                          `json:"updatedAt"`
+}
+
+type PlatformSubscriptionLineItems struct {
+	Dimension  LineItemDimension `json:"dimension"`
+	Quantity   int64             `json:"quantity"`
+	ExternalID *string           `json:"externalId"`
+}
+
+type PluralConfiguration struct {
+	StripeConnectID      *string `json:"stripeConnectId"`
+	StripePublishableKey *string `json:"stripePublishableKey"`
+	Registry             *string `json:"registry"`
+	GitCommit            *string `json:"gitCommit"`
+}
+
+type PolicyBinding struct {
+	ID         string  `json:"id"`
+	User       *User   `json:"user"`
+	Group      *Group  `json:"group"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type Postmortem struct {
+	ID          string        `json:"id"`
+	Content     string        `json:"content"`
+	ActionItems []*ActionItem `json:"actionItems"`
+	Creator     User          `json:"creator"`
+	InsertedAt  *string       `json:"insertedAt"`
+	UpdatedAt   *string       `json:"updatedAt"`
+}
+
+type PostmortemAttributes struct {
+	Content     string                  `json:"content"`
+	ActionItems []*ActionItemAttributes `json:"actionItems,omitempty"`
+}
+
+type PublicKey struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Content    string  `json:"content"`
+	Digest     string  `json:"digest"`
+	User       User    `json:"user"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type PublicKeyAttributes struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+}
+
+type PublicKeyConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*PublicKeyEdge `json:"edges"`
+}
+
+type PublicKeyEdge struct {
+	Node   *PublicKey `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type Publisher struct {
+	ID               *string       `json:"id"`
+	Name             string        `json:"name"`
+	Description      *string       `json:"description"`
+	BillingAccountID *string       `json:"billingAccountId"`
+	Phone            *string       `json:"phone"`
+	Address          *Address      `json:"address"`
+	Community        *Community    `json:"community"`
+	Owner            *User         `json:"owner"`
+	Avatar           *string       `json:"avatar"`
+	BackgroundColor  *string       `json:"backgroundColor"`
+	Repositories     []*Repository `json:"repositories"`
+	InsertedAt       *string       `json:"insertedAt"`
+	UpdatedAt        *string       `json:"updatedAt"`
+}
+
+type PublisherAttributes struct {
+	Name        *string              `json:"name,omitempty"`
+	Description *string              `json:"description,omitempty"`
+	Avatar      *string              `json:"avatar,omitempty"`
+	Phone       *string              `json:"phone,omitempty"`
+	Address     *AddressAttributes   `json:"address,omitempty"`
+	Community   *CommunityAttributes `json:"community,omitempty"`
+}
+
+type PublisherConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*PublisherEdge `json:"edges"`
+}
+
+type PublisherEdge struct {
+	Node   *Publisher `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type Reaction struct {
+	Name       string          `json:"name"`
+	Creator    User            `json:"creator"`
+	Message    IncidentMessage `json:"message"`
+	InsertedAt *string         `json:"insertedAt"`
+	UpdatedAt  *string         `json:"updatedAt"`
+}
+
+type Recipe struct {
+	ID                 string           `json:"id"`
+	Name               string           `json:"name"`
+	Description        *string          `json:"description"`
+	Provider           *Provider        `json:"provider"`
+	OidcSettings       *OidcSettings    `json:"oidcSettings"`
+	Private            *bool            `json:"private"`
+	Restricted         *bool            `json:"restricted"`
+	Primary            *bool            `json:"primary"`
+	OidcEnabled        *bool            `json:"oidcEnabled"`
+	Tests              []*RecipeTest    `json:"tests"`
+	Repository         *Repository      `json:"repository"`
+	RecipeSections     []*RecipeSection `json:"recipeSections"`
+	RecipeDependencies []*Recipe        `json:"recipeDependencies"`
+	InsertedAt         *string          `json:"insertedAt"`
+	UpdatedAt          *string          `json:"updatedAt"`
+}
+
+type RecipeAttributes struct {
+	Name         string                     `json:"name"`
+	Description  *string                    `json:"description,omitempty"`
+	Provider     *Provider                  `json:"provider,omitempty"`
+	Tests        []*RecipeTestAttributes    `json:"tests,omitempty"`
+	Sections     []*RecipeSectionAttributes `json:"sections,omitempty"`
+	Dependencies []*RecipeReference         `json:"dependencies,omitempty"`
+	OidcSettings *OidcSettingsAttributes    `json:"oidcSettings,omitempty"`
+	Private      *bool                      `json:"private,omitempty"`
+	Primary      *bool                      `json:"primary,omitempty"`
+	Restricted   *bool                      `json:"restricted,omitempty"`
+}
+
+type RecipeCondition struct {
+	Field     string    `json:"field"`
+	Value     *string   `json:"value"`
+	Operation Operation `json:"operation"`
+}
+
+type RecipeConditionAttributes struct {
+	Field     string    `json:"field"`
+	Value     *string   `json:"value,omitempty"`
+	Operation Operation `json:"operation"`
+}
+
+type RecipeConfiguration struct {
+	Type          *Datatype         `json:"type"`
+	Name          *string           `json:"name"`
+	Default       *string           `json:"default"`
+	Documentation *string           `json:"documentation"`
+	Placeholder   *string           `json:"placeholder"`
+	Longform      *string           `json:"longform"`
+	Optional      *bool             `json:"optional"`
+	Condition     *RecipeCondition  `json:"condition"`
+	Validation    *RecipeValidation `json:"validation"`
+	FunctionName  *string           `json:"functionName"`
+	Args          []*string         `json:"args"`
+}
+
+type RecipeConfigurationAttributes struct {
+	Type          Datatype                    `json:"type"`
+	Name          string                      `json:"name"`
+	Default       *string                     `json:"default,omitempty"`
+	Documentation *string                     `json:"documentation,omitempty"`
+	Longform      *string                     `json:"longform,omitempty"`
+	Placeholder   *string                     `json:"placeholder,omitempty"`
+	Condition     *RecipeConditionAttributes  `json:"condition,omitempty"`
+	Validation    *RecipeValidationAttributes `json:"validation,omitempty"`
+	FunctionName  *string                     `json:"functionName,omitempty"`
+	Optional      *bool                       `json:"optional,omitempty"`
+}
+
+type RecipeConnection struct {
+	PageInfo PageInfo      `json:"pageInfo"`
+	Edges    []*RecipeEdge `json:"edges"`
+}
+
+type RecipeEdge struct {
+	Node   *Recipe `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type RecipeItem struct {
+	ID            *string                `json:"id"`
+	Chart         *Chart                 `json:"chart"`
+	Terraform     *Terraform             `json:"terraform"`
+	RecipeSection *RecipeSection         `json:"recipeSection"`
+	Configuration []*RecipeConfiguration `json:"configuration"`
+	InsertedAt    *string                `json:"insertedAt"`
+	UpdatedAt     *string                `json:"updatedAt"`
+}
+
+type RecipeItemAttributes struct {
+	Name          string                           `json:"name"`
+	Type          RecipeItemType                   `json:"type"`
+	Configuration []*RecipeConfigurationAttributes `json:"configuration,omitempty"`
+}
+
+type RecipeReference struct {
+	Repo string `json:"repo"`
+	Name string `json:"name"`
+}
+
+type RecipeSection struct {
+	ID            *string                `json:"id"`
+	Repository    *Repository            `json:"repository"`
+	Recipe        *Recipe                `json:"recipe"`
+	Index         *int64                 `json:"index"`
+	RecipeItems   []*RecipeItem          `json:"recipeItems"`
+	Configuration []*RecipeConfiguration `json:"configuration"`
+	InsertedAt    *string                `json:"insertedAt"`
+	UpdatedAt     *string                `json:"updatedAt"`
+}
+
+type RecipeSectionAttributes struct {
+	Name          string                           `json:"name"`
+	Items         []*RecipeItemAttributes          `json:"items,omitempty"`
+	Configuration []*RecipeConfigurationAttributes `json:"configuration,omitempty"`
+}
+
+type RecipeTest struct {
+	Type    TestType        `json:"type"`
+	Name    string          `json:"name"`
+	Message *string         `json:"message"`
+	Args    []*TestArgument `json:"args"`
+}
+
+type RecipeTestAttributes struct {
+	Type    TestType                  `json:"type"`
+	Message *string                   `json:"message,omitempty"`
+	Name    string                    `json:"name"`
+	Args    []*TestArgumentAttributes `json:"args,omitempty"`
+}
+
+type RecipeValidation struct {
+	Type    ValidationType `json:"type"`
+	Regex   *string        `json:"regex"`
+	Message string         `json:"message"`
+}
+
+type RecipeValidationAttributes struct {
+	Type    ValidationType `json:"type"`
+	Regex   *string        `json:"regex,omitempty"`
+	Message string         `json:"message"`
+}
+
+type RedirectToURL struct {
+	URL       *string `json:"url"`
+	ReturnURL *string `json:"returnUrl"`
+}
+
+// Container for all resources to create an application.
+type Repository struct {
+	// The application's ID.
+	ID string `json:"id"`
+	// The name of the application.
+	Name string `json:"name"`
+	// The description of the application.
+	Description *string `json:"description"`
+	// The documentation of the application.
+	Documentation *string `json:"documentation"`
+	// The category of the application.
+	Category *Category `json:"category"`
+	// release status of the repository
+	ReleaseStatus *ReleaseStatus `json:"releaseStatus"`
+	// Whether the application is private.
+	Private *bool `json:"private"`
+	// Whether the application is verified.
+	Verified *bool `json:"verified"`
+	// Whether the application is trending.
+	Trending *bool `json:"trending"`
+	// Notes about the application rendered after deploying and displayed to the user.
+	Notes *string `json:"notes"`
+	// The default tag to deploy.
+	DefaultTag *string `json:"defaultTag"`
+	// The git URL of the application.
+	GitURL *string `json:"gitUrl"`
+	// The main branch of the application.
+	MainBranch *string `json:"mainBranch"`
+	// The README of the application.
+	Readme *string `json:"readme"`
+	// The license of the application.
+	License *License `json:"license"`
+	// The community links of the application.
+	Community *Community `json:"community"`
+	// The homepage of the application.
+	Homepage *string `json:"homepage"`
+	// The application publisher.
+	Publisher *Publisher `json:"publisher"`
+	// The available plans for the application.
+	Plans []*Plan `json:"plans"`
+	// The tags of the application.
+	Tags []*Tag `json:"tags"`
+	// The artifacts of the application.
+	Artifacts []*Artifact `json:"artifacts"`
+	// The recipes used to install the application.
+	Recipes []*Recipe `json:"recipes"`
+	// The OAuth settings for the application.
+	OauthSettings *OauthSettings `json:"oauthSettings"`
+	Icon          *string        `json:"icon"`
+	DarkIcon      *string        `json:"darkIcon"`
+	// The external contributors to this repository
+	Contributors []*Contributor `json:"contributors"`
+	// The installation of the application by a user.
+	Installation *Installation `json:"installation"`
+	// version tags that can be followed to control upgrade flow
+	UpgradeChannels []*string `json:"upgradeChannels"`
+	// If the application can be edited by the current user.
+	Editable *bool `json:"editable"`
+	// A map of secrets of the application.
+	Secrets map[string]interface{} `json:"secrets"`
+	// The application's public key.
+	PublicKey *string `json:"publicKey"`
+	// The documentation of the application.
+	Docs       []*FileContent `json:"docs"`
+	InsertedAt *string        `json:"insertedAt"`
+	UpdatedAt  *string        `json:"updatedAt"`
+}
+
+// Input for creating or updating an application's attributes.
+type RepositoryAttributes struct {
+	// The name of the application.
+	Name *string `json:"name,omitempty"`
+	// A short description of the application.
+	Description *string `json:"description,omitempty"`
+	// A link to the application's documentation.
+	Documentation *string `json:"documentation,omitempty"`
+	// The category of the application.
+	Category *Category `json:"category,omitempty"`
+	// A YAML object of secrets.
+	Secrets *string `json:"secrets,omitempty"`
+	// release status of the repository
+	ReleaseStatus *ReleaseStatus `json:"releaseStatus,omitempty"`
+	// The application's icon.
+	Icon *string `json:"icon,omitempty"`
+	// The application's dark icon.
+	DarkIcon *string `json:"darkIcon,omitempty"`
+	// The application's documentation.
+	Docs *string `json:"docs,omitempty"`
+	// The application's tags.
+	Tags []*TagAttributes `json:"tags,omitempty"`
+	// Whether the application is private.
+	Private *bool `json:"private,omitempty"`
+	// Whether the application is verified.
+	Verified *bool `json:"verified,omitempty"`
+	// Whether the application is trending.
+	Trending *bool `json:"trending,omitempty"`
+	// Notes about the application rendered after deploying and displayed to the user.
+	Notes *string `json:"notes,omitempty"`
+	// The default tag to use when deploying the application.
+	DefaultTag *string `json:"defaultTag,omitempty"`
+	// The application's git URL.
+	GitURL *string `json:"gitUrl,omitempty"`
+	// The application's homepage.
+	Homepage *string `json:"homepage,omitempty"`
+	// The application's README.
+	Readme *string `json:"readme,omitempty"`
+	// List of emails of external users contributing to this repository and who will be granted access
+	Contributors []*string `json:"contributors,omitempty"`
+	// The application's OAuth settings.
+	OauthSettings *OauthSettingsAttributes `json:"oauthSettings,omitempty"`
+	// The application's integration resource definition.
+	IntegrationResourceDefinition *ResourceDefinitionAttributes `json:"integrationResourceDefinition,omitempty"`
+	// The application's community links.
+	Community *CommunityAttributes `json:"community,omitempty"`
+}
+
+type RepositoryConnection struct {
+	PageInfo PageInfo          `json:"pageInfo"`
+	Edges    []*RepositoryEdge `json:"edges"`
+}
+
+type RepositoryEdge struct {
+	Node   *Repository `json:"node"`
+	Cursor *string     `json:"cursor"`
+}
+
+type RepositorySubscription struct {
+	ID           string                 `json:"id"`
+	ExternalID   *string                `json:"externalId"`
+	CustomerID   *string                `json:"customerId"`
+	LineItems    *SubscriptionLineItems `json:"lineItems"`
+	Installation *Installation          `json:"installation"`
+	Plan         *Plan                  `json:"plan"`
+	Invoices     *InvoiceConnection     `json:"invoices"`
+}
+
+type RepositorySubscriptionConnection struct {
+	PageInfo PageInfo                      `json:"pageInfo"`
+	Edges    []*RepositorySubscriptionEdge `json:"edges"`
+}
+
+type RepositorySubscriptionEdge struct {
+	Node   *RepositorySubscription `json:"node"`
+	Cursor *string                 `json:"cursor"`
+}
+
+type ResetToken struct {
+	ID         string         `json:"id"`
+	ExternalID string         `json:"externalId"`
+	Type       ResetTokenType `json:"type"`
+	User       User           `json:"user"`
+	Email      string         `json:"email"`
+	InsertedAt *string        `json:"insertedAt"`
+	UpdatedAt  *string        `json:"updatedAt"`
+}
+
+type ResetTokenAttributes struct {
+	Type  ResetTokenType `json:"type"`
+	Email *string        `json:"email,omitempty"`
+}
+
+type ResetTokenRealization struct {
+	Password *string `json:"password,omitempty"`
+}
+
+type ResourceDefinitionAttributes struct {
+	Name string                     `json:"name"`
+	Spec []*SpecificationAttributes `json:"spec,omitempty"`
+}
+
+type Role struct {
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Description  *string        `json:"description"`
+	Repositories []*string      `json:"repositories"`
+	Permissions  []*Permission  `json:"permissions"`
+	RoleBindings []*RoleBinding `json:"roleBindings"`
+	Account      *Account       `json:"account"`
+	InsertedAt   *string        `json:"insertedAt"`
+	UpdatedAt    *string        `json:"updatedAt"`
+}
+
+type RoleAttributes struct {
+	Name         *string              `json:"name,omitempty"`
+	Description  *string              `json:"description,omitempty"`
+	Repositories []*string            `json:"repositories,omitempty"`
+	RoleBindings []*BindingAttributes `json:"roleBindings,omitempty"`
+	Permissions  []*Permission        `json:"permissions,omitempty"`
+}
+
+type RoleBinding struct {
+	ID         string  `json:"id"`
+	User       *User   `json:"user"`
+	Group      *Group  `json:"group"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type RoleConnection struct {
+	PageInfo PageInfo    `json:"pageInfo"`
+	Edges    []*RoleEdge `json:"edges"`
+}
+
+type RoleEdge struct {
+	Node   *Role   `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type Roles struct {
+	Admin *bool `json:"admin"`
+}
+
+type RolesAttributes struct {
+	Admin *bool `json:"admin,omitempty"`
+}
+
+type Rollout struct {
+	ID         string        `json:"id"`
+	Status     RolloutStatus `json:"status"`
+	Heartbeat  *string       `json:"heartbeat"`
+	Cursor     *string       `json:"cursor"`
+	Count      *int64        `json:"count"`
+	Event      *string       `json:"event"`
+	Repository *Repository   `json:"repository"`
+	InsertedAt *string       `json:"insertedAt"`
+	UpdatedAt  *string       `json:"updatedAt"`
+}
+
+type RolloutConnection struct {
+	PageInfo PageInfo       `json:"pageInfo"`
+	Edges    []*RolloutEdge `json:"edges"`
+}
+
+type RolloutDelta struct {
+	Delta   *Delta   `json:"delta"`
+	Payload *Rollout `json:"payload"`
+}
+
+type RolloutEdge struct {
+	Node   *Rollout `json:"node"`
+	Cursor *string  `json:"cursor"`
+}
+
+type ScaffoldFile struct {
+	Path    *string `json:"path"`
+	Content *string `json:"content"`
+}
+
+type ScanError struct {
+	Message *string `json:"message"`
+}
+
+type ScanViolation struct {
+	RuleName     *string    `json:"ruleName"`
+	Description  *string    `json:"description"`
+	RuleID       *string    `json:"ruleId"`
+	Severity     *VulnGrade `json:"severity"`
+	Category     *string    `json:"category"`
+	ResourceName *string    `json:"resourceName"`
+	ResourceType *string    `json:"resourceType"`
+	Line         *int64     `json:"line"`
+	File         *string    `json:"file"`
+	InsertedAt   *string    `json:"insertedAt"`
+	UpdatedAt    *string    `json:"updatedAt"`
+}
+
+type ScmAttributes struct {
+	Provider   *ScmProvider `json:"provider,omitempty"`
+	Token      *string      `json:"token,omitempty"`
+	Name       *string      `json:"name,omitempty"`
+	Org        *string      `json:"org,omitempty"`
+	GitURL     *string      `json:"gitUrl,omitempty"`
+	PublicKey  *string      `json:"publicKey,omitempty"`
+	PrivateKey *string      `json:"privateKey,omitempty"`
+}
+
+type ServiceAccountAttributes struct {
+	Name                *string                        `json:"name,omitempty"`
+	Email               *string                        `json:"email,omitempty"`
+	ImpersonationPolicy *ImpersonationPolicyAttributes `json:"impersonationPolicy,omitempty"`
+}
+
+type ServiceLevel struct {
+	MaxSeverity  *int64 `json:"maxSeverity"`
+	MinSeverity  *int64 `json:"minSeverity"`
+	ResponseTime *int64 `json:"responseTime"`
+}
+
+type ServiceLevelAttributes struct {
+	MaxSeverity  *int64 `json:"maxSeverity,omitempty"`
+	MinSeverity  *int64 `json:"minSeverity,omitempty"`
+	ResponseTime *int64 `json:"responseTime,omitempty"`
+}
+
+type SetupIntent struct {
+	ID                 *string     `json:"id"`
+	ClientSecret       *string     `json:"clientSecret"`
+	NextAction         *NextAction `json:"nextAction"`
+	PaymentMethodTypes []*string   `json:"paymentMethodTypes"`
+	Status             *string     `json:"status"`
+}
+
+type ShellConfiguration struct {
+	Workspace            *ShellWorkspace        `json:"workspace"`
+	Git                  *GitConfiguration      `json:"git"`
+	ContextConfiguration map[string]interface{} `json:"contextConfiguration"`
+	Buckets              []*string              `json:"buckets"`
+	Domains              []*string              `json:"domains"`
+}
+
+type ShellCredentialsAttributes struct {
+	Aws   *AwsShellCredentialsAttributes   `json:"aws,omitempty"`
+	Gcp   *GcpShellCredentialsAttributes   `json:"gcp,omitempty"`
+	Azure *AzureShellCredentialsAttributes `json:"azure,omitempty"`
+}
+
+type ShellStatus struct {
+	Ready           *bool `json:"ready"`
+	Initialized     *bool `json:"initialized"`
+	ContainersReady *bool `json:"containersReady"`
+	PodScheduled    *bool `json:"podScheduled"`
+}
+
+type ShellWorkspace struct {
+	Network      *NetworkConfiguration `json:"network"`
+	BucketPrefix *string               `json:"bucketPrefix"`
+	Cluster      *string               `json:"cluster"`
+	Region       *string               `json:"region"`
+}
+
+type SlimSubscription struct {
+	ID        string                 `json:"id"`
+	LineItems *SubscriptionLineItems `json:"lineItems"`
+	Plan      *Plan                  `json:"plan"`
+}
+
+type SpecificationAttributes struct {
+	Name     string                     `json:"name"`
+	Type     SpecDatatype               `json:"type"`
+	Inner    *SpecDatatype              `json:"inner,omitempty"`
+	Spec     []*SpecificationAttributes `json:"spec,omitempty"`
+	Required *bool                      `json:"required,omitempty"`
+}
+
+type Stack struct {
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Description *string            `json:"description"`
+	Featured    *bool              `json:"featured"`
+	Community   *Community         `json:"community"`
+	DisplayName *string            `json:"displayName"`
+	Collections []*StackCollection `json:"collections"`
+	Creator     *User              `json:"creator"`
+	Bundles     []*Recipe          `json:"bundles"`
+	Sections    []*RecipeSection   `json:"sections"`
+	InsertedAt  *string            `json:"insertedAt"`
+	UpdatedAt   *string            `json:"updatedAt"`
+}
+
+type StackAttributes struct {
+	Name        string                       `json:"name"`
+	Description *string                      `json:"description,omitempty"`
+	Featured    *bool                        `json:"featured,omitempty"`
+	DisplayName *string                      `json:"displayName,omitempty"`
+	Collections []*StackCollectionAttributes `json:"collections,omitempty"`
+	Community   *CommunityAttributes         `json:"community,omitempty"`
+}
+
+type StackCollection struct {
+	ID         string         `json:"id"`
+	Provider   Provider       `json:"provider"`
+	Bundles    []*StackRecipe `json:"bundles"`
+	InsertedAt *string        `json:"insertedAt"`
+	UpdatedAt  *string        `json:"updatedAt"`
+}
+
+type StackCollectionAttributes struct {
+	Provider Provider           `json:"provider"`
+	Bundles  []*RecipeReference `json:"bundles,omitempty"`
+}
+
+type StackConnection struct {
+	PageInfo PageInfo     `json:"pageInfo"`
+	Edges    []*StackEdge `json:"edges"`
+}
+
+type StackEdge struct {
+	Node   *Stack  `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type StackRecipe struct {
+	ID         string  `json:"id"`
+	Recipe     Recipe  `json:"recipe"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type StepLogs struct {
+	Step *TestStep `json:"step"`
+	Logs []*string `json:"logs"`
+}
+
+type SubscriptionAttributes struct {
+	LineItems *SubscriptionLineItemAttributes `json:"lineItems,omitempty"`
+}
+
+type SubscriptionLineItemAttributes struct {
+	Items []*LimitAttributes `json:"items,omitempty"`
+}
+
+type SubscriptionLineItems struct {
+	Items []*Limit `json:"items"`
+}
+
+type Tag struct {
+	ID  string `json:"id"`
+	Tag string `json:"tag"`
+}
+
+type TagAttributes struct {
+	Tag string `json:"tag"`
+}
+
+type Terraform struct {
+	ID             *string                `json:"id"`
+	Name           *string                `json:"name"`
+	Readme         *string                `json:"readme"`
+	Description    *string                `json:"description"`
+	ValuesTemplate *string                `json:"valuesTemplate"`
+	LatestVersion  *string                `json:"latestVersion"`
+	Dependencies   *Dependencies          `json:"dependencies"`
+	Package        *string                `json:"package"`
+	Repository     *Repository            `json:"repository"`
+	Editable       *bool                  `json:"editable"`
+	Installation   *TerraformInstallation `json:"installation"`
+	InsertedAt     *string                `json:"insertedAt"`
+	UpdatedAt      *string                `json:"updatedAt"`
+}
+
+type TerraformAttributes struct {
+	Name         *string `json:"name,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	Package      *string `json:"package,omitempty"`
+	Dependencies *string `json:"dependencies,omitempty"`
+	Version      *string `json:"version,omitempty"`
+}
+
+type TerraformConnection struct {
+	PageInfo PageInfo         `json:"pageInfo"`
+	Edges    []*TerraformEdge `json:"edges"`
+}
+
+type TerraformEdge struct {
+	Node   *Terraform `json:"node"`
+	Cursor *string    `json:"cursor"`
+}
+
+type TerraformInstallation struct {
+	ID           *string       `json:"id"`
+	Terraform    *Terraform    `json:"terraform"`
+	Installation *Installation `json:"installation"`
+	Version      *Version      `json:"version"`
+	InsertedAt   *string       `json:"insertedAt"`
+	UpdatedAt    *string       `json:"updatedAt"`
+}
+
+type TerraformInstallationAttributes struct {
+	TerraformID *string `json:"terraformId,omitempty"`
+	VersionID   *string `json:"versionId,omitempty"`
+}
+
+type TerraformInstallationConnection struct {
+	PageInfo PageInfo                     `json:"pageInfo"`
+	Edges    []*TerraformInstallationEdge `json:"edges"`
+}
+
+type TerraformInstallationEdge struct {
+	Node   *TerraformInstallation `json:"node"`
+	Cursor *string                `json:"cursor"`
+}
+
+type TerraformProvider struct {
+	Name    *Provider `json:"name"`
+	Content *string   `json:"content"`
+}
+
+type Test struct {
+	ID         string      `json:"id"`
+	Name       *string     `json:"name"`
+	Status     TestStatus  `json:"status"`
+	SourceTag  string      `json:"sourceTag"`
+	PromoteTag string      `json:"promoteTag"`
+	Tags       []string    `json:"tags"`
+	Steps      []*TestStep `json:"steps"`
+	Creator    *User       `json:"creator"`
+	Repository *Repository `json:"repository"`
+	InsertedAt *string     `json:"insertedAt"`
+	UpdatedAt  *string     `json:"updatedAt"`
+}
+
+type TestArgument struct {
+	Name string `json:"name"`
+	Repo string `json:"repo"`
+	Key  string `json:"key"`
+}
+
+type TestArgumentAttributes struct {
+	Name string `json:"name"`
+	Repo string `json:"repo"`
+	Key  string `json:"key"`
+}
+
+type TestAttributes struct {
+	Name       *string               `json:"name,omitempty"`
+	Status     *TestStatus           `json:"status,omitempty"`
+	PromoteTag *string               `json:"promoteTag,omitempty"`
+	Tags       []*string             `json:"tags,omitempty"`
+	Steps      []*TestStepAttributes `json:"steps,omitempty"`
+}
+
+type TestConnection struct {
+	PageInfo PageInfo    `json:"pageInfo"`
+	Edges    []*TestEdge `json:"edges"`
+}
+
+type TestDelta struct {
+	Delta   *Delta `json:"delta"`
+	Payload *Test  `json:"payload"`
+}
+
+type TestEdge struct {
+	Node   *Test   `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type TestStep struct {
+	ID          string     `json:"id"`
+	Status      TestStatus `json:"status"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	HasLogs     *bool      `json:"hasLogs"`
+	InsertedAt  *string    `json:"insertedAt"`
+	UpdatedAt   *string    `json:"updatedAt"`
+}
+
+type TestStepAttributes struct {
+	ID          *string     `json:"id,omitempty"`
+	Name        *string     `json:"name,omitempty"`
+	Description *string     `json:"description,omitempty"`
+	Status      *TestStatus `json:"status,omitempty"`
+	Logs        *string     `json:"logs,omitempty"`
+}
+
+type TrustRelationshipAttributes struct {
+	Issuer string   `json:"issuer"`
+	Trust  string   `json:"trust"`
+	Scopes []string `json:"scopes,omitempty"`
+}
+
+type UpdatablePlanAttributes struct {
+	Default       *bool                     `json:"default,omitempty"`
+	ServiceLevels []*ServiceLevelAttributes `json:"serviceLevels,omitempty"`
+}
+
+type Upgrade struct {
+	ID         string         `json:"id"`
+	Type       *UpgradeType   `json:"type"`
+	Message    *string        `json:"message"`
+	Config     *UpgradeConfig `json:"config"`
+	Repository *Repository    `json:"repository"`
+	InsertedAt *string        `json:"insertedAt"`
+	UpdatedAt  *string        `json:"updatedAt"`
+}
+
+// The information for this upgrade
+type UpgradeAttributes struct {
+	// a simple message to explain this upgrade
+	Message string `json:"message"`
+	// the type of upgrade
+	Type UpgradeType `json:"type"`
+	// information for a config upgrade
+	Config *UpgradeConfigAttributes `json:"config,omitempty"`
+}
+
+type UpgradeConfig struct {
+	Paths []*UpgradePath `json:"paths"`
+}
+
+// the attributes of the config upgrade
+type UpgradeConfigAttributes struct {
+	// paths for a configuration change
+	Paths []*UpgradePathAttributes `json:"paths,omitempty"`
+}
+
+type UpgradeConnection struct {
+	PageInfo PageInfo       `json:"pageInfo"`
+	Edges    []*UpgradeEdge `json:"edges"`
+}
+
+type UpgradeEdge struct {
+	Node   *Upgrade `json:"node"`
+	Cursor *string  `json:"cursor"`
+}
+
+// The pending upgrades for a repository
+type UpgradeInfo struct {
+	Installation *Installation `json:"installation"`
+	Count        *int64        `json:"count"`
+}
+
+type UpgradePath struct {
+	Path  string    `json:"path"`
+	Value string    `json:"value"`
+	Type  ValueType `json:"type"`
+}
+
+// attributes of a path update
+type UpgradePathAttributes struct {
+	// path the upgrade will occur on, formatted like .some.key[0].here
+	Path string `json:"path"`
+	// the stringified value that will be applied on this path
+	Value string `json:"value"`
+	// the ultimate type of the value
+	Type ValueType `json:"type"`
+}
+
+type UpgradeQueue struct {
+	ID         string             `json:"id"`
+	Acked      *string            `json:"acked"`
+	Name       *string            `json:"name"`
+	Domain     *string            `json:"domain"`
+	Git        *string            `json:"git"`
+	Provider   *Provider          `json:"provider"`
+	PingedAt   *string            `json:"pingedAt"`
+	User       User               `json:"user"`
+	Upgrades   *UpgradeConnection `json:"upgrades"`
+	InsertedAt *string            `json:"insertedAt"`
+	UpdatedAt  *string            `json:"updatedAt"`
+}
+
+type UpgradeQueueAttributes struct {
+	Name     string    `json:"name"`
+	Domain   *string   `json:"domain,omitempty"`
+	Git      *string   `json:"git,omitempty"`
+	Provider *Provider `json:"provider,omitempty"`
+}
+
+type UpgradeQueueDelta struct {
+	Delta   *Delta        `json:"delta"`
+	Payload *UpgradeQueue `json:"payload"`
+}
+
+type User struct {
+	ID                  string               `json:"id"`
+	Name                string               `json:"name"`
+	Email               string               `json:"email"`
+	Phone               *string              `json:"phone"`
+	Address             *Address             `json:"address"`
+	LoginMethod         *LoginMethod         `json:"loginMethod"`
+	Onboarding          *OnboardingState     `json:"onboarding"`
+	OnboardingChecklist *OnboardingChecklist `json:"onboardingChecklist"`
+	DefaultQueueID      *string              `json:"defaultQueueId"`
+	ServiceAccount      *bool                `json:"serviceAccount"`
+	EmailConfirmed      *bool                `json:"emailConfirmed"`
+	EmailConfirmBy      *string              `json:"emailConfirmBy"`
+	Provider            *Provider            `json:"provider"`
+	Roles               *Roles               `json:"roles"`
+	// the groups attached to this user, only fetch this when querying an individual user
+	Groups []*Group `json:"groups"`
+	// the roles attached to this user, only fetch this when querying an individual user
+	BoundRoles          []*Role                  `json:"boundRoles"`
+	Publisher           *Publisher               `json:"publisher"`
+	Account             Account                  `json:"account"`
+	ImpersonationPolicy *ImpersonationPolicy     `json:"impersonationPolicy"`
+	TrustRelationships  []*OidcTrustRelationship `json:"trustRelationships"`
+	Invites             []*Invite                `json:"invites"`
+	Jwt                 *string                  `json:"jwt"`
+	HasInstallations    *bool                    `json:"hasInstallations"`
+	Demoing             *bool                    `json:"demoing"`
+	HasShell            *bool                    `json:"hasShell"`
+	Avatar              *string                  `json:"avatar"`
+	BackgroundColor     *string                  `json:"backgroundColor"`
+	// If a user has reached the demo project usage limit.
+	Demoed     *bool           `json:"demoed"`
+	Cards      *CardConnection `json:"cards"`
+	InsertedAt *string         `json:"insertedAt"`
+	UpdatedAt  *string         `json:"updatedAt"`
+}
+
+type UserAttributes struct {
+	Name                *string                        `json:"name,omitempty"`
+	Email               *string                        `json:"email,omitempty"`
+	Password            *string                        `json:"password,omitempty"`
+	Avatar              *string                        `json:"avatar,omitempty"`
+	Onboarding          *OnboardingState               `json:"onboarding,omitempty"`
+	OnboardingChecklist *OnboardingChecklistAttributes `json:"onboardingChecklist,omitempty"`
+	LoginMethod         *LoginMethod                   `json:"loginMethod,omitempty"`
+	Roles               *RolesAttributes               `json:"roles,omitempty"`
+	Confirm             *string                        `json:"confirm,omitempty"`
+	GroupIds            []string                       `json:"groupIds,omitempty"`
+}
+
+type UserConnection struct {
+	PageInfo PageInfo    `json:"pageInfo"`
+	Edges    []*UserEdge `json:"edges"`
+}
+
+type UserEdge struct {
+	Node   *User   `json:"node"`
+	Cursor *string `json:"cursor"`
+}
+
+type UserEventAttributes struct {
+	Event  string           `json:"event"`
+	Data   *string          `json:"data,omitempty"`
+	Status *UserEventStatus `json:"status,omitempty"`
+}
+
+// The version of a package.
+type Version struct {
+	ID             string  `json:"id"`
+	Version        string  `json:"version"`
+	Readme         *string `json:"readme"`
+	ValuesTemplate *string `json:"valuesTemplate"`
+	// The template engine used to render the valuesTemplate.
+	TemplateType      *TemplateType          `json:"templateType"`
+	Helm              map[string]interface{} `json:"helm"`
+	Tags              []*VersionTag          `json:"tags"`
+	Dependencies      *Dependencies          `json:"dependencies"`
+	Package           *string                `json:"package"`
+	Chart             *Chart                 `json:"chart"`
+	Terraform         *Terraform             `json:"terraform"`
+	Crds              []*Crd                 `json:"crds"`
+	Scan              *PackageScan           `json:"scan"`
+	ImageDependencies []*ImageDependency     `json:"imageDependencies"`
+	InsertedAt        *string                `json:"insertedAt"`
+	UpdatedAt         *string                `json:"updatedAt"`
+}
+
+type VersionAttributes struct {
+	Tags []*VersionTagAttributes `json:"tags,omitempty"`
+}
+
+type VersionConnection struct {
+	PageInfo PageInfo       `json:"pageInfo"`
+	Edges    []*VersionEdge `json:"edges"`
+}
+
+type VersionEdge struct {
+	Node   *Version `json:"node"`
+	Cursor *string  `json:"cursor"`
+}
+
+type VersionSpec struct {
+	Repository *string `json:"repository,omitempty"`
+	Chart      *string `json:"chart,omitempty"`
+	Terraform  *string `json:"terraform,omitempty"`
+	Version    *string `json:"version,omitempty"`
+}
+
+type VersionTag struct {
+	ID         string   `json:"id"`
+	Tag        string   `json:"tag"`
+	Version    *Version `json:"version"`
+	Chart      *Chart   `json:"chart"`
+	InsertedAt *string  `json:"insertedAt"`
+	UpdatedAt  *string  `json:"updatedAt"`
+}
+
+type VersionTagAttributes struct {
+	VersionID *string `json:"versionId,omitempty"`
+	Tag       string  `json:"tag"`
+}
+
+type Vulnerability struct {
+	ID               string      `json:"id"`
+	Title            *string     `json:"title"`
+	Description      *string     `json:"description"`
+	VulnerabilityID  *string     `json:"vulnerabilityId"`
+	Package          *string     `json:"package"`
+	InstalledVersion *string     `json:"installedVersion"`
+	FixedVersion     *string     `json:"fixedVersion"`
+	Source           *string     `json:"source"`
+	URL              *string     `json:"url"`
+	Severity         *VulnGrade  `json:"severity"`
+	Score            *float64    `json:"score"`
+	Cvss             *Cvss       `json:"cvss"`
+	Layer            *ImageLayer `json:"layer"`
+	InsertedAt       *string     `json:"insertedAt"`
+	UpdatedAt        *string     `json:"updatedAt"`
+}
+
+type Webhook struct {
+	ID         *string `json:"id"`
+	URL        *string `json:"url"`
+	Secret     *string `json:"secret"`
+	User       *User   `json:"user"`
+	InsertedAt *string `json:"insertedAt"`
+	UpdatedAt  *string `json:"updatedAt"`
+}
+
+type WebhookAttributes struct {
+	URL string `json:"url"`
+}
+
+type WebhookConnection struct {
+	PageInfo PageInfo       `json:"pageInfo"`
+	Edges    []*WebhookEdge `json:"edges"`
+}
+
+type WebhookEdge struct {
+	Node   *Webhook `json:"node"`
+	Cursor *string  `json:"cursor"`
+}
+
+type WebhookLog struct {
+	ID         string                 `json:"id"`
+	State      WebhookLogState        `json:"state"`
+	Status     *int64                 `json:"status"`
+	Response   *string                `json:"response"`
+	Payload    map[string]interface{} `json:"payload"`
+	Webhook    *IntegrationWebhook    `json:"webhook"`
+	InsertedAt *string                `json:"insertedAt"`
+	UpdatedAt  *string                `json:"updatedAt"`
+}
+
+type WebhookLogConnection struct {
+	PageInfo PageInfo          `json:"pageInfo"`
+	Edges    []*WebhookLogEdge `json:"edges"`
+}
+
+type WebhookLogEdge struct {
+	Node   *WebhookLog `json:"node"`
+	Cursor *string     `json:"cursor"`
+}
+
+type WebhookResponse struct {
+	StatusCode int64                  `json:"statusCode"`
+	Body       *string                `json:"body"`
+	Headers    map[string]interface{} `json:"headers"`
+}
+
+type Wirings struct {
+	Terraform map[string]interface{} `json:"terraform"`
+	Helm      map[string]interface{} `json:"helm"`
+}
+
+type WorkspaceAttributes struct {
+	Cluster      string  `json:"cluster"`
+	BucketPrefix string  `json:"bucketPrefix"`
+	Region       string  `json:"region"`
+	Project      *string `json:"project,omitempty"`
+	Subdomain    string  `json:"subdomain"`
+}
+
+type ZoomMeeting struct {
+	JoinURL  string  `json:"joinUrl"`
+	Password *string `json:"password"`
+}
+
+type ActionItemType string
+
+const (
+	ActionItemTypePull  ActionItemType = "PULL"
+	ActionItemTypeIssue ActionItemType = "ISSUE"
+	ActionItemTypeBlog  ActionItemType = "BLOG"
+)
+
+var AllActionItemType = []ActionItemType{
+	ActionItemTypePull,
+	ActionItemTypeIssue,
+	ActionItemTypeBlog,
+}
+
+func (e ActionItemType) IsValid() bool {
+	switch e {
+	case ActionItemTypePull, ActionItemTypeIssue, ActionItemTypeBlog:
+		return true
+	}
+	return false
+}
+
+func (e ActionItemType) String() string {
+	return string(e)
+}
+
+func (e *ActionItemType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ActionItemType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ActionItemType", str)
+	}
+	return nil
+}
+
+func (e ActionItemType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ArtifactPlatform string
+
+const (
+	ArtifactPlatformMac     ArtifactPlatform = "MAC"
+	ArtifactPlatformWindows ArtifactPlatform = "WINDOWS"
+	ArtifactPlatformLinux   ArtifactPlatform = "LINUX"
+	ArtifactPlatformAndroid ArtifactPlatform = "ANDROID"
+	ArtifactPlatformFreebsd ArtifactPlatform = "FREEBSD"
+	ArtifactPlatformOpenbsd ArtifactPlatform = "OPENBSD"
+	ArtifactPlatformSolaris ArtifactPlatform = "SOLARIS"
+)
+
+var AllArtifactPlatform = []ArtifactPlatform{
+	ArtifactPlatformMac,
+	ArtifactPlatformWindows,
+	ArtifactPlatformLinux,
+	ArtifactPlatformAndroid,
+	ArtifactPlatformFreebsd,
+	ArtifactPlatformOpenbsd,
+	ArtifactPlatformSolaris,
+}
+
+func (e ArtifactPlatform) IsValid() bool {
+	switch e {
+	case ArtifactPlatformMac, ArtifactPlatformWindows, ArtifactPlatformLinux, ArtifactPlatformAndroid, ArtifactPlatformFreebsd, ArtifactPlatformOpenbsd, ArtifactPlatformSolaris:
+		return true
+	}
+	return false
+}
+
+func (e ArtifactPlatform) String() string {
+	return string(e)
+}
+
+func (e *ArtifactPlatform) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ArtifactPlatform(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ArtifactPlatform", str)
+	}
+	return nil
+}
+
+func (e ArtifactPlatform) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ArtifactType string
+
+const (
+	ArtifactTypeCli     ArtifactType = "CLI"
+	ArtifactTypeMobile  ArtifactType = "MOBILE"
+	ArtifactTypeDesktop ArtifactType = "DESKTOP"
+)
+
+var AllArtifactType = []ArtifactType{
+	ArtifactTypeCli,
+	ArtifactTypeMobile,
+	ArtifactTypeDesktop,
+}
+
+func (e ArtifactType) IsValid() bool {
+	switch e {
+	case ArtifactTypeCli, ArtifactTypeMobile, ArtifactTypeDesktop:
+		return true
+	}
+	return false
+}
+
+func (e ArtifactType) String() string {
+	return string(e)
+}
+
+func (e *ArtifactType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ArtifactType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ArtifactType", str)
+	}
+	return nil
+}
+
+func (e ArtifactType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// Application categories.
+type Category string
+
+const (
+	CategoryDevops       Category = "DEVOPS"
+	CategoryDatabase     Category = "DATABASE"
+	CategoryMessaging    Category = "MESSAGING"
+	CategorySecurity     Category = "SECURITY"
+	CategoryData         Category = "DATA"
+	CategoryProductivity Category = "PRODUCTIVITY"
+	CategoryNetwork      Category = "NETWORK"
+	CategoryStorage      Category = "STORAGE"
+)
+
+var AllCategory = []Category{
+	CategoryDevops,
+	CategoryDatabase,
+	CategoryMessaging,
+	CategorySecurity,
+	CategoryData,
+	CategoryProductivity,
+	CategoryNetwork,
+	CategoryStorage,
+}
+
+func (e Category) IsValid() bool {
+	switch e {
+	case CategoryDevops, CategoryDatabase, CategoryMessaging, CategorySecurity, CategoryData, CategoryProductivity, CategoryNetwork, CategoryStorage:
+		return true
+	}
+	return false
+}
+
+func (e Category) String() string {
+	return string(e)
+}
+
+func (e *Category) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Category(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Category", str)
+	}
+	return nil
+}
+
+func (e Category) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Datatype string
+
+const (
+	DatatypeString   Datatype = "STRING"
+	DatatypeInt      Datatype = "INT"
+	DatatypeBool     Datatype = "BOOL"
+	DatatypeDomain   Datatype = "DOMAIN"
+	DatatypeBucket   Datatype = "BUCKET"
+	DatatypeFile     Datatype = "FILE"
+	DatatypeFunction Datatype = "FUNCTION"
+	DatatypePassword Datatype = "PASSWORD"
+)
+
+var AllDatatype = []Datatype{
+	DatatypeString,
+	DatatypeInt,
+	DatatypeBool,
+	DatatypeDomain,
+	DatatypeBucket,
+	DatatypeFile,
+	DatatypeFunction,
+	DatatypePassword,
+}
+
+func (e Datatype) IsValid() bool {
+	switch e {
+	case DatatypeString, DatatypeInt, DatatypeBool, DatatypeDomain, DatatypeBucket, DatatypeFile, DatatypeFunction, DatatypePassword:
+		return true
+	}
+	return false
+}
+
+func (e Datatype) String() string {
+	return string(e)
+}
+
+func (e *Datatype) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Datatype(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Datatype", str)
+	}
+	return nil
+}
+
+func (e Datatype) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Delta string
+
+const (
+	DeltaCreate Delta = "CREATE"
+	DeltaUpdate Delta = "UPDATE"
+	DeltaDelete Delta = "DELETE"
+)
+
+var AllDelta = []Delta{
+	DeltaCreate,
+	DeltaUpdate,
+	DeltaDelete,
+}
+
+func (e Delta) IsValid() bool {
+	switch e {
+	case DeltaCreate, DeltaUpdate, DeltaDelete:
+		return true
+	}
+	return false
+}
+
+func (e Delta) String() string {
+	return string(e)
+}
+
+func (e *Delta) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Delta(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Delta", str)
+	}
+	return nil
+}
+
+func (e Delta) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DemoProjectState string
+
+const (
+	DemoProjectStateCreated DemoProjectState = "CREATED"
+	DemoProjectStateReady   DemoProjectState = "READY"
+	DemoProjectStateEnabled DemoProjectState = "ENABLED"
+)
+
+var AllDemoProjectState = []DemoProjectState{
+	DemoProjectStateCreated,
+	DemoProjectStateReady,
+	DemoProjectStateEnabled,
+}
+
+func (e DemoProjectState) IsValid() bool {
+	switch e {
+	case DemoProjectStateCreated, DemoProjectStateReady, DemoProjectStateEnabled:
+		return true
+	}
+	return false
+}
+
+func (e DemoProjectState) String() string {
+	return string(e)
+}
+
+func (e *DemoProjectState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DemoProjectState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DemoProjectState", str)
+	}
+	return nil
+}
+
+func (e DemoProjectState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DependencyType string
+
+const (
+	DependencyTypeTerraform DependencyType = "TERRAFORM"
+	DependencyTypeHelm      DependencyType = "HELM"
+)
+
+var AllDependencyType = []DependencyType{
+	DependencyTypeTerraform,
+	DependencyTypeHelm,
+}
+
+func (e DependencyType) IsValid() bool {
+	switch e {
+	case DependencyTypeTerraform, DependencyTypeHelm:
+		return true
+	}
+	return false
+}
+
+func (e DependencyType) String() string {
+	return string(e)
+}
+
+func (e *DependencyType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DependencyType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DependencyType", str)
+	}
+	return nil
+}
+
+func (e DependencyType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DNSRecordType string
+
+const (
+	DNSRecordTypeA     DNSRecordType = "A"
+	DNSRecordTypeAaaa  DNSRecordType = "AAAA"
+	DNSRecordTypeTxt   DNSRecordType = "TXT"
+	DNSRecordTypeCname DNSRecordType = "CNAME"
+)
+
+var AllDNSRecordType = []DNSRecordType{
+	DNSRecordTypeA,
+	DNSRecordTypeAaaa,
+	DNSRecordTypeTxt,
+	DNSRecordTypeCname,
+}
+
+func (e DNSRecordType) IsValid() bool {
+	switch e {
+	case DNSRecordTypeA, DNSRecordTypeAaaa, DNSRecordTypeTxt, DNSRecordTypeCname:
+		return true
+	}
+	return false
+}
+
+func (e DNSRecordType) String() string {
+	return string(e)
+}
+
+func (e *DNSRecordType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DNSRecordType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DnsRecordType", str)
+	}
+	return nil
+}
+
+func (e DNSRecordType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ExternalOidcProvider string
+
+const (
+	ExternalOidcProviderGithubActions ExternalOidcProvider = "GITHUB_ACTIONS"
+)
+
+var AllExternalOidcProvider = []ExternalOidcProvider{
+	ExternalOidcProviderGithubActions,
+}
+
+func (e ExternalOidcProvider) IsValid() bool {
+	switch e {
+	case ExternalOidcProviderGithubActions:
+		return true
+	}
+	return false
+}
+
+func (e ExternalOidcProvider) String() string {
+	return string(e)
+}
+
+func (e *ExternalOidcProvider) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ExternalOidcProvider(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ExternalOidcProvider", str)
+	}
+	return nil
+}
+
+func (e ExternalOidcProvider) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ImageGrade string
+
+const (
+	ImageGradeA ImageGrade = "A"
+	ImageGradeB ImageGrade = "B"
+	ImageGradeC ImageGrade = "C"
+	ImageGradeD ImageGrade = "D"
+	ImageGradeF ImageGrade = "F"
+)
+
+var AllImageGrade = []ImageGrade{
+	ImageGradeA,
+	ImageGradeB,
+	ImageGradeC,
+	ImageGradeD,
+	ImageGradeF,
+}
+
+func (e ImageGrade) IsValid() bool {
+	switch e {
+	case ImageGradeA, ImageGradeB, ImageGradeC, ImageGradeD, ImageGradeF:
+		return true
+	}
+	return false
+}
+
+func (e ImageGrade) String() string {
+	return string(e)
+}
+
+func (e *ImageGrade) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ImageGrade(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ImageGrade", str)
+	}
+	return nil
+}
+
+func (e ImageGrade) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type IncidentAction string
+
+const (
+	IncidentActionEdit     IncidentAction = "EDIT"
+	IncidentActionCreate   IncidentAction = "CREATE"
+	IncidentActionStatus   IncidentAction = "STATUS"
+	IncidentActionSeverity IncidentAction = "SEVERITY"
+	IncidentActionAccept   IncidentAction = "ACCEPT"
+	IncidentActionComplete IncidentAction = "COMPLETE"
+)
+
+var AllIncidentAction = []IncidentAction{
+	IncidentActionEdit,
+	IncidentActionCreate,
+	IncidentActionStatus,
+	IncidentActionSeverity,
+	IncidentActionAccept,
+	IncidentActionComplete,
+}
+
+func (e IncidentAction) IsValid() bool {
+	switch e {
+	case IncidentActionEdit, IncidentActionCreate, IncidentActionStatus, IncidentActionSeverity, IncidentActionAccept, IncidentActionComplete:
+		return true
+	}
+	return false
+}
+
+func (e IncidentAction) String() string {
+	return string(e)
+}
+
+func (e *IncidentAction) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IncidentAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IncidentAction", str)
+	}
+	return nil
+}
+
+func (e IncidentAction) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type IncidentFilterType string
+
+const (
+	IncidentFilterTypeNotifications IncidentFilterType = "NOTIFICATIONS"
+	IncidentFilterTypeFollowing     IncidentFilterType = "FOLLOWING"
+	IncidentFilterTypeTag           IncidentFilterType = "TAG"
+	IncidentFilterTypeStatus        IncidentFilterType = "STATUS"
+)
+
+var AllIncidentFilterType = []IncidentFilterType{
+	IncidentFilterTypeNotifications,
+	IncidentFilterTypeFollowing,
+	IncidentFilterTypeTag,
+	IncidentFilterTypeStatus,
+}
+
+func (e IncidentFilterType) IsValid() bool {
+	switch e {
+	case IncidentFilterTypeNotifications, IncidentFilterTypeFollowing, IncidentFilterTypeTag, IncidentFilterTypeStatus:
+		return true
+	}
+	return false
+}
+
+func (e IncidentFilterType) String() string {
+	return string(e)
+}
+
+func (e *IncidentFilterType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IncidentFilterType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IncidentFilterType", str)
+	}
+	return nil
+}
+
+func (e IncidentFilterType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type IncidentSort string
+
+const (
+	IncidentSortInsertedAt IncidentSort = "INSERTED_AT"
+	IncidentSortTitle      IncidentSort = "TITLE"
+	IncidentSortStatus     IncidentSort = "STATUS"
+	IncidentSortSeverity   IncidentSort = "SEVERITY"
+)
+
+var AllIncidentSort = []IncidentSort{
+	IncidentSortInsertedAt,
+	IncidentSortTitle,
+	IncidentSortStatus,
+	IncidentSortSeverity,
+}
+
+func (e IncidentSort) IsValid() bool {
+	switch e {
+	case IncidentSortInsertedAt, IncidentSortTitle, IncidentSortStatus, IncidentSortSeverity:
+		return true
+	}
+	return false
+}
+
+func (e IncidentSort) String() string {
+	return string(e)
+}
+
+func (e *IncidentSort) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IncidentSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IncidentSort", str)
+	}
+	return nil
+}
+
+func (e IncidentSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type IncidentStatus string
+
+const (
+	IncidentStatusOpen       IncidentStatus = "OPEN"
+	IncidentStatusInProgress IncidentStatus = "IN_PROGRESS"
+	IncidentStatusResolved   IncidentStatus = "RESOLVED"
+	IncidentStatusComplete   IncidentStatus = "COMPLETE"
+)
+
+var AllIncidentStatus = []IncidentStatus{
+	IncidentStatusOpen,
+	IncidentStatusInProgress,
+	IncidentStatusResolved,
+	IncidentStatusComplete,
+}
+
+func (e IncidentStatus) IsValid() bool {
+	switch e {
+	case IncidentStatusOpen, IncidentStatusInProgress, IncidentStatusResolved, IncidentStatusComplete:
+		return true
+	}
+	return false
+}
+
+func (e IncidentStatus) String() string {
+	return string(e)
+}
+
+func (e *IncidentStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IncidentStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IncidentStatus", str)
+	}
+	return nil
+}
+
+func (e IncidentStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type LineItemDimension string
+
+const (
+	LineItemDimensionUser    LineItemDimension = "USER"
+	LineItemDimensionCluster LineItemDimension = "CLUSTER"
+)
+
+var AllLineItemDimension = []LineItemDimension{
+	LineItemDimensionUser,
+	LineItemDimensionCluster,
+}
+
+func (e LineItemDimension) IsValid() bool {
+	switch e {
+	case LineItemDimensionUser, LineItemDimensionCluster:
+		return true
+	}
+	return false
+}
+
+func (e LineItemDimension) String() string {
+	return string(e)
+}
+
+func (e *LineItemDimension) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LineItemDimension(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LineItemDimension", str)
+	}
+	return nil
+}
+
+func (e LineItemDimension) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type LoginMethod string
+
+const (
+	LoginMethodPassword     LoginMethod = "PASSWORD"
+	LoginMethodPasswordless LoginMethod = "PASSWORDLESS"
+	LoginMethodGoogle       LoginMethod = "GOOGLE"
+	LoginMethodGithub       LoginMethod = "GITHUB"
+	LoginMethodSso          LoginMethod = "SSO"
+)
+
+var AllLoginMethod = []LoginMethod{
+	LoginMethodPassword,
+	LoginMethodPasswordless,
+	LoginMethodGoogle,
+	LoginMethodGithub,
+	LoginMethodSso,
+}
+
+func (e LoginMethod) IsValid() bool {
+	switch e {
+	case LoginMethodPassword, LoginMethodPasswordless, LoginMethodGoogle, LoginMethodGithub, LoginMethodSso:
+		return true
+	}
+	return false
+}
+
+func (e LoginMethod) String() string {
+	return string(e)
+}
+
+func (e *LoginMethod) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LoginMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LoginMethod", str)
+	}
+	return nil
+}
+
+func (e LoginMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type MediaType string
+
+const (
+	MediaTypeImage MediaType = "IMAGE"
+	MediaTypeVideo MediaType = "VIDEO"
+	MediaTypeAudio MediaType = "AUDIO"
+	MediaTypeOther MediaType = "OTHER"
+	MediaTypePDF   MediaType = "PDF"
+)
+
+var AllMediaType = []MediaType{
+	MediaTypeImage,
+	MediaTypeVideo,
+	MediaTypeAudio,
+	MediaTypeOther,
+	MediaTypePDF,
+}
+
+func (e MediaType) IsValid() bool {
+	switch e {
+	case MediaTypeImage, MediaTypeVideo, MediaTypeAudio, MediaTypeOther, MediaTypePDF:
+		return true
+	}
+	return false
+}
+
+func (e MediaType) String() string {
+	return string(e)
+}
+
+func (e *MediaType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MediaType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MediaType", str)
+	}
+	return nil
+}
+
+func (e MediaType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type MessageEntityType string
+
+const (
+	MessageEntityTypeMention MessageEntityType = "MENTION"
+	MessageEntityTypeEmoji   MessageEntityType = "EMOJI"
+)
+
+var AllMessageEntityType = []MessageEntityType{
+	MessageEntityTypeMention,
+	MessageEntityTypeEmoji,
+}
+
+func (e MessageEntityType) IsValid() bool {
+	switch e {
+	case MessageEntityTypeMention, MessageEntityTypeEmoji:
+		return true
+	}
+	return false
+}
+
+func (e MessageEntityType) String() string {
+	return string(e)
+}
+
+func (e *MessageEntityType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MessageEntityType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MessageEntityType", str)
+	}
+	return nil
+}
+
+func (e MessageEntityType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type NotificationType string
+
+const (
+	NotificationTypeMessage        NotificationType = "MESSAGE"
+	NotificationTypeIncidentUpdate NotificationType = "INCIDENT_UPDATE"
+	NotificationTypeMention        NotificationType = "MENTION"
+	NotificationTypeLocked         NotificationType = "LOCKED"
+	NotificationTypePending        NotificationType = "PENDING"
+)
+
+var AllNotificationType = []NotificationType{
+	NotificationTypeMessage,
+	NotificationTypeIncidentUpdate,
+	NotificationTypeMention,
+	NotificationTypeLocked,
+	NotificationTypePending,
+}
+
+func (e NotificationType) IsValid() bool {
+	switch e {
+	case NotificationTypeMessage, NotificationTypeIncidentUpdate, NotificationTypeMention, NotificationTypeLocked, NotificationTypePending:
+		return true
+	}
+	return false
+}
+
+func (e NotificationType) String() string {
+	return string(e)
+}
+
+func (e *NotificationType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = NotificationType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid NotificationType", str)
+	}
+	return nil
+}
+
+func (e NotificationType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type OauthProvider string
+
+const (
+	OauthProviderGithub OauthProvider = "GITHUB"
+	OauthProviderGoogle OauthProvider = "GOOGLE"
+	OauthProviderGitlab OauthProvider = "GITLAB"
+)
+
+var AllOauthProvider = []OauthProvider{
+	OauthProviderGithub,
+	OauthProviderGoogle,
+	OauthProviderGitlab,
+}
+
+func (e OauthProvider) IsValid() bool {
+	switch e {
+	case OauthProviderGithub, OauthProviderGoogle, OauthProviderGitlab:
+		return true
+	}
+	return false
+}
+
+func (e OauthProvider) String() string {
+	return string(e)
+}
+
+func (e *OauthProvider) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OauthProvider(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OauthProvider", str)
+	}
+	return nil
+}
+
+func (e OauthProvider) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type OauthService string
+
+const (
+	OauthServiceZoom OauthService = "ZOOM"
+)
+
+var AllOauthService = []OauthService{
+	OauthServiceZoom,
+}
+
+func (e OauthService) IsValid() bool {
+	switch e {
+	case OauthServiceZoom:
+		return true
+	}
+	return false
+}
+
+func (e OauthService) String() string {
+	return string(e)
+}
+
+func (e *OauthService) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OauthService(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OauthService", str)
+	}
+	return nil
+}
+
+func (e OauthService) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// Supported OIDC authentication methods.
+type OidcAuthMethod string
+
+const (
+	OidcAuthMethodPost  OidcAuthMethod = "POST"
+	OidcAuthMethodBasic OidcAuthMethod = "BASIC"
+)
+
+var AllOidcAuthMethod = []OidcAuthMethod{
+	OidcAuthMethodPost,
+	OidcAuthMethodBasic,
+}
+
+func (e OidcAuthMethod) IsValid() bool {
+	switch e {
+	case OidcAuthMethodPost, OidcAuthMethodBasic:
+		return true
+	}
+	return false
+}
+
+func (e OidcAuthMethod) String() string {
+	return string(e)
+}
+
+func (e *OidcAuthMethod) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OidcAuthMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OidcAuthMethod", str)
+	}
+	return nil
+}
+
+func (e OidcAuthMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type OnboardingChecklistState string
+
+const (
+	OnboardingChecklistStateNew              OnboardingChecklistState = "NEW"
+	OnboardingChecklistStateConfigured       OnboardingChecklistState = "CONFIGURED"
+	OnboardingChecklistStateConsoleInstalled OnboardingChecklistState = "CONSOLE_INSTALLED"
+	OnboardingChecklistStateFinished         OnboardingChecklistState = "FINISHED"
+)
+
+var AllOnboardingChecklistState = []OnboardingChecklistState{
+	OnboardingChecklistStateNew,
+	OnboardingChecklistStateConfigured,
+	OnboardingChecklistStateConsoleInstalled,
+	OnboardingChecklistStateFinished,
+}
+
+func (e OnboardingChecklistState) IsValid() bool {
+	switch e {
+	case OnboardingChecklistStateNew, OnboardingChecklistStateConfigured, OnboardingChecklistStateConsoleInstalled, OnboardingChecklistStateFinished:
+		return true
+	}
+	return false
+}
+
+func (e OnboardingChecklistState) String() string {
+	return string(e)
+}
+
+func (e *OnboardingChecklistState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OnboardingChecklistState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OnboardingChecklistState", str)
+	}
+	return nil
+}
+
+func (e OnboardingChecklistState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type OnboardingState string
+
+const (
+	OnboardingStateNew       OnboardingState = "NEW"
+	OnboardingStateOnboarded OnboardingState = "ONBOARDED"
+	OnboardingStateInstalled OnboardingState = "INSTALLED"
+	OnboardingStateActive    OnboardingState = "ACTIVE"
+)
+
+var AllOnboardingState = []OnboardingState{
+	OnboardingStateNew,
+	OnboardingStateOnboarded,
+	OnboardingStateInstalled,
+	OnboardingStateActive,
+}
+
+func (e OnboardingState) IsValid() bool {
+	switch e {
+	case OnboardingStateNew, OnboardingStateOnboarded, OnboardingStateInstalled, OnboardingStateActive:
+		return true
+	}
+	return false
+}
+
+func (e OnboardingState) String() string {
+	return string(e)
+}
+
+func (e *OnboardingState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OnboardingState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OnboardingState", str)
+	}
+	return nil
+}
+
+func (e OnboardingState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Operation string
+
+const (
+	OperationNot    Operation = "NOT"
+	OperationGt     Operation = "GT"
+	OperationLt     Operation = "LT"
+	OperationEq     Operation = "EQ"
+	OperationGte    Operation = "GTE"
+	OperationLte    Operation = "LTE"
+	OperationPrefix Operation = "PREFIX"
+	OperationSuffix Operation = "SUFFIX"
+)
+
+var AllOperation = []Operation{
+	OperationNot,
+	OperationGt,
+	OperationLt,
+	OperationEq,
+	OperationGte,
+	OperationLte,
+	OperationPrefix,
+	OperationSuffix,
+}
+
+func (e Operation) IsValid() bool {
+	switch e {
+	case OperationNot, OperationGt, OperationLt, OperationEq, OperationGte, OperationLte, OperationPrefix, OperationSuffix:
+		return true
+	}
+	return false
+}
+
+func (e Operation) String() string {
+	return string(e)
+}
+
+func (e *Operation) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Operation(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Operation", str)
+	}
+	return nil
+}
+
+func (e Operation) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Order string
+
+const (
+	OrderAsc  Order = "ASC"
+	OrderDesc Order = "DESC"
+)
+
+var AllOrder = []Order{
+	OrderAsc,
+	OrderDesc,
+}
+
+func (e Order) IsValid() bool {
+	switch e {
+	case OrderAsc, OrderDesc:
+		return true
+	}
+	return false
+}
+
+func (e Order) String() string {
+	return string(e)
+}
+
+func (e *Order) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Order(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Order", str)
+	}
+	return nil
+}
+
+func (e Order) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type PaymentPeriod string
+
+const (
+	PaymentPeriodMonthly PaymentPeriod = "MONTHLY"
+	PaymentPeriodYearly  PaymentPeriod = "YEARLY"
+)
+
+var AllPaymentPeriod = []PaymentPeriod{
+	PaymentPeriodMonthly,
+	PaymentPeriodYearly,
+}
+
+func (e PaymentPeriod) IsValid() bool {
+	switch e {
+	case PaymentPeriodMonthly, PaymentPeriodYearly:
+		return true
+	}
+	return false
+}
+
+func (e PaymentPeriod) String() string {
+	return string(e)
+}
+
+func (e *PaymentPeriod) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PaymentPeriod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PaymentPeriod", str)
+	}
+	return nil
+}
+
+func (e PaymentPeriod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Permission string
+
+const (
+	PermissionInstall      Permission = "INSTALL"
+	PermissionPublish      Permission = "PUBLISH"
+	PermissionBilling      Permission = "BILLING"
+	PermissionUsers        Permission = "USERS"
+	PermissionSupport      Permission = "SUPPORT"
+	PermissionIntegrations Permission = "INTEGRATIONS"
+)
+
+var AllPermission = []Permission{
+	PermissionInstall,
+	PermissionPublish,
+	PermissionBilling,
+	PermissionUsers,
+	PermissionSupport,
+	PermissionIntegrations,
+}
+
+func (e Permission) IsValid() bool {
+	switch e {
+	case PermissionInstall, PermissionPublish, PermissionBilling, PermissionUsers, PermissionSupport, PermissionIntegrations:
+		return true
+	}
+	return false
+}
+
+func (e Permission) String() string {
+	return string(e)
+}
+
+func (e *Permission) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Permission(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Permission", str)
+	}
+	return nil
+}
+
+func (e Permission) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type PlanType string
+
+const (
+	PlanTypeLicensed PlanType = "LICENSED"
+	PlanTypeMetered  PlanType = "METERED"
+)
+
+var AllPlanType = []PlanType{
+	PlanTypeLicensed,
+	PlanTypeMetered,
+}
+
+func (e PlanType) IsValid() bool {
+	switch e {
+	case PlanTypeLicensed, PlanTypeMetered:
+		return true
+	}
+	return false
+}
+
+func (e PlanType) String() string {
+	return string(e)
+}
+
+func (e *PlanType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PlanType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PlanType", str)
+	}
+	return nil
+}
+
+func (e PlanType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Provider string
+
+const (
+	ProviderGcp        Provider = "GCP"
+	ProviderAws        Provider = "AWS"
+	ProviderAzure      Provider = "AZURE"
+	ProviderCustom     Provider = "CUSTOM"
+	ProviderKubernetes Provider = "KUBERNETES"
+	ProviderEquinix    Provider = "EQUINIX"
+	ProviderKind       Provider = "KIND"
+	ProviderGeneric    Provider = "GENERIC"
+)
+
+var AllProvider = []Provider{
+	ProviderGcp,
+	ProviderAws,
+	ProviderAzure,
+	ProviderCustom,
+	ProviderKubernetes,
+	ProviderEquinix,
+	ProviderKind,
+	ProviderGeneric,
+}
+
+func (e Provider) IsValid() bool {
+	switch e {
+	case ProviderGcp, ProviderAws, ProviderAzure, ProviderCustom, ProviderKubernetes, ProviderEquinix, ProviderKind, ProviderGeneric:
+		return true
+	}
+	return false
+}
+
+func (e Provider) String() string {
+	return string(e)
+}
+
+func (e *Provider) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Provider(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Provider", str)
+	}
+	return nil
+}
+
+func (e Provider) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type RecipeItemType string
+
+const (
+	RecipeItemTypeHelm      RecipeItemType = "HELM"
+	RecipeItemTypeTerraform RecipeItemType = "TERRAFORM"
+)
+
+var AllRecipeItemType = []RecipeItemType{
+	RecipeItemTypeHelm,
+	RecipeItemTypeTerraform,
+}
+
+func (e RecipeItemType) IsValid() bool {
+	switch e {
+	case RecipeItemTypeHelm, RecipeItemTypeTerraform:
+		return true
+	}
+	return false
+}
+
+func (e RecipeItemType) String() string {
+	return string(e)
+}
+
+func (e *RecipeItemType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RecipeItemType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RecipeItemType", str)
+	}
+	return nil
+}
+
+func (e RecipeItemType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// The release status of a repository, defaults to ALPHA, GA if it is ready for general consumption
+type ReleaseStatus string
+
+const (
+	ReleaseStatusGa    ReleaseStatus = "GA"
+	ReleaseStatusBeta  ReleaseStatus = "BETA"
+	ReleaseStatusAlpha ReleaseStatus = "ALPHA"
+)
+
+var AllReleaseStatus = []ReleaseStatus{
+	ReleaseStatusGa,
+	ReleaseStatusBeta,
+	ReleaseStatusAlpha,
+}
+
+func (e ReleaseStatus) IsValid() bool {
+	switch e {
+	case ReleaseStatusGa, ReleaseStatusBeta, ReleaseStatusAlpha:
+		return true
+	}
+	return false
+}
+
+func (e ReleaseStatus) String() string {
+	return string(e)
+}
+
+func (e *ReleaseStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ReleaseStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ReleaseStatus", str)
+	}
+	return nil
+}
+
+func (e ReleaseStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ResetTokenType string
+
+const (
+	ResetTokenTypePassword ResetTokenType = "PASSWORD"
+	ResetTokenTypeEmail    ResetTokenType = "EMAIL"
+)
+
+var AllResetTokenType = []ResetTokenType{
+	ResetTokenTypePassword,
+	ResetTokenTypeEmail,
+}
+
+func (e ResetTokenType) IsValid() bool {
+	switch e {
+	case ResetTokenTypePassword, ResetTokenTypeEmail:
+		return true
+	}
+	return false
+}
+
+func (e ResetTokenType) String() string {
+	return string(e)
+}
+
+func (e *ResetTokenType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ResetTokenType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ResetTokenType", str)
+	}
+	return nil
+}
+
+func (e ResetTokenType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type RolloutStatus string
+
+const (
+	RolloutStatusQueued   RolloutStatus = "QUEUED"
+	RolloutStatusRunning  RolloutStatus = "RUNNING"
+	RolloutStatusFinished RolloutStatus = "FINISHED"
+)
+
+var AllRolloutStatus = []RolloutStatus{
+	RolloutStatusQueued,
+	RolloutStatusRunning,
+	RolloutStatusFinished,
+}
+
+func (e RolloutStatus) IsValid() bool {
+	switch e {
+	case RolloutStatusQueued, RolloutStatusRunning, RolloutStatusFinished:
+		return true
+	}
+	return false
+}
+
+func (e RolloutStatus) String() string {
+	return string(e)
+}
+
+func (e *RolloutStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RolloutStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RolloutStatus", str)
+	}
+	return nil
+}
+
+func (e RolloutStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ScmProvider string
+
+const (
+	ScmProviderGithub ScmProvider = "GITHUB"
+	ScmProviderGitlab ScmProvider = "GITLAB"
+	ScmProviderManual ScmProvider = "MANUAL"
+	ScmProviderDemo   ScmProvider = "DEMO"
+)
+
+var AllScmProvider = []ScmProvider{
+	ScmProviderGithub,
+	ScmProviderGitlab,
+	ScmProviderManual,
+	ScmProviderDemo,
+}
+
+func (e ScmProvider) IsValid() bool {
+	switch e {
+	case ScmProviderGithub, ScmProviderGitlab, ScmProviderManual, ScmProviderDemo:
+		return true
+	}
+	return false
+}
+
+func (e ScmProvider) String() string {
+	return string(e)
+}
+
+func (e *ScmProvider) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ScmProvider(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ScmProvider", str)
+	}
+	return nil
+}
+
+func (e ScmProvider) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// Possible cluster sources.
+type Source string
+
+const (
+	SourceDefault Source = "DEFAULT"
+	SourceShell   Source = "SHELL"
+	SourceDemo    Source = "DEMO"
+)
+
+var AllSource = []Source{
+	SourceDefault,
+	SourceShell,
+	SourceDemo,
+}
+
+func (e Source) IsValid() bool {
+	switch e {
+	case SourceDefault, SourceShell, SourceDemo:
+		return true
+	}
+	return false
+}
+
+func (e Source) String() string {
+	return string(e)
+}
+
+func (e *Source) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Source(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Source", str)
+	}
+	return nil
+}
+
+func (e Source) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type SpecDatatype string
+
+const (
+	SpecDatatypeString SpecDatatype = "STRING"
+	SpecDatatypeInt    SpecDatatype = "INT"
+	SpecDatatypeFloat  SpecDatatype = "FLOAT"
+	SpecDatatypeBool   SpecDatatype = "BOOL"
+	SpecDatatypeObject SpecDatatype = "OBJECT"
+	SpecDatatypeList   SpecDatatype = "LIST"
+)
+
+var AllSpecDatatype = []SpecDatatype{
+	SpecDatatypeString,
+	SpecDatatypeInt,
+	SpecDatatypeFloat,
+	SpecDatatypeBool,
+	SpecDatatypeObject,
+	SpecDatatypeList,
+}
+
+func (e SpecDatatype) IsValid() bool {
+	switch e {
+	case SpecDatatypeString, SpecDatatypeInt, SpecDatatypeFloat, SpecDatatypeBool, SpecDatatypeObject, SpecDatatypeList:
+		return true
+	}
+	return false
+}
+
+func (e SpecDatatype) String() string {
+	return string(e)
+}
+
+func (e *SpecDatatype) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SpecDatatype(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SpecDatatype", str)
+	}
+	return nil
+}
+
+func (e SpecDatatype) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TagGroup string
+
+const (
+	TagGroupIntegrations TagGroup = "INTEGRATIONS"
+	TagGroupRepositories TagGroup = "REPOSITORIES"
+)
+
+var AllTagGroup = []TagGroup{
+	TagGroupIntegrations,
+	TagGroupRepositories,
+}
+
+func (e TagGroup) IsValid() bool {
+	switch e {
+	case TagGroupIntegrations, TagGroupRepositories:
+		return true
+	}
+	return false
+}
+
+func (e TagGroup) String() string {
+	return string(e)
+}
+
+func (e *TagGroup) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TagGroup(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TagGroup", str)
+	}
+	return nil
+}
+
+func (e TagGroup) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+// Template engines that can be used at build time.
+type TemplateType string
+
+const (
+	TemplateTypeGotemplate TemplateType = "GOTEMPLATE"
+	TemplateTypeLua        TemplateType = "LUA"
+	TemplateTypeJavascript TemplateType = "JAVASCRIPT"
+)
+
+var AllTemplateType = []TemplateType{
+	TemplateTypeGotemplate,
+	TemplateTypeLua,
+	TemplateTypeJavascript,
+}
+
+func (e TemplateType) IsValid() bool {
+	switch e {
+	case TemplateTypeGotemplate, TemplateTypeLua, TemplateTypeJavascript:
+		return true
+	}
+	return false
+}
+
+func (e TemplateType) String() string {
+	return string(e)
+}
+
+func (e *TemplateType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TemplateType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TemplateType", str)
+	}
+	return nil
+}
+
+func (e TemplateType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TestStatus string
+
+const (
+	TestStatusQueued    TestStatus = "QUEUED"
+	TestStatusRunning   TestStatus = "RUNNING"
+	TestStatusSucceeded TestStatus = "SUCCEEDED"
+	TestStatusFailed    TestStatus = "FAILED"
+)
+
+var AllTestStatus = []TestStatus{
+	TestStatusQueued,
+	TestStatusRunning,
+	TestStatusSucceeded,
+	TestStatusFailed,
+}
+
+func (e TestStatus) IsValid() bool {
+	switch e {
+	case TestStatusQueued, TestStatusRunning, TestStatusSucceeded, TestStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e TestStatus) String() string {
+	return string(e)
+}
+
+func (e *TestStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TestStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TestStatus", str)
+	}
+	return nil
+}
+
+func (e TestStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TestType string
+
+const (
+	TestTypeGit TestType = "GIT"
+)
+
+var AllTestType = []TestType{
+	TestTypeGit,
+}
+
+func (e TestType) IsValid() bool {
+	switch e {
+	case TestTypeGit:
+		return true
+	}
+	return false
+}
+
+func (e TestType) String() string {
+	return string(e)
+}
+
+func (e *TestType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TestType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TestType", str)
+	}
+	return nil
+}
+
+func (e TestType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type UpgradeType string
+
+const (
+	UpgradeTypeDeploy    UpgradeType = "DEPLOY"
+	UpgradeTypeApproval  UpgradeType = "APPROVAL"
+	UpgradeTypeBounce    UpgradeType = "BOUNCE"
+	UpgradeTypeDedicated UpgradeType = "DEDICATED"
+	UpgradeTypeConfig    UpgradeType = "CONFIG"
+)
+
+var AllUpgradeType = []UpgradeType{
+	UpgradeTypeDeploy,
+	UpgradeTypeApproval,
+	UpgradeTypeBounce,
+	UpgradeTypeDedicated,
+	UpgradeTypeConfig,
+}
+
+func (e UpgradeType) IsValid() bool {
+	switch e {
+	case UpgradeTypeDeploy, UpgradeTypeApproval, UpgradeTypeBounce, UpgradeTypeDedicated, UpgradeTypeConfig:
+		return true
+	}
+	return false
+}
+
+func (e UpgradeType) String() string {
+	return string(e)
+}
+
+func (e *UpgradeType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UpgradeType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UpgradeType", str)
+	}
+	return nil
+}
+
+func (e UpgradeType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type UserEventStatus string
+
+const (
+	UserEventStatusOk    UserEventStatus = "OK"
+	UserEventStatusError UserEventStatus = "ERROR"
+)
+
+var AllUserEventStatus = []UserEventStatus{
+	UserEventStatusOk,
+	UserEventStatusError,
+}
+
+func (e UserEventStatus) IsValid() bool {
+	switch e {
+	case UserEventStatusOk, UserEventStatusError:
+		return true
+	}
+	return false
+}
+
+func (e UserEventStatus) String() string {
+	return string(e)
+}
+
+func (e *UserEventStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UserEventStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UserEventStatus", str)
+	}
+	return nil
+}
+
+func (e UserEventStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ValidationType string
+
+const (
+	ValidationTypeRegex ValidationType = "REGEX"
+)
+
+var AllValidationType = []ValidationType{
+	ValidationTypeRegex,
+}
+
+func (e ValidationType) IsValid() bool {
+	switch e {
+	case ValidationTypeRegex:
+		return true
+	}
+	return false
+}
+
+func (e ValidationType) String() string {
+	return string(e)
+}
+
+func (e *ValidationType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ValidationType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ValidationType", str)
+	}
+	return nil
+}
+
+func (e ValidationType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ValueType string
+
+const (
+	ValueTypeInt    ValueType = "INT"
+	ValueTypeString ValueType = "STRING"
+	ValueTypeFloat  ValueType = "FLOAT"
+)
+
+var AllValueType = []ValueType{
+	ValueTypeInt,
+	ValueTypeString,
+	ValueTypeFloat,
+}
+
+func (e ValueType) IsValid() bool {
+	switch e {
+	case ValueTypeInt, ValueTypeString, ValueTypeFloat:
+		return true
+	}
+	return false
+}
+
+func (e ValueType) String() string {
+	return string(e)
+}
+
+func (e *ValueType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ValueType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ValueType", str)
+	}
+	return nil
+}
+
+func (e ValueType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type VulnGrade string
+
+const (
+	VulnGradeLow      VulnGrade = "LOW"
+	VulnGradeMedium   VulnGrade = "MEDIUM"
+	VulnGradeHigh     VulnGrade = "HIGH"
+	VulnGradeCritical VulnGrade = "CRITICAL"
+	VulnGradeNone     VulnGrade = "NONE"
+)
+
+var AllVulnGrade = []VulnGrade{
+	VulnGradeLow,
+	VulnGradeMedium,
+	VulnGradeHigh,
+	VulnGradeCritical,
+	VulnGradeNone,
+}
+
+func (e VulnGrade) IsValid() bool {
+	switch e {
+	case VulnGradeLow, VulnGradeMedium, VulnGradeHigh, VulnGradeCritical, VulnGradeNone:
+		return true
+	}
+	return false
+}
+
+func (e VulnGrade) String() string {
+	return string(e)
+}
+
+func (e *VulnGrade) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = VulnGrade(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid VulnGrade", str)
+	}
+	return nil
+}
+
+func (e VulnGrade) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type VulnRequirement string
+
+const (
+	VulnRequirementNone     VulnRequirement = "NONE"
+	VulnRequirementRequired VulnRequirement = "REQUIRED"
+)
+
+var AllVulnRequirement = []VulnRequirement{
+	VulnRequirementNone,
+	VulnRequirementRequired,
+}
+
+func (e VulnRequirement) IsValid() bool {
+	switch e {
+	case VulnRequirementNone, VulnRequirementRequired:
+		return true
+	}
+	return false
+}
+
+func (e VulnRequirement) String() string {
+	return string(e)
+}
+
+func (e *VulnRequirement) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = VulnRequirement(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid VulnRequirement", str)
+	}
+	return nil
+}
+
+func (e VulnRequirement) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type VulnVector string
+
+const (
+	VulnVectorNetwork  VulnVector = "NETWORK"
+	VulnVectorAdjacent VulnVector = "ADJACENT"
+	VulnVectorLocal    VulnVector = "LOCAL"
+	VulnVectorPhysical VulnVector = "PHYSICAL"
+)
+
+var AllVulnVector = []VulnVector{
+	VulnVectorNetwork,
+	VulnVectorAdjacent,
+	VulnVectorLocal,
+	VulnVectorPhysical,
+}
+
+func (e VulnVector) IsValid() bool {
+	switch e {
+	case VulnVectorNetwork, VulnVectorAdjacent, VulnVectorLocal, VulnVectorPhysical:
+		return true
+	}
+	return false
+}
+
+func (e VulnVector) String() string {
+	return string(e)
+}
+
+func (e *VulnVector) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = VulnVector(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid VulnVector", str)
+	}
+	return nil
+}
+
+func (e VulnVector) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type WebhookLogState string
+
+const (
+	WebhookLogStateSending   WebhookLogState = "SENDING"
+	WebhookLogStateDelivered WebhookLogState = "DELIVERED"
+	WebhookLogStateFailed    WebhookLogState = "FAILED"
+)
+
+var AllWebhookLogState = []WebhookLogState{
+	WebhookLogStateSending,
+	WebhookLogStateDelivered,
+	WebhookLogStateFailed,
+}
+
+func (e WebhookLogState) IsValid() bool {
+	switch e {
+	case WebhookLogStateSending, WebhookLogStateDelivered, WebhookLogStateFailed:
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return true
 	}
 	return false

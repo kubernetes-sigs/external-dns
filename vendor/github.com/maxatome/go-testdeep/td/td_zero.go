@@ -32,6 +32,7 @@ var _ TestDeep = &tdZero{}
 // Beware that:
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	td.Cmp(t, AnyStruct{}, td.Zero())          // is true
 //	td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
 //	td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
@@ -84,6 +85,17 @@ var _ TestDeep = &tdNotZero{}
 //   td.Cmp(t, AnyStruct{}, td.Zero())          // is true
 //   td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
 //   td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   td.Cmp(t, AnyStruct{}, td.Zero())          // is true
+//   td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
+//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
+=======
+//	td.Cmp(t, AnyStruct{}, td.Zero())          // is true
+//	td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
+//	td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
+//
+// See also [Empty], [Nil] and [NotZero].
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func Zero() TestDeep {
 	return &tdZero{
 		baseOKNil: newBaseOKNil(3),
@@ -121,10 +133,22 @@ var _ TestDeep = &tdNotZero{}
 //
 // Beware that:
 //
+<<<<<<< HEAD
 //   td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
 //   td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
 //   td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
+//   td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
+//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
+=======
+//	td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
+//	td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
+//	td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
+//
+// See also [NotEmpty], [NotNil] and [Zero].
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NotZero() TestDeep {
 	return &tdNotZero{
 		baseOKNil: newBaseOKNil(3),

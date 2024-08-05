@@ -18,12 +18,22 @@ package alidns
 // Instance is a nested struct in alidns response
 type Instance struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	InstanceName string                                            `json:"InstanceName" xml:"InstanceName"`
 	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	InstanceName string                                            `json:"InstanceName" xml:"InstanceName"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	AddrPools    AddrPoolsInDescribeGtmRecoveryPlanAvailableConfig `json:"AddrPools" xml:"AddrPools"`
 }

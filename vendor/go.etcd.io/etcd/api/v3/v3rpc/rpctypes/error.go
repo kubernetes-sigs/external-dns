@@ -45,6 +45,7 @@ var (
 	ErrGRPCMemberNotLearner       = status.New(codes.FailedPrecondition, "etcdserver: can only promote a learner member").Err()
 	ErrGRPCLearnerNotReady        = status.New(codes.FailedPrecondition, "etcdserver: can only promote a learner member which is in sync with leader").Err()
 	ErrGRPCTooManyLearners        = status.New(codes.FailedPrecondition, "etcdserver: too many learner members in cluster").Err()
+<<<<<<< HEAD
 
 	ErrGRPCRequestTooLarge        = status.New(codes.InvalidArgument, "etcdserver: request is too large").Err()
 	ErrGRPCRequestTooManyRequests = status.New(codes.ResourceExhausted, "etcdserver: too many requests").Err()
@@ -471,6 +472,167 @@ var (
 	ErrAuthOldRevision      = Error(ErrGRPCAuthOldRevision)
 >>>>>>> 4d7e5ad26 (update vendored files)
 	ErrInvalidAuthMgmt      = Error(ErrGRPCInvalidAuthMgmt)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ErrGRPCClusterIdMismatch      = status.New(codes.FailedPrecondition, "etcdserver: cluster ID mismatch").Err()
+
+	ErrGRPCRequestTooLarge        = status.New(codes.InvalidArgument, "etcdserver: request is too large").Err()
+	ErrGRPCRequestTooManyRequests = status.New(codes.ResourceExhausted, "etcdserver: too many requests").Err()
+
+	ErrGRPCRootUserNotExist     = status.New(codes.FailedPrecondition, "etcdserver: root user does not exist").Err()
+	ErrGRPCRootRoleNotExist     = status.New(codes.FailedPrecondition, "etcdserver: root user does not have root role").Err()
+	ErrGRPCUserAlreadyExist     = status.New(codes.FailedPrecondition, "etcdserver: user name already exists").Err()
+	ErrGRPCUserEmpty            = status.New(codes.InvalidArgument, "etcdserver: user name is empty").Err()
+	ErrGRPCUserNotFound         = status.New(codes.FailedPrecondition, "etcdserver: user name not found").Err()
+	ErrGRPCRoleAlreadyExist     = status.New(codes.FailedPrecondition, "etcdserver: role name already exists").Err()
+	ErrGRPCRoleNotFound         = status.New(codes.FailedPrecondition, "etcdserver: role name not found").Err()
+	ErrGRPCRoleEmpty            = status.New(codes.InvalidArgument, "etcdserver: role name is empty").Err()
+	ErrGRPCAuthFailed           = status.New(codes.InvalidArgument, "etcdserver: authentication failed, invalid user ID or password").Err()
+	ErrGRPCPermissionNotGiven   = status.New(codes.InvalidArgument, "etcdserver: permission not given").Err()
+	ErrGRPCPermissionDenied     = status.New(codes.PermissionDenied, "etcdserver: permission denied").Err()
+	ErrGRPCRoleNotGranted       = status.New(codes.FailedPrecondition, "etcdserver: role is not granted to the user").Err()
+	ErrGRPCPermissionNotGranted = status.New(codes.FailedPrecondition, "etcdserver: permission is not granted to the role").Err()
+	ErrGRPCAuthNotEnabled       = status.New(codes.FailedPrecondition, "etcdserver: authentication is not enabled").Err()
+	ErrGRPCInvalidAuthToken     = status.New(codes.Unauthenticated, "etcdserver: invalid auth token").Err()
+	ErrGRPCInvalidAuthMgmt      = status.New(codes.InvalidArgument, "etcdserver: invalid auth management").Err()
+	ErrGRPCAuthOldRevision      = status.New(codes.InvalidArgument, "etcdserver: revision of auth store is old").Err()
+
+	ErrGRPCNoLeader                   = status.New(codes.Unavailable, "etcdserver: no leader").Err()
+	ErrGRPCNotLeader                  = status.New(codes.FailedPrecondition, "etcdserver: not leader").Err()
+	ErrGRPCLeaderChanged              = status.New(codes.Unavailable, "etcdserver: leader changed").Err()
+	ErrGRPCNotCapable                 = status.New(codes.Unavailable, "etcdserver: not capable").Err()
+	ErrGRPCStopped                    = status.New(codes.Unavailable, "etcdserver: server stopped").Err()
+	ErrGRPCTimeout                    = status.New(codes.Unavailable, "etcdserver: request timed out").Err()
+	ErrGRPCTimeoutDueToLeaderFail     = status.New(codes.Unavailable, "etcdserver: request timed out, possibly due to previous leader failure").Err()
+	ErrGRPCTimeoutDueToConnectionLost = status.New(codes.Unavailable, "etcdserver: request timed out, possibly due to connection lost").Err()
+	ErrGRPCTimeoutWaitAppliedIndex    = status.New(codes.Unavailable, "etcdserver: request timed out, waiting for the applied index took too long").Err()
+	ErrGRPCUnhealthy                  = status.New(codes.Unavailable, "etcdserver: unhealthy cluster").Err()
+	ErrGRPCCorrupt                    = status.New(codes.DataLoss, "etcdserver: corrupt cluster").Err()
+	ErrGPRCNotSupportedForLearner     = status.New(codes.Unavailable, "etcdserver: rpc not supported for learner").Err()
+	ErrGRPCBadLeaderTransferee        = status.New(codes.FailedPrecondition, "etcdserver: bad leader transferee").Err()
+
+	ErrGRPCClusterVersionUnavailable     = status.New(codes.Unavailable, "etcdserver: cluster version not found during downgrade").Err()
+	ErrGRPCWrongDowngradeVersionFormat   = status.New(codes.InvalidArgument, "etcdserver: wrong downgrade target version format").Err()
+	ErrGRPCInvalidDowngradeTargetVersion = status.New(codes.InvalidArgument, "etcdserver: invalid downgrade target version").Err()
+	ErrGRPCDowngradeInProcess            = status.New(codes.FailedPrecondition, "etcdserver: cluster has a downgrade job in progress").Err()
+	ErrGRPCNoInflightDowngrade           = status.New(codes.FailedPrecondition, "etcdserver: no inflight downgrade job").Err()
+
+	ErrGRPCCanceled         = status.New(codes.Canceled, "etcdserver: request canceled").Err()
+	ErrGRPCDeadlineExceeded = status.New(codes.DeadlineExceeded, "etcdserver: context deadline exceeded").Err()
+
+	errStringToError = map[string]error{
+		ErrorDesc(ErrGRPCEmptyKey):      ErrGRPCEmptyKey,
+		ErrorDesc(ErrGRPCKeyNotFound):   ErrGRPCKeyNotFound,
+		ErrorDesc(ErrGRPCValueProvided): ErrGRPCValueProvided,
+		ErrorDesc(ErrGRPCLeaseProvided): ErrGRPCLeaseProvided,
+
+		ErrorDesc(ErrGRPCTooManyOps):   ErrGRPCTooManyOps,
+		ErrorDesc(ErrGRPCDuplicateKey): ErrGRPCDuplicateKey,
+		ErrorDesc(ErrGRPCCompacted):    ErrGRPCCompacted,
+		ErrorDesc(ErrGRPCFutureRev):    ErrGRPCFutureRev,
+		ErrorDesc(ErrGRPCNoSpace):      ErrGRPCNoSpace,
+
+		ErrorDesc(ErrGRPCLeaseNotFound):    ErrGRPCLeaseNotFound,
+		ErrorDesc(ErrGRPCLeaseExist):       ErrGRPCLeaseExist,
+		ErrorDesc(ErrGRPCLeaseTTLTooLarge): ErrGRPCLeaseTTLTooLarge,
+
+		ErrorDesc(ErrGRPCMemberExist):            ErrGRPCMemberExist,
+		ErrorDesc(ErrGRPCPeerURLExist):           ErrGRPCPeerURLExist,
+		ErrorDesc(ErrGRPCMemberNotEnoughStarted): ErrGRPCMemberNotEnoughStarted,
+		ErrorDesc(ErrGRPCMemberBadURLs):          ErrGRPCMemberBadURLs,
+		ErrorDesc(ErrGRPCMemberNotFound):         ErrGRPCMemberNotFound,
+		ErrorDesc(ErrGRPCMemberNotLearner):       ErrGRPCMemberNotLearner,
+		ErrorDesc(ErrGRPCLearnerNotReady):        ErrGRPCLearnerNotReady,
+		ErrorDesc(ErrGRPCTooManyLearners):        ErrGRPCTooManyLearners,
+		ErrorDesc(ErrGRPCClusterIdMismatch):      ErrGRPCClusterIdMismatch,
+
+		ErrorDesc(ErrGRPCRequestTooLarge):        ErrGRPCRequestTooLarge,
+		ErrorDesc(ErrGRPCRequestTooManyRequests): ErrGRPCRequestTooManyRequests,
+
+		ErrorDesc(ErrGRPCRootUserNotExist):     ErrGRPCRootUserNotExist,
+		ErrorDesc(ErrGRPCRootRoleNotExist):     ErrGRPCRootRoleNotExist,
+		ErrorDesc(ErrGRPCUserAlreadyExist):     ErrGRPCUserAlreadyExist,
+		ErrorDesc(ErrGRPCUserEmpty):            ErrGRPCUserEmpty,
+		ErrorDesc(ErrGRPCUserNotFound):         ErrGRPCUserNotFound,
+		ErrorDesc(ErrGRPCRoleAlreadyExist):     ErrGRPCRoleAlreadyExist,
+		ErrorDesc(ErrGRPCRoleNotFound):         ErrGRPCRoleNotFound,
+		ErrorDesc(ErrGRPCRoleEmpty):            ErrGRPCRoleEmpty,
+		ErrorDesc(ErrGRPCAuthFailed):           ErrGRPCAuthFailed,
+		ErrorDesc(ErrGRPCPermissionDenied):     ErrGRPCPermissionDenied,
+		ErrorDesc(ErrGRPCRoleNotGranted):       ErrGRPCRoleNotGranted,
+		ErrorDesc(ErrGRPCPermissionNotGranted): ErrGRPCPermissionNotGranted,
+		ErrorDesc(ErrGRPCAuthNotEnabled):       ErrGRPCAuthNotEnabled,
+		ErrorDesc(ErrGRPCInvalidAuthToken):     ErrGRPCInvalidAuthToken,
+		ErrorDesc(ErrGRPCInvalidAuthMgmt):      ErrGRPCInvalidAuthMgmt,
+		ErrorDesc(ErrGRPCAuthOldRevision):      ErrGRPCAuthOldRevision,
+
+		ErrorDesc(ErrGRPCNoLeader):                   ErrGRPCNoLeader,
+		ErrorDesc(ErrGRPCNotLeader):                  ErrGRPCNotLeader,
+		ErrorDesc(ErrGRPCLeaderChanged):              ErrGRPCLeaderChanged,
+		ErrorDesc(ErrGRPCNotCapable):                 ErrGRPCNotCapable,
+		ErrorDesc(ErrGRPCStopped):                    ErrGRPCStopped,
+		ErrorDesc(ErrGRPCTimeout):                    ErrGRPCTimeout,
+		ErrorDesc(ErrGRPCTimeoutDueToLeaderFail):     ErrGRPCTimeoutDueToLeaderFail,
+		ErrorDesc(ErrGRPCTimeoutDueToConnectionLost): ErrGRPCTimeoutDueToConnectionLost,
+		ErrorDesc(ErrGRPCUnhealthy):                  ErrGRPCUnhealthy,
+		ErrorDesc(ErrGRPCCorrupt):                    ErrGRPCCorrupt,
+		ErrorDesc(ErrGPRCNotSupportedForLearner):     ErrGPRCNotSupportedForLearner,
+		ErrorDesc(ErrGRPCBadLeaderTransferee):        ErrGRPCBadLeaderTransferee,
+
+		ErrorDesc(ErrGRPCClusterVersionUnavailable):     ErrGRPCClusterVersionUnavailable,
+		ErrorDesc(ErrGRPCWrongDowngradeVersionFormat):   ErrGRPCWrongDowngradeVersionFormat,
+		ErrorDesc(ErrGRPCInvalidDowngradeTargetVersion): ErrGRPCInvalidDowngradeTargetVersion,
+		ErrorDesc(ErrGRPCDowngradeInProcess):            ErrGRPCDowngradeInProcess,
+		ErrorDesc(ErrGRPCNoInflightDowngrade):           ErrGRPCNoInflightDowngrade,
+	}
+)
+
+// client-side error
+var (
+	ErrEmptyKey      = Error(ErrGRPCEmptyKey)
+	ErrKeyNotFound   = Error(ErrGRPCKeyNotFound)
+	ErrValueProvided = Error(ErrGRPCValueProvided)
+	ErrLeaseProvided = Error(ErrGRPCLeaseProvided)
+	ErrTooManyOps    = Error(ErrGRPCTooManyOps)
+	ErrDuplicateKey  = Error(ErrGRPCDuplicateKey)
+	ErrCompacted     = Error(ErrGRPCCompacted)
+	ErrFutureRev     = Error(ErrGRPCFutureRev)
+	ErrNoSpace       = Error(ErrGRPCNoSpace)
+
+	ErrLeaseNotFound    = Error(ErrGRPCLeaseNotFound)
+	ErrLeaseExist       = Error(ErrGRPCLeaseExist)
+	ErrLeaseTTLTooLarge = Error(ErrGRPCLeaseTTLTooLarge)
+
+	ErrMemberExist            = Error(ErrGRPCMemberExist)
+	ErrPeerURLExist           = Error(ErrGRPCPeerURLExist)
+	ErrMemberNotEnoughStarted = Error(ErrGRPCMemberNotEnoughStarted)
+	ErrMemberBadURLs          = Error(ErrGRPCMemberBadURLs)
+	ErrMemberNotFound         = Error(ErrGRPCMemberNotFound)
+	ErrMemberNotLearner       = Error(ErrGRPCMemberNotLearner)
+	ErrMemberLearnerNotReady  = Error(ErrGRPCLearnerNotReady)
+	ErrTooManyLearners        = Error(ErrGRPCTooManyLearners)
+
+	ErrRequestTooLarge = Error(ErrGRPCRequestTooLarge)
+	ErrTooManyRequests = Error(ErrGRPCRequestTooManyRequests)
+
+	ErrRootUserNotExist     = Error(ErrGRPCRootUserNotExist)
+	ErrRootRoleNotExist     = Error(ErrGRPCRootRoleNotExist)
+	ErrUserAlreadyExist     = Error(ErrGRPCUserAlreadyExist)
+	ErrUserEmpty            = Error(ErrGRPCUserEmpty)
+	ErrUserNotFound         = Error(ErrGRPCUserNotFound)
+	ErrRoleAlreadyExist     = Error(ErrGRPCRoleAlreadyExist)
+	ErrRoleNotFound         = Error(ErrGRPCRoleNotFound)
+	ErrRoleEmpty            = Error(ErrGRPCRoleEmpty)
+	ErrAuthFailed           = Error(ErrGRPCAuthFailed)
+	ErrPermissionDenied     = Error(ErrGRPCPermissionDenied)
+	ErrRoleNotGranted       = Error(ErrGRPCRoleNotGranted)
+	ErrPermissionNotGranted = Error(ErrGRPCPermissionNotGranted)
+	ErrAuthNotEnabled       = Error(ErrGRPCAuthNotEnabled)
+	ErrInvalidAuthToken     = Error(ErrGRPCInvalidAuthToken)
+	ErrAuthOldRevision      = Error(ErrGRPCAuthOldRevision)
+	ErrInvalidAuthMgmt      = Error(ErrGRPCInvalidAuthMgmt)
+	ErrClusterIdMismatch    = Error(ErrGRPCClusterIdMismatch)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	ErrNoLeader                   = Error(ErrGRPCNoLeader)
 	ErrNotLeader                  = Error(ErrGRPCNotLeader)

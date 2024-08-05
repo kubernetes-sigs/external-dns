@@ -93,6 +93,7 @@ func (d *decoder) Decode(defaults *schema.GroupVersionKind, into runtime.Object)
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			base = 0
@@ -101,6 +102,10 @@ func (d *decoder) Decode(defaults *schema.GroupVersionKind, into runtime.Object)
 			base = 0
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			base = 0
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			return nil, nil, ErrObjectTooLarge
 		}
 		if err != nil {

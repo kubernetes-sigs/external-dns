@@ -115,6 +115,7 @@ func parseNetUNIX(r io.Reader) (*NetUNIX, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
 		}
 
@@ -364,13 +365,18 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
+=======
+			return nil, fmt.Errorf("%s: /proc/net/unix encountered data %q: %w", ErrFileParse, line, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 
 		nu.Rows = append(nu.Rows, item)
 	}
 
 	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %v", err)
+		return nil, fmt.Errorf("%s: /proc/net/unix encountered data: %w", ErrFileParse, err)
 	}
 
 	return &nu, nil
@@ -381,7 +387,7 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 
 	l := len(fields)
 	if l < min {
-		return nil, fmt.Errorf("expected at least %d fields but got %d", min, l)
+		return nil, fmt.Errorf("%w: expected at least %d fields but got %d", ErrFileParse, min, l)
 	}
 
 	// Field offsets are as follows:
@@ -391,30 +397,36 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 
 	users, err := u.parseUsers(fields[1])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ref count(%s): %v", fields[1], err)
+		return nil, fmt.Errorf("%s: ref count %q: %w", ErrFileParse, fields[1], err)
 	}
 
 	flags, err := u.parseFlags(fields[3])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse flags(%s): %v", fields[3], err)
+		return nil, fmt.Errorf("%s: Unable to parse flags %q: %w", ErrFileParse, fields[3], err)
 	}
 
 	typ, err := u.parseType(fields[4])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse type(%s): %v", fields[4], err)
+		return nil, fmt.Errorf("%s: Failed to parse type %q: %w", ErrFileParse, fields[4], err)
 	}
 
 	state, err := u.parseState(fields[5])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse state(%s): %v", fields[5], err)
+		return nil, fmt.Errorf("%s: Failed to parse state %q: %w", ErrFileParse, fields[5], err)
 	}
 
 	var inode uint64
 	if hasInode {
 		inode, err = u.parseInode(fields[6])
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
+=======
+			return nil, fmt.Errorf("%s failed to parse inode %q: %w", ErrFileParse, fields[6], err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 

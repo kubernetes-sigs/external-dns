@@ -14,6 +14,7 @@ import (
 )
 
 // ArrayCodec is the Codec used for bsoncore.Array values.
+<<<<<<< HEAD
 type ArrayCodec struct{}
 
 var defaultArrayCodec = NewArrayCodec()
@@ -35,6 +36,35 @@ func (ac *ArrayCodec) EncodeValue(ec EncodeContext, vw bsonrw.ValueWriter, val r
 
 // DecodeValue is the ValueDecoder for bsoncore.Array values.
 func (ac *ArrayCodec) DecodeValue(dc DecodeContext, vr bsonrw.ValueReader, val reflect.Value) error {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// Deprecated: ArrayCodec will not be directly accessible in Go Driver 2.0.
+type ArrayCodec struct{}
+
+var defaultArrayCodec = NewArrayCodec()
+
+// NewArrayCodec returns an ArrayCodec.
+//
+// Deprecated: NewArrayCodec will not be available in Go Driver 2.0. See
+// [ArrayCodec] for more details.
+func NewArrayCodec() *ArrayCodec {
+	return &ArrayCodec{}
+}
+
+// EncodeValue is the ValueEncoder for bsoncore.Array values.
+func (ac *ArrayCodec) EncodeValue(_ EncodeContext, vw bsonrw.ValueWriter, val reflect.Value) error {
+	if !val.IsValid() || val.Type() != tCoreArray {
+		return ValueEncoderError{Name: "CoreArrayEncodeValue", Types: []reflect.Type{tCoreArray}, Received: val}
+	}
+
+	arr := val.Interface().(bsoncore.Array)
+	return bsonrw.Copier{}.CopyArrayFromBytes(vw, arr)
+}
+
+// DecodeValue is the ValueDecoder for bsoncore.Array values.
+func (ac *ArrayCodec) DecodeValue(_ DecodeContext, vr bsonrw.ValueReader, val reflect.Value) error {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if !val.CanSet() || val.Type() != tCoreArray {
 		return ValueDecoderError{Name: "CoreArrayDecodeValue", Types: []reflect.Type{tCoreArray}, Received: val}
 	}

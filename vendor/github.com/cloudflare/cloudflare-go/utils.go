@@ -16,7 +16,12 @@ func buildURI(path string, options interface{}) string {
 }
 
 // loadFixture takes a series of path components and returns the JSON fixture at
+<<<<<<< HEAD
 // that locationassociated.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// that location associated.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func loadFixture(parts ...string) string {
 	paths := []string{"testdata", "fixtures"}
 	paths = append(paths, parts...)

@@ -16,8 +16,8 @@
 
 # Common IDE paths
 .vscode/
+.idea/
 
 vendor/**/
 .env
 coverage.txt
-

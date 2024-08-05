@@ -36,6 +36,7 @@ func Delay(delayed func() TestDeep) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	d := tdDelay{
 		base:    newBase(3),
 		delayed: delayed,
@@ -224,23 +225,50 @@ func (d *tdDelay) TypeBehind() reflect.Type {
 		panic("delayed param must be non-nil")
 	}
 	return &tdDelay{
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if delayed == nil {
+		panic("delayed param must be non-nil")
+	}
+	return &tdDelay{
+=======
+	d := tdDelay{
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		base:    newBase(3),
 		delayed: delayed,
 	}
+
+	if delayed == nil {
+		d.err = ctxerr.OpBad("Delay", "Delay(DELAYED): DELAYED must be non-nil")
+	}
+	return &d
 }
 
 func (d *tdDelay) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if d.err != nil {
+		return ctx.CollectError(d.err)
+	}
+
 	op := d.getOperator()
 	ctx.CurOperator = op // to have correct location
 	return op.Match(ctx, got)
 }
 
 func (d *tdDelay) String() string {
+	if d.err != nil {
+		return d.stringError()
+	}
 	return d.getOperator().String()
 }
 
 func (d *tdDelay) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if d.err != nil {
+		return nil
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return d.getOperator().TypeBehind()
 }
 

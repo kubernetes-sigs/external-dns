@@ -38,6 +38,7 @@ type xopPlaceholder struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NewBinary allocate a new Binary backed by the given byte slice, an auto-generated packageID and no MTOM-usage
 func NewBinary(v []byte) *Binary {
 	return &Binary{&v, "application/octet-stream", "", false}
@@ -239,6 +240,11 @@ func (b *Binary) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // NewBinary allocate a new Binary backed by the given byte slice
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// NewBinary allocate a new Binary backed by the given byte slice
+=======
+// NewBinary allocate a new Binary backed by the given byte slice, an auto-generated packageID and no MTOM-usage
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NewBinary(v []byte) *Binary {
 	return &Binary{&v, "application/octet-stream", "", false}
 }
@@ -246,6 +252,18 @@ func NewBinary(v []byte) *Binary {
 // Bytes returns a slice backed by the content of the field
 func (b *Binary) Bytes() []byte {
 	return *b.content
+}
+
+// SetUseMTOM activates the XOP transformation of binaries in MTOM requests
+func (b *Binary) SetUseMTOM(useMTOM bool) *Binary {
+	b.useMTOM = useMTOM
+	return b
+}
+
+// SetPackageID sets and overrides the default auto-generated package ID to be used for the multipart binary
+func (b *Binary) SetPackageID(packageID string) *Binary {
+	b.packageID = packageID
+	return b
 }
 
 // SetContentType sets the content type the content will be transmitted as multipart
@@ -262,8 +280,16 @@ func (b *Binary) ContentType() string {
 // MarshalXML implements the xml.Marshaler interface to encode a Binary to XML
 func (b *Binary) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 	if b.useMTOM {
+<<<<<<< HEAD
 		b.packageID = fmt.Sprintf("%d", rand.Int())
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		b.packageID = fmt.Sprintf("%d", rand.Int())
+=======
+		if b.packageID == "" {
+			b.packageID = fmt.Sprintf("%d", rand.Int())
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return enc.EncodeElement(struct {
 			Include *xopPlaceholder `xml:"http://www.w3.org/2004/08/xop/include Include"`
 		}{

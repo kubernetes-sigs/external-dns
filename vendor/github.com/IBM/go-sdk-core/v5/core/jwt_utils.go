@@ -33,6 +33,7 @@ func parseJWT(tokenString string) (claims *coreJWTClaims, err error) {
 	segments := strings.Split(tokenString, ".")
 	if len(segments) != 3 {
 		err = fmt.Errorf("token contains an invalid number of segments")
+<<<<<<< HEAD
 		return
 	}
 
@@ -63,4 +64,42 @@ func decodeSegment(seg string) ([]byte, error) {
 	}
 
 	return base64.URLEncoding.DecodeString(seg)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		err = SDKErrorf(err, "", "need-3-segs", getComponentInfo())
+		return
+	}
+
+	// Parse Claims segment.
+	var claimBytes []byte
+	claimBytes, err = decodeSegment(segments[1])
+	if err != nil {
+		return
+	}
+
+	// Now deserialize the claims segment into our coreClaims struct.
+	claims = &coreJWTClaims{}
+	err = json.Unmarshal(claimBytes, claims)
+	if err != nil {
+		err = fmt.Errorf("error unmarshalling token: %s", err.Error())
+		err = SDKErrorf(err, "", "bad-token", getComponentInfo())
+		return
+	}
+
+	return
+}
+
+// Decode JWT specific base64url encoding with padding stripped
+// Copied from https://github.com/golang-jwt/jwt/blob/main/token.go
+func decodeSegment(seg string) ([]byte, error) {
+	if l := len(seg) % 4; l > 0 {
+		seg += strings.Repeat("=", 4-l)
+	}
+
+	res, err := base64.URLEncoding.DecodeString(seg)
+	if err != nil {
+		err = SDKErrorf(err, fmt.Sprintf("error decoding claims segment: %s", err.Error()), "bad-claim-seg", getComponentInfo())
+	}
+	return res, err
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

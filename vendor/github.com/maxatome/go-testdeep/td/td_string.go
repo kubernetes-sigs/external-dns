@@ -41,6 +41,7 @@ func getString(ctx ctxerr.Context, got reflect.Value) (string, *ctxerr.Error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if got.Type().Elem() == types.Uint8 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -229,6 +230,11 @@ var _ TestDeep = &tdHasSuffix{}
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		if got.Type().Elem() == uint8Type {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		if got.Type().Elem() == uint8Type {
+=======
+		if got.Type().Elem() == types.Uint8 {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			return string(got.Bytes()), nil
 		}
 		fallthrough
@@ -266,14 +272,16 @@ var _ TestDeep = &tdString{}
 // input(String): str,slice([]byte),if(✓ + fmt.Stringer/error)
 
 // String operator allows to compare a string (or convertible), []byte
-// (or convertible), error or fmt.Stringer interface (error interface
-// is tested before fmt.Stringer).
+// (or convertible), error or [fmt.Stringer] interface (error interface
+// is tested before [fmt.Stringer]).
 //
-//   err := errors.New("error!")
-//   td.Cmp(t, err, td.String("error!")) // succeeds
+//	err := errors.New("error!")
+//	td.Cmp(t, err, td.String("error!")) // succeeds
 //
-//   bstr := bytes.NewBufferString("fmt.Stringer!")
-//   td.Cmp(t, bstr, td.String("fmt.Stringer!")) // succeeds
+//	bstr := bytes.NewBufferString("fmt.Stringer!")
+//	td.Cmp(t, bstr, td.String("fmt.Stringer!")) // succeeds
+//
+// See also [Contains], [HasPrefix], [HasSuffix], [Re] and [ReAll].
 func String(expected string) TestDeep {
 	return &tdString{
 		tdStringBase: newStringBase(expected),
@@ -314,19 +322,21 @@ var _ TestDeep = &tdHasPrefix{}
 // input(HasPrefix): str,slice([]byte),if(✓ + fmt.Stringer/error)
 
 // HasPrefix operator allows to compare the prefix of a string (or
-// convertible), []byte (or convertible), error or fmt.Stringer
-// interface (error interface is tested before fmt.Stringer).
+// convertible), []byte (or convertible), error or [fmt.Stringer]
+// interface (error interface is tested before [fmt.Stringer]).
 //
-//   td.Cmp(t, []byte("foobar"), td.HasPrefix("foo")) // succeeds
+//	td.Cmp(t, []byte("foobar"), td.HasPrefix("foo")) // succeeds
 //
-//   type Foobar string
-//   td.Cmp(t, Foobar("foobar"), td.HasPrefix("foo")) // succeeds
+//	type Foobar string
+//	td.Cmp(t, Foobar("foobar"), td.HasPrefix("foo")) // succeeds
 //
-//   err := errors.New("error!")
-//   td.Cmp(t, err, td.HasPrefix("err")) // succeeds
+//	err := errors.New("error!")
+//	td.Cmp(t, err, td.HasPrefix("err")) // succeeds
 //
-//   bstr := bytes.NewBufferString("fmt.Stringer!")
-//   td.Cmp(t, bstr, td.HasPrefix("fmt")) // succeeds
+//	bstr := bytes.NewBufferString("fmt.Stringer!")
+//	td.Cmp(t, bstr, td.HasPrefix("fmt")) // succeeds
+//
+// See also [Contains], [HasSuffix], [Re], [ReAll] and [String].
 func HasPrefix(expected string) TestDeep {
 	return &tdHasPrefix{
 		tdStringBase: newStringBase(expected),
@@ -367,20 +377,30 @@ var _ TestDeep = &tdHasSuffix{}
 // input(HasSuffix): str,slice([]byte),if(✓ + fmt.Stringer/error)
 
 // HasSuffix operator allows to compare the suffix of a string (or
-// convertible), []byte (or convertible), error or fmt.Stringer
-// interface (error interface is tested before fmt.Stringer).
+// convertible), []byte (or convertible), error or [fmt.Stringer]
+// interface (error interface is tested before [fmt.Stringer]).
 //
-//   td.Cmp(t, []byte("foobar"), td.HasSuffix("bar")) // succeeds
+//	td.Cmp(t, []byte("foobar"), td.HasSuffix("bar")) // succeeds
 //
-//   type Foobar string
-//   td.Cmp(t, Foobar("foobar"), td.HasSuffix("bar")) // succeeds
+//	type Foobar string
+//	td.Cmp(t, Foobar("foobar"), td.HasSuffix("bar")) // succeeds
 //
-//   err := errors.New("error!")
-//   td.Cmp(t, err, td.HasSuffix("!")) // succeeds
+//	err := errors.New("error!")
+//	td.Cmp(t, err, td.HasSuffix("!")) // succeeds
 //
+<<<<<<< HEAD
 //   bstr := bytes.NewBufferString("fmt.Stringer!")
 //   td.Cmp(t, bstr, td.HasSuffix("!")) // succeeds
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   bstr := bytes.NewBufferString("fmt.Stringer!")
+//   td.Cmp(t, bstr, td.HasSuffix("!")) // succeeds
+=======
+//	bstr := bytes.NewBufferString("fmt.Stringer!")
+//	td.Cmp(t, bstr, td.HasSuffix("!")) // succeeds
+//
+// See also [Contains], [HasPrefix], [Re], [ReAll] and [String].
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func HasSuffix(expected string) TestDeep {
 	return &tdHasSuffix{
 		tdStringBase: newStringBase(expected),

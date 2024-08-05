@@ -18,11 +18,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,9 +36,9 @@ type FakeEnvoyFilters struct {
 	ns   string
 }
 
-var envoyfiltersResource = schema.GroupVersionResource{Group: "networking.istio.io", Version: "v1alpha3", Resource: "envoyfilters"}
+var envoyfiltersResource = v1alpha3.SchemeGroupVersion.WithResource("envoyfilters")
 
-var envoyfiltersKind = schema.GroupVersionKind{Group: "networking.istio.io", Version: "v1alpha3", Kind: "EnvoyFilter"}
+var envoyfiltersKind = v1alpha3.SchemeGroupVersion.WithKind("EnvoyFilter")
 
 // Get takes name of the envoyFilter, and returns the corresponding envoyFilter object, and an error if there is any.
 func (c *FakeEnvoyFilters) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha3.EnvoyFilter, err error) {
@@ -115,7 +117,7 @@ func (c *FakeEnvoyFilters) UpdateStatus(ctx context.Context, envoyFilter *v1alph
 // Delete takes name of the envoyFilter and deletes it. Returns an error if one occurs.
 func (c *FakeEnvoyFilters) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(envoyfiltersResource, c.ns, name), &v1alpha3.EnvoyFilter{})
+		Invokes(testing.NewDeleteActionWithOptions(envoyfiltersResource, c.ns, name, opts), &v1alpha3.EnvoyFilter{})
 
 	return err
 }
@@ -132,6 +134,51 @@ func (c *FakeEnvoyFilters) DeleteCollection(ctx context.Context, opts v1.DeleteO
 func (c *FakeEnvoyFilters) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.EnvoyFilter, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(envoyfiltersResource, c.ns, name, pt, data, subresources...), &v1alpha3.EnvoyFilter{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha3.EnvoyFilter), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied envoyFilter.
+func (c *FakeEnvoyFilters) Apply(ctx context.Context, envoyFilter *networkingv1alpha3.EnvoyFilterApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.EnvoyFilter, err error) {
+	if envoyFilter == nil {
+		return nil, fmt.Errorf("envoyFilter provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(envoyFilter)
+	if err != nil {
+		return nil, err
+	}
+	name := envoyFilter.Name
+	if name == nil {
+		return nil, fmt.Errorf("envoyFilter.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(envoyfiltersResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha3.EnvoyFilter{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha3.EnvoyFilter), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeEnvoyFilters) ApplyStatus(ctx context.Context, envoyFilter *networkingv1alpha3.EnvoyFilterApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.EnvoyFilter, err error) {
+	if envoyFilter == nil {
+		return nil, fmt.Errorf("envoyFilter provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(envoyFilter)
+	if err != nil {
+		return nil, err
+	}
+	name := envoyFilter.Name
+	if name == nil {
+		return nil, fmt.Errorf("envoyFilter.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(envoyfiltersResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1alpha3.EnvoyFilter{})
 
 	if obj == nil {
 		return nil, err

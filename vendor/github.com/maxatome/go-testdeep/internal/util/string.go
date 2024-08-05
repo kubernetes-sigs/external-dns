@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright (c) 2018-2022, Maxime Soulé
 // All rights reserved.
 //
@@ -818,6 +819,11 @@ func typeFullName(b *bytes.Buffer, t reflect.Type) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Copyright (c) 2018, Maxime Soulé
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Copyright (c) 2018, Maxime Soulé
+=======
+// Copyright (c) 2018-2022, Maxime Soulé
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
@@ -827,6 +833,7 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"reflect"
 	"strconv"
@@ -838,7 +845,7 @@ import (
 )
 
 // ToString does its best to stringify val.
-func ToString(val interface{}) string {
+func ToString(val any) string {
 	if val == nil {
 		return "nil"
 	}
@@ -851,8 +858,8 @@ func ToString(val interface{}) string {
 		}
 
 	case []reflect.Value:
-		var buf bytes.Buffer
-		SliceToBuffer(&buf, tval)
+		var buf strings.Builder
+		SliceToString(&buf, tval)
 		return buf.String()
 
 		// no "(string) " prefix for printable strings
@@ -863,7 +870,15 @@ func ToString(val interface{}) string {
 	case int:
 		return strconv.Itoa(tval)
 
-		// no "(bool)" prefix for booleans
+		// no "(float64) " prefix for float64s
+	case float64:
+		s := strconv.FormatFloat(tval, 'g', -1, 64)
+		if strings.ContainsAny(s, "e.IN") { // I for Inf, N for NaN
+			return s
+		}
+		return s + ".0" // to distinguish from ints
+
+		// no "(bool) " prefix for booleans
 	case bool:
 		return TernStr(tval, "true", "false")
 
@@ -876,22 +891,39 @@ func ToString(val interface{}) string {
 
 // IndentString indents str lines (from 2nd one = 1st line is not
 // indented) by indent.
-func IndentString(str string, indent string) string {
-	return strings.Replace(str, "\n", "\n"+indent, -1)
+func IndentString(str, indent string) string {
+	return strings.ReplaceAll(str, "\n", "\n"+indent)
 }
 
 // IndentStringIn indents str lines (from 2nd one = 1st line is not
 // indented) by indent and write it to w.
-func IndentStringIn(w io.Writer, str string, indent string) {
+func IndentStringIn(w io.Writer, str, indent string) {
 	repl := strings.NewReplacer("\n", "\n"+indent)
 	repl.WriteString(w, str) //nolint: errcheck
 }
 
-// SliceToBuffer stringifies items slice into buf then returns buf.
-func SliceToBuffer(buf *bytes.Buffer, items []reflect.Value) *bytes.Buffer {
+// IndentColorizeStringIn indents str lines (from 2nd one = 1st line
+// is not indented) by indent and write it to w. Before each end of
+// line, colOff is inserted, and after each indent on new line, colOn
+// is inserted.
+func IndentColorizeStringIn(w io.Writer, str, indent, colOn, colOff string) {
+	if str != "" {
+		if colOn == "" && colOff == "" {
+			IndentStringIn(w, str, indent)
+			return
+		}
+		repl := strings.NewReplacer("\n", colOff+"\n"+indent+colOn)
+		io.WriteString(w, colOn)  //nolint: errcheck
+		repl.WriteString(w, str)  //nolint: errcheck
+		io.WriteString(w, colOff) //nolint: errcheck
+	}
+}
+
+// SliceToString stringifies items slice into buf then returns buf.
+func SliceToString(buf *strings.Builder, items []reflect.Value) *strings.Builder {
 	buf.WriteByte('(')
 
-	begLine := bytes.LastIndexByte(buf.Bytes(), '\n') + 1
+	begLine := strings.LastIndexByte(buf.String(), '\n') + 1
 	prefix := strings.Repeat(" ", buf.Len()-begLine)
 
 	if len(items) < 2 {
@@ -899,17 +931,118 @@ func SliceToBuffer(buf *bytes.Buffer, items []reflect.Value) *bytes.Buffer {
 			buf.WriteString(IndentString(ToString(items[0]), prefix))
 		}
 	} else {
-		for idx, item := range items {
-			if idx != 0 {
-				buf.WriteString(prefix)
-			}
-			buf.WriteString(IndentString(ToString(item), prefix))
+		buf.WriteString(IndentString(ToString(items[0]), prefix))
+		for _, item := range items[1:] {
 			buf.WriteString(",\n")
+			buf.WriteString(prefix)
+			buf.WriteString(IndentString(ToString(item), prefix))
 		}
-		buf.Truncate(buf.Len() - 2)
 	}
 	buf.WriteByte(')')
 
 	return buf
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// TypeFullName returns the t type name with packages fully visible
+// instead of the last package part in t.String().
+func TypeFullName(t reflect.Type) string {
+	var b bytes.Buffer
+	typeFullName(&b, t)
+	return b.String()
+}
+
+func typeFullName(b *bytes.Buffer, t reflect.Type) {
+	if t.Name() != "" {
+		if pkg := t.PkgPath(); pkg != "" {
+			fmt.Fprintf(b, "%s.", pkg)
+		}
+		b.WriteString(t.Name())
+		return
+	}
+
+	switch t.Kind() {
+	case reflect.Ptr:
+		b.WriteByte('*')
+		typeFullName(b, t.Elem())
+
+	case reflect.Slice:
+		b.WriteString("[]")
+		typeFullName(b, t.Elem())
+
+	case reflect.Array:
+		fmt.Fprintf(b, "[%d]", t.Len())
+		typeFullName(b, t.Elem())
+
+	case reflect.Map:
+		b.WriteString("map[")
+		typeFullName(b, t.Key())
+		b.WriteByte(']')
+		typeFullName(b, t.Elem())
+
+	case reflect.Struct:
+		b.WriteString("struct {")
+		if num := t.NumField(); num > 0 {
+			for i := 0; i < num; i++ {
+				sf := t.Field(i)
+				if !sf.Anonymous {
+					b.WriteByte(' ')
+					b.WriteString(sf.Name)
+				}
+				b.WriteByte(' ')
+				typeFullName(b, sf.Type)
+				b.WriteByte(';')
+			}
+			b.Truncate(b.Len() - 1)
+			b.WriteByte(' ')
+		}
+		b.WriteByte('}')
+
+	case reflect.Func:
+		b.WriteString("func(")
+		if num := t.NumIn(); num > 0 {
+			for i := 0; i < num; i++ {
+				if i == num-1 && t.IsVariadic() {
+					b.WriteString("...")
+					typeFullName(b, t.In(i).Elem())
+				} else {
+					typeFullName(b, t.In(i))
+				}
+				b.WriteString(", ")
+			}
+			b.Truncate(b.Len() - 2)
+		}
+		b.WriteByte(')')
+
+		if num := t.NumOut(); num > 0 {
+			if num == 1 {
+				b.WriteByte(' ')
+			} else {
+				b.WriteString(" (")
+			}
+			for i := 0; i < num; i++ {
+				typeFullName(b, t.Out(i))
+				b.WriteString(", ")
+			}
+			b.Truncate(b.Len() - 2)
+			if num > 1 {
+				b.WriteByte(')')
+			}
+		}
+
+	case reflect.Chan:
+		switch t.ChanDir() {
+		case reflect.RecvDir:
+			b.WriteString("<-chan ")
+		case reflect.SendDir:
+			b.WriteString("chan<- ")
+		case reflect.BothDir:
+			b.WriteString("chan ")
+		}
+		typeFullName(b, t.Elem())
+
+	default:
+		// Fallback to default implementation
+		b.WriteString(t.String())
+	}
 }

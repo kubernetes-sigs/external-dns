@@ -55,6 +55,11 @@ type Marshaler struct {
 // implement JSONPBUnmarshaler so that the custom format can be parsed.
 //
 // The JSON marshaling must follow the proto to JSON specification:
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //	https://developers.google.com/protocol-buffers/docs/proto3#json
 //
 // Deprecated: Custom types should implement protobuf reflection instead.

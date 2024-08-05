@@ -47,6 +47,9 @@ type RecordSet struct {
 	TTL          int      `json:"ttl"`
 	Account      string   `json:"account"`
 	Records      []Record `json:"records"`
+	FQDN         string   `json:"fqdn,omitempty"`
+	ZoneName     string   `json:"zoneName,omitempty"`
+	IsShared     *bool    `json:"zoneShared,omitempty"`
 }
 
 // RecordSetUpdateResponse represents

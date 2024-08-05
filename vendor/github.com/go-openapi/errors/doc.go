@@ -13,6 +13,7 @@
 // limitations under the License.
 
 /*
+<<<<<<< HEAD
 
 Package errors provides an Error interface and several concrete types
 implementing this interface to manage API errors and JSON-schema validation
@@ -24,5 +25,17 @@ it defines.
 It is used throughout the various go-openapi toolkit libraries
 (https://github.com/go-openapi).
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+Package errors provides an Error interface and several concrete types
+implementing this interface to manage API errors and JSON-schema validation
+errors.
+
+A middleware handler ServeError() is provided to serve the errors types
+it defines.
+
+It is used throughout the various go-openapi toolkit libraries
+(https://github.com/go-openapi).
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 */
 package errors

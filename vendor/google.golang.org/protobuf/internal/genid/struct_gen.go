@@ -18,6 +18,15 @@ const (
 	NullValue_enum_name     = "NullValue"
 )
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Enum values for google.protobuf.NullValue.
+const (
+	NullValue_NULL_VALUE_enum_value = 0
+)
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Names for google.protobuf.Struct.
 const (
 	Struct_message_name     protoreflect.Name     = "Struct"

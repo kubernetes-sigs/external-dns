@@ -30,6 +30,7 @@ import (
 	"net/url"
 	"strings"
 
+<<<<<<< HEAD
 	"github.com/PuerkitoBio/purell"
 	"github.com/go-openapi/jsonpointer"
 )
@@ -115,6 +116,96 @@ func (r *Ref) parse(jsonReferenceString string) error {
 	}
 
 	r.referenceURL, _ = url.Parse(purell.NormalizeURL(parsed, purell.FlagsSafe|purell.FlagRemoveDuplicateSlashes))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"github.com/go-openapi/jsonpointer"
+	"github.com/go-openapi/jsonreference/internal"
+)
+
+const (
+	fragmentRune = `#`
+)
+
+// New creates a new reference for the given string
+func New(jsonReferenceString string) (Ref, error) {
+
+	var r Ref
+	err := r.parse(jsonReferenceString)
+	return r, err
+
+}
+
+// MustCreateRef parses the ref string and panics when it's invalid.
+// Use the New method for a version that returns an error
+func MustCreateRef(ref string) Ref {
+	r, err := New(ref)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
+// Ref represents a json reference object
+type Ref struct {
+	referenceURL     *url.URL
+	referencePointer jsonpointer.Pointer
+
+	HasFullURL      bool
+	HasURLPathOnly  bool
+	HasFragmentOnly bool
+	HasFileScheme   bool
+	HasFullFilePath bool
+}
+
+// GetURL gets the URL for this reference
+func (r *Ref) GetURL() *url.URL {
+	return r.referenceURL
+}
+
+// GetPointer gets the json pointer for this reference
+func (r *Ref) GetPointer() *jsonpointer.Pointer {
+	return &r.referencePointer
+}
+
+// String returns the best version of the url for this reference
+func (r *Ref) String() string {
+
+	if r.referenceURL != nil {
+		return r.referenceURL.String()
+	}
+
+	if r.HasFragmentOnly {
+		return fragmentRune + r.referencePointer.String()
+	}
+
+	return r.referencePointer.String()
+}
+
+// IsRoot returns true if this reference is a root document
+func (r *Ref) IsRoot() bool {
+	return r.referenceURL != nil &&
+		!r.IsCanonical() &&
+		!r.HasURLPathOnly &&
+		r.referenceURL.Fragment == ""
+}
+
+// IsCanonical returns true when this pointer starts with http(s):// or file://
+func (r *Ref) IsCanonical() bool {
+	return (r.HasFileScheme && r.HasFullFilePath) || (!r.HasFileScheme && r.HasFullURL)
+}
+
+// "Constructor", parses the given string JSON reference
+func (r *Ref) parse(jsonReferenceString string) error {
+
+	parsed, err := url.Parse(jsonReferenceString)
+	if err != nil {
+		return err
+	}
+
+	internal.NormalizeURL(parsed)
+
+	r.referenceURL = parsed
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	refURL := r.referenceURL
 
 	if refURL.Scheme != "" && refURL.Host != "" {

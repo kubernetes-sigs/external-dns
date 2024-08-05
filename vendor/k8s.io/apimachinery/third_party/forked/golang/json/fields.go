@@ -29,6 +29,7 @@ const (
 func LookupPatchMetadataForStruct(t reflect.Type, jsonField string) (
 	elemType reflect.Type, patchStrategies []string, patchMergeKey string, e error) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
@@ -188,6 +189,11 @@ func typeFields(t reflect.Type) []field {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if t.Kind() == reflect.Ptr {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if t.Kind() == reflect.Ptr {
+=======
+	if t.Kind() == reflect.Pointer {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		t = t.Elem()
 	}
 
@@ -342,8 +348,14 @@ func typeFields(t reflect.Type) []field {
 				index[len(f.index)] = i
 
 				ft := sf.Type
+<<<<<<< HEAD
 				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
+=======
+				if ft.Name() == "" && ft.Kind() == reflect.Pointer {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 					// Follow pointer.
 					ft = ft.Elem()
 				}

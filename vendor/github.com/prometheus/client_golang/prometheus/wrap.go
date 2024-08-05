@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 
@@ -142,8 +143,15 @@ import (
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+	"github.com/golang/protobuf/proto"
+=======
+	"github.com/prometheus/client_golang/prometheus/internal"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	dto "github.com/prometheus/client_model/go"
+	"google.golang.org/protobuf/proto"
 )
 
 // WrapRegistererWith returns a Registerer wrapping the provided
@@ -155,8 +163,16 @@ import (
 // in a no-op Registerer.
 //
 // WrapRegistererWith provides a way to add fixed labels to a subset of
+<<<<<<< HEAD
 // Collectors. It should not be used to add fixed labels to all metrics exposed.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Collectors. It should not be used to add fixed labels to all metrics exposed.
+=======
+// Collectors. It should not be used to add fixed labels to all metrics
+// exposed. See also
+// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Conflicts between Collectors registered through the original Registerer with
 // Collectors registered through the wrapping Registerer will still be
@@ -304,7 +320,7 @@ func (m *wrappingMetric) Write(out *dto.Metric) error {
 			Value: proto.String(lv),
 		})
 	}
-	sort.Sort(labelPairSorter(out.Label))
+	sort.Sort(internal.LabelPairSorter(out.Label))
 	return nil
 }
 
@@ -326,7 +342,7 @@ func wrapDesc(desc *Desc, prefix string, labels Labels) *Desc {
 		constLabels[ln] = lv
 	}
 	// NewDesc will do remaining validations.
-	newDesc := NewDesc(prefix+desc.fqName, desc.help, desc.variableLabels, constLabels)
+	newDesc := V2.NewDesc(prefix+desc.fqName, desc.help, desc.variableLabels, constLabels)
 	// Propagate errors if there was any. This will override any errer
 	// created by NewDesc above, i.e. earlier errors get precedence.
 	if desc.err != nil {

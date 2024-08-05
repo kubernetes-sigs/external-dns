@@ -3,6 +3,7 @@
 reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - thockin
 - lavalamp
 - smarterclayton
@@ -160,3 +161,41 @@ reviewers:
 - cjcullen
 - david-mcmahon
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- thockin
+- lavalamp
+- smarterclayton
+- wojtek-t
+- deads2k
+- brendandburns
+- derekwaynecarr
+- caesarxuchao
+- mikedanese
+- liggitt
+- nikhiljindal
+- gmarek
+- erictune
+- saad-ali
+- janetkuo
+- tallclair
+- eparis
+- dims
+- hongchaodeng
+- krousey
+- cjcullen
+- david-mcmahon
+=======
+  - thockin
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - derekwaynecarr
+  - caesarxuchao
+  - mikedanese
+  - liggitt
+  - saad-ali
+  - janetkuo
+  - tallclair
+  - dims
+  - cjcullen
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

@@ -18,6 +18,7 @@ limitations under the License.
 
 package v1beta1
 
+<<<<<<< HEAD
 <<<<<<< HEAD:vendor/k8s.io/client-go/pkg/apis/clientauthentication/v1beta1/conversion.go
 import (
 <<<<<<< HEAD
@@ -127,3 +128,13 @@ type GatewayClassExpansion interface{}
 
 type HTTPRouteExpansion interface{}
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1):vendor/sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1beta1/generated_expansion.go
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+type GatewayExpansion interface{}
+
+type GatewayClassExpansion interface{}
+
+type HTTPRouteExpansion interface{}
+
+type ReferenceGrantExpansion interface{}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

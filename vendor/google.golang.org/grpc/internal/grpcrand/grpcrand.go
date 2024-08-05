@@ -1,3 +1,8 @@
+//go:build !go1.21
+
+// TODO: when this file is deleted (after Go 1.20 support is dropped), delete
+// all of grpcrand and call the rand package directly.
+
 /*
  *
  * Copyright 2018 gRPC authors.
@@ -31,6 +36,7 @@ var (
 	mu sync.Mutex
 )
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -241,27 +247,79 @@ var Shuffle = func(n int, f func(int, int)) {
 	r.Shuffle(n, f)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Int implements rand.Int on the grpcrand global source.
+func Int() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return r.Int()
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Int63n implements rand.Int63n on the grpcrand global source.
 func Int63n(n int64) int64 {
 	mu.Lock()
-	res := r.Int63n(n)
-	mu.Unlock()
-	return res
+	defer mu.Unlock()
+	return r.Int63n(n)
 }
 
 // Intn implements rand.Intn on the grpcrand global source.
 func Intn(n int) int {
 	mu.Lock()
-	res := r.Intn(n)
-	mu.Unlock()
-	return res
+	defer mu.Unlock()
+	return r.Intn(n)
+}
+
+// Int31n implements rand.Int31n on the grpcrand global source.
+func Int31n(n int32) int32 {
+	mu.Lock()
+	defer mu.Unlock()
+	return r.Int31n(n)
 }
 
 // Float64 implements rand.Float64 on the grpcrand global source.
 func Float64() float64 {
 	mu.Lock()
+<<<<<<< HEAD
 	res := r.Float64()
 	mu.Unlock()
 	return res
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	res := r.Float64()
+	mu.Unlock()
+	return res
+=======
+	defer mu.Unlock()
+	return r.Float64()
+}
+
+// Uint64 implements rand.Uint64 on the grpcrand global source.
+func Uint64() uint64 {
+	mu.Lock()
+	defer mu.Unlock()
+	return r.Uint64()
+}
+
+// Uint32 implements rand.Uint32 on the grpcrand global source.
+func Uint32() uint32 {
+	mu.Lock()
+	defer mu.Unlock()
+	return r.Uint32()
+}
+
+// ExpFloat64 implements rand.ExpFloat64 on the grpcrand global source.
+func ExpFloat64() float64 {
+	mu.Lock()
+	defer mu.Unlock()
+	return r.ExpFloat64()
+}
+
+// Shuffle implements rand.Shuffle on the grpcrand global source.
+var Shuffle = func(n int, f func(int, int)) {
+	mu.Lock()
+	defer mu.Unlock()
+	r.Shuffle(n, f)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

@@ -92,6 +92,11 @@ func NewMaintenance(c *Client) Maintenance {
 			err = c.getToken(dctx)
 			cancel()
 			if err != nil {
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+				conn.Close()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				return nil, nil, fmt.Errorf("failed to getToken from endpoint %s with maintenance client: %v", endpoint, err)
 			}
 			cancel = func() { conn.Close() }

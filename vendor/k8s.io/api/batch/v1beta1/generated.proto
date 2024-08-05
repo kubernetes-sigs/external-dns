@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.batch.v1beta1;
@@ -456,6 +457,11 @@ message CronJobStatus {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package k8s.io.api.batch.v1beta1;
 
@@ -466,7 +472,7 @@ import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
-option go_package = "v1beta1";
+option go_package = "k8s.io/api/batch/v1beta1";
 
 // CronJob represents the configuration of a single cron job.
 message CronJob {
@@ -502,6 +508,18 @@ message CronJobSpec {
   // The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
   optional string schedule = 1;
 
+  // The time zone name for the given schedule, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+  // If not specified, this will default to the time zone of the kube-controller-manager process.
+  // The set of valid time zone names and the time zone offset is loaded from the system-wide time zone
+  // database by the API server during CronJob validation and the controller manager during execution.
+  // If no system-wide time zone database can be found a bundled version of the database is used instead.
+  // If the time zone name becomes invalid during the lifetime of a CronJob or due to a change in host
+  // configuration, the controller will stop creating new new Jobs and will create a system event with the
+  // reason UnknownTimeZone.
+  // More information can be found in https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones
+  // +optional
+  optional string timeZone = 8;
+
   // Optional deadline in seconds for starting the job if it misses scheduled
   // time for any reason.  Missed jobs executions will be counted as failed ones.
   // +optional
@@ -509,6 +527,7 @@ message CronJobSpec {
 
   // Specifies how to treat concurrent executions of a Job.
   // Valid values are:
+  //
   // - "Allow" (default): allows CronJobs to run concurrently;
   // - "Forbid": forbids concurrent runs, skipping next run if previous run hasn't finished yet;
   // - "Replace": cancels currently running job and replaces it with a new one
@@ -540,25 +559,23 @@ message CronJobSpec {
 message CronJobStatus {
   // A list of pointers to currently running jobs.
   // +optional
+  // +listType=atomic
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
 
   // Information when was the last time the job was successfully scheduled.
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduleTime = 4;
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-// JobTemplate describes a template for creating copies of a predefined pod.
-message JobTemplate {
-  // Standard object's metadata.
-  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+  // Information when was the last time the job successfully completed.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  // Defines jobs that will be created from this template.
-  // https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-  // +optional
-  optional JobTemplateSpec template = 2;
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastSuccessfulTime = 5;
 }
 
 // JobTemplateSpec describes the data a Job should have when created from a template

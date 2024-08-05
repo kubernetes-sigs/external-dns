@@ -17,9 +17,10 @@ import (
 var (
 	ErrNilArguments                = errors.New("src and dst must not be nil")
 	ErrDifferentArgumentsTypes     = errors.New("src and dst must be of same type")
-	ErrNotSupported                = errors.New("only structs and maps are supported")
+	ErrNotSupported                = errors.New("only structs, maps, and slices are supported")
 	ErrExpectedMapAsDestination    = errors.New("dst was expected to be a map")
 	ErrExpectedStructAsDestination = errors.New("dst was expected to be a struct")
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -402,6 +403,10 @@ func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err 
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ErrNonPointerArgument          = errors.New("dst must be a pointer")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // During deepMerge, must keep track of checks that are
@@ -409,13 +414,13 @@ func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err 
 // checks in progress are true when it reencounters them.
 // Visited are stored in a map indexed by 17 * a1 + a2;
 type visit struct {
-	ptr  uintptr
 	typ  reflect.Type
 	next *visit
+	ptr  uintptr
 }
 
 // From src/pkg/encoding/json/encode.go.
-func isEmptyValue(v reflect.Value) bool {
+func isEmptyValue(v reflect.Value, shouldDereference bool) bool {
 	switch v.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
 		return v.Len() == 0
@@ -431,7 +436,10 @@ func isEmptyValue(v reflect.Value) bool {
 		if v.IsNil() {
 			return true
 		}
-		return isEmptyValue(v.Elem())
+		if shouldDereference {
+			return isEmptyValue(v.Elem(), shouldDereference)
+		}
+		return false
 	case reflect.Func:
 		return v.IsNil()
 	case reflect.Invalid:
@@ -446,7 +454,7 @@ func resolveValues(dst, src interface{}) (vDst, vSrc reflect.Value, err error) {
 		return
 	}
 	vDst = reflect.ValueOf(dst).Elem()
-	if vDst.Kind() != reflect.Struct && vDst.Kind() != reflect.Map {
+	if vDst.Kind() != reflect.Struct && vDst.Kind() != reflect.Map && vDst.Kind() != reflect.Slice {
 		err = ErrNotSupported
 		return
 	}
@@ -457,6 +465,7 @@ func resolveValues(dst, src interface{}) (vDst, vSrc reflect.Value, err error) {
 	}
 	return
 }
+<<<<<<< HEAD
 
 // Traverses recursively both values, assigning src's fields values to dst.
 // The map argument tracks comparisons that have already been seen, which allows
@@ -478,3 +487,26 @@ func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err 
 	return // TODO refactor
 }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+// Traverses recursively both values, assigning src's fields values to dst.
+// The map argument tracks comparisons that have already been seen, which allows
+// short circuiting on recursive types.
+func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err error) {
+	if dst.CanAddr() {
+		addr := dst.UnsafeAddr()
+		h := 17 * addr
+		seen := visited[h]
+		typ := dst.Type()
+		for p := seen; p != nil; p = p.next {
+			if p.ptr == addr && p.typ == typ {
+				return nil
+			}
+		}
+		// Remember, remember...
+		visited[h] = &visit{addr, typ, seen}
+	}
+	return // TODO refactor
+}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

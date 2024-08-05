@@ -72,11 +72,11 @@ func (s *DataFeedsService) Create(sourceID string, df *data.Feed) (*http.Respons
 
 // Update takes a *Feed and modifies and existing data feed.
 // Note:
-//  - The 'data' portion of a feed does not actually
-//    get updated during a POST. In order to update a feeds'
-//    'data' attribute, one must use the Publish method.
-//  - Both the 'destinations' and 'networks' attributes are
-//    not updated during a POST.
+//   - The 'data' portion of a feed does not actually
+//     get updated during a POST. In order to update a feeds'
+//     'data' attribute, one must use the Publish method.
+//   - Both the 'destinations' and 'networks' attributes are
+//     not updated during a POST.
 //
 // NS1 API docs: https://ns1.com/api/#feeds-post
 func (s *DataFeedsService) Update(sourceID string, df *data.Feed) (*http.Response, error) {

@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+<<<<<<< HEAD
 	"log"
 	"net"
 	"net/http"
@@ -34,6 +35,40 @@ func (c *Client) sendWithNetworkFailureRetry(req *http.Request, retryable bool) 
 				duration := durationFunc(idx)
 				if c.debug {
 					log.Printf(tplNetworkFailureRetry, idx, maxRetries, duration.Seconds(), err.Error())
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"net"
+	"net/http"
+	"reflect"
+	"time"
+
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
+	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
+)
+
+const (
+	tplNetworkFailureRetry = "[WARN] temporary network failure, retrying (%d/%d) in %f seconds: %s"
+)
+
+func (c *Client) sendWithNetworkFailureRetry(req *http.Request, retryable bool) (resp *http.Response, err error) {
+	// make sure maxRetries is more than or equal 0
+	var maxRetries int
+	if retryable {
+		maxRetries = maxInt(c.profile.NetworkFailureMaxRetries, 0)
+	}
+	durationFunc := safeDurationFunc(c.profile.NetworkFailureRetryDuration)
+
+	for idx := 0; idx <= maxRetries; idx++ {
+		resp, err = c.sendHttp(req)
+
+		// retry when error occurred and retryable and not the last retry
+		// should not sleep on last retry even if it's retryable
+		if err != nil && retryable && idx < maxRetries {
+			if err, ok := err.(net.Error); ok && (err.Timeout() || err.Temporary()) {
+				duration := durationFunc(idx)
+				if c.debug {
+					c.logger.Printf(tplNetworkFailureRetry, idx, maxRetries, duration.Seconds(), err.Error())
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				}
 
 				time.Sleep(duration)

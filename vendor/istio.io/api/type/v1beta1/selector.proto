@@ -13,14 +13,13 @@
 // limitations under the License.
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-
 // $title: Workload Selector
 // $description: Definition of a workload selector.
-// $location: https://istio.io/latest/docs/reference/config/networking/sidecar/
-// $aliases: [https://istio.io/docs/reference/config/type/v1beta1/workload-selector.html]
+// $location: https://istio.io/docs/reference/config/type/workload-selector.html
 
 package istio.type.v1beta1;
+
+import "google/api/field_behavior.proto";
 
 option go_package="istio.io/api/type/v1beta1";
 
@@ -34,5 +33,85 @@ message WorkloadSelector {
   // One or more labels that indicate a specific set of pods/VMs
   // on which a policy should be applied. The scope of label search is restricted to
   // the configuration namespace in which the resource is present.
-  map<string, string> match_labels = 1 [(google.api.field_behavior) = REQUIRED];
+  map<string, string> match_labels = 1;
+}
+
+// PortSelector is the criteria for specifying if a policy can be applied to 
+// a listener having a specific port.
+message PortSelector {
+  // Port number
+  // +kubebuilder:validation:Minimum=1
+  // +kubebuilder:validation:Maximum=65535
+  uint32 number = 1  [(google.api.field_behavior) = REQUIRED];
+}
+
+// WorkloadMode allows selection of the role of the underlying workload in
+// network traffic. A workload is considered as acting as a SERVER if it is
+// the destination of the traffic (that is, traffic direction, from the
+// perspective of the workload is *inbound*). If the workload is the source of
+// the network traffic, it is considered to be in CLIENT mode (traffic is
+// *outbound* from the workload).
+enum WorkloadMode {
+  // Default value, which will be interpreted by its own usage.
+  UNDEFINED = 0;
+
+  // Selects for scenarios when the workload is the
+  // source of the network traffic. In addition, 
+  // if the workload is a gateway, selects this.
+  CLIENT = 1;
+
+  // Selects for scenarios when the workload is the
+  // destination of the network traffic.
+  SERVER = 2;
+
+  // Selects for scenarios when the workload is either the
+  // source or destination of the network traffic.
+  CLIENT_AND_SERVER = 3;
+}
+
+// PolicyTargetReference format as defined by [GEP-713](https://gateway-api.sigs.k8s.io/geps/gep-713/#policy-targetref-api).
+//
+// PolicyTargetReferences specifies the targeted resource which the policy
+// can be applied to. It must only target a single resource at a time, but it
+// can be used to target larger resources such as Gateways that may apply to
+// multiple child resources. The PolicyTargetReference will be used instead of
+// a WorkloadSelector in the RequestAuthentication, AuthorizationPolicy,
+// Telemetry, and WasmPlugin CRDs to target a Kubernetes Gateway.
+//
+// The following is an example of an AuthorizationPolicy bound to a waypoint proxy using 
+// a PolicyTargetReference. The example sets `action` to `DENY` to create a deny policy.
+// It denies all the requests with `POST` method on port `8080` directed through the
+// `waypoint` Gateway in the `foo` namespace.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   name: httpbin
+//   namespace: foo
+// spec:
+//   targetRef:
+//     name: waypoint
+//     kind: Gateway
+//     group: gateway.networking.k8s.io
+//   action: DENY
+//   rules:
+//   - to:
+//     - operation:
+//         methods: ["POST"]
+//         ports: ["8080"]
+// ```
+message PolicyTargetReference {
+  // group is the group of the target resource.
+  string group = 1;
+
+  // kind is kind of the target resource.
+  string kind = 2;
+
+  // name is the name of the target resource.
+  string name = 3;
+
+  // namespace is the namespace of the referent. When unspecified, the local
+  // namespace is inferred.
+  string namespace = 4;
 }

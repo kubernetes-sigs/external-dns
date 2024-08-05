@@ -15,6 +15,7 @@
 package errors
 
 import (
+<<<<<<< HEAD
 	"fmt"
 	"net/http"
 )
@@ -43,6 +44,55 @@ func (e *Validation) ValidateName(name string) *Validation {
 	if e.Name == "" && name != "" {
 		e.Name = name
 		e.message = name + e.message
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
+
+// Validation represents a failure of a precondition
+type Validation struct {
+	code    int32
+	Name    string
+	In      string
+	Value   interface{}
+	message string
+	Values  []interface{}
+}
+
+func (e *Validation) Error() string {
+	return e.message
+}
+
+// Code the error code
+func (e *Validation) Code() int32 {
+	return e.code
+}
+
+// MarshalJSON implements the JSON encoding interface
+func (e Validation) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"code":    e.code,
+		"message": e.message,
+		"in":      e.In,
+		"name":    e.Name,
+		"value":   e.Value,
+		"values":  e.Values,
+	})
+}
+
+// ValidateName sets the name for a validation or updates it for a nested property
+func (e *Validation) ValidateName(name string) *Validation {
+	if name != "" {
+		if e.Name == "" {
+			e.Name = name
+			e.message = name + e.message
+		} else {
+			e.Name = name + "." + e.Name
+			e.message = name + "." + e.message
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return e
 }

@@ -1,0 +1,67 @@
+{
+  "nixpkgs-flox": {
+    "x86_64-darwin": {
+      "stable": {
+        "go_1_20": {
+          "latest": {
+            "cache": {
+              "out": {
+                "https://cache.nixos.org": {}
+              }
+            },
+            "element": {
+              "attrPath": [
+                "legacyPackages",
+                "x86_64-darwin",
+                "go_1_20"
+              ],
+              "originalUrl": "flake:nixpkgs",
+              "storePaths": [
+                "/nix/store/0pp0svlrkdls28dixb6a7kqa567gs59v-go-1.20.1"
+              ],
+              "url": "github:flox/nixpkgs/d0d55259081f0b97c828f38559cad899d351cad1"
+            },
+            "eval": {
+              "meta": {
+                "description": "The Go Programming language",
+                "outputsToInstall": [
+                  "out"
+                ],
+                "position": "/nix/store/32cp7y0cf36h3xp0fqwy2nf432fpcaci-source/pkgs/development/compilers/go/1.20.nix:176",
+                "unfree": false
+              },
+              "name": "go-1.20.1",
+              "outputs": {
+                "out": "/nix/store/0pp0svlrkdls28dixb6a7kqa567gs59v-go-1.20.1"
+              },
+              "pname": "go",
+              "system": "x86_64-darwin",
+              "version": "1.20.1"
+            },
+            "publish_element": {
+              "attrPath": [
+                "evalCatalog",
+                "x86_64-darwin",
+                "stable",
+                "go_1_20"
+              ],
+              "originalUrl": "flake:nixpkgs-flox",
+              "storePaths": [
+                "/nix/store/0pp0svlrkdls28dixb6a7kqa567gs59v-go-1.20.1"
+              ],
+              "url": "flake:nixpkgs-flox/b7e7e40e2aa1ca2a44db440f5dc52213564af02f"
+            },
+            "source": {
+              "locked": {
+                "lastModified": 1676973346,
+                "revCount": 456418
+              }
+            },
+            "type": "catalogRender",
+            "version": 1
+          }
+        }
+      }
+    }
+  }
+}

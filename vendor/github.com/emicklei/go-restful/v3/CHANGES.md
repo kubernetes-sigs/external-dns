@@ -1,6 +1,47 @@
 # Change history of go-restful
 
+<<<<<<< HEAD
 ## [v3.8.0] - 20221-06-06
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+## [v3.12.0] - 2024-03-11
+- add Flush method #529 (#538)
+- fix: Improper handling of empty POST requests (#543)
+
+## [v3.11.3] - 2024-01-09
+- better not have 2 tags on one commit
+
+## [v3.11.1, v3.11.2] - 2024-01-09
+
+- fix by restoring custom JSON handler functions (Mike Beaumont #540)
+
+## [v3.11.0] - 2023-08-19
+
+- restored behavior as <= v3.9.0 with option to change path strategy using TrimRightSlashEnabled. 
+
+## [v3.10.2] - 2023-03-09 - DO NOT USE
+
+- introduced MergePathStrategy to be able to revert behaviour of path concatenation to 3.9.0
+  see comment in Readme how to customize this behaviour.
+
+## [v3.10.1] - 2022-11-19 - DO NOT USE
+
+- fix broken 3.10.0 by using path package for joining paths
+
+## [v3.10.0] - 2022-10-11 - BROKEN
+
+- changed tokenizer to match std route match behavior; do not trimright the path (#511)
+- Add MIME_ZIP (#512)
+- Add MIME_ZIP and HEADER_ContentDisposition (#513)
+- Changed how to get query parameter issue #510
+
+## [v3.9.0] - 2022-07-21
+
+- add support for http.Handler implementations to work as FilterFunction, issue #504 (thanks to https://github.com/ggicci)
+
+## [v3.8.0] - 2022-06-06
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 - use exact matching of allowed domain entries, issue #489 (#493)
 	- this changes fixes [security] Authorization Bypass Through User-Controlled Key

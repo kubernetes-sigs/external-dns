@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,6 +32,40 @@ type TeamsDeviceListItem struct {
 	OSVersion        string   `json:"os_version,omitempty"`
 	OSDistroName     string   `json:"os_distro_name,omitempty"`
 	OsDistroRevision string   `json:"os_distro_revision,omitempty"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+	"net/http"
+
+	"github.com/goccy/go-json"
+)
+
+type TeamsDevicesList struct {
+	Response
+	Result []TeamsDeviceListItem `json:"result"`
+}
+
+type TeamsDeviceDetail struct {
+	Response
+	Result TeamsDeviceListItem `json:"result"`
+}
+
+type TeamsDeviceListItem struct {
+	User             UserItem `json:"user,omitempty"`
+	ID               string   `json:"id,omitempty"`
+	Key              string   `json:"key,omitempty"`
+	DeviceType       string   `json:"device_type,omitempty"`
+	Name             string   `json:"name,omitempty"`
+	Model            string   `json:"model,omitempty"`
+	Manufacturer     string   `json:"manufacturer,omitempty"`
+	Deleted          bool     `json:"deleted,omitempty"`
+	Version          string   `json:"version,omitempty"`
+	SerialNumber     string   `json:"serial_number,omitempty"`
+	OSVersion        string   `json:"os_version,omitempty"`
+	OSDistroName     string   `json:"os_distro_name,omitempty"`
+	OsDistroRevision string   `json:"os_distro_revision,omitempty"`
+	OSVersionExtra   string   `json:"os_version_extra,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	MacAddress       string   `json:"mac_address,omitempty"`
 	IP               string   `json:"ip,omitempty"`
 	Created          string   `json:"created,omitempty"`

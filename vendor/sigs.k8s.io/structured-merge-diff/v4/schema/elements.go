@@ -73,6 +73,7 @@ type Atom struct {
 }
 
 // Scalar (AKA "primitive") represents a type which has a single value which is
+<<<<<<< HEAD
 // either numeric, string, or boolean.
 //
 // TODO: split numeric into float/int? Something even more fine-grained?
@@ -82,6 +83,19 @@ const (
 	Numeric = Scalar("numeric")
 	String  = Scalar("string")
 	Boolean = Scalar("boolean")
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// either numeric, string, or boolean, or untyped for any of them.
+//
+// TODO: split numeric into float/int? Something even more fine-grained?
+type Scalar string
+
+const (
+	Numeric = Scalar("numeric")
+	String  = Scalar("string")
+	Boolean = Scalar("boolean")
+	Untyped = Scalar("untyped")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // ElementRelationship is an enum of the different possible relationships

@@ -2,6 +2,7 @@ package shareddefaults
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"os/user"
 	"path/filepath"
 )
@@ -47,8 +48,12 @@ func UserHomeDir() string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"os"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"os"
+=======
+	"os/user"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"path/filepath"
-	"runtime"
 )
 
 // SharedCredentialsFilename returns the SDK's default file path
@@ -76,11 +81,26 @@ func SharedConfigFilename() string {
 // UserHomeDir returns the home directory for the user the process is
 // running under.
 func UserHomeDir() string {
-	if runtime.GOOS == "windows" { // Windows
-		return os.Getenv("USERPROFILE")
+	var home string
+
+	home = userHomeDir()
+	if len(home) > 0 {
+		return home
 	}
 
+<<<<<<< HEAD
 	// *nix
 	return os.Getenv("HOME")
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// *nix
+	return os.Getenv("HOME")
+=======
+	currUser, _ := user.Current()
+	if currUser != nil {
+		home = currUser.HomeDir
+	}
+
+	return home
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

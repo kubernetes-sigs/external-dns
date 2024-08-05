@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 Copyright (c) 2015-2020, Cloudflare. All rights reserved.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -43,6 +44,11 @@ Copyright (c) 2015-2022, Cloudflare. All rights reserved.
 =======
 Copyright (c) 2015-2019, Cloudflare. All rights reserved.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+Copyright (c) 2015-2019, Cloudflare. All rights reserved.
+=======
+Copyright (c) 2015-2022, Cloudflare. All rights reserved.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:

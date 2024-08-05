@@ -176,6 +176,7 @@ func (d decoder) unmarshalAny(m protoreflect.Message) error {
 	// Use another decoder to parse the unread bytes for @type field. This
 	// avoids advancing a read from current decoder because the current JSON
 	// object may contain the fields of the embedded type.
+<<<<<<< HEAD
 	dec := decoder{d.Clone(), UnmarshalOptions{}}
 	tok, err := findTypeURL(dec)
 	switch err {
@@ -350,6 +351,164 @@ func (d decoder) skipJSONValue() error {
 		}
 	}
 	return nil
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	dec := decoder{d.Clone(), UnmarshalOptions{RecursionLimit: d.opts.RecursionLimit}}
+	tok, err := findTypeURL(dec)
+	switch err {
+	case errEmptyObject:
+		// An empty JSON object translates to an empty Any message.
+		d.Read() // Read json.ObjectOpen.
+		d.Read() // Read json.ObjectClose.
+		return nil
+
+	case errMissingType:
+		if d.opts.DiscardUnknown {
+			// Treat all fields as unknowns, similar to an empty object.
+			return d.skipJSONValue()
+		}
+		// Use start.Pos() for line position.
+		return d.newError(start.Pos(), err.Error())
+
+	default:
+		if err != nil {
+			return err
+		}
+	}
+
+	typeURL := tok.ParsedString()
+	emt, err := d.opts.Resolver.FindMessageByURL(typeURL)
+	if err != nil {
+		return d.newError(tok.Pos(), "unable to resolve %v: %q", tok.RawString(), err)
+	}
+
+	// Create new message for the embedded message type and unmarshal into it.
+	em := emt.New()
+	if unmarshal := wellKnownTypeUnmarshaler(emt.Descriptor().FullName()); unmarshal != nil {
+		// If embedded message is a custom type,
+		// unmarshal the JSON "value" field into it.
+		if err := d.unmarshalAnyValue(unmarshal, em); err != nil {
+			return err
+		}
+	} else {
+		// Else unmarshal the current JSON object into it.
+		if err := d.unmarshalMessage(em, true); err != nil {
+			return err
+		}
+	}
+	// Serialize the embedded message and assign the resulting bytes to the
+	// proto value field.
+	b, err := proto.MarshalOptions{
+		AllowPartial:  true, // No need to check required fields inside an Any.
+		Deterministic: true,
+	}.Marshal(em.Interface())
+	if err != nil {
+		return d.newError(start.Pos(), "error in marshaling Any.value field: %v", err)
+	}
+
+	fds := m.Descriptor().Fields()
+	fdType := fds.ByNumber(genid.Any_TypeUrl_field_number)
+	fdValue := fds.ByNumber(genid.Any_Value_field_number)
+
+	m.Set(fdType, protoreflect.ValueOfString(typeURL))
+	m.Set(fdValue, protoreflect.ValueOfBytes(b))
+	return nil
+}
+
+var errEmptyObject = fmt.Errorf(`empty object`)
+var errMissingType = fmt.Errorf(`missing "@type" field`)
+
+// findTypeURL returns the token for the "@type" field value from the given
+// JSON bytes. It is expected that the given bytes start with json.ObjectOpen.
+// It returns errEmptyObject if the JSON object is empty or errMissingType if
+// @type field does not exist. It returns other error if the @type field is not
+// valid or other decoding issues.
+func findTypeURL(d decoder) (json.Token, error) {
+	var typeURL string
+	var typeTok json.Token
+	numFields := 0
+	// Skip start object.
+	d.Read()
+
+Loop:
+	for {
+		tok, err := d.Read()
+		if err != nil {
+			return json.Token{}, err
+		}
+
+		switch tok.Kind() {
+		case json.ObjectClose:
+			if typeURL == "" {
+				// Did not find @type field.
+				if numFields > 0 {
+					return json.Token{}, errMissingType
+				}
+				return json.Token{}, errEmptyObject
+			}
+			break Loop
+
+		case json.Name:
+			numFields++
+			if tok.Name() != "@type" {
+				// Skip value.
+				if err := d.skipJSONValue(); err != nil {
+					return json.Token{}, err
+				}
+				continue
+			}
+
+			// Return error if this was previously set already.
+			if typeURL != "" {
+				return json.Token{}, d.newError(tok.Pos(), `duplicate "@type" field`)
+			}
+			// Read field value.
+			tok, err := d.Read()
+			if err != nil {
+				return json.Token{}, err
+			}
+			if tok.Kind() != json.String {
+				return json.Token{}, d.newError(tok.Pos(), `@type field value is not a string: %v`, tok.RawString())
+			}
+			typeURL = tok.ParsedString()
+			if typeURL == "" {
+				return json.Token{}, d.newError(tok.Pos(), `@type field contains empty value`)
+			}
+			typeTok = tok
+		}
+	}
+
+	return typeTok, nil
+}
+
+// skipJSONValue parses a JSON value (null, boolean, string, number, object and
+// array) in order to advance the read to the next JSON value. It relies on
+// the decoder returning an error if the types are not in valid sequence.
+func (d decoder) skipJSONValue() error {
+	var open int
+	for {
+		tok, err := d.Read()
+		if err != nil {
+			return err
+		}
+		switch tok.Kind() {
+		case json.ObjectClose, json.ArrayClose:
+			open--
+		case json.ObjectOpen, json.ArrayOpen:
+			open++
+			if open > d.opts.RecursionLimit {
+				return errors.New("exceeded max recursion depth")
+			}
+		case json.EOF:
+			// This can only happen if there's a bug in Decoder.Read.
+			// Avoid an infinite loop if this does happen.
+			return errors.New("unexpected EOF")
+		}
+		if open == 0 {
+			return nil
+		}
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // unmarshalAnyValue unmarshals the given custom-type message from the JSON

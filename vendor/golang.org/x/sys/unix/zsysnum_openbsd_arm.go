@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build arm && openbsd
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -31,10 +32,16 @@
 //go:build arm && openbsd
 >>>>>>> 4d7e5ad26 (update vendored files)
 // +build arm,openbsd
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build arm,openbsd
+=======
+//go:build arm && openbsd
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
 // Deprecated: Use libc wrappers instead of direct syscalls.
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build arm,openbsd
@@ -42,6 +49,9 @@ package unix
 package unix
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 const (
 	SYS_EXIT           = 1   // { void sys_exit(int rval); }
 	SYS_FORK           = 2   // { int sys_fork(void); }

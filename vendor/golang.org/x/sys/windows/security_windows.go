@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"unsafe"
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 const (
@@ -3602,6 +3603,11 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 =======
 
 	"golang.org/x/sys/internal/unsafeheader"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+	"golang.org/x/sys/internal/unsafeheader"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 const (
@@ -4217,6 +4223,7 @@ func (tml *Tokenmandatorylabel) Size() uint32 {
 
 // Authorization Functions
 //sys	checkTokenMembership(tokenHandle Token, sidToCheck *SID, isMember *int32) (err error) = advapi32.CheckTokenMembership
+//sys	isTokenRestricted(tokenHandle Token) (ret bool, err error) [!failretval] = advapi32.IsTokenRestricted
 //sys	OpenProcessToken(process Handle, access uint32, token *Token) (err error) = advapi32.OpenProcessToken
 //sys	OpenThreadToken(thread Handle, access uint32, openAsSelf bool, token *Token) (err error) = advapi32.OpenThreadToken
 //sys	ImpersonateSelf(impersonationlevel uint32) (err error) = advapi32.ImpersonateSelf
@@ -4430,6 +4437,16 @@ func (t Token) IsMember(sid *SID) (bool, error) {
 	return b != 0, nil
 }
 
+// IsRestricted reports whether the access token t is a restricted token.
+func (t Token) IsRestricted() (isRestricted bool, err error) {
+	isRestricted, err = isTokenRestricted(t)
+	if !isRestricted && err == syscall.EINVAL {
+		// If err is EINVAL, this returned ERROR_SUCCESS indicating a non-restricted token.
+		err = nil
+	}
+	return
+}
+
 const (
 	WTS_CONSOLE_CONNECT        = 0x1
 	WTS_CONSOLE_DISCONNECT     = 0x2
@@ -4471,6 +4488,7 @@ type WTS_SESSION_INFO struct {
 //sys WTSQueryUserToken(session uint32, token *Token) (err error) = wtsapi32.WTSQueryUserToken
 //sys WTSEnumerateSessions(handle Handle, reserved uint32, version uint32, sessions **WTS_SESSION_INFO, count *uint32) (err error) = wtsapi32.WTSEnumerateSessionsW
 //sys WTSFreeMemory(ptr uintptr) = wtsapi32.WTSFreeMemory
+//sys WTSGetActiveConsoleSessionId() (sessionID uint32)
 
 type ACL struct {
 	aclRevision byte
@@ -4489,6 +4507,19 @@ type SECURITY_DESCRIPTOR struct {
 	sacl     *ACL
 	dacl     *ACL
 }
+
+type SECURITY_QUALITY_OF_SERVICE struct {
+	Length              uint32
+	ImpersonationLevel  uint32
+	ContextTrackingMode byte
+	EffectiveOnly       byte
+}
+
+// Constants for the ContextTrackingMode field of SECURITY_QUALITY_OF_SERVICE.
+const (
+	SECURITY_STATIC_TRACKING  = 0
+	SECURITY_DYNAMIC_TRACKING = 1
+)
 
 type SecurityAttributes struct {
 	Length             uint32
@@ -4903,8 +4934,13 @@ func (absoluteSD *SECURITY_DESCRIPTOR) ToSelfRelative() (selfRelativeSD *SECURIT
 }
 
 func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() *SECURITY_DESCRIPTOR {
-	sdLen := (int)(selfRelativeSD.Length())
+	sdLen := int(selfRelativeSD.Length())
+	const min = int(unsafe.Sizeof(SECURITY_DESCRIPTOR{}))
+	if sdLen < min {
+		sdLen = min
+	}
 
+<<<<<<< HEAD
 	var src []byte
 	h := (*unsafeheader.Slice)(unsafe.Pointer(&src))
 	h.Data = unsafe.Pointer(selfRelativeSD)
@@ -4913,6 +4949,24 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 
 	dst := make([]byte, sdLen)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	var src []byte
+	h := (*unsafeheader.Slice)(unsafe.Pointer(&src))
+	h.Data = unsafe.Pointer(selfRelativeSD)
+	h.Len = sdLen
+	h.Cap = sdLen
+
+	dst := make([]byte, sdLen)
+=======
+	src := unsafe.Slice((*byte)(unsafe.Pointer(selfRelativeSD)), sdLen)
+	// SECURITY_DESCRIPTOR has pointers in it, which means checkptr expects for it to
+	// be aligned properly. When we're copying a Windows-allocated struct to a
+	// Go-allocated one, make sure that the Go allocation is aligned to the
+	// pointer size.
+	const psize = int(unsafe.Sizeof(uintptr(0)))
+	alloc := make([]uintptr, (sdLen+psize-1)/psize)
+	dst := unsafe.Slice((*byte)(unsafe.Pointer(&alloc[0])), sdLen)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	copy(dst, src)
 	return (*SECURITY_DESCRIPTOR)(unsafe.Pointer(&dst[0]))
 }

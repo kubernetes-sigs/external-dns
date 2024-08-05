@@ -20,6 +20,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // # Unicasting
 //
 // The options for unicasting are available for net.TCPConn,
@@ -402,6 +403,12 @@
 =======
 //
 // Unicasting
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//
+// Unicasting
+=======
+// # Unicasting
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // The options for unicasting are available for net.TCPConn,
 // net.UDPConn and net.IPConn which are created as network connections
@@ -435,8 +442,7 @@
 //		}(c)
 //	}
 //
-//
-// Multicasting
+// # Multicasting
 //
 // The options for multicasting are available for net.UDPConn and
 // net.IPConn which are created as network connections that use the
@@ -523,8 +529,7 @@
 //		}
 //	}
 //
-//
-// More multicasting
+// # More multicasting
 //
 // An application that uses PacketConn may join multiple multicast
 // groups. For example, a UDP listener with port 1024 might join two
@@ -582,9 +587,16 @@
 //		// error handling
 //	}
 //
+<<<<<<< HEAD
 //
 // Source-specific multicasting
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//
+// Source-specific multicasting
+=======
+// # Source-specific multicasting
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // An application that uses PacketConn on MLDv2 supported platform is
 // able to join source-specific multicast groups.

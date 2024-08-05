@@ -1,0 +1,497 @@
+// Copyright Istio Authors
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
+import "type/v1beta1/selector.proto";
+import "google/api/field_behavior.proto";
+
+// $schema: istio.extensions.v1alpha1.WasmPlugin
+// $title: Wasm Plugin
+// $description: Extend the functionality provided by the Istio proxy through WebAssembly filters.
+// $location: https://istio.io/docs/reference/config/proxy_extensions/wasm-plugin.html
+// $aliases: [/docs/reference/config/extensions/v1alpha1/wasm-plugin]
+
+// WasmPlugins provides a mechanism to extend the functionality provided by
+// the Istio proxy through WebAssembly filters.
+//
+// Order of execution (as part of Envoy's filter chain) is determined by
+// phase and priority settings, allowing the configuration of complex
+// interactions between user-supplied WasmPlugins and Istio's internal
+// filters.
+//
+// Examples:
+//
+// AuthN Filter deployed to ingress-gateway that implements an OpenID flow
+// and populates the `Authorization` header with a JWT to be consumed by
+// Istio AuthN.
+//
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: openid-connect
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: file:///opt/filters/openid.wasm
+//   sha256: 1ef0c9a92b0420cf25f7fe5d481b231464bc88f486ca3b9c83ed5cc21d2f6210
+//   phase: AUTHN
+//   pluginConfig:
+//     openid_server: authn
+//     openid_realm: ingress
+// ```
+//
+// This is the same as the last example, but using an OCI image.
+//
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: openid-connect
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: oci://private-registry:5000/openid-connect/openid:latest
+//   imagePullPolicy: IfNotPresent
+//   imagePullSecret: private-registry-pull-secret
+//   phase: AUTHN
+//   pluginConfig:
+//     openid_server: authn
+//     openid_realm: ingress
+// ```
+//
+// This is the same as the last example, but using VmConfig to configure environment variables in the VM.
+//
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: openid-connect
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: oci://private-registry:5000/openid-connect/openid:latest
+//   imagePullPolicy: IfNotPresent
+//   imagePullSecret: private-registry-pull-secret
+//   phase: AUTHN
+//   pluginConfig:
+//     openid_server: authn
+//     openid_realm: ingress
+//   vmConfig:
+//     env:
+//     - name: POD_NAME
+//       valueFrom: HOST
+//     - name: TRUST_DOMAIN
+//       value: "cluster.local"
+// ```
+//
+// This is also the same as the last example, but the Wasm module is pulled via https and updated for each time when this plugin resource is changed.
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: openid-connect
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: https://private-bucket/filters/openid.wasm
+//   imagePullPolicy: Always
+//   phase: AUTHN
+//   pluginConfig:
+//     openid_server: authn
+//     openid_realm: ingress
+//   vmConfig:
+//     env:
+//     - name: POD_NAME
+//       valueFrom: HOST
+//     - name: TRUST_DOMAIN
+//       value: "cluster.local"
+// ```
+//
+// And a more complex example that deploys three WasmPlugins and orders them
+// using `phase` and `priority`. The (hypothetical) setup is that the
+// `openid-connect` filter performs an OpenID Connect flow to authenticate the
+// user, writing a signed JWT into the Authorization header of the request,
+// which can be verified by the Istio authn plugin. Then, the `acl-check` plugin
+// kicks in, passing the JWT to a policy server, which in turn responds with a
+// signed token that contains information about which files and functions of the
+// system are available to the user that was previously authenticated. The
+// `acl-check` filter writes this token to a header. Finally, the `check-header`
+// filter verifies the token in that header and makes sure that the token's
+// contents (the permitted 'function') matches its plugin configuration.
+//
+// The resulting filter chain looks like this:
+// -> openid-connect -> istio.authn -> acl-check -> check-header -> router
+//
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: openid-connect
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: oci://private-registry:5000/openid-connect/openid:latest
+//   imagePullPolicy: IfNotPresent
+//   imagePullSecret: private-registry-pull-secret
+//   phase: AUTHN
+//   pluginConfig:
+//     openid_server: authn
+//     openid_realm: ingress
+// ```
+//
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: acl-check
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: oci://private-registry:5000/acl-check/acl:latest
+//   imagePullPolicy: Always
+//   imagePullSecret: private-registry-pull-secret
+//   phase: AUTHZ
+//   priority: 1000
+//   pluginConfig:
+//     acl_server: some_server
+//     set_header: authz_complete
+// ```
+//
+// ```yaml
+// apiVersion: extensions.istio.io/v1alpha1
+// kind: WasmPlugin
+// metadata:
+//   name: check-header
+//   namespace: istio-ingress
+// spec:
+//   selector:
+//     matchLabels:
+//       istio: ingressgateway
+//   url: oci://private-registry:5000/check-header:latest
+//   imagePullPolicy: IfNotPresent
+//   imagePullSecret: private-registry-pull-secret
+//   phase: AUTHZ
+//   priority: 10
+//   pluginConfig:
+//     read_header: authz_complete
+//     verification_key: a89gAzxvls0JKAKIJSBnnvvvkIO
+//     function: read_data
+// ```
+//
+package istio.extensions.v1alpha1;
+
+option go_package="istio.io/api/extensions/v1alpha1";
+
+// WasmPlugins provides a mechanism to extend the functionality provided by
+// the Istio proxy through WebAssembly filters.
+//
+// <!-- crd generation tags
+// +cue-gen:WasmPlugin:groupName:extensions.istio.io
+// +cue-gen:WasmPlugin:version:v1alpha1
+// +cue-gen:WasmPlugin:storageVersion
+// +cue-gen:WasmPlugin:annotations:helm.sh/resource-policy=keep
+// +cue-gen:WasmPlugin:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
+// +cue-gen:WasmPlugin:subresource:status
+// +cue-gen:WasmPlugin:spec:required
+// +cue-gen:WasmPlugin:scope:Namespaced
+// +cue-gen:WasmPlugin:resource:categories=istio-io,extensions-istio-io
+// +cue-gen:WasmPlugin:preserveUnknownFields:pluginConfig
+// +cue-gen:WasmPlugin:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp is a timestamp
+// representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations.
+// Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+// Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
+// -->
+//
+// <!-- go code generation tags
+// +kubetype-gen
+// +kubetype-gen:groupVersion=extensions.istio.io/v1alpha1
+// +genclient
+// +k8s:deepcopy-gen=true
+// -->
+message WasmPlugin {
+  // Criteria used to select the specific set of pods/VMs on which
+  // this plugin configuration should be applied. If omitted, this
+  // configuration will be applied to all workload instances in the same
+  // namespace. If the `WasmPlugin` is present in the config root
+  // namespace, it will be applied to all applicable workloads in any
+  // namespace.
+  //
+  // At most, only one of `selector` or `targetRefs` can be set for a given policy.
+  istio.type.v1beta1.WorkloadSelector selector = 1;
+
+  // $hide_from_docs
+  istio.type.v1beta1.PolicyTargetReference targetRef = 15;
+
+  // Optional. The targetRef specifies the gateway the policy should be
+  // applied to. The targeted resource specified will determine which
+  // workloads the policy applies to.
+  //
+  // Currently, the following resource attachment types are supported:
+  // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  //
+  // If not set, the policy is applied as defined by the selector.
+  // At most one of the selector and targetRefs can be set.
+  //
+  // NOTE: If you are using the `targetRefs` field in a multi-revision environment with Istio versions prior to 1.22,
+  // it is highly recommended that you pin the policy to a revision running 1.22+ via the `istio.io/rev` label.
+  // This is to prevent proxies connected to older control planes (that don't know about the `targetRefs` field)
+  // from misinterpreting the policy as namespace-wide during the upgrade process.
+  //
+  // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 16;
+
+  // URL of a Wasm module or OCI container. If no scheme is present,
+  // defaults to `oci://`, referencing an OCI image. Other valid schemes
+  // are `file://` for referencing .wasm module files present locally
+  // within the proxy container, and `http[s]://` for `.wasm` module files
+  // hosted remotely.
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:XValidation:message="url must have schema one of [http, https, file, oci]",rule="isURL(self) ? (url(self).getScheme() in ['', 'http', 'https', 'oci', 'file']) : (isURL('http://' + self) && url('http://' +self).getScheme() in ['', 'http', 'https', 'oci', 'file'])"
+  string url = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // SHA256 checksum that will be used to verify Wasm module or OCI container.
+  // If the `url` field already references a SHA256 (using the `@sha256:`
+  // notation), it must match the value of this field. If an OCI image is
+  // referenced by tag and this field is set, its checksum will be verified
+  // against the contents of this field after pulling.
+  // +kubebuilder:validation:Pattern="(^$|^[a-f0-9]{64}$)"
+  string sha256 = 3;
+
+  // The pull behaviour to be applied when fetching Wasm module by either
+  // OCI image or `http/https`. Only relevant when referencing Wasm module without
+  // any digest, including the digest in OCI image URL or `sha256` field in `vm_config`.
+  // Defaults to `IfNotPresent`, except when an OCI image is referenced in the `url`
+  // and the `latest` tag is used, in which case `Always` is the default,
+  // mirroring Kubernetes behaviour.
+  PullPolicy image_pull_policy = 4;
+
+  // Credentials to use for OCI image pulling.
+  // Name of a Kubernetes Secret in the same namespace as the `WasmPlugin` that
+  // contains a Docker pull secret which is to be used to authenticate
+  // against the registry when pulling the image.
+  // +kubebuilder:validation:MinLength=1
+  // +kubebuilder:validation:MaxLength=253
+  string image_pull_secret = 5;
+
+  // $hide_from_docs
+  // Public key that will be used to verify signatures of signed OCI images
+  // or Wasm modules.
+  //
+  // At this moment, various ways for signing/verifying are emerging and being proposed.
+  // We can observe two major streams for signing OCI images: Cosign from Sigstore and Notary,
+  // which is used in Docker Content Trust.
+  // In case of Wasm module, multiple approaches are still in discussion.
+  //  * https://github.com/WebAssembly/design/issues/1413
+  //  * https://github.com/wasm-signatures/design (various signing tools are enumerated)
+  //
+  // In addition, for each method for signing&verifying, we may need to consider to provide
+  // additional data or configuration (e.g., key rolling, KMS, root certs, ...) as well.
+  //
+  // To deal with this situation, we need to elaborate more generic way to describe
+  // how to sign and verify the image or wasm binary, and how to specify relevant data,
+  // including this `verification_key`.
+  //
+  // Therefore, this field will not be implemented until the detailed design is established.
+  // For the future use, just keep this field in proto and hide from documentation.
+  string verification_key = 6;
+
+  // The configuration that will be passed on to the plugin.
+  google.protobuf.Struct plugin_config = 7;
+
+  // The plugin name to be used in the Envoy configuration (used to be called
+  // `rootID`). Some .wasm modules might require this value to select the Wasm
+  // plugin to execute.
+  // +kubebuilder:validation:MaxLength=256
+  // +kubebuilder:validation:MinLength=1
+  string plugin_name = 8;
+
+  // Determines where in the filter chain this `WasmPlugin` is to be injected.
+  PluginPhase phase = 9;
+
+  // Determines ordering of `WasmPlugins` in the same `phase`.
+  // When multiple `WasmPlugins` are applied to the same workload in the
+  // same `phase`, they will be applied by priority, in descending order.
+  // If `priority` is not set, or two `WasmPlugins` exist with the same
+  // value, the ordering will be deterministically derived from name and
+  // namespace of the `WasmPlugins`. Defaults to `0`.
+  google.protobuf.Int32Value priority = 10;
+
+  // Specifies the failure behavior for the plugin due to fatal errors.
+  FailStrategy fail_strategy = 13;
+
+  // Configuration for a Wasm VM.
+  // More details can be found [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-vmconfig).
+  VmConfig vm_config = 11;
+
+  // TrafficSelector provides a mechanism to select a specific traffic flow
+  // for which this Wasm Plugin will be enabled.
+  // When all the sub conditions in the TrafficSelector are satisfied, the
+  // traffic will be selected.
+  message TrafficSelector {
+    // Criteria for selecting traffic by their direction.
+    // Note that `CLIENT` and `SERVER` are analogous to OUTBOUND and INBOUND,
+    // respectively.
+    // For the gateway, the field should be `CLIENT` or `CLIENT_AND_SERVER`.
+    // If not specified, the default value is `CLIENT_AND_SERVER`.
+    istio.type.v1beta1.WorkloadMode mode = 1;
+
+    // Criteria for selecting traffic by their destination port.
+    // More specifically, for the outbound traffic, the destination port would be
+    // the port of the target service. On the other hand, for the inbound traffic,
+    // the destination port is the port bound by the server process in the same Pod.
+    //
+    // If one of the given `ports` is matched, this condition is evaluated to true.
+    // If not specified, this condition is evaluated to true for any port.
+    // +listType=map
+    // +listMapKey=number
+    repeated istio.type.v1beta1.PortSelector ports = 2;
+  }
+
+  // Specifies the criteria to determine which traffic is passed to WasmPlugin.
+  // If a traffic satisfies any of TrafficSelectors,
+  // the traffic passes the WasmPlugin.
+  repeated TrafficSelector match = 12;
+
+  // Specifies the type of Wasm Extension to be used.
+  PluginType type = 14;
+}
+
+
+// PluginType indicates the type of Wasm extension to be used.
+// There are two types of extensions: `HTTP` and `NETWORK`.
+//
+// The `HTTP` extension works at Layer 7 (for example, as an HTTP filter in Envoy).
+// The detailed HTTP interface can be found here:
+// - [C++](https://github.com/proxy-wasm/proxy-wasm-cpp-host/blob/b7e690703c7f26707438a2f1ebd7c197bc8f0296/include/proxy-wasm/context_interface.h#L199)
+// - [Rust](https://github.com/proxy-wasm/proxy-wasm-rust-sdk/blob/6b47aec926bc29971c727471d6f4c972ec407c7f/src/traits.rs#L309)
+//
+// The `NETWORK` extension works at Layer 4 (for example, as a network filter in Envoy).
+// The detailed `NETWORK` interface can be found here:
+// - [C++](https://github.com/proxy-wasm/proxy-wasm-cpp-host/blob/b7e690703c7f26707438a2f1ebd7c197bc8f0296/include/proxy-wasm/context_interface.h#L257)
+// - [Rust](https://github.com/proxy-wasm/proxy-wasm-rust-sdk/blob/6b47aec926bc29971c727471d6f4c972ec407c7f/src/traits.rs#L257)
+//
+// The `NETWORK` extension can be applied to HTTP traffic as well.
+enum PluginType {
+  // Defaults to HTTP.
+  UNSPECIFIED_PLUGIN_TYPE = 0;
+
+  // Use HTTP Wasm Extension.
+  HTTP = 1;
+  
+  // Use Network Wasm Extension.
+  NETWORK = 2;
+}
+
+// The phase in the filter chain where the plugin will be injected.
+enum PluginPhase {
+  // Control plane decides where to insert the plugin. This will generally
+  // be at the end of the filter chain, right before the Router.
+  // Do not specify `PluginPhase` if the plugin is independent of others.
+  UNSPECIFIED_PHASE = 0;
+
+  // Insert plugin before Istio authentication filters.
+  AUTHN = 1;
+
+  // Insert plugin before Istio authorization filters and after Istio authentication filters.
+  AUTHZ = 2;
+
+  // Insert plugin before Istio stats filters and after Istio authorization filters.
+  STATS = 3;
+}
+
+// The pull behaviour to be applied when fetching a Wam module,
+// mirroring K8s behaviour.
+//
+// <!--
+// buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+// -->
+enum PullPolicy {
+  // Defaults to `IfNotPresent`, except for OCI images with tag `latest`, for which
+  // the default will be `Always`.
+  UNSPECIFIED_POLICY = 0;
+
+  // If an existing version of the image has been pulled before, that
+  // will be used. If no version of the image is present locally, we
+  // will pull the latest version.
+  IfNotPresent = 1;
+
+  // We will always pull the latest version of an image when changing
+  // this plugin. Note that the change includes `metadata` field as well.
+  Always = 2;
+}
+
+// Configuration for a Wasm VM.
+// more details can be found [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-vmconfig).
+message VmConfig {
+  // Specifies environment variables to be injected to this VM.
+  // Note that if a key does not exist, it will be ignored.
+  // +kubebuilder:validation:MaxItems=256
+  // +listType=map
+  // +listMapKey=name
+  repeated EnvVar env = 1;
+}
+
+// +kubebuilder:validation:XValidation:message="value may only be set when valueFrom is INLINE",rule="(has(self.valueFrom) ? self.valueFrom : '') != 'HOST' || !has(self.value)"
+message EnvVar {
+  // Name of the environment variable.
+  // Must be a C_IDENTIFIER.
+  // +kubebuilder:validation:MaxLength=256
+  // +kubebuilder:validation:MinLength=1
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Source for the environment variable's value.
+  EnvValueSource value_from = 3;
+
+  // Value for the environment variable.
+  // Only applicable if `valueFrom` is `HOST`.
+  // Defaults to "".
+  // +kubebuilder:validation:MaxLength=2048
+  string value = 2;
+}
+
+enum EnvValueSource {
+  // Explicitly given key-value pairs to be injected to this VM
+  INLINE = 0;
+
+  // *Istio-proxy's* environment variables exposed to this VM.
+  HOST = 1;
+}
+
+enum FailStrategy {
+  // A fatal error in the binary fetching or during the plugin execution causes
+  // all subsequent requests to fail with 5xx.
+  FAIL_CLOSE = 0;
+
+  // Enables the fail open behavior for the Wasm plugin fatal errors to bypass
+  // the plugin execution. A fatal error can be a failure to fetch the remote
+  // binary, an exception, or abort() on the VM. This flag is not recommended
+  // for the authentication or the authorization plugins.
+  FAIL_OPEN = 1;
+}

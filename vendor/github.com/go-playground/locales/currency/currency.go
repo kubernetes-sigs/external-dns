@@ -176,6 +176,7 @@ const (
 	MNT
 	MOP
 	MRO
+<<<<<<< HEAD
 	MTL
 	MTP
 	MUR
@@ -265,6 +266,101 @@ const (
 	UZS
 	VEB
 	VEF
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	MRU
+	MTL
+	MTP
+	MUR
+	MVP
+	MVR
+	MWK
+	MXN
+	MXP
+	MXV
+	MYR
+	MZE
+	MZM
+	MZN
+	NAD
+	NGN
+	NIC
+	NIO
+	NLG
+	NOK
+	NPR
+	NZD
+	OMR
+	PAB
+	PEI
+	PEN
+	PES
+	PGK
+	PHP
+	PKR
+	PLN
+	PLZ
+	PTE
+	PYG
+	QAR
+	RHD
+	ROL
+	RON
+	RSD
+	RUB
+	RUR
+	RWF
+	SAR
+	SBD
+	SCR
+	SDD
+	SDG
+	SDP
+	SEK
+	SGD
+	SHP
+	SIT
+	SKK
+	SLL
+	SOS
+	SRD
+	SRG
+	SSP
+	STD
+	STN
+	SUR
+	SVC
+	SYP
+	SZL
+	THB
+	TJR
+	TJS
+	TMM
+	TMT
+	TND
+	TOP
+	TPE
+	TRL
+	TRY
+	TTD
+	TWD
+	TZS
+	UAH
+	UAK
+	UGS
+	UGX
+	USD
+	USN
+	USS
+	UYI
+	UYP
+	UYU
+	UYW
+	UZS
+	VEB
+	VEF
+	VES
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	VND
 	VNN
 	VUV

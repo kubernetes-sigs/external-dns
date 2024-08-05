@@ -6,6 +6,7 @@ package socket
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net"
 	"syscall"
 	"unsafe"
@@ -65,6 +66,10 @@ func sendmsg(s uintptr, buffers [][]byte, oob []byte, to net.Addr, flags int) (i
 	n, _, errno := syscall_syscall(syscall.SYS___SENDMSG_A, s, uintptr(unsafe.Pointer(&h)), uintptr(flags))
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"net"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"syscall"
 	"unsafe"
 )
@@ -87,13 +92,48 @@ func setsockopt(s uintptr, level, name int, b []byte) error {
 	return errnoErr(errno)
 }
 
-func recvmsg(s uintptr, h *msghdr, flags int) (int, error) {
-	n, _, errno := syscall_syscall(syscall.SYS___RECVMSG_A, s, uintptr(unsafe.Pointer(h)), uintptr(flags))
-	return int(n), errnoErr(errno)
+func recvmsg(s uintptr, buffers [][]byte, oob []byte, flags int, network string) (n, oobn int, recvflags int, from net.Addr, err error) {
+	var h msghdr
+	vs := make([]iovec, len(buffers))
+	var sa []byte
+	if network != "tcp" {
+		sa = make([]byte, sizeofSockaddrInet6)
+	}
+	h.pack(vs, buffers, oob, sa)
+	sn, _, errno := syscall_syscall(syscall.SYS___RECVMSG_A, s, uintptr(unsafe.Pointer(&h)), uintptr(flags))
+	n = int(sn)
+	oobn = h.controllen()
+	recvflags = h.flags()
+	err = errnoErr(errno)
+	if network != "tcp" {
+		var err2 error
+		from, err2 = parseInetAddr(sa, network)
+		if err2 != nil && err == nil {
+			err = err2
+		}
+	}
+	return
 }
 
+<<<<<<< HEAD
 func sendmsg(s uintptr, h *msghdr, flags int) (int, error) {
 	n, _, errno := syscall_syscall(syscall.SYS___SENDMSG_A, s, uintptr(unsafe.Pointer(h)), uintptr(flags))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func sendmsg(s uintptr, h *msghdr, flags int) (int, error) {
+	n, _, errno := syscall_syscall(syscall.SYS___SENDMSG_A, s, uintptr(unsafe.Pointer(h)), uintptr(flags))
+=======
+func sendmsg(s uintptr, buffers [][]byte, oob []byte, to net.Addr, flags int) (int, error) {
+	var h msghdr
+	vs := make([]iovec, len(buffers))
+	var sa []byte
+	if to != nil {
+		var a [sizeofSockaddrInet6]byte
+		n := marshalInetAddr(to, a[:])
+		sa = a[:n]
+	}
+	h.pack(vs, buffers, oob, sa)
+	n, _, errno := syscall_syscall(syscall.SYS___SENDMSG_A, s, uintptr(unsafe.Pointer(&h)), uintptr(flags))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return int(n), errnoErr(errno)
 }

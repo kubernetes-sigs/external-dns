@@ -18,9 +18,12 @@ package v1alpha3
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3"
 	scheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -45,6 +48,8 @@ type EnvoyFilterInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha3.EnvoyFilterList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.EnvoyFilter, err error)
+	Apply(ctx context.Context, envoyFilter *networkingv1alpha3.EnvoyFilterApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.EnvoyFilter, err error)
+	ApplyStatus(ctx context.Context, envoyFilter *networkingv1alpha3.EnvoyFilterApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.EnvoyFilter, err error)
 	EnvoyFilterExpansion
 }
 
@@ -186,6 +191,62 @@ func (c *envoyFilters) Patch(ctx context.Context, name string, pt types.PatchTyp
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied envoyFilter.
+func (c *envoyFilters) Apply(ctx context.Context, envoyFilter *networkingv1alpha3.EnvoyFilterApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.EnvoyFilter, err error) {
+	if envoyFilter == nil {
+		return nil, fmt.Errorf("envoyFilter provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(envoyFilter)
+	if err != nil {
+		return nil, err
+	}
+	name := envoyFilter.Name
+	if name == nil {
+		return nil, fmt.Errorf("envoyFilter.Name must be provided to Apply")
+	}
+	result = &v1alpha3.EnvoyFilter{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("envoyfilters").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *envoyFilters) ApplyStatus(ctx context.Context, envoyFilter *networkingv1alpha3.EnvoyFilterApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.EnvoyFilter, err error) {
+	if envoyFilter == nil {
+		return nil, fmt.Errorf("envoyFilter provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(envoyFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	name := envoyFilter.Name
+	if name == nil {
+		return nil, fmt.Errorf("envoyFilter.Name must be provided to Apply")
+	}
+
+	result = &v1alpha3.EnvoyFilter{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("envoyfilters").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

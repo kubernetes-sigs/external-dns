@@ -386,6 +386,10 @@ func (v *Value) Int(optionalDefault ...int) int {
 		return s
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if s, ok := v.data.(float64); ok {
 		if float64(int(s)) == s {
 			return int(s)
@@ -406,6 +410,7 @@ func (v *Value) MustInt() int {
 			return int(s)
 		}
 	}
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if len(optionalDefault) == 1 {
@@ -419,6 +424,9 @@ func (v *Value) MustInt() int {
 // Panics if the object is not a int.
 func (v *Value) MustInt() int {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return v.data.(int)
 }
 

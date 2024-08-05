@@ -7,6 +7,7 @@
 package bsonoptions
 
 // UIntCodecOptions represents all possible options for uint encoding and decoding.
+<<<<<<< HEAD
 type UIntCodecOptions struct {
 	EncodeToMinSize *bool // Specifies if all uints except uint64 should be decoded to minimum size bsontype. Defaults to false.
 }
@@ -23,6 +24,36 @@ func (u *UIntCodecOptions) SetEncodeToMinSize(b bool) *UIntCodecOptions {
 }
 
 // MergeUIntCodecOptions combines the given *UIntCodecOptions into a single *UIntCodecOptions in a last one wins fashion.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// Deprecated: Use the bson.Encoder and bson.Decoder configuration methods to set the desired BSON marshal
+// and unmarshal behavior instead.
+type UIntCodecOptions struct {
+	EncodeToMinSize *bool // Specifies if all uints except uint64 should be decoded to minimum size bsontype. Defaults to false.
+}
+
+// UIntCodec creates a new *UIntCodecOptions
+//
+// Deprecated: Use the bson.Encoder and bson.Decoder configuration methods to set the desired BSON marshal
+// and unmarshal behavior instead.
+func UIntCodec() *UIntCodecOptions {
+	return &UIntCodecOptions{}
+}
+
+// SetEncodeToMinSize specifies if all uints except uint64 should be decoded to minimum size bsontype. Defaults to false.
+//
+// Deprecated: Use [go.mongodb.org/mongo-driver/bson.Encoder.IntMinSize] instead.
+func (u *UIntCodecOptions) SetEncodeToMinSize(b bool) *UIntCodecOptions {
+	u.EncodeToMinSize = &b
+	return u
+}
+
+// MergeUIntCodecOptions combines the given *UIntCodecOptions into a single *UIntCodecOptions in a last one wins fashion.
+//
+// Deprecated: Merging options structs will not be supported in Go Driver 2.0. Users should create a
+// single options struct instead.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func MergeUIntCodecOptions(opts ...*UIntCodecOptions) *UIntCodecOptions {
 	u := UIntCodec()
 	for _, opt := range opts {

@@ -19,6 +19,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"github.com/maxatome/go-testdeep/internal/types"
 )
@@ -272,8 +273,13 @@ func AddAnchorableStructType(fn interface{}) error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 )
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-var intType = reflect.TypeOf(42)
+	"github.com/maxatome/go-testdeep/internal/types"
+)
 
 type anchorableType struct {
 	typ     reflect.Type
@@ -281,7 +287,7 @@ type anchorableType struct {
 }
 
 // AnchorableTypes contains all non-native types that can be
-// anchorable. See AddAnchorableStructType to add a new type to it.
+// anchorable. See [AddAnchorableStructType] to add a new type to it.
 var AnchorableTypes []anchorableType
 
 func init() {
@@ -290,31 +296,31 @@ func init() {
 	})
 }
 
-// AddAnchorableStructType declares a struct type as anchorable. "fn"
+// AddAnchorableStructType declares a struct type as anchorable. fn
 // is a function allowing to return a unique and identifiable instance
 // of the struct type.
 //
-// "fn" has to have the following signature:
+// fn has to have the following signature:
 //
-//   func (nextAnchor int) TYPE
+//	func (nextAnchor int) TYPE
 //
-// TYPE is the struct type to make anchorable and "nextAnchor" is an
+// TYPE is the struct type to make anchorable and nextAnchor is an
 // index to allow to differentiate several instances of the same type.
 //
-// For example, the time.Time type which is anchrorable by default,
+// For example, the [time.Time] type which is anchorable by default,
 // is declared as:
 //
-//   AddAnchorableStructType(func (nextAnchor int) time.Time {
-//     return time.Unix(math.MaxInt64-1000424443-int64(nextAnchor), 42)
-//   })
+//	AddAnchorableStructType(func (nextAnchor int) time.Time {
+//	  return time.Unix(math.MaxInt64-1000424443-int64(nextAnchor), 42)
+//	})
 //
 // Just as a note, the 1000424443 constant allows to avoid to flirt
-// with the math.MaxInt64 extreme limit and so avoid possible
+// with the [math.MaxInt64] extreme limit and so avoid possible
 // collision with real world values.
 //
-// It returns an error if the provided "fn" is not a function or if it
+// It returns an error if the provided fn is not a function or if it
 // has not the expected signature (see above).
-func AddAnchorableStructType(fn interface{}) error {
+func AddAnchorableStructType(fn any) error {
 	vfn := reflect.ValueOf(fn)
 
 	if vfn.Kind() == reflect.Func {
@@ -322,8 +328,14 @@ func AddAnchorableStructType(fn interface{}) error {
 
 		if !fnType.IsVariadic() &&
 			fnType.NumIn() == 1 && fnType.NumOut() == 1 &&
+<<<<<<< HEAD
 			fnType.In(0) == intType &&
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			fnType.In(0) == intType &&
+=======
+			fnType.In(0) == types.Int &&
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			fnType.Out(0).Kind() == reflect.Struct {
 			typ := fnType.Out(0)
 			if !typ.Comparable() {

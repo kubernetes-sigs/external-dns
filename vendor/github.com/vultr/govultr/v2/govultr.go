@@ -24,6 +24,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	version     = "2.9.0"
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
@@ -701,6 +702,11 @@ func (c *Client) vultrErrorHandler(resp *http.Response, err error, numTries int)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	version     = "2.5.1"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	version     = "2.5.1"
+=======
+	version     = "2.17.2"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
 	rateLimit   = 500 * time.Millisecond
@@ -732,6 +738,7 @@ type Client struct {
 	Application     ApplicationService
 	Backup          BackupService
 	BareMetalServer BareMetalServerService
+	Billing         BillingService
 	BlockStorage    BlockStorageService
 	Domain          DomainService
 	DomainRecord    DomainRecordService
@@ -739,17 +746,20 @@ type Client struct {
 	FirewallRule    FireWallRuleService
 	Instance        InstanceService
 	ISO             ISOService
+	Kubernetes      KubernetesService
 	LoadBalancer    LoadBalancerService
-	Network         NetworkService
-	ObjectStorage   ObjectStorageService
-	OS              OSService
-	Plan            PlanService
-	Region          RegionService
-	ReservedIP      ReservedIPService
-	Snapshot        SnapshotService
-	SSHKey          SSHKeyService
-	StartupScript   StartupScriptService
-	User            UserService
+	// Deprecated: Network should no longer be used. Instead, use VPC.
+	Network       NetworkService
+	ObjectStorage ObjectStorageService
+	OS            OSService
+	Plan          PlanService
+	Region        RegionService
+	ReservedIP    ReservedIPService
+	Snapshot      SnapshotService
+	SSHKey        SSHKeyService
+	StartupScript StartupScriptService
+	User          UserService
+	VPC           VPCService
 
 	// Optional function called after every successful request made to the Vultr API
 	onRequestCompleted RequestCompletionCallback
@@ -783,6 +793,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client.Application = &ApplicationServiceHandler{client}
 	client.Backup = &BackupServiceHandler{client}
 	client.BareMetalServer = &BareMetalServerServiceHandler{client}
+	client.Billing = &BillingServiceHandler{client}
 	client.BlockStorage = &BlockStorageServiceHandler{client}
 	client.Domain = &DomainServiceHandler{client}
 	client.DomainRecord = &DomainRecordsServiceHandler{client}
@@ -790,6 +801,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client.FirewallRule = &FireWallRuleServiceHandler{client}
 	client.Instance = &InstanceServiceHandler{client}
 	client.ISO = &ISOServiceHandler{client}
+	client.Kubernetes = &KubernetesHandler{client}
 	client.LoadBalancer = &LoadBalancerHandler{client}
 	client.Network = &NetworkServiceHandler{client}
 	client.ObjectStorage = &ObjectStorageServiceHandler{client}
@@ -801,6 +813,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client.SSHKey = &SSHKeyServiceHandler{client}
 	client.StartupScript = &StartupScriptServiceHandler{client}
 	client.User = &UserServiceHandler{client}
+	client.VPC = &VPCServiceHandler{client}
 
 	return client
 }
@@ -907,15 +920,24 @@ func (c *Client) SetRetryLimit(n int) {
 
 func (c *Client) vultrErrorHandler(resp *http.Response, err error, numTries int) (*http.Response, error) {
 	if resp == nil {
-		return nil, fmt.Errorf("gave up after %d attempts, last error unavailable (resp == nil)", c.client.RetryMax+1)
+		if err != nil {
+			return nil, fmt.Errorf("gave up after %d attempts, last error : %s", numTries, err.Error())
+		}
+		return nil, fmt.Errorf("gave up after %d attempts, last error unavailable (resp == nil)", numTries)
 	}
 
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("gave up after %d attempts, last error unavailable (error reading response body: %v)", c.client.RetryMax+1, err)
+		return nil, fmt.Errorf("gave up after %d attempts, last error unavailable (error reading response body: %v)", numTries, err)
 	}
+<<<<<<< HEAD
 	return nil, fmt.Errorf("gave up after %d attempts, last error: %#v", c.client.RetryMax+1, strings.TrimSpace(string(buf)))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return nil, fmt.Errorf("gave up after %d attempts, last error: %#v", c.client.RetryMax+1, strings.TrimSpace(string(buf)))
+=======
+	return nil, fmt.Errorf("gave up after %d attempts, last error: %#v", numTries, strings.TrimSpace(string(buf)))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // BoolToBoolPtr helper function that returns a pointer from your bool value

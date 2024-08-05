@@ -13,6 +13,7 @@ coverage:
 comment:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   layout: 'diff, files'
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -28,3 +29,9 @@ comment:
 
 github_checks: false
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+  layout: 'diff'
+
+github_checks: false
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

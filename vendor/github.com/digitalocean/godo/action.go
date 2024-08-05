@@ -20,6 +20,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ActionsService handles communction with action related methods of the
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -79,13 +80,26 @@ type ActionsService interface {
 =======
 // ActionsService handles communction with action related methods of the
 // DigitalOcean API: https://developers.digitalocean.com/documentation/v2#actions
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// ActionsService handles communction with action related methods of the
+// DigitalOcean API: https://developers.digitalocean.com/documentation/v2#actions
+=======
+// ActionsService handles communication with action related methods of the
+// DigitalOcean API: https://docs.digitalocean.com/reference/api/api-reference/#tag/Actions
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ActionsService interface {
 	List(context.Context, *ListOptions) ([]Action, *Response, error)
 	Get(context.Context, int) (*Action, *Response, error)
 }
 
+<<<<<<< HEAD
 // ActionsServiceOp handles communition with the image action related methods of the
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// ActionsServiceOp handles communition with the image action related methods of the
+=======
+// ActionsServiceOp handles communication with the image action related methods of the
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // DigitalOcean API.
 type ActionsServiceOp struct {
 	client *Client

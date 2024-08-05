@@ -3,6 +3,9 @@ package linodego
 import (
 	"context"
 	"fmt"
+	"net/url"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // IPv6PoolsPagedResponse represents a paginated IPv6Pool API response
@@ -12,17 +15,18 @@ type IPv6PoolsPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for IPv6Pool
-func (IPv6PoolsPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.IPv6Pools.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+func (IPv6PoolsPagedResponse) endpoint(_ ...any) string {
+	return "networking/ipv6/pools"
 }
 
-// appendData appends IPv6Pools when processing paginated IPv6Pool responses
-func (resp *IPv6PoolsPagedResponse) appendData(r *IPv6PoolsPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *IPv6PoolsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(IPv6PoolsPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*IPv6PoolsPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListIPv6Pools lists IPv6Pools
@@ -37,12 +41,10 @@ func (c *Client) ListIPv6Pools(ctx context.Context, opts *ListOptions) ([]IPv6Ra
 
 // GetIPv6Pool gets the template with the provided ID
 func (c *Client) GetIPv6Pool(ctx context.Context, id string) (*IPv6Range, error) {
-	e, err := c.IPv6Pools.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%s", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&IPv6Range{}).Get(e))
+	id = url.PathEscape(id)
+	e := fmt.Sprintf("networking/ipv6/pools/%s", id)
+	req := c.R(ctx).SetResult(&IPv6Range{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}

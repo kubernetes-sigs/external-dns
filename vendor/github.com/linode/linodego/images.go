@@ -3,6 +3,7 @@ package linodego
 import (
 	"context"
 	"encoding/json"
+<<<<<<< HEAD
 	"fmt"
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1099,24 +1100,44 @@ func (c *Client) UploadImage(ctx context.Context, options ImageUploadOptions) (*
 	return image, c.UploadImageToURL(ctx, uploadURL, options.Image)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"fmt"
+=======
+	"io"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
+)
+
+// ImageStatus represents the status of an Image.
+type ImageStatus string
+
+// ImageStatus options start with ImageStatus and include all Image statuses
+const (
+	ImageStatusCreating      ImageStatus = "creating"
+	ImageStatusPendingUpload ImageStatus = "pending_upload"
+	ImageStatusAvailable     ImageStatus = "available"
 )
 
 // Image represents a deployable Image object for use with Linode Instances
 type Image struct {
-	ID          string     `json:"id"`
-	CreatedBy   string     `json:"created_by"`
-	Label       string     `json:"label"`
-	Description string     `json:"description"`
-	Type        string     `json:"type"`
-	Vendor      string     `json:"vendor"`
-	Size        int        `json:"size"`
-	IsPublic    bool       `json:"is_public"`
-	Deprecated  bool       `json:"deprecated"`
-	Created     *time.Time `json:"-"`
-	Expiry      *time.Time `json:"-"`
+	ID           string      `json:"id"`
+	CreatedBy    string      `json:"created_by"`
+	Capabilities []string    `json:"capabilities"`
+	Label        string      `json:"label"`
+	Description  string      `json:"description"`
+	Type         string      `json:"type"`
+	Vendor       string      `json:"vendor"`
+	Status       ImageStatus `json:"status"`
+	Size         int         `json:"size"`
+	IsPublic     bool        `json:"is_public"`
+	Deprecated   bool        `json:"deprecated"`
+	Updated      *time.Time  `json:"-"`
+	Created      *time.Time  `json:"-"`
+	Expiry       *time.Time  `json:"-"`
+	EOL          *time.Time  `json:"-"`
 }
 
 // ImageCreateOptions fields are those accepted by CreateImage
@@ -1124,6 +1145,7 @@ type ImageCreateOptions struct {
 	DiskID      int    `json:"disk_id"`
 	Label       string `json:"label"`
 	Description string `json:"description,omitempty"`
+	CloudInit   bool   `json:"cloud_init,omitempty"`
 }
 
 // ImageUpdateOptions fields are those accepted by UpdateImage
@@ -1132,14 +1154,39 @@ type ImageUpdateOptions struct {
 	Description *string `json:"description,omitempty"`
 }
 
+// ImageCreateUploadResponse fields are those returned by CreateImageUpload
+type ImageCreateUploadResponse struct {
+	Image    *Image `json:"image"`
+	UploadTo string `json:"upload_to"`
+}
+
+// ImageCreateUploadOptions fields are those accepted by CreateImageUpload
+type ImageCreateUploadOptions struct {
+	Region      string `json:"region"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	CloudInit   bool   `json:"cloud_init,omitempty"`
+}
+
+// ImageUploadOptions fields are those accepted by UploadImage
+type ImageUploadOptions struct {
+	Region      string `json:"region"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	CloudInit   bool   `json:"cloud_init"`
+	Image       io.Reader
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface
 func (i *Image) UnmarshalJSON(b []byte) error {
 	type Mask Image
 
 	p := struct {
 		*Mask
+		Updated *parseabletime.ParseableTime `json:"updated"`
 		Created *parseabletime.ParseableTime `json:"created"`
 		Expiry  *parseabletime.ParseableTime `json:"expiry"`
+		EOL     *parseabletime.ParseableTime `json:"eol"`
 	}{
 		Mask: (*Mask)(i),
 	}
@@ -1148,8 +1195,10 @@ func (i *Image) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	i.Updated = (*time.Time)(p.Updated)
 	i.Created = (*time.Time)(p.Created)
 	i.Expiry = (*time.Time)(p.Expiry)
+	i.EOL = (*time.Time)(p.EOL)
 
 	return nil
 }
@@ -1161,118 +1210,96 @@ func (i Image) GetUpdateOptions() (iu ImageUpdateOptions) {
 	return
 }
 
-// ImagesPagedResponse represents a linode API response for listing of images
-type ImagesPagedResponse struct {
-	*PageOptions
-	Data []Image `json:"data"`
-}
-
-func (ImagesPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.Images.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
-}
-
-func (resp *ImagesPagedResponse) appendData(r *ImagesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
-}
-
 // ListImages lists Images
 func (c *Client) ListImages(ctx context.Context, opts *ListOptions) ([]Image, error) {
-	response := ImagesPagedResponse{}
-	err := c.listHelper(ctx, &response, opts)
-
-	if err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return getPaginatedResults[Image](
+		ctx,
+		c,
+		"images",
+		opts,
+	)
 }
 
 // GetImage gets the Image with the provided ID
-func (c *Client) GetImage(ctx context.Context, id string) (*Image, error) {
-	e, err := c.Images.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%s", e, id)
-	r, err := coupleAPIErrors(c.Images.R(ctx).Get(e))
-
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*Image), nil
+func (c *Client) GetImage(ctx context.Context, imageID string) (*Image, error) {
+	return doGETRequest[Image](
+		ctx,
+		c,
+		formatAPIPath("images/%s", imageID),
+	)
 }
 
-// CreateImage creates a Image
-func (c *Client) CreateImage(ctx context.Context, createOpts ImageCreateOptions) (*Image, error) {
-	var body string
-
-	e, err := c.Images.Endpoint()
-
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&Image{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*Image), nil
+// CreateImage creates an Image
+func (c *Client) CreateImage(ctx context.Context, opts ImageCreateOptions) (*Image, error) {
+	return doPOSTRequest[Image](
+		ctx,
+		c,
+		"images",
+		opts,
+	)
 }
 
 // UpdateImage updates the Image with the specified id
-func (c *Client) UpdateImage(ctx context.Context, id string, updateOpts ImageUpdateOptions) (*Image, error) {
-	var body string
-
-	e, err := c.Images.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%s", e, id)
-
-	req := c.R(ctx).SetResult(&Image{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
-	if err != nil {
-		return nil, err
-	}
-	return r.Result().(*Image), nil
+func (c *Client) UpdateImage(ctx context.Context, imageID string, opts ImageUpdateOptions) (*Image, error) {
+	return doPUTRequest[Image](
+		ctx,
+		c,
+		formatAPIPath("images/%s", imageID),
+		opts,
+	)
 }
 
 // DeleteImage deletes the Image with the specified id
-func (c *Client) DeleteImage(ctx context.Context, id string) error {
-	e, err := c.Images.Endpoint()
+func (c *Client) DeleteImage(ctx context.Context, imageID string) error {
+	return doDELETERequest(
+		ctx,
+		c,
+		formatAPIPath("images/%s", imageID),
+	)
+}
+
+// CreateImageUpload creates an Image and an upload URL
+func (c *Client) CreateImageUpload(ctx context.Context, opts ImageCreateUploadOptions) (*Image, string, error) {
+	result, err := doPOSTRequest[ImageCreateUploadResponse](
+		ctx,
+		c,
+		"images/upload",
+		opts,
+	)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 
-	e = fmt.Sprintf("%s/%s", e, id)
+	return result.Image, result.UploadTo, nil
+}
 
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+// UploadImageToURL uploads the given image to the given upload URL
+func (c *Client) UploadImageToURL(ctx context.Context, uploadURL string, image io.Reader) error {
+	// Linode-specific headers do not need to be sent to this endpoint
+	req := resty.New().SetDebug(c.resty.Debug).R().
+		SetContext(ctx).
+		SetContentLength(true).
+		SetHeader("Content-Type", "application/octet-stream").
+		SetBody(image)
+
+	_, err := coupleAPIErrors(req.
+		Put(uploadURL))
+
 	return err
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// UploadImage creates and uploads an image
+func (c *Client) UploadImage(ctx context.Context, opts ImageUploadOptions) (*Image, error) {
+	image, uploadURL, err := c.CreateImageUpload(ctx, ImageCreateUploadOptions{
+		Label:       opts.Label,
+		Region:      opts.Region,
+		Description: opts.Description,
+		CloudInit:   opts.CloudInit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return image, c.UploadImageToURL(ctx, uploadURL, opts.Image)
 }

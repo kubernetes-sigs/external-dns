@@ -32,6 +32,7 @@ import (
 // OpenCensus. It supports both stats and tracing.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // # Tracing
 //
 // This handler is aware of the incoming request's span, reading it from request
@@ -231,13 +232,18 @@ func (t *trackingResponseWriter) WriteHeader(statusCode int) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Tracing
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Tracing
+=======
+// # Tracing
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // This handler is aware of the incoming request's span, reading it from request
 // headers as configured using the Propagation field.
 // The extracted span can be accessed from the incoming request's
 // context.
 //
-//    span := trace.FromContext(r.Context())
+//	span := trace.FromContext(r.Context())
 //
 // The server span will be automatically ended at the end of ServeHTTP.
 type Handler struct {
@@ -423,8 +429,16 @@ func (t *trackingResponseWriter) WriteHeader(statusCode int) {
 }
 
 // wrappedResponseWriter returns a wrapped version of the original
+<<<<<<< HEAD
 //  ResponseWriter and only implements the same combination of additional
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//  ResponseWriter and only implements the same combination of additional
+=======
+//
+//	ResponseWriter and only implements the same combination of additional
+//
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // interfaces as the original.
 // This implementation is based on https://github.com/felixge/httpsnoop.
 func (t *trackingResponseWriter) wrappedResponseWriter() http.ResponseWriter {

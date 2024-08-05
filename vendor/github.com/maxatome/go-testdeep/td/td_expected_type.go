@@ -26,6 +26,7 @@ type tdExpectedType struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (t *tdExpectedType) errorTypeMismatch(gotType reflect.Type) *ctxerr.Error {
 	expectedType := t.expectedType
 	if t.isPtr {
@@ -317,7 +318,20 @@ func (t *tdExpectedType) errorTypeMismatch(gotType types.RawString) *ctxerr.Erro
 		Message:  "type mismatch",
 		Got:      gotType,
 		Expected: types.RawString(t.expectedTypeStr()),
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (t *tdExpectedType) errorTypeMismatch(gotType types.RawString) *ctxerr.Error {
+	return &ctxerr.Error{
+		Message:  "type mismatch",
+		Got:      gotType,
+		Expected: types.RawString(t.expectedTypeStr()),
+=======
+func (t *tdExpectedType) errorTypeMismatch(gotType reflect.Type) *ctxerr.Error {
+	expectedType := t.expectedType
+	if t.isPtr {
+		expectedType = reflect.PtrTo(expectedType)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
+	return ctxerr.TypeMismatch(gotType, expectedType)
 }
 
 func (t *tdExpectedType) checkPtr(ctx ctxerr.Context, pGot *reflect.Value, nilAllowed bool) *ctxerr.Error {
@@ -327,7 +341,7 @@ func (t *tdExpectedType) checkPtr(ctx ctxerr.Context, pGot *reflect.Value, nilAl
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}
-			return t.errorTypeMismatch(types.RawString(got.Type().String()))
+			return t.errorTypeMismatch(got.Type())
 		}
 
 		if !nilAllowed && got.IsNil() {
@@ -355,18 +369,24 @@ func (t *tdExpectedType) checkType(ctx ctxerr.Context, got reflect.Value) *ctxer
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
-		var gotType types.RawString
+		gt := got.Type()
 		if t.isPtr {
-			gotType = "*"
+			gt = reflect.PtrTo(gt)
 		}
-		gotType += types.RawString(got.Type().String())
-		return t.errorTypeMismatch(gotType)
+		return t.errorTypeMismatch(gt)
 	}
 	return nil
 }
 
 func (t *tdExpectedType) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if t.err != nil {
+		return nil
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if t.isPtr {
 		return reflect.New(t.expectedType).Type()
 	}

@@ -41,6 +41,20 @@ func BindStringToObject(src string, dst interface{}) error {
 		t = v.Type()
 	}
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// For some optioinal args
+	if t.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			v.Set(reflect.New(t.Elem()))
+		}
+
+		v = reflect.Indirect(v)
+		t = v.Type()
+	}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// The resulting type must be settable. reflect will catch issues like
 	// passing the destination by value.
 	if !v.CanSet() {

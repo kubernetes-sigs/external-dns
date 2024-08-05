@@ -28,3 +28,11 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	d.Time = parsed
 	return nil
 }
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+func (d Date) String() string {
+	return d.Time.Format(DateFormat)
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

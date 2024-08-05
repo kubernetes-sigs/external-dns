@@ -20,6 +20,7 @@ type Addr struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
 	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
 	Remark          string `json:"Remark" xml:"Remark"`
@@ -61,14 +62,26 @@ type Addr struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Value           string `json:"Value" xml:"Value"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Value           string `json:"Value" xml:"Value"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
 	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
+	Remark          string `json:"Remark" xml:"Remark"`
 	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	AddrId          int64  `json:"AddrId" xml:"AddrId"`
 	Id              int64  `json:"Id" xml:"Id"`
 	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	AttributeInfo   string `json:"AttributeInfo" xml:"AttributeInfo"`
 	LbaWeight       int    `json:"LbaWeight" xml:"LbaWeight"`
 	Mode            string `json:"Mode" xml:"Mode"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Value           string `json:"Value" xml:"Value"`
+	Addr            string `json:"Addr" xml:"Addr"`
+	AddrId          int64  `json:"AddrId" xml:"AddrId"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

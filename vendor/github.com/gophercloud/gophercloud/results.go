@@ -30,6 +30,11 @@ type Result struct {
 	// this will be the deserialized JSON structure.
 	Body interface{}
 
+	// StatusCode is the HTTP status code of the original response. Will be
+	// one of the OkCodes defined on the gophercloud.RequestOpts that was
+	// used in the request.
+	StatusCode int
+
 	// Header contains the HTTP header structure from the original response.
 	Header http.Header
 
@@ -138,6 +143,7 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 				// jtopjian: This was put into place to resolve the issue
 				// described at
@@ -207,6 +213,21 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+				// jtopjian: This was put into place to resolve the issue
+				// described at
+				// https://github.com/gophercloud/gophercloud/issues/1963
+				//
+				// This probably isn't the best fix, but it appears to
+				// be resolving the issue, so I'm going to implement it
+				// for now.
+				//
+				// For future readers, this entire case statement could
+				// use a review.
+				return nil
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			}
 		}
 	case reflect.Struct:

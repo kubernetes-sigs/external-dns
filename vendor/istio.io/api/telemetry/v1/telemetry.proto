@@ -1,0 +1,711 @@
+// Copyright Istio Authors
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+
+syntax = "proto3";
+
+import "type/v1beta1/selector.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+// $schema: istio.telemetry.v1.Telemetry
+// $title: Telemetry
+// $description: Telemetry configuration for workloads.
+// $location: https://istio.io/docs/reference/config/telemetry.html
+// $aliases: [/docs/reference/config/telemetry/v1/telemetry]
+// $mode: none
+
+// Telemetry defines how the telemetry is generated for workloads within a mesh.
+//
+// For mesh level configuration, put the resource in root configuration
+// namespace for your Istio installation *without* a workload selector.
+//
+// For any namespace, including the root configuration namespace, it is only
+// valid to have a single workload selector-less Telemetry resource.
+//
+// For resources with a workload selector, it is only valid to have one resource
+// selecting any given workload.
+//
+// The hierarchy of Telemetry configuration is as follows:
+//
+// 1. Workload-specific configuration
+// 2. Namespace-specific configuration
+// 3. Root namespace configuration
+//
+// ## Examples
+// 
+// Policy to enable random sampling for 10% of traffic:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: mesh-default
+//   namespace: istio-system
+// spec:
+//   # no selector specified, applies to all workloads
+//   tracing:
+//   - randomSamplingPercentage: 10.00
+// ```
+//
+// Policy to disable trace reporting for the `foo` workload (note: tracing
+// context will still be propagated):
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: foo-tracing
+//   namespace: bar
+// spec:
+//   selector:
+//     matchLabels:
+//       service.istio.io/canonical-name: foo
+//   tracing:
+//   - disableSpanReporting: true
+// ```
+//
+// Policy to select the alternate zipkin provider for trace reporting:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: foo-tracing-alternate
+//   namespace: baz
+// spec:
+//   selector:
+//     matchLabels:
+//       service.istio.io/canonical-name: foo
+//   tracing:
+//   - providers:
+//     - name: "zipkin-alternate"
+//     randomSamplingPercentage: 10.00
+// ```
+//
+// Policy to tailor the zipkin provider to sample traces from Client workloads only:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1alpha1
+// kind: Telemetry
+// metadata:
+//   name: mesh-default
+//   namespace: istio-system
+// spec:
+//   # no selector specified, applies to all workloads
+//   tracing:
+//   - match: CLIENT
+//   - providers:
+//     - name: "zipkin"
+// ```
+//
+// Policy to add a custom tag from a literal value:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: mesh-default
+//   namespace: istio-system
+// spec:
+//   # no selector specified, applies to all workloads
+//   tracing:
+//   - randomSamplingPercentage: 10.00
+//     customTags:
+//       my_new_foo_tag:
+//         literal:
+//           value: "foo"
+// ```
+//
+// Policy to disable server-side metrics for Prometheus for an entire mesh:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: mesh-default
+//   namespace: istio-system
+// spec:
+//   # no selector specified, applies to all workloads
+//   metrics:
+//   - providers:
+//     - name: prometheus
+//     overrides:
+//     - match:
+//         metric: ALL_METRICS
+//         mode: SERVER
+//       disabled: true
+// ```
+//
+// Policy to add dimensions to all Prometheus metrics for the `foo` namespace:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: namespace-metrics
+//   namespace: foo
+// spec:
+//   # no selector specified, applies to all workloads in the namespace
+//   metrics:
+//   - providers:
+//     - name: prometheus
+//     overrides:
+//     # match clause left off matches all istio metrics, client and server
+//     - tagOverrides:
+//         request_method:
+//           value: "request.method"
+//         request_host:
+//           value: "request.host"
+// ```
+//
+// Policy to remove the `response_code` dimension on some Prometheus metrics for
+// the `bar.foo` workload:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: remove-response-code
+//   namespace: foo
+// spec:
+//   selector:
+//     matchLabels:
+//       service.istio.io/canonical-name: bar
+//   metrics:
+//   - providers:
+//     - name: prometheus
+//     overrides:
+//     - match:
+//         metric: REQUEST_COUNT
+//       tagOverrides:
+//         response_code:
+//           operation: REMOVE
+//     - match:
+//         metric: REQUEST_DURATION
+//       tagOverrides:
+//         response_code:
+//           operation: REMOVE
+//     - match:
+//         metric: REQUEST_SIZE
+//       tagOverrides:
+//         response_code:
+//           operation: REMOVE
+//     - match:
+//         metric: RESPONSE_SIZE
+//       tagOverrides:
+//         response_code:
+//           operation: REMOVE
+// ```
+//
+// Policy to enable access logging for the entire mesh:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: mesh-default
+//   namespace: istio-system
+// spec:
+//   # no selector specified, applies to all workloads
+//   accessLogging:
+//   - providers:
+//     - name: envoy
+//     # By default, this turns on access logging (no need to set `disabled: false`).
+//     # Unspecified `disabled` will be treated as `disabled: false`, except in
+//     # cases where a parent configuration has marked as `disabled: true`. In
+//     # those cases, `disabled: false` must be set explicitly to override.
+// ```
+//
+// Policy to disable access logging for the `foo` namespace:
+// ```yaml
+// apiVersion: telemetry.istio.io/v1
+// kind: Telemetry
+// metadata:
+//   name: namespace-no-log
+//   namespace: foo
+// spec:
+//   # no selector specified, applies to all workloads in the namespace
+//   accessLogging:
+//   - disabled: true
+// ```
+//
+package istio.telemetry.v1;
+
+option go_package = "istio.io/api/telemetry/v1";
+
+// <!-- crd generation tags
+// +cue-gen:Telemetry:groupName:telemetry.istio.io
+// +cue-gen:Telemetry:version:v1
+// +cue-gen:Telemetry:annotations:helm.sh/resource-policy=keep
+// +cue-gen:Telemetry:labels:app=istio-pilot,chart=istio,istio=telemetry,heritage=Tiller,release=istio
+// +cue-gen:Telemetry:subresource:status
+// +cue-gen:Telemetry:scope:Namespaced
+// +cue-gen:Telemetry:resource:categories=istio-io,telemetry-istio-io,shortNames=telemetry,plural=telemetries
+// +cue-gen:Telemetry:preserveUnknownFields:false
+// +cue-gen:Telemetry:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp
+// is a timestamp representing the server time when this object was created. It
+// is not guaranteed to be set in happens-before order across separate
+// operations. Clients may not set this value. It is represented in RFC3339 form
+// and is in UTC. Populated by the system. Read-only. Null for lists. More info:
+// https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
+// -->
+//
+// <!-- go code generation tags
+// +kubetype-gen
+// +kubetype-gen:groupVersion=telemetry.istio.io/v1
+// +genclient
+// +k8s:deepcopy-gen=true
+// -->
+// -->
+// <!-- istio code generation tags
+// +istio.io/sync-from:telemetry/v1alpha1/telemetry.proto
+// -->
+message Telemetry {
+  // Optional. The selector decides where to apply the policy.
+  // If not set, the policy will be applied to all workloads in the
+  // same namespace as the policy.
+  //
+  // At most one of `selector` or `targetRefs` can be set for a given policy.
+  istio.type.v1beta1.WorkloadSelector selector = 1;
+
+  // $hide_from_docs
+  istio.type.v1beta1.PolicyTargetReference targetRef = 5;
+
+  // Optional. The targetRef specifies the gateway the policy should be
+  // applied to. The targeted resource specified will determine which
+  // workloads the policy applies to.
+  //
+  // Currently, the following resource attachment types are supported:
+  // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  //
+  // If not set, the policy is applied as defined by the selector.
+  // At most one of the selector and targetRefs can be set.
+  //
+  // NOTE: If you are using the `targetRefs` field in a multi-revision environment with Istio versions prior to 1.22,
+  // it is highly recommended that you pin the policy to a revision running 1.22+ via the `istio.io/rev` label.
+  // This is to prevent proxies connected to older control planes (that don't know about the `targetRefs` field)
+  // from misinterpreting the policy as namespace-wide during the upgrade process.
+  //
+  // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 6;
+
+  // Optional. Tracing configures the tracing behavior for all
+  // selected workloads.
+  repeated Tracing tracing = 2;
+
+  // Optional. Metrics configures the metrics behavior for all
+  // selected workloads.
+  repeated Metrics metrics = 3;
+
+  // Optional. Access logging configures the access logging behavior for all
+  // selected workloads.
+  repeated AccessLogging access_logging = 4;
+}
+
+// Tracing configures tracing behavior for workloads within a mesh.
+// It can be used to enable/disable tracing, as well as to set sampling
+// rates and custom tag extraction.
+//
+// Tracing configuration support overrides of the fields `providers`,
+// `random_sampling_percentage`, `disable_span_reporting`, and `custom_tags` at
+// each level in the configuration hierarchy, with missing values filled in
+// from parent resources. However, when specified, `custom_tags` will
+// fully replace any values provided by parent configuration.
+message Tracing {
+
+  // TracingSelector provides a coarse-grained ability to configure tracing
+  // behavior based on certain traffic metadata (such as traffic direction).
+  message TracingSelector {
+    // This determines whether or not to apply the tracing configuration
+    // based on the direction of traffic relative to the proxied workload.
+    WorkloadMode mode = 1;
+  }
+
+  // Allows tailoring of behavior to specific conditions.
+  TracingSelector match = 7;
+
+  // Optional. Name of provider(s) to use for span reporting. If a provider is
+  // not specified, the [default tracing
+  // provider](https://istio.io/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-DefaultProviders) will be
+  // used. NOTE: At the moment, only a single provider can be specified in a
+  // given Tracing rule.
+  repeated ProviderRef providers = 2;
+
+  // Controls the rate at which traffic will be selected for tracing if no
+  // prior sampling decision has been made. If a prior sampling decision has
+  // been made, that decision will be respected. However, if no sampling
+  // decision has been made (example: no `x-b3-sampled` tracing header was
+  // present in the requests), the traffic will be selected for telemetry
+  // generation at the percentage specified.
+  //
+  // Defaults to 0%. Valid values [0.00-100.00]. Can be specified in 0.01%
+  // increments.
+  // +kubebuilder:validation:Minimum=0
+  // +kubebuilder:validation:Maximum=100
+  google.protobuf.DoubleValue random_sampling_percentage = 3;
+
+  // Controls span reporting. If set to true, no spans will be reported for
+  // impacted workloads. This does NOT impact context propagation or trace
+  // sampling behavior.
+  google.protobuf.BoolValue disable_span_reporting = 4;
+
+  // CustomTag defines a tag to be added to a trace span that is based on
+  // an operator-supplied value. This value can either be a hard-coded value,
+  // a value taken from an environment variable known to the sidecar proxy, or
+  // from a request header.
+  //
+  // NOTE: when specified, `custom_tags` will fully replace any values provided
+  // by parent configuration.
+  message CustomTag {
+    oneof type {
+      // Literal adds the same, hard-coded value to each span.
+      Literal literal = 1;
+      // Environment adds the value of an environment variable to each span.
+      Environment environment = 2;
+      // RequestHeader adds the value of an header from the request to each
+      // span.
+      RequestHeader header = 3;
+      // TODO: add support for Metadata tags
+    }
+  }
+
+  message Literal {
+    // The tag value to use.
+    // +kubebuilder:validation:MinLength=1
+    string value = 1 [(google.api.field_behavior) = REQUIRED];
+  }
+
+  message Environment {
+    // Name of the environment variable from which to extract the tag value.
+    // +kubebuilder:validation:MinLength=1
+    string name = 1 [(google.api.field_behavior) = REQUIRED];
+    // Optional. If the environment variable is not found, this value will be
+    // used instead.
+    string default_value = 2;
+  }
+
+  message RequestHeader {
+    // Name of the header from which to extract the tag value.
+    // +kubebuilder:validation:MinLength=1
+    string name = 1 [(google.api.field_behavior) = REQUIRED];
+    // Optional. If the header is not found, this value will be
+    // used instead.
+    string default_value = 2;
+  }
+
+  // Optional. Configures additional custom tags to the generated trace spans.
+  map<string, CustomTag> custom_tags = 5;
+
+  // This value is true by default; Envoy decides whether or not to sample based
+  // on the value of the Request ID generated by Ingress in distributed tracing.
+  // The format of this Request ID is specific to Envoy, and if the Request ID
+  // generated by the proxy that receives user traffic first is not specific to
+  // Envoy, Envoy will break the trace because it cannot interpret the Request
+  // ID. By setting this value to false, we can prevent Envoy from sampling
+  // based on the Request ID. As a result, the trace will not be broken even if
+  // the Request ID is not in the Envoy format. [Trace Context
+  // Propagation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing#trace-context-propagation)
+  // provides more information on Request ID handling.
+  // $hide_from_docs
+  // +cue-gen:Telemetry:releaseChannel:extended
+  google.protobuf.BoolValue use_request_id_for_trace_sampling = 6;
+}
+
+// Used to bind Telemetry configuration to specific providers for
+// targeted customization.
+message ProviderRef {
+  // Required. Name of Telemetry provider in [MeshConfig](https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-ExtensionProvider).
+  // +kubebuilder:validation:MinLength=1
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Metrics defines the workload-level overrides for metrics generation behavior
+// within a mesh. It can be used to enable/disable metrics generation, as well
+// as to customize the dimensions of the generated metrics.
+message Metrics {
+  // Optional. Name of providers to which this configuration should apply.
+  // If a provider is not specified, the [default metrics
+  // provider](https://istio.io/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-DefaultProviders) will be
+  // used.
+  repeated ProviderRef providers = 1;
+
+  // Optional. Ordered list of overrides to metrics generation behavior.
+  //
+  // Specified overrides will be applied in order. They will be applied on
+  // top of inherited overrides from other resources in the hierarchy in the
+  // following order:
+  // 1. Mesh-scoped overrides
+  // 2. Namespace-scoped overrides
+  // 3. Workload-scoped overrides
+  //
+  // Because overrides are applied in order, users are advised to order their
+  // overrides from least specific to most specific matches. That is, it is
+  // a best practice to list any universal overrides first, with tailored
+  // overrides following them.
+  repeated MetricsOverrides overrides = 2;
+  
+  // Optional. Reporting interval allows configuration of the time between calls out to for metrics reporting.
+  // This currently only supports TCP metrics but we may use this for long duration HTTP streams in the future.
+  // The default duration is `5s`.
+  // +cue-gen:Telemetry:releaseChannel:extended
+  google.protobuf.Duration reporting_interval = 3;
+}
+
+// WorkloadMode allows selection of the role of the underlying workload in
+// network traffic. A workload is considered as acting as a `SERVER` if it is
+// the destination of the traffic (that is, traffic direction, from the
+// perspective of the workload is *inbound*). If the workload is the source of
+// the network traffic, it is considered to be in `CLIENT` mode (traffic is
+// *outbound* from the workload).
+enum WorkloadMode {
+  // Selects for scenarios when the workload is either the
+  // source or destination of the network traffic.
+  CLIENT_AND_SERVER = 0;
+
+  // Selects for scenarios when the workload is the
+  // source of the network traffic.
+  CLIENT = 1;
+
+  // Selects for scenarios when the workload is the
+  // destination of the network traffic.
+  SERVER = 2;
+}
+
+// Provides a mechanism for matching metrics for the application of override
+// behaviors.
+message MetricSelector {
+  // Curated list of known metric types that is supported by Istio metric
+  // providers. See also:
+  // https://istio.io/latest/docs/reference/config/metrics/#metrics
+  enum IstioMetric {
+    // Use of this enum indicates that the override should apply to all Istio
+    // default metrics.
+    ALL_METRICS = 0;
+
+    // Counter of requests to/from an application, generated for HTTP, HTTP/2,
+    // and GRPC traffic.
+    //
+    // The Prometheus provider exports this metric as: `istio_requests_total`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/request_count` (SERVER mode)
+    // - `istio.io/service/client/request_count` (CLIENT mode)
+    REQUEST_COUNT = 1;
+
+    // Histogram of request durations, generated for HTTP, HTTP/2, and GRPC
+    // traffic.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_request_duration_milliseconds`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/response_latencies` (SERVER mode)
+    // - `istio.io/service/client/roundtrip_latencies` (CLIENT mode)
+    REQUEST_DURATION = 2;
+
+    // Histogram of request body sizes, generated for HTTP, HTTP/2, and GRPC
+    // traffic.
+    //
+    // The Prometheus provider exports this metric as: `istio_request_bytes`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/request_bytes` (SERVER mode)
+    // - `istio.io/service/client/request_bytes` (CLIENT mode)
+    REQUEST_SIZE = 3;
+
+    // Histogram of response body sizes, generated for HTTP, HTTP/2, and GRPC
+    // traffic.
+    //
+    // The Prometheus provider exports this metric as: `istio_response_bytes`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/response_bytes` (SERVER mode)
+    // - `istio.io/service/client/response_bytes` (CLIENT mode)
+    RESPONSE_SIZE = 4;
+
+    // Counter of TCP connections opened over lifetime of workload.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_tcp_connections_opened_total`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/connection_open_count` (SERVER mode)
+    // - `istio.io/service/client/connection_open_count` (CLIENT mode)
+    TCP_OPENED_CONNECTIONS = 5;
+
+    // Counter of TCP connections closed over lifetime of workload.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_tcp_connections_closed_total`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/connection_close_count` (SERVER mode)
+    // - `istio.io/service/client/connection_close_count` (CLIENT mode)
+    TCP_CLOSED_CONNECTIONS = 6;
+
+    // Counter of bytes sent during a response over a TCP connection.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_tcp_sent_bytes_total`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/sent_bytes_count` (SERVER mode)
+    // - `istio.io/service/client/sent_bytes_count` (CLIENT mode)
+    TCP_SENT_BYTES = 7;
+
+    // Counter of bytes received during a request over a TCP connection.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_tcp_received_bytes_total`.
+    //
+    // The Stackdriver provider exports this metric as:
+    //
+    // - `istio.io/service/server/received_bytes_count` (SERVER mode)
+    // - `istio.io/service/client/received_bytes_count` (CLIENT mode)
+    TCP_RECEIVED_BYTES = 8;
+
+    // Counter incremented for every gRPC messages sent from a client.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_request_messages_total`
+    GRPC_REQUEST_MESSAGES = 9;
+
+    // Counter incremented for every gRPC messages sent from a server.
+    //
+    // The Prometheus provider exports this metric as:
+    // `istio_response_messages_total`
+    GRPC_RESPONSE_MESSAGES = 10;
+  }
+
+  // Controls which metric(s) are selected by the selector.
+  oneof metric_match {
+    // One of the well-known [Istio Standard Metrics](https://istio.io/latest/docs/reference/config/metrics/).
+    IstioMetric metric = 1;
+
+    // Allows free-form specification of a metric. No validation of custom
+    // metrics is provided.
+    // +kubebuilder:validation:MinLength=1
+    string custom_metric = 2;
+  }
+
+  // Controls which mode of metrics generation is selected: `CLIENT`, `SERVER`,
+  // or `CLIENT_AND_SERVER`.
+  WorkloadMode mode = 3;
+}
+
+// MetricsOverrides defines custom metric generation behavior for an individual
+// metric or the set of all standard metrics.
+message MetricsOverrides {
+
+  // Match allows providing the scope of the override. It can be used to select
+  // individual metrics, as well as the workload modes (server, client, or both)
+  // in which the metrics will be generated.
+  //
+  // If match is not specified, the overrides will apply to *all* metrics for
+  // *both* modes of operation (client and server).
+  MetricSelector match = 1;
+
+  // Optional. Must explicitly set this to `true` to turn off metrics reporting
+  // for the listed metrics. If disabled has been set to `true` in a parent
+  // configuration, it must explicitly be set to `false` to turn metrics
+  // reporting on in the workloads selected by the Telemetry resource.
+  google.protobuf.BoolValue disabled = 2;
+
+  // TagOverride specifies an operation to perform on a metric dimension (also
+  // known as a `label`). Tags may be added, removed, or have their default
+  // values overridden.
+  // +kubebuilder:validation:XValidation:message="value must be set when operation is UPSERT",rule="((has(self.operation) ? self.operation : '') == 'UPSERT') ? self.value != '' : true"
+  // +kubebuilder:validation:XValidation:message="value must not be set when operation is REMOVE",rule="((has(self.operation) ? self.operation : '') == 'REMOVE') ? !has(self.value) : true"
+  message TagOverride {
+    enum Operation {
+      // Insert or Update the tag with the provided value expression. The
+      // `value` field MUST be specified if `UPSERT` is used as the operation.
+      UPSERT = 0;
+
+      // Specifies that the tag should not be included in the metric when
+      // generated.
+      REMOVE = 1;
+    }
+
+    // Operation controls whether or not to update/add a tag, or to remove it.
+    Operation operation = 1;
+
+    // Value is only considered if the operation is `UPSERT`.
+    // Values are [CEL expressions](https://opensource.google/projects/cel) over
+    // attributes. Examples include: `string(destination.port)` and
+    // `request.host`. Istio exposes all standard [Envoy
+    // attributes](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes).
+    // Additionally, Istio exposes node metadata as attributes.
+    // More information is provided in the [customization
+    // docs](https://istio.io/latest/docs/tasks/observability/metrics/customize-metrics/#use-expressions-for-values).
+    string value = 2;
+  }
+
+  // Optional. Collection of tag names and tag expressions to override in the
+  // selected metric(s).
+  // The key in the map is the name of the tag.
+  // The value in the map is the operation to perform on the the tag.
+  // WARNING: some providers may not support adding/removing tags.
+  // See also: https://istio.io/latest/docs/reference/config/metrics/#labels
+  map<string, TagOverride> tag_overrides = 3;
+}
+
+// Access logging defines the workload-level overrides for access log
+// generation. It can be used to select provider or enable/disable access log
+// generation for a workload.
+message AccessLogging {
+
+  // LogSelector provides a coarse-grained ability to configure logging behavior
+  // based on certain traffic metadata (such as traffic direction). LogSelector
+  // applies to traffic metadata which is not represented in the attribute set
+  // currently supported by [filters](https://istio.io/latest/docs/reference/config/telemetry/#AccessLogging-Filter).
+  // It allows control planes to limit the configuration sent to individual workloads.
+  // Finer-grained logging behavior can be further configured via `filter`.
+  message LogSelector {
+    // This determines whether or not to apply the access logging configuration
+    // based on the direction of traffic relative to the proxied workload.
+    WorkloadMode mode = 1;
+  }
+
+  // Allows tailoring of logging behavior to specific conditions.
+  LogSelector match = 4;
+
+  // Optional. Name of providers to which this configuration should apply.
+  // If a provider is not specified, the [default logging
+  // provider](https://istio.io/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-DefaultProviders) will be used.
+  repeated ProviderRef providers = 1;
+
+  // Controls logging. If set to true, no access logs will be generated for
+  // impacted workloads (for the specified providers).
+  // NOTE: currently default behavior will be controlled by the provider(s)
+  // selected above. Customization controls will be added to this API in
+  // future releases.
+  google.protobuf.BoolValue disabled = 2;
+
+  // Allows specification of an access log filter.
+  message Filter {
+    // CEL expression for selecting when requests/connections should be logged.
+    //
+    // Examples:
+    //
+    // - `response.code >= 400`
+    // - `connection.mtls && request.url_path.contains('v1beta3')`
+    // - `!has(request.useragent) || !(request.useragent.startsWith("Amazon-Route53-Health-Check-Service"))`
+    string expression = 1;
+  }
+
+  // Optional. If specified, this filter will be used to select specific
+  // requests/connections for logging.
+  // +cue-gen:Telemetry:releaseChannel:extended
+  Filter filter = 3;
+}

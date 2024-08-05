@@ -18,6 +18,7 @@ limitations under the License.
 
 package v1alpha2
 
+<<<<<<< HEAD
 type GatewayExpansion interface{}
 
 type GatewayClassExpansion interface{}
@@ -27,6 +28,14 @@ type HTTPRouteExpansion interface{}
 type ReferenceGrantExpansion interface{}
 
 type ReferencePolicyExpansion interface{}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+type BackendLBPolicyExpansion interface{}
+
+type GRPCRouteExpansion interface{}
+
+type ReferenceGrantExpansion interface{}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 type TCPRouteExpansion interface{}
 

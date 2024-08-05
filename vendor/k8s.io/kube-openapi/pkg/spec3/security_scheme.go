@@ -19,6 +19,7 @@ package spec3
 import (
 	"encoding/json"
 
+<<<<<<< HEAD
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"github.com/go-openapi/swag"
 )
@@ -45,6 +46,52 @@ func (s *SecurityScheme) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return swag.ConcatJSON(b1, b2, b3), nil
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"github.com/go-openapi/swag"
+	"k8s.io/kube-openapi/pkg/internal"
+	jsonv2 "k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json"
+	"k8s.io/kube-openapi/pkg/validation/spec"
+)
+
+// SecurityScheme defines reusable Security Scheme Object, more at https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#securitySchemeObject
+type SecurityScheme struct {
+	spec.Refable
+	SecuritySchemeProps
+	spec.VendorExtensible
+}
+
+// MarshalJSON is a custom marshal function that knows how to encode SecurityScheme as JSON
+func (s *SecurityScheme) MarshalJSON() ([]byte, error) {
+	if internal.UseOptimizedJSONMarshalingV3 {
+		return internal.DeterministicMarshal(s)
+	}
+	b1, err := json.Marshal(s.SecuritySchemeProps)
+	if err != nil {
+		return nil, err
+	}
+	b2, err := json.Marshal(s.VendorExtensible)
+	if err != nil {
+		return nil, err
+	}
+	b3, err := json.Marshal(s.Refable)
+	if err != nil {
+		return nil, err
+	}
+	return swag.ConcatJSON(b1, b2, b3), nil
+}
+
+func (s *SecurityScheme) MarshalNextJSON(opts jsonv2.MarshalOptions, enc *jsonv2.Encoder) error {
+	var x struct {
+		Ref                 string `json:"$ref,omitempty"`
+		SecuritySchemeProps `json:",inline"`
+		spec.Extensions
+	}
+	x.Ref = s.Refable.Ref.String()
+	x.Extensions = internal.SanitizeExtensions(s.Extensions)
+	x.SecuritySchemeProps = s.SecuritySchemeProps
+	return opts.MarshalNext(enc, x)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // UnmarshalJSON hydrates this items instance with the data from JSON

@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build darwin && go1.12
 // +build darwin,go1.12
 
@@ -176,10 +177,15 @@ func funcPC(f func()) uintptr {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build darwin,go1.12
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build darwin,go1.12
+=======
+//go:build darwin
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
-import "unsafe"
+import _ "unsafe"
 
 // Implemented in the runtime package (runtime/sys_darwin.go)
 func syscall_syscall(fn, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
@@ -197,6 +203,7 @@ func syscall_syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
 //go:linkname syscall_rawSyscall syscall.rawSyscall
 //go:linkname syscall_rawSyscall6 syscall.rawSyscall6
 //go:linkname syscall_syscallPtr syscall.syscallPtr
+<<<<<<< HEAD
 
 // Find the entry point for f. See comments in runtime/proc.go for the
 // function of the same name.
@@ -205,3 +212,13 @@ func funcPC(f func()) uintptr {
 	return **(**uintptr)(unsafe.Pointer(&f))
 }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+// Find the entry point for f. See comments in runtime/proc.go for the
+// function of the same name.
+//go:nosplit
+func funcPC(f func()) uintptr {
+	return **(**uintptr)(unsafe.Pointer(&f))
+}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

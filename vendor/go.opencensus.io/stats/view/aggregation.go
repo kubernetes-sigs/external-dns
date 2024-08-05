@@ -22,6 +22,7 @@ package view
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "time"
 
 // AggType represents the type of aggregation function used on a View.
@@ -468,6 +469,11 @@ func LastValue() *Aggregation {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+import "time"
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // AggType represents the type of aggregation function used on a View.
 type AggType int
 
@@ -498,20 +504,20 @@ type Aggregation struct {
 	Type    AggType   // Type is the AggType of this Aggregation.
 	Buckets []float64 // Buckets are the bucket endpoints if this Aggregation represents a distribution, see Distribution.
 
-	newData func() AggregationData
+	newData func(time.Time) AggregationData
 }
 
 var (
 	aggCount = &Aggregation{
 		Type: AggTypeCount,
-		newData: func() AggregationData {
-			return &CountData{}
+		newData: func(t time.Time) AggregationData {
+			return &CountData{Start: t}
 		},
 	}
 	aggSum = &Aggregation{
 		Type: AggTypeSum,
-		newData: func() AggregationData {
-			return &SumData{}
+		newData: func(t time.Time) AggregationData {
+			return &SumData{Start: t}
 		},
 	}
 )
@@ -541,9 +547,9 @@ func Sum() *Aggregation {
 //
 // If len(bounds) >= 2 then the boundaries for bucket index i are:
 //
-//     [-infinity, bounds[i]) for i = 0
-//     [bounds[i-1], bounds[i]) for 0 < i < length
-//     [bounds[i-1], +infinity) for i = length
+//	[-infinity, bounds[i]) for i = 0
+//	[bounds[i-1], bounds[i]) for 0 < i < length
+//	[bounds[i-1], +infinity) for i = length
 //
 // If len(bounds) is 0 then there is no histogram associated with the
 // distribution. There will be a single bucket with boundaries
@@ -556,8 +562,8 @@ func Distribution(bounds ...float64) *Aggregation {
 		Type:    AggTypeDistribution,
 		Buckets: bounds,
 	}
-	agg.newData = func() AggregationData {
-		return newDistributionData(agg)
+	agg.newData = func(t time.Time) AggregationData {
+		return newDistributionData(agg, t)
 	}
 	return agg
 }
@@ -567,8 +573,14 @@ func Distribution(bounds ...float64) *Aggregation {
 func LastValue() *Aggregation {
 	return &Aggregation{
 		Type: AggTypeLastValue,
+<<<<<<< HEAD
 		newData: func() AggregationData {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		newData: func() AggregationData {
+=======
+		newData: func(_ time.Time) AggregationData {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			return &LastValueData{}
 		},
 	}

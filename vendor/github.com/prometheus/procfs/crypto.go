@@ -62,6 +62,7 @@ func (fs FS) Crypto() ([]Crypto, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
 	}
 
@@ -131,12 +132,24 @@ func (fs FS) Crypto() ([]Crypto, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
+=======
+		return nil, fmt.Errorf("%s: Cannot read file %v: %w", ErrFileRead, b, err)
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	crypto, err := parseCrypto(bytes.NewReader(b))
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
+=======
+		return nil, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, crypto, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return crypto, nil
@@ -159,7 +172,7 @@ func parseCrypto(r io.Reader) ([]Crypto, error) {
 
 		kv := strings.Split(text, ":")
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("malformed crypto line: %q", text)
+			return nil, fmt.Errorf("%w: Cannot parae line: %q", ErrFileParse, text)
 		}
 
 		k := strings.TrimSpace(kv[0])

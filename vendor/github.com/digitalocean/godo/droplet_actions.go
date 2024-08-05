@@ -10,6 +10,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ActionRequest represents DigitalOcean Action Request
 type ActionRequest map[string]interface{}
 
@@ -61,12 +62,23 @@ type ActionRequest map[string]interface{}
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // ActionRequest reprents DigitalOcean Action Request
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// ActionRequest reprents DigitalOcean Action Request
+=======
+// ActionRequest represents DigitalOcean Action Request
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ActionRequest map[string]interface{}
 
 // DropletActionsService is an interface for interfacing with the Droplet actions
 // endpoints of the DigitalOcean API
+<<<<<<< HEAD
 // See: https://developers.digitalocean.com/documentation/v2#droplet-actions
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2#droplet-actions
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Droplet-Actions
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type DropletActionsService interface {
 	Shutdown(context.Context, int) (*Action, *Response, error)
 	ShutdownByTag(context.Context, string) ([]Action, *Response, error)
@@ -347,7 +359,7 @@ func (s *DropletActionsServiceOp) Get(ctx context.Context, dropletID, actionID i
 	return s.get(ctx, path)
 }
 
-// GetByURI gets an action for a particular Droplet by id.
+// GetByURI gets an action for a particular Droplet by URI.
 func (s *DropletActionsServiceOp) GetByURI(ctx context.Context, rawurl string) (*Action, *Response, error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {

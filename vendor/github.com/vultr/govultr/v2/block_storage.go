@@ -38,6 +38,7 @@ type BlockStorage struct {
 	Label              string  `json:"label"`
 	MountID            string  `json:"mount_id"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	BlockType          string  `json:"block_type"`
 }
 
@@ -49,14 +50,29 @@ type BlockStorageCreate struct {
 	BlockType string `json:"block_type,omitempty"`
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	BlockType          string  `json:"block_type"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // BlockStorageCreate struct is used for creating Block Storage.
 type BlockStorageCreate struct {
+<<<<<<< HEAD
 	Region string `json:"region"`
 	SizeGB int    `json:"size_gb"`
 	Label  string `json:"label,omitempty"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Region string `json:"region"`
+	SizeGB int    `json:"size_gb"`
+	Label  string `json:"label,omitempty"`
+=======
+	Region    string `json:"region"`
+	SizeGB    int    `json:"size_gb"`
+	Label     string `json:"label,omitempty"`
+	BlockType string `json:"block_type,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // BlockStorageUpdate struct is used to update Block Storage.

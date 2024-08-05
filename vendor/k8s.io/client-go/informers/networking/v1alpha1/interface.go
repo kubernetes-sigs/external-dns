@@ -24,6 +24,7 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+<<<<<<< HEAD
 	// ClusterCIDRs returns a ClusterCIDRInformer.
 	ClusterCIDRs() ClusterCIDRInformer
 }
@@ -42,4 +43,32 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // ClusterCIDRs returns a ClusterCIDRInformer.
 func (v *version) ClusterCIDRs() ClusterCIDRInformer {
 	return &clusterCIDRInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// IPAddresses returns a IPAddressInformer.
+	IPAddresses() IPAddressInformer
+	// ServiceCIDRs returns a ServiceCIDRInformer.
+	ServiceCIDRs() ServiceCIDRInformer
+}
+
+type version struct {
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+}
+
+// New returns a new Interface.
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// IPAddresses returns a IPAddressInformer.
+func (v *version) IPAddresses() IPAddressInformer {
+	return &iPAddressInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceCIDRs returns a ServiceCIDRInformer.
+func (v *version) ServiceCIDRs() ServiceCIDRInformer {
+	return &serviceCIDRInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

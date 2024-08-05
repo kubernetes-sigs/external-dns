@@ -43,9 +43,32 @@ func (d Error) Error() string {
 }
 
 // ListFilter represents the list query parameters that may be passed to
-// VinylDNS API endpoints such as /zones and /recordsets
+// VinylDNS API endpoints such as /zones and /zones/${zone_id}/recordsets
 type ListFilter struct {
 	NameFilter string
 	StartFrom  string
 	MaxItems   int
+}
+
+// NameSort specifies the name sort order for record sets returned by the global list record set response.
+// Valid values are ASC (ascending; default) and DESC (descending).
+type NameSort string
+
+const (
+	// ASC represents an ascending NameSort
+	ASC NameSort = "ASC"
+
+	// DESC represents a descending NameSort
+	DESC NameSort = "DESC"
+)
+
+// GlobalListFilter represents the list query parameters that may be passed to
+// VinylDNS API endpoints such as /recordsets
+type GlobalListFilter struct {
+	RecordNameFilter       string
+	RecordTypeFilter       string
+	RecordOwnerGroupFilter string
+	NameSort               NameSort
+	StartFrom              string
+	MaxItems               int
 }

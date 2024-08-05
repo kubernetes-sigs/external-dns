@@ -24,11 +24,17 @@ import (
 // package loading.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Deprecated: Use the higher-level API in golang.org/x/tools/go/packages,
 // which is more efficient.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Deprecated: Use the higher-level API in golang.org/x/tools/go/packages,
+// which is more efficient.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NewImporter(fset *token.FileSet, imports map[string]*types.Package) types.ImporterFrom {
 	return importer{fset, imports}
 }

@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/runtime/protoiface"
 )
@@ -181,6 +182,13 @@ func mergeMessageValue(dst, src protoreflect.Value, opts mergeOptions) protorefl
 =======
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 	piface "google.golang.org/protobuf/runtime/protoiface"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	pref "google.golang.org/protobuf/reflect/protoreflect"
+	piface "google.golang.org/protobuf/runtime/protoiface"
+=======
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/runtime/protoiface"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 type mergeOptions struct{}
@@ -190,17 +198,17 @@ func (o mergeOptions) Merge(dst, src proto.Message) {
 }
 
 // merge is protoreflect.Methods.Merge.
-func (mi *MessageInfo) merge(in piface.MergeInput) piface.MergeOutput {
+func (mi *MessageInfo) merge(in protoiface.MergeInput) protoiface.MergeOutput {
 	dp, ok := mi.getPointer(in.Destination)
 	if !ok {
-		return piface.MergeOutput{}
+		return protoiface.MergeOutput{}
 	}
 	sp, ok := mi.getPointer(in.Source)
 	if !ok {
-		return piface.MergeOutput{}
+		return protoiface.MergeOutput{}
 	}
 	mi.mergePointer(dp, sp, mergeOptions{})
-	return piface.MergeOutput{Flags: piface.MergeComplete}
+	return protoiface.MergeOutput{Flags: protoiface.MergeComplete}
 }
 
 func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
@@ -234,7 +242,7 @@ func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
 				continue
 			}
 			dx := (*dext)[num]
-			var dv pref.Value
+			var dv protoreflect.Value
 			if dx.Type() == sx.Type() {
 				dv = dx.Value()
 			}
@@ -247,23 +255,23 @@ func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
 		}
 	}
 	if mi.unknownOffset.IsValid() {
-		du := dst.Apply(mi.unknownOffset).Bytes()
-		su := src.Apply(mi.unknownOffset).Bytes()
-		if len(*su) > 0 {
+		su := mi.getUnknownBytes(src)
+		if su != nil && len(*su) > 0 {
+			du := mi.mutableUnknownBytes(dst)
 			*du = append(*du, *su...)
 		}
 	}
 }
 
-func mergeScalarValue(dst, src pref.Value, opts mergeOptions) pref.Value {
+func mergeScalarValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
 	return src
 }
 
-func mergeBytesValue(dst, src pref.Value, opts mergeOptions) pref.Value {
-	return pref.ValueOfBytes(append(emptyBuf[:], src.Bytes()...))
+func mergeBytesValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
+	return protoreflect.ValueOfBytes(append(emptyBuf[:], src.Bytes()...))
 }
 
-func mergeListValue(dst, src pref.Value, opts mergeOptions) pref.Value {
+func mergeListValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
 	dstl := dst.List()
 	srcl := src.List()
 	for i, llen := 0, srcl.Len(); i < llen; i++ {
@@ -272,30 +280,36 @@ func mergeListValue(dst, src pref.Value, opts mergeOptions) pref.Value {
 	return dst
 }
 
-func mergeBytesListValue(dst, src pref.Value, opts mergeOptions) pref.Value {
+func mergeBytesListValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
 	dstl := dst.List()
 	srcl := src.List()
 	for i, llen := 0, srcl.Len(); i < llen; i++ {
 		sb := srcl.Get(i).Bytes()
 		db := append(emptyBuf[:], sb...)
-		dstl.Append(pref.ValueOfBytes(db))
+		dstl.Append(protoreflect.ValueOfBytes(db))
 	}
 	return dst
 }
 
-func mergeMessageListValue(dst, src pref.Value, opts mergeOptions) pref.Value {
+func mergeMessageListValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
 	dstl := dst.List()
 	srcl := src.List()
 	for i, llen := 0, srcl.Len(); i < llen; i++ {
 		sm := srcl.Get(i).Message()
 		dm := proto.Clone(sm.Interface()).ProtoReflect()
-		dstl.Append(pref.ValueOfMessage(dm))
+		dstl.Append(protoreflect.ValueOfMessage(dm))
 	}
 	return dst
 }
 
+<<<<<<< HEAD
 func mergeMessageValue(dst, src pref.Value, opts mergeOptions) pref.Value {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func mergeMessageValue(dst, src pref.Value, opts mergeOptions) pref.Value {
+=======
+func mergeMessageValue(dst, src protoreflect.Value, opts mergeOptions) protoreflect.Value {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	opts.Merge(dst.Message().Interface(), src.Message().Interface())
 	return dst
 }

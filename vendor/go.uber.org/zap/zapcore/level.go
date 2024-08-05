@@ -53,8 +53,14 @@ const (
 
 	_minLevel = DebugLevel
 	_maxLevel = FatalLevel
+
+	// InvalidLevel is an invalid value for Level.
+	//
+	// Core implementations may panic if they see messages of this level.
+	InvalidLevel = _maxLevel + 1
 )
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // ParseLevel parses a level based on the lower-case or all-caps ASCII
 // representation of the log level. If the provided ASCII representation is
@@ -71,6 +77,58 @@ func ParseLevel(text string) (Level, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// ParseLevel parses a level based on the lower-case or all-caps ASCII
+// representation of the log level. If the provided ASCII representation is
+// invalid an error is returned.
+//
+// This is particularly useful when dealing with text input to configure log
+// levels.
+func ParseLevel(text string) (Level, error) {
+	var level Level
+	err := level.UnmarshalText([]byte(text))
+	return level, err
+}
+
+type leveledEnabler interface {
+	LevelEnabler
+
+	Level() Level
+}
+
+// LevelOf reports the minimum enabled log level for the given LevelEnabler
+// from Zap's supported log levels, or [InvalidLevel] if none of them are
+// enabled.
+//
+// A LevelEnabler may implement a 'Level() Level' method to override the
+// behavior of this function.
+//
+//	func (c *core) Level() Level {
+//		return c.currentLevel
+//	}
+//
+// It is recommended that [Core] implementations that wrap other cores use
+// LevelOf to retrieve the level of the wrapped core. For example,
+//
+//	func (c *coreWrapper) Level() Level {
+//		return zapcore.LevelOf(c.wrappedCore)
+//	}
+func LevelOf(enab LevelEnabler) Level {
+	if lvler, ok := enab.(leveledEnabler); ok {
+		return lvler.Level()
+	}
+
+	for lvl := _minLevel; lvl <= _maxLevel; lvl++ {
+		if enab.Enabled(lvl) {
+			return lvl
+		}
+	}
+
+	return InvalidLevel
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
 	switch l {

@@ -33,6 +33,7 @@ type AccessToken struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	AccountID int64  `json:"account_id"`
 }
 
@@ -160,6 +161,11 @@ func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuth
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	AccountID int    `json:"account_id"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	AccountID int    `json:"account_id"`
+=======
+	AccountID int64  `json:"account_id"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ExchangeAuthorizationRequest represents a request to exchange
@@ -207,11 +213,20 @@ func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuth
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		errorResponse := &ExchangeAuthorizationError{}
+		err = json.NewDecoder(resp.Body).Decode(errorResponse)
+		if err != nil {
+			return nil, err
+		}
 		errorResponse.HTTPResponse = resp
+<<<<<<< HEAD
 		json.NewDecoder(resp.Body).Decode(errorResponse)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		json.NewDecoder(resp.Body).Decode(errorResponse)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return nil, errorResponse
 	}
 

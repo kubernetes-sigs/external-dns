@@ -18,6 +18,7 @@ package alidns
 // RecordLog is a nested struct in alidns response
 type RecordLog struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Action          string `json:"Action" xml:"Action"`
 	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
@@ -27,8 +28,19 @@ type RecordLog struct {
 =======
 	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
 	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Action          string `json:"Action" xml:"Action"`
-	Message         string `json:"Message" xml:"Message"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Message         string `json:"Message" xml:"Message"`
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

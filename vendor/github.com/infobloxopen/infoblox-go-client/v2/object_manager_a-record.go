@@ -2,6 +2,7 @@ package ibclient
 
 import (
 	"fmt"
+<<<<<<< HEAD
 	"net"
 	"strings"
 )
@@ -115,6 +116,123 @@ func (objMgr *ObjectManager) UpdateARecord(
 	}
 	rec = NewRecordA(
 		"", "", name, newIpAddr, ttl, useTTL, comment, eas, ref)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"github.com/infobloxopen/infoblox-go-client/v2/utils"
+	"net"
+	"strings"
+)
+
+func (objMgr *ObjectManager) CreateARecord(
+	netView string,
+	dnsView string,
+	name string,
+	cidr string,
+	ipAddr string,
+	ttl uint32,
+	useTTL bool,
+	comment string,
+	eas EA) (*RecordA, error) {
+
+	cleanName := strings.TrimSpace(name)
+	if cleanName == "" || cleanName != name {
+		return nil, fmt.Errorf(
+			"'name' argument is expected to be non-empty and it must NOT contain leading/trailing spaces")
+	}
+
+	recordA := NewRecordA(dnsView, "", name, "", ttl, useTTL, comment, eas, "")
+
+	if ipAddr == "" {
+		if cidr == "" {
+			return nil, fmt.Errorf("CIDR must not be empty")
+		}
+		ip, _, err := net.ParseCIDR(cidr)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse CIDR value: %s", err.Error())
+		}
+		if ip.To4() == nil {
+			return nil, fmt.Errorf("CIDR value must be an IPv4 CIDR, not an IPv6 one")
+		}
+		if netView == "" {
+			recordA.Ipv4Addr = utils.StringPtr(fmt.Sprintf("func:nextavailableip:%s", cidr))
+		} else {
+			recordA.Ipv4Addr = utils.StringPtr(fmt.Sprintf("func:nextavailableip:%s,%s", cidr, netView))
+		}
+	} else {
+		ip := net.ParseIP(ipAddr)
+		if ip == nil {
+			return nil, fmt.Errorf("'IP address for the record is not valid")
+		}
+		if ip.To4() == nil {
+			return nil, fmt.Errorf("IP address must be an IPv4 address, not an IPv6 one")
+		}
+		recordA.Ipv4Addr = &ipAddr
+	}
+
+	ref, err := objMgr.connector.CreateObject(recordA)
+	if err != nil {
+		return nil, err
+	}
+
+	newRec, err := objMgr.GetARecordByRef(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	return newRec, nil
+}
+
+func (objMgr *ObjectManager) UpdateARecord(
+	ref string,
+	name string,
+	ipAddr string,
+	cidr string,
+	netView string,
+	ttl uint32,
+	useTTL bool,
+	comment string,
+	eas EA) (*RecordA, error) {
+
+	cleanName := strings.TrimSpace(name)
+	if cleanName == "" || cleanName != name {
+		return nil, fmt.Errorf(
+			"'name' argument is expected to be non-empty and it must NOT contain leading/trailing spaces")
+	}
+
+	rec, err := objMgr.GetARecordByRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	newIpAddr := rec.Ipv4Addr
+	if ipAddr == "" {
+		if cidr != "" {
+			ip, _, err := net.ParseCIDR(cidr)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse CIDR value: %s", err.Error())
+			}
+			if ip.To4() == nil {
+				return nil, fmt.Errorf("CIDR value must be an IPv4 CIDR, not an IPv6 one")
+			}
+			if netView == "" {
+				newIpAddr = utils.StringPtr(fmt.Sprintf("func:nextavailableip:%s", cidr))
+			} else {
+				newIpAddr = utils.StringPtr(fmt.Sprintf("func:nextavailableip:%s,%s", cidr, netView))
+			}
+		}
+		// else: leaving ipv4addr field untouched
+	} else {
+		ip := net.ParseIP(ipAddr)
+		if ip == nil {
+			return nil, fmt.Errorf("'IP address for the record is not valid")
+		}
+		if ip.To4() == nil {
+			return nil, fmt.Errorf("IP address must be an IPv4 address, not an IPv6 one")
+		}
+		newIpAddr = &ipAddr
+	}
+	rec = NewRecordA(
+		"", "", name, *newIpAddr, ttl, useTTL, comment, eas, ref)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	ref, err = objMgr.connector.UpdateObject(rec, ref)
 	if err != nil {
 		return nil, err

@@ -33,6 +33,7 @@ const key = keyType("grpc.internal.transport.networktype")
 func Set(address resolver.Address, networkType string) resolver.Address {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	address.Attributes = address.Attributes.WithValues(key, networkType)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -42,6 +43,10 @@ func Set(address resolver.Address, networkType string) resolver.Address {
 =======
 	address.Attributes = address.Attributes.WithValue(key, networkType)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	address.Attributes = address.Attributes.WithValue(key, networkType)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return address
 }
 

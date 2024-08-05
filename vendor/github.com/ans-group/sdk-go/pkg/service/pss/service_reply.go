@@ -47,6 +47,7 @@ func (s *Service) DownloadReplyAttachmentStream(replyID string, attachmentName s
 }
 
 func (s *Service) downloadReplyAttachmentResponse(replyID string, attachmentName string) (*connection.APIResponse, error) {
+<<<<<<< HEAD
 	body := &connection.APIResponseBody{}
 	response := &connection.APIResponse{}
 
@@ -67,6 +68,28 @@ func (s *Service) downloadReplyAttachmentResponse(replyID string, attachmentName
 	}
 
 	return response, response.ValidateStatusCode([]int{}, body)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	response := &connection.APIResponse{}
+
+	if replyID == "" {
+		return response, fmt.Errorf("invalid reply id")
+	}
+	if attachmentName == "" {
+		return response, fmt.Errorf("invalid attachment name")
+	}
+
+	response, err := s.connection.Get(fmt.Sprintf("/pss/v1/replies/%s/attachments/%s", replyID, attachmentName), connection.APIRequestParameters{})
+	if err != nil {
+		return response, err
+	}
+
+	if response.StatusCode == 404 {
+		return response, &AttachmentNotFoundError{Name: attachmentName}
+	}
+
+	return response, response.HandleResponse(nil)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // UploadReplyAttachmentStream uploads the provided attachment

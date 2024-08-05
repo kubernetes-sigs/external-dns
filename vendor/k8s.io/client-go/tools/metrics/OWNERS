@@ -3,6 +3,7 @@
 reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - wojtek-t
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -51,3 +52,12 @@ reviewers:
 - krousey
 - jayunit100
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- wojtek-t
+- eparis
+- krousey
+- jayunit100
+=======
+  - wojtek-t
+  - jayunit100
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

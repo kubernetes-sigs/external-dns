@@ -125,7 +125,12 @@ func (e *extractor) extractUnstructured(object *unstructured.Unstructured, field
 		return nil, fmt.Errorf("failed to fetch the objectType: %v", err)
 	}
 	result := &unstructured.Unstructured{}
+<<<<<<< HEAD
 	err = managedfields.ExtractInto(object, *objectType, fieldManager, result, subresource)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	err = managedfields.ExtractInto(object, *objectType, fieldManager, result, subresource) //nolint:forbidigo
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, fmt.Errorf("failed calling ExtractInto for unstructured: %v", err)
 	}

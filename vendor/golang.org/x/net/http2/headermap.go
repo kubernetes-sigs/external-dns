@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"sync"
 )
 
@@ -388,6 +389,10 @@ func canonicalHeader(v string) string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"strings"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"strings"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"sync"
 )
 
@@ -409,7 +414,14 @@ func buildCommonHeaderMaps() {
 		"accept-language",
 		"accept-ranges",
 		"age",
+		"access-control-allow-credentials",
+		"access-control-allow-headers",
+		"access-control-allow-methods",
 		"access-control-allow-origin",
+		"access-control-expose-headers",
+		"access-control-max-age",
+		"access-control-request-headers",
+		"access-control-request-method",
 		"allow",
 		"authorization",
 		"cache-control",
@@ -435,6 +447,7 @@ func buildCommonHeaderMaps() {
 		"link",
 		"location",
 		"max-forwards",
+		"origin",
 		"proxy-authenticate",
 		"proxy-authorization",
 		"range",
@@ -450,6 +463,8 @@ func buildCommonHeaderMaps() {
 		"vary",
 		"via",
 		"www-authenticate",
+		"x-forwarded-for",
+		"x-forwarded-proto",
 	}
 	commonLowerHeader = make(map[string]string, len(common))
 	commonCanonHeader = make(map[string]string, len(common))
@@ -460,11 +475,25 @@ func buildCommonHeaderMaps() {
 	}
 }
 
-func lowerHeader(v string) string {
+func lowerHeader(v string) (lower string, ascii bool) {
 	buildCommonHeaderMapsOnce()
 	if s, ok := commonLowerHeader[v]; ok {
+		return s, true
+	}
+	return asciiToLower(v)
+}
+
+func canonicalHeader(v string) string {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonCanonHeader[v]; ok {
 		return s
 	}
+<<<<<<< HEAD
 	return strings.ToLower(v)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return strings.ToLower(v)
+=======
+	return http.CanonicalHeaderKey(v)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

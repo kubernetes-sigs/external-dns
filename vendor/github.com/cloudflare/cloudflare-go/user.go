@@ -4,6 +4,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -277,9 +278,16 @@ func (api *API) UserBillingHistory(ctx context.Context, pageOpts UserBillingOpti
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"encoding/json"
+=======
+	"context"
+	"fmt"
+	"net/http"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // User describes a user account.
@@ -333,19 +341,48 @@ type UserBillingProfile struct {
 	EditedOn        *time.Time `json:"edited_on,omitempty"`
 }
 
+type UserBillingHistoryResponse struct {
+	Response
+	Result     []UserBillingHistory `json:"result"`
+	ResultInfo ResultInfo           `json:"result_info"`
+}
+
+type UserBillingHistory struct {
+	ID          string                 `json:"id,omitempty"`
+	Type        string                 `json:"type,omitempty"`
+	Action      string                 `json:"action,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	OccurredAt  *time.Time             `json:"occurred_at,omitempty"`
+	Amount      float32                `json:"amount,omitempty"`
+	Currency    string                 `json:"currency,omitempty"`
+	Zone        userBillingHistoryZone `json:"zone"`
+}
+
+type userBillingHistoryZone struct {
+	Name string `json:"name,omitempty"`
+}
+
+type UserBillingOptions struct {
+	PaginationOptions
+	Order      string     `url:"order,omitempty"`
+	Type       string     `url:"type,omitempty"`
+	OccurredAt *time.Time `url:"occurred_at,omitempty"`
+	Action     string     `url:"action,omitempty"`
+}
+
 // UserDetails provides information about the logged-in user.
 //
 // API reference: https://api.cloudflare.com/#user-user-details
-func (api *API) UserDetails() (User, error) {
+func (api *API) UserDetails(ctx context.Context) (User, error) {
 	var r UserResponse
-	res, err := api.makeRequest("GET", "/user", nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, "/user", nil)
 	if err != nil {
-		return User{}, errors.Wrap(err, errMakeRequestError)
+		return User{}, err
 	}
 
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return User{}, errors.Wrap(err, errUnmarshalError)
+		return User{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -354,16 +391,16 @@ func (api *API) UserDetails() (User, error) {
 // UpdateUser updates the properties of the given user.
 //
 // API reference: https://api.cloudflare.com/#user-update-user
-func (api *API) UpdateUser(user *User) (User, error) {
+func (api *API) UpdateUser(ctx context.Context, user *User) (User, error) {
 	var r UserResponse
-	res, err := api.makeRequest("PATCH", "/user", user)
+	res, err := api.makeRequestContext(ctx, http.MethodPatch, "/user", user)
 	if err != nil {
-		return User{}, errors.Wrap(err, errMakeRequestError)
+		return User{}, err
 	}
 
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return User{}, errors.Wrap(err, errUnmarshalError)
+		return User{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -372,18 +409,35 @@ func (api *API) UpdateUser(user *User) (User, error) {
 // UserBillingProfile returns the billing profile of the user.
 //
 // API reference: https://api.cloudflare.com/#user-billing-profile
-func (api *API) UserBillingProfile() (UserBillingProfile, error) {
+func (api *API) UserBillingProfile(ctx context.Context) (UserBillingProfile, error) {
 	var r userBillingProfileResponse
-	res, err := api.makeRequest("GET", "/user/billing/profile", nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, "/user/billing/profile", nil)
 	if err != nil {
-		return UserBillingProfile{}, errors.Wrap(err, errMakeRequestError)
+		return UserBillingProfile{}, err
 	}
 
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return UserBillingProfile{}, errors.Wrap(err, errUnmarshalError)
+		return UserBillingProfile{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	return r.Result, nil
+}
+
+// UserBillingHistory return the billing history of the user
+//
+// API reference: https://api.cloudflare.com/#user-billing-history-billing-history-details
+func (api *API) UserBillingHistory(ctx context.Context, pageOpts UserBillingOptions) ([]UserBillingHistory, error) {
+	uri := buildURI("/user/billing/history", pageOpts)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return []UserBillingHistory{}, err
+	}
+	var r UserBillingHistoryResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return []UserBillingHistory{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
 	return r.Result, nil
 }

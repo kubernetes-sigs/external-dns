@@ -1,0 +1,3 @@
+[submodule "tod_scripts"]
+	path = tod_scripts
+	url = https://github.com/linode/TOD-test-report-uploader.git

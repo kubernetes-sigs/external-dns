@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 [![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
@@ -459,10 +460,14 @@ opts := linodego.NewListOptions(0, string(fStr))
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
+=======
+![Tests](https://img.shields.io/github/actions/workflow/status/linode/linodego/ci.yml?branch=main)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 [![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
 [![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
 [![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
-[![codecov](https://codecov.io/gh/linode/linodego/branch/master/graph/badge.svg)](https://codecov.io/gh/linode/linodego)
 
 Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
 
@@ -471,12 +476,6 @@ Go client for [Linode REST v4 API](https://developers.linode.com/api/v4)
 ```sh
 go get -u github.com/linode/linodego
 ```
-
-## API Support
-
-Check [API_SUPPORT.md](API_SUPPORT.md) for current support of the Linode `v4` API endpoints.
-
-** Note: This project will change and break until we release a v1.0.0 tagged version. Breaking changes in v0.x.x will be denoted with a minor version bump (v0.2.4 -> v0.3.0) **
 
 ## Documentation
 
@@ -552,7 +551,7 @@ kernels, err := linodego.ListKernels(context.Background(), opts)
 
 ```go
 opts := linodego.NewListOptions(2,"")
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
+// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
 kernels, err := linodego.ListKernels(context.Background(), opts)
 // len(kernels) == 100
 ```
@@ -567,9 +566,22 @@ values are set in the supplied ListOptions.
 #### Filtering
 
 ```go
+<<<<<<< HEAD
 opts := linodego.ListOptions{Filter: "{\"mine\":true}"}
 // or opts := linodego.NewListOptions(0, "{\"mine\":true}")
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+opts := linodego.ListOptions{Filter: "{\"mine\":true}"}
+// or opts := linodego.NewListOptions(0, "{\"mine\":true}")
+=======
+f := linodego.Filter{}
+f.AddField(linodego.Eq, "mine", true)
+fStr, err := f.MarshalJSON()
+if err != nil {
+    log.Fatal(err)
+}
+opts := linodego.NewListOptions(0, string(fStr))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 stackscripts, err := linodego.ListStackscripts(context.Background(), opts)
 ```
 
@@ -602,6 +614,18 @@ linodes, err := linodego.ListInstances(context.Background(), linodego.NewListOpt
 // linodes == []
 // err = nil
 ```
+
+### Response Caching
+
+By default, certain endpoints with static responses will be cached into memory. 
+Endpoints with cached responses are identified in their [accompanying documentation](https://pkg.go.dev/github.com/linode/linodego?utm_source=godoc).
+
+The default cache entry expiry time is `15` minutes. Certain endpoints may override this value to allow for more frequent refreshes (e.g. `client.GetRegion(...)`).
+The global cache expiry time can be customized using the `client.SetGlobalCacheExpiration(...)` method.
+
+Response caching can be globally disabled or enabled for a client using the `client.UseCache(...)` method.
+
+The global cache can be cleared and refreshed using the `client.InvalidateCache()` method.
 
 ### Writes
 

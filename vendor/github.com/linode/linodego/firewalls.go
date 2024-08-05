@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -87,16 +88,18 @@ type FirewallsPagedResponse struct {
 	Data []Firewall `json:"data"`
 }
 
-func (FirewallsPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.Firewalls.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+func (FirewallsPagedResponse) endpoint(_ ...any) string {
+	return "networking/firewalls"
 }
 
-func (resp *FirewallsPagedResponse) appendData(r *FirewallsPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *FirewallsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(FirewallsPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*FirewallsPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListFirewalls returns a paginated list of Cloud Firewalls
@@ -104,6 +107,7 @@ func (c *Client) ListFirewalls(ctx context.Context, opts *ListOptions) ([]Firewa
 	response := FirewallsPagedResponse{}
 
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -260,6 +264,10 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -268,13 +276,13 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 }
 
 // CreateFirewall creates a single Firewall with at least one set of inbound or outbound rules
-func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOptions) (*Firewall, error) {
-	var body string
-	e, err := c.Firewalls.Endpoint()
+func (c *Client) CreateFirewall(ctx context.Context, opts FirewallCreateOptions) (*Firewall, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	req := c.R(ctx).SetResult(&Firewall{})
 
 	if bodyData, err := json.Marshal(createOpts); err == nil {
@@ -288,23 +296,36 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 		Post(e))
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	req := c.R(ctx).SetResult(&Firewall{})
+
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+=======
+	e := "networking/firewalls"
+	req := c.R(ctx).SetResult(&Firewall{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
+
 	return r.Result().(*Firewall), nil
 }
 
 // GetFirewall gets a single Firewall with the provided ID
-func (c *Client) GetFirewall(ctx context.Context, id int) (*Firewall, error) {
-	e, err := c.Firewalls.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx)
-
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(req.SetResult(&Firewall{}).Get(e))
+func (c *Client) GetFirewall(ctx context.Context, firewallID int) (*Firewall, error) {
+	e := fmt.Sprintf("networking/firewalls/%d", firewallID)
+	req := c.R(ctx).SetResult(&Firewall{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -313,23 +334,15 @@ func (c *Client) GetFirewall(ctx context.Context, id int) (*Firewall, error) {
 }
 
 // UpdateFirewall updates a Firewall with the given ID
-func (c *Client) UpdateFirewall(ctx context.Context, id int, updateOpts FirewallUpdateOptions) (*Firewall, error) {
-	e, err := c.Firewalls.Endpoint()
+func (c *Client) UpdateFirewall(ctx context.Context, firewallID int, opts FirewallUpdateOptions) (*Firewall, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&Firewall{})
-
-	bodyData, err := json.Marshal(updateOpts)
-	if err != nil {
-		return nil, NewError(err)
-	}
-
-	body := string(bodyData)
-
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(req.SetBody(body).Put(e))
+	e := fmt.Sprintf("networking/firewalls/%d", firewallID)
+	req := c.R(ctx).SetResult(&Firewall{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
 	if err != nil {
 		return nil, err
 	}
@@ -338,15 +351,8 @@ func (c *Client) UpdateFirewall(ctx context.Context, id int, updateOpts Firewall
 }
 
 // DeleteFirewall deletes a single Firewall with the provided ID
-func (c *Client) DeleteFirewall(ctx context.Context, id int) error {
-	e, err := c.Firewalls.Endpoint()
-	if err != nil {
-		return err
-	}
-
-	req := c.R(ctx)
-
-	e = fmt.Sprintf("%s/%d", e, id)
-	_, err = coupleAPIErrors(req.Delete(e))
+func (c *Client) DeleteFirewall(ctx context.Context, firewallID int) error {
+	e := fmt.Sprintf("networking/firewalls/%d", firewallID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 }

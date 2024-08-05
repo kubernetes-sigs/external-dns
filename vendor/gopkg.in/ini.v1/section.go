@@ -73,6 +73,7 @@ func (s *Section) NewKey(name, val string) (*Key, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	} else if s.f.options.Insensitive || s.f.options.InsensitiveKeys {
 		name = strings.ToLower(name)
 	}
@@ -854,6 +855,11 @@ func (s *Section) ChildSections() []*Section {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	} else if s.f.options.Insensitive {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	} else if s.f.options.Insensitive {
+=======
+	} else if s.f.options.Insensitive || s.f.options.InsensitiveKeys {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		name = strings.ToLower(name)
 	}
 
@@ -896,7 +902,7 @@ func (s *Section) GetKey(name string) (*Key, error) {
 	if s.f.BlockMode {
 		s.f.lock.RLock()
 	}
-	if s.f.options.Insensitive {
+	if s.f.options.Insensitive || s.f.options.InsensitiveKeys {
 		name = strings.ToLower(name)
 	}
 	key := s.keys[name]
@@ -908,7 +914,7 @@ func (s *Section) GetKey(name string) (*Key, error) {
 		// Check if it is a child-section.
 		sname := s.name
 		for {
-			if i := strings.LastIndex(sname, "."); i > -1 {
+			if i := strings.LastIndex(sname, s.f.options.ChildSectionDelimiter); i > -1 {
 				sname = sname[:i]
 				sec, err := s.f.GetSection(sname)
 				if err != nil {
@@ -918,7 +924,7 @@ func (s *Section) GetKey(name string) (*Key, error) {
 			}
 			break
 		}
-		return nil, fmt.Errorf("error when getting key of section '%s': key '%s' not exists", s.name, name)
+		return nil, fmt.Errorf("error when getting key of section %q: key %q not exists", s.name, name)
 	}
 	return key, nil
 }
@@ -975,7 +981,7 @@ func (s *Section) ParentKeys() []*Key {
 	var parentKeys []*Key
 	sname := s.name
 	for {
-		if i := strings.LastIndex(sname, "."); i > -1 {
+		if i := strings.LastIndex(sname, s.f.options.ChildSectionDelimiter); i > -1 {
 			sname = sname[:i]
 			sec, err := s.f.GetSection(sname)
 			if err != nil {
@@ -1004,7 +1010,7 @@ func (s *Section) KeysHash() map[string]string {
 		defer s.f.lock.RUnlock()
 	}
 
-	hash := map[string]string{}
+	hash := make(map[string]string, len(s.keysHash))
 	for key, value := range s.keysHash {
 		hash[key] = value
 	}
@@ -1032,12 +1038,18 @@ func (s *Section) DeleteKey(name string) {
 // For example, "[parent.child1]" and "[parent.child12]" are child sections
 // of section "[parent]".
 func (s *Section) ChildSections() []*Section {
-	prefix := s.name + "."
+	prefix := s.name + s.f.options.ChildSectionDelimiter
 	children := make([]*Section, 0, 3)
 	for _, name := range s.f.sectionList {
 		if strings.HasPrefix(name, prefix) {
+<<<<<<< HEAD
 			children = append(children, s.f.sections[name])
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			children = append(children, s.f.sections[name])
+=======
+			children = append(children, s.f.sections[name]...)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 	return children

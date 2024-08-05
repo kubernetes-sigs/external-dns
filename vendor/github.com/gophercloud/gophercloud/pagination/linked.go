@@ -47,6 +47,7 @@ func (current LinkedPageBase) NextPageURL() (string, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		key, path = path[0], path[1:]
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -79,6 +80,11 @@ func (current LinkedPageBase) NextPageURL() (string, error) {
 =======
 		key, path = path[0], path[1:len(path)]
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		key, path = path[0], path[1:len(path)]
+=======
+		key, path = path[0], path[1:]
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 		value, ok := submap[key]
 		if !ok {

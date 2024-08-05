@@ -756,6 +756,7 @@ func yaml_parser_fetch_next_token(parser *yaml_parser_t) (ok bool) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if len(parser.tokens) > 0 && parser.tokens[len(parser.tokens)-1].typ == yaml_BLOCK_ENTRY_TOKEN {
 			// Sequence indicators alone have no line comments. It becomes
 			// a head comment for whatever follows.
@@ -9884,6 +9885,14 @@ func yaml_parser_scan_comments(parser *yaml_parser_t, scan_mark yaml_mark_t) boo
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		if len(parser.tokens) > 0 && parser.tokens[len(parser.tokens)-1].typ == yaml_BLOCK_ENTRY_TOKEN {
+			// Sequence indicators alone have no line comments. It becomes
+			// a head comment for whatever follows.
+			return
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		if !yaml_parser_scan_line_comment(parser, comment_mark) {
 			ok = false
 			return
@@ -11390,10 +11399,9 @@ func yaml_parser_scan_block_scalar(parser *yaml_parser_t, token *yaml_token_t, l
 		}
 	}
 	if parser.buffer[parser.buffer_pos] == '#' {
-		// TODO Test this and then re-enable it.
-		//if !yaml_parser_scan_line_comment(parser, start_mark) {
-		//	return false
-		//}
+		if !yaml_parser_scan_line_comment(parser, start_mark) {
+			return false
+		}
 		for !is_breakz(parser.buffer, parser.buffer_pos) {
 			skip(parser)
 			if parser.unread < 1 && !yaml_parser_update_buffer(parser, 1) {
@@ -11991,13 +11999,12 @@ func yaml_parser_scan_line_comment(parser *yaml_parser_t, token_mark yaml_mark_t
 						return false
 					}
 					skip_line(parser)
-				} else {
-					if parser.mark.index >= seen {
-						if len(text) == 0 {
-							start_mark = parser.mark
-						}
-						text = append(text, parser.buffer[parser.buffer_pos])
+				} else if parser.mark.index >= seen {
+					if len(text) == 0 {
+						start_mark = parser.mark
 					}
+					text = read(parser, text)
+				} else {
 					skip(parser)
 				}
 			}
@@ -12023,6 +12030,10 @@ func yaml_parser_scan_comments(parser *yaml_parser_t, scan_mark yaml_mark_t) boo
 
 	var token_mark = token.start_mark
 	var start_mark yaml_mark_t
+	var next_indent = parser.indent
+	if next_indent < 0 {
+		next_indent = 0
+	}
 
 	var recent_empty = false
 	var first_empty = parser.newlines <= 1
@@ -12054,15 +12065,18 @@ func yaml_parser_scan_comments(parser *yaml_parser_t, scan_mark yaml_mark_t) boo
 			continue
 		}
 		c := parser.buffer[parser.buffer_pos+peek]
-		if is_breakz(parser.buffer, parser.buffer_pos+peek) || parser.flow_level > 0 && (c == ']' || c == '}') {
+		var close_flow = parser.flow_level > 0 && (c == ']' || c == '}')
+		if close_flow || is_breakz(parser.buffer, parser.buffer_pos+peek) {
 			// Got line break or terminator.
-			if !recent_empty {
-				if first_empty && (start_mark.line == foot_line || start_mark.column-1 < parser.indent) {
+			if close_flow || !recent_empty {
+				if close_flow || first_empty && (start_mark.line == foot_line && token.typ != yaml_VALUE_TOKEN || start_mark.column-1 < next_indent) {
 					// This is the first empty line and there were no empty lines before,
 					// so this initial part of the comment is a foot of the prior token
 					// instead of being a head for the following one. Split it up.
+					// Alternatively, this might also be the last comment inside a flow
+					// scope, so it must be a footer.
 					if len(text) > 0 {
-						if start_mark.column-1 < parser.indent {
+						if start_mark.column-1 < next_indent {
 							// If dedented it's unrelated to the prior token.
 							token_mark = start_mark
 						}
@@ -12093,7 +12107,7 @@ func yaml_parser_scan_comments(parser *yaml_parser_t, scan_mark yaml_mark_t) boo
 			continue
 		}
 
-		if len(text) > 0 && column < parser.indent+1 && column != start_mark.column {
+		if len(text) > 0 && (close_flow || column-1 < next_indent && column != start_mark.column) {
 			// The comment at the different indentation is a foot of the
 			// preceding data rather than a head of the upcoming one.
 			parser.comments = append(parser.comments, yaml_comment_t{
@@ -12134,10 +12148,9 @@ func yaml_parser_scan_comments(parser *yaml_parser_t, scan_mark yaml_mark_t) boo
 					return false
 				}
 				skip_line(parser)
+			} else if parser.mark.index >= seen {
+				text = read(parser, text)
 			} else {
-				if parser.mark.index >= seen {
-					text = append(text, parser.buffer[parser.buffer_pos])
-				}
 				skip(parser)
 			}
 		}
@@ -12145,7 +12158,15 @@ func yaml_parser_scan_comments(parser *yaml_parser_t, scan_mark yaml_mark_t) boo
 		peek = 0
 		column = 0
 		line = parser.mark.line
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		next_indent = parser.indent
+		if next_indent < 0 {
+			next_indent = 0
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	if len(text) > 0 {

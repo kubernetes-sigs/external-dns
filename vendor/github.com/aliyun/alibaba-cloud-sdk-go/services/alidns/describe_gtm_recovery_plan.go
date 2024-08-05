@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmRecoveryPlan(request *DescribeGtmRecoveryPlanRequest) (response *DescribeGtmRecoveryPlanResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -203,6 +204,10 @@ func CreateDescribeGtmRecoveryPlanRequest() (request *DescribeGtmRecoveryPlanReq
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmRecoveryPlan(request *DescribeGtmRecoveryPlanRequest) (response *DescribeGtmRecoveryPlanResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -210,8 +215,6 @@ func (client *Client) DescribeGtmRecoveryPlan(request *DescribeGtmRecoveryPlanRe
 }
 
 // DescribeGtmRecoveryPlanWithChan invokes the alidns.DescribeGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanWithChan(request *DescribeGtmRecoveryPlanRequest) (<-chan *DescribeGtmRecoveryPlanResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmRecoveryPlanResponse, 1)
 	errChan := make(chan error, 1)
@@ -234,8 +237,6 @@ func (client *Client) DescribeGtmRecoveryPlanWithChan(request *DescribeGtmRecove
 }
 
 // DescribeGtmRecoveryPlanWithCallback invokes the alidns.DescribeGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanWithCallback(request *DescribeGtmRecoveryPlanRequest, callback func(response *DescribeGtmRecoveryPlanResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -265,20 +266,20 @@ type DescribeGtmRecoveryPlanRequest struct {
 // DescribeGtmRecoveryPlanResponse is the response struct for api DescribeGtmRecoveryPlan
 type DescribeGtmRecoveryPlanResponse struct {
 	*responses.BaseResponse
-	RequestId             string         `json:"RequestId" xml:"RequestId"`
-	RecoveryPlanId        int64          `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
-	Name                  string         `json:"Name" xml:"Name"`
-	Remark                string         `json:"Remark" xml:"Remark"`
-	FaultAddrPoolNum      int            `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
 	Status                string         `json:"Status" xml:"Status"`
-	LastExecuteTime       string         `json:"LastExecuteTime" xml:"LastExecuteTime"`
-	LastExecuteTimestamp  int64          `json:"LastExecuteTimestamp" xml:"LastExecuteTimestamp"`
 	LastRollbackTime      string         `json:"LastRollbackTime" xml:"LastRollbackTime"`
-	LastRollbackTimestamp int64          `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
+	FaultAddrPoolNum      int            `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
+	LastExecuteTime       string         `json:"LastExecuteTime" xml:"LastExecuteTime"`
+	RequestId             string         `json:"RequestId" xml:"RequestId"`
 	CreateTime            string         `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp       int64          `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	LastExecuteTimestamp  int64          `json:"LastExecuteTimestamp" xml:"LastExecuteTimestamp"`
+	Remark                string         `json:"Remark" xml:"Remark"`
+	Name                  string         `json:"Name" xml:"Name"`
+	RecoveryPlanId        int64          `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
 	UpdateTime            string         `json:"UpdateTime" xml:"UpdateTime"`
 	UpdateTimestamp       int64          `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	LastRollbackTimestamp int64          `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
+	CreateTimestamp       int64          `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	FaultAddrPools        FaultAddrPools `json:"FaultAddrPools" xml:"FaultAddrPools"`
 }
 
@@ -288,7 +289,12 @@ func CreateDescribeGtmRecoveryPlanRequest() (request *DescribeGtmRecoveryPlanReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmRecoveryPlan", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

@@ -34,15 +34,15 @@ type TLSContextSpec struct {
 	CASecret        string   `json:"ca_secret,omitempty"`
 	CACertChainFile string   `json:"cacert_chain_file,omitempty"`
 	ALPNProtocols   string   `json:"alpn_protocols,omitempty"`
-	CertRequired    bool     `json:"cert_required,omitempty"`
+	CertRequired    *bool    `json:"cert_required,omitempty"`
 	// +kubebuilder:validation:Enum={"v1.0", "v1.1", "v1.2", "v1.3"}
 	MinTLSVersion string `json:"min_tls_version,omitempty"`
 	// +kubebuilder:validation:Enum={"v1.0", "v1.1", "v1.2", "v1.3"}
 	MaxTLSVersion         string   `json:"max_tls_version,omitempty"`
 	CipherSuites          []string `json:"cipher_suites,omitempty"`
 	ECDHCurves            []string `json:"ecdh_curves,omitempty"`
-	SecretNamespacing     bool     `json:"secret_namespacing,omitempty"`
-	RedirectCleartextFrom int      `json:"redirect_cleartext_from,omitempty"`
+	SecretNamespacing     *bool    `json:"secret_namespacing,omitempty"`
+	RedirectCleartextFrom *int     `json:"redirect_cleartext_from,omitempty"`
 	SNI                   string   `json:"sni,omitempty"`
 }
 

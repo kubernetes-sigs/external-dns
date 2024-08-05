@@ -19,12 +19,22 @@ package alidns
 type FaultAddrPool struct {
 	AddrPoolId   string                         `json:"AddrPoolId" xml:"AddrPoolId"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	InstanceId   string                         `json:"InstanceId" xml:"InstanceId"`
 	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	InstanceId   string                         `json:"InstanceId" xml:"InstanceId"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Addrs        AddrsInDescribeGtmRecoveryPlan `json:"Addrs" xml:"Addrs"`
 }

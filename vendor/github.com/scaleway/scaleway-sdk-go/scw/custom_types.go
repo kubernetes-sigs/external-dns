@@ -2,6 +2,7 @@ package scw
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,6 +41,28 @@ type File struct {
 
 	// Content of the file
 	Content io.Reader `json:"content"`
+}
+
+func (f *File) MarshalJSON() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if f.Content != nil {
+		_, err := io.Copy(buf, f.Content)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tmpFile := struct {
+		Name        string `json:"name"`
+		ContentType string `json:"content_type"`
+		Content     string `json:"content"`
+	}{
+		Name:        f.Name,
+		ContentType: f.ContentType,
+		Content:     buf.String(),
+	}
+
+	return json.Marshal(tmpFile)
 }
 
 func (f *File) UnmarshalJSON(b []byte) error {
@@ -238,10 +261,11 @@ func (n *IPNet) UnmarshalJSON(b []byte) error {
 		str += "/128"
 	}
 
-	_, value, err := net.ParseCIDR(str)
+	ip, value, err := net.ParseCIDR(str)
 	if err != nil {
 		return err
 	}
+	value.IP = ip
 	n.IPNet = *value
 
 	return nil
@@ -262,7 +286,7 @@ func (d *Duration) ToTimeDuration() *time.Duration {
 	if d == nil {
 		return nil
 	}
-	timeDuration := time.Duration(d.Nanos) + time.Duration(d.Seconds/1e9)
+	timeDuration := time.Duration(d.Nanos) + time.Duration(d.Seconds)*time.Second
 	return &timeDuration
 }
 
@@ -303,6 +327,15 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func NewDurationFromTimeDuration(t time.Duration) *Duration {
+	duration := Duration{
+		Seconds: int64(t.Seconds()),
+	}
+	duration.Nanos = int32(t.Nanoseconds() - (time.Duration(duration.Seconds) * time.Second).Nanoseconds())
+
+	return &duration
+}
+
 // splitFloatString splits a float represented in a string, and returns its units (left-coma part) and nanos (right-coma part).
 // E.g.:
 // "3"     ==> units = 3  | nanos = 0
@@ -336,4 +369,82 @@ func splitFloatString(input string) (units int64, nanos int32, err error) {
 	}
 
 	return units, nanos, nil
+}
+
+// JSONObject represent any JSON object. See struct.proto.
+// It will be marshaled into a json string.
+// This type can be used just like any other map.
+//
+//	Example:
+//
+//	values := scw.JSONValue{
+//		"Foo": "Bar",
+//	}
+//	values["Baz"] = "Qux"
+type JSONObject map[string]interface{}
+
+// EscapeMode is the mode that should be use for escaping a value
+type EscapeMode uint
+
+// The modes for escaping a value before it is marshaled, and unmarshalled.
+const (
+	NoEscape EscapeMode = iota
+	Base64Escape
+	QuotedEscape
+)
+
+// DecodeJSONObject will attempt to decode the string input as a JSONValue.
+// Optionally decoding base64 the value first before JSON unmarshalling.
+//
+// Will panic if the escape mode is unknown.
+func DecodeJSONObject(v string, escape EscapeMode) (JSONObject, error) {
+	var b []byte
+	var err error
+
+	switch escape {
+	case NoEscape:
+		b = []byte(v)
+	case Base64Escape:
+		b, err = base64.StdEncoding.DecodeString(v)
+	case QuotedEscape:
+		var u string
+		u, err = strconv.Unquote(v)
+		b = []byte(u)
+	default:
+		panic(fmt.Sprintf("DecodeJSONObject called with unknown EscapeMode, %v", escape))
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := JSONObject{}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+// EncodeJSONObject marshals the value into a JSON string, and optionally base64
+// encodes the string before returning it.
+//
+// Will panic if the escape mode is unknown.
+func EncodeJSONObject(v JSONObject, escape EscapeMode) (string, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+
+	switch escape {
+	case NoEscape:
+		return string(b), nil
+	case Base64Escape:
+		return base64.StdEncoding.EncodeToString(b), nil
+	case QuotedEscape:
+		return strconv.Quote(string(b)), nil
+	}
+
+	panic(fmt.Sprintf("EncodeJSONObject called with unknown EscapeMode, %v", escape))
 }

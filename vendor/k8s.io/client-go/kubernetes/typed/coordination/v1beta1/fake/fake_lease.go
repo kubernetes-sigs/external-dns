@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -555,13 +556,18 @@ func (c *FakeLeases) Apply(ctx context.Context, lease *coordinationv1beta1.Lease
 		Invokes(testing.NewPatchSubresourceAction(leasesResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.Lease{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	v1beta1 "k8s.io/api/coordination/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	coordinationv1beta1 "k8s.io/client-go/applyconfigurations/coordination/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -571,9 +577,9 @@ type FakeLeases struct {
 	ns   string
 }
 
-var leasesResource = schema.GroupVersionResource{Group: "coordination.k8s.io", Version: "v1beta1", Resource: "leases"}
+var leasesResource = v1beta1.SchemeGroupVersion.WithResource("leases")
 
-var leasesKind = schema.GroupVersionKind{Group: "coordination.k8s.io", Version: "v1beta1", Kind: "Lease"}
+var leasesKind = v1beta1.SchemeGroupVersion.WithKind("Lease")
 
 // Get takes name of the lease, and returns the corresponding lease object, and an error if there is any.
 func (c *FakeLeases) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Lease, err error) {
@@ -640,7 +646,7 @@ func (c *FakeLeases) Update(ctx context.Context, lease *v1beta1.Lease, opts v1.U
 // Delete takes name of the lease and deletes it. Returns an error if one occurs.
 func (c *FakeLeases) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(leasesResource, c.ns, name), &v1beta1.Lease{})
+		Invokes(testing.NewDeleteActionWithOptions(leasesResource, c.ns, name, opts), &v1beta1.Lease{})
 
 	return err
 }
@@ -658,6 +664,28 @@ func (c *FakeLeases) Patch(ctx context.Context, name string, pt types.PatchType,
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(leasesResource, c.ns, name, pt, data, subresources...), &v1beta1.Lease{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.Lease), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied lease.
+func (c *FakeLeases) Apply(ctx context.Context, lease *coordinationv1beta1.LeaseApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Lease, err error) {
+	if lease == nil {
+		return nil, fmt.Errorf("lease provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(lease)
+	if err != nil {
+		return nil, err
+	}
+	name := lease.Name
+	if name == nil {
+		return nil, fmt.Errorf("lease.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(leasesResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.Lease{})
 
 	if obj == nil {
 		return nil, err

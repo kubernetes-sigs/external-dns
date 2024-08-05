@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
 	response = CreateDescribeZoneInfoResponse()
 	err = client.DoAction(request, response)
@@ -205,6 +206,10 @@ func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
 	response = CreateDescribeZoneInfoResponse()
 	err = client.DoAction(request, response)
@@ -212,8 +217,6 @@ func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (respon
 }
 
 // DescribeZoneInfoWithChan invokes the pvtz.DescribeZoneInfo API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZoneInfoWithChan(request *DescribeZoneInfoRequest) (<-chan *DescribeZoneInfoResponse, <-chan error) {
 	responseChan := make(chan *DescribeZoneInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -236,8 +239,6 @@ func (client *Client) DescribeZoneInfoWithChan(request *DescribeZoneInfoRequest)
 }
 
 // DescribeZoneInfoWithCallback invokes the pvtz.DescribeZoneInfo API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZoneInfoWithCallback(request *DescribeZoneInfoRequest, callback func(response *DescribeZoneInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -267,19 +268,22 @@ type DescribeZoneInfoRequest struct {
 // DescribeZoneInfoResponse is the response struct for api DescribeZoneInfo
 type DescribeZoneInfoResponse struct {
 	*responses.BaseResponse
-	RequestId       string   `json:"RequestId" xml:"RequestId"`
-	ZoneId          string   `json:"ZoneId" xml:"ZoneId"`
-	ZoneName        string   `json:"ZoneName" xml:"ZoneName"`
-	Remark          string   `json:"Remark" xml:"Remark"`
-	RecordCount     int      `json:"RecordCount" xml:"RecordCount"`
-	CreateTime      string   `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64    `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime      string   `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp int64    `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	IsPtr           bool     `json:"IsPtr" xml:"IsPtr"`
-	ProxyPattern    string   `json:"ProxyPattern" xml:"ProxyPattern"`
-	SlaveDns        bool     `json:"SlaveDns" xml:"SlaveDns"`
-	BindVpcs        BindVpcs `json:"BindVpcs" xml:"BindVpcs"`
+	RequestId       string                     `json:"RequestId" xml:"RequestId"`
+	ZoneId          string                     `json:"ZoneId" xml:"ZoneId"`
+	ZoneName        string                     `json:"ZoneName" xml:"ZoneName"`
+	Remark          string                     `json:"Remark" xml:"Remark"`
+	RecordCount     int                        `json:"RecordCount" xml:"RecordCount"`
+	CreateTime      string                     `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp int64                      `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	UpdateTime      string                     `json:"UpdateTime" xml:"UpdateTime"`
+	UpdateTimestamp int64                      `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	IsPtr           bool                       `json:"IsPtr" xml:"IsPtr"`
+	ProxyPattern    string                     `json:"ProxyPattern" xml:"ProxyPattern"`
+	SlaveDns        bool                       `json:"SlaveDns" xml:"SlaveDns"`
+	ResourceGroupId string                     `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	ZoneType        string                     `json:"ZoneType" xml:"ZoneType"`
+	ZoneTag         string                     `json:"ZoneTag" xml:"ZoneTag"`
+	BindVpcs        BindVpcsInDescribeZoneInfo `json:"BindVpcs" xml:"BindVpcs"`
 }
 
 // CreateDescribeZoneInfoRequest creates a request to invoke DescribeZoneInfo API
@@ -288,7 +292,12 @@ func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneInfo", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

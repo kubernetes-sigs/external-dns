@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -21,6 +22,7 @@ type Stackscript struct {
 	DeploymentsTotal  int               `json:"deployments_total"`
 	DeploymentsActive int               `json:"deployments_active"`
 	IsPublic          bool              `json:"is_public"`
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -786,6 +788,10 @@ func (c *Client) UpdateStackscript(ctx context.Context, id int, updateOpts Stack
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Mine              bool              `json:"mine"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Created           *time.Time        `json:"-"`
 	Updated           *time.Time        `json:"-"`
 	RevNote           string            `json:"rev_note"`
@@ -881,24 +887,24 @@ type StackscriptsPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for Stackscript
-func (StackscriptsPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.StackScripts.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+func (StackscriptsPagedResponse) endpoint(_ ...any) string {
+	return "linode/stackscripts"
 }
 
-// appendData appends Stackscripts when processing paginated Stackscript responses
-func (resp *StackscriptsPagedResponse) appendData(r *StackscriptsPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *StackscriptsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(StackscriptsPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*StackscriptsPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListStackscripts lists Stackscripts
 func (c *Client) ListStackscripts(ctx context.Context, opts *ListOptions) ([]Stackscript, error) {
 	response := StackscriptsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -906,15 +912,10 @@ func (c *Client) ListStackscripts(ctx context.Context, opts *ListOptions) ([]Sta
 }
 
 // GetStackscript gets the Stackscript with the provided ID
-func (c *Client) GetStackscript(ctx context.Context, id int) (*Stackscript, error) {
-	e, err := c.StackScripts.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetResult(&Stackscript{}).
-		Get(e))
+func (c *Client) GetStackscript(ctx context.Context, scriptID int) (*Stackscript, error) {
+	e := fmt.Sprintf("linode/stackscripts/%d", scriptID)
+	req := c.R(ctx).SetResult(&Stackscript{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -922,25 +923,15 @@ func (c *Client) GetStackscript(ctx context.Context, id int) (*Stackscript, erro
 }
 
 // CreateStackscript creates a StackScript
-func (c *Client) CreateStackscript(ctx context.Context, createOpts StackscriptCreateOptions) (*Stackscript, error) {
-	var body string
-	e, err := c.StackScripts.Endpoint()
+func (c *Client) CreateStackscript(ctx context.Context, opts StackscriptCreateOptions) (*Stackscript, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&Stackscript{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
+	e := "linode/stackscripts"
+	req := c.R(ctx).SetResult(&Stackscript{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -948,27 +939,20 @@ func (c *Client) CreateStackscript(ctx context.Context, createOpts StackscriptCr
 }
 
 // UpdateStackscript updates the StackScript with the specified id
-func (c *Client) UpdateStackscript(ctx context.Context, id int, updateOpts StackscriptUpdateOptions) (*Stackscript, error) {
-	var body string
-	e, err := c.StackScripts.Endpoint()
+func (c *Client) UpdateStackscript(ctx context.Context, scriptID int, opts StackscriptUpdateOptions) (*Stackscript, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
-	e = fmt.Sprintf("%s/%d", e, id)
 
-	req := c.R(ctx).SetResult(&Stackscript{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	req := c.R(ctx).SetResult(&Stackscript{}).SetBody(string(body))
+	e := fmt.Sprintf("linode/stackscripts/%d", scriptID)
+	r, err := coupleAPIErrors(req.Put(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -976,13 +960,8 @@ func (c *Client) UpdateStackscript(ctx context.Context, id int, updateOpts Stack
 }
 
 // DeleteStackscript deletes the StackScript with the specified id
-func (c *Client) DeleteStackscript(ctx context.Context, id int) error {
-	e, err := c.StackScripts.Endpoint()
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+func (c *Client) DeleteStackscript(ctx context.Context, scriptID int) error {
+	e := fmt.Sprintf("linode/stackscripts/%d", scriptID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 }

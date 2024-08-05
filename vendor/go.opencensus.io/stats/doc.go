@@ -20,6 +20,7 @@ OpenCensus allows users to create typed measures, record measurements,
 aggregate the collected data, and export the aggregated data.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Measures
 
 A measure represents a type of data point to be tracked and recorded.
@@ -68,6 +69,11 @@ to example traces that fell into each bucket in the Distribution.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 Measures
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+Measures
+=======
+# Measures
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 A measure represents a type of data point to be tracked and recorded.
 For example, latency, request Mb/s, and response Mb/s are measures
@@ -81,7 +87,7 @@ Libraries can define and export measures. Application authors can then
 create views and collect and break down measures by the tags they are
 interested in.
 
-Recording measurements
+# Recording measurements
 
 Measurement is a data point to be collected for a measure. For example,
 for a latency (ms) measure, 100 is a measurement that represents a 100ms
@@ -97,7 +103,7 @@ Libraries can always record measurements, and applications can later decide
 on which measurements they want to collect by registering views. This allows
 libraries to turn on the instrumentation by default.
 
-Exemplars
+# Exemplars
 
 For a given recorded measurement, the associated exemplar is a diagnostic map
 that gives more information about the measurement.
@@ -112,7 +118,12 @@ then the trace span will be added to the exemplar associated with the measuremen
 
 When exported to a supporting back end, you should be able to easily navigate
 to example traces that fell into each bucket in the Distribution.
+<<<<<<< HEAD
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 */
 package stats // import "go.opencensus.io/stats"

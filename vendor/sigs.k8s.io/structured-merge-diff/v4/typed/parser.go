@@ -93,6 +93,7 @@ func (p ParseableType) IsValid() bool {
 
 // FromYAML parses a yaml string into an object with the current schema
 // and the type "typename" or an error if validation fails.
+<<<<<<< HEAD
 func (p ParseableType) FromYAML(object YAMLObject) (*TypedValue, error) {
 	var v interface{}
 	err := yaml.Unmarshal([]byte(object), &v)
@@ -123,6 +124,39 @@ func (p ParseableType) FromStructured(in interface{}) (*TypedValue, error) {
 		return nil, fmt.Errorf("error creating struct value reflector: %v", err)
 	}
 	return AsTyped(v, p.Schema, p.TypeRef)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func (p ParseableType) FromYAML(object YAMLObject, opts ...ValidationOptions) (*TypedValue, error) {
+	var v interface{}
+	err := yaml.Unmarshal([]byte(object), &v)
+	if err != nil {
+		return nil, err
+	}
+	return AsTyped(value.NewValueInterface(v), p.Schema, p.TypeRef, opts...)
+}
+
+// FromUnstructured converts a go "interface{}" type, typically an
+// unstructured object in Kubernetes world, to a TypedValue. It returns an
+// error if the resulting object fails schema validation.
+// The provided interface{} must be one of: map[string]interface{},
+// map[interface{}]interface{}, []interface{}, int types, float types,
+// string or boolean. Nested interface{} must also be one of these types.
+func (p ParseableType) FromUnstructured(in interface{}, opts ...ValidationOptions) (*TypedValue, error) {
+	return AsTyped(value.NewValueInterface(in), p.Schema, p.TypeRef, opts...)
+}
+
+// FromStructured converts a go "interface{}" type, typically an structured object in
+// Kubernetes, to a TypedValue. It will return an error if the resulting object fails
+// schema validation. The provided "interface{}" value must be a pointer so that the
+// value can be modified via reflection. The provided "interface{}" may contain structs
+// and types that are converted to Values by the jsonMarshaler interface.
+func (p ParseableType) FromStructured(in interface{}, opts ...ValidationOptions) (*TypedValue, error) {
+	v, err := value.NewValueReflect(in)
+	if err != nil {
+		return nil, fmt.Errorf("error creating struct value reflector: %v", err)
+	}
+	return AsTyped(v, p.Schema, p.TypeRef, opts...)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // DeducedParseableType is a ParseableType that deduces the type from

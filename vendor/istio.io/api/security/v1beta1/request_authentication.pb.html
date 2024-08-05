@@ -11,17 +11,15 @@ number_of_entries: 1
 <h2 id="RequestAuthentication">RequestAuthentication</h2>
 <section>
 <p>RequestAuthentication defines what request authentication methods are supported by a workload.
-If will reject a request if the request contains invalid authentication information, based on the
+It will reject a request if the request contains invalid authentication information, based on the
 configured authentication rules. A request that does not contain any authentication credentials
 will be accepted but will not have any authenticated identity. To restrict access to authenticated
 requests only, this should be accompanied by an authorization rule.
 Examples:</p>
-
 <ul>
 <li>Require JWT for all request for workloads that have label <code>app:httpbin</code></li>
 </ul>
-
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
 kind: RequestAuthentication
 metadata:
   name: httpbin
@@ -34,7 +32,7 @@ spec:
   - issuer: &quot;issuer-foo&quot;
     jwksUri: https://example.com/.well-known/jwks.json
 ---
-apiVersion: security.istio.io/v1beta1
+apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
   name: httpbin
@@ -48,14 +46,38 @@ spec:
     - source:
         requestPrincipals: [&quot;*&quot;]
 </code></pre>
-
+<ul>
+<li>A policy in the root namespace (&ldquo;istio-system&rdquo; by default) applies to workloads in all namespaces
+in a mesh. The following policy makes all workloads only accept requests that contain a
+valid JWT token.</li>
+</ul>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: req-authn-for-all
+  namespace: istio-system
+spec:
+  jwtRules:
+  - issuer: &quot;issuer-foo&quot;
+    jwksUri: https://example.com/.well-known/jwks.json
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt-for-all
+  namespace: istio-system
+spec:
+  rules:
+  - from:
+    - source:
+        requestPrincipals: [&quot;*&quot;]
+</code></pre>
 <ul>
 <li>The next example shows how to set a different JWT requirement for a different <code>host</code>. The <code>RequestAuthentication</code>
 declares it can accept JWTs issued by either <code>issuer-foo</code> or <code>issuer-bar</code> (the public key set is implicitly
 set from the OpenID Connect spec).</li>
 </ul>
-
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
 kind: RequestAuthentication
 metadata:
   name: httpbin
@@ -68,7 +90,7 @@ spec:
   - issuer: &quot;issuer-foo&quot;
   - issuer: &quot;issuer-bar&quot;
 ---
-apiVersion: security.istio.io/v1beta1
+apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
   name: httpbin
@@ -77,26 +99,26 @@ spec:
   selector:
     matchLabels:
       app: httpbin
- rules:
- - from:
-   - source:
-       requestPrincipals: [&quot;issuer-foo/*&quot;]
-   to:
-     hosts: [&quot;example.com&quot;]
- - from:
-   - source:
-       requestPrincipals: [&quot;issuer-bar/*&quot;]
-   to:
-     hosts: [&quot;another-host.com&quot;]
+  rules:
+  - from:
+    - source:
+        requestPrincipals: [&quot;issuer-foo/*&quot;]
+    to:
+    - operation:
+        hosts: [&quot;example.com&quot;]
+  - from:
+    - source:
+        requestPrincipals: [&quot;issuer-bar/*&quot;]
+    to:
+    - operation:
+        hosts: [&quot;another-host.com&quot;]
 </code></pre>
-
 <ul>
 <li>You can fine tune the authorization policy to set different requirement per path. For example,
 to require JWT on all paths, except /healthz, the same <code>RequestAuthentication</code> can be used, but the
 authorization policy could be:</li>
 </ul>
-
-<pre><code class="language-yaml">apiVersion: security.istio.io/v1beta1
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
   name: httpbin
@@ -105,13 +127,80 @@ spec:
   selector:
     matchLabels:
       app: httpbin
- rules:
- - from:
-   - source:
-       requestPrincipals: [&quot;*&quot;]
- - to:
-   - operation:
-       paths: [&quot;/healthz]
+  rules:
+  - from:
+    - source:
+        requestPrincipals: [&quot;*&quot;]
+  - to:
+    - operation:
+        paths: [&quot;/healthz&quot;]
+</code></pre>
+<p>[Experimental] Routing based on derived <a href="https://istio.io/latest/docs/reference/config/security/conditions/">metadata</a>
+is now supported. A prefix &lsquo;@&rsquo; is used to denote a match against internal metadata instead of the headers in the request.
+Currently this feature is only supported for the following metadata:</p>
+<ul>
+<li><code>request.auth.claims.{claim-name}[.{nested-claim}]*</code> which are extracted from validated JWT tokens.
+Use the <code>.</code> or <code>[]</code> as a separator for nested claim names.
+Examples: <code>request.auth.claims.sub</code>, <code>request.auth.claims.name.givenName</code> and <code>request.auth.claims[foo.com/name]</code>.
+For more information, see <a href="https://istio.io/latest/docs/tasks/security/authentication/jwt-route/">JWT claim based routing</a>.</li>
+</ul>
+<p>The use of matches against JWT claim metadata is only supported in Gateways. The following example shows:</p>
+<ul>
+<li>RequestAuthentication to decode and validate a JWT. This also makes the <code>@request.auth.claims</code> available for use in the VirtualService.</li>
+<li>AuthorizationPolicy to check for valid principals in the request. This makes the JWT required for the request.</li>
+<li>VirtualService to route the request based on the &ldquo;sub&rdquo; claim.</li>
+</ul>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: jwt-on-ingress
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: istio-ingressgateway
+  jwtRules:
+  - issuer: &quot;example.com&quot;
+    jwksUri: https://example.com/.well-known/jwks.json
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: istio-ingressgateway
+  rules:
+  - from:
+    - source:
+        requestPrincipals: [&quot;*&quot;]
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: route-jwt
+spec:
+  hosts:
+  - foo.prod.svc.cluster.local
+  gateways:
+  - istio-ingressgateway
+  http:
+  - name: &quot;v2&quot;
+    match:
+    - headers:
+        &quot;@request.auth.claims.sub&quot;:
+          exact: &quot;dev&quot;
+    route:
+    - destination:
+        host: foo.prod.svc.cluster.local
+        subset: v2
+  - name: &quot;default&quot;
+    route:
+    - destination:
+        host: foo.prod.svc.cluster.local
+        subset: v1
 </code></pre>
 
 <table class="message-fields">
@@ -126,10 +215,37 @@ spec:
 <tbody>
 <tr id="RequestAuthentication-selector">
 <td><code>selector</code></td>
-<td><code><a href="https://istio.io/latest/docs/reference/config/networking/sidecar/#WorkloadSelector">WorkloadSelector</a></code></td>
+<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></code></td>
 <td>
-<p>The selector determines the workloads to apply the RequestAuthentication on.
-If not set, the policy will be applied to all workloads in the same namespace as the policy.</p>
+<p>Optional. The selector decides where to apply the request authentication policy. The selector will match with workloads
+in the same namespace as the request authentication policy. If the request authentication policy is in the root namespace,
+the selector will additionally match with workloads in all namespaces.</p>
+<p>If not set, the selector will match all workloads.</p>
+<p>At most one of <code>selector</code> or <code>targetRefs</code> can be set for a given policy.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="RequestAuthentication-targetRefs">
+<td><code>targetRefs</code></td>
+<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#PolicyTargetReference">PolicyTargetReference[]</a></code></td>
+<td>
+<p>Optional. The targetRef specifies the gateway the policy should be
+applied to. The targeted resource specified will determine which
+workloads the policy applies to.</p>
+<p>Currently, the following resource attachment types are supported:</p>
+<ul>
+<li><code>kind: Gateway</code> with <code>group: gateway.networking.k8s.io</code> in the same namespace.</li>
+</ul>
+<p>If not set, the policy is applied as defined by the selector.
+At most one of the selector and targetRefs can be set.</p>
+<p>NOTE: If you are using the <code>targetRefs</code> field in a multi-revision environment with Istio versions prior to 1.22,
+it is highly recommended that you pin the policy to a revision running 1.22+ via the <code>istio.io/rev</code> label.
+This is to prevent proxies connected to older control planes (that don&rsquo;t know about the <code>targetRefs</code> field)
+from misinterpreting the policy as namespace-wide during the upgrade process.</p>
+<p>NOTE: Waypoint proxies are required to use this field for policies to apply; <code>selector</code> policies will be ignored.</p>
 
 </td>
 <td>
@@ -142,10 +258,11 @@ No
 <td>
 <p>Define the list of JWTs that can be validated at the selected workloads&rsquo; proxy. A valid token
 will be used to extract the authenticated identity.
-Each rule will be activated only when a token is presented at the location recorgnized by the
+Each rule will be activated only when a token is presented at the location recognized by the
 rule. The token will be validated based on the JWT rule config. If validation fails, the request will
 be rejected.
-Note: if more than one token is presented (at different locations), the output principal is nondeterministic.</p>
+Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+such requests is undefined.</p>
 
 </td>
 <td>

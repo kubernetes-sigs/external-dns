@@ -35,6 +35,7 @@ const (
 	DEFAULT_CREDENTIAL_FILE_NAME = "ibm-credentials.env"
 )
 
+<<<<<<< HEAD
 //
 // GetServiceProperties returns a map containing configuration properties for the specified service
 // that are retrieved from external configuration sources in the following precedence order:
@@ -58,6 +59,34 @@ func getServiceProperties(serviceName string) (serviceProps map[string]string, e
 
 	if serviceName == "" {
 		err = fmt.Errorf("serviceName was not specified")
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// GetServiceProperties returns a map containing configuration properties for the specified service
+// that are retrieved from external configuration sources in the following precedence order:
+// 1) credential file
+// 2) environment variables
+// 3) VCAP_SERVICES
+//
+// 'serviceName' is used as a filter against the property names.  For example, if serviceName is
+// passed in as "my_service", then configuration properties whose names begin with "MY_SERVICE_"
+// will be returned in the map.
+func GetServiceProperties(serviceName string) (serviceProps map[string]string, err error) {
+	serviceProps, err = getServiceProperties(serviceName)
+	err = RepurposeSDKProblem(err, "get-props-error")
+	return
+}
+
+// getServiceProperties: This function will retrieve configuration properties for the specified service
+// from external config sources in the following precedence order:
+// 1) credential file
+// 2) environment variables
+// 3) VCAP_SERVICES
+func getServiceProperties(serviceName string) (serviceProps map[string]string, err error) {
+
+	if serviceName == "" {
+		err = fmt.Errorf("serviceName was not specified")
+		err = SDKErrorf(err, "", "no-service-name", getComponentInfo())
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return
 	}
 

@@ -24,8 +24,10 @@ import (
 )
 
 // AuthorizationPolicyLister helps list AuthorizationPolicies.
+// All objects returned here must be treated as read-only.
 type AuthorizationPolicyLister interface {
 	// List lists all AuthorizationPolicies in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.AuthorizationPolicy, err error)
 	// AuthorizationPolicies returns an object that can list and get AuthorizationPolicies.
 	AuthorizationPolicies(namespace string) AuthorizationPolicyNamespaceLister
@@ -56,10 +58,13 @@ func (s *authorizationPolicyLister) AuthorizationPolicies(namespace string) Auth
 }
 
 // AuthorizationPolicyNamespaceLister helps list and get AuthorizationPolicies.
+// All objects returned here must be treated as read-only.
 type AuthorizationPolicyNamespaceLister interface {
 	// List lists all AuthorizationPolicies in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.AuthorizationPolicy, err error)
 	// Get retrieves the AuthorizationPolicy from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.AuthorizationPolicy, error)
 	AuthorizationPolicyNamespaceListerExpansion
 }

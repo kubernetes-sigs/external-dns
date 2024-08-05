@@ -4,6 +4,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -161,9 +162,15 @@ func (api *API) AccountRole(ctx context.Context, accountID string, roleID string
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"encoding/json"
+=======
+	"context"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"fmt"
+	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // AccountRole defines the roles that a member can have attached.
@@ -198,42 +205,78 @@ type AccountRoleDetailResponse struct {
 	Result   AccountRole `json:"result"`
 }
 
-// AccountRoles returns all roles of an account.
-//
-// API reference: https://api.cloudflare.com/#account-roles-list-roles
-func (api *API) AccountRoles(accountID string) ([]AccountRole, error) {
-	uri := "/accounts/" + accountID + "/roles"
-
-	res, err := api.makeRequest("GET", uri, nil)
-	if err != nil {
-		return []AccountRole{}, errors.Wrap(err, errMakeRequestError)
-	}
-
-	var accountRolesListResponse AccountRolesListResponse
-	err = json.Unmarshal(res, &accountRolesListResponse)
-	if err != nil {
-		return []AccountRole{}, errors.Wrap(err, errUnmarshalError)
-	}
-
-	return accountRolesListResponse.Result, nil
+type ListAccountRolesParams struct {
+	ResultInfo
 }
 
-// AccountRole returns the details of a single account role.
+// ListAccountRoles returns all roles of an account.
 //
-// API reference: https://api.cloudflare.com/#account-roles-role-details
-func (api *API) AccountRole(accountID string, roleID string) (AccountRole, error) {
-	uri := fmt.Sprintf("/accounts/%s/roles/%s", accountID, roleID)
+// API reference: https://developers.cloudflare.com/api/operations/account-roles-list-roles
+func (api *API) ListAccountRoles(ctx context.Context, rc *ResourceContainer, params ListAccountRolesParams) ([]AccountRole, error) {
+	if rc.Identifier == "" {
+		return []AccountRole{}, ErrMissingAccountID
+	}
+	autoPaginate := true
+	if params.PerPage >= 1 || params.Page >= 1 {
+		autoPaginate = false
+	}
 
-	res, err := api.makeRequest("GET", uri, nil)
+	if params.PerPage < 1 {
+		params.PerPage = 25
+	}
+
+	if params.Page < 1 {
+		params.Page = 1
+	}
+	var roles []AccountRole
+	var r AccountRolesListResponse
+	for {
+		uri := buildURI(fmt.Sprintf("/accounts/%s/roles", rc.Identifier), params)
+
+		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+		if err != nil {
+			return []AccountRole{}, err
+		}
+
+		err = json.Unmarshal(res, &r)
+		if err != nil {
+			return []AccountRole{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+		}
+		roles = append(roles, r.Result...)
+		params.ResultInfo = r.ResultInfo.Next()
+		if params.ResultInfo.Done() || !autoPaginate {
+			break
+		}
+	}
+
+	return roles, nil
+}
+
+// GetAccountRole returns the details of a single account role.
+//
+// API reference: https://developers.cloudflare.com/api/operations/account-roles-role-details
+func (api *API) GetAccountRole(ctx context.Context, rc *ResourceContainer, roleID string) (AccountRole, error) {
+	if rc.Identifier == "" {
+		return AccountRole{}, ErrMissingAccountID
+	}
+	uri := fmt.Sprintf("/accounts/%s/roles/%s", rc.Identifier, roleID)
+
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return AccountRole{}, errors.Wrap(err, errMakeRequestError)
+		return AccountRole{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
 	var accountRole AccountRoleDetailResponse
 	err = json.Unmarshal(res, &accountRole)
 	if err != nil {
+<<<<<<< HEAD
 		return AccountRole{}, errors.Wrap(err, errUnmarshalError)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return AccountRole{}, errors.Wrap(err, errUnmarshalError)
+=======
+		return AccountRole{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return accountRole.Result, nil

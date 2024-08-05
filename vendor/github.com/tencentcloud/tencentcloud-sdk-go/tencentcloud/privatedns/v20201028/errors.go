@@ -38,6 +38,7 @@ const (
 	// 私有域创建失败。
 	FAILEDOPERATION_CREATEZONEFAILED = "FailedOperation.CreateZoneFailed"
 
+<<<<<<< HEAD
 	// 当前私有域已关联 VPC，如需清空解析记录请先解除 VPC 关联。
 	FAILEDOPERATION_DELETELASTBINDVPCRECORDFAILED = "FailedOperation.DeleteLastBindVpcRecordFailed"
 
@@ -187,4 +188,207 @@ const (
 
 	// 存在绑定的VPC资源。
 	UNSUPPORTEDOPERATION_EXISTBOUNDVPC = "UnsupportedOperation.ExistBoundVpc"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// 数据异常。
+	FAILEDOPERATION_DATAERROR = "FailedOperation.DataError"
+
+	// 当前私有域已关联 VPC，如需清空解析记录请先解除 VPC 关联。
+	FAILEDOPERATION_DELETELASTBINDVPCRECORDFAILED = "FailedOperation.DeleteLastBindVpcRecordFailed"
+
+	// 记录删除失败。
+	FAILEDOPERATION_DELETERECORDFAILED = "FailedOperation.DeleteRecordFailed"
+
+	// 删除终端节点失败。
+	FAILEDOPERATION_DELETEVPCENDPOINTFAILED = "FailedOperation.DeleteVpcEndPointFailed"
+
+	// 解析域删除失败。
+	FAILEDOPERATION_DELETEZONEFAILED = "FailedOperation.DeleteZoneFailed"
+
+	// 记录修改失败。
+	FAILEDOPERATION_MODIFYRECORDFAILED = "FailedOperation.ModifyRecordFailed"
+
+	// 私有域修改失败。
+	FAILEDOPERATION_MODIFYZONEFAILED = "FailedOperation.ModifyZoneFailed"
+
+	// 记录更新失败
+	FAILEDOPERATION_UPDATERECORDFAILED = "FailedOperation.UpdateRecordFailed"
+
+	// 内部错误。
+	INTERNALERROR = "InternalError"
+
+	// 错误未定义。
+	INTERNALERROR_UNDEFIENDERROR = "InternalError.UndefiendError"
+
+	// 参数错误。
+	INVALIDPARAMETER = "InvalidParameter"
+
+	// 已经存在绑定的账号。
+	INVALIDPARAMETER_ACCOUNTEXIST = "InvalidParameter.AccountExist"
+
+	// 终端节点已经绑定了转发规则。
+	INVALIDPARAMETER_ENDPOINTBINDFORWARDRULE = "InvalidParameter.EndPointBindForwardRule"
+
+	// 终端节点不存在。
+	INVALIDPARAMETER_ENDPOINTNOTEXISTS = "InvalidParameter.EndPointNotExists"
+
+	// 非法CIDR。
+	INVALIDPARAMETER_ILLEGALCIDR = "InvalidParameter.IllegalCidr"
+
+	// 域名不正确。
+	INVALIDPARAMETER_ILLEGALDOMAIN = "InvalidParameter.IllegalDomain"
+
+	// 顶级域名不正确。
+	INVALIDPARAMETER_ILLEGALDOMAINTLD = "InvalidParameter.IllegalDomainTld"
+
+	// PTR记录非法。
+	INVALIDPARAMETER_ILLEGALPTRRECORD = "InvalidParameter.IllegalPTRRecord"
+
+	// 记录不合法。
+	INVALIDPARAMETER_ILLEGALRECORD = "InvalidParameter.IllegalRecord"
+
+	// 无效的记录值。
+	INVALIDPARAMETER_ILLEGALRECORDVALUE = "InvalidParameter.IllegalRecordValue"
+
+	// VPC非法。
+	INVALIDPARAMETER_ILLEGALVPCINFO = "InvalidParameter.IllegalVpcInfo"
+
+	// MX 必须为5-50之间且为5的倍数。
+	INVALIDPARAMETER_INVALIDMX = "InvalidParameter.InvalidMX"
+
+	// 该记录类型不支持 MX 优先级设置
+	INVALIDPARAMETER_MXNOTSUPPORTED = "InvalidParameter.MXNotSupported"
+
+	// AAAA记录负载均衡数量超过50。
+	INVALIDPARAMETER_RECORDAAAACOUNTEXCEED = "InvalidParameter.RecordAAAACountExceed"
+
+	// A记录负载均衡数量超过50。
+	INVALIDPARAMETER_RECORDACOUNTEXCEED = "InvalidParameter.RecordACountExceed"
+
+	// CNAME记录负载均衡数量超过50。
+	INVALIDPARAMETER_RECORDCNAMECOUNTEXCEED = "InvalidParameter.RecordCNAMECountExceed"
+
+	// 记录冲突。
+	INVALIDPARAMETER_RECORDCONFLICT = "InvalidParameter.RecordConflict"
+
+	// 记录数量超过限制。
+	INVALIDPARAMETER_RECORDCOUNTEXCEED = "InvalidParameter.RecordCountExceed"
+
+	// 记录已经存在。
+	INVALIDPARAMETER_RECORDEXIST = "InvalidParameter.RecordExist"
+
+	// 记录层级超过限制。
+	INVALIDPARAMETER_RECORDLEVELEXCEED = "InvalidParameter.RecordLevelExceed"
+
+	// MX记录负载均衡数量超过50。
+	INVALIDPARAMETER_RECORDMXCOUNTEXCEED = "InvalidParameter.RecordMXCountExceed"
+
+	// 记录不存在。
+	INVALIDPARAMETER_RECORDNOTEXIST = "InvalidParameter.RecordNotExist"
+
+	// 记录负载均衡数量超过限制。
+	INVALIDPARAMETER_RECORDROLLLIMITCOUNTEXCEED = "InvalidParameter.RecordRolllimitCountExceed"
+
+	// TXT记录负载均衡数量超过10。
+	INVALIDPARAMETER_RECORDTXTCOUNTEXCEED = "InvalidParameter.RecordTXTCountExceed"
+
+	// 当前记录类型不支持权重。
+	INVALIDPARAMETER_RECORDUNSUPPORTWEIGHT = "InvalidParameter.RecordUnsupportWeight"
+
+	// 唯一id不存在
+	INVALIDPARAMETER_UNIQUEIDNOTEXIST = "InvalidParameter.UniqueIdNotExist"
+
+	// VPC已绑定其它解析域。
+	INVALIDPARAMETER_VPCBINDED = "InvalidParameter.VpcBinded"
+
+	// 当前VPC已关联相同主域名。
+	INVALIDPARAMETER_VPCBINDEDMAINDOMAIN = "InvalidParameter.VpcBindedMainDomain"
+
+	// VPC关联反解析域超过限制。
+	INVALIDPARAMETER_VPCPTRZONEBINDEXCEED = "InvalidParameter.VpcPtrZoneBindExceed"
+
+	// 解析域不存在。
+	INVALIDPARAMETER_ZONENOTEXISTS = "InvalidParameter.ZoneNotExists"
+
+	// 参数取值错误。
+	INVALIDPARAMETERVALUE = "InvalidParameterValue"
+
+	// ttl的值必须是1-86400之间。
+	INVALIDPARAMETERVALUE_ILLEGALTTLVALUE = "InvalidParameterValue.IllegalTTLValue"
+
+	// 内部保留域名，不支持创建。
+	INVALIDPARAMETERVALUE_RESERVEDDOMAIN = "InvalidParameterValue.ReservedDomain"
+
+	// 超过配额限制。
+	LIMITEXCEEDED = "LimitExceeded"
+
+	// 超过自定义TLD额度。
+	LIMITEXCEEDED_TLDOUTOFLIMIT = "LimitExceeded.TldOutOfLimit"
+
+	// 使用自定义TLD的私有域超过总额度。
+	LIMITEXCEEDED_TLDOUTOFRANGE = "LimitExceeded.TldOutOfRange"
+
+	// 缺少参数错误。
+	MISSINGPARAMETER = "MissingParameter"
+
+	// 操作被拒绝。
+	OPERATIONDENIED = "OperationDenied"
+
+	// 请求的次数超过了频率限制。
+	REQUESTLIMITEXCEEDED = "RequestLimitExceeded"
+
+	// 资源被占用。
+	RESOURCEINUSE = "ResourceInUse"
+
+	// 当前私有域已转发至其他DNS服务。
+	RESOURCEINUSE_ZONEBINDFORWARDRULE = "ResourceInUse.ZoneBindForwardRule"
+
+	// 资源不足。
+	RESOURCEINSUFFICIENT = "ResourceInsufficient"
+
+	// 余额不足。
+	RESOURCEINSUFFICIENT_BALANCE = "ResourceInsufficient.Balance"
+
+	// 资源不存在。
+	RESOURCENOTFOUND = "ResourceNotFound"
+
+	// 私有域解析服务未开通。
+	RESOURCENOTFOUND_SERVICENOTSUBSCRIBED = "ResourceNotFound.ServiceNotSubscribed"
+
+	// 资源不可用。
+	RESOURCEUNAVAILABLE = "ResourceUnavailable"
+
+	// TLD增值包已过期。
+	RESOURCEUNAVAILABLE_TLDPACKAGEEXPIRED = "ResourceUnavailable.TldPackageExpired"
+
+	// 资源售罄。
+	RESOURCESSOLDOUT = "ResourcesSoldOut"
+
+	// 未授权操作。
+	UNAUTHORIZEDOPERATION = "UnauthorizedOperation"
+
+	// 角色未授权。
+	UNAUTHORIZEDOPERATION_ROLEUNAUTHORIZED = "UnauthorizedOperation.RoleUnAuthorized"
+
+	// 未实名账号。
+	UNAUTHORIZEDOPERATION_UNAUTHORIZEDACCOUNT = "UnauthorizedOperation.UnauthorizedAccount"
+
+	// 未知参数错误。
+	UNKNOWNPARAMETER = "UnknownParameter"
+
+	// 操作不支持。
+	UNSUPPORTEDOPERATION = "UnsupportedOperation"
+
+	// 账号未绑定。
+	UNSUPPORTEDOPERATION_ACCOUNTNOTBOUND = "UnsupportedOperation.AccountNotBound"
+
+	// 存在绑定的VPC资源。
+	UNSUPPORTEDOPERATION_EXISTBOUNDVPC = "UnsupportedOperation.ExistBoundVpc"
+
+	// 接口调用超过限频。
+	UNSUPPORTEDOPERATION_FREQUENCYLIMIT = "UnsupportedOperation.FrequencyLimit"
+
+	// 不支持设置子域名递归解析。
+	UNSUPPORTEDOPERATION_NOTSUPPORTDNSFORWARD = "UnsupportedOperation.NotSupportDnsForward"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )

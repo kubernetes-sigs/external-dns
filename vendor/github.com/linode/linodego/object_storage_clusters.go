@@ -3,6 +3,9 @@ package linodego
 import (
 	"context"
 	"fmt"
+	"net/url"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // ObjectStorageCluster represents a linode object storage cluster object
@@ -21,17 +24,18 @@ type ObjectStorageClustersPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for ObjectStorageCluster
-func (ObjectStorageClustersPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.ObjectStorageClusters.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+func (ObjectStorageClustersPagedResponse) endpoint(_ ...any) string {
+	return "object-storage/clusters"
 }
 
-// appendData appends ObjectStorageClusters when processing paginated ObjectStorageCluster responses
-func (resp *ObjectStorageClustersPagedResponse) appendData(r *ObjectStorageClustersPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *ObjectStorageClustersPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(ObjectStorageClustersPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*ObjectStorageClustersPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListObjectStorageClusters lists ObjectStorageClusters
@@ -45,13 +49,11 @@ func (c *Client) ListObjectStorageClusters(ctx context.Context, opts *ListOption
 }
 
 // GetObjectStorageCluster gets the template with the provided ID
-func (c *Client) GetObjectStorageCluster(ctx context.Context, id string) (*ObjectStorageCluster, error) {
-	e, err := c.ObjectStorageClusters.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%s", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&ObjectStorageCluster{}).Get(e))
+func (c *Client) GetObjectStorageCluster(ctx context.Context, clusterID string) (*ObjectStorageCluster, error) {
+	clusterID = url.PathEscape(clusterID)
+	e := fmt.Sprintf("object-storage/clusters/%s", clusterID)
+	req := c.R(ctx).SetResult(&ObjectStorageCluster{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}

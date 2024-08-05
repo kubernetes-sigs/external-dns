@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/json"
 	"io"
 	"time"
@@ -1313,6 +1314,11 @@ type EncoderConfig struct {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"encoding/json"
+	"io"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"time"
 
 	"go.uber.org/zap/buffer"
@@ -1404,21 +1410,51 @@ func EpochNanosTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	enc.AppendInt64(t.UnixNano())
 }
 
+func encodeTimeLayout(t time.Time, layout string, enc PrimitiveArrayEncoder) {
+	type appendTimeEncoder interface {
+		AppendTimeLayout(time.Time, string)
+	}
+
+	if enc, ok := enc.(appendTimeEncoder); ok {
+		enc.AppendTimeLayout(t, layout)
+		return
+	}
+
+	enc.AppendString(t.Format(layout))
+}
+
 // ISO8601TimeEncoder serializes a time.Time to an ISO8601-formatted string
 // with millisecond precision.
+//
+// If enc supports AppendTimeLayout(t time.Time,layout string), it's used
+// instead of appending a pre-formatted string value.
 func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02T15:04:05.000Z0700"))
+	encodeTimeLayout(t, "2006-01-02T15:04:05.000Z0700", enc)
 }
 
 // RFC3339TimeEncoder serializes a time.Time to an RFC3339-formatted string.
+//
+// If enc supports AppendTimeLayout(t time.Time,layout string), it's used
+// instead of appending a pre-formatted string value.
 func RFC3339TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format(time.RFC3339))
+	encodeTimeLayout(t, time.RFC3339, enc)
 }
 
 // RFC3339NanoTimeEncoder serializes a time.Time to an RFC3339-formatted string
 // with nanosecond precision.
+//
+// If enc supports AppendTimeLayout(t time.Time,layout string), it's used
+// instead of appending a pre-formatted string value.
 func RFC3339NanoTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format(time.RFC3339Nano))
+	encodeTimeLayout(t, time.RFC3339Nano, enc)
+}
+
+// TimeEncoderOfLayout returns TimeEncoder which serializes a time.Time using
+// given layout.
+func TimeEncoderOfLayout(layout string) TimeEncoder {
+	return func(t time.Time, enc PrimitiveArrayEncoder) {
+		encodeTimeLayout(t, layout, enc)
+	}
 }
 
 // UnmarshalText unmarshals text to a TimeEncoder.
@@ -1446,6 +1482,38 @@ func (e *TimeEncoder) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// UnmarshalYAML unmarshals YAML to a TimeEncoder.
+// If value is an object with a "layout" field, it will be unmarshaled to  TimeEncoder with given layout.
+//
+//	timeEncoder:
+//	  layout: 06/01/02 03:04pm
+//
+// If value is string, it uses UnmarshalText.
+//
+//	timeEncoder: iso8601
+func (e *TimeEncoder) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var o struct {
+		Layout string `json:"layout" yaml:"layout"`
+	}
+	if err := unmarshal(&o); err == nil {
+		*e = TimeEncoderOfLayout(o.Layout)
+		return nil
+	}
+
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	return e.UnmarshalText([]byte(s))
+}
+
+// UnmarshalJSON unmarshals JSON to a TimeEncoder as same way UnmarshalYAML does.
+func (e *TimeEncoder) UnmarshalJSON(data []byte) error {
+	return e.UnmarshalYAML(func(v interface{}) error {
+		return json.Unmarshal(data, v)
+	})
+}
+
 // A DurationEncoder serializes a time.Duration to a primitive type.
 type DurationEncoder func(time.Duration, PrimitiveArrayEncoder)
 
@@ -1458,6 +1526,12 @@ func SecondsDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
 // nanoseconds elapsed.
 func NanosDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
 	enc.AppendInt64(int64(d))
+}
+
+// MillisDurationEncoder serializes a time.Duration to an integer number of
+// milliseconds elapsed.
+func MillisDurationEncoder(d time.Duration, enc PrimitiveArrayEncoder) {
+	enc.AppendInt64(d.Nanoseconds() / 1e6)
 }
 
 // StringDurationEncoder serializes a time.Duration using its built-in String
@@ -1475,6 +1549,8 @@ func (e *DurationEncoder) UnmarshalText(text []byte) error {
 		*e = StringDurationEncoder
 	case "nanos":
 		*e = NanosDurationEncoder
+	case "ms":
+		*e = MillisDurationEncoder
 	default:
 		*e = SecondsDurationEncoder
 	}
@@ -1536,13 +1612,15 @@ func (e *NameEncoder) UnmarshalText(text []byte) error {
 type EncoderConfig struct {
 	// Set the keys used for each log entry. If any key is empty, that portion
 	// of the entry is omitted.
-	MessageKey    string `json:"messageKey" yaml:"messageKey"`
-	LevelKey      string `json:"levelKey" yaml:"levelKey"`
-	TimeKey       string `json:"timeKey" yaml:"timeKey"`
-	NameKey       string `json:"nameKey" yaml:"nameKey"`
-	CallerKey     string `json:"callerKey" yaml:"callerKey"`
-	StacktraceKey string `json:"stacktraceKey" yaml:"stacktraceKey"`
-	LineEnding    string `json:"lineEnding" yaml:"lineEnding"`
+	MessageKey     string `json:"messageKey" yaml:"messageKey"`
+	LevelKey       string `json:"levelKey" yaml:"levelKey"`
+	TimeKey        string `json:"timeKey" yaml:"timeKey"`
+	NameKey        string `json:"nameKey" yaml:"nameKey"`
+	CallerKey      string `json:"callerKey" yaml:"callerKey"`
+	FunctionKey    string `json:"functionKey" yaml:"functionKey"`
+	StacktraceKey  string `json:"stacktraceKey" yaml:"stacktraceKey"`
+	SkipLineEnding bool   `json:"skipLineEnding" yaml:"skipLineEnding"`
+	LineEnding     string `json:"lineEnding" yaml:"lineEnding"`
 	// Configure the primitive representations of common complex types. For
 	// example, some users may want all time.Times serialized as floating-point
 	// seconds since epoch, while others may prefer ISO8601 strings.
@@ -1553,7 +1631,17 @@ type EncoderConfig struct {
 	// Unlike the other primitive type encoders, EncodeName is optional. The
 	// zero value falls back to FullNameEncoder.
 	EncodeName NameEncoder `json:"nameEncoder" yaml:"nameEncoder"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// Configure the encoder for interface{} type objects.
+	// If not provided, objects are encoded using json.Encoder
+	NewReflectedEncoder func(io.Writer) ReflectedEncoder `json:"-" yaml:"-"`
+	// Configures the field separator used by the console encoder. Defaults
+	// to tab.
+	ConsoleSeparator string `json:"consoleSeparator" yaml:"consoleSeparator"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ObjectEncoder is a strongly-typed, encoding-agnostic interface for adding a

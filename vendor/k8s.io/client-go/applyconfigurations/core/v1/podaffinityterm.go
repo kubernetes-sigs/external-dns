@@ -29,6 +29,7 @@ type PodAffinityTermApplyConfiguration struct {
 	Namespaces        []string                            `json:"namespaces,omitempty"`
 	TopologyKey       *string                             `json:"topologyKey,omitempty"`
 	NamespaceSelector *v1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
+<<<<<<< HEAD
 }
 
 // PodAffinityTermApplyConfiguration constructs an declarative configuration of the PodAffinityTerm type for use with
@@ -68,5 +69,69 @@ func (b *PodAffinityTermApplyConfiguration) WithTopologyKey(value string) *PodAf
 // If called multiple times, the NamespaceSelector field is set to the value of the last call.
 func (b *PodAffinityTermApplyConfiguration) WithNamespaceSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
 	b.NamespaceSelector = value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	MatchLabelKeys    []string                            `json:"matchLabelKeys,omitempty"`
+	MismatchLabelKeys []string                            `json:"mismatchLabelKeys,omitempty"`
+}
+
+// PodAffinityTermApplyConfiguration constructs an declarative configuration of the PodAffinityTerm type for use with
+// apply.
+func PodAffinityTerm() *PodAffinityTermApplyConfiguration {
+	return &PodAffinityTermApplyConfiguration{}
+}
+
+// WithLabelSelector sets the LabelSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LabelSelector field is set to the value of the last call.
+func (b *PodAffinityTermApplyConfiguration) WithLabelSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
+	b.LabelSelector = value
+	return b
+}
+
+// WithNamespaces adds the given value to the Namespaces field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Namespaces field.
+func (b *PodAffinityTermApplyConfiguration) WithNamespaces(values ...string) *PodAffinityTermApplyConfiguration {
+	for i := range values {
+		b.Namespaces = append(b.Namespaces, values[i])
+	}
+	return b
+}
+
+// WithTopologyKey sets the TopologyKey field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TopologyKey field is set to the value of the last call.
+func (b *PodAffinityTermApplyConfiguration) WithTopologyKey(value string) *PodAffinityTermApplyConfiguration {
+	b.TopologyKey = &value
+	return b
+}
+
+// WithNamespaceSelector sets the NamespaceSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the NamespaceSelector field is set to the value of the last call.
+func (b *PodAffinityTermApplyConfiguration) WithNamespaceSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
+	b.NamespaceSelector = value
+	return b
+}
+
+// WithMatchLabelKeys adds the given value to the MatchLabelKeys field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the MatchLabelKeys field.
+func (b *PodAffinityTermApplyConfiguration) WithMatchLabelKeys(values ...string) *PodAffinityTermApplyConfiguration {
+	for i := range values {
+		b.MatchLabelKeys = append(b.MatchLabelKeys, values[i])
+	}
+	return b
+}
+
+// WithMismatchLabelKeys adds the given value to the MismatchLabelKeys field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the MismatchLabelKeys field.
+func (b *PodAffinityTermApplyConfiguration) WithMismatchLabelKeys(values ...string) *PodAffinityTermApplyConfiguration {
+	for i := range values {
+		b.MismatchLabelKeys = append(b.MismatchLabelKeys, values[i])
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

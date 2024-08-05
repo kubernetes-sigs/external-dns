@@ -102,6 +102,7 @@ func (cmd *unregisterFromViewReq) handleCommand(w *worker) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		w.reportView(vi)
 
 		vi.unsubscribe()
@@ -423,6 +424,11 @@ func (cmd *recordReq) handleCommand(w *worker) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		w.reportView(vi, time.Now())
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		w.reportView(vi, time.Now())
+=======
+		w.reportView(vi)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 		vi.unsubscribe()
 		if !vi.isSubscribed() {
@@ -430,7 +436,7 @@ func (cmd *recordReq) handleCommand(w *worker) {
 			// The collected data can be cleared.
 			vi.clearRows()
 		}
-		w.unregisterView(name)
+		w.unregisterView(vi)
 	}
 	cmd.done <- struct{}{}
 }
@@ -490,8 +496,14 @@ func (cmd *recordReq) handleCommand(w *worker) {
 		}
 		ref := w.getMeasureRef(m.Measure().Name())
 		for v := range ref.views {
+<<<<<<< HEAD
 			v.addSample(cmd.tm, m.Value(), cmd.attachments, time.Now())
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			v.addSample(cmd.tm, m.Value(), cmd.attachments, time.Now())
+=======
+			v.addSample(cmd.tm, m.Value(), cmd.attachments, cmd.t)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 }

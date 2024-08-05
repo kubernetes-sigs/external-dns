@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -284,6 +285,11 @@ func GetAuthProvider(clusterAddress string, apc *clientcmdapi.AuthProviderConfig
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -298,15 +304,23 @@ type AuthProvider interface {
 }
 
 // Factory generates an AuthProvider plugin.
-//  clusterAddress is the address of the current cluster.
-//  config is the initial configuration for this plugin.
-//  persister allows the plugin to save updated configuration.
+//
+//	clusterAddress is the address of the current cluster.
+//	config is the initial configuration for this plugin.
+//	persister allows the plugin to save updated configuration.
 type Factory func(clusterAddress string, config map[string]string, persister AuthProviderConfigPersister) (AuthProvider, error)
 
 // AuthProviderConfigPersister allows a plugin to persist configuration info
 // for just itself.
 type AuthProviderConfigPersister interface {
 	Persist(map[string]string) error
+}
+
+type noopPersister struct{}
+
+func (n *noopPersister) Persist(_ map[string]string) error {
+	// no operation persister
+	return nil
 }
 
 // All registered auth provider plugins.
@@ -331,6 +345,9 @@ func GetAuthProvider(clusterAddress string, apc *clientcmdapi.AuthProviderConfig
 	if !ok {
 		return nil, fmt.Errorf("no Auth Provider found for name %q", apc.Name)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	}
+	if persister == nil {
+		persister = &noopPersister{}
 	}
 	return p(clusterAddress, apc.Config, persister)
 }

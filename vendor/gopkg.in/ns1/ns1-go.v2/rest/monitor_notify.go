@@ -45,7 +45,7 @@ func (s *NotificationsService) Get(listID string) (*monitor.NotifyList, *http.Re
 	if err != nil {
 		switch err.(type) {
 		case *Error:
-			if err.(*Error).Message == "unknown notification list" {
+			if resourceMissingMatch(err.(*Error).Message) {
 				return nil, resp, ErrListMissing
 			}
 		}

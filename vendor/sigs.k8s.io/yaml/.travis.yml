@@ -6,6 +6,7 @@ language: go
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 arch: arm64
 dist: focal
 go: 1.15.x
@@ -67,6 +68,16 @@ go:
   - 1.12.x
   - 1.13.x
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+dist: xenial
+go:
+  - 1.12.x
+  - 1.13.x
+=======
+arch: arm64
+dist: focal
+go: 1.15.x
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 script:
   - diff -u <(echo -n) <(gofmt -d *.go)
   - diff -u <(echo -n) <(golint $(go list -e ./...) | grep -v YAMLToJSON)

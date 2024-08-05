@@ -4,11 +4,12 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/transip/gotransip/v6/jwt"
-	"github.com/transip/gotransip/v6/rest"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
+
+	"github.com/transip/gotransip/v6/jwt"
+	"github.com/transip/gotransip/v6/rest"
 )
 
 const (
@@ -164,7 +165,7 @@ func (a *Authenticator) requestNewToken() (jwt.Token, error) {
 	defer httpResponse.Body.Close()
 
 	// read entire response body
-	b, err := ioutil.ReadAll(httpResponse.Body)
+	b, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
 		return jwt.Token{}, fmt.Errorf("error requesting token: %w", err)
 	}
@@ -193,6 +194,7 @@ type tokenResponse struct {
 // each time it is called
 func (a *Authenticator) getNonce() (string, error) {
 	randomBytes := make([]byte, 8)
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -242,8 +244,12 @@ func (a *Authenticator) getAuthRequest() (rest.Request, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	_, err := rand.Read(randomBytes)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	_, err := rand.Read(randomBytes)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-	if err != nil {
+	if _, err := rand.Read(randomBytes); err != nil {
 		return "", fmt.Errorf("error when getting random data for new nonce: %w", err)
 	}
 
@@ -253,8 +259,14 @@ func (a *Authenticator) getAuthRequest() (rest.Request, error) {
 
 // getAuthRequest returns a rest.Request filled with a new AuthRequest
 func (a *Authenticator) getAuthRequest() (rest.Request, error) {
+<<<<<<< HEAD
 	labelPostFix := time.Now().Unix()
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	labelPostFix := time.Now().Unix()
+=======
+	labelPostFix := time.Now().UnixNano()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	nonce, err := a.getNonce()
 	if err != nil {

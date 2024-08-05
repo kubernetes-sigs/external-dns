@@ -29,15 +29,16 @@ type RestoreInstanceOptions struct {
 
 // InstanceSnapshot represents a linode backup snapshot
 type InstanceSnapshot struct {
-	ID       int                     `json:"id"`
-	Label    string                  `json:"label"`
-	Status   InstanceSnapshotStatus  `json:"status"`
-	Type     string                  `json:"type"`
-	Created  *time.Time              `json:"-"`
-	Updated  *time.Time              `json:"-"`
-	Finished *time.Time              `json:"-"`
-	Configs  []string                `json:"configs"`
-	Disks    []*InstanceSnapshotDisk `json:"disks"`
+	ID        int                     `json:"id"`
+	Label     string                  `json:"label"`
+	Status    InstanceSnapshotStatus  `json:"status"`
+	Type      string                  `json:"type"`
+	Created   *time.Time              `json:"-"`
+	Updated   *time.Time              `json:"-"`
+	Finished  *time.Time              `json:"-"`
+	Configs   []string                `json:"configs"`
+	Disks     []*InstanceSnapshotDisk `json:"disks"`
+	Available bool                    `json:"available"`
 }
 
 // InstanceSnapshotDisk fields represent the source disk of a Snapshot
@@ -87,6 +88,7 @@ func (i *InstanceSnapshot) UnmarshalJSON(b []byte) error {
 
 // GetInstanceSnapshot gets the snapshot with the provided ID
 func (c *Client) GetInstanceSnapshot(ctx context.Context, linodeID int, snapshotID int) (*InstanceSnapshot, error) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -477,6 +479,19 @@ func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backup
 	e = fmt.Sprintf("%s/%d", e, snapshotID)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	if err != nil {
+		return nil, err
+	}
+	e = fmt.Sprintf("%s/%d", e, snapshotID)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
+
+=======
+	e := fmt.Sprintf("linode/instances/%d/backups/%d", linodeID, snapshotID)
+	req := c.R(ctx).SetResult(&InstanceSnapshot{})
+	r, err := coupleAPIErrors(req.Get(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -485,22 +500,13 @@ func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backup
 
 // CreateInstanceSnapshot Creates or Replaces the snapshot Backup of a Linode. If a previous snapshot exists for this Linode, it will be deleted.
 func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label string) (*InstanceSnapshot, error) {
-	o, err := json.Marshal(map[string]string{"label": label})
+	body, err := json.Marshal(map[string]string{"label": label})
 	if err != nil {
 		return nil, err
 	}
-	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetBody(body).
-		SetResult(&InstanceSnapshot{}).
-		Post(e))
-
+	e := fmt.Sprintf("linode/instances/%d/backups", linodeID)
+	req := c.R(ctx).SetResult(&InstanceSnapshot{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -511,14 +517,9 @@ func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label
 // GetInstanceBackups gets the Instance's available Backups.
 // This is not called ListInstanceBackups because a single object is returned, matching the API response.
 func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-	if err != nil {
-		return nil, err
-	}
-	r, err := coupleAPIErrors(c.R(ctx).
-		SetResult(&InstanceBackupsResponse{}).
-		Get(e))
-
+	e := fmt.Sprintf("linode/instances/%d/backups", linodeID)
+	req := c.R(ctx).SetResult(&InstanceBackupsResponse{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -527,34 +528,25 @@ func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*Instanc
 
 // EnableInstanceBackups Enables backups for the specified Linode.
 func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/enable", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
+	e := fmt.Sprintf("linode/instances/%d/backups/enable", linodeID)
+	_, err := coupleAPIErrors(c.R(ctx).Post(e))
 	return err
 }
 
 // CancelInstanceBackups Cancels backups for the specified Linode.
 func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/cancel", e)
-
-	_, err = coupleAPIErrors(c.R(ctx).Post(e))
+	e := fmt.Sprintf("linode/instances/%d/backups/cancel", linodeID)
+	_, err := coupleAPIErrors(c.R(ctx).Post(e))
 	return err
 }
 
 // RestoreInstanceBackup Restores a Linode's Backup to the specified Linode.
 func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backupID int, opts RestoreInstanceOptions) error {
-	o, err := json.Marshal(opts)
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return NewError(err)
 	}
+<<<<<<< HEAD
 	body := string(o)
 	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -565,5 +557,19 @@ func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backup
 
 	_, err = coupleAPIErrors(c.R(ctx).SetBody(body).Post(e))
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	body := string(o)
+	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	if err != nil {
+		return err
+	}
+	e = fmt.Sprintf("%s/%d/restore", e, backupID)
+
+	_, err = coupleAPIErrors(c.R(ctx).SetBody(body).Post(e))
+
+=======
+	e := fmt.Sprintf("linode/instances/%d/backups/%d/restore", linodeID, backupID)
+	_, err = coupleAPIErrors(c.R(ctx).SetBody(string(body)).Post(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return err
 }

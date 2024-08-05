@@ -2,6 +2,7 @@ package domain
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net"
 
 	"github.com/transip/gotransip/v6/rest"
@@ -266,7 +267,13 @@ type Domain struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"github.com/transip/gotransip/v6/rest"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"github.com/transip/gotransip/v6/rest"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net"
+
+	"github.com/transip/gotransip/v6/rest"
 )
 
 // PerformAction List of available actions to perform on this domain.
@@ -523,7 +530,13 @@ type Domain struct {
 	RegistrationDate rest.Date `json:"registrationDate,omitempty"`
 	// Next renewal date of the domain, in YYYY-mm-dd format.
 	RenewalDate rest.Date `json:"renewalDate,omitempty"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// Status of the domain
+	Status string `json:"status,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // Branding struct for a Branding, this information is shown in the whois information

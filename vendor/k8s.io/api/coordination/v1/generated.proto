@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -64,6 +65,11 @@ option go_package = "k8s.io/api/coordination/v1";
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package k8s.io.api.coordination.v1;
 
@@ -72,8 +78,14 @@ import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
+<<<<<<< HEAD
 option go_package = "v1";
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+option go_package = "v1";
+=======
+option go_package = "k8s.io/api/coordination/v1";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Lease defines a lease concept.
 message Lease {
@@ -81,7 +93,7 @@ message Lease {
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  // Specification of the Lease.
+  // spec contains the specification of the Lease.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
   // +optional
   optional LeaseSpec spec = 2;
@@ -94,7 +106,7 @@ message LeaseList {
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  // Items is a list of schema objects.
+  // items is a list of schema objects.
   repeated Lease items = 2;
 }
 
@@ -106,7 +118,7 @@ message LeaseSpec {
 
   // leaseDurationSeconds is a duration that candidates for a lease need
   // to wait to force acquire it. This is measure against time of last
-  // observed RenewTime.
+  // observed renewTime.
   // +optional
   optional int32 leaseDurationSeconds = 2;
 

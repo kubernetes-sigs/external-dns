@@ -129,7 +129,12 @@ func (e Element) String() string {
 	if !valid {
 		return ""
 	}
+<<<<<<< HEAD
 	return fmt.Sprintf(`"%s": %v`, key, val)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	return "\"" + string(key) + "\": " + val.String()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // DebugString outputs a human readable version of RawElement. It will attempt to stringify the

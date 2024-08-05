@@ -24,6 +24,7 @@ type ServerStorageVersionApplyConfiguration struct {
 	APIServerID       *string  `json:"apiServerID,omitempty"`
 	EncodingVersion   *string  `json:"encodingVersion,omitempty"`
 	DecodableVersions []string `json:"decodableVersions,omitempty"`
+<<<<<<< HEAD
 }
 
 // ServerStorageVersionApplyConfiguration constructs an declarative configuration of the ServerStorageVersion type for use with
@@ -54,6 +55,50 @@ func (b *ServerStorageVersionApplyConfiguration) WithEncodingVersion(value strin
 func (b *ServerStorageVersionApplyConfiguration) WithDecodableVersions(values ...string) *ServerStorageVersionApplyConfiguration {
 	for i := range values {
 		b.DecodableVersions = append(b.DecodableVersions, values[i])
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ServedVersions    []string `json:"servedVersions,omitempty"`
+}
+
+// ServerStorageVersionApplyConfiguration constructs an declarative configuration of the ServerStorageVersion type for use with
+// apply.
+func ServerStorageVersion() *ServerStorageVersionApplyConfiguration {
+	return &ServerStorageVersionApplyConfiguration{}
+}
+
+// WithAPIServerID sets the APIServerID field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the APIServerID field is set to the value of the last call.
+func (b *ServerStorageVersionApplyConfiguration) WithAPIServerID(value string) *ServerStorageVersionApplyConfiguration {
+	b.APIServerID = &value
+	return b
+}
+
+// WithEncodingVersion sets the EncodingVersion field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the EncodingVersion field is set to the value of the last call.
+func (b *ServerStorageVersionApplyConfiguration) WithEncodingVersion(value string) *ServerStorageVersionApplyConfiguration {
+	b.EncodingVersion = &value
+	return b
+}
+
+// WithDecodableVersions adds the given value to the DecodableVersions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the DecodableVersions field.
+func (b *ServerStorageVersionApplyConfiguration) WithDecodableVersions(values ...string) *ServerStorageVersionApplyConfiguration {
+	for i := range values {
+		b.DecodableVersions = append(b.DecodableVersions, values[i])
+	}
+	return b
+}
+
+// WithServedVersions adds the given value to the ServedVersions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ServedVersions field.
+func (b *ServerStorageVersionApplyConfiguration) WithServedVersions(values ...string) *ServerStorageVersionApplyConfiguration {
+	for i := range values {
+		b.ServedVersions = append(b.ServedVersions, values[i])
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return b
 }

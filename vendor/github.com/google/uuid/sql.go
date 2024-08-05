@@ -10,11 +10,17 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Scan implements sql.Scanner so UUIDs can be read from databases transparently.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Scan implements sql.Scanner so UUIDs can be read from databases transparently
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Scan implements sql.Scanner so UUIDs can be read from databases transparently
+=======
+// Scan implements sql.Scanner so UUIDs can be read from databases transparently.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Currently, database types that map to string and []byte are supported. Please
 // consult database-specific driver documentation for matching types.
 func (uuid *UUID) Scan(src interface{}) error {

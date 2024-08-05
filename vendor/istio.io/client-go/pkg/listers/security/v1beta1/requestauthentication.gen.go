@@ -24,8 +24,10 @@ import (
 )
 
 // RequestAuthenticationLister helps list RequestAuthentications.
+// All objects returned here must be treated as read-only.
 type RequestAuthenticationLister interface {
 	// List lists all RequestAuthentications in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.RequestAuthentication, err error)
 	// RequestAuthentications returns an object that can list and get RequestAuthentications.
 	RequestAuthentications(namespace string) RequestAuthenticationNamespaceLister
@@ -56,10 +58,13 @@ func (s *requestAuthenticationLister) RequestAuthentications(namespace string) R
 }
 
 // RequestAuthenticationNamespaceLister helps list and get RequestAuthentications.
+// All objects returned here must be treated as read-only.
 type RequestAuthenticationNamespaceLister interface {
 	// List lists all RequestAuthentications in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.RequestAuthentication, err error)
 	// Get retrieves the RequestAuthentication from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.RequestAuthentication, error)
 	RequestAuthenticationNamespaceListerExpansion
 }

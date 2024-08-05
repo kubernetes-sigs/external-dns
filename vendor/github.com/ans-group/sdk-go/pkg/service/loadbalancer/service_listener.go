@@ -102,6 +102,29 @@ func (s *Service) patchListenerResponseBody(listenerID int, req PatchListenerReq
 	})
 }
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// PatchListener patches a listener
+func (s *Service) DisableListenerGeoIP(listenerID int) error {
+	_, err := s.disableListenerGeoIPResponseBody(listenerID)
+
+	return err
+}
+
+func (s *Service) disableListenerGeoIPResponseBody(listenerID int) (*connection.APIResponseBodyData[interface{}], error) {
+	if listenerID < 1 {
+		return nil, fmt.Errorf("invalid listener id")
+	}
+
+	disableGeoIPReq := struct {
+		GeoIP interface{} `json:"geoip"`
+	}{}
+
+	return connection.Patch[interface{}](s.connection, fmt.Sprintf("/loadbalancers/v2/listeners/%d", listenerID), &disableGeoIPReq, connection.NotFoundResponseHandler(&ListenerNotFoundError{ID: listenerID}))
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // DeleteListener deletes a listener
 func (s *Service) DeleteListener(listenerID int) error {
 	_, err := s.deleteListenerResponseBody(listenerID)

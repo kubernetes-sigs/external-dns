@@ -32,7 +32,7 @@ func NewLengthDelimitedFrameWriter(w io.Writer) io.Writer {
 	return &lengthDelimitedFrameWriter{w: w}
 }
 
-// Write writes a single frame to the nested writer, prepending it with the length in
+// Write writes a single frame to the nested writer, prepending it with the length
 // in bytes of data (as a 4 byte, bigendian uint32).
 func (w *lengthDelimitedFrameWriter) Write(data []byte) (int, error) {
 	binary.BigEndian.PutUint32(w.h[:], uint32(len(data)))
@@ -56,6 +56,7 @@ type lengthDelimitedFrameReader struct {
 //
 // The protocol is:
 //
+<<<<<<< HEAD
 <<<<<<< HEAD
 //	stream: message ...
 //	message: prefix body
@@ -279,6 +280,17 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 //   message: prefix body
 //   prefix: 4 byte uint32 in BigEndian order, denotes length of body
 //   body: bytes (0..prefix)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   stream: message ...
+//   message: prefix body
+//   prefix: 4 byte uint32 in BigEndian order, denotes length of body
+//   body: bytes (0..prefix)
+=======
+//	stream: message ...
+//	message: prefix body
+//	prefix: 4 byte uint32 in BigEndian order, denotes length of body
+//	body: bytes (0..prefix)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // If the buffer passed to Read is not long enough to contain an entire frame, io.ErrShortRead
 // will be returned along with the number of bytes read.
@@ -351,12 +363,14 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 	// Return whatever remaining data exists from an in progress frame
 	if n := len(r.remaining); n > 0 {
 		if n <= len(data) {
+			//nolint:staticcheck // SA4006,SA4010 underlying array of data is modified here.
 			data = append(data[0:0], r.remaining...)
 			r.remaining = nil
 			return n, nil
 		}
 
 		n = len(data)
+		//nolint:staticcheck // SA4006,SA4010 underlying array of data is modified here.
 		data = append(data[0:0], r.remaining[:n]...)
 		r.remaining = r.remaining[n:]
 		return n, io.ErrShortBuffer
@@ -374,7 +388,12 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 	// and set m to it, which means we need to copy the partial result back into data and preserve
 	// the remaining result for subsequent reads.
 	if len(m) > n {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		//nolint:staticcheck // SA4006,SA4010 underlying array of data is modified here.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		data = append(data[0:0], m[:n]...)
 		r.remaining = m[n:]
 		return n, io.ErrShortBuffer

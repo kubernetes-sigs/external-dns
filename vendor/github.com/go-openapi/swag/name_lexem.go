@@ -14,6 +14,7 @@
 
 package swag
 
+<<<<<<< HEAD
 import "unicode"
 
 type (
@@ -84,4 +85,83 @@ func (l *initialismNameLexem) IsInitialism() bool {
 
 func (l *casualNameLexem) IsInitialism() bool {
 	return false
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+import (
+	"unicode"
+	"unicode/utf8"
+)
+
+type (
+	lexemKind uint8
+
+	nameLexem struct {
+		original          string
+		matchedInitialism string
+		kind              lexemKind
+	}
+)
+
+const (
+	lexemKindCasualName lexemKind = iota
+	lexemKindInitialismName
+)
+
+func newInitialismNameLexem(original, matchedInitialism string) nameLexem {
+	return nameLexem{
+		kind:              lexemKindInitialismName,
+		original:          original,
+		matchedInitialism: matchedInitialism,
+	}
+}
+
+func newCasualNameLexem(original string) nameLexem {
+	return nameLexem{
+		kind:     lexemKindCasualName,
+		original: original,
+	}
+}
+
+func (l nameLexem) GetUnsafeGoName() string {
+	if l.kind == lexemKindInitialismName {
+		return l.matchedInitialism
+	}
+
+	var (
+		first rune
+		rest  string
+	)
+
+	for i, orig := range l.original {
+		if i == 0 {
+			first = orig
+			continue
+		}
+
+		if i > 0 {
+			rest = l.original[i:]
+			break
+		}
+	}
+
+	if len(l.original) > 1 {
+		b := poolOfBuffers.BorrowBuffer(utf8.UTFMax + len(rest))
+		defer func() {
+			poolOfBuffers.RedeemBuffer(b)
+		}()
+		b.WriteRune(unicode.ToUpper(first))
+		b.WriteString(lower(rest))
+		return b.String()
+	}
+
+	return l.original
+}
+
+func (l nameLexem) GetOriginal() string {
+	return l.original
+}
+
+func (l nameLexem) IsInitialism() bool {
+	return l.kind == lexemKindInitialismName
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

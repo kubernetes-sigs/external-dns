@@ -15,15 +15,16 @@
 syntax = "proto3";
 
 import "google/api/field_behavior.proto";
+import "networking/v1beta1/destination_rule.proto";
 import "networking/v1beta1/gateway.proto";
 import "networking/v1beta1/virtual_service.proto";
-import "networking/v1beta1/destination_rule.proto";
 
 // $schema: istio.networking.v1beta1.Sidecar
 // $title: Sidecar
 // $description: Configuration affecting network reachability of a sidecar.
 // $location: https://istio.io/docs/reference/config/networking/sidecar.html
 // $aliases: [/docs/reference/config/networking/v1beta1/sidecar]
+// $mode: none
 
 // `Sidecar` describes the configuration of the sidecar proxy that mediates
 // inbound and outbound communication to the workload instance it is attached to. By
@@ -61,29 +62,14 @@ import "networking/v1beta1/destination_rule.proto";
 // configuration_*. This global default `Sidecar` configuration should not have
 // any `workloadSelector`.
 //
+// **NOTE 3**: *_A `Sidecar` is not applicable to gateways, even though gateways are istio-proxies_*.
+//
 // The example below declares a global default `Sidecar` configuration
 // in the root namespace called `istio-config`, that configures
 // sidecars in all namespaces to allow egress traffic only to other
 // workloads in the same namespace as well as to services in the
 // `istio-system` namespace.
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: Sidecar
-// metadata:
-//   name: default
-//   namespace: istio-config
-// spec:
-//   egress:
-//   - hosts:
-//     - "./*"
-//     - "istio-system/*"
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: Sidecar
@@ -96,8 +82,6 @@ import "networking/v1beta1/destination_rule.proto";
 //     - "./*"
 //     - "istio-system/*"
 // ```
-// {{</tab>}}
-// {{</tabset>}}
 //
 // The example below declares a `Sidecar` configuration in the
 // `prod-us1` namespace that overrides the global default defined
@@ -105,24 +89,6 @@ import "networking/v1beta1/destination_rule.proto";
 // traffic to public services in the `prod-us1`, `prod-apis`, and the
 // `istio-system` namespaces.
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: Sidecar
-// metadata:
-//   name: default
-//   namespace: prod-us1
-// spec:
-//   egress:
-//   - hosts:
-//     - "prod-us1/*"
-//     - "prod-apis/*"
-//     - "istio-system/*"
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: Sidecar
@@ -136,8 +102,6 @@ import "networking/v1beta1/destination_rule.proto";
 //     - "prod-apis/*"
 //     - "istio-system/*"
 // ```
-// {{</tab>}}
-// {{</tabset>}}
 //
 // The following example declares a `Sidecar` configuration in the
 // `prod-us1` namespace for all pods with labels `app: ratings`
@@ -148,37 +112,6 @@ import "networking/v1beta1/destination_rule.proto";
 // namespace, the sidecar proxies only HTTP traffic bound for port
 // 9080 for services in the `prod-us1` namespace.
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: Sidecar
-// metadata:
-//   name: ratings
-//   namespace: prod-us1
-// spec:
-//   workloadSelector:
-//     labels:
-//       app: ratings
-//   ingress:
-//   - port:
-//       number: 9080
-//       protocol: HTTP
-//       name: somename
-//     defaultEndpoint: unix:///var/run/someuds.sock
-//   egress:
-//   - port:
-//       number: 9080
-//       protocol: HTTP
-//       name: egresshttp
-//     hosts:
-//     - "prod-us1/*"
-//   - hosts:
-//     - "istio-system/*"
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: Sidecar
@@ -205,8 +138,6 @@ import "networking/v1beta1/destination_rule.proto";
 //   - hosts:
 //     - "istio-system/*"
 // ```
-// {{</tab>}}
-// {{</tabset>}}
 //
 // If the workload is deployed without IPTables-based traffic capture,
 // the `Sidecar` configuration is the only way to configure the ports
@@ -223,38 +154,6 @@ import "networking/v1beta1/destination_rule.proto";
 // `127.0.0.1:3306`, that then gets proxied to the externally hosted
 // MySQL service at `mysql.foo.com:3306`.
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: Sidecar
-// metadata:
-//   name: no-ip-tables
-//   namespace: prod-us1
-// spec:
-//   workloadSelector:
-//     labels:
-//       app: productpage
-//   ingress:
-//   - port:
-//       number: 9080 # binds to proxy_instance_ip:9080 (0.0.0.0:9080, if no unicast IP is available for the instance)
-//       protocol: HTTP
-//       name: somename
-//     defaultEndpoint: 127.0.0.1:8080
-//     captureMode: NONE # not needed if metadata is set for entire proxy
-//   egress:
-//   - port:
-//       number: 3306
-//       protocol: MYSQL
-//       name: egressmysql
-//     captureMode: NONE # not needed if metadata is set for entire proxy
-//     bind: 127.0.0.1
-//     hosts:
-//     - "*/mysql.foo.com"
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: Sidecar
@@ -282,32 +181,9 @@ import "networking/v1beta1/destination_rule.proto";
 //     hosts:
 //     - "*/mysql.foo.com"
 // ```
-// {{</tab>}}
-// {{</tabset>}}
 //
 // And the associated service entry for routing to `mysql.foo.com:3306`
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: ServiceEntry
-// metadata:
-//   name: external-svc-mysql
-//   namespace: ns1
-// spec:
-//   hosts:
-//   - mysql.foo.com
-//   ports:
-//   - number: 3306
-//     name: mysql
-//     protocol: MYSQL
-//   location: MESH_EXTERNAL
-//   resolution: DNS
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: ServiceEntry
@@ -324,8 +200,6 @@ import "networking/v1beta1/destination_rule.proto";
 //   location: MESH_EXTERNAL
 //   resolution: DNS
 // ```
-// {{</tab>}}
-// {{</tabset>}}
 //
 // It is also possible to mix and match traffic capture modes in a single
 // proxy. For example, consider a setup where internal services are on the
@@ -340,38 +214,6 @@ import "networking/v1beta1/destination_rule.proto";
 // proxy in the VM should contain `REDIRECT` or `TPROXY` as its value,
 // implying that IP tables based traffic capture is active.
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: Sidecar
-// metadata:
-//   name: partial-ip-tables
-//   namespace: prod-us1
-// spec:
-//   workloadSelector:
-//     labels:
-//       app: productpage
-//   ingress:
-//   - bind: 172.16.1.32
-//     port:
-//       number: 80 # binds to 172.16.1.32:80
-//       protocol: HTTP
-//       name: somename
-//     defaultEndpoint: 127.0.0.1:8080
-//     captureMode: NONE
-//   egress:
-//     # use the system detected defaults
-//     # sets up configuration to handle outbound traffic to services
-//     # in 192.168.0.0/16 subnet, based on information provided by the
-//     # service registry
-//   - captureMode: IPTABLES
-//     hosts:
-//     - "*/*"
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: Sidecar
@@ -399,9 +241,45 @@ import "networking/v1beta1/destination_rule.proto";
 //     hosts:
 //     - "*/*"
 // ```
-// {{</tab>}}
-// {{</tabset>}}
 //
+// In addition to configuring traffic capture and how traffic is forwarded to the app,
+// it's possible to control inbound connection pool settings. By default, Istio pushes
+// connection pool settings from `DestinationRules` to both clients (for outbound
+// connections to the service) as well as servers (for inbound connections to a service
+// instance). Using the `InboundConnectionPool` and per-port `ConnectionPool` settings
+// in a `Sidecar` allow you to control those connection pools for the server separately
+// from the settings pushed to all clients.
+//
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: Sidecar
+// metadata:
+//   name: connection-pool-settings
+//   namespace: prod-us1
+// spec:
+//   workloadSelector:
+//     labels:
+//       app: productpage
+//   inboundConnectionPool:
+//       http:
+//         http1MaxPendingRequests: 1024
+//         http2MaxRequests: 1024
+//         maxRequestsPerConnection: 1024
+//         maxRetries: 100
+//   ingress:
+//   - port:
+//       number: 80
+//       protocol: HTTP
+//       name: somename
+//     connectionPool:
+//       http:
+//         http1MaxPendingRequests: 1024
+//         http2MaxRequests: 1024
+//         maxRequestsPerConnection: 1024
+//         maxRetries: 100
+//       tcp:
+//         maxConnections: 100
+// ```
 package istio.networking.v1beta1;
 
 option go_package = "istio.io/api/networking/v1beta1";
@@ -413,11 +291,13 @@ option go_package = "istio.io/api/networking/v1beta1";
 // <!-- crd generation tags
 // +cue-gen:Sidecar:groupName:networking.istio.io
 // +cue-gen:Sidecar:version:v1beta1
+// +cue-gen:Sidecar:storageVersion
 // +cue-gen:Sidecar:annotations:helm.sh/resource-policy=keep
 // +cue-gen:Sidecar:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:Sidecar:subresource:status
 // +cue-gen:Sidecar:scope:Namespaced
 // +cue-gen:Sidecar:resource:categories=istio-io,networking-istio-io
+// +cue-gen:Sidecar:preserveUnknownFields:false
 // -->
 //
 // <!-- go code generation tags
@@ -425,6 +305,9 @@ option go_package = "istio.io/api/networking/v1beta1";
 // +kubetype-gen:groupVersion=networking.istio.io/v1beta1
 // +genclient
 // +k8s:deepcopy-gen=true
+// -->
+// <!-- istio code generation tags
+// +istio.io/sync-from:networking/v1alpha3/sidecar.proto
 // -->
 message Sidecar {
   // Criteria used to select the specific set of pods/VMs on which this
@@ -446,6 +329,32 @@ message Sidecar {
   // detected defaults from the namespace-wide or the global default Sidecar.
   repeated IstioEgressListener egress = 3;
 
+  // Settings controlling the volume of connections Envoy will accept from the network.
+  // This default will apply for all inbound listeners and can be overridden per-port
+  // in the `Ingress` field. This configuration mirrors the `DestinationRule`'s
+  // [`connectionPool`](https://istio.io/latest/docs/reference/config/networking/destination-rule/#ConnectionPoolSettings) field.
+  //
+  // By default, Istio applies a service's `DestinationRule` to client sidecars
+  // for outbound traffic directed at the service -- the usual case folks think
+  // of when configuring a `DestinationRule` -- but also to the server's inbound
+  // sidecar. The `Sidecar`'s connection pool configures the server's inbound
+  // sidecar directly, so its settings can be different than clients'. This is
+  // valuable, for example, when you have many clients calling few servers: a
+  // `DestinationRule` can limit the concurrency of any single client, while
+  // the `Sidecar` allows you to configure much higher concurrency on the server
+  // side.
+  //
+  // Connection pool settings for a server's inbound sidecar are configured in the
+  // following precedence, highest to lowest:
+  // - per-port `ConnectionPool` from the `Sidecar`
+  // - top level `InboundConnectionPool` from the `Sidecar`
+  // - per-port `TrafficPolicy.ConnectionPool` from the `DestinationRule`
+  // - top level `TrafficPolicy.ConnectionPool` from the `DestinationRule`
+  // - default connection pool settings (essentially unlimited)
+  //
+  // In every case, the connection pool settings are overriden, not merged.
+  ConnectionPoolSettings inbound_connection_pool = 7;
+
   // Configuration for the outbound traffic policy.  If your
   // application uses one or more external services that are not known
   // apriori, setting the policy to `ALLOW_ANY` will cause the
@@ -463,10 +372,10 @@ message Sidecar {
 // traffic listener on the sidecar proxy attached to a workload instance.
 message IstioIngressListener {
   // The port associated with the listener.
-  Port port = 1 [(google.api.field_behavior) = REQUIRED];
+  SidecarPort port = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The IP to which the listener should be bound. Must be in the
-  // format `x.x.x.x`. Unix domain socket addresses are not allowed in
+  // The IP(IPv4 or IPv6) to which the listener should be bound.
+  // Unix domain socket addresses are not allowed in
   // the bind field for ingress listeners. If omitted, Istio will
   // automatically configure the defaults based on imported services
   // and the workload instances to which this configuration is applied
@@ -477,15 +386,32 @@ message IstioIngressListener {
   // expected to be captured (or not).
   CaptureMode capture_mode = 3;
 
-  // The loopback IP endpoint or Unix domain socket to which
+  // The IP endpoint or Unix domain socket to which
   // traffic should be forwarded to. This configuration can be used to
   // redirect traffic arriving at the bind `IP:Port` on the sidecar to a `localhost:port`
   // or Unix domain socket where the application workload instance is listening for
-  // connections. Format should be `127.0.0.1:PORT` or `unix:///path/to/socket`
-  string default_endpoint = 4 [(google.api.field_behavior) = REQUIRED];
+  // connections. Arbitrary IPs are not supported. Format should be one of
+  // `127.0.0.1:PORT`, `[::1]:PORT` (forward to localhost),
+  // `0.0.0.0:PORT`, `[::]:PORT` (forward to the instance IP),
+  // or `unix:///path/to/socket` (forward to Unix domain socket).
+  string default_endpoint = 4;
 
   reserved "localhost_client_tls";
   reserved 5, 6;
+
+  // Set of TLS related options that will enable TLS termination on the
+  // sidecar for requests originating from outside the mesh.
+  // Currently supports only SIMPLE and MUTUAL TLS modes.
+  ServerTLSSettings tls = 7;
+
+  // Settings controlling the volume of connections Envoy will accept from the network.
+  // This setting overrides the top-level default `inboundConnectionPool` to configure
+  // specific settings for this port. This configuration mirrors the `DestinationRule`'s
+  // [`PortTrafficPolicy.connectionPool`](https://istio.io/latest/docs/reference/config/networking/destination-rule/#TrafficPolicy-PortTrafficPolicy) field.
+  // This port level connection pool has the highest precedence in configuration,
+  // overriding both the `Sidecar`'s top level `InboundConnectionPool` as well as any
+  // connection pooling settings from the `DestinationRule`.
+  ConnectionPoolSettings connection_pool = 8;
 }
 
 // `IstioEgressListener` specifies the properties of an outbound traffic
@@ -500,10 +426,10 @@ message IstioEgressListener {
   // specific ports while others have no port, the hosts exposed on a
   // listener port will be based on the listener with the most specific
   // port.
-  Port port = 1;
+  SidecarPort port = 1;
 
-  // The IP or the Unix domain socket to which the listener should be bound
-  // to. Port MUST be specified if bind is not empty. Format: `x.x.x.x` or
+  // The IP(IPv4 or IPv6) or the Unix domain socket to which the listener should be bound
+  // to. Port MUST be specified if bind is not empty. Format: IPv4 or IPv6 address formats or
   // `unix:///path/to/uds` or `unix://@foobar` (Linux abstract namespace). If
   // omitted, Istio will automatically configure the defaults based on imported
   // services, the workload instances to which this configuration is applied to and
@@ -543,34 +469,27 @@ message IstioEgressListener {
   // Private configurations (e.g., `exportTo` set to `.`) will
   // not be available. Refer to the `exportTo` setting in `VirtualService`,
   // `DestinationRule`, and `ServiceEntry` configurations for details.
-  //
-  // **WARNING:** The list of egress hosts in a `Sidecar` must also include
-  // the Mixer control plane services if they are enabled. Envoy will not
-  // be able to reach them otherwise. For example, add host
-  // `istio-system/istio-telemetry.istio-system.svc.cluster.local` if telemetry
-  // is enabled, `istio-system/istio-policy.istio-system.svc.cluster.local` if
-  // policy is enabled, or add `istio-system/*` to allow all services in the
-  // `istio-system` namespace. This requirement is temporary and will be removed
-  // in a future Istio release.
   repeated string hosts = 4 [(google.api.field_behavior) = REQUIRED];
 
   reserved "localhost_server_tls";
   reserved 5, 6;
 }
 
-// `WorkloadSelector` specifies the criteria used to determine if the `Gateway`,
-// `Sidecar`, or `EnvoyFilter` configuration can be applied to a proxy. The matching criteria
-// includes the metadata associated with a proxy, workload instance info such as
-// labels attached to the pod/VM, or any other info that the proxy provides
-// to Istio during the initial handshake. If multiple conditions are
-// specified, all conditions need to match in order for the workload instance to be
-// selected. Currently, only label based selection mechanism is supported.
+// `WorkloadSelector` specifies the criteria used to determine if the
+// `Gateway`, `Sidecar`, `EnvoyFilter`, `ServiceEntry`, or `DestinationRule`
+// configuration can be applied to a proxy. The matching criteria
+// includes the metadata associated with a proxy, workload instance
+// info such as labels attached to the pod/VM, or any other info that
+// the proxy provides to Istio during the initial handshake. If
+// multiple conditions are specified, all conditions need to match in
+// order for the workload instance to be selected. Currently, only
+// label based selection mechanism is supported.
 message WorkloadSelector {
   // One or more labels that indicate a specific set of pods/VMs
-  // on which this `Sidecar` configuration should be applied. The scope of
+  // on which the configuration should be applied. The scope of
   // label search is restricted to the configuration namespace in which the
   // the resource is present.
-  map<string, string> labels = 1 [(google.api.field_behavior) = REQUIRED];
+  map<string, string> labels = 1;
 
   // $hide_from_docs
   // other forms of identification supplied by the proxy
@@ -612,7 +531,7 @@ message OutboundTrafficPolicy {
   // Envoy's dynamic forward proxy can handle only HTTP and TLS
   // connections.
   // $hide_from_docs
-  istio.networking.v1beta1.Destination egress_proxy = 2;
+  Destination egress_proxy = 2;
 }
 
 
@@ -631,4 +550,24 @@ enum CaptureMode {
   // to ensure that the listener port is not in use by other processes on
   // the host.
   NONE = 2;
+}
+
+// Port describes the properties of a specific port of a service.
+message SidecarPort {
+  // A valid non-negative integer port number.
+  uint32 number = 1;
+
+  // The protocol exposed on the port.
+  // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
+  // TLS can be either used to terminate non-HTTP based connections on a specific port
+  // or to route traffic based on SNI header to the destination without terminating the TLS connection.
+  string protocol = 2;
+
+  // Label assigned to the port.
+  string name = 3;
+
+  // Has no effect, only for backwards compatibility
+  // received. Applicable only when used with ServiceEntries.
+  // $hide_from_docs
+  uint32 target_port = 4 [deprecated=true];
 }

@@ -56,12 +56,19 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CSIDriver{},
 		&CSIDriverList{},
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 		&CSIStorageCapacity{},
 		&CSIStorageCapacityList{},
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+		&CSIStorageCapacity{},
+		&CSIStorageCapacityList{},
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

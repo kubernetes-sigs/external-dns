@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) CheckZoneName(request *CheckZoneNameRequest) (response *CheckZoneNameResponse, err error) {
 	response = CreateCheckZoneNameResponse()
 	err = client.DoAction(request, response)
@@ -179,6 +180,10 @@ func CreateCheckZoneNameRequest() (request *CheckZoneNameRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/checkzonename.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) CheckZoneName(request *CheckZoneNameRequest) (response *CheckZoneNameResponse, err error) {
 	response = CreateCheckZoneNameResponse()
 	err = client.DoAction(request, response)
@@ -186,8 +191,6 @@ func (client *Client) CheckZoneName(request *CheckZoneNameRequest) (response *Ch
 }
 
 // CheckZoneNameWithChan invokes the pvtz.CheckZoneName API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CheckZoneNameWithChan(request *CheckZoneNameRequest) (<-chan *CheckZoneNameResponse, <-chan error) {
 	responseChan := make(chan *CheckZoneNameResponse, 1)
 	errChan := make(chan error, 1)
@@ -210,8 +213,6 @@ func (client *Client) CheckZoneNameWithChan(request *CheckZoneNameRequest) (<-ch
 }
 
 // CheckZoneNameWithCallback invokes the pvtz.CheckZoneName API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/checkzonename.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CheckZoneNameWithCallback(request *CheckZoneNameRequest, callback func(response *CheckZoneNameResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -252,7 +253,12 @@ func CreateCheckZoneNameRequest() (request *CheckZoneNameRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "CheckZoneName", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

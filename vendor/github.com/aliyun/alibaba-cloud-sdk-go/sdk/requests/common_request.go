@@ -14,6 +14,7 @@ type CommonRequest struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Version      string
 	ApiName      string
 	Product      string
@@ -190,6 +191,18 @@ func (request *CommonRequest) TransToAcsRequest() {
 	ApiName     string
 	Product     string
 	ServiceCode string
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Version     string
+	ApiName     string
+	Product     string
+	ServiceCode string
+=======
+	Version      string
+	ApiName      string
+	Product      string
+	ServiceCode  string
+	EndpointType string
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	// roa params
 	PathPattern string
@@ -257,8 +270,16 @@ func (request *CommonRequest) TransToAcsRequest() {
 		rpcRequest.product = request.Product
 		rpcRequest.version = request.Version
 		rpcRequest.locationServiceCode = request.ServiceCode
+		rpcRequest.locationEndpointType = request.EndpointType
 		rpcRequest.actionName = request.ApiName
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		rpcRequest.Headers["x-acs-version"] = request.Version
+		rpcRequest.Headers["x-acs-action"] = request.ApiName
+		rpcRequest.span = request.span
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		request.Ontology = rpcRequest
 	}
 }

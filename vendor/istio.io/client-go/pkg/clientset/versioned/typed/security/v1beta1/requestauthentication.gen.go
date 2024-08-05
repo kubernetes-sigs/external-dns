@@ -18,9 +18,12 @@ package v1beta1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
+	securityv1beta1 "istio.io/client-go/pkg/applyconfiguration/security/v1beta1"
 	scheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -45,6 +48,8 @@ type RequestAuthenticationInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.RequestAuthenticationList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.RequestAuthentication, err error)
+	Apply(ctx context.Context, requestAuthentication *securityv1beta1.RequestAuthenticationApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.RequestAuthentication, err error)
+	ApplyStatus(ctx context.Context, requestAuthentication *securityv1beta1.RequestAuthenticationApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.RequestAuthentication, err error)
 	RequestAuthenticationExpansion
 }
 
@@ -186,6 +191,62 @@ func (c *requestAuthentications) Patch(ctx context.Context, name string, pt type
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied requestAuthentication.
+func (c *requestAuthentications) Apply(ctx context.Context, requestAuthentication *securityv1beta1.RequestAuthenticationApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.RequestAuthentication, err error) {
+	if requestAuthentication == nil {
+		return nil, fmt.Errorf("requestAuthentication provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(requestAuthentication)
+	if err != nil {
+		return nil, err
+	}
+	name := requestAuthentication.Name
+	if name == nil {
+		return nil, fmt.Errorf("requestAuthentication.Name must be provided to Apply")
+	}
+	result = &v1beta1.RequestAuthentication{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("requestauthentications").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *requestAuthentications) ApplyStatus(ctx context.Context, requestAuthentication *securityv1beta1.RequestAuthenticationApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.RequestAuthentication, err error) {
+	if requestAuthentication == nil {
+		return nil, fmt.Errorf("requestAuthentication provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(requestAuthentication)
+	if err != nil {
+		return nil, err
+	}
+
+	name := requestAuthentication.Name
+	if name == nil {
+		return nil, fmt.Errorf("requestAuthentication.Name must be provided to Apply")
+	}
+
+	result = &v1beta1.RequestAuthentication{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("requestauthentications").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

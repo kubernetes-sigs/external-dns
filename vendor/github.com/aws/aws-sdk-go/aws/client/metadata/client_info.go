@@ -5,6 +5,7 @@ type ClientInfo struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ServiceName    string
 	ServiceID      string
 	APIVersion     string
@@ -61,4 +62,26 @@ type ClientInfo struct {
 	JSONVersion   string
 	TargetPrefix  string
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	ServiceName   string
+	ServiceID     string
+	APIVersion    string
+	PartitionID   string
+	Endpoint      string
+	SigningName   string
+	SigningRegion string
+	JSONVersion   string
+	TargetPrefix  string
+=======
+	ServiceName    string
+	ServiceID      string
+	APIVersion     string
+	PartitionID    string
+	Endpoint       string
+	SigningName    string
+	SigningRegion  string
+	JSONVersion    string
+	TargetPrefix   string
+	ResolvedRegion string
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

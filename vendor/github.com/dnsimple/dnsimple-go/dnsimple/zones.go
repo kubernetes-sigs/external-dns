@@ -15,12 +15,15 @@ type ZonesService struct {
 
 // Zone represents a Zone in DNSimple.
 type Zone struct {
-	ID        int64  `json:"id,omitempty"`
-	AccountID int64  `json:"account_id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Reverse   bool   `json:"reverse,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"`
+	ID                int64  `json:"id,omitempty"`
+	AccountID         int64  `json:"account_id,omitempty"`
+	Name              string `json:"name,omitempty"`
+	Reverse           bool   `json:"reverse,omitempty"`
+	Secondary         bool   `json:"secondary,omitempty"`
+	LastTransferredAt string `json:"last_transferred_at,omitempty"`
+	Active            bool   `json:"active,omitempty"`
+	CreatedAt         string `json:"created_at,omitempty"`
+	UpdatedAt         string `json:"updated_at,omitempty"`
 }
 
 // ZoneFile represents a Zone File in DNSimple.
@@ -106,4 +109,36 @@ func (s *ZonesService) GetZoneFile(ctx context.Context, accountID string, zoneNa
 
 	zoneFileResponse.HTTPResponse = resp
 	return zoneFileResponse, nil
+}
+
+// ActivateZoneDns activates DNS services for a zone.
+//
+// See https://developer.dnsimple.com/v2/zones/#activateZoneService
+func (s *ZonesService) ActivateZoneDns(ctx context.Context, accountID string, zoneName string) (*ZoneResponse, error) {
+	path := versioned(fmt.Sprintf("/%v/zones/%v/activation", accountID, zoneName))
+	zoneResponse := &ZoneResponse{}
+
+	resp, err := s.client.put(ctx, path, nil, zoneResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	zoneResponse.HTTPResponse = resp
+	return zoneResponse, nil
+}
+
+// DeactivateZoneDns deactivates DNS services for a zone.
+//
+// See https://developer.dnsimple.com/v2/zones/#deactivateZoneService
+func (s *ZonesService) DeactivateZoneDns(ctx context.Context, accountID string, zoneName string) (*ZoneResponse, error) {
+	path := versioned(fmt.Sprintf("/%v/zones/%v/activation", accountID, zoneName))
+	zoneResponse := &ZoneResponse{}
+
+	resp, err := s.client.delete(ctx, path, nil, zoneResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	zoneResponse.HTTPResponse = resp
+	return zoneResponse, nil
 }

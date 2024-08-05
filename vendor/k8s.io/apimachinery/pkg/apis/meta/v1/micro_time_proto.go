@@ -28,6 +28,7 @@ func (m *MicroTime) ProtoMicroTime() *Timestamp {
 		return &Timestamp{}
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	// truncate precision to microseconds to match JSON marshaling/unmarshaling
 	truncatedNanoseconds := time.Duration(m.Time.Nanosecond()).Truncate(time.Microsecond)
@@ -61,9 +62,15 @@ func (m *MicroTime) Unmarshal(data []byte) error {
 	m.Time = time.Unix(p.Seconds, int64(truncatedNanoseconds)).Local()
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	// truncate precision to microseconds to match JSON marshaling/unmarshaling
+	truncatedNanoseconds := time.Duration(m.Time.Nanosecond()).Truncate(time.Microsecond)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return &Timestamp{
 		Seconds: m.Time.Unix(),
-		Nanos:   int32(m.Time.Nanosecond()),
+		Nanos:   int32(truncatedNanoseconds),
 	}
 }
 
@@ -85,8 +92,17 @@ func (m *MicroTime) Unmarshal(data []byte) error {
 	if err := p.Unmarshal(data); err != nil {
 		return err
 	}
+<<<<<<< HEAD
 	m.Time = time.Unix(p.Seconds, int64(p.Nanos)).Local()
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	m.Time = time.Unix(p.Seconds, int64(p.Nanos)).Local()
+=======
+
+	// truncate precision to microseconds to match JSON marshaling/unmarshaling
+	truncatedNanoseconds := time.Duration(p.Nanos).Truncate(time.Microsecond)
+	m.Time = time.Unix(p.Seconds, int64(truncatedNanoseconds)).Local()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return nil
 }
 

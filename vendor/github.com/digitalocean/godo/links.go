@@ -35,6 +35,7 @@ func (l *Links) CurrentPage() (int, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NextPageToken is the page token to request the next page of the list
 func (l *Links) NextPageToken() (string, error) {
 	return l.Pages.nextPageToken()
@@ -209,6 +210,19 @@ func pageTokenFromURL(urlText string) (string, error) {
 	return u.Query().Get("page_token"), nil
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// NextPageToken is the page token to request the next page of the list
+func (l *Links) NextPageToken() (string, error) {
+	return l.Pages.nextPageToken()
+}
+
+// PrevPageToken is the page token to request the previous page of the list
+func (l *Links) PrevPageToken() (string, error) {
+	return l.Pages.prevPageToken()
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (p *Pages) current() (int, error) {
 	switch {
 	case p == nil:
@@ -225,6 +239,28 @@ func (p *Pages) current() (int, error) {
 	}
 
 	return 0, nil
+}
+
+func (p *Pages) nextPageToken() (string, error) {
+	if p == nil || p.Next == "" {
+		return "", nil
+	}
+	token, err := pageTokenFromURL(p.Next)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func (p *Pages) prevPageToken() (string, error) {
+	if p == nil || p.Prev == "" {
+		return "", nil
+	}
+	token, err := pageTokenFromURL(p.Prev)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // IsLastPage returns true if the current page is the last
@@ -253,6 +289,14 @@ func pageForURL(urlText string) (int, error) {
 
 	return page, nil
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func pageTokenFromURL(urlText string) (string, error) {
+	u, err := url.ParseRequestURI(urlText)
+	if err != nil {
+		return "", err
+	}
+	return u.Query().Get("page_token"), nil
 }
 
 // Get a link action by id.

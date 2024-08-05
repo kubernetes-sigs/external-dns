@@ -23,32 +23,18 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/util/dump"
 )
-
-// StringDiff diffs a and b and returns a human readable diff.
-func StringDiff(a, b string) string {
-	ba := []byte(a)
-	bb := []byte(b)
-	out := []byte{}
-	i := 0
-	for ; i < len(ba) && i < len(bb); i++ {
-		if ba[i] != bb[i] {
-			break
-		}
-		out = append(out, ba[i])
-	}
-	out = append(out, []byte("\n\nA: ")...)
-	out = append(out, ba[i:]...)
-	out = append(out, []byte("\n\nB: ")...)
-	out = append(out, bb[i:]...)
-	out = append(out, []byte("\n\n")...)
-	return string(out)
-}
 
 func legacyDiff(a, b interface{}) string {
 	return cmp.Diff(a, b)
+}
+
+// StringDiff diffs a and b and returns a human readable diff.
+// DEPRECATED: use github.com/google/go-cmp/cmp.Diff
+func StringDiff(a, b string) string {
+	return legacyDiff(a, b)
 }
 
 // ObjectDiff prints the diff of two go objects and fails if the objects
@@ -75,13 +61,8 @@ func ObjectReflectDiff(a, b interface{}) string {
 // ObjectGoPrintSideBySide prints a and b as textual dumps side by side,
 // enabling easy visual scanning for mismatches.
 func ObjectGoPrintSideBySide(a, b interface{}) string {
-	s := spew.ConfigState{
-		Indent: " ",
-		// Extra deep spew.
-		DisableMethods: true,
-	}
-	sA := s.Sdump(a)
-	sB := s.Sdump(b)
+	sA := dump.Pretty(a)
+	sB := dump.Pretty(b)
 
 	linesA := strings.Split(sA, "\n")
 	linesB := strings.Split(sB, "\n")
@@ -136,11 +117,17 @@ func IgnoreUnset() cmp.Option {
 					return true
 				}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			case reflect.Interface, reflect.Pointer:
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			case reflect.Interface, reflect.Ptr:
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			case reflect.Interface, reflect.Ptr:
+=======
+			case reflect.Interface, reflect.Pointer:
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				if v2.IsNil() {
 					return true
 				}

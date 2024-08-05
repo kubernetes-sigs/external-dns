@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
 
 package procfs
@@ -18,7 +19,7 @@ package procfs
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
@@ -72,8 +73,9 @@ var nodeZoneRE = regexp.MustCompile(`(\d+), zone\s+(\w+)`)
 // structs containing the relevant info.  More information available here:
 // https://www.kernel.org/doc/Documentation/sysctl/vm.txt
 func (fs FS) Zoneinfo() ([]Zoneinfo, error) {
-	data, err := ioutil.ReadFile(fs.proc.Path("zoneinfo"))
+	data, err := os.ReadFile(fs.proc.Path("zoneinfo"))
 	if err != nil {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -166,10 +168,15 @@ func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+=======
+		return nil, fmt.Errorf("%s: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	zoneinfo, err := parseZoneinfo(data)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+		return nil, fmt.Errorf("%s: error parsing zoneinfo %q: %w", ErrFileParse, fs.proc.Path("zoneinfo"), err)
 	}
 	return zoneinfo, nil
 }
@@ -190,8 +197,13 @@ func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
 				continue
 			}
 			if strings.HasPrefix(strings.TrimSpace(line), "per-node stats") {
+<<<<<<< HEAD
 				zoneinfoElement.Zone = ""
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				zoneinfoElement.Zone = ""
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				continue
 			}
 			parts := strings.Fields(strings.TrimSpace(line))

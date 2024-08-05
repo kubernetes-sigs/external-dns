@@ -22,6 +22,7 @@ import (
 var DefaultRecorder func(tags *tag.Map, measurement interface{}, attachments map[string]interface{})
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // MeasurementRecorder will be called for each Record call. This is the same as DefaultRecorder but
 // avoids interface{} conversion.
 // This will be a func(tags *tag.Map, measurement []Measurement, attachments map[string]interface{}) type,
@@ -31,5 +32,14 @@ var MeasurementRecorder interface{}
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// MeasurementRecorder will be called for each Record call. This is the same as DefaultRecorder but
+// avoids interface{} conversion.
+// This will be a func(tags *tag.Map, measurement []Measurement, attachments map[string]interface{}) type,
+// but is interface{} here to avoid import loops
+var MeasurementRecorder interface{}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // SubscriptionReporter reports when a view subscribed with a measure.
 var SubscriptionReporter func(measure string)

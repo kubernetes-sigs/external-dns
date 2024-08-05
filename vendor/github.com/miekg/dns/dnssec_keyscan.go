@@ -7,6 +7,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/rsa"
 	"io"
@@ -35,14 +36,24 @@ import (
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"crypto/ed25519"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"crypto/rsa"
 	"io"
 	"math/big"
 	"strconv"
 	"strings"
+<<<<<<< HEAD
 
 	"golang.org/x/crypto/ed25519"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+	"golang.org/x/crypto/ed25519"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.
@@ -70,7 +81,8 @@ func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (crypto.PrivateKey, er
 		return nil, ErrPrivKey
 	}
 	// TODO(mg): check if the pubkey matches the private key
-	algo, err := strconv.ParseUint(strings.SplitN(m["algorithm"], " ", 2)[0], 10, 8)
+	algoStr, _, _ := strings.Cut(m["algorithm"], " ")
+	algo, err := strconv.ParseUint(algoStr, 10, 8)
 	if err != nil {
 		return nil, ErrPrivKey
 	}
@@ -192,7 +204,7 @@ func parseKey(r io.Reader, file string) (map[string]string, error) {
 			k = l.token
 		case zValue:
 			if k == "" {
-				return nil, &ParseError{file, "no private key seen", l}
+				return nil, &ParseError{file: file, err: "no private key seen", lex: l}
 			}
 
 			m[strings.ToLower(k)] = l.token

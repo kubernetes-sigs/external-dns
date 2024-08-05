@@ -45,7 +45,12 @@ func (db *DocumentBuilder) AppendInt32(key string, i32 int32) *DocumentBuilder {
 	return db
 }
 
+<<<<<<< HEAD
 // AppendDocument will append a bson embeded document element using key
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// AppendDocument will append a bson embedded document element using key
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // and doc to DocumentBuilder.doc
 func (db *DocumentBuilder) AppendDocument(key string, doc []byte) *DocumentBuilder {
 	db.doc = AppendDocumentElement(db.doc, key, doc)

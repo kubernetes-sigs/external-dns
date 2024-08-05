@@ -20,16 +20,16 @@ type RequestRetryer interface{}
 // A Config provides service configuration for service clients. By default,
 // all clients will use the defaults.DefaultConfig structure.
 //
-//     // Create Session with MaxRetries configuration to be shared by multiple
-//     // service clients.
-//     sess := session.Must(session.NewSession(&aws.Config{
-//         MaxRetries: aws.Int(3),
-//     }))
+//	// Create Session with MaxRetries configuration to be shared by multiple
+//	// service clients.
+//	sess := session.Must(session.NewSession(&aws.Config{
+//	    MaxRetries: aws.Int(3),
+//	}))
 //
-//     // Create S3 service client with a specific Region.
-//     svc := s3.New(sess, &aws.Config{
-//         Region: aws.String("us-west-2"),
-//     })
+//	// Create S3 service client with a specific Region.
+//	svc := s3.New(sess, &aws.Config{
+//	    Region: aws.String("us-west-2"),
+//	})
 type Config struct {
 	// Enables verbose error printing of all credential chain errors.
 	// Should be used when wanting to see all errors while attempting to
@@ -43,6 +43,7 @@ type Config struct {
 
 	// An optional endpoint URL (hostname only or fully qualified URI)
 	// that overrides the default generated endpoint for a client. Set this
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -2306,6 +2307,11 @@ func mergeInConfig(dst *Config, other *Config) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// to `""` to use the default generated endpoint.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// to `""` to use the default generated endpoint.
+=======
+	// to `nil` or the value to `""` to use the default generated endpoint.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	//
 	// Note: You must still provide a `Region` value when specifying an
 	// endpoint for a client.
@@ -2400,7 +2406,7 @@ func mergeInConfig(dst *Config, other *Config) {
 	// `ExpectContinueTimeout` for information on adjusting the continue wait
 	// timeout. https://golang.org/pkg/net/http/#Transport
 	//
-	// You should use this flag to disble 100-Continue if you experience issues
+	// You should use this flag to disable 100-Continue if you experience issues
 	// with proxies or third party S3 compatible services.
 	S3Disable100Continue *bool
 
@@ -2432,6 +2438,9 @@ func mergeInConfig(dst *Config, other *Config) {
 	//
 	// For example S3's X-Amz-Meta prefixed header will be unmarshaled to lower case
 	// Metadata member's map keys. The value of the header in the map is unaffected.
+	//
+	// The AWS SDK for Go v2, uses lower case header maps by default. The v1
+	// SDK provides this opt-in for this option, for backwards compatibility.
 	LowerCaseHeaderMaps *bool
 
 	// Set this to `true` to disable the EC2Metadata client from overriding the
@@ -2445,18 +2454,35 @@ func mergeInConfig(dst *Config, other *Config) {
 	//
 	// Example:
 	//    sess := session.Must(session.NewSession(aws.NewConfig()
-	//       .WithEC2MetadataDiableTimeoutOverride(true)))
+	//       .WithEC2MetadataDisableTimeoutOverride(true)))
 	//
 	//    svc := s3.New(sess)
 	//
 	EC2MetadataDisableTimeoutOverride *bool
+
+	// Set this to `false` to disable EC2Metadata client from falling back to IMDSv1.
+	// By default, EC2 role credentials will fall back to IMDSv1 as needed for backwards compatibility.
+	// You can disable this behavior by explicitly setting this flag to `false`. When false, the EC2Metadata
+	// client will return any errors encountered from attempting to fetch a token instead of silently
+	// using the insecure data flow of IMDSv1.
+	//
+	// Example:
+	//    sess := session.Must(session.NewSession(aws.NewConfig()
+	//       .WithEC2MetadataEnableFallback(false)))
+	//
+	//    svc := s3.New(sess)
+	//
+	// See [configuring IMDS] for more information.
+	//
+	// [configuring IMDS]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html
+	EC2MetadataEnableFallback *bool
 
 	// Instructs the endpoint to be generated for a service client to
 	// be the dual stack endpoint. The dual stack endpoint will support
 	// both IPv4 and IPv6 addressing.
 	//
 	// Setting this for a service which does not support dual stack will fail
-	// to make requets. It is not recommended to set this value on the session
+	// to make requests. It is not recommended to set this value on the session
 	// as it will apply to all service clients created with the session. Even
 	// services which don't support dual stack endpoints.
 	//
@@ -2470,7 +2496,18 @@ func mergeInConfig(dst *Config, other *Config) {
 	//     svc := s3.New(sess, &aws.Config{
 	//         UseDualStack: aws.Bool(true),
 	//     })
+	//
+	// Deprecated: This option will continue to function for S3 and S3 Control for backwards compatibility.
+	// UseDualStackEndpoint should be used to enable usage of a service's dual-stack endpoint for all service clients
+	// moving forward. For S3 and S3 Control, when UseDualStackEndpoint is set to a non-zero value it takes higher
+	// precedence then this option.
 	UseDualStack *bool
+
+	// Sets the resolver to resolve a dual-stack endpoint for the service.
+	UseDualStackEndpoint endpoints.DualStackEndpointState
+
+	// UseFIPSEndpoint specifies the resolver must resolve a FIPS endpoint.
+	UseFIPSEndpoint endpoints.FIPSEndpointState
 
 	// SleepDelay is an override for the func the SDK will call when sleeping
 	// during the lifecycle of a request. Specifically this will be used for
@@ -2500,6 +2537,7 @@ func mergeInConfig(dst *Config, other *Config) {
 
 	// EnableEndpointDiscovery will allow for endpoint discovery on operations that
 	// have the definition in its model. By default, endpoint discovery is off.
+	// To use EndpointDiscovery, Endpoint should be unset or set to an empty string.
 	//
 	// Example:
 	//    sess := session.Must(session.NewSession(&aws.Config{
@@ -2530,16 +2568,16 @@ func mergeInConfig(dst *Config, other *Config) {
 // NewConfig returns a new Config pointer that can be chained with builder
 // methods to set multiple configuration values inline without using pointers.
 //
-//     // Create Session with MaxRetries configuration to be shared by multiple
-//     // service clients.
-//     sess := session.Must(session.NewSession(aws.NewConfig().
-//         WithMaxRetries(3),
-//     ))
+//	// Create Session with MaxRetries configuration to be shared by multiple
+//	// service clients.
+//	sess := session.Must(session.NewSession(aws.NewConfig().
+//	    WithMaxRetries(3),
+//	))
 //
-//     // Create S3 service client with a specific Region.
-//     svc := s3.New(sess, aws.NewConfig().
-//         WithRegion("us-west-2"),
-//     )
+//	// Create S3 service client with a specific Region.
+//	svc := s3.New(sess, aws.NewConfig().
+//	    WithRegion("us-west-2"),
+//	)
 func NewConfig() *Config {
 	return &Config{}
 }
@@ -2672,10 +2710,28 @@ func (c *Config) WithUseDualStack(enable bool) *Config {
 	return c
 }
 
+// WithUseFIPSEndpoint sets a config UseFIPSEndpoint value returning a Config
+// pointer for chaining.
+func (c *Config) WithUseFIPSEndpoint(enable bool) *Config {
+	if enable {
+		c.UseFIPSEndpoint = endpoints.FIPSEndpointStateEnabled
+	} else {
+		c.UseFIPSEndpoint = endpoints.FIPSEndpointStateDisabled
+	}
+	return c
+}
+
 // WithEC2MetadataDisableTimeoutOverride sets a config EC2MetadataDisableTimeoutOverride value
 // returning a Config pointer for chaining.
 func (c *Config) WithEC2MetadataDisableTimeoutOverride(enable bool) *Config {
 	c.EC2MetadataDisableTimeoutOverride = &enable
+	return c
+}
+
+// WithEC2MetadataEnableFallback sets a config EC2MetadataEnableFallback value
+// returning a Config pointer for chaining.
+func (c *Config) WithEC2MetadataEnableFallback(v bool) *Config {
+	c.EC2MetadataEnableFallback = &v
 	return c
 }
 
@@ -2699,13 +2755,6 @@ func (c *Config) WithDisableEndpointHostPrefix(t bool) *Config {
 	return c
 }
 
-// MergeIn merges the passed in configs into the existing config object.
-func (c *Config) MergeIn(cfgs ...*Config) {
-	for _, other := range cfgs {
-		mergeInConfig(c, other)
-	}
-}
-
 // WithSTSRegionalEndpoint will set whether or not to use regional endpoint flag
 // when resolving the endpoint for a service
 func (c *Config) WithSTSRegionalEndpoint(sre endpoints.STSRegionalEndpoint) *Config {
@@ -2718,6 +2767,27 @@ func (c *Config) WithSTSRegionalEndpoint(sre endpoints.STSRegionalEndpoint) *Con
 func (c *Config) WithS3UsEast1RegionalEndpoint(sre endpoints.S3UsEast1RegionalEndpoint) *Config {
 	c.S3UsEast1RegionalEndpoint = sre
 	return c
+}
+
+// WithLowerCaseHeaderMaps sets a config LowerCaseHeaderMaps value
+// returning a Config pointer for chaining.
+func (c *Config) WithLowerCaseHeaderMaps(t bool) *Config {
+	c.LowerCaseHeaderMaps = &t
+	return c
+}
+
+// WithDisableRestProtocolURICleaning sets a config DisableRestProtocolURICleaning value
+// returning a Config pointer for chaining.
+func (c *Config) WithDisableRestProtocolURICleaning(t bool) *Config {
+	c.DisableRestProtocolURICleaning = &t
+	return c
+}
+
+// MergeIn merges the passed in configs into the existing config object.
+func (c *Config) MergeIn(cfgs ...*Config) {
+	for _, other := range cfgs {
+		mergeInConfig(c, other)
+	}
 }
 
 func mergeInConfig(dst *Config, other *Config) {
@@ -2801,8 +2871,16 @@ func mergeInConfig(dst *Config, other *Config) {
 		dst.UseDualStack = other.UseDualStack
 	}
 
+	if other.UseDualStackEndpoint != endpoints.DualStackEndpointStateUnset {
+		dst.UseDualStackEndpoint = other.UseDualStackEndpoint
+	}
+
 	if other.EC2MetadataDisableTimeoutOverride != nil {
 		dst.EC2MetadataDisableTimeoutOverride = other.EC2MetadataDisableTimeoutOverride
+	}
+
+	if other.EC2MetadataEnableFallback != nil {
+		dst.EC2MetadataEnableFallback = other.EC2MetadataEnableFallback
 	}
 
 	if other.SleepDelay != nil {
@@ -2832,6 +2910,18 @@ func mergeInConfig(dst *Config, other *Config) {
 	if other.S3UsEast1RegionalEndpoint != endpoints.UnsetS3UsEast1Endpoint {
 		dst.S3UsEast1RegionalEndpoint = other.S3UsEast1RegionalEndpoint
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	}
+
+	if other.LowerCaseHeaderMaps != nil {
+		dst.LowerCaseHeaderMaps = other.LowerCaseHeaderMaps
+	}
+
+	if other.UseDualStackEndpoint != endpoints.DualStackEndpointStateUnset {
+		dst.UseDualStackEndpoint = other.UseDualStackEndpoint
+	}
+
+	if other.UseFIPSEndpoint != endpoints.FIPSEndpointStateUnset {
+		dst.UseFIPSEndpoint = other.UseFIPSEndpoint
 	}
 }
 

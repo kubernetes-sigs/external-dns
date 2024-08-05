@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"crypto/tls"
 	"net/http"
 
@@ -1342,10 +1343,17 @@ func WithCredentials(creds *google.Credentials) ClientOption {
 	return (*withCreds)(creds)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"crypto/tls"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net/http"
 
+	"cloud.google.com/go/auth"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/internal"
+	"google.golang.org/api/internal/impersonate"
 	"google.golang.org/grpc"
 )
 
@@ -1415,6 +1423,9 @@ func (w withEndpoint) Apply(o *internal.DialSettings) {
 
 // WithScopes returns a ClientOption that overrides the default OAuth2 scopes
 // to be used for a service.
+//
+// If both WithScopes and WithTokenSource are used, scope settings from the
+// token source will be used instead.
 func WithScopes(scope ...string) ClientOption {
 	return withScopes(scope)
 }
@@ -1426,7 +1437,9 @@ func (w withScopes) Apply(o *internal.DialSettings) {
 	copy(o.Scopes, w)
 }
 
-// WithUserAgent returns a ClientOption that sets the User-Agent.
+// WithUserAgent returns a ClientOption that sets the User-Agent. This option
+// is incompatible with the [WithHTTPClient] option. If you wish to provide a
+// custom client you will need to add this header via RoundTripper middleware.
 func WithUserAgent(ua string) ClientOption {
 	return withUA(ua)
 }
@@ -1478,7 +1491,6 @@ func (w withGRPCDialOption) Apply(o *internal.DialSettings) {
 
 // WithGRPCConnectionPool returns a ClientOption that creates a pool of gRPC
 // connections that requests will be balanced between.
-// This is an EXPERIMENTAL API and may be changed or removed in the future.
 func WithGRPCConnectionPool(size int) ClientOption {
 	return withGRPCConnectionPool(size)
 }
@@ -1486,8 +1498,7 @@ func WithGRPCConnectionPool(size int) ClientOption {
 type withGRPCConnectionPool int
 
 func (w withGRPCConnectionPool) Apply(o *internal.DialSettings) {
-	balancer := grpc.RoundRobin(internal.NewPoolResolver(int(w), o))
-	o.GRPCDialOpts = append(o.GRPCDialOpts, grpc.WithBalancer(balancer))
+	o.GRPCConnPoolSize = int(w)
 }
 
 // WithAPIKey returns a ClientOption that specifies an API key to be used
@@ -1564,12 +1575,139 @@ func (w withRequestReason) Apply(o *internal.DialSettings) {
 // settings on gRPC and HTTP clients.
 // An example reason would be to bind custom telemetry that overrides the defaults.
 func WithTelemetryDisabled() ClientOption {
-	return withTelemetryDisabledOption{}
+	return withTelemetryDisabled{}
 }
 
-type withTelemetryDisabledOption struct{}
+type withTelemetryDisabled struct{}
 
-func (w withTelemetryDisabledOption) Apply(o *internal.DialSettings) {
+func (w withTelemetryDisabled) Apply(o *internal.DialSettings) {
 	o.TelemetryDisabled = true
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// ClientCertSource is a function that returns a TLS client certificate to be used
+// when opening TLS connections.
+//
+// It follows the same semantics as crypto/tls.Config.GetClientCertificate.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+type ClientCertSource = func(*tls.CertificateRequestInfo) (*tls.Certificate, error)
+
+// WithClientCertSource returns a ClientOption that specifies a
+// callback function for obtaining a TLS client certificate.
+//
+// This option is used for supporting mTLS authentication, where the
+// server validates the client certifcate when establishing a connection.
+//
+// The callback function will be invoked whenever the server requests a
+// certificate from the client. Implementations of the callback function
+// should try to ensure that a valid certificate can be repeatedly returned
+// on demand for the entire life cycle of the transport client. If a nil
+// Certificate is returned (i.e. no Certificate can be obtained), an error
+// should be returned.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+func WithClientCertSource(s ClientCertSource) ClientOption {
+	return withClientCertSource{s}
+}
+
+type withClientCertSource struct{ s ClientCertSource }
+
+func (w withClientCertSource) Apply(o *internal.DialSettings) {
+	o.ClientCertSource = w.s
+}
+
+// ImpersonateCredentials returns a ClientOption that will impersonate the
+// target service account.
+//
+// In order to impersonate the target service account
+// the base service account must have the Service Account Token Creator role,
+// roles/iam.serviceAccountTokenCreator, on the target service account.
+// See https://cloud.google.com/iam/docs/understanding-service-accounts.
+//
+// Optionally, delegates can be used during impersonation if the base service
+// account lacks the token creator role on the target. When using delegates,
+// each service account must be granted roles/iam.serviceAccountTokenCreator
+// on the next service account in the chain.
+//
+// For example, if a base service account of SA1 is trying to impersonate target
+// service account SA2 while using delegate service accounts DSA1 and DSA2,
+// the following must be true:
+//
+//  1. Base service account SA1 has roles/iam.serviceAccountTokenCreator on
+//     DSA1.
+//  2. DSA1 has roles/iam.serviceAccountTokenCreator on DSA2.
+//  3. DSA2 has roles/iam.serviceAccountTokenCreator on target SA2.
+//
+// The resulting impersonated credential will either have the default scopes of
+// the client being instantiating or the scopes from WithScopes if provided.
+// Scopes are required for creating impersonated credentials, so if this option
+// is used while not using a NewClient/NewService function, WithScopes must also
+// be explicitly passed in as well.
+//
+// If the base credential is an authorized user and not a service account, or if
+// the option WithQuotaProject is set, the target service account must have a
+// role that grants the serviceusage.services.use permission such as
+// roles/serviceusage.serviceUsageConsumer.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+//
+// Deprecated: This option has been replaced by `impersonate` package:
+// `google.golang.org/api/impersonate`. Please use the `impersonate` package
+// instead with the WithTokenSource option.
+func ImpersonateCredentials(target string, delegates ...string) ClientOption {
+	return impersonateServiceAccount{
+		target:    target,
+		delegates: delegates,
+	}
+}
+
+type impersonateServiceAccount struct {
+	target    string
+	delegates []string
+}
+
+func (i impersonateServiceAccount) Apply(o *internal.DialSettings) {
+	o.ImpersonationConfig = &impersonate.Config{
+		Target: i.target,
+	}
+	o.ImpersonationConfig.Delegates = make([]string, len(i.delegates))
+	copy(o.ImpersonationConfig.Delegates, i.delegates)
+}
+
+type withCreds google.Credentials
+
+func (w *withCreds) Apply(o *internal.DialSettings) {
+	o.Credentials = (*google.Credentials)(w)
+}
+
+// WithCredentials returns a ClientOption that authenticates API calls.
+func WithCredentials(creds *google.Credentials) ClientOption {
+	return (*withCreds)(creds)
+}
+
+// WithAuthCredentials returns a ClientOption that specifies an
+// [cloud.google.com/go/auth.Credentials] to be used as the basis for
+// authentication.
+func WithAuthCredentials(creds *auth.Credentials) ClientOption {
+	return withAuthCredentials{creds}
+}
+
+type withAuthCredentials struct{ creds *auth.Credentials }
+
+func (w withAuthCredentials) Apply(o *internal.DialSettings) {
+	o.AuthCredentials = w.creds
+}
+
+// WithUniverseDomain returns a ClientOption that sets the universe domain.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+func WithUniverseDomain(ud string) ClientOption {
+	return withUniverseDomain(ud)
+}
+
+type withUniverseDomain string
+
+func (w withUniverseDomain) Apply(o *internal.DialSettings) {
+	o.UniverseDomain = string(w)
 }

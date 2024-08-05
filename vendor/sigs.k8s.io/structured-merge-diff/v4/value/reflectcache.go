@@ -154,7 +154,14 @@ func buildStructCacheEntry(t reflect.Type, infos map[string]*FieldCacheEntry, fi
 			if field.Type.Kind() == reflect.Ptr {
 				e = field.Type.Elem()
 			}
+<<<<<<< HEAD
 			buildStructCacheEntry(e, infos, append(fieldPath, field.Index))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+			if e.Kind() == reflect.Struct {
+				buildStructCacheEntry(e, infos, append(fieldPath, field.Index))
+			}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			continue
 		}
 		info := &FieldCacheEntry{JsonName: jsonName, isOmitEmpty: isOmitempty, fieldPath: append(fieldPath, field.Index), fieldType: field.Type}

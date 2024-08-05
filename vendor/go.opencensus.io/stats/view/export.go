@@ -21,6 +21,7 @@ package view
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Exporter exports the collected records as view data.
 //
 // The ExportView method should return quickly; if an
@@ -238,6 +239,16 @@ var (
 	exporters   = make(map[Exporter]struct{})
 )
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+import "sync"
+
+var (
+	exportersMu sync.RWMutex // guards exporters
+	exporters   = make(map[Exporter]struct{})
+)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Exporter exports the collected records as view data.
 //
 // The ExportView method should return quickly; if an
@@ -260,17 +271,23 @@ type Exporter interface {
 //
 // Binaries can register exporters, libraries shouldn't register exporters.
 func RegisterExporter(e Exporter) {
-	exportersMu.Lock()
-	defer exportersMu.Unlock()
-
-	exporters[e] = struct{}{}
+	defaultWorker.RegisterExporter(e)
 }
 
 // UnregisterExporter unregisters an exporter.
 func UnregisterExporter(e Exporter) {
+<<<<<<< HEAD
 	exportersMu.Lock()
 	defer exportersMu.Unlock()
 
 	delete(exporters, e)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	exportersMu.Lock()
+	defer exportersMu.Unlock()
+
+	delete(exporters, e)
+=======
+	defaultWorker.UnregisterExporter(e)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

@@ -6,6 +6,7 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+<<<<<<< HEAD
     - deadcode
     - errcheck
     - forcetypeassert
@@ -22,6 +23,22 @@ linters:
     - typecheck
     - unused
     - varcheck
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+    - errcheck
+    - forcetypeassert
+    - gocritic
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - typecheck
+    - unused
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 issues:
   exclude-use-default: false

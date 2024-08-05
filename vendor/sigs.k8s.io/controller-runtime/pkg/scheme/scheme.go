@@ -22,6 +22,7 @@ limitations under the License.
 // called AddToScheme for adding its types to a Scheme:
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	 // in package myapigroupv1...
 //	var (
 //		SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
@@ -212,31 +213,45 @@ type Builder struct {
 //  	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
 //  	AddToScheme = SchemeBuilder.AddToScheme
 //  )
-//
-//  func init() {
-//  	SchemeBuilder.Register(&MyType{}, &MyTypeList)
-//  }
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//  // in package myapigroupv1...
 //  var (
-//  	scheme *runtime.Scheme = runtime.NewScheme()
+//  	SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
+//  	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+//  	AddToScheme = SchemeBuilder.AddToScheme
 //  )
+=======
+//	 // in package myapigroupv1...
+//	var (
+//		SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
+//		SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+//		AddToScheme = SchemeBuilder.AddToScheme
+//	)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//
+//	func init() {
+//		SchemeBuilder.Register(&MyType{}, &MyTypeList)
+//	}
+//	var (
+//		scheme *runtime.Scheme = runtime.NewScheme()
+//	)
 //
 // This also true of the built-in Kubernetes types.  Then, in the entrypoint for
 // your manager, assemble the scheme containing exactly the types you need,
 // panicing if scheme registration failed. For instance, if our controller needs
 // types from the core/v1 API group (e.g. Pod), plus types from my.api.group/v1:
 //
-//  func init() {
-//  	utilruntime.Must(myapigroupv1.AddToScheme(scheme))
-//  	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
-//  }
+//	func init() {
+//		utilruntime.Must(myapigroupv1.AddToScheme(scheme))
+//		utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
+//	}
 //
-//  func main() {
-//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
-//  		Scheme: scheme,
-//  	})
-//  	// ...
-//  }
-//
+//	func main() {
+//		mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
+//			Scheme: scheme,
+//		})
+//		// ...
+//	}
 package scheme
 
 import (
@@ -251,8 +266,14 @@ type Builder struct {
 	runtime.SchemeBuilder
 }
 
+<<<<<<< HEAD
 // Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
+=======
+// Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (bld *Builder) Register(object ...runtime.Object) *Builder {
 	bld.SchemeBuilder.Register(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(bld.GroupVersion, object...)

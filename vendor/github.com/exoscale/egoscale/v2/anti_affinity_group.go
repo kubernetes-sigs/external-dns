@@ -56,6 +56,7 @@ func (c *Client) CreateAntiAffinityGroup(
 	res, err := oapi.NewPoller().
 		WithTimeout(c.timeout).
 		WithInterval(c.pollInterval).
+<<<<<<< HEAD
 		Poll(ctx, c.OperationPoller(zone, *resp.JSON200.Id))
 	if err != nil {
 		return nil, err
@@ -83,6 +84,40 @@ func (c *Client) DeleteAntiAffinityGroup(
 		WithTimeout(c.timeout).
 		WithInterval(c.pollInterval).
 		Poll(ctx, c.OperationPoller(zone, *resp.JSON200.Id))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		Poll(ctx, oapi.OperationPoller(c, zone, *resp.JSON200.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	return c.GetAntiAffinityGroup(ctx, zone, *res.(*struct {
+		Command *string `json:"command,omitempty"`
+		Id      *string `json:"id,omitempty"` // revive:disable-line
+		Link    *string `json:"link,omitempty"`
+	}).Id)
+}
+
+// DeleteAntiAffinityGroup deletes an Anti-Affinity Group.
+func (c *Client) DeleteAntiAffinityGroup(
+	ctx context.Context,
+	zone string,
+	antiAffinityGroup *AntiAffinityGroup,
+) error {
+	if err := validateOperationParams(antiAffinityGroup, "delete"); err != nil {
+		return err
+	}
+
+	resp, err := c.DeleteAntiAffinityGroupWithResponse(apiv2.WithZone(ctx, zone), *antiAffinityGroup.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = oapi.NewPoller().
+		WithTimeout(c.timeout).
+		WithInterval(c.pollInterval).
+		Poll(ctx, oapi.OperationPoller(c, zone, *resp.JSON200.Id))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return err
 	}

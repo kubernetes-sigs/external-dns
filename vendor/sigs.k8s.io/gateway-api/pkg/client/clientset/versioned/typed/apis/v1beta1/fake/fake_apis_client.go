@@ -40,6 +40,14 @@ func (c *FakeGatewayV1beta1) HTTPRoutes(namespace string) v1beta1.HTTPRouteInter
 	return &FakeHTTPRoutes{c, namespace}
 }
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func (c *FakeGatewayV1beta1) ReferenceGrants(namespace string) v1beta1.ReferenceGrantInterface {
+	return &FakeReferenceGrants{c, namespace}
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeGatewayV1beta1) RESTClient() rest.Interface {

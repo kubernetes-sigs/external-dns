@@ -17,6 +17,7 @@ const floatingBasePath = "v2/floating_ips"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IPs
 type FloatingIPsService interface {
 	List(context.Context, *ListOptions) ([]FloatingIP, *Response, error)
@@ -254,6 +255,11 @@ type FloatingIPCreateRequest struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#floating-ips
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2#floating-ips
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IPs
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type FloatingIPsService interface {
 	List(context.Context, *ListOptions) ([]FloatingIP, *Response, error)
 	Get(context.Context, string) (*FloatingIP, *Response, error)
@@ -271,15 +277,18 @@ var _ FloatingIPsService = &FloatingIPsServiceOp{}
 
 // FloatingIP represents a Digital Ocean floating IP.
 type FloatingIP struct {
-	Region  *Region  `json:"region"`
-	Droplet *Droplet `json:"droplet"`
-	IP      string   `json:"ip"`
+	Region    *Region  `json:"region"`
+	Droplet   *Droplet `json:"droplet"`
+	IP        string   `json:"ip"`
+	ProjectID string   `json:"project_id"`
+	Locked    bool     `json:"locked"`
 }
 
 func (f FloatingIP) String() string {
 	return Stringify(f)
 }
 
+// URN returns the floating IP in a valid DO API URN form.
 func (f FloatingIP) URN() string {
 	return ToURN("FloatingIP", f.IP)
 }
@@ -296,12 +305,19 @@ type floatingIPRoot struct {
 }
 
 // FloatingIPCreateRequest represents a request to create a floating IP.
-// If DropletID is not empty, the floating IP will be assigned to the
-// droplet.
+// Specify DropletID to assign the floating IP to a Droplet or Region
+// to reserve it to the region.
 type FloatingIPCreateRequest struct {
+<<<<<<< HEAD
 	Region    string `json:"region"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Region    string `json:"region"`
+=======
+	Region    string `json:"region,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	DropletID int    `json:"droplet_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 // List all floating IPs.

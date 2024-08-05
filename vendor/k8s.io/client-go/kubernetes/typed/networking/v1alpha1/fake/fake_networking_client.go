@@ -28,8 +28,18 @@ type FakeNetworkingV1alpha1 struct {
 	*testing.Fake
 }
 
+<<<<<<< HEAD
 func (c *FakeNetworkingV1alpha1) ClusterCIDRs() v1alpha1.ClusterCIDRInterface {
 	return &FakeClusterCIDRs{c}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func (c *FakeNetworkingV1alpha1) IPAddresses() v1alpha1.IPAddressInterface {
+	return &FakeIPAddresses{c}
+}
+
+func (c *FakeNetworkingV1alpha1) ServiceCIDRs() v1alpha1.ServiceCIDRInterface {
+	return &FakeServiceCIDRs{c}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

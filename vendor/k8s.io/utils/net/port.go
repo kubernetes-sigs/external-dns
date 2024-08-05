@@ -23,6 +23,7 @@ import (
 	"strings"
 )
 
+<<<<<<< HEAD
 // IPFamily refers to a specific family if not empty, i.e. "4" or "6".
 type IPFamily string
 
@@ -78,6 +79,56 @@ func NewLocalPort(desc, ip string, ipFamily IPFamily, port int, protocol Protoco
 		asIPv4 := parsedIP.To4()
 		if asIPv4 == nil && ipFamily == IPv4 || asIPv4 != nil && ipFamily == IPv6 {
 			return nil, fmt.Errorf("ip address and family mismatch %s, %s", ip, ipFamily)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Protocol is a network protocol support by LocalPort.
+type Protocol string
+
+// Constants for valid protocols:
+const (
+	TCP Protocol = "TCP"
+	UDP Protocol = "UDP"
+)
+
+// LocalPort represents an IP address and port pair along with a protocol
+// and potentially a specific IP family.
+// A LocalPort can be opened and subsequently closed.
+type LocalPort struct {
+	// Description is an arbitrary string.
+	Description string
+	// IP is the IP address part of a given local port.
+	// If this string is empty, the port binds to all local IP addresses.
+	IP string
+	// If IPFamily is not empty, the port binds only to addresses of this
+	// family.
+	// IF empty along with IP, bind to local addresses of any family.
+	IPFamily IPFamily
+	// Port is the port number.
+	// A value of 0 causes a port to be automatically chosen.
+	Port int
+	// Protocol is the protocol, e.g. TCP
+	Protocol Protocol
+}
+
+// NewLocalPort returns a LocalPort instance and ensures IPFamily and IP are
+// consistent and that the given protocol is valid.
+func NewLocalPort(desc, ip string, ipFamily IPFamily, port int, protocol Protocol) (*LocalPort, error) {
+	if protocol != TCP && protocol != UDP {
+		return nil, fmt.Errorf("Unsupported protocol %s", protocol)
+	}
+	if ipFamily != IPFamilyUnknown && ipFamily != IPv4 && ipFamily != IPv6 {
+		return nil, fmt.Errorf("Invalid IP family %s", ipFamily)
+	}
+	if ip != "" {
+		parsedIP := ParseIPSloppy(ip)
+		if parsedIP == nil {
+			return nil, fmt.Errorf("invalid ip address %s", ip)
+		}
+		if ipFamily != IPFamilyUnknown {
+			if IPFamily(parsedIP) != ipFamily {
+				return nil, fmt.Errorf("ip address and family mismatch %s, %s", ip, ipFamily)
+			}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 	return &LocalPort{Description: desc, IP: ip, IPFamily: ipFamily, Port: port, Protocol: protocol}, nil

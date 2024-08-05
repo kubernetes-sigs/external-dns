@@ -136,6 +136,7 @@ func Pipe(p []int) (err error) {
 	err = pipe(&pp)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	p[0] = int(pp[0])
 	p[1] = int(pp[1])
 ||||||| parent of 6b7ce455e (update vendored files)
@@ -152,6 +153,13 @@ func Pipe(p []int) (err error) {
 		p[1] = int(pp[1])
 	}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if err == nil {
+		p[0] = int(pp[0])
+		p[1] = int(pp[1])
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

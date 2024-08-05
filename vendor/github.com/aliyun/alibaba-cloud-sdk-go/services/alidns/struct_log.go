@@ -20,6 +20,7 @@ type Log struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
 	Content       string `json:"content" xml:"content"`
 	OperTime      string `json:"OperTime" xml:"OperTime"`
@@ -86,8 +87,37 @@ type Log struct {
 	EntityId      string `json:"EntityId" xml:"EntityId"`
 	EntityName    string `json:"EntityName" xml:"EntityName"`
 	OperIp        string `json:"OperIp" xml:"OperIp"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	OperTime      string `json:"OperTime" xml:"OperTime"`
+	OperAction    string `json:"OperAction" xml:"OperAction"`
+	EntityType    string `json:"EntityType" xml:"EntityType"`
+	EntityId      string `json:"EntityId" xml:"EntityId"`
+	EntityName    string `json:"EntityName" xml:"EntityName"`
+	OperIp        string `json:"OperIp" xml:"OperIp"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
+	Content       string `json:"content" xml:"content"`
+	OperTime      string `json:"OperTime" xml:"OperTime"`
+	Action        string `json:"Action" xml:"Action"`
 	Id            int64  `json:"Id" xml:"Id"`
+<<<<<<< HEAD
 	Content       string `json:"Content" xml:"Content"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Content       string `json:"Content" xml:"Content"`
+=======
+	ThreatTime    string `json:"ThreatTime" xml:"ThreatTime"`
+	EntityName    string `json:"EntityName" xml:"EntityName"`
+	SubDomain     string `json:"SubDomain" xml:"SubDomain"`
+	EntityId      string `json:"EntityId" xml:"EntityId"`
+	OperateTime   string `json:"OperateTime" xml:"OperateTime"`
+	EntityType    string `json:"EntityType" xml:"EntityType"`
+	OperAction    string `json:"OperAction" xml:"OperAction"`
+	SourceIp      string `json:"SourceIp" xml:"SourceIp"`
+	OperIp        string `json:"OperIp" xml:"OperIp"`
+	ThreatLevel   string `json:"ThreatLevel" xml:"ThreatLevel"`
+	ThreatType    string `json:"ThreatType" xml:"ThreatType"`
+	Type          string `json:"Type" xml:"Type"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

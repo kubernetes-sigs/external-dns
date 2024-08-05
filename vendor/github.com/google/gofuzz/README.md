@@ -75,6 +75,7 @@ See more examples in ```example_test.go```.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
 go-fuzz provides the user a byte-slice, which should be converted to different inputs
 for the tested function. This library can help convert the byte slice. Consider for
@@ -168,4 +169,25 @@ func Fuzz(data []byte) int {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
+go-fuzz provides the user a byte-slice, which should be converted to different inputs
+for the tested function. This library can help convert the byte slice. Consider for
+example a fuzz test for a the function `mypackage.MyFunc` that takes an int arguments:
+```go
+// +build gofuzz
+package mypackage
+
+import fuzz "github.com/google/gofuzz"
+
+func Fuzz(data []byte) int {
+        var i int
+        fuzz.NewFromGoFuzz(data).Fuzz(&i)
+        MyFunc(i)
+        return 0
+}
+```
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 Happy testing!

@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMonitorAvailableConfigRequest) (response *DescribeGtmMonitorAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -175,6 +176,10 @@ func CreateDescribeGtmMonitorAvailableConfigRequest() (request *DescribeGtmMonit
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMonitorAvailableConfigRequest) (response *DescribeGtmMonitorAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -182,8 +187,6 @@ func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMoni
 }
 
 // DescribeGtmMonitorAvailableConfigWithChan invokes the alidns.DescribeGtmMonitorAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorAvailableConfigWithChan(request *DescribeGtmMonitorAvailableConfigRequest) (<-chan *DescribeGtmMonitorAvailableConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmMonitorAvailableConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -206,8 +209,6 @@ func (client *Client) DescribeGtmMonitorAvailableConfigWithChan(request *Describ
 }
 
 // DescribeGtmMonitorAvailableConfigWithCallback invokes the alidns.DescribeGtmMonitorAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorAvailableConfigWithCallback(request *DescribeGtmMonitorAvailableConfigRequest, callback func(response *DescribeGtmMonitorAvailableConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -246,7 +247,12 @@ func CreateDescribeGtmMonitorAvailableConfigRequest() (request *DescribeGtmMonit
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorAvailableConfig", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

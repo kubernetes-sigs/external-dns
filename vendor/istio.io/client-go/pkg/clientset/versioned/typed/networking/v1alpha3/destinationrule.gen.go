@@ -18,9 +18,12 @@ package v1alpha3
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3"
 	scheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -45,6 +48,8 @@ type DestinationRuleInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha3.DestinationRuleList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.DestinationRule, err error)
+	Apply(ctx context.Context, destinationRule *networkingv1alpha3.DestinationRuleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.DestinationRule, err error)
+	ApplyStatus(ctx context.Context, destinationRule *networkingv1alpha3.DestinationRuleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.DestinationRule, err error)
 	DestinationRuleExpansion
 }
 
@@ -186,6 +191,62 @@ func (c *destinationRules) Patch(ctx context.Context, name string, pt types.Patc
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied destinationRule.
+func (c *destinationRules) Apply(ctx context.Context, destinationRule *networkingv1alpha3.DestinationRuleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.DestinationRule, err error) {
+	if destinationRule == nil {
+		return nil, fmt.Errorf("destinationRule provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(destinationRule)
+	if err != nil {
+		return nil, err
+	}
+	name := destinationRule.Name
+	if name == nil {
+		return nil, fmt.Errorf("destinationRule.Name must be provided to Apply")
+	}
+	result = &v1alpha3.DestinationRule{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("destinationrules").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *destinationRules) ApplyStatus(ctx context.Context, destinationRule *networkingv1alpha3.DestinationRuleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.DestinationRule, err error) {
+	if destinationRule == nil {
+		return nil, fmt.Errorf("destinationRule provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(destinationRule)
+	if err != nil {
+		return nil, err
+	}
+
+	name := destinationRule.Name
+	if name == nil {
+		return nil, fmt.Errorf("destinationRule.Name must be provided to Apply")
+	}
+
+	result = &v1alpha3.DestinationRule{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("destinationrules").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

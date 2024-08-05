@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 	"regexp"
 
@@ -456,16 +457,21 @@ func parseInotifyInfo(line string) (*InotifyInfo, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"errors"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"errors"
+=======
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"regexp"
 
 	"github.com/prometheus/procfs/internal/util"
 )
 
-// Regexp variables
 var (
 	rPos          = regexp.MustCompile(`^pos:\s+(\d+)$`)
 	rFlags        = regexp.MustCompile(`^flags:\s+(\d+)$`)
 	rMntID        = regexp.MustCompile(`^mnt_id:\s+(\d+)$`)
+	rIno          = regexp.MustCompile(`^ino:\s+(\d+)$`)
 	rInotify      = regexp.MustCompile(`^inotify`)
 	rInotifyParts = regexp.MustCompile(`^inotify\s+wd:([0-9a-f]+)\s+ino:([0-9a-f]+)\s+sdev:([0-9a-f]+)(?:\s+mask:([0-9a-f]+))?`)
 )
@@ -480,6 +486,8 @@ type ProcFDInfo struct {
 	Flags string
 	// Mount point ID
 	MntID string
+	// Inode number
+	Ino string
 	// List of inotify lines (structured) in the fdinfo file (kernel 3.8+ only)
 	InotifyInfos []InotifyInfo
 }
@@ -491,7 +499,7 @@ func (p Proc) FDInfo(fd string) (*ProcFDInfo, error) {
 		return nil, err
 	}
 
-	var text, pos, flags, mntid string
+	var text, pos, flags, mntid, ino string
 	var inotify []InotifyInfo
 
 	scanner := bufio.NewScanner(bytes.NewReader(data))
@@ -503,6 +511,8 @@ func (p Proc) FDInfo(fd string) (*ProcFDInfo, error) {
 			flags = rFlags.FindStringSubmatch(text)[1]
 		} else if rMntID.MatchString(text) {
 			mntid = rMntID.FindStringSubmatch(text)[1]
+		} else if rIno.MatchString(text) {
+			ino = rIno.FindStringSubmatch(text)[1]
 		} else if rInotify.MatchString(text) {
 			newInotify, err := parseInotifyInfo(text)
 			if err != nil {
@@ -517,6 +527,7 @@ func (p Proc) FDInfo(fd string) (*ProcFDInfo, error) {
 		Pos:          pos,
 		Flags:        flags,
 		MntID:        mntid,
+		Ino:          ino,
 		InotifyInfos: inotify,
 	}
 
@@ -551,8 +562,14 @@ func parseInotifyInfo(line string) (*InotifyInfo, error) {
 		}
 		return i, nil
 	}
+<<<<<<< HEAD
 	return nil, errors.New("invalid inode entry: " + line)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return nil, errors.New("invalid inode entry: " + line)
+=======
+	return nil, fmt.Errorf("%w: invalid inode entry: %q", ErrFileParse, line)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ProcFDInfos represents a list of ProcFDInfo structs.
@@ -562,7 +579,7 @@ func (p ProcFDInfos) Len() int           { return len(p) }
 func (p ProcFDInfos) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p ProcFDInfos) Less(i, j int) bool { return p[i].FD < p[j].FD }
 
-// InotifyWatchLen returns the total number of inotify watches
+// InotifyWatchLen returns the total number of inotify watches.
 func (p ProcFDInfos) InotifyWatchLen() (int, error) {
 	length := 0
 	for _, f := range p {

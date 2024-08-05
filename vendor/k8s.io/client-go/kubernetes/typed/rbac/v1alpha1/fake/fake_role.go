@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -555,13 +556,18 @@ func (c *FakeRoles) Apply(ctx context.Context, role *rbacv1alpha1.RoleApplyConfi
 		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.Role{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	v1alpha1 "k8s.io/api/rbac/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1alpha1 "k8s.io/client-go/applyconfigurations/rbac/v1alpha1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -571,9 +577,9 @@ type FakeRoles struct {
 	ns   string
 }
 
-var rolesResource = schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1alpha1", Resource: "roles"}
+var rolesResource = v1alpha1.SchemeGroupVersion.WithResource("roles")
 
-var rolesKind = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1alpha1", Kind: "Role"}
+var rolesKind = v1alpha1.SchemeGroupVersion.WithKind("Role")
 
 // Get takes name of the role, and returns the corresponding role object, and an error if there is any.
 func (c *FakeRoles) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Role, err error) {
@@ -640,7 +646,7 @@ func (c *FakeRoles) Update(ctx context.Context, role *v1alpha1.Role, opts v1.Upd
 // Delete takes name of the role and deletes it. Returns an error if one occurs.
 func (c *FakeRoles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(rolesResource, c.ns, name), &v1alpha1.Role{})
+		Invokes(testing.NewDeleteActionWithOptions(rolesResource, c.ns, name, opts), &v1alpha1.Role{})
 
 	return err
 }
@@ -658,6 +664,28 @@ func (c *FakeRoles) Patch(ctx context.Context, name string, pt types.PatchType, 
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, name, pt, data, subresources...), &v1alpha1.Role{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.Role), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied role.
+func (c *FakeRoles) Apply(ctx context.Context, role *rbacv1alpha1.RoleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.Role, err error) {
+	if role == nil {
+		return nil, fmt.Errorf("role provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(role)
+	if err != nil {
+		return nil, err
+	}
+	name := role.Name
+	if name == nil {
+		return nil, fmt.Errorf("role.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.Role{})
 
 	if obj == nil {
 		return nil, err

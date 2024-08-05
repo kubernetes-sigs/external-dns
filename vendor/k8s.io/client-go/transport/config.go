@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/url"
 )
 
@@ -474,6 +475,10 @@ type GetCertHolder struct {
 	GetCert func() (*tls.Certificate, error)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"net/url"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // Config holds various options for establishing a transport.
@@ -487,10 +492,10 @@ type Config struct {
 
 	// Username and password for basic authentication
 	Username string
-	Password string
+	Password string `datapolicy:"password"`
 
 	// Bearer token for authentication
-	BearerToken string
+	BearerToken string `datapolicy:"token"`
 
 	// Path to a file containing a BearerToken.
 	// If set, the contents are periodically read.
@@ -519,7 +524,20 @@ type Config struct {
 	// instead of setting this value directly.
 	WrapTransport WrapperFunc
 
-	// Dial specifies the dial function for creating unencrypted TCP connections.
+	// DialHolder specifies the dial function for creating unencrypted TCP connections.
+	// This struct indirection is used to make transport configs cacheable.
+	DialHolder *DialHolder
+
+	// Proxy is the proxy func to be used for all requests made by this
+	// transport. If Proxy is nil, http.ProxyFromEnvironment is used. If Proxy
+	// returns a nil *URL, no proxy is used.
+	//
+	// socks5 proxying does not currently support spdy streaming endpoints.
+	Proxy func(*http.Request) (*url.URL, error)
+}
+
+// DialHolder is used to make the wrapped function comparable so that it can be used as a map key.
+type DialHolder struct {
 	Dial func(ctx context.Context, network, address string) (net.Conn, error)
 }
 
@@ -527,6 +545,8 @@ type Config struct {
 type ImpersonationConfig struct {
 	// UserName matches user.Info.GetName()
 	UserName string
+	// UID matches user.Info.GetUID()
+	UID string
 	// Groups matches user.Info.GetGroups()
 	Groups []string
 	// Extra matches user.Info.GetExtra()
@@ -553,9 +573,9 @@ func (c *Config) HasCertAuth() bool {
 	return (len(c.TLS.CertData) != 0 || len(c.TLS.CertFile) != 0) && (len(c.TLS.KeyData) != 0 || len(c.TLS.KeyFile) != 0)
 }
 
-// HasCertCallbacks returns whether the configuration has certificate callback or not.
+// HasCertCallback returns whether the configuration has certificate callback or not.
 func (c *Config) HasCertCallback() bool {
-	return c.TLS.GetCert != nil
+	return c.TLS.GetCertHolder != nil
 }
 
 // Wrap adds a transport middleware function that will give the caller
@@ -586,6 +606,19 @@ type TLSConfig struct {
 	// To use only http/1.1, set to ["http/1.1"].
 	NextProtos []string
 
+<<<<<<< HEAD
 	GetCert func() (*tls.Certificate, error) // Callback that returns a TLS client certificate. CertData, CertFile, KeyData and KeyFile supercede this field.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	GetCert func() (*tls.Certificate, error) // Callback that returns a TLS client certificate. CertData, CertFile, KeyData and KeyFile supercede this field.
+=======
+	// Callback that returns a TLS client certificate. CertData, CertFile, KeyData and KeyFile supercede this field.
+	// This struct indirection is used to make transport configs cacheable.
+	GetCertHolder *GetCertHolder
+}
+
+// GetCertHolder is used to make the wrapped function comparable so that it can be used as a map key.
+type GetCertHolder struct {
+	GetCert func() (*tls.Certificate, error)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

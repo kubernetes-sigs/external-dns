@@ -21,6 +21,7 @@ type SlbSubDomain struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
@@ -57,4 +58,16 @@ type SlbSubDomain struct {
 	Open        bool   `json:"Open" xml:"Open"`
 	Type        string `json:"Type" xml:"Type"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	SubDomain   string `json:"SubDomain" xml:"SubDomain"`
+	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
+	Open        bool   `json:"Open" xml:"Open"`
+	Type        string `json:"Type" xml:"Type"`
+=======
+	Type           string         `json:"Type" xml:"Type"`
+	RecordCount    int64          `json:"RecordCount" xml:"RecordCount"`
+	Open           bool           `json:"Open" xml:"Open"`
+	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
+	LineAlgorithms LineAlgorithms `json:"LineAlgorithms" xml:"LineAlgorithms"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

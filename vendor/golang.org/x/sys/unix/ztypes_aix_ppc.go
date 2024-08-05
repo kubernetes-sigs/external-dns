@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -19,6 +20,11 @@
 >>>>>>> 4d7e5ad26 (update vendored files)
 //go:build ppc && aix
 // +build ppc,aix
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build ppc,aix
+=======
+//go:build ppc && aix
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -237,6 +243,7 @@ const (
 	SizeofSockaddrDatalink = 0x80
 	SizeofLinger           = 0x8
 	SizeofIovec            = 0x8
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1133,6 +1140,9 @@ const (
 	SizeofSockaddrDatalink = 0x80
 	SizeofLinger           = 0x8
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofIPv6MTUInfo      = 0x20

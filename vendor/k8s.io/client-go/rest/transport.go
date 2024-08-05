@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/transport"
@@ -442,9 +443,34 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"k8s.io/client-go/pkg/apis/clientauthentication"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/transport"
 )
+
+// HTTPClientFor returns an http.Client that will provide the authentication
+// or transport level security defined by the provided Config. Will return the
+// default http.DefaultClient if no special case behavior is needed.
+func HTTPClientFor(config *Config) (*http.Client, error) {
+	transport, err := TransportFor(config)
+	if err != nil {
+		return nil, err
+	}
+	var httpClient *http.Client
+	if transport != http.DefaultTransport || config.Timeout > 0 {
+		httpClient = &http.Client{
+			Transport: transport,
+			Timeout:   config.Timeout,
+		}
+	} else {
+		httpClient = http.DefaultClient
+	}
+
+	return httpClient, nil
+}
 
 // TLSConfigFor returns a tls.Config that will provide the transport level security defined
 // by the provided Config. Will return nil if no transport level security is requested.
@@ -503,10 +529,15 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 		BearerTokenFile: c.BearerTokenFile,
 		Impersonate: transport.ImpersonationConfig{
 			UserName: c.Impersonate.UserName,
+			UID:      c.Impersonate.UID,
 			Groups:   c.Impersonate.Groups,
 			Extra:    c.Impersonate.Extra,
 		},
-		Dial: c.Dial,
+		Proxy: c.Proxy,
+	}
+
+	if c.Dial != nil {
+		conf.DialHolder = &transport.DialHolder{Dial: c.Dial}
 	}
 
 	if c.ExecProvider != nil && c.AuthProvider != nil {
@@ -514,8 +545,22 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 	}
 
 	if c.ExecProvider != nil {
+<<<<<<< HEAD
 		provider, err := exec.GetAuthenticator(c.ExecProvider)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		provider, err := exec.GetAuthenticator(c.ExecProvider)
+=======
+		var cluster *clientauthentication.Cluster
+		if c.ExecProvider.ProvideClusterInfo {
+			var err error
+			cluster, err = ConfigToExecCluster(c)
+			if err != nil {
+				return nil, err
+			}
+		}
+		provider, err := exec.GetAuthenticator(c.ExecProvider, cluster)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		if err != nil {
 			return nil, err
 		}

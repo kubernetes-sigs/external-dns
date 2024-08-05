@@ -69,9 +69,9 @@ type Collector interface {
 // If a Collector collects the same metrics throughout its lifetime, its
 // Describe method can simply be implemented as:
 //
-//   func (c customCollector) Describe(ch chan<- *Desc) {
-//   	DescribeByCollect(c, ch)
-//   }
+//	func (c customCollector) Describe(ch chan<- *Desc) {
+//		DescribeByCollect(c, ch)
+//	}
 //
 // However, this will not work if the metrics collected change dynamically over
 // the lifetime of the Collector in a way that their combined set of descriptors
@@ -119,6 +119,7 @@ func (c *selfCollector) Collect(ch chan<- Metric) {
 	ch <- c.self
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // collectorMetric is a metric that is also a collector.
 // Because of selfCollector, most (if not all) Metrics in
@@ -130,3 +131,14 @@ type collectorMetric interface {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+// collectorMetric is a metric that is also a collector.
+// Because of selfCollector, most (if not all) Metrics in
+// this package are also collectors.
+type collectorMetric interface {
+	Metric
+	Collector
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

@@ -3,6 +3,7 @@ package linodego
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // NetworkProtocol enum type
@@ -10,13 +11,15 @@ type NetworkProtocol string
 
 // NetworkProtocol enum values
 const (
-	TCP  NetworkProtocol = "TCP"
-	UDP  NetworkProtocol = "UDP"
-	ICMP NetworkProtocol = "ICMP"
+	TCP     NetworkProtocol = "TCP"
+	UDP     NetworkProtocol = "UDP"
+	ICMP    NetworkProtocol = "ICMP"
+	IPENCAP NetworkProtocol = "IPENCAP"
 )
 
 // NetworkAddresses are arrays of ipv4 and v6 addresses
 type NetworkAddresses struct {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -232,29 +235,38 @@ func (c *Client) UpdateFirewallRules(ctx context.Context, firewallID int, rules 
 =======
 	IPv4 []string `json:"ipv4"`
 	IPv6 []string `json:"ipv6"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	IPv4 []string `json:"ipv4"`
+	IPv6 []string `json:"ipv6"`
+=======
+	IPv4 *[]string `json:"ipv4,omitempty"`
+	IPv6 *[]string `json:"ipv6,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // A FirewallRule is a whitelist of ports, protocols, and addresses for which traffic should be allowed.
 type FirewallRule struct {
-	Ports     string           `json:"ports,omitempty"`
-	Protocol  NetworkProtocol  `json:"protocol"`
-	Addresses NetworkAddresses `json:"addresses"`
+	Action      string           `json:"action"`
+	Label       string           `json:"label"`
+	Description string           `json:"description,omitempty"`
+	Ports       string           `json:"ports,omitempty"`
+	Protocol    NetworkProtocol  `json:"protocol"`
+	Addresses   NetworkAddresses `json:"addresses"`
 }
 
 // FirewallRuleSet is a pair of inbound and outbound rules that specify what network traffic should be allowed.
 type FirewallRuleSet struct {
-	Inbound  []FirewallRule `json:"inbound,omitempty"`
-	Outbound []FirewallRule `json:"outbound,omitempty"`
+	Inbound        []FirewallRule `json:"inbound"`
+	InboundPolicy  string         `json:"inbound_policy"`
+	Outbound       []FirewallRule `json:"outbound"`
+	OutboundPolicy string         `json:"outbound_policy"`
 }
 
 // GetFirewallRules gets the FirewallRuleSet for the given Firewall.
 func (c *Client) GetFirewallRules(ctx context.Context, firewallID int) (*FirewallRuleSet, error) {
-	e, err := c.FirewallRules.endpointWithID(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallRuleSet{}).Get(e))
+	e := fmt.Sprintf("networking/firewalls/%d/rules", firewallID)
+	req := c.R(ctx).SetResult(&FirewallRuleSet{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -263,21 +275,21 @@ func (c *Client) GetFirewallRules(ctx context.Context, firewallID int) (*Firewal
 
 // UpdateFirewallRules updates the FirewallRuleSet for the given Firewall
 func (c *Client) UpdateFirewallRules(ctx context.Context, firewallID int, rules FirewallRuleSet) (*FirewallRuleSet, error) {
+<<<<<<< HEAD
 	e, err := c.FirewallRules.endpointWithID(firewallID)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	e, err := c.FirewallRules.endpointWithID(firewallID)
+=======
+	body, err := json.Marshal(rules)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
 
-	var body string
-	req := c.R(ctx).SetResult(&FirewallRuleSet{})
-	if bodyData, err := json.Marshal(rules); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.SetBody(body).Put(e))
+	e := fmt.Sprintf("networking/firewalls/%d/rules", firewallID)
+	req := c.R(ctx).SetResult(&FirewallRuleSet{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
 	if err != nil {
 		return nil, err
 	}

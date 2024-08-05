@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build linux && (386 || amd64)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -110,6 +111,12 @@ func PtraceSetRegsAmd64(pid int, regs *PtraceRegsAmd64) error {
 =======
 // +build linux
 // +build 386 amd64
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build linux
+// +build 386 amd64
+=======
+//go:build linux && (386 || amd64)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -138,12 +145,12 @@ type PtraceRegs386 struct {
 
 // PtraceGetRegs386 fetches the registers used by 386 binaries.
 func PtraceGetRegs386(pid int, regsout *PtraceRegs386) error {
-	return ptrace(PTRACE_GETREGS, pid, 0, uintptr(unsafe.Pointer(regsout)))
+	return ptracePtr(PTRACE_GETREGS, pid, 0, unsafe.Pointer(regsout))
 }
 
 // PtraceSetRegs386 sets the registers used by 386 binaries.
 func PtraceSetRegs386(pid int, regs *PtraceRegs386) error {
-	return ptrace(PTRACE_SETREGS, pid, 0, uintptr(unsafe.Pointer(regs)))
+	return ptracePtr(PTRACE_SETREGS, pid, 0, unsafe.Pointer(regs))
 }
 
 // PtraceRegsAmd64 is the registers used by amd64 binaries.
@@ -179,11 +186,17 @@ type PtraceRegsAmd64 struct {
 
 // PtraceGetRegsAmd64 fetches the registers used by amd64 binaries.
 func PtraceGetRegsAmd64(pid int, regsout *PtraceRegsAmd64) error {
-	return ptrace(PTRACE_GETREGS, pid, 0, uintptr(unsafe.Pointer(regsout)))
+	return ptracePtr(PTRACE_GETREGS, pid, 0, unsafe.Pointer(regsout))
 }
 
 // PtraceSetRegsAmd64 sets the registers used by amd64 binaries.
 func PtraceSetRegsAmd64(pid int, regs *PtraceRegsAmd64) error {
+<<<<<<< HEAD
 	return ptrace(PTRACE_SETREGS, pid, 0, uintptr(unsafe.Pointer(regs)))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return ptrace(PTRACE_SETREGS, pid, 0, uintptr(unsafe.Pointer(regs)))
+=======
+	return ptracePtr(PTRACE_SETREGS, pid, 0, unsafe.Pointer(regs))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

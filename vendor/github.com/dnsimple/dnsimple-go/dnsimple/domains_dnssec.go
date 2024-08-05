@@ -28,7 +28,7 @@ func (s *DomainsService) EnableDnssec(ctx context.Context, accountID string, dom
 	path := versioned(dnssecPath(accountID, domainIdentifier))
 	dnssecResponse := &DnssecResponse{}
 
-	resp, err := s.client.post(ctx, path, dnssecResponse, nil)
+	resp, err := s.client.post(ctx, path, nil, dnssecResponse)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *DomainsService) DisableDnssec(ctx context.Context, accountID string, do
 	path := versioned(dnssecPath(accountID, domainIdentifier))
 	dnssecResponse := &DnssecResponse{}
 
-	resp, err := s.client.delete(ctx, path, dnssecResponse, nil)
+	resp, err := s.client.delete(ctx, path, nil, nil)
 	if err != nil {
 		return nil, err
 	}

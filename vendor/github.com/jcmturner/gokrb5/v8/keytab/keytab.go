@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 	"unsafe"
@@ -93,7 +93,7 @@ func (kt *Keytab) GetEncryptionKey(princName types.PrincipalName, realm string, 
 		}
 	}
 	if len(key.KeyValue) < 1 {
-		return key, 0, fmt.Errorf("matching key not found in keytab. Looking for %v realm: %v kvno: %v etype: %v", princName.NameString, realm, kvno, etype)
+		return key, 0, fmt.Errorf("matching key not found in keytab. Looking for %q realm: %v kvno: %v etype: %v", princName.PrincipalNameString(), realm, kvno, etype)
 	}
 	return key, kv, nil
 }
@@ -113,6 +113,7 @@ func newEntry() entry {
 	}
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -955,18 +956,23 @@ func (kt *Keytab) JSON() (string, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (k Keytab) String() string {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (k Keytab) String() string {
+=======
+func (kt Keytab) String() string {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	var s string
 	s = `KVNO Timestamp         Principal                                                ET Key
 ---- ----------------- -------------------------------------------------------- -- ----------------------------------------------------------------
 `
-	for _, entry := range k.Entries {
+	for _, entry := range kt.Entries {
 		s += entry.String() + "\n"
 	}
 	return s
 }
 
 // AddEntry adds an entry to the keytab. The password should be provided in plain text and it will be converted using the defined enctype to be stored.
-func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error {
+func (kt *Keytab) AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error {
 	// Generate a key from the password
 	princ, _ := types.ParseSPNString(principalName)
 	key, _, err := crypto.GetKeyFromPassword(password, princ, realm, encType, types.PADataSequence{})
@@ -977,7 +983,7 @@ func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, K
 	// Populate the keytab entry principal
 	ktep := newPrincipal()
 	ktep.NumComponents = int16(len(princ.NameString))
-	if k.version == 1 {
+	if kt.version == 1 {
 		ktep.NumComponents += 1
 	}
 
@@ -993,7 +999,7 @@ func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, K
 	e.KVNO = uint32(KVNO)
 	e.Key = key
 
-	k.Entries = append(k.Entries, e)
+	kt.Entries = append(kt.Entries, e)
 	return nil
 }
 
@@ -1011,7 +1017,7 @@ func newPrincipal() principal {
 // Load a Keytab file into a Keytab type.
 func Load(ktPath string) (*Keytab, error) {
 	kt := new(Keytab)
-	b, err := ioutil.ReadFile(ktPath)
+	b, err := os.ReadFile(ktPath)
 	if err != nil {
 		return kt, err
 	}
@@ -1362,9 +1368,17 @@ func isNativeEndianLittle() bool {
 }
 
 // JSON return information about the keys held in the keytab in a JSON format.
+<<<<<<< HEAD
 func (k *Keytab) JSON() (string, error) {
 	b, err := json.MarshalIndent(k, "", "  ")
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (k *Keytab) JSON() (string, error) {
+	b, err := json.MarshalIndent(k, "", "  ")
+=======
+func (kt *Keytab) JSON() (string, error) {
+	b, err := json.MarshalIndent(kt, "", "  ")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return "", err
 	}

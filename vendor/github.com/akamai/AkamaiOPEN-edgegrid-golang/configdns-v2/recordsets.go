@@ -3,10 +3,11 @@ package dnsv2
 import (
 	"errors"
 	"fmt"
-	"github.com/akamai/AkamaiOPEN-edgegrid-golang/client-v1"
-	edge "github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
 	"strconv"
 	"sync"
+
+	"github.com/akamai/AkamaiOPEN-edgegrid-golang/client-v1"
+	edge "github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
 )
 
 var (

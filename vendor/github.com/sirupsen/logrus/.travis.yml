@@ -11,6 +11,7 @@ env:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 go: 1.15.x
 os: linux
 install:
@@ -129,9 +130,17 @@ script:
 =======
 go: [1.13.x, 1.14.x]
 os: [linux, osx]
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+go: [1.13.x, 1.14.x]
+os: [linux, osx]
+=======
+go: 1.15.x
+os: linux
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 install:
   - ./travis/install.sh
 script:
+<<<<<<< HEAD
   - ./travis/cross_build.sh
   - ./travis/lint.sh
   - export GOMAXPROCS=4
@@ -139,3 +148,16 @@ script:
   - go test -race -v ./...
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then go test -race -v -tags appengine ./... ; fi
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+  - ./travis/cross_build.sh
+  - ./travis/lint.sh
+  - export GOMAXPROCS=4
+  - export GORACE=halt_on_error=1
+  - go test -race -v ./...
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then go test -race -v -tags appengine ./... ; fi
+=======
+  - cd ci
+  - go run mage.go -v -w ../ crossBuild
+  - go run mage.go -v -w ../ lint
+  - go run mage.go -v -w ../ test
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

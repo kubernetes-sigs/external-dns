@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (response *GetMainDomainNameResponse, err error) {
 	response = CreateGetMainDomainNameResponse()
 	err = client.DoAction(request, response)
@@ -181,6 +182,10 @@ func CreateGetMainDomainNameRequest() (request *GetMainDomainNameRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (response *GetMainDomainNameResponse, err error) {
 	response = CreateGetMainDomainNameResponse()
 	err = client.DoAction(request, response)
@@ -188,8 +193,6 @@ func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (resp
 }
 
 // GetMainDomainNameWithChan invokes the alidns.GetMainDomainName API asynchronously
-// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetMainDomainNameWithChan(request *GetMainDomainNameRequest) (<-chan *GetMainDomainNameResponse, <-chan error) {
 	responseChan := make(chan *GetMainDomainNameResponse, 1)
 	errChan := make(chan error, 1)
@@ -212,8 +215,6 @@ func (client *Client) GetMainDomainNameWithChan(request *GetMainDomainNameReques
 }
 
 // GetMainDomainNameWithCallback invokes the alidns.GetMainDomainName API asynchronously
-// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetMainDomainNameWithCallback(request *GetMainDomainNameRequest, callback func(response *GetMainDomainNameResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -243,9 +244,9 @@ type GetMainDomainNameRequest struct {
 // GetMainDomainNameResponse is the response struct for api GetMainDomainName
 type GetMainDomainNameResponse struct {
 	*responses.BaseResponse
+	RR          string `json:"RR" xml:"RR"`
 	RequestId   string `json:"RequestId" xml:"RequestId"`
 	DomainName  string `json:"DomainName" xml:"DomainName"`
-	RR          string `json:"RR" xml:"RR"`
 	DomainLevel int64  `json:"DomainLevel" xml:"DomainLevel"`
 }
 
@@ -255,7 +256,12 @@ func CreateGetMainDomainNameRequest() (request *GetMainDomainNameRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "GetMainDomainName", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

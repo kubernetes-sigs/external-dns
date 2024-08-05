@@ -24,8 +24,10 @@ import (
 )
 
 // VirtualServiceLister helps list VirtualServices.
+// All objects returned here must be treated as read-only.
 type VirtualServiceLister interface {
 	// List lists all VirtualServices in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha3.VirtualService, err error)
 	// VirtualServices returns an object that can list and get VirtualServices.
 	VirtualServices(namespace string) VirtualServiceNamespaceLister
@@ -56,10 +58,13 @@ func (s *virtualServiceLister) VirtualServices(namespace string) VirtualServiceN
 }
 
 // VirtualServiceNamespaceLister helps list and get VirtualServices.
+// All objects returned here must be treated as read-only.
 type VirtualServiceNamespaceLister interface {
 	// List lists all VirtualServices in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha3.VirtualService, err error)
 	// Get retrieves the VirtualService from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha3.VirtualService, error)
 	VirtualServiceNamespaceListerExpansion
 }

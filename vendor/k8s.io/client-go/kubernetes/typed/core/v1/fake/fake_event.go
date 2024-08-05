@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -555,13 +556,18 @@ func (c *FakeEvents) Apply(ctx context.Context, event *applyconfigurationscorev1
 		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Event{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -571,25 +577,25 @@ type FakeEvents struct {
 	ns   string
 }
 
-var eventsResource = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}
+var eventsResource = v1.SchemeGroupVersion.WithResource("events")
 
-var eventsKind = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Event"}
+var eventsKind = v1.SchemeGroupVersion.WithKind("Event")
 
 // Get takes name of the event, and returns the corresponding event object, and an error if there is any.
-func (c *FakeEvents) Get(ctx context.Context, name string, options v1.GetOptions) (result *corev1.Event, err error) {
+func (c *FakeEvents) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Event, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(eventsResource, c.ns, name), &corev1.Event{})
+		Invokes(testing.NewGetAction(eventsResource, c.ns, name), &v1.Event{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*corev1.Event), err
+	return obj.(*v1.Event), err
 }
 
 // List takes label and field selectors, and returns the list of Events that match those selectors.
-func (c *FakeEvents) List(ctx context.Context, opts v1.ListOptions) (result *corev1.EventList, err error) {
+func (c *FakeEvents) List(ctx context.Context, opts metav1.ListOptions) (result *v1.EventList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(eventsResource, eventsKind, c.ns, opts), &corev1.EventList{})
+		Invokes(testing.NewListAction(eventsResource, eventsKind, c.ns, opts), &v1.EventList{})
 
 	if obj == nil {
 		return nil, err
@@ -599,8 +605,8 @@ func (c *FakeEvents) List(ctx context.Context, opts v1.ListOptions) (result *cor
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &corev1.EventList{ListMeta: obj.(*corev1.EventList).ListMeta}
-	for _, item := range obj.(*corev1.EventList).Items {
+	list := &v1.EventList{ListMeta: obj.(*v1.EventList).ListMeta}
+	for _, item := range obj.(*v1.EventList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -609,58 +615,86 @@ func (c *FakeEvents) List(ctx context.Context, opts v1.ListOptions) (result *cor
 }
 
 // Watch returns a watch.Interface that watches the requested events.
-func (c *FakeEvents) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeEvents) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(eventsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a event and creates it.  Returns the server's representation of the event, and an error, if there is any.
-func (c *FakeEvents) Create(ctx context.Context, event *corev1.Event, opts v1.CreateOptions) (result *corev1.Event, err error) {
+func (c *FakeEvents) Create(ctx context.Context, event *v1.Event, opts metav1.CreateOptions) (result *v1.Event, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(eventsResource, c.ns, event), &corev1.Event{})
+		Invokes(testing.NewCreateAction(eventsResource, c.ns, event), &v1.Event{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*corev1.Event), err
+	return obj.(*v1.Event), err
 }
 
 // Update takes the representation of a event and updates it. Returns the server's representation of the event, and an error, if there is any.
-func (c *FakeEvents) Update(ctx context.Context, event *corev1.Event, opts v1.UpdateOptions) (result *corev1.Event, err error) {
+func (c *FakeEvents) Update(ctx context.Context, event *v1.Event, opts metav1.UpdateOptions) (result *v1.Event, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(eventsResource, c.ns, event), &corev1.Event{})
+		Invokes(testing.NewUpdateAction(eventsResource, c.ns, event), &v1.Event{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*corev1.Event), err
+	return obj.(*v1.Event), err
 }
 
 // Delete takes name of the event and deletes it. Returns an error if one occurs.
-func (c *FakeEvents) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeEvents) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(eventsResource, c.ns, name), &corev1.Event{})
+		Invokes(testing.NewDeleteActionWithOptions(eventsResource, c.ns, name, opts), &v1.Event{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeEvents) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeEvents) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(eventsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &corev1.EventList{})
+	_, err := c.Fake.Invokes(action, &v1.EventList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched event.
-func (c *FakeEvents) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *corev1.Event, err error) {
+func (c *FakeEvents) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Event, err error) {
 	obj, err := c.Fake.
+<<<<<<< HEAD
 		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, name, pt, data, subresources...), &corev1.Event{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, name, pt, data, subresources...), &corev1.Event{})
+=======
+		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, name, pt, data, subresources...), &v1.Event{})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*corev1.Event), err
+	return obj.(*v1.Event), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied event.
+func (c *FakeEvents) Apply(ctx context.Context, event *corev1.EventApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Event, err error) {
+	if event == nil {
+		return nil, fmt.Errorf("event provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
+	}
+	name := event.Name
+	if name == nil {
+		return nil, fmt.Errorf("event.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &v1.Event{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Event), err
 }

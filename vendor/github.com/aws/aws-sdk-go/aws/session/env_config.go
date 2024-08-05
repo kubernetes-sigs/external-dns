@@ -108,6 +108,7 @@ type envConfig struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Sets the TLC client certificate that should be used by the SDK's HTTP transport
 	// when making requests. The certificate must be paired with a TLS client key file.
 	//
@@ -1460,6 +1461,21 @@ func setUseFIPSEndpointFromEnvVal(dst *endpoints.FIPSEndpointState, keys []strin
 	return nil
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// Sets the TLC client certificate that should be used by the SDK's HTTP transport
+	// when making requests. The certificate must be paired with a TLS client key file.
+	//
+	//  AWS_SDK_GO_CLIENT_TLS_CERT=$HOME/my_client_cert
+	ClientTLSCert string
+
+	// Sets the TLC client key that should be used by the SDK's HTTP transport
+	// when making requests. The key must be paired with a TLS client certificate file.
+	//
+	//  AWS_SDK_GO_CLIENT_TLS_KEY=$HOME/my_client_key
+	ClientTLSKey string
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	csmEnabled  string
 	CSMEnabled  *bool
 	CSMPort     string
@@ -1507,6 +1523,34 @@ func setUseFIPSEndpointFromEnvVal(dst *endpoints.FIPSEndpointState, keys []strin
 	//
 	// AWS_S3_USE_ARN_REGION=true
 	S3UseARNRegion bool
+
+	// Specifies the EC2 Instance Metadata Service endpoint to use. If specified it overrides EC2IMDSEndpointMode.
+	//
+	// AWS_EC2_METADATA_SERVICE_ENDPOINT=http://[::1]
+	EC2IMDSEndpoint string
+
+	// Specifies the EC2 Instance Metadata Service default endpoint selection mode (IPv4 or IPv6)
+	//
+	// AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE=IPv6
+	EC2IMDSEndpointMode endpoints.EC2IMDSEndpointModeState
+
+	// Specifies that IMDS clients should not fallback to IMDSv1 if token
+	// requests fail.
+	//
+	// AWS_EC2_METADATA_V1_DISABLED=true
+	EC2IMDSv1Disabled *bool
+
+	// Specifies that SDK clients must resolve a dual-stack endpoint for
+	// services.
+	//
+	// AWS_USE_DUALSTACK_ENDPOINT=true
+	UseDualStackEndpoint endpoints.DualStackEndpointState
+
+	// Specifies that SDK clients must resolve a FIPS endpoint for
+	// services.
+	//
+	// AWS_USE_FIPS_ENDPOINT=true
+	UseFIPSEndpoint endpoints.FIPSEndpointState
 }
 
 var (
@@ -1569,6 +1613,30 @@ var (
 	}
 	s3UseARNRegionEnvKey = []string{
 		"AWS_S3_USE_ARN_REGION",
+	}
+	ec2IMDSEndpointEnvKey = []string{
+		"AWS_EC2_METADATA_SERVICE_ENDPOINT",
+	}
+	ec2IMDSEndpointModeEnvKey = []string{
+		"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE",
+	}
+	ec2MetadataV1DisabledEnvKey = []string{
+		"AWS_EC2_METADATA_V1_DISABLED",
+	}
+	useCABundleKey = []string{
+		"AWS_CA_BUNDLE",
+	}
+	useClientTLSCert = []string{
+		"AWS_SDK_GO_CLIENT_TLS_CERT",
+	}
+	useClientTLSKey = []string{
+		"AWS_SDK_GO_CLIENT_TLS_KEY",
+	}
+	awsUseDualStackEndpoint = []string{
+		"AWS_USE_DUALSTACK_ENDPOINT",
+	}
+	awsUseFIPSEndpoint = []string{
+		"AWS_USE_FIPS_ENDPOINT",
 	}
 )
 
@@ -1653,7 +1721,9 @@ func envConfigLoad(enableSharedConfig bool) (envConfig, error) {
 		cfg.SharedConfigFile = defaults.SharedConfigFilename()
 	}
 
-	cfg.CustomCABundle = os.Getenv("AWS_CA_BUNDLE")
+	setFromEnvVal(&cfg.CustomCABundle, useCABundleKey)
+	setFromEnvVal(&cfg.ClientTLSCert, useClientTLSCert)
+	setFromEnvVal(&cfg.ClientTLSKey, useClientTLSKey)
 
 	var err error
 	// STS Regional Endpoint variable
@@ -1691,6 +1761,20 @@ func envConfigLoad(enableSharedConfig bool) (envConfig, error) {
 		}
 	}
 
+	setFromEnvVal(&cfg.EC2IMDSEndpoint, ec2IMDSEndpointEnvKey)
+	if err := setEC2IMDSEndpointMode(&cfg.EC2IMDSEndpointMode, ec2IMDSEndpointModeEnvKey); err != nil {
+		return envConfig{}, err
+	}
+	setBoolPtrFromEnvVal(&cfg.EC2IMDSv1Disabled, ec2MetadataV1DisabledEnvKey)
+
+	if err := setUseDualStackEndpointFromEnvVal(&cfg.UseDualStackEndpoint, awsUseDualStackEndpoint); err != nil {
+		return cfg, err
+	}
+
+	if err := setUseFIPSEndpointFromEnvVal(&cfg.UseFIPSEndpoint, awsUseFIPSEndpoint); err != nil {
+		return cfg, err
+	}
+
 	return cfg, nil
 }
 
@@ -1702,4 +1786,78 @@ func setFromEnvVal(dst *string, keys []string) {
 		}
 	}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func setBoolPtrFromEnvVal(dst **bool, keys []string) {
+	for _, k := range keys {
+		value := os.Getenv(k)
+		if len(value) == 0 {
+			continue
+		}
+
+		switch {
+		case strings.EqualFold(value, "false"):
+			*dst = new(bool)
+			**dst = false
+		case strings.EqualFold(value, "true"):
+			*dst = new(bool)
+			**dst = true
+		}
+	}
+}
+
+func setEC2IMDSEndpointMode(mode *endpoints.EC2IMDSEndpointModeState, keys []string) error {
+	for _, k := range keys {
+		value := os.Getenv(k)
+		if len(value) == 0 {
+			continue
+		}
+		if err := mode.SetFromString(value); err != nil {
+			return fmt.Errorf("invalid value for environment variable, %s=%s, %v", k, value, err)
+		}
+		return nil
+	}
+	return nil
+}
+
+func setUseDualStackEndpointFromEnvVal(dst *endpoints.DualStackEndpointState, keys []string) error {
+	for _, k := range keys {
+		value := os.Getenv(k)
+		if len(value) == 0 {
+			continue // skip if empty
+		}
+
+		switch {
+		case strings.EqualFold(value, "true"):
+			*dst = endpoints.DualStackEndpointStateEnabled
+		case strings.EqualFold(value, "false"):
+			*dst = endpoints.DualStackEndpointStateDisabled
+		default:
+			return fmt.Errorf(
+				"invalid value for environment variable, %s=%s, need true, false",
+				k, value)
+		}
+	}
+	return nil
+}
+
+func setUseFIPSEndpointFromEnvVal(dst *endpoints.FIPSEndpointState, keys []string) error {
+	for _, k := range keys {
+		value := os.Getenv(k)
+		if len(value) == 0 {
+			continue // skip if empty
+		}
+
+		switch {
+		case strings.EqualFold(value, "true"):
+			*dst = endpoints.FIPSEndpointStateEnabled
+		case strings.EqualFold(value, "false"):
+			*dst = endpoints.FIPSEndpointStateDisabled
+		default:
+			return fmt.Errorf(
+				"invalid value for environment variable, %s=%s, need true, false",
+				k, value)
+		}
+	}
+	return nil
 }

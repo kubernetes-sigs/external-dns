@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -555,13 +556,18 @@ func (c *FakeRoles) Apply(ctx context.Context, role *applyconfigurationsrbacv1.R
 		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &rbacv1.Role{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-	rbacv1 "k8s.io/api/rbac/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1 "k8s.io/client-go/applyconfigurations/rbac/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -571,25 +577,25 @@ type FakeRoles struct {
 	ns   string
 }
 
-var rolesResource = schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"}
+var rolesResource = v1.SchemeGroupVersion.WithResource("roles")
 
-var rolesKind = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "Role"}
+var rolesKind = v1.SchemeGroupVersion.WithKind("Role")
 
 // Get takes name of the role, and returns the corresponding role object, and an error if there is any.
-func (c *FakeRoles) Get(ctx context.Context, name string, options v1.GetOptions) (result *rbacv1.Role, err error) {
+func (c *FakeRoles) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Role, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(rolesResource, c.ns, name), &rbacv1.Role{})
+		Invokes(testing.NewGetAction(rolesResource, c.ns, name), &v1.Role{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*rbacv1.Role), err
+	return obj.(*v1.Role), err
 }
 
 // List takes label and field selectors, and returns the list of Roles that match those selectors.
-func (c *FakeRoles) List(ctx context.Context, opts v1.ListOptions) (result *rbacv1.RoleList, err error) {
+func (c *FakeRoles) List(ctx context.Context, opts metav1.ListOptions) (result *v1.RoleList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(rolesResource, rolesKind, c.ns, opts), &rbacv1.RoleList{})
+		Invokes(testing.NewListAction(rolesResource, rolesKind, c.ns, opts), &v1.RoleList{})
 
 	if obj == nil {
 		return nil, err
@@ -599,8 +605,8 @@ func (c *FakeRoles) List(ctx context.Context, opts v1.ListOptions) (result *rbac
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &rbacv1.RoleList{ListMeta: obj.(*rbacv1.RoleList).ListMeta}
-	for _, item := range obj.(*rbacv1.RoleList).Items {
+	list := &v1.RoleList{ListMeta: obj.(*v1.RoleList).ListMeta}
+	for _, item := range obj.(*v1.RoleList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -609,58 +615,86 @@ func (c *FakeRoles) List(ctx context.Context, opts v1.ListOptions) (result *rbac
 }
 
 // Watch returns a watch.Interface that watches the requested roles.
-func (c *FakeRoles) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeRoles) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(rolesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a role and creates it.  Returns the server's representation of the role, and an error, if there is any.
-func (c *FakeRoles) Create(ctx context.Context, role *rbacv1.Role, opts v1.CreateOptions) (result *rbacv1.Role, err error) {
+func (c *FakeRoles) Create(ctx context.Context, role *v1.Role, opts metav1.CreateOptions) (result *v1.Role, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(rolesResource, c.ns, role), &rbacv1.Role{})
+		Invokes(testing.NewCreateAction(rolesResource, c.ns, role), &v1.Role{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*rbacv1.Role), err
+	return obj.(*v1.Role), err
 }
 
 // Update takes the representation of a role and updates it. Returns the server's representation of the role, and an error, if there is any.
-func (c *FakeRoles) Update(ctx context.Context, role *rbacv1.Role, opts v1.UpdateOptions) (result *rbacv1.Role, err error) {
+func (c *FakeRoles) Update(ctx context.Context, role *v1.Role, opts metav1.UpdateOptions) (result *v1.Role, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(rolesResource, c.ns, role), &rbacv1.Role{})
+		Invokes(testing.NewUpdateAction(rolesResource, c.ns, role), &v1.Role{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*rbacv1.Role), err
+	return obj.(*v1.Role), err
 }
 
 // Delete takes name of the role and deletes it. Returns an error if one occurs.
-func (c *FakeRoles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeRoles) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(rolesResource, c.ns, name), &rbacv1.Role{})
+		Invokes(testing.NewDeleteActionWithOptions(rolesResource, c.ns, name, opts), &v1.Role{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeRoles) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeRoles) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(rolesResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &rbacv1.RoleList{})
+	_, err := c.Fake.Invokes(action, &v1.RoleList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched role.
-func (c *FakeRoles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *rbacv1.Role, err error) {
+func (c *FakeRoles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Role, err error) {
 	obj, err := c.Fake.
+<<<<<<< HEAD
 		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, name, pt, data, subresources...), &rbacv1.Role{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, name, pt, data, subresources...), &rbacv1.Role{})
+=======
+		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, name, pt, data, subresources...), &v1.Role{})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*rbacv1.Role), err
+	return obj.(*v1.Role), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied role.
+func (c *FakeRoles) Apply(ctx context.Context, role *rbacv1.RoleApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Role, err error) {
+	if role == nil {
+		return nil, fmt.Errorf("role provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(role)
+	if err != nil {
+		return nil, err
+	}
+	name := role.Name
+	if name == nil {
+		return nil, fmt.Errorf("role.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &v1.Role{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Role), err
 }

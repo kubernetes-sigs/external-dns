@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
 
@@ -288,32 +289,31 @@ func (c *Conn) sendMsg(m *Message, flags int) error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows || zos
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package socket
 
 import (
+	"net"
 	"os"
-	"runtime"
-	"syscall"
 )
 
 func (c *Conn) recvMsg(m *Message, flags int) error {
 	m.raceWrite()
-	var h msghdr
-	vs := make([]iovec, len(m.Buffers))
-	var sa []byte
-	if c.network != "tcp" {
-		sa = make([]byte, sizeofSockaddrInet6)
-	}
-	h.pack(vs, m.Buffers, m.OOB, sa)
-	var operr error
-	var n int
+	var (
+		operr     error
+		n         int
+		oobn      int
+		recvflags int
+		from      net.Addr
+	)
 	fn := func(s uintptr) bool {
-		n, operr = recvmsg(s, &h, flags)
-		if operr == syscall.EAGAIN || (runtime.GOOS == "zos" && operr == syscall.EWOULDBLOCK) {
-			return false
-		}
-		return true
+		n, oobn, recvflags, from, operr = recvmsg(s, m.Buffers, m.OOB, flags, c.network)
+		return ioComplete(flags, operr)
 	}
 	if err := c.c.Read(fn); err != nil {
 		return err
@@ -321,37 +321,37 @@ func (c *Conn) recvMsg(m *Message, flags int) error {
 	if operr != nil {
 		return os.NewSyscallError("recvmsg", operr)
 	}
-	if c.network != "tcp" {
-		var err error
-		m.Addr, err = parseInetAddr(sa[:], c.network)
-		if err != nil {
-			return err
-		}
-	}
+	m.Addr = from
 	m.N = n
-	m.NN = h.controllen()
-	m.Flags = h.flags()
+	m.NN = oobn
+	m.Flags = recvflags
 	return nil
 }
 
 func (c *Conn) sendMsg(m *Message, flags int) error {
 	m.raceRead()
-	var h msghdr
-	vs := make([]iovec, len(m.Buffers))
-	var sa []byte
-	if m.Addr != nil {
-		sa = marshalInetAddr(m.Addr)
-	}
-	h.pack(vs, m.Buffers, m.OOB, sa)
-	var operr error
-	var n int
+	var (
+		operr error
+		n     int
+	)
 	fn := func(s uintptr) bool {
+<<<<<<< HEAD
 		n, operr = sendmsg(s, &h, flags)
 		if operr == syscall.EAGAIN || (runtime.GOOS == "zos" && operr == syscall.EWOULDBLOCK) {
 			return false
 		}
 		return true
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		n, operr = sendmsg(s, &h, flags)
+		if operr == syscall.EAGAIN || (runtime.GOOS == "zos" && operr == syscall.EWOULDBLOCK) {
+			return false
+		}
+		return true
+=======
+		n, operr = sendmsg(s, m.Buffers, m.OOB, m.Addr, flags)
+		return ioComplete(flags, operr)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	if err := c.c.Write(fn); err != nil {
 		return err

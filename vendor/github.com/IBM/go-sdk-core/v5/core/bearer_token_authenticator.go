@@ -22,6 +22,7 @@ import (
 // BearerTokenAuthenticator will take a user-supplied bearer token and adds
 // it to requests via an Authorization header of the form:
 //
+<<<<<<< HEAD
 // 		Authorization: Bearer <bearer-token>
 //
 type BearerTokenAuthenticator struct {
@@ -72,6 +73,60 @@ func (this *BearerTokenAuthenticator) Authenticate(request *http.Request) error 
 func (this BearerTokenAuthenticator) Validate() error {
 	if this.BearerToken == "" {
 		return fmt.Errorf(ERRORMSG_PROP_MISSING, "BearerToken")
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//	Authorization: Bearer <bearer-token>
+type BearerTokenAuthenticator struct {
+
+	// The bearer token value to be used to authenticate request [required].
+	BearerToken string
+}
+
+// NewBearerTokenAuthenticator constructs a new BearerTokenAuthenticator instance.
+func NewBearerTokenAuthenticator(bearerToken string) (*BearerTokenAuthenticator, error) {
+	obj := &BearerTokenAuthenticator{
+		BearerToken: bearerToken,
+	}
+	if err := obj.Validate(); err != nil {
+		err = RepurposeSDKProblem(err, "validation-failed")
+		return nil, err
+	}
+	return obj, nil
+}
+
+// newBearerTokenAuthenticator : Constructs a new BearerTokenAuthenticator instance from a map.
+func newBearerTokenAuthenticatorFromMap(properties map[string]string) (*BearerTokenAuthenticator, error) {
+	if properties == nil {
+		err := fmt.Errorf(ERRORMSG_PROPS_MAP_NIL)
+		return nil, SDKErrorf(err, "", "missing-props", getComponentInfo())
+	}
+
+	return NewBearerTokenAuthenticator(properties[PROPNAME_BEARER_TOKEN])
+}
+
+// AuthenticationType returns the authentication type for this authenticator.
+func (BearerTokenAuthenticator) AuthenticationType() string {
+	return AUTHTYPE_BEARER_TOKEN
+}
+
+// Authenticate adds bearer authentication information to the request.
+//
+// The bearer token will be added to the request's headers in the form:
+//
+//	Authorization: Bearer <bearer-token>
+func (this *BearerTokenAuthenticator) Authenticate(request *http.Request) error {
+	request.Header.Set("Authorization", fmt.Sprintf(`Bearer %s`, this.BearerToken))
+	return nil
+}
+
+// Validate the authenticator's configuration.
+//
+// Ensures the bearer token is not Nil.
+func (this BearerTokenAuthenticator) Validate() error {
+	if this.BearerToken == "" {
+		err := fmt.Errorf(ERRORMSG_PROP_MISSING, "BearerToken")
+		return SDKErrorf(err, "", "no-token", getComponentInfo())
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return nil
 }

@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/idna"
 )
 
-var isTokenTable = [127]bool{
+var isTokenTable = [256]bool{
 	'!':  true,
 	'#':  true,
 	'$':  true,
@@ -93,12 +93,7 @@ var isTokenTable = [127]bool{
 }
 
 func IsTokenRune(r rune) bool {
-	i := int(r)
-	return i < len(isTokenTable) && isTokenTable[i]
-}
-
-func isNotToken(r rune) bool {
-	return !IsTokenRune(r)
+	return r < utf8.RuneSelf && isTokenTable[byte(r)]
 }
 
 // HeaderValuesContainsToken reports whether any string in values
@@ -137,6 +132,7 @@ func trimOWS(x string) string {
 // contains token amongst its comma-separated tokens, ASCII
 // case-insensitively.
 func headerValueContainsToken(v string, token string) bool {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -537,8 +533,19 @@ var validHostByte = [256]bool{
 	v = trimOWS(v)
 	if comma := strings.IndexByte(v, ','); comma != -1 {
 		return tokenEqual(trimOWS(v[:comma]), token) || headerValueContainsToken(v[comma+1:], token)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	v = trimOWS(v)
+	if comma := strings.IndexByte(v, ','); comma != -1 {
+		return tokenEqual(trimOWS(v[:comma]), token) || headerValueContainsToken(v[comma+1:], token)
+=======
+	for comma := strings.IndexByte(v, ','); comma != -1; comma = strings.IndexByte(v, ',') {
+		if tokenEqual(trimOWS(v[:comma]), token) {
+			return true
+		}
+		v = v[comma+1:]
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
-	return tokenEqual(v, token)
+	return tokenEqual(trimOWS(v), token)
 }
 
 // lowerASCII returns the ASCII lowercase version of b.
@@ -568,13 +575,15 @@ func tokenEqual(t1, t2 string) bool {
 
 // isLWS reports whether b is linear white space, according
 // to http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2
-//      LWS            = [CRLF] 1*( SP | HT )
+//
+//	LWS            = [CRLF] 1*( SP | HT )
 func isLWS(b byte) bool { return b == ' ' || b == '\t' }
 
 // isCTL reports whether b is a control byte, according
 // to http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2
-//      CTL            = <any US-ASCII control character
-//                       (octets 0 - 31) and DEL (127)>
+//
+//	CTL            = <any US-ASCII control character
+//	                 (octets 0 - 31) and DEL (127)>
 func isCTL(b byte) bool {
 	const del = 0x7f // a CTL
 	return b < ' ' || b == del
@@ -584,18 +593,19 @@ func isCTL(b byte) bool {
 // HTTP/2 imposes the additional restriction that uppercase ASCII
 // letters are not allowed.
 //
-//  RFC 7230 says:
-//   header-field   = field-name ":" OWS field-value OWS
-//   field-name     = token
-//   token          = 1*tchar
-//   tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." /
-//           "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
+// RFC 7230 says:
+//
+//	header-field   = field-name ":" OWS field-value OWS
+//	field-name     = token
+//	token          = 1*tchar
+//	tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." /
+//	        "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
 func ValidHeaderFieldName(v string) bool {
 	if len(v) == 0 {
 		return false
 	}
-	for _, r := range v {
-		if !IsTokenRune(r) {
+	for i := 0; i < len(v); i++ {
+		if !isTokenTable[v[i]] {
 			return false
 		}
 	}
@@ -662,21 +672,22 @@ var validHostByte = [256]bool{
 // ValidHeaderFieldValue reports whether v is a valid "field-value" according to
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2 :
 //
-//        message-header = field-name ":" [ field-value ]
-//        field-value    = *( field-content | LWS )
-//        field-content  = <the OCTETs making up the field-value
-//                         and consisting of either *TEXT or combinations
-//                         of token, separators, and quoted-string>
+//	message-header = field-name ":" [ field-value ]
+//	field-value    = *( field-content | LWS )
+//	field-content  = <the OCTETs making up the field-value
+//	                 and consisting of either *TEXT or combinations
+//	                 of token, separators, and quoted-string>
 //
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2 :
 //
-//        TEXT           = <any OCTET except CTLs,
-//                          but including LWS>
-//        LWS            = [CRLF] 1*( SP | HT )
-//        CTL            = <any US-ASCII control character
-//                         (octets 0 - 31) and DEL (127)>
+//	TEXT           = <any OCTET except CTLs,
+//	                  but including LWS>
+//	LWS            = [CRLF] 1*( SP | HT )
+//	CTL            = <any US-ASCII control character
+//	                 (octets 0 - 31) and DEL (127)>
 //
 // RFC 7230 says:
+<<<<<<< HEAD
 //  field-value    = *( field-content / obs-fold )
 //  obj-fold       =  N/A to http2, and deprecated
 //  field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
@@ -684,6 +695,22 @@ var validHostByte = [256]bool{
 //  obs-text       = %x80-FF
 //  VCHAR          = "any visible [USASCII] character"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//  field-value    = *( field-content / obs-fold )
+//  obj-fold       =  N/A to http2, and deprecated
+//  field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+//  field-vchar    = VCHAR / obs-text
+//  obs-text       = %x80-FF
+//  VCHAR          = "any visible [USASCII] character"
+=======
+//
+//	field-value    = *( field-content / obs-fold )
+//	obj-fold       =  N/A to http2, and deprecated
+//	field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+//	field-vchar    = VCHAR / obs-text
+//	obs-text       = %x80-FF
+//	VCHAR          = "any visible [USASCII] character"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // http2 further says: "Similarly, HTTP/2 allows header field values
 // that are not valid. While most of the values that can be encoded

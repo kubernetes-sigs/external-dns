@@ -33,6 +33,7 @@ var _ TestDeep = &tdRe{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func newRe(regIf interface{}, capture ...interface{}) *tdRe {
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 func newRe(regIf interface{}, capture ...interface{}) *tdRe {
@@ -1100,7 +1101,24 @@ func (r *tdRe) String() string {
 =======
 func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
 	r = &tdRe{
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
+	r = &tdRe{
+=======
+func newRe(regIf any, capture ...any) *tdRe {
+	r := &tdRe{
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		base: newBase(4),
+	}
+
+	const (
+		usageRe    = "(STRING|*regexp.Regexp[, NON_NIL_CAPTURE])"
+		usageReAll = "(STRING|*regexp.Regexp, NON_NIL_CAPTURE)"
+	)
+
+	usage := usageRe
+	if len(r.location.Func) != 2 {
+		usage = usageReAll
 	}
 
 	switch len(capture) {
@@ -1110,18 +1128,26 @@ func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
 			r.captures = reflect.ValueOf(capture[0])
 		}
 	default:
-		r.usage()
+		r.err = ctxerr.OpTooManyParams(r.location.Func, usage)
+		return r
 	}
 
 	switch reg := regIf.(type) {
 	case *regexp.Regexp:
 		r.re = reg
 	case string:
-		r.re = regexp.MustCompile(reg)
+		var err error
+		r.re, err = regexp.Compile(reg)
+		if err != nil {
+			r.err = &ctxerr.Error{
+				Message: "invalid regexp given to " + r.location.Func + " operator",
+				Summary: ctxerr.NewSummary(err.Error()),
+			}
+		}
 	default:
-		r.usage()
+		r.err = ctxerr.OpBadUsage(r.location.Func, usage, regIf, 1, false)
 	}
-	return
+	return r
 }
 
 // summary(Re): allows to apply a regexp on a string (or convertible),
@@ -1130,23 +1156,25 @@ func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
 // input(Re): str,slice([]byte),if(✓ + fmt.Stringer/error)
 
 // Re operator allows to apply a regexp on a string (or convertible),
-// []byte, error or fmt.Stringer interface (error interface is tested
-// before fmt.Stringer.)
+// []byte, error or [fmt.Stringer] interface (error interface is tested
+// before [fmt.Stringer].)
 //
-// "reg" is the regexp. It can be a string that is automatically
-// compiled using regexp.MustCompile, or a *regexp.Regexp.
+// reg is the regexp. It can be a string that is automatically
+// compiled using [regexp.Compile], or a [*regexp.Regexp].
 //
-// Optional "capture" parameter can be used to match the contents of
+// Optional capture parameter can be used to match the contents of
 // regexp groups. Groups are presented as a []string or [][]byte
 // depending the original matched data. Note that an other operator
 // can be used here.
 //
-//   td.Cmp(t, "foobar zip!", td.Re(`^foobar`)) // succeeds
-//   td.Cmp(t, "John Doe",
-//     td.Re(`^(\w+) (\w+)`, []string{"John", "Doe"})) // succeeds
-//   td.Cmp(t, "John Doe",
-//     td.Re(`^(\w+) (\w+)`, td.Bag("Doe", "John"))) // succeeds
-func Re(reg interface{}, capture ...interface{}) TestDeep {
+//	td.Cmp(t, "foobar zip!", td.Re(`^foobar`)) // succeeds
+//	td.Cmp(t, "John Doe",
+//	  td.Re(`^(\w+) (\w+)`, []string{"John", "Doe"})) // succeeds
+//	td.Cmp(t, "John Doe",
+//	  td.Re(`^(\w+) (\w+)`, td.Bag("Doe", "John"))) // succeeds
+//
+// See also [ReAll].
+func Re(reg any, capture ...any) TestDeep {
 	r := newRe(reg, capture...)
 	r.numMatches = 1
 	return r
@@ -1158,30 +1186,27 @@ func Re(reg interface{}, capture ...interface{}) TestDeep {
 // input(ReAll): str,slice([]byte),if(✓ + fmt.Stringer/error)
 
 // ReAll operator allows to successively apply a regexp on a string
-// (or convertible), []byte, error or fmt.Stringer interface (error
-// interface is tested before fmt.Stringer) and to match its groups
+// (or convertible), []byte, error or [fmt.Stringer] interface (error
+// interface is tested before [fmt.Stringer]) and to match its groups
 // contents.
 //
-// "reg" is the regexp. It can be a string that is automatically
-// compiled using regexp.MustCompile, or a *regexp.Regexp.
+// reg is the regexp. It can be a string that is automatically
+// compiled using [regexp.Compile], or a [*regexp.Regexp].
 //
-// "capture" is used to match the contents of regexp groups. Groups
+// capture is used to match the contents of regexp groups. Groups
 // are presented as a []string or [][]byte depending the original
 // matched data. Note that an other operator can be used here.
 //
-//   td.Cmp(t, "John Doe",
-//     td.ReAll(`(\w+)(?: |\z)`, []string{"John", "Doe"})) // succeeds
-//   td.Cmp(t, "John Doe",
-//     td.ReAll(`(\w+)(?: |\z)`, td.Bag("Doe", "John"))) // succeeds
-func ReAll(reg interface{}, capture interface{}) TestDeep {
+//	td.Cmp(t, "John Doe",
+//	  td.ReAll(`(\w+)(?: |\z)`, []string{"John", "Doe"})) // succeeds
+//	td.Cmp(t, "John Doe",
+//	  td.ReAll(`(\w+)(?: |\z)`, td.Bag("Doe", "John"))) // succeeds
+//
+// See also [Re].
+func ReAll(reg, capture any) TestDeep {
 	r := newRe(reg, capture)
 	r.numMatches = -1
 	return r
-}
-
-func (r *tdRe) usage() {
-	panic(fmt.Sprintf("usage: %s(STRING|*regexp.Regexp[, NON_NIL_CAPTURE])",
-		r.location.Func))
 }
 
 func (r *tdRe) needCaptures() bool {
@@ -1199,13 +1224,24 @@ func (r *tdRe) matchByteCaptures(ctx ctxerr.Context, got []byte, result [][][]by
 	}
 
 	// Not perfect but cast captured groups to string
+
+	// Special case to accepted expected []any type
+	if r.captures.Type() == types.SliceInterface {
+		captures := make([]any, 0, num)
+		for _, set := range result {
+			for _, match := range set[1:] {
+				captures = append(captures, string(match))
+			}
+		}
+		return r.matchCaptures(ctx, captures)
+	}
+
 	captures := make([]string, 0, num)
 	for _, set := range result {
 		for _, match := range set[1:] {
 			captures = append(captures, string(match))
 		}
 	}
-
 	return r.matchCaptures(ctx, captures)
 }
 
@@ -1219,28 +1255,38 @@ func (r *tdRe) matchStringCaptures(ctx ctxerr.Context, got string, result [][]st
 		num += len(set) - 1
 	}
 
+	// Special case to accepted expected []any type
+	if r.captures.Type() == types.SliceInterface {
+		captures := make([]any, 0, num)
+		for _, set := range result {
+			for _, match := range set[1:] {
+				captures = append(captures, match)
+			}
+		}
+		return r.matchCaptures(ctx, captures)
+	}
+
 	captures := make([]string, 0, num)
 	for _, set := range result {
 		captures = append(captures, set[1:]...)
 	}
-
 	return r.matchCaptures(ctx, captures)
 }
 
-func (r *tdRe) matchCaptures(ctx ctxerr.Context, captures []string) (err *ctxerr.Error) {
+func (r *tdRe) matchCaptures(ctx ctxerr.Context, captures any) (err *ctxerr.Error) {
 	return deepValueEqual(
 		ctx.ResetPath("("+ctx.Path.String()+" =~ "+r.String()+")"),
 		reflect.ValueOf(captures), r.captures)
 }
 
-func (r *tdRe) matchBool(ctx ctxerr.Context, got interface{}, result bool) *ctxerr.Error {
+func (r *tdRe) matchBool(ctx ctxerr.Context, got any, result bool) *ctxerr.Error {
 	if result {
 		return nil
 	}
 	return r.doesNotMatch(ctx, got)
 }
 
-func (r *tdRe) doesNotMatch(ctx ctxerr.Context, got interface{}) *ctxerr.Error {
+func (r *tdRe) doesNotMatch(ctx ctxerr.Context, got any) *ctxerr.Error {
 	if ctx.BooleanError {
 		return ctxerr.BooleanError
 	}
@@ -1252,6 +1298,10 @@ func (r *tdRe) doesNotMatch(ctx ctxerr.Context, got interface{}) *ctxerr.Error {
 }
 
 func (r *tdRe) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if r.err != nil {
+		return ctx.CollectError(r.err)
+	}
+
 	var str string
 	switch got.Kind() {
 	case reflect.String:
@@ -1310,6 +1360,13 @@ func (r *tdRe) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (r *tdRe) String() string {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if r.err != nil {
+		return r.stringError()
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return r.re.String()
 }

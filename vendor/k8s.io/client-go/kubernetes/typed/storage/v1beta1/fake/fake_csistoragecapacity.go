@@ -26,6 +26,7 @@ import (
 	v1beta1 "k8s.io/api/storage/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
+<<<<<<< HEAD
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -119,6 +120,91 @@ func (c *FakeCSIStorageCapacities) Delete(ctx context.Context, name string, opts
 =======
 		Invokes(testing.NewDeleteActionWithOptions(csistoragecapacitiesResource, c.ns, name, opts), &v1beta1.CSIStorageCapacity{})
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	storagev1beta1 "k8s.io/client-go/applyconfigurations/storage/v1beta1"
+	testing "k8s.io/client-go/testing"
+)
+
+// FakeCSIStorageCapacities implements CSIStorageCapacityInterface
+type FakeCSIStorageCapacities struct {
+	Fake *FakeStorageV1beta1
+	ns   string
+}
+
+var csistoragecapacitiesResource = v1beta1.SchemeGroupVersion.WithResource("csistoragecapacities")
+
+var csistoragecapacitiesKind = v1beta1.SchemeGroupVersion.WithKind("CSIStorageCapacity")
+
+// Get takes name of the cSIStorageCapacity, and returns the corresponding cSIStorageCapacity object, and an error if there is any.
+func (c *FakeCSIStorageCapacities) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.CSIStorageCapacity, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewGetAction(csistoragecapacitiesResource, c.ns, name), &v1beta1.CSIStorageCapacity{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CSIStorageCapacity), err
+}
+
+// List takes label and field selectors, and returns the list of CSIStorageCapacities that match those selectors.
+func (c *FakeCSIStorageCapacities) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.CSIStorageCapacityList, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewListAction(csistoragecapacitiesResource, csistoragecapacitiesKind, c.ns, opts), &v1beta1.CSIStorageCapacityList{})
+
+	if obj == nil {
+		return nil, err
+	}
+
+	label, _, _ := testing.ExtractFromListOptions(opts)
+	if label == nil {
+		label = labels.Everything()
+	}
+	list := &v1beta1.CSIStorageCapacityList{ListMeta: obj.(*v1beta1.CSIStorageCapacityList).ListMeta}
+	for _, item := range obj.(*v1beta1.CSIStorageCapacityList).Items {
+		if label.Matches(labels.Set(item.Labels)) {
+			list.Items = append(list.Items, item)
+		}
+	}
+	return list, err
+}
+
+// Watch returns a watch.Interface that watches the requested cSIStorageCapacities.
+func (c *FakeCSIStorageCapacities) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+	return c.Fake.
+		InvokesWatch(testing.NewWatchAction(csistoragecapacitiesResource, c.ns, opts))
+
+}
+
+// Create takes the representation of a cSIStorageCapacity and creates it.  Returns the server's representation of the cSIStorageCapacity, and an error, if there is any.
+func (c *FakeCSIStorageCapacities) Create(ctx context.Context, cSIStorageCapacity *v1beta1.CSIStorageCapacity, opts v1.CreateOptions) (result *v1beta1.CSIStorageCapacity, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewCreateAction(csistoragecapacitiesResource, c.ns, cSIStorageCapacity), &v1beta1.CSIStorageCapacity{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CSIStorageCapacity), err
+}
+
+// Update takes the representation of a cSIStorageCapacity and updates it. Returns the server's representation of the cSIStorageCapacity, and an error, if there is any.
+func (c *FakeCSIStorageCapacities) Update(ctx context.Context, cSIStorageCapacity *v1beta1.CSIStorageCapacity, opts v1.UpdateOptions) (result *v1beta1.CSIStorageCapacity, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateAction(csistoragecapacitiesResource, c.ns, cSIStorageCapacity), &v1beta1.CSIStorageCapacity{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CSIStorageCapacity), err
+}
+
+// Delete takes name of the cSIStorageCapacity and deletes it. Returns an error if one occurs.
+func (c *FakeCSIStorageCapacities) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+	_, err := c.Fake.
+		Invokes(testing.NewDeleteActionWithOptions(csistoragecapacitiesResource, c.ns, name, opts), &v1beta1.CSIStorageCapacity{})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	return err
 }

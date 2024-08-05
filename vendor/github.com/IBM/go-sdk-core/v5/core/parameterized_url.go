@@ -20,6 +20,7 @@ import (
 	"strings"
 )
 
+<<<<<<< HEAD
 //
 // ConstructServiceURL returns a service URL that is constructed by formatting a parameterized URL.
 //
@@ -34,6 +35,23 @@ import (
 // 		If a variable is not provided in this map,
 // 		the default variable value will be used instead.
 //
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// ConstructServiceURL returns a service URL that is constructed by formatting a parameterized URL.
+//
+// Parameters:
+//
+// parameterizedUrl: URL that contains variable placeholders, e.g. "{scheme}://ibm.com".
+//
+// defaultUrlVariables: map from variable names to default values.
+//
+//	Each variable in the parameterized URL must have a default value specified in this map.
+//
+// providedUrlVariables: map from variable names to desired values.
+//
+//	If a variable is not provided in this map,
+//	the default variable value will be used instead.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func ConstructServiceURL(
 	parameterizedUrl string,
 	defaultUrlVariables map[string]string,

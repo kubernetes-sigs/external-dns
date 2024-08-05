@@ -136,7 +136,12 @@ func (r mapReflect) EqualsUsing(a Allocator, m Map) bool {
 		if !ok {
 			return false
 		}
+<<<<<<< HEAD
 		return Equals(vr.mustReuse(lhsVal, entry, nil, nil), value)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		return EqualsUsing(a, vr.mustReuse(lhsVal, entry, nil, nil), value)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	})
 }
 

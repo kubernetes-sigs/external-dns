@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime/debug"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"sync"
 	"testing"
 	"time"
@@ -162,6 +163,10 @@ func Run(t *testing.T, suite TestingSuite) {
 					failOnPanic(t, r)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"sync"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"testing"
 	"time"
 
@@ -176,26 +181,43 @@ var matchMethod = flag.String("testify.m", "", "regular expression to select tes
 // retrieving the current *testing.T context.
 type Suite struct {
 	*assert.Assertions
+
+	mu      sync.RWMutex
 	require *require.Assertions
 	t       *testing.T
+
+	// Parent suite to have access to the implemented methods of parent struct
+	s TestingSuite
 }
 
 // T retrieves the current *testing.T context.
 func (suite *Suite) T() *testing.T {
+	suite.mu.RLock()
+	defer suite.mu.RUnlock()
 	return suite.t
 }
 
 // SetT sets the current *testing.T context.
 func (suite *Suite) SetT(t *testing.T) {
+	suite.mu.Lock()
+	defer suite.mu.Unlock()
 	suite.t = t
 	suite.Assertions = assert.New(t)
 	suite.require = require.New(t)
 }
 
+// SetS needs to set the current test suite as parent
+// to get access to the parent methods
+func (suite *Suite) SetS(s TestingSuite) {
+	suite.s = s
+}
+
 // Require returns a require context for suite.
 func (suite *Suite) Require() *require.Assertions {
+	suite.mu.Lock()
+	defer suite.mu.Unlock()
 	if suite.require == nil {
-		suite.require = require.New(suite.T())
+		panic("'Require' must not be called before 'Run' or 'SetT'")
 	}
 	return suite.require
 }
@@ -206,14 +228,22 @@ func (suite *Suite) Require() *require.Assertions {
 // assert.Assertions with require.Assertions), this method is provided so you
 // can call `suite.Assert().NoError()`.
 func (suite *Suite) Assert() *assert.Assertions {
+	suite.mu.Lock()
+	defer suite.mu.Unlock()
 	if suite.Assertions == nil {
-		suite.Assertions = assert.New(suite.T())
+		panic("'Assert' must not be called before 'Run' or 'SetT'")
 	}
 	return suite.Assertions
 }
 
-func failOnPanic(t *testing.T) {
+func recoverAndFailOnPanic(t *testing.T) {
+	t.Helper()
 	r := recover()
+	failOnPanic(t, r)
+}
+
+func failOnPanic(t *testing.T, r interface{}) {
+	t.Helper()
 	if r != nil {
 		t.Errorf("test panicked: %v\n%s", r, debug.Stack())
 		t.FailNow()
@@ -226,9 +256,21 @@ func failOnPanic(t *testing.T) {
 // Provides compatibility with go test pkg -run TestSuite/TestName/SubTestName.
 func (suite *Suite) Run(name string, subtest func()) bool {
 	oldT := suite.T()
-	defer suite.SetT(oldT)
+
 	return oldT.Run(name, func(t *testing.T) {
 		suite.SetT(t)
+		defer suite.SetT(oldT)
+
+		defer recoverAndFailOnPanic(t)
+
+		if setupSubTest, ok := suite.s.(SetupSubTest); ok {
+			setupSubTest.SetupSubTest()
+		}
+
+		if tearDownSubTest, ok := suite.s.(TearDownSubTest); ok {
+			defer tearDownSubTest.TearDownSubTest()
+		}
+
 		subtest()
 	})
 }
@@ -236,9 +278,10 @@ func (suite *Suite) Run(name string, subtest func()) bool {
 // Run takes a testing suite and runs all of the tests attached
 // to it.
 func Run(t *testing.T, suite TestingSuite) {
-	defer failOnPanic(t)
+	defer recoverAndFailOnPanic(t)
 
 	suite.SetT(t)
+	suite.SetS(suite)
 
 	var suiteSetupDone bool
 
@@ -281,10 +324,14 @@ func Run(t *testing.T, suite TestingSuite) {
 			F: func(t *testing.T) {
 				parentT := suite.T()
 				suite.SetT(t)
-				defer failOnPanic(t)
+				defer recoverAndFailOnPanic(t)
 				defer func() {
+					t.Helper()
+
+					r := recover()
+
 					if stats != nil {
-						passed := !t.Failed()
+						passed := !t.Failed() && r == nil
 						stats.end(method.Name, passed)
 					}
 
@@ -297,7 +344,12 @@ func Run(t *testing.T, suite TestingSuite) {
 					}
 
 					suite.SetT(parentT)
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+					failOnPanic(t, r)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				}()
 
 				if setupTestSuite, ok := suite.(SetupTestSuite); ok {

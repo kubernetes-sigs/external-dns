@@ -24,8 +24,10 @@ import (
 )
 
 // EnvoyFilterLister helps list EnvoyFilters.
+// All objects returned here must be treated as read-only.
 type EnvoyFilterLister interface {
 	// List lists all EnvoyFilters in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha3.EnvoyFilter, err error)
 	// EnvoyFilters returns an object that can list and get EnvoyFilters.
 	EnvoyFilters(namespace string) EnvoyFilterNamespaceLister
@@ -56,10 +58,13 @@ func (s *envoyFilterLister) EnvoyFilters(namespace string) EnvoyFilterNamespaceL
 }
 
 // EnvoyFilterNamespaceLister helps list and get EnvoyFilters.
+// All objects returned here must be treated as read-only.
 type EnvoyFilterNamespaceLister interface {
 	// List lists all EnvoyFilters in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha3.EnvoyFilter, err error)
 	// Get retrieves the EnvoyFilter from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha3.EnvoyFilter, error)
 	EnvoyFilterNamespaceListerExpansion
 }

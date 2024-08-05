@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddZone(request *AddZoneRequest) (response *AddZoneResponse, err error) {
 	response = CreateAddZoneResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,10 @@ func CreateAddZoneRequest() (request *AddZoneRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/addzone.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/addzone.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) AddZone(request *AddZoneRequest) (response *AddZoneResponse, err error) {
 	response = CreateAddZoneResponse()
 	err = client.DoAction(request, response)
@@ -196,8 +201,6 @@ func (client *Client) AddZone(request *AddZoneRequest) (response *AddZoneRespons
 }
 
 // AddZoneWithChan invokes the pvtz.AddZone API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/addzone.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddZoneWithChan(request *AddZoneRequest) (<-chan *AddZoneResponse, <-chan error) {
 	responseChan := make(chan *AddZoneResponse, 1)
 	errChan := make(chan error, 1)
@@ -220,8 +223,6 @@ func (client *Client) AddZoneWithChan(request *AddZoneRequest) (<-chan *AddZoneR
 }
 
 // AddZoneWithCallback invokes the pvtz.AddZone API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/addzone.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddZoneWithCallback(request *AddZoneRequest, callback func(response *AddZoneResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -246,7 +247,9 @@ type AddZoneRequest struct {
 	ProxyPattern    string `position:"Query" name:"ProxyPattern"`
 	ZoneName        string `position:"Query" name:"ZoneName"`
 	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
+	ZoneTag         string `position:"Query" name:"ZoneTag"`
 	UserClientIp    string `position:"Query" name:"UserClientIp"`
+	ZoneType        string `position:"Query" name:"ZoneType"`
 	Lang            string `position:"Query" name:"Lang"`
 }
 
@@ -265,7 +268,12 @@ func CreateAddZoneRequest() (request *AddZoneRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZone", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

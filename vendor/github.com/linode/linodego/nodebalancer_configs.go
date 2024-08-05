@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // NodeBalancerConfig objects allow a NodeBalancer to accept traffic on a new port
@@ -11,6 +13,7 @@ type NodeBalancerConfig struct {
 	ID             int                     `json:"id"`
 	Port           int                     `json:"port"`
 	Protocol       ConfigProtocol          `json:"protocol"`
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1336,6 +1339,10 @@ func (c *Client) RebuildNodeBalancerConfig(ctx context.Context, nodeBalancerID i
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ProxyProtocol  ConfigProxyProtocol     `json:"proxy_protocol"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Algorithm      ConfigAlgorithm         `json:"algorithm"`
 	Stickiness     ConfigStickiness        `json:"stickiness"`
 	Check          ConfigCheck             `json:"check"`
@@ -1395,6 +1402,16 @@ const (
 	ProtocolTCP   ConfigProtocol = "tcp"
 )
 
+// ConfigProxyProtocol constants start with ProxyProtocol and include Linode API NodeBalancer Config proxy protocol versions
+type ConfigProxyProtocol string
+
+// ConfigProxyProtocol constatns reflect the proxy protocol version used by a NodeBalancer Config
+const (
+	ProxyProtocolNone ConfigProxyProtocol = "none"
+	ProxyProtocolV1   ConfigProxyProtocol = "v1"
+	ProxyProtocolV2   ConfigProxyProtocol = "v2"
+)
+
 // ConfigCipher constants start with Cipher and include Linode API NodeBalancer Config Cipher values
 type ConfigCipher string
 
@@ -1414,6 +1431,7 @@ type NodeBalancerNodeStatus struct {
 type NodeBalancerConfigCreateOptions struct {
 	Port          int                             `json:"port"`
 	Protocol      ConfigProtocol                  `json:"protocol,omitempty"`
+	ProxyProtocol ConfigProxyProtocol             `json:"proxy_protocol,omitempty"`
 	Algorithm     ConfigAlgorithm                 `json:"algorithm,omitempty"`
 	Stickiness    ConfigStickiness                `json:"stickiness,omitempty"`
 	Check         ConfigCheck                     `json:"check,omitempty"`
@@ -1431,21 +1449,30 @@ type NodeBalancerConfigCreateOptions struct {
 
 // NodeBalancerConfigRebuildOptions used by RebuildNodeBalancerConfig
 type NodeBalancerConfigRebuildOptions struct {
-	Port          int                             `json:"port"`
-	Protocol      ConfigProtocol                  `json:"protocol,omitempty"`
-	Algorithm     ConfigAlgorithm                 `json:"algorithm,omitempty"`
-	Stickiness    ConfigStickiness                `json:"stickiness,omitempty"`
-	Check         ConfigCheck                     `json:"check,omitempty"`
-	CheckInterval int                             `json:"check_interval,omitempty"`
-	CheckAttempts int                             `json:"check_attempts,omitempty"`
-	CheckPath     string                          `json:"check_path,omitempty"`
-	CheckBody     string                          `json:"check_body,omitempty"`
-	CheckPassive  *bool                           `json:"check_passive,omitempty"`
-	CheckTimeout  int                             `json:"check_timeout,omitempty"`
-	CipherSuite   ConfigCipher                    `json:"cipher_suite,omitempty"`
-	SSLCert       string                          `json:"ssl_cert,omitempty"`
-	SSLKey        string                          `json:"ssl_key,omitempty"`
-	Nodes         []NodeBalancerNodeCreateOptions `json:"nodes"`
+	Port          int                                    `json:"port"`
+	Protocol      ConfigProtocol                         `json:"protocol,omitempty"`
+	ProxyProtocol ConfigProxyProtocol                    `json:"proxy_protocol,omitempty"`
+	Algorithm     ConfigAlgorithm                        `json:"algorithm,omitempty"`
+	Stickiness    ConfigStickiness                       `json:"stickiness,omitempty"`
+	Check         ConfigCheck                            `json:"check,omitempty"`
+	CheckInterval int                                    `json:"check_interval,omitempty"`
+	CheckAttempts int                                    `json:"check_attempts,omitempty"`
+	CheckPath     string                                 `json:"check_path,omitempty"`
+	CheckBody     string                                 `json:"check_body,omitempty"`
+	CheckPassive  *bool                                  `json:"check_passive,omitempty"`
+	CheckTimeout  int                                    `json:"check_timeout,omitempty"`
+	CipherSuite   ConfigCipher                           `json:"cipher_suite,omitempty"`
+	SSLCert       string                                 `json:"ssl_cert,omitempty"`
+	SSLKey        string                                 `json:"ssl_key,omitempty"`
+	Nodes         []NodeBalancerConfigRebuildNodeOptions `json:"nodes"`
+}
+
+// NodeBalancerConfigRebuildNodeOptions represents a node defined when rebuilding a
+// NodeBalancer config.
+type NodeBalancerConfigRebuildNodeOptions struct {
+	NodeBalancerNodeCreateOptions
+
+	ID int `json:"id,omitempty"`
 }
 
 // NodeBalancerConfigUpdateOptions are permitted by UpdateNodeBalancerConfig
@@ -1456,6 +1483,7 @@ func (i NodeBalancerConfig) GetCreateOptions() NodeBalancerConfigCreateOptions {
 	return NodeBalancerConfigCreateOptions{
 		Port:          i.Port,
 		Protocol:      i.Protocol,
+		ProxyProtocol: i.ProxyProtocol,
 		Algorithm:     i.Algorithm,
 		Stickiness:    i.Stickiness,
 		Check:         i.Check,
@@ -1476,6 +1504,7 @@ func (i NodeBalancerConfig) GetUpdateOptions() NodeBalancerConfigUpdateOptions {
 	return NodeBalancerConfigUpdateOptions{
 		Port:          i.Port,
 		Protocol:      i.Protocol,
+		ProxyProtocol: i.ProxyProtocol,
 		Algorithm:     i.Algorithm,
 		Stickiness:    i.Stickiness,
 		Check:         i.Check,
@@ -1496,6 +1525,7 @@ func (i NodeBalancerConfig) GetRebuildOptions() NodeBalancerConfigRebuildOptions
 	return NodeBalancerConfigRebuildOptions{
 		Port:          i.Port,
 		Protocol:      i.Protocol,
+		ProxyProtocol: i.ProxyProtocol,
 		Algorithm:     i.Algorithm,
 		Stickiness:    i.Stickiness,
 		Check:         i.Check,
@@ -1508,7 +1538,7 @@ func (i NodeBalancerConfig) GetRebuildOptions() NodeBalancerConfigRebuildOptions
 		CipherSuite:   i.CipherSuite,
 		SSLCert:       i.SSLCert,
 		SSLKey:        i.SSLKey,
-		Nodes:         make([]NodeBalancerNodeCreateOptions, 0),
+		Nodes:         make([]NodeBalancerConfigRebuildNodeOptions, 0),
 	}
 }
 
@@ -1518,25 +1548,26 @@ type NodeBalancerConfigsPagedResponse struct {
 	Data []NodeBalancerConfig `json:"data"`
 }
 
-// endpointWithID gets the endpoint URL for NodeBalancerConfig
-func (NodeBalancerConfigsPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.NodeBalancerConfigs.endpointWithID(id)
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+// endpoint gets the endpoint URL for NodeBalancerConfig
+func (NodeBalancerConfigsPagedResponse) endpoint(ids ...any) string {
+	id := ids[0].(int)
+	return fmt.Sprintf("nodebalancers/%d/configs", id)
 }
 
-// appendData appends NodeBalancerConfigs when processing paginated NodeBalancerConfig responses
-func (resp *NodeBalancerConfigsPagedResponse) appendData(r *NodeBalancerConfigsPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *NodeBalancerConfigsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(NodeBalancerConfigsPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*NodeBalancerConfigsPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListNodeBalancerConfigs lists NodeBalancerConfigs
 func (c *Client) ListNodeBalancerConfigs(ctx context.Context, nodebalancerID int, opts *ListOptions) ([]NodeBalancerConfig, error) {
 	response := NodeBalancerConfigsPagedResponse{}
-	err := c.listHelperWithID(ctx, &response, nodebalancerID, opts)
-
+	err := c.listHelper(ctx, &response, opts, nodebalancerID)
 	if err != nil {
 		return nil, err
 	}
@@ -1545,12 +1576,9 @@ func (c *Client) ListNodeBalancerConfigs(ctx context.Context, nodebalancerID int
 
 // GetNodeBalancerConfig gets the template with the provided ID
 func (c *Client) GetNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int) (*NodeBalancerConfig, error) {
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, configID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerConfig{}).Get(e))
+	e := fmt.Sprintf("nodebalancers/%d/configs/%d", nodebalancerID, configID)
+	req := c.R(ctx).SetResult(&NodeBalancerConfig{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -1558,27 +1586,15 @@ func (c *Client) GetNodeBalancerConfig(ctx context.Context, nodebalancerID int, 
 }
 
 // CreateNodeBalancerConfig creates a NodeBalancerConfig
-func (c *Client) CreateNodeBalancerConfig(ctx context.Context, nodebalancerID int, nodebalancerConfig NodeBalancerConfigCreateOptions) (*NodeBalancerConfig, error) {
-	var body string
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
-
+func (c *Client) CreateNodeBalancerConfig(ctx context.Context, nodebalancerID int, opts NodeBalancerConfigCreateOptions) (*NodeBalancerConfig, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&NodeBalancerConfig{})
-
-	if bodyData, err := json.Marshal(nodebalancerConfig); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetHeader("Content-Type", "application/json").
-		SetBody(body).
-		Post(e))
-
+	e := fmt.Sprintf("nodebalancers/%d/configs", nodebalancerID)
+	req := c.R(ctx).SetResult(&NodeBalancerConfig{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -1586,26 +1602,15 @@ func (c *Client) CreateNodeBalancerConfig(ctx context.Context, nodebalancerID in
 }
 
 // UpdateNodeBalancerConfig updates the NodeBalancerConfig with the specified id
-func (c *Client) UpdateNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int, updateOpts NodeBalancerConfigUpdateOptions) (*NodeBalancerConfig, error) {
-	var body string
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
+func (c *Client) UpdateNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int, opts NodeBalancerConfigUpdateOptions) (*NodeBalancerConfig, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
-	e = fmt.Sprintf("%s/%d", e, configID)
 
-	req := c.R(ctx).SetResult(&NodeBalancerConfig{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
+	e := fmt.Sprintf("nodebalancers/%d/configs/%d", nodebalancerID, configID)
+	req := c.R(ctx).SetResult(&NodeBalancerConfig{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
 	if err != nil {
 		return nil, err
 	}
@@ -1614,38 +1619,26 @@ func (c *Client) UpdateNodeBalancerConfig(ctx context.Context, nodebalancerID in
 
 // DeleteNodeBalancerConfig deletes the NodeBalancerConfig with the specified id
 func (c *Client) DeleteNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int) error {
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d", e, configID)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+	e := fmt.Sprintf("nodebalancers/%d/configs/%d", nodebalancerID, configID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 }
 
 // RebuildNodeBalancerConfig updates the NodeBalancer with the specified id
-func (c *Client) RebuildNodeBalancerConfig(ctx context.Context, nodeBalancerID int, configID int, rebuildOpts NodeBalancerConfigRebuildOptions) (*NodeBalancerConfig, error) {
-	var body string
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodeBalancerID)
+func (c *Client) RebuildNodeBalancerConfig(ctx context.Context, nodeBalancerID int, configID int, opts NodeBalancerConfigRebuildOptions) (*NodeBalancerConfig, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
-	e = fmt.Sprintf("%s/%d/rebuild", e, configID)
 
-	req := c.R(ctx).SetResult(&NodeBalancerConfig{})
-
-	if bodyData, err := json.Marshal(rebuildOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	e := fmt.Sprintf("nodebalancers/%d/configs/%d/rebuild", nodeBalancerID, configID)
+	req := c.R(ctx).SetResult(&NodeBalancerConfig{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

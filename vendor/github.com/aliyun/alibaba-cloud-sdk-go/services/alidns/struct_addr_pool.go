@@ -18,6 +18,7 @@ package alidns
 // AddrPool is a nested struct in alidns response
 type AddrPool struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Name                string `json:"Name" xml:"Name"`
 	AddrCount           int    `json:"AddrCount" xml:"AddrCount"`
 	MinAvailableAddrNum int    `json:"MinAvailableAddrNum" xml:"MinAvailableAddrNum"`
@@ -43,7 +44,12 @@ type AddrPool struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	AddrCount           int    `json:"AddrCount" xml:"AddrCount"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	AddrCount           int    `json:"AddrCount" xml:"AddrCount"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Name                string `json:"Name" xml:"Name"`
+	AddrCount           int    `json:"AddrCount" xml:"AddrCount"`
 	MinAvailableAddrNum int    `json:"MinAvailableAddrNum" xml:"MinAvailableAddrNum"`
 	UpdateTime          string `json:"UpdateTime" xml:"UpdateTime"`
 	MonitorConfigId     string `json:"MonitorConfigId" xml:"MonitorConfigId"`
@@ -54,6 +60,11 @@ type AddrPool struct {
 	UpdateTimestamp     int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	Status              string `json:"Status" xml:"Status"`
 	MonitorStatus       string `json:"MonitorStatus" xml:"MonitorStatus"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	LbaStrategy         string `json:"LbaStrategy" xml:"LbaStrategy"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Type                string `json:"Type" xml:"Type"`
 }

@@ -57,6 +57,7 @@ func (d *Date) UnmarshalText(text []byte) error {
 	if len(text) == 0 {
 		return nil
 	}
+<<<<<<< HEAD
 	dd, err := time.Parse(RFC3339FullDate, string(text))
 	if err != nil {
 		return err
@@ -127,6 +128,79 @@ func (d *Date) UnmarshalBSON(data []byte) error {
 
 	if data, ok := m["data"].(string); ok {
 		rd, err := time.Parse(RFC3339FullDate, data)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	dd, err := time.ParseInLocation(RFC3339FullDate, string(text), DefaultTimeLocation)
+	if err != nil {
+		return err
+	}
+	*d = Date(dd)
+	return nil
+}
+
+// MarshalText serializes this date type to string
+func (d Date) MarshalText() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+// Scan scans a Date value from database driver type.
+func (d *Date) Scan(raw interface{}) error {
+	switch v := raw.(type) {
+	case []byte:
+		return d.UnmarshalText(v)
+	case string:
+		return d.UnmarshalText([]byte(v))
+	case time.Time:
+		*d = Date(v)
+		return nil
+	case nil:
+		*d = Date{}
+		return nil
+	default:
+		return fmt.Errorf("cannot sql.Scan() strfmt.Date from: %#v", v)
+	}
+}
+
+// Value converts Date to a primitive value ready to written to a database.
+func (d Date) Value() (driver.Value, error) {
+	return driver.Value(d.String()), nil
+}
+
+// MarshalJSON returns the Date as JSON
+func (d Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(d).Format(RFC3339FullDate))
+}
+
+// UnmarshalJSON sets the Date from JSON
+func (d *Date) UnmarshalJSON(data []byte) error {
+	if string(data) == jsonNull {
+		return nil
+	}
+	var strdate string
+	if err := json.Unmarshal(data, &strdate); err != nil {
+		return err
+	}
+	tt, err := time.ParseInLocation(RFC3339FullDate, strdate, DefaultTimeLocation)
+	if err != nil {
+		return err
+	}
+	*d = Date(tt)
+	return nil
+}
+
+func (d Date) MarshalBSON() ([]byte, error) {
+	return bson.Marshal(bson.M{"data": d.String()})
+}
+
+func (d *Date) UnmarshalBSON(data []byte) error {
+	var m bson.M
+	if err := bson.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
+	if data, ok := m["data"].(string); ok {
+		rd, err := time.ParseInLocation(RFC3339FullDate, data, DefaultTimeLocation)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		if err != nil {
 			return err
 		}

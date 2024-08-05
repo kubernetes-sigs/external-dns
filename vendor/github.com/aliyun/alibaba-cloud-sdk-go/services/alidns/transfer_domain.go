@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) TransferDomain(request *TransferDomainRequest) (response *TransferDomainResponse, err error) {
 	response = CreateTransferDomainResponse()
 	err = client.DoAction(request, response)
@@ -181,6 +182,10 @@ func CreateTransferDomainRequest() (request *TransferDomainRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/transferdomain.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/transferdomain.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) TransferDomain(request *TransferDomainRequest) (response *TransferDomainResponse, err error) {
 	response = CreateTransferDomainResponse()
 	err = client.DoAction(request, response)
@@ -188,8 +193,6 @@ func (client *Client) TransferDomain(request *TransferDomainRequest) (response *
 }
 
 // TransferDomainWithChan invokes the alidns.TransferDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/transferdomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) TransferDomainWithChan(request *TransferDomainRequest) (<-chan *TransferDomainResponse, <-chan error) {
 	responseChan := make(chan *TransferDomainResponse, 1)
 	errChan := make(chan error, 1)
@@ -212,8 +215,6 @@ func (client *Client) TransferDomainWithChan(request *TransferDomainRequest) (<-
 }
 
 // TransferDomainWithCallback invokes the alidns.TransferDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/transferdomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) TransferDomainWithCallback(request *TransferDomainRequest, callback func(response *TransferDomainResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -245,8 +246,8 @@ type TransferDomainRequest struct {
 // TransferDomainResponse is the response struct for api TransferDomain
 type TransferDomainResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    int64  `json:"TaskId" xml:"TaskId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateTransferDomainRequest creates a request to invoke TransferDomain API
@@ -255,7 +256,12 @@ func CreateTransferDomainRequest() (request *TransferDomainRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "TransferDomain", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

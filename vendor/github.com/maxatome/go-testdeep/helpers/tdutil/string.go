@@ -15,6 +15,7 @@ import (
 
 // FormatString formats s to a printable string, trying to enclose it
 <<<<<<< HEAD
+<<<<<<< HEAD
 // in double-quotes or back-quotes and defaulting to using [SpewString].
 func FormatString(s string) string {
 	var unquotable, unbackquotable bool
@@ -55,6 +56,11 @@ func SpewString(val any) string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // in "" or `` and defaulting to using SpewString.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// in "" or `` and defaulting to using SpewString.
+=======
+// in double-quotes or back-quotes and defaulting to using [SpewString].
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func FormatString(s string) string {
 	var unquotable, unbackquotable bool
 	for _, chr := range s {
@@ -89,8 +95,16 @@ func FormatString(s string) string {
 	return `"` + s + `"`
 }
 
+<<<<<<< HEAD
 // SpewString uses github.com/davecgh/go-spew/spew.Sdump() to format val.
 func SpewString(val interface{}) string {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// SpewString uses github.com/davecgh/go-spew/spew.Sdump() to format val.
+func SpewString(val interface{}) string {
+=======
+// SpewString uses [spew.Sdump] to format val.
+func SpewString(val any) string {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return strings.TrimRight(spew.Sdump(val), "\n")
 }

@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmInstanceSystemCname(request *DescribeGtmInstanceSystemCnameRequest) (response *DescribeGtmInstanceSystemCnameResponse, err error) {
 	response = CreateDescribeGtmInstanceSystemCnameResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,10 @@ func CreateDescribeGtmInstanceSystemCnameRequest() (request *DescribeGtmInstance
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmInstanceSystemCname(request *DescribeGtmInstanceSystemCnameRequest) (response *DescribeGtmInstanceSystemCnameResponse, err error) {
 	response = CreateDescribeGtmInstanceSystemCnameResponse()
 	err = client.DoAction(request, response)
@@ -184,8 +189,6 @@ func (client *Client) DescribeGtmInstanceSystemCname(request *DescribeGtmInstanc
 }
 
 // DescribeGtmInstanceSystemCnameWithChan invokes the alidns.DescribeGtmInstanceSystemCname API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceSystemCnameWithChan(request *DescribeGtmInstanceSystemCnameRequest) (<-chan *DescribeGtmInstanceSystemCnameResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstanceSystemCnameResponse, 1)
 	errChan := make(chan error, 1)
@@ -208,8 +211,6 @@ func (client *Client) DescribeGtmInstanceSystemCnameWithChan(request *DescribeGt
 }
 
 // DescribeGtmInstanceSystemCnameWithCallback invokes the alidns.DescribeGtmInstanceSystemCname API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceSystemCnameWithCallback(request *DescribeGtmInstanceSystemCnameRequest, callback func(response *DescribeGtmInstanceSystemCnameResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -239,8 +240,8 @@ type DescribeGtmInstanceSystemCnameRequest struct {
 // DescribeGtmInstanceSystemCnameResponse is the response struct for api DescribeGtmInstanceSystemCname
 type DescribeGtmInstanceSystemCnameResponse struct {
 	*responses.BaseResponse
-	RequestId   string `json:"RequestId" xml:"RequestId"`
 	SystemCname string `json:"SystemCname" xml:"SystemCname"`
+	RequestId   string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeGtmInstanceSystemCnameRequest creates a request to invoke DescribeGtmInstanceSystemCname API
@@ -249,7 +250,12 @@ func CreateDescribeGtmInstanceSystemCnameRequest() (request *DescribeGtmInstance
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceSystemCname", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

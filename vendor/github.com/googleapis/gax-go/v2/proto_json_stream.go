@@ -111,7 +111,13 @@ func (s *ProtoJSONStream) Recv() (proto.Message, error) {
 	// Initialize a new instance of the protobuf message to unmarshal the
 	// raw data into.
 	m := s.typ.New().Interface()
+<<<<<<< HEAD
 	err := protojson.Unmarshal(raw, m)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
+	err := unm.Unmarshal(raw, m)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	return m, err
 }

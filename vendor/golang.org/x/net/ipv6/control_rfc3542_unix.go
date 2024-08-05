@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 
@@ -372,6 +373,11 @@ func marshalPathMTU(b []byte, cm *ControlMessage) []byte {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package ipv6
 
@@ -381,11 +387,13 @@ import (
 
 	"golang.org/x/net/internal/iana"
 	"golang.org/x/net/internal/socket"
+
+	"golang.org/x/sys/unix"
 )
 
 func marshalTrafficClass(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
-	m.MarshalHeader(iana.ProtocolIPv6, sysIPV6_TCLASS, 4)
+	m.MarshalHeader(iana.ProtocolIPv6, unix.IPV6_TCLASS, 4)
 	if cm != nil {
 		socket.NativeEndian.PutUint32(m.Data(4), uint32(cm.TrafficClass))
 	}
@@ -398,7 +406,7 @@ func parseTrafficClass(cm *ControlMessage, b []byte) {
 
 func marshalHopLimit(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
-	m.MarshalHeader(iana.ProtocolIPv6, sysIPV6_HOPLIMIT, 4)
+	m.MarshalHeader(iana.ProtocolIPv6, unix.IPV6_HOPLIMIT, 4)
 	if cm != nil {
 		socket.NativeEndian.PutUint32(m.Data(4), uint32(cm.HopLimit))
 	}
@@ -411,7 +419,7 @@ func parseHopLimit(cm *ControlMessage, b []byte) {
 
 func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
-	m.MarshalHeader(iana.ProtocolIPv6, sysIPV6_PKTINFO, sizeofInet6Pktinfo)
+	m.MarshalHeader(iana.ProtocolIPv6, unix.IPV6_PKTINFO, sizeofInet6Pktinfo)
 	if cm != nil {
 		pi := (*inet6Pktinfo)(unsafe.Pointer(&m.Data(sizeofInet6Pktinfo)[0]))
 		if ip := cm.Src.To16(); ip != nil && ip.To4() == nil {
@@ -435,7 +443,7 @@ func parsePacketInfo(cm *ControlMessage, b []byte) {
 
 func marshalNextHop(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
-	m.MarshalHeader(iana.ProtocolIPv6, sysIPV6_NEXTHOP, sizeofSockaddrInet6)
+	m.MarshalHeader(iana.ProtocolIPv6, unix.IPV6_NEXTHOP, sizeofSockaddrInet6)
 	if cm != nil {
 		sa := (*sockaddrInet6)(unsafe.Pointer(&m.Data(sizeofSockaddrInet6)[0]))
 		sa.setSockaddr(cm.NextHop, cm.IfIndex)
@@ -448,8 +456,14 @@ func parseNextHop(cm *ControlMessage, b []byte) {
 
 func marshalPathMTU(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
+<<<<<<< HEAD
 	m.MarshalHeader(iana.ProtocolIPv6, sysIPV6_PATHMTU, sizeofIPv6Mtuinfo)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	m.MarshalHeader(iana.ProtocolIPv6, sysIPV6_PATHMTU, sizeofIPv6Mtuinfo)
+=======
+	m.MarshalHeader(iana.ProtocolIPv6, unix.IPV6_PATHMTU, sizeofIPv6Mtuinfo)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return m.Next(sizeofIPv6Mtuinfo)
 }
 

@@ -35,6 +35,7 @@ type lazyObject struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NewLazyRESTMapperLoader handles unrecoverable errors when creating a RESTMapper / ObjectTyper by
 // returning those initialization errors when the interface methods are invoked. This defers the
 // initialization and any server calls until a client actually needs to perform the action.
@@ -200,6 +201,11 @@ func (o *lazyObject) Reset() {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // NewLazyObjectLoader handles unrecoverable errors when creating a RESTMapper / ObjectTyper by
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// NewLazyObjectLoader handles unrecoverable errors when creating a RESTMapper / ObjectTyper by
+=======
+// NewLazyRESTMapperLoader handles unrecoverable errors when creating a RESTMapper / ObjectTyper by
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // returning those initialization errors when the interface methods are invoked. This defers the
 // initialization and any server calls until a client actually needs to perform the action.
 func NewLazyRESTMapperLoader(fn func() (RESTMapper, error)) RESTMapper {
@@ -219,7 +225,7 @@ func (o *lazyObject) init() error {
 	return o.err
 }
 
-var _ RESTMapper = &lazyObject{}
+var _ ResettableRESTMapper = &lazyObject{}
 
 func (o *lazyObject) KindFor(resource schema.GroupVersionResource) (schema.GroupVersionKind, error) {
 	if err := o.init(); err != nil {
@@ -269,4 +275,12 @@ func (o *lazyObject) ResourceSingularizer(resource string) (singular string, err
 	}
 	return o.mapper.ResourceSingularizer(resource)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func (o *lazyObject) Reset() {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	if o.loaded && o.err == nil {
+		MaybeResetRESTMapper(o.mapper)
+	}
 }

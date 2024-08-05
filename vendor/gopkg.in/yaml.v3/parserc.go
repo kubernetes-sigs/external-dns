@@ -655,6 +655,7 @@ func yaml_parser_parse_node(parser *yaml_parser_t, event *yaml_event_t, block, i
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if parser.stem_comment != nil {
 			event.head_comment = parser.stem_comment
 			parser.stem_comment = nil
@@ -1408,6 +1409,13 @@ func yaml_parser_parse_flow_sequence_entry(parser *yaml_parser_t, event *yaml_ev
 		}
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		if parser.stem_comment != nil {
+			event.head_comment = parser.stem_comment
+			parser.stem_comment = nil
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return true
 	}
 	if len(anchor) > 0 || len(tag) > 0 {
@@ -1443,6 +1451,9 @@ func yaml_parser_parse_flow_sequence_entry(parser *yaml_parser_t, event *yaml_ev
 func yaml_parser_parse_block_sequence_entry(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
 	if first {
 		token := peek_token(parser)
+		if token == nil {
+			return false
+		}
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}
@@ -1454,24 +1465,12 @@ func yaml_parser_parse_block_sequence_entry(parser *yaml_parser_t, event *yaml_e
 
 	if token.typ == yaml_BLOCK_ENTRY_TOKEN {
 		mark := token.end_mark
-		prior_head := len(parser.head_comment)
+		prior_head_len := len(parser.head_comment)
 		skip_token(parser)
+		yaml_parser_split_stem_comment(parser, prior_head_len)
 		token = peek_token(parser)
 		if token == nil {
 			return false
-		}
-		if prior_head > 0 && token.typ == yaml_BLOCK_SEQUENCE_START_TOKEN {
-			// [Go] It's a sequence under a sequence entry, so the former head comment
-			//      is for the list itself, not the first list item under it.
-			parser.stem_comment = parser.head_comment[:prior_head]
-			if len(parser.head_comment) == prior_head {
-				parser.head_comment = nil
-			} else {
-				// Copy suffix to prevent very strange bugs if someone ever appends
-				// further bytes to the prefix in the stem_comment slice above.
-				parser.head_comment = append([]byte(nil), parser.head_comment[prior_head+1:]...)
-			}
-
 		}
 		if token.typ != yaml_BLOCK_ENTRY_TOKEN && token.typ != yaml_BLOCK_END_TOKEN {
 			parser.states = append(parser.states, yaml_PARSE_BLOCK_SEQUENCE_ENTRY_STATE)
@@ -1514,7 +1513,9 @@ func yaml_parser_parse_indentless_sequence_entry(parser *yaml_parser_t, event *y
 
 	if token.typ == yaml_BLOCK_ENTRY_TOKEN {
 		mark := token.end_mark
+		prior_head_len := len(parser.head_comment)
 		skip_token(parser)
+		yaml_parser_split_stem_comment(parser, prior_head_len)
 		token = peek_token(parser)
 		if token == nil {
 			return false
@@ -1540,6 +1541,32 @@ func yaml_parser_parse_indentless_sequence_entry(parser *yaml_parser_t, event *y
 	return true
 }
 
+// Split stem comment from head comment.
+//
+// When a sequence or map is found under a sequence entry, the former head comment
+// is assigned to the underlying sequence or map as a whole, not the individual
+// sequence or map entry as would be expected otherwise. To handle this case the
+// previous head comment is moved aside as the stem comment.
+func yaml_parser_split_stem_comment(parser *yaml_parser_t, stem_len int) {
+	if stem_len == 0 {
+		return
+	}
+
+	token := peek_token(parser)
+	if token == nil || token.typ != yaml_BLOCK_SEQUENCE_START_TOKEN && token.typ != yaml_BLOCK_MAPPING_START_TOKEN {
+		return
+	}
+
+	parser.stem_comment = parser.head_comment[:stem_len]
+	if len(parser.head_comment) == stem_len {
+		parser.head_comment = nil
+	} else {
+		// Copy suffix to prevent very strange bugs if someone ever appends
+		// further bytes to the prefix in the stem_comment slice above.
+		parser.head_comment = append([]byte(nil), parser.head_comment[stem_len+1:]...)
+	}
+}
+
 // Parse the productions:
 // block_mapping        ::= BLOCK-MAPPING_START
 //                          *******************
@@ -1553,6 +1580,9 @@ func yaml_parser_parse_indentless_sequence_entry(parser *yaml_parser_t, event *y
 func yaml_parser_parse_block_mapping_key(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
 	if first {
 		token := peek_token(parser)
+		if token == nil {
+			return false
+		}
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}
@@ -1662,7 +1692,14 @@ func yaml_parser_parse_block_mapping_value(parser *yaml_parser_t, event *yaml_ev
 func yaml_parser_parse_flow_sequence_entry(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
 	if first {
 		token := peek_token(parser)
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		if token == nil {
+			return false
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}

@@ -41,6 +41,7 @@ type State struct {
 func Set(state resolver.State, s *State) resolver.State {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	state.Attributes = state.Attributes.WithValues(key, s)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -50,6 +51,10 @@ func Set(state resolver.State, s *State) resolver.State {
 =======
 	state.Attributes = state.Attributes.WithValue(key, s)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	state.Attributes = state.Attributes.WithValue(key, s)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return state
 }
 

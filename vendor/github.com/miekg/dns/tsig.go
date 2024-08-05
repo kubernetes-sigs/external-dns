@@ -77,6 +77,7 @@ func (key tsigHMACProvider) Verify(msg []byte, t *TSIG) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type tsigSecretProvider map[string]string
 
 func (ts tsigSecretProvider) Generate(msg []byte, t *TSIG) ([]byte, error) {
@@ -351,6 +352,27 @@ func tsigGenerateProvider(m *Msg, provider TsigProvider, requestMAC string, time
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+type tsigSecretProvider map[string]string
+
+func (ts tsigSecretProvider) Generate(msg []byte, t *TSIG) ([]byte, error) {
+	key, ok := ts[t.Hdr.Name]
+	if !ok {
+		return nil, ErrSecret
+	}
+	return tsigHMACProvider(key).Generate(msg, t)
+}
+
+func (ts tsigSecretProvider) Verify(msg []byte, t *TSIG) error {
+	key, ok := ts[t.Hdr.Name]
+	if !ok {
+		return ErrSecret
+	}
+	return tsigHMACProvider(key).Verify(msg, t)
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // TSIG is the RR the holds the transaction signature of a message.
 // See RFC 2845 and RFC 4635.
 type TSIG struct {
@@ -383,8 +405,8 @@ func (rr *TSIG) String() string {
 	return s
 }
 
-func (rr *TSIG) parse(c *zlexer, origin string) *ParseError {
-	panic("dns: internal error: parse should never be called on TSIG")
+func (*TSIG) parse(c *zlexer, origin string) *ParseError {
+	return &ParseError{err: "TSIG records do not have a presentation format"}
 }
 
 // The following values must be put in wireformat, so that the MAC can be calculated.
@@ -417,18 +439,17 @@ type timerWireFmt struct {
 }
 
 // TsigGenerate fills out the TSIG record attached to the message.
-// The message should contain
-// a "stub" TSIG RR with the algorithm, key name (owner name of the RR),
-// time fudge (defaults to 300 seconds) and the current time
-// The TSIG MAC is saved in that Tsig RR.
-// When TsigGenerate is called for the first time requestMAC is set to the empty string and
-// timersOnly is false.
-// If something goes wrong an error is returned, otherwise it is nil.
+// The message should contain a "stub" TSIG RR with the algorithm, key name
+// (owner name of the RR), time fudge (defaults to 300 seconds) and the current
+// time The TSIG MAC is saved in that Tsig RR. When TsigGenerate is called for
+// the first time requestMAC should be set to the empty string and timersOnly to
+// false.
 func TsigGenerate(m *Msg, secret, requestMAC string, timersOnly bool) ([]byte, string, error) {
-	return tsigGenerateProvider(m, tsigHMACProvider(secret), requestMAC, timersOnly)
+	return TsigGenerateWithProvider(m, tsigHMACProvider(secret), requestMAC, timersOnly)
 }
 
-func tsigGenerateProvider(m *Msg, provider TsigProvider, requestMAC string, timersOnly bool) ([]byte, string, error) {
+// TsigGenerateWithProvider is similar to TsigGenerate, but allows for a custom TsigProvider.
+func TsigGenerateWithProvider(m *Msg, provider TsigProvider, requestMAC string, timersOnly bool) ([]byte, string, error) {
 	if m.IsTsig() == nil {
 		panic("dns: TSIG not last RR in additional")
 	}
@@ -439,21 +460,38 @@ func tsigGenerateProvider(m *Msg, provider TsigProvider, requestMAC string, time
 	if err != nil {
 		return nil, "", err
 	}
+
 	buf, err := tsigBuffer(mbuf, rr, requestMAC, timersOnly)
 	if err != nil {
 		return nil, "", err
 	}
 
 	t := new(TSIG)
-	// Copy all TSIG fields except MAC and its size, which are filled using the computed digest.
+	// Copy all TSIG fields except MAC, its size, and time signed which are filled when signing.
 	*t = *rr
-	mac, err := provider.Generate(buf, rr)
-	if err != nil {
-		return nil, "", err
+	t.TimeSigned = 0
+	t.MAC = ""
+	t.MACSize = 0
+
+	// Sign unless there is a key or MAC validation error (RFC 8945 5.3.2)
+	if rr.Error != RcodeBadKey && rr.Error != RcodeBadSig {
+		mac, err := provider.Generate(buf, rr)
+		if err != nil {
+			return nil, "", err
+		}
+		t.TimeSigned = rr.TimeSigned
+		t.MAC = hex.EncodeToString(mac)
+		t.MACSize = uint16(len(t.MAC) / 2) // Size is half!
 	}
+<<<<<<< HEAD
 	t.MAC = hex.EncodeToString(mac)
 	t.MACSize = uint16(len(t.MAC) / 2) // Size is half!
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	t.MAC = hex.EncodeToString(mac)
+	t.MACSize = uint16(len(t.MAC) / 2) // Size is half!
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	tbuf := make([]byte, Len(t))
 	off, err := PackRR(t, tbuf, 0, nil, false)
@@ -467,14 +505,15 @@ func tsigGenerateProvider(m *Msg, provider TsigProvider, requestMAC string, time
 	return mbuf, t.MAC, nil
 }
 
-// TsigVerify verifies the TSIG on a message.
-// If the signature does not validate err contains the
-// error, otherwise it is nil.
+// TsigVerify verifies the TSIG on a message. If the signature does not
+// validate the returned error contains the cause. If the signature is OK, the
+// error is nil.
 func TsigVerify(msg []byte, secret, requestMAC string, timersOnly bool) error {
 	return tsigVerify(msg, tsigHMACProvider(secret), requestMAC, timersOnly, uint64(time.Now().Unix()))
 }
 
-func tsigVerifyProvider(msg []byte, provider TsigProvider, requestMAC string, timersOnly bool) error {
+// TsigVerifyWithProvider is similar to TsigVerify, but allows for a custom TsigProvider.
+func TsigVerifyWithProvider(msg []byte, provider TsigProvider, requestMAC string, timersOnly bool) error {
 	return tsigVerify(msg, provider, requestMAC, timersOnly, uint64(time.Now().Unix()))
 }
 

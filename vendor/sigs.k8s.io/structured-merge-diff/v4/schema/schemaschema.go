@@ -110,6 +110,7 @@ var SchemaSchemaYAML = `types:
         scalar: string
     - name: deduceInvalidDiscriminator
       type:
+<<<<<<< HEAD
         scalar: bool
     - name: fields
       type:
@@ -145,6 +146,45 @@ var SchemaSchemaYAML = `types:
         list:
           elementType:
             scalar: string
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+        scalar: boolean
+    - name: fields
+      type:
+        list:
+          elementRelationship: associative
+          elementType:
+            namedType: unionField
+          keys:
+          - fieldName
+- name: structField
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+    - name: type
+      type:
+        namedType: typeRef
+    - name: default
+      type:
+        namedType: __untyped_atomic_
+- name: list
+  map:
+    fields:
+    - name: elementType
+      type:
+        namedType: typeRef
+    - name: elementRelationship
+      type:
+        scalar: string
+    - name: keys
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 - name: untyped
   map:
     fields:

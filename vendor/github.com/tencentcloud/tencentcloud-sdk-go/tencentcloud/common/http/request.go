@@ -39,6 +39,7 @@ type Request interface {
 	GetVersion() string
 	GetContentType() string
 	GetContext() context.Context
+<<<<<<< HEAD
 	SetScheme(string)
 	SetRootDomain(string)
 	SetDomain(string)
@@ -241,6 +242,239 @@ func CompleteCommonParams(request Request, region string) {
 	params["Timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
 	params["Nonce"] = strconv.Itoa(rand.Int())
 	params["RequestClient"] = "SDK_GO_1.0.344"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	GetHeader() map[string]string
+	GetSkipSign() bool
+	SetScheme(string)
+	SetRootDomain(string)
+	SetDomain(string)
+	SetHttpMethod(string)
+	SetPath(string)
+	SetContentType(string)
+	SetBody([]byte)
+	SetContext(context.Context)
+	SetHeader(header map[string]string)
+	SetSkipSign(skip bool)
+}
+
+type BaseRequest struct {
+	context    context.Context
+	httpMethod string
+	scheme     string
+	rootDomain string
+	domain     string
+	path       string
+	skipSign   bool
+	params     map[string]string
+	formParams map[string]string
+	header     map[string]string
+
+	service string
+	version string
+	action  string
+
+	contentType string
+	body        []byte
+}
+
+func (r *BaseRequest) GetAction() string {
+	return r.action
+}
+
+func (r *BaseRequest) GetHttpMethod() string {
+	return r.httpMethod
+}
+
+func (r *BaseRequest) GetParams() map[string]string {
+	return r.params
+}
+
+func (r *BaseRequest) GetPath() string {
+	return r.path
+}
+
+func (r *BaseRequest) GetDomain() string {
+	return r.domain
+}
+
+func (r *BaseRequest) GetScheme() string {
+	return r.scheme
+}
+
+func (r *BaseRequest) GetRootDomain() string {
+	return r.rootDomain
+}
+
+func (r *BaseRequest) GetServiceDomain(service string) (domain string) {
+	rootDomain := r.rootDomain
+	if rootDomain == "" {
+		rootDomain = RootDomain
+	}
+	domain = service + "." + rootDomain
+	return
+}
+
+func (r *BaseRequest) GetBody() []byte {
+	return r.body
+}
+
+func (r *BaseRequest) SetBody(body []byte) {
+	r.body = body
+}
+
+func (r *BaseRequest) GetContentType() string {
+	return r.contentType
+}
+
+func (r *BaseRequest) SetContentType(contentType string) {
+	r.contentType = contentType
+}
+
+func (r *BaseRequest) SetDomain(domain string) {
+	r.domain = domain
+}
+
+func (r *BaseRequest) SetScheme(scheme string) {
+	scheme = strings.ToLower(scheme)
+	switch scheme {
+	case HTTP:
+		r.scheme = HTTP
+	default:
+		r.scheme = HTTPS
+	}
+}
+
+func (r *BaseRequest) SetRootDomain(rootDomain string) {
+	r.rootDomain = rootDomain
+}
+
+func (r *BaseRequest) SetHttpMethod(method string) {
+	switch strings.ToUpper(method) {
+	case POST:
+		{
+			r.httpMethod = POST
+		}
+	case GET:
+		{
+			r.httpMethod = GET
+		}
+	default:
+		{
+			r.httpMethod = GET
+		}
+	}
+}
+
+func (r *BaseRequest) SetPath(path string) {
+	r.path = path
+}
+
+func (r *BaseRequest) GetService() string {
+	return r.service
+}
+
+func (r *BaseRequest) GetUrl() string {
+	if r.httpMethod == GET {
+		return r.GetScheme() + "://" + r.domain + r.path + "?" + GetUrlQueriesEncoded(r.params)
+	} else if r.httpMethod == POST {
+		return r.GetScheme() + "://" + r.domain + r.path
+	} else {
+		return ""
+	}
+}
+
+func (r *BaseRequest) GetVersion() string {
+	return r.version
+}
+
+func (r *BaseRequest) GetContext() context.Context {
+	if r.context == nil {
+		return context.Background()
+	}
+	return r.context
+}
+
+func (r *BaseRequest) SetContext(ctx context.Context) {
+	r.context = ctx
+}
+
+func (r *BaseRequest) GetHeader() map[string]string {
+	return r.header
+}
+
+func (r *BaseRequest) SetHeader(header map[string]string) {
+	if header == nil {
+		return
+	}
+	r.header = header
+}
+
+func (r *BaseRequest) GetSkipSign() bool {
+	return r.skipSign
+}
+
+func (r *BaseRequest) SetSkipSign(skip bool) {
+	r.skipSign = skip
+}
+
+func GetUrlQueriesEncoded(params map[string]string) string {
+	values := url.Values{}
+	for key, value := range params {
+		values.Add(key, value)
+	}
+	return values.Encode()
+}
+
+func (r *BaseRequest) GetBodyReader() io.Reader {
+	if r.httpMethod == POST {
+		s := GetUrlQueriesEncoded(r.params)
+		return strings.NewReader(s)
+	} else {
+		return strings.NewReader("")
+	}
+}
+
+func (r *BaseRequest) Init() *BaseRequest {
+	r.domain = ""
+	r.path = Path
+	r.params = make(map[string]string)
+	r.formParams = make(map[string]string)
+	return r
+}
+
+func (r *BaseRequest) WithApiInfo(service, version, action string) *BaseRequest {
+	r.service = service
+	r.version = version
+	r.action = action
+	return r
+}
+
+func (r *BaseRequest) WithContentType(contentType string) *BaseRequest {
+	r.contentType = contentType
+	return r
+}
+
+// Deprecated, use request.GetServiceDomain instead
+func GetServiceDomain(service string) (domain string) {
+	domain = service + "." + RootDomain
+	return
+}
+
+func CompleteCommonParams(request Request, region string, requestClient string) {
+	params := request.GetParams()
+	params["Region"] = region
+	if request.GetVersion() != "" {
+		params["Version"] = request.GetVersion()
+	}
+	params["Action"] = request.GetAction()
+	params["Timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
+	params["Nonce"] = strconv.Itoa(rand.Int())
+	params["RequestClient"] = "SDK_GO_1.0.921"
+	if requestClient != "" {
+		params["RequestClient"] += ": " + requestClient
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func ConstructParams(req Request) (err error) {

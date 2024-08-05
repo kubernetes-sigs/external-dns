@@ -20,6 +20,8 @@ type DestinationRuleExpansion interface{}
 
 type GatewayExpansion interface{}
 
+type ProxyConfigExpansion interface{}
+
 type ServiceEntryExpansion interface{}
 
 type SidecarExpansion interface{}
@@ -27,3 +29,5 @@ type SidecarExpansion interface{}
 type VirtualServiceExpansion interface{}
 
 type WorkloadEntryExpansion interface{}
+
+type WorkloadGroupExpansion interface{}

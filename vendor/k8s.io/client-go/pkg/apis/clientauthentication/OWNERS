@@ -3,6 +3,7 @@
 # approval on api packages bubbles to api-approvers
 reviewers:
 <<<<<<< HEAD
+<<<<<<< HEAD
   - sig-auth-authenticators-approvers
   - sig-auth-authenticators-reviewers
 labels:
@@ -11,7 +12,21 @@ labels:
 =======
 - sig-auth-authenticators-approvers
 - sig-auth-authenticators-reviewers
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- sig-auth-authenticators-approvers
+- sig-auth-authenticators-reviewers
+=======
+  - sig-auth-authenticators-approvers
+  - sig-auth-authenticators-reviewers
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 labels:
+<<<<<<< HEAD
 - sig/auth
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- sig/auth
+
+=======
+  - sig/auth
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

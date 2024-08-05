@@ -13,6 +13,7 @@ type Config struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Config         *aws.Config
 	Handlers       request.Handlers
 	PartitionID    string
@@ -241,6 +242,22 @@ func (c *Client) AddDebugHandlers() {
 	Endpoint      string
 	SigningRegion string
 	SigningName   string
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Config        *aws.Config
+	Handlers      request.Handlers
+	PartitionID   string
+	Endpoint      string
+	SigningRegion string
+	SigningName   string
+=======
+	Config         *aws.Config
+	Handlers       request.Handlers
+	PartitionID    string
+	Endpoint       string
+	SigningRegion  string
+	SigningName    string
+	ResolvedRegion string
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	// States that the signing name did not come from a modeled source but
 	// was derived based on other data. Used by service client constructors
@@ -313,11 +330,19 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 // AddDebugHandlers injects debug logging handlers into the service to log request
 // debug information.
 func (c *Client) AddDebugHandlers() {
+<<<<<<< HEAD
 	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
 		return
 	}
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
+		return
+	}
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	c.Handlers.Send.PushFrontNamed(LogHTTPRequestHandler)
 	c.Handlers.Send.PushBackNamed(LogHTTPResponseHandler)
 }

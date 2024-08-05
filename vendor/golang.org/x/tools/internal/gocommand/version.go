@@ -23,6 +23,7 @@ import (
 func GoVersion(ctx context.Context, inv Invocation, r *Runner) (int, error) {
 	inv.Verb = "list"
 	inv.Args = []string{"-e", "-f", `{{context.ReleaseTags}}`, `--`, `unsafe`}
+<<<<<<< HEAD
 	inv.Env = append(append([]string{}, inv.Env...), "GO111MODULE=off")
 	// Unset any unneeded flags, and remove them from BuildFlags, if they're
 	// present.
@@ -38,6 +39,14 @@ func GoVersion(ctx context.Context, inv Invocation, r *Runner) (int, error) {
 		buildFlags = append(buildFlags, flag)
 	}
 	inv.BuildFlags = buildFlags
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	inv.BuildFlags = nil // This is not a build command.
+	inv.ModFlag = ""
+	inv.ModFile = ""
+	inv.Env = append(inv.Env[:len(inv.Env):len(inv.Env)], "GO111MODULE=off")
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	stdoutBytes, err := r.Run(ctx, inv)
 	if err != nil {
 		return 0, err

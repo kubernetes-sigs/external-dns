@@ -24,8 +24,10 @@ import (
 )
 
 // SidecarLister helps list Sidecars.
+// All objects returned here must be treated as read-only.
 type SidecarLister interface {
 	// List lists all Sidecars in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Sidecar, err error)
 	// Sidecars returns an object that can list and get Sidecars.
 	Sidecars(namespace string) SidecarNamespaceLister
@@ -56,10 +58,13 @@ func (s *sidecarLister) Sidecars(namespace string) SidecarNamespaceLister {
 }
 
 // SidecarNamespaceLister helps list and get Sidecars.
+// All objects returned here must be treated as read-only.
 type SidecarNamespaceLister interface {
 	// List lists all Sidecars in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Sidecar, err error)
 	// Get retrieves the Sidecar from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.Sidecar, error)
 	SidecarNamespaceListerExpansion
 }

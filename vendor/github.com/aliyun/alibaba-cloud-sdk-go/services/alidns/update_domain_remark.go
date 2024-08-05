@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateDomainRemark(request *UpdateDomainRemarkRequest) (response *UpdateDomainRemarkResponse, err error) {
 	response = CreateUpdateDomainRemarkResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,10 @@ func CreateUpdateDomainRemarkRequest() (request *UpdateDomainRemarkRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) UpdateDomainRemark(request *UpdateDomainRemarkRequest) (response *UpdateDomainRemarkResponse, err error) {
 	response = CreateUpdateDomainRemarkResponse()
 	err = client.DoAction(request, response)
@@ -184,8 +189,6 @@ func (client *Client) UpdateDomainRemark(request *UpdateDomainRemarkRequest) (re
 }
 
 // UpdateDomainRemarkWithChan invokes the alidns.UpdateDomainRemark API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainRemarkWithChan(request *UpdateDomainRemarkRequest) (<-chan *UpdateDomainRemarkResponse, <-chan error) {
 	responseChan := make(chan *UpdateDomainRemarkResponse, 1)
 	errChan := make(chan error, 1)
@@ -208,8 +211,6 @@ func (client *Client) UpdateDomainRemarkWithChan(request *UpdateDomainRemarkRequ
 }
 
 // UpdateDomainRemarkWithCallback invokes the alidns.UpdateDomainRemark API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainRemarkWithCallback(request *UpdateDomainRemarkRequest, callback func(response *UpdateDomainRemarkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -249,7 +250,12 @@ func CreateUpdateDomainRemarkRequest() (request *UpdateDomainRemarkRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainRemark", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

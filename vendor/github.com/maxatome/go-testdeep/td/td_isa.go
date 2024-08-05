@@ -17,6 +17,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 type tdIsa struct {
@@ -388,6 +389,10 @@ func (i *tdIsa) String() string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"github.com/maxatome/go-testdeep/internal/types"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"github.com/maxatome/go-testdeep/internal/types"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 type tdIsa struct {
@@ -406,39 +411,49 @@ var _ TestDeep = &tdIsa{}
 //
 // Typical type checks:
 //
-//   td.Cmp(t, time.Now(), td.Isa(time.Time{}))  // succeeds
-//   td.Cmp(t, time.Now(), td.Isa(&time.Time{})) // fails, as not a *time.Time
-//   td.Cmp(t, got, td.Isa(map[string]time.Time{}))
+//	td.Cmp(t, time.Now(), td.Isa(time.Time{}))  // succeeds
+//	td.Cmp(t, time.Now(), td.Isa(&time.Time{})) // fails, as not a *time.Time
+//	td.Cmp(t, got, td.Isa(map[string]time.Time{}))
 //
 // For interfaces, it is a bit more complicated, as:
 //
-//   fmt.Stringer(nil)
+//	fmt.Stringer(nil)
 //
 // is not an interface, but just nil… To bypass this golang
 // limitation, Isa accepts pointers on interfaces. So checking that
-// data implements fmt.Stringer interface should be written as:
+// data implements [fmt.Stringer] interface should be written as:
 //
-//   td.Cmp(t, bytes.Buffer{}, td.Isa((*fmt.Stringer)(nil))) // succeeds
+//	td.Cmp(t, bytes.Buffer{}, td.Isa((*fmt.Stringer)(nil))) // succeeds
 //
 // Of course, in the latter case, if checked data type is
-// *fmt.Stringer, Isa will match too (in fact before checking whether
-// it implements fmt.Stringer or not).
+// [*fmt.Stringer], Isa will match too (in fact before checking whether
+// it implements [fmt.Stringer] or not).
 //
-// TypeBehind method returns the reflect.Type of "model".
-func Isa(model interface{}) TestDeep {
-	modelType := reflect.ValueOf(model).Type()
-
-	return &tdIsa{
+// TypeBehind method returns the [reflect.Type] of model.
+func Isa(model any) TestDeep {
+	modelType := reflect.TypeOf(model)
+	i := tdIsa{
 		tdExpectedType: tdExpectedType{
 			base:         newBase(3),
 			expectedType: modelType,
 		},
-		checkImplement: modelType.Kind() == reflect.Ptr &&
-			modelType.Elem().Kind() == reflect.Interface,
 	}
+
+	if modelType == nil {
+		i.err = ctxerr.OpBad("Isa", "Isa(nil) is not allowed. To check an interface, try Isa((*fmt.Stringer)(nil)), for fmt.Stringer for example")
+		return &i
+	}
+
+	i.checkImplement = modelType.Kind() == reflect.Ptr &&
+		modelType.Elem().Kind() == reflect.Interface
+	return &i
 }
 
 func (i *tdIsa) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if i.err != nil {
+		return ctx.CollectError(i.err)
+	}
+
 	gotType := got.Type()
 
 	if gotType == i.expectedType {
@@ -454,10 +469,17 @@ func (i *tdIsa) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	if ctx.BooleanError {
 		return ctxerr.BooleanError
 	}
-	return ctx.CollectError(i.errorTypeMismatch(types.RawString(gotType.String())))
+	return ctx.CollectError(i.errorTypeMismatch(gotType))
 }
 
 func (i *tdIsa) String() string {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if i.err != nil {
+		return i.stringError()
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return i.expectedType.String()
 }

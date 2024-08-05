@@ -150,13 +150,30 @@ type AmbassadorConfigSpec struct {
 
 	CircuitBreakers *CircuitBreaker `json:"circuit_breakers,omitempty"`
 
+	// List of HTTP error response overrides.
+	// +kubebuilder:validation:MinItems=1
+	ErrorResponseOverrides []ErrorResponseOverride `json:"error_response_overrides,omitempty"`
+
+	// List of headers whose names should be rewritten to the case-sensitive value
+	// present in the list. Applies to both upstream and downstream headers.
+	// +kubebuilder:validation:MinItems=1
+	HeaderCaseOverrides []string `json:"header_case_overrides,omitempty"`
+
 	RetryPolicy *RetryPolicy `json:"retry_policy,omitempty"`
 
 	Cors *CORS `json:"cors,omitempty"`
 
+	// Set the default upstream-connection request timeout. If not set (the default), upstream
+	// requests will be subject to a 3000 millisecond timeout.
+	ClusterRequestTimeoutMS int `json:"cluster_request_timeout_ms,omitempty"`
+
 	// Set the default upstream-connection idle timeout. If not set (the default), upstream
 	// connections will never be closed due to idling.
 	ClusterIdleTimeoutMS int `json:"cluster_idle_timeout_ms,omitempty"`
+
+	// Set the default upstream-connection max connection lifetime. If not set (the default), upstream
+	// connections may never close.
+	ClusterMaxConnectionLifetimeMS int `json:"cluster_max_connection_lifetime_ms,omitempty"`
 
 	// +kubebuilder:validation:Enum={"safe", "unsafe"}
 	RegexType string `json:"regex_type,omitempty"`

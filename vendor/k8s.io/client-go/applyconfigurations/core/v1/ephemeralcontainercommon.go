@@ -25,6 +25,7 @@ import (
 // EphemeralContainerCommonApplyConfiguration represents an declarative configuration of the EphemeralContainerCommon type for use
 // with apply.
 type EphemeralContainerCommonApplyConfiguration struct {
+<<<<<<< HEAD
 	Name                     *string                                 `json:"name,omitempty"`
 	Image                    *string                                 `json:"image,omitempty"`
 	Command                  []string                                `json:"command,omitempty"`
@@ -143,6 +144,150 @@ func (b *EphemeralContainerCommonApplyConfiguration) WithEnv(values ...*EnvVarAp
 // If called multiple times, the Resources field is set to the value of the last call.
 func (b *EphemeralContainerCommonApplyConfiguration) WithResources(value *ResourceRequirementsApplyConfiguration) *EphemeralContainerCommonApplyConfiguration {
 	b.Resources = value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Name                     *string                                   `json:"name,omitempty"`
+	Image                    *string                                   `json:"image,omitempty"`
+	Command                  []string                                  `json:"command,omitempty"`
+	Args                     []string                                  `json:"args,omitempty"`
+	WorkingDir               *string                                   `json:"workingDir,omitempty"`
+	Ports                    []ContainerPortApplyConfiguration         `json:"ports,omitempty"`
+	EnvFrom                  []EnvFromSourceApplyConfiguration         `json:"envFrom,omitempty"`
+	Env                      []EnvVarApplyConfiguration                `json:"env,omitempty"`
+	Resources                *ResourceRequirementsApplyConfiguration   `json:"resources,omitempty"`
+	ResizePolicy             []ContainerResizePolicyApplyConfiguration `json:"resizePolicy,omitempty"`
+	RestartPolicy            *corev1.ContainerRestartPolicy            `json:"restartPolicy,omitempty"`
+	VolumeMounts             []VolumeMountApplyConfiguration           `json:"volumeMounts,omitempty"`
+	VolumeDevices            []VolumeDeviceApplyConfiguration          `json:"volumeDevices,omitempty"`
+	LivenessProbe            *ProbeApplyConfiguration                  `json:"livenessProbe,omitempty"`
+	ReadinessProbe           *ProbeApplyConfiguration                  `json:"readinessProbe,omitempty"`
+	StartupProbe             *ProbeApplyConfiguration                  `json:"startupProbe,omitempty"`
+	Lifecycle                *LifecycleApplyConfiguration              `json:"lifecycle,omitempty"`
+	TerminationMessagePath   *string                                   `json:"terminationMessagePath,omitempty"`
+	TerminationMessagePolicy *corev1.TerminationMessagePolicy          `json:"terminationMessagePolicy,omitempty"`
+	ImagePullPolicy          *corev1.PullPolicy                        `json:"imagePullPolicy,omitempty"`
+	SecurityContext          *SecurityContextApplyConfiguration        `json:"securityContext,omitempty"`
+	Stdin                    *bool                                     `json:"stdin,omitempty"`
+	StdinOnce                *bool                                     `json:"stdinOnce,omitempty"`
+	TTY                      *bool                                     `json:"tty,omitempty"`
+}
+
+// EphemeralContainerCommonApplyConfiguration constructs an declarative configuration of the EphemeralContainerCommon type for use with
+// apply.
+func EphemeralContainerCommon() *EphemeralContainerCommonApplyConfiguration {
+	return &EphemeralContainerCommonApplyConfiguration{}
+}
+
+// WithName sets the Name field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Name field is set to the value of the last call.
+func (b *EphemeralContainerCommonApplyConfiguration) WithName(value string) *EphemeralContainerCommonApplyConfiguration {
+	b.Name = &value
+	return b
+}
+
+// WithImage sets the Image field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Image field is set to the value of the last call.
+func (b *EphemeralContainerCommonApplyConfiguration) WithImage(value string) *EphemeralContainerCommonApplyConfiguration {
+	b.Image = &value
+	return b
+}
+
+// WithCommand adds the given value to the Command field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Command field.
+func (b *EphemeralContainerCommonApplyConfiguration) WithCommand(values ...string) *EphemeralContainerCommonApplyConfiguration {
+	for i := range values {
+		b.Command = append(b.Command, values[i])
+	}
+	return b
+}
+
+// WithArgs adds the given value to the Args field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Args field.
+func (b *EphemeralContainerCommonApplyConfiguration) WithArgs(values ...string) *EphemeralContainerCommonApplyConfiguration {
+	for i := range values {
+		b.Args = append(b.Args, values[i])
+	}
+	return b
+}
+
+// WithWorkingDir sets the WorkingDir field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the WorkingDir field is set to the value of the last call.
+func (b *EphemeralContainerCommonApplyConfiguration) WithWorkingDir(value string) *EphemeralContainerCommonApplyConfiguration {
+	b.WorkingDir = &value
+	return b
+}
+
+// WithPorts adds the given value to the Ports field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Ports field.
+func (b *EphemeralContainerCommonApplyConfiguration) WithPorts(values ...*ContainerPortApplyConfiguration) *EphemeralContainerCommonApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithPorts")
+		}
+		b.Ports = append(b.Ports, *values[i])
+	}
+	return b
+}
+
+// WithEnvFrom adds the given value to the EnvFrom field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the EnvFrom field.
+func (b *EphemeralContainerCommonApplyConfiguration) WithEnvFrom(values ...*EnvFromSourceApplyConfiguration) *EphemeralContainerCommonApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithEnvFrom")
+		}
+		b.EnvFrom = append(b.EnvFrom, *values[i])
+	}
+	return b
+}
+
+// WithEnv adds the given value to the Env field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Env field.
+func (b *EphemeralContainerCommonApplyConfiguration) WithEnv(values ...*EnvVarApplyConfiguration) *EphemeralContainerCommonApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithEnv")
+		}
+		b.Env = append(b.Env, *values[i])
+	}
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *EphemeralContainerCommonApplyConfiguration) WithResources(value *ResourceRequirementsApplyConfiguration) *EphemeralContainerCommonApplyConfiguration {
+	b.Resources = value
+	return b
+}
+
+// WithResizePolicy adds the given value to the ResizePolicy field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the ResizePolicy field.
+func (b *EphemeralContainerCommonApplyConfiguration) WithResizePolicy(values ...*ContainerResizePolicyApplyConfiguration) *EphemeralContainerCommonApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithResizePolicy")
+		}
+		b.ResizePolicy = append(b.ResizePolicy, *values[i])
+	}
+	return b
+}
+
+// WithRestartPolicy sets the RestartPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RestartPolicy field is set to the value of the last call.
+func (b *EphemeralContainerCommonApplyConfiguration) WithRestartPolicy(value corev1.ContainerRestartPolicy) *EphemeralContainerCommonApplyConfiguration {
+	b.RestartPolicy = &value
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }
 

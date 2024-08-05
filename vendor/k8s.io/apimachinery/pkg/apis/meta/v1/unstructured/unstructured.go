@@ -101,6 +101,11 @@ func (obj *Unstructured) EachListItem(fn func(runtime.Object) error) error {
 	return nil
 }
 
+func (obj *Unstructured) EachListItemWithAlloc(fn func(runtime.Object) error) error {
+	// EachListItem has allocated a new Object for the user, we can use it directly.
+	return obj.EachListItem(fn)
+}
+
 func (obj *Unstructured) UnstructuredContent() map[string]interface{} {
 	if obj.Object == nil {
 		return make(map[string]interface{})
@@ -445,6 +450,7 @@ func (u *Unstructured) SetFinalizers(finalizers []string) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (u *Unstructured) GetClusterName() string {
@@ -460,6 +466,21 @@ func (u *Unstructured) SetClusterName(clusterName string) {
 }
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (u *Unstructured) GetClusterName() string {
+	return getNestedString(u.Object, "metadata", "clusterName")
+}
+
+func (u *Unstructured) SetClusterName(clusterName string) {
+	if len(clusterName) == 0 {
+		RemoveNestedField(u.Object, "metadata", "clusterName")
+		return
+	}
+	u.setNestedField(clusterName, "metadata", "clusterName")
+}
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (u *Unstructured) GetManagedFields() []metav1.ManagedFieldsEntry {
 	items, found, err := NestedSlice(u.Object, "metadata", "managedFields")
 	if !found || err != nil {

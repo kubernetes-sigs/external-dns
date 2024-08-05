@@ -14,6 +14,7 @@
 
 package errors
 
+<<<<<<< HEAD
 import "fmt"
 
 // ParseError represents a parsing error
@@ -33,6 +34,47 @@ func (e *ParseError) Error() string {
 // Code returns the http status code for this error
 func (e *ParseError) Code() int32 {
 	return e.code
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// ParseError represents a parsing error
+type ParseError struct {
+	code    int32
+	Name    string
+	In      string
+	Value   string
+	Reason  error
+	message string
+}
+
+func (e *ParseError) Error() string {
+	return e.message
+}
+
+// Code returns the http status code for this error
+func (e *ParseError) Code() int32 {
+	return e.code
+}
+
+// MarshalJSON implements the JSON encoding interface
+func (e ParseError) MarshalJSON() ([]byte, error) {
+	var reason string
+	if e.Reason != nil {
+		reason = e.Reason.Error()
+	}
+	return json.Marshal(map[string]interface{}{
+		"code":    e.code,
+		"message": e.message,
+		"in":      e.In,
+		"name":    e.Name,
+		"value":   e.Value,
+		"reason":  reason,
+	})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 const (

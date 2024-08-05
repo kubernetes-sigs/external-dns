@@ -29,6 +29,7 @@ var _ ReservedIPsService = &ReservedIPsServiceOp{}
 
 // ReservedIP represents a Digital Ocean reserved IP.
 type ReservedIP struct {
+<<<<<<< HEAD
 	Region  *Region  `json:"region"`
 	Droplet *Droplet `json:"droplet"`
 	IP      string   `json:"ip"`
@@ -60,6 +61,43 @@ type reservedIPRoot struct {
 type ReservedIPCreateRequest struct {
 	Region    string `json:"region,omitempty"`
 	DropletID int    `json:"droplet_id,omitempty"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Region    *Region  `json:"region"`
+	Droplet   *Droplet `json:"droplet"`
+	IP        string   `json:"ip"`
+	ProjectID string   `json:"project_id"`
+	Locked    bool     `json:"locked"`
+}
+
+func (f ReservedIP) String() string {
+	return Stringify(f)
+}
+
+// URN returns the reserved IP in a valid DO API URN form.
+func (f ReservedIP) URN() string {
+	return ToURN(resourceType, f.IP)
+}
+
+type reservedIPsRoot struct {
+	ReservedIPs []ReservedIP `json:"reserved_ips"`
+	Links       *Links       `json:"links"`
+	Meta        *Meta        `json:"meta"`
+}
+
+type reservedIPRoot struct {
+	ReservedIP *ReservedIP `json:"reserved_ip"`
+	Links      *Links      `json:"links,omitempty"`
+}
+
+// ReservedIPCreateRequest represents a request to create a reserved IP.
+// Specify DropletID to assign the reserved IP to a Droplet or Region
+// to reserve it to the region.
+type ReservedIPCreateRequest struct {
+	Region    string `json:"region,omitempty"`
+	DropletID int    `json:"droplet_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // List all reserved IPs.

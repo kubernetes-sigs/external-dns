@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -68,23 +69,25 @@ type SSHKeysPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for SSHKey
-func (SSHKeysPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.SSHKeys.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+func (SSHKeysPagedResponse) endpoint(_ ...any) string {
+	return "profile/sshkeys"
 }
 
-// appendData appends SSHKeys when processing paginated SSHKey responses
-func (resp *SSHKeysPagedResponse) appendData(r *SSHKeysPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *SSHKeysPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(SSHKeysPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*SSHKeysPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListSSHKeys lists SSHKeys
 func (c *Client) ListSSHKeys(ctx context.Context, opts *ListOptions) ([]SSHKey, error) {
 	response := SSHKeysPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -397,6 +400,10 @@ func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpda
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -404,13 +411,10 @@ func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpda
 }
 
 // GetSSHKey gets the sshkey with the provided ID
-func (c *Client) GetSSHKey(ctx context.Context, id int) (*SSHKey, error) {
-	e, err := c.SSHKeys.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&SSHKey{}).Get(e))
+func (c *Client) GetSSHKey(ctx context.Context, keyID int) (*SSHKey, error) {
+	e := fmt.Sprintf("profile/sshkeys/%d", keyID)
+	req := c.R(ctx).SetResult(&SSHKey{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -418,25 +422,15 @@ func (c *Client) GetSSHKey(ctx context.Context, id int) (*SSHKey, error) {
 }
 
 // CreateSSHKey creates a SSHKey
-func (c *Client) CreateSSHKey(ctx context.Context, createOpts SSHKeyCreateOptions) (*SSHKey, error) {
-	var body string
-	e, err := c.SSHKeys.Endpoint()
+func (c *Client) CreateSSHKey(ctx context.Context, opts SSHKeyCreateOptions) (*SSHKey, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&SSHKey{})
-
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
+	e := "profile/sshkeys"
+	req := c.R(ctx).SetResult(&SSHKey{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -444,27 +438,20 @@ func (c *Client) CreateSSHKey(ctx context.Context, createOpts SSHKeyCreateOption
 }
 
 // UpdateSSHKey updates the SSHKey with the specified id
-func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpdateOptions) (*SSHKey, error) {
-	var body string
-	e, err := c.SSHKeys.Endpoint()
+func (c *Client) UpdateSSHKey(ctx context.Context, keyID int, opts SSHKeyUpdateOptions) (*SSHKey, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
-	e = fmt.Sprintf("%s/%d", e, id)
 
-	req := c.R(ctx).SetResult(&SSHKey{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	e := fmt.Sprintf("profile/sshkeys/%d", keyID)
+	req := c.R(ctx).SetResult(&SSHKey{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -472,13 +459,8 @@ func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpda
 }
 
 // DeleteSSHKey deletes the SSHKey with the specified id
-func (c *Client) DeleteSSHKey(ctx context.Context, id int) error {
-	e, err := c.SSHKeys.Endpoint()
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+func (c *Client) DeleteSSHKey(ctx context.Context, keyID int) error {
+	e := fmt.Sprintf("profile/sshkeys/%d", keyID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 }

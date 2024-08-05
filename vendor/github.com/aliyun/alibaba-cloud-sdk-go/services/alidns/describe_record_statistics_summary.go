@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeRecordStatisticsSummary(request *DescribeRecordStatisticsSummaryRequest) (response *DescribeRecordStatisticsSummaryResponse, err error) {
 	response = CreateDescribeRecordStatisticsSummaryResponse()
 	err = client.DoAction(request, response)
@@ -205,6 +206,10 @@ func CreateDescribeRecordStatisticsSummaryRequest() (request *DescribeRecordStat
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeRecordStatisticsSummary(request *DescribeRecordStatisticsSummaryRequest) (response *DescribeRecordStatisticsSummaryResponse, err error) {
 	response = CreateDescribeRecordStatisticsSummaryResponse()
 	err = client.DoAction(request, response)
@@ -212,8 +217,6 @@ func (client *Client) DescribeRecordStatisticsSummary(request *DescribeRecordSta
 }
 
 // DescribeRecordStatisticsSummaryWithChan invokes the alidns.DescribeRecordStatisticsSummary API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRecordStatisticsSummaryWithChan(request *DescribeRecordStatisticsSummaryRequest) (<-chan *DescribeRecordStatisticsSummaryResponse, <-chan error) {
 	responseChan := make(chan *DescribeRecordStatisticsSummaryResponse, 1)
 	errChan := make(chan error, 1)
@@ -236,8 +239,6 @@ func (client *Client) DescribeRecordStatisticsSummaryWithChan(request *DescribeR
 }
 
 // DescribeRecordStatisticsSummaryWithCallback invokes the alidns.DescribeRecordStatisticsSummary API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRecordStatisticsSummaryWithCallback(request *DescribeRecordStatisticsSummaryRequest, callback func(response *DescribeRecordStatisticsSummaryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -262,6 +263,7 @@ type DescribeRecordStatisticsSummaryRequest struct {
 	Threshold    requests.Integer `position:"Query" name:"Threshold"`
 	StartDate    string           `position:"Query" name:"StartDate"`
 	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	DomainType   string           `position:"Query" name:"DomainType"`
 	PageSize     requests.Integer `position:"Query" name:"PageSize"`
 	Lang         string           `position:"Query" name:"Lang"`
 	Keyword      string           `position:"Query" name:"Keyword"`
@@ -276,11 +278,11 @@ type DescribeRecordStatisticsSummaryRequest struct {
 // DescribeRecordStatisticsSummaryResponse is the response struct for api DescribeRecordStatisticsSummary
 type DescribeRecordStatisticsSummaryResponse struct {
 	*responses.BaseResponse
-	RequestId  string                                      `json:"RequestId" xml:"RequestId"`
-	TotalItems int                                         `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                                         `json:"TotalPages" xml:"TotalPages"`
 	PageSize   int                                         `json:"PageSize" xml:"PageSize"`
+	RequestId  string                                      `json:"RequestId" xml:"RequestId"`
 	PageNumber int                                         `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                                         `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                                         `json:"TotalItems" xml:"TotalItems"`
 	Statistics StatisticsInDescribeRecordStatisticsSummary `json:"Statistics" xml:"Statistics"`
 }
 
@@ -290,7 +292,12 @@ func CreateDescribeRecordStatisticsSummaryRequest() (request *DescribeRecordStat
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeRecordStatisticsSummary", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

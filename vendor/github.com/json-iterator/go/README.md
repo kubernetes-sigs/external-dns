@@ -15,6 +15,7 @@ A high-performance 100% compatible drop-in replacement of "encoding/json"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 You can also use thrift like JSON using [thrift-iterator](https://github.com/thrift-iterator/go)
@@ -50,6 +51,11 @@ You can also use thrift like JSON using [thrift-iterator](https://github.com/thr
 You can also use thrift like JSON using [thrift-iterator](https://github.com/thrift-iterator/go)
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+You can also use thrift like JSON using [thrift-iterator](https://github.com/thrift-iterator/go)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 # Benchmark
 
 ![benchmark](http://jsoniter.com/benchmarks/go-benchmark.png)

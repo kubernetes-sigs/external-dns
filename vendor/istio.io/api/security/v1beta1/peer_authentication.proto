@@ -25,6 +25,9 @@ package istio.security.v1beta1;
 
 option go_package="istio.io/api/security/v1beta1";
 
+// {{< warning >}}
+// Development of PeerAuthentication is currently frozen and likely to be replaced in Ambient.
+// {{< /warning >}}
 // PeerAuthentication defines how traffic will be tunneled (or not) to the sidecar.
 //
 // Examples:
@@ -42,7 +45,7 @@ option go_package="istio.io/api/security/v1beta1";
 // ```
 // For mesh level, put the policy in root-namespace according to your Istio installation.
 //
-// Policies to allow both mTLS & plaintext traffic for all workloads under namespace `foo`, but
+// Policies to allow both mTLS and plaintext traffic for all workloads under namespace `foo`, but
 // require mTLS for workload `finance`.
 // ```yaml
 // apiVersion: security.istio.io/v1beta1
@@ -57,7 +60,7 @@ option go_package="istio.io/api/security/v1beta1";
 // apiVersion: security.istio.io/v1beta1
 // kind: PeerAuthentication
 // metadata:
-//   name: default
+//   name: finance
 //   namespace: foo
 // spec:
 //   selector:
@@ -66,8 +69,9 @@ option go_package="istio.io/api/security/v1beta1";
 //   mtls:
 //     mode: STRICT
 // ```
-// Policy to allow mTLS strict for all workloads, but leave port 8080 to
-// plaintext:
+// Policy that enables strict mTLS for all `finance` workloads, but leaves the port `8080` to
+// plaintext. Note the port value in the `portLevelMtls` field refers to the port
+// of the workload, not the port of the Kubernetes service.
 // ```yaml
 // apiVersion: security.istio.io/v1beta1
 // kind: PeerAuthentication
@@ -84,8 +88,8 @@ option go_package="istio.io/api/security/v1beta1";
 //     8080:
 //       mode: DISABLE
 // ```
-// Policy to inherite mTLS mode from namespace (or mesh) settings, and overwrite
-// settings for port 8080
+// Policy that inherits mTLS mode from namespace (or mesh) settings, and disables
+// mTLS for workload port `8080`.
 // ```yaml
 // apiVersion: security.istio.io/v1beta1
 // kind: PeerAuthentication
@@ -112,6 +116,12 @@ option go_package="istio.io/api/security/v1beta1";
 // +cue-gen:PeerAuthentication:subresource:status
 // +cue-gen:PeerAuthentication:scope:Namespaced
 // +cue-gen:PeerAuthentication:resource:categories=istio-io,security-istio-io,shortNames=pa
+// +cue-gen:PeerAuthentication:preserveUnknownFields:false
+// +cue-gen:PeerAuthentication:printerColumn:name=Mode,type=string,JSONPath=.spec.mtls.mode,description="Defines the mTLS mode used for peer authentication."
+// +cue-gen:PeerAuthentication:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp is a timestamp
+// representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations.
+// Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+// Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
 // -->
 //
 // <!-- go code generation tags
@@ -120,15 +130,21 @@ option go_package="istio.io/api/security/v1beta1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
+// <!-- istio code generation tags
+// +istio.io/sync-start
+// -->
 message PeerAuthentication {
-  // The selector determines the workloads to apply the ChannelAuthentication on.
-  // If not set, the policy will be applied to all workloads in the same namespace as the policy.
+  // The selector determines the workloads to apply the PeerAuthentication on. The selector will match with workloads in the
+  // same namespace as the policy. If the policy is in the root namespace, the selector will additionally match with workloads in all namespace.
+  //
+  // If not set, the policy will be applied to all workloads in the same namespace as the policy. If it is in the root namespace, it would be applied
+  // to all workloads in the mesh.
   istio.type.v1beta1.WorkloadSelector selector = 1;
 
   // Mutual TLS settings.
   message MutualTLS {
     enum Mode {
-      // Inherit from parent, if has one. Otherwise treated as PERMISSIVE.
+      // Inherit from parent, if has one. Otherwise treated as `PERMISSIVE`.
       UNSET = 0;
 
       // Connection is not tunneled.
@@ -148,6 +164,8 @@ message PeerAuthentication {
   // Mutual TLS settings for workload. If not defined, inherit from parent.
   MutualTLS mtls = 2;
 
-  // Port specific mutual TLS settings.
+  // Port specific mutual TLS settings. These only apply when a workload selector
+  // is specified. The port refers to the port of the workload, not the port of the
+  // Kubernetes service.
   map<uint32, MutualTLS> port_level_mtls = 3;
 }

@@ -2,6 +2,7 @@ package linodego
 
 import (
 	"context"
+	"fmt"
 )
 
 // NodeBalancerStats represents a nodebalancer stats object
@@ -23,6 +24,7 @@ type StatsTraffic struct {
 }
 
 // GetNodeBalancerStats gets the template with the provided ID
+<<<<<<< HEAD
 func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeBalancerStats, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -67,8 +69,22 @@ func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeB
 		return nil, err
 	}
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerStats{}).Get(e))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeBalancerStats, error) {
+	e, err := c.NodeBalancerStats.endpointWithID(linodeID)
 	if err != nil {
 		return nil, err
 	}
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&NodeBalancerStats{}).Get(e))
+=======
+func (c *Client) GetNodeBalancerStats(ctx context.Context, nodebalancerID int) (*NodeBalancerStats, error) {
+	e := fmt.Sprintf("nodebalancers/%d/stats", nodebalancerID)
+	req := c.R(ctx).SetResult(&NodeBalancerStats{})
+	r, err := coupleAPIErrors(req.Get(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if err != nil {
+		return nil, err
+	}
+
 	return r.Result().(*NodeBalancerStats), nil
 }

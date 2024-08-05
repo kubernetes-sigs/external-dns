@@ -20,9 +20,7 @@ func unpackDataA(msg []byte, off int) (net.IP, int, error) {
 	if off+net.IPv4len > len(msg) {
 		return nil, len(msg), &Error{err: "overflow unpacking a"}
 	}
-	a := append(make(net.IP, 0, net.IPv4len), msg[off:off+net.IPv4len]...)
-	off += net.IPv4len
-	return a, off, nil
+	return cloneSlice(msg[off : off+net.IPv4len]), off + net.IPv4len, nil
 }
 
 func packDataA(a net.IP, msg []byte, off int) (int, error) {
@@ -47,9 +45,7 @@ func unpackDataAAAA(msg []byte, off int) (net.IP, int, error) {
 	if off+net.IPv6len > len(msg) {
 		return nil, len(msg), &Error{err: "overflow unpacking aaaa"}
 	}
-	aaaa := append(make(net.IP, 0, net.IPv6len), msg[off:off+net.IPv6len]...)
-	off += net.IPv6len
-	return aaaa, off, nil
+	return cloneSlice(msg[off : off+net.IPv6len]), off + net.IPv6len, nil
 }
 
 func packDataAAAA(aaaa net.IP, msg []byte, off int) (int, error) {
@@ -299,8 +295,7 @@ func unpackString(msg []byte, off int) (string, int, error) {
 }
 
 func packString(s string, msg []byte, off int) (int, error) {
-	txtTmp := make([]byte, 256*4+1)
-	off, err := packTxtString(s, msg, off, txtTmp)
+	off, err := packTxtString(s, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
@@ -402,8 +397,7 @@ func unpackStringTxt(msg []byte, off int) ([]string, int, error) {
 }
 
 func packStringTxt(s []string, msg []byte, off int) (int, error) {
-	txtTmp := make([]byte, 256*4+1) // If the whole string consists out of \DDD we need this many.
-	off, err := packTxt(s, msg, off, txtTmp)
+	off, err := packTxt(s, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
@@ -412,32 +406,28 @@ func packStringTxt(s []string, msg []byte, off int) (int, error) {
 
 func unpackDataOpt(msg []byte, off int) ([]EDNS0, int, error) {
 	var edns []EDNS0
-Option:
-	var code uint16
-	if off+4 > len(msg) {
-		return nil, len(msg), &Error{err: "overflow unpacking opt"}
+	for off < len(msg) {
+		if off+4 > len(msg) {
+			return nil, len(msg), &Error{err: "overflow unpacking opt"}
+		}
+		code := binary.BigEndian.Uint16(msg[off:])
+		off += 2
+		optlen := binary.BigEndian.Uint16(msg[off:])
+		off += 2
+		if off+int(optlen) > len(msg) {
+			return nil, len(msg), &Error{err: "overflow unpacking opt"}
+		}
+		opt := makeDataOpt(code)
+		if err := opt.unpack(msg[off : off+int(optlen)]); err != nil {
+			return nil, len(msg), err
+		}
+		edns = append(edns, opt)
+		off += int(optlen)
 	}
-	code = binary.BigEndian.Uint16(msg[off:])
-	off += 2
-	optlen := binary.BigEndian.Uint16(msg[off:])
-	off += 2
-	if off+int(optlen) > len(msg) {
-		return nil, len(msg), &Error{err: "overflow unpacking opt"}
-	}
-	e := makeDataOpt(code)
-	if err := e.unpack(msg[off : off+int(optlen)]); err != nil {
-		return nil, len(msg), err
-	}
-	edns = append(edns, e)
-	off += int(optlen)
-
-	if off < len(msg) {
-		goto Option
-	}
-
 	return edns, off, nil
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1279,6 +1269,38 @@ func makeDataOpt(code uint16) EDNS0 {
 	}
 }
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func makeDataOpt(code uint16) EDNS0 {
+	switch code {
+	case EDNS0NSID:
+		return new(EDNS0_NSID)
+	case EDNS0SUBNET:
+		return new(EDNS0_SUBNET)
+	case EDNS0COOKIE:
+		return new(EDNS0_COOKIE)
+	case EDNS0EXPIRE:
+		return new(EDNS0_EXPIRE)
+	case EDNS0UL:
+		return new(EDNS0_UL)
+	case EDNS0LLQ:
+		return new(EDNS0_LLQ)
+	case EDNS0DAU:
+		return new(EDNS0_DAU)
+	case EDNS0DHU:
+		return new(EDNS0_DHU)
+	case EDNS0N3U:
+		return new(EDNS0_N3U)
+	case EDNS0PADDING:
+		return new(EDNS0_PADDING)
+	default:
+		e := new(EDNS0_LOCAL)
+		e.Code = code
+		return e
+	}
+}
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func packDataOpt(options []EDNS0, msg []byte, off int) (int, error) {
 	for _, el := range options {
 		b, err := el.pack()
@@ -1304,8 +1326,7 @@ func unpackStringOctet(msg []byte, off int) (string, int, error) {
 }
 
 func packStringOctet(s string, msg []byte, off int) (int, error) {
-	txtTmp := make([]byte, 256*4+1)
-	off, err := packOctetString(s, msg, off, txtTmp)
+	off, err := packOctetString(s, msg, off)
 	if err != nil {
 		return len(msg), err
 	}
@@ -1317,7 +1338,7 @@ func unpackDataNsec(msg []byte, off int) ([]uint16, int, error) {
 	length, window, lastwindow := 0, 0, -1
 	for off < len(msg) {
 		if off+2 > len(msg) {
-			return nsec, len(msg), &Error{err: "overflow unpacking nsecx"}
+			return nsec, len(msg), &Error{err: "overflow unpacking NSEC(3)"}
 		}
 		window = int(msg[off])
 		length = int(msg[off+1])
@@ -1325,17 +1346,17 @@ func unpackDataNsec(msg []byte, off int) ([]uint16, int, error) {
 		if window <= lastwindow {
 			// RFC 4034: Blocks are present in the NSEC RR RDATA in
 			// increasing numerical order.
-			return nsec, len(msg), &Error{err: "out of order NSEC block"}
+			return nsec, len(msg), &Error{err: "out of order NSEC(3) block in type bitmap"}
 		}
 		if length == 0 {
 			// RFC 4034: Blocks with no types present MUST NOT be included.
-			return nsec, len(msg), &Error{err: "empty NSEC block"}
+			return nsec, len(msg), &Error{err: "empty NSEC(3) block in type bitmap"}
 		}
 		if length > 32 {
-			return nsec, len(msg), &Error{err: "NSEC block too long"}
+			return nsec, len(msg), &Error{err: "NSEC(3) block too long in type bitmap"}
 		}
 		if off+length > len(msg) {
-			return nsec, len(msg), &Error{err: "overflowing NSEC block"}
+			return nsec, len(msg), &Error{err: "overflowing NSEC(3) block in type bitmap"}
 		}
 
 		// Walk the bytes in the window and extract the type bits
@@ -1399,6 +1420,16 @@ func packDataNsec(bitmap []uint16, msg []byte, off int) (int, error) {
 	if len(bitmap) == 0 {
 		return off, nil
 	}
+	if off > len(msg) {
+		return off, &Error{err: "overflow packing nsec"}
+	}
+	toZero := msg[off:]
+	if maxLen := typeBitMapLen(bitmap); maxLen < len(toZero) {
+		toZero = toZero[:maxLen]
+	}
+	for i := range toZero {
+		toZero[i] = 0
+	}
 	var lastwindow, lastlength uint16
 	for _, t := range bitmap {
 		window := t / 256
@@ -1456,7 +1487,7 @@ func unpackDataSVCB(msg []byte, off int) ([]SVCBKeyValue, int, error) {
 }
 
 func packDataSVCB(pairs []SVCBKeyValue, msg []byte, off int) (int, error) {
-	pairs = append([]SVCBKeyValue(nil), pairs...)
+	pairs = cloneSlice(pairs)
 	sort.Slice(pairs, func(i, j int) bool {
 		return pairs[i].Key() < pairs[j].Key()
 	})
@@ -1622,6 +1653,8 @@ func unpackDataAplPrefix(msg []byte, off int) (APLPrefix, int, error) {
 	if off+afdlen > len(msg) {
 		return APLPrefix{}, len(msg), &Error{err: "overflow unpacking APL address"}
 	}
+
+	// Address MUST NOT contain trailing zero bytes per RFC3123 Sections 4.1 and 4.2.
 	off += copy(ip, msg[off:off+afdlen])
 	if afdlen > 0 {
 		last := ip[afdlen-1]
@@ -1633,14 +1666,56 @@ func unpackDataAplPrefix(msg []byte, off int) (APLPrefix, int, error) {
 		IP:   ip,
 		Mask: net.CIDRMask(int(prefix), 8*len(ip)),
 	}
+<<<<<<< HEAD
 	network := ipnet.IP.Mask(ipnet.Mask)
 	if !network.Equal(ipnet.IP) {
 		return APLPrefix{}, len(msg), &Error{err: "invalid APL address length"}
 	}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	network := ipnet.IP.Mask(ipnet.Mask)
+	if !network.Equal(ipnet.IP) {
+		return APLPrefix{}, len(msg), &Error{err: "invalid APL address length"}
+	}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	return APLPrefix{
 		Negation: (nlen & 0x80) != 0,
 		Network:  ipnet,
 	}, off, nil
+}
+
+func unpackIPSECGateway(msg []byte, off int, gatewayType uint8) (net.IP, string, int, error) {
+	var retAddr net.IP
+	var retString string
+	var err error
+
+	switch gatewayType {
+	case IPSECGatewayNone: // do nothing
+	case IPSECGatewayIPv4:
+		retAddr, off, err = unpackDataA(msg, off)
+	case IPSECGatewayIPv6:
+		retAddr, off, err = unpackDataAAAA(msg, off)
+	case IPSECGatewayHost:
+		retString, off, err = UnpackDomainName(msg, off)
+	}
+
+	return retAddr, retString, off, err
+}
+
+func packIPSECGateway(gatewayAddr net.IP, gatewayString string, msg []byte, off int, gatewayType uint8, compression compressionMap, compress bool) (int, error) {
+	var err error
+
+	switch gatewayType {
+	case IPSECGatewayNone: // do nothing
+	case IPSECGatewayIPv4:
+		off, err = packDataA(gatewayAddr, msg, off)
+	case IPSECGatewayIPv6:
+		off, err = packDataAAAA(gatewayAddr, msg, off)
+	case IPSECGatewayHost:
+		off, err = packDomainName(gatewayString, msg, off, compression, compress)
+	}
+
+	return off, err
 }

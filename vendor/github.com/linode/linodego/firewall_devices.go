@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -67,6 +68,7 @@ type FirewallDevicesPagedResponse struct {
 	Data []FirewallDevice `json:"data"`
 }
 
+<<<<<<< HEAD
 // endpointWithID gets the endpoint URL for FirewallDevices of a given Firewall
 func (FirewallDevicesPagedResponse) endpointWithID(c *Client, id int) string {
 <<<<<<< HEAD
@@ -369,17 +371,36 @@ func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID 
 		panic(err)
 	}
 	return endpoint
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// endpointWithID gets the endpoint URL for FirewallDevices of a given Firewall
+func (FirewallDevicesPagedResponse) endpointWithID(c *Client, id int) string {
+	endpoint, err := c.FirewallDevices.endpointWithID(id)
+	if err != nil {
+		panic(err)
+	}
+	return endpoint
+=======
+// endpoint gets the endpoint URL for FirewallDevices of a given Firewall
+func (FirewallDevicesPagedResponse) endpoint(ids ...any) string {
+	id, _ := ids[0].(int)
+	return fmt.Sprintf("networking/firewalls/%d/devices", id)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
-func (resp *FirewallDevicesPagedResponse) appendData(r *FirewallDevicesPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *FirewallDevicesPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(FirewallDevicesPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*FirewallDevicesPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListFirewallDevices get devices associated with a given Firewall
 func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
 	response := FirewallDevicesPagedResponse{}
-	err := c.listHelperWithID(ctx, &response, firewallID, opts)
-
+	err := c.listHelper(ctx, &response, opts, firewallID)
 	if err != nil {
 		return nil, err
 	}
@@ -388,13 +409,9 @@ func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *
 
 // GetFirewallDevice gets a FirewallDevice given an ID
 func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, deviceID)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallDevice{}).Get(e))
+	e := fmt.Sprintf("networking/firewalls/%d/devices/%d", firewallID, deviceID)
+	req := c.R(ctx).SetResult(&FirewallDevice{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -402,21 +419,15 @@ func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int
 }
 
 // AddFirewallDevice associates a Device with a given Firewall
-func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, createOpts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
-	var body string
-	e, err := c.FirewallDevices.endpointWithID(firewallID)
+func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, opts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&FirewallDevice{})
-	if bodyData, err := json.Marshal(createOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.SetBody(body).Post(e))
+	e := fmt.Sprintf("networking/firewalls/%d/devices", firewallID)
+	req := c.R(ctx).SetResult(&FirewallDevice{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -425,6 +436,7 @@ func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, creat
 
 // DeleteFirewallDevice disassociates a Device with a given Firewall
 func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
+<<<<<<< HEAD
 	e, err := c.FirewallDevices.endpointWithID(firewallID)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
@@ -433,5 +445,17 @@ func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID 
 
 	e = fmt.Sprintf("%s/%d", e, deviceID)
 	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	e, err := c.FirewallDevices.endpointWithID(firewallID)
+	if err != nil {
+		return err
+	}
+
+	e = fmt.Sprintf("%s/%d", e, deviceID)
+	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+=======
+	e := fmt.Sprintf("networking/firewalls/%d/devices/%d", firewallID, deviceID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return err
 }

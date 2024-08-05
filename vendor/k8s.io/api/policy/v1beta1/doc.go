@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen=true
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -49,8 +50,12 @@ limitations under the License.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// +k8s:prerelease-lifecycle-gen=true
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Package policy is for any kind of policy object.  Suitable examples, even if
-// they aren't all here, are PodDisruptionBudget, PodSecurityPolicy,
+// they aren't all here, are PodDisruptionBudget,
 // NetworkPolicy, etc.
 package v1beta1 // import "k8s.io/api/policy/v1beta1"

@@ -182,6 +182,7 @@ func unmarshal(in []byte, out interface{}, strict bool) (err error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 //                  case the field will be included if that method returns true.
 =======
@@ -194,6 +195,10 @@ func unmarshal(in []byte, out interface{}, strict bool) (err error) {
 //                  case the field will be included if that method returns true.
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//                  case the field will be included if that method returns true.
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //                  case the field will be excluded if IsZero returns true.
 //
 //     flow         Marshal using a flow style (useful for structs,
@@ -494,6 +499,7 @@ func isZero(v reflect.Value) bool {
 // in v2.4.0, at which point this function was introduced to help migration.
 func FutureLineWrap() {
 	disableLineWrapping = true
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1670,4 +1676,7 @@ func isZero(v reflect.Value) bool {
 	}
 	return false
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

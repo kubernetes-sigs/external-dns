@@ -155,7 +155,12 @@ func (r RouterJSR311) detectRoute(routes []Route, httpRequest *http.Request) (*R
 		method, length := httpRequest.Method, httpRequest.Header.Get("Content-Length")
 		if (method == http.MethodPost ||
 			method == http.MethodPut ||
+<<<<<<< HEAD
 			method == http.MethodPatch) && length == "" {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+			method == http.MethodPatch) && (length == "" || length == "0") {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			return nil, NewError(
 				http.StatusUnsupportedMediaType,
 				fmt.Sprintf("415: Unsupported Media Type\n\nAvailable representations: %s", strings.Join(available, ", ")),

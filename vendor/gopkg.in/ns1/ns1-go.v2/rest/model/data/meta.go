@@ -16,19 +16,26 @@ type FeedPtr struct {
 	FeedID string `json:"feed,omitempty"`
 }
 
+// PulsarMeta is currently only used for validation
+type PulsarMeta struct {
+	JobID     string  `json:"job_id,omitempty"`
+	Bias      string  `json:"bias,omitempty"`
+	A5MCutoff float64 `json:"a5m_cutoff,omitempty"`
+}
+
 // Meta contains information on an entity's metadata table. Metadata key/value
 // pairs are used by a record's filter pipeline during a dns query.
 // All values can be a feed id as well, indicating real-time updates of these values.
-// Structure/Precendence of metadata tables:
-//  - Record
-//    - Meta <- lowest precendence in filter
-//    - Region(s)
-//      - Meta <- middle precedence in filter chain
-//      - ...
-//    - Answer(s)
-//      - Meta <- highest precedence in filter chain
-//      - ...
-//    - ...
+// Structure/Precedence of metadata tables:
+//   - Record
+//   - Meta <- lowest precedence in filter
+//   - Region(s)
+//   - Meta <- middle precedence in filter chain
+//   - ...
+//   - Answer(s)
+//   - Meta <- highest precedence in filter chain
+//   - ...
+//   - ...
 type Meta struct {
 	// STATUS
 
@@ -51,9 +58,8 @@ type Meta struct {
 	// float64 or FeedPtr.
 	LoadAvg interface{} `json:"loadavg,omitempty"`
 
-	// The Job ID of a Pulsar telemetry gathering job and routing granularities
-	// to associate with.
-	// string or FeedPtr.
+	// The Job ID of a Pulsar telemetry gathering job and associated metadata.
+	// list of PulsarMeta
 	Pulsar interface{} `json:"pulsar,omitempty"`
 
 	// GEOGRAPHICAL
@@ -124,6 +130,12 @@ type Meta struct {
 	// float64 or FeedPtr.
 	Weight interface{} `json:"weight,omitempty"`
 
+	// Indicates a cost.
+	// Filters that use costs normalize them.
+	// Any positive values are allowed.
+	// float64 or FeedPtr.
+	Cost interface{} `json:"cost,omitempty"`
+
 	// Indicates a "low watermark" to use for load shedding.
 	// The value should depend on the metric used to determine
 	// load (e.g., loadavg, connections, etc).
@@ -135,6 +147,12 @@ type Meta struct {
 	// load (e.g., loadavg, connections, etc).
 	// int or FeedPtr.
 	HighWatermark interface{} `json:"high_watermark,omitempty"`
+
+	// subdivisions must follow the ISO-3166-2 code for a country and subdivisions
+	// map[string]interface{} or FeedPtr.
+	Subdivisions interface{} `json:"subdivisions,omitempty"`
+
+	AdditionalMetadata interface{} `json:"additional_metadata,omitempty"`
 }
 
 // StringMap returns a map[string]interface{} representation of metadata (for use with terraform in nested structures)
@@ -157,7 +175,7 @@ func (meta *Meta) StringMap() map[string]interface{} {
 	return m
 }
 
-// FormatInterface takes an interface of types: string, bool, int, float64, []string, and FeedPtr, and returns a string representation of said interface
+// FormatInterface takes an interface of types: string, bool, int, float64, []string, map[string]interface{} and FeedPtr, and returns a string representation of said interface
 func FormatInterface(i interface{}) string {
 	switch v := i.(type) {
 	case string:
@@ -176,9 +194,31 @@ func FormatInterface(i interface{}) string {
 	case []interface{}:
 		slc := make([]string, 0)
 		for _, s := range v {
-			slc = append(slc, s.(string))
+			switch ss := s.(type) {
+			// Pulsar
+			case map[string]interface{}:
+				data, _ := json.Marshal(v)
+				return string(data)
+			case string:
+				slc = append(slc, ss)
+			// The ASN field specifically is returned from the API as an integer,
+			// which Go treats as a float64 when it parses the json,
+			// so this is to account for that field.
+			case float64:
+				slc = append(slc, strconv.FormatFloat(ss, 'f', -1, 64))
+			}
 		}
 		return strings.Join(slc, ",")
+	case map[string]interface{}:
+		// Required for Terraform workaround to allow users to submit raw json of feed pointer
+		// as value for metadata.  See https://github.com/terraform-providers/terraform-provider-ns1/issues/35
+		if val, ok := v["feed"].(string); ok {
+			feedPtr := FeedPtr{FeedID: val}
+			data, _ := json.Marshal(feedPtr)
+			return string(data)
+		}
+		data, _ := json.Marshal(v)
+		return string(data)
 	case FeedPtr:
 		data, _ := json.Marshal(v)
 		return string(data)
@@ -226,26 +266,61 @@ func MetaFromMap(m map[string]interface{}) *Meta {
 	mt := mv.Type()
 	for k, v := range m {
 		name := ToCamel(k)
-		if name == "UsState" {
+		switch name {
+		case "UsState":
 			name = "USState"
-		} else if name == "Loadavg" {
+		case "Loadavg":
 			name = "LoadAvg"
-		} else if name == "CaProvince" {
+		case "CaProvince":
 			name = "CAProvince"
-		} else if name == "IpPrefixes" {
+		case "IpPrefixes":
 			name = "IPPrefixes"
-		} else if name == "Asn" {
+		case "Asn":
 			name = "ASN"
 		}
 		if _, ok := mt.FieldByName(name); ok {
 			fv := mv.FieldByName(name)
-			if name == "Up" {
-				if v.(string) == "1" {
+			switch name {
+			case "Up":
+				if v.(string) == "1" || strings.ToLower(v.(string)) == "true" {
 					fv.Set(reflect.ValueOf(true))
-				} else {
+				} else if v.(string) == "0" || strings.ToLower(v.(string)) == "false" {
 					fv.Set(reflect.ValueOf(false))
+				} else {
+					fv.Set(reflect.ValueOf(ParseType(v.(string))))
 				}
-			} else {
+			case "ASN":
+				// If there is only one ASN, it should still be treated as a string.-
+				// otherwise this gets parsed into a float64 and breaks stuff.
+				i := strings.Index(v.(string), ",")
+				if i == -1 {
+					fv.Set(reflect.ValueOf(v.(string)))
+				} else {
+					fv.Set(reflect.ValueOf(ParseType(v.(string))))
+				}
+			case "Pulsar":
+				var pulsars []map[string]interface{}
+				if err := json.Unmarshal([]byte(v.(string)), &pulsars); err == nil {
+					fv.Set(reflect.ValueOf(pulsars))
+				}
+			case "Subdivisions":
+				switch v.(type) {
+				case string:
+					var subMap map[string]interface{}
+					json.Unmarshal([]byte(v.(string)), &subMap)
+					fv.Set(reflect.ValueOf(subMap))
+				case map[string]interface{}:
+					fv.Set(reflect.ValueOf(v.(map[string]interface{})))
+				}
+			case "Note":
+				// If it's a Note, just pass the string without any type of parse.
+				fv.Set(reflect.ValueOf(v.(string)))
+			case "AdditionalMetadata":
+				var additional []map[string]interface{}
+				if err := json.Unmarshal([]byte(v.(string)), &additional); err == nil {
+					fv.Set(reflect.ValueOf(additional))
+				}
+			default:
 				fv.Set(reflect.ValueOf(ParseType(v.(string))))
 			}
 		}
@@ -280,15 +355,25 @@ func validateCidr(v reflect.Value) error {
 			return err
 		}
 	}
-	var last error
 	if v.Kind() == reflect.Slice {
+		if slc, ok := v.Interface().([]string); ok {
+			for _, s := range slc {
+				_, _, err := net.ParseCIDR(s)
+				if err != nil {
+					return fmt.Errorf("%s is not a valid CIDR block", s)
+				}
+			}
+			return nil
+		}
 		slc := v.Interface().([]interface{})
 		for _, s := range slc {
 			_, _, err := net.ParseCIDR(s.(string))
-			last = err
+			if err != nil {
+				return fmt.Errorf("%s is not a valid CIDR block", s.(string))
+			}
 		}
 	}
-	return last
+	return nil
 }
 
 // validatePositiveNumber makes sure that the given number (float or int) is positive
@@ -402,6 +487,43 @@ func validateNoteLength(v reflect.Value) error {
 	return nil
 }
 
+func validatePulsar(v reflect.Value) error {
+	var pulsars []*PulsarMeta
+
+	switch v.Kind() {
+	case reflect.Slice:
+		// Slice from API
+		bs, err := json.Marshal(v.Interface())
+		if err != nil {
+			return fmt.Errorf("pulsar: unexpected value: `%v`", v.Interface())
+		}
+		if err := json.Unmarshal(bs, &pulsars); err != nil {
+			return fmt.Errorf("pulsar: invalid value: `%v`", v.Interface())
+		}
+	case reflect.String:
+		// String from terraform
+		if err := json.Unmarshal([]byte(v.String()), &pulsars); err != nil {
+			return fmt.Errorf("pulsar: invalid value: `%v`", v.String())
+		}
+	}
+
+	for _, p := range pulsars {
+		if p.JobID == "" {
+			return fmt.Errorf("pulsar Job ID is required")
+		}
+	}
+	return nil
+}
+
+func validateAdditionalMetadata(v reflect.Value) error {
+	// API expects additional_metadata to be array of length 1
+	if v.Len() > 1 {
+		return fmt.Errorf("unexpected length of `%d`, expected 1", v.Len())
+	}
+
+	return nil
+}
+
 // checkFuncs is shorthand for returning a slice of functions that take a reflect.Value and return an error
 func checkFuncs(f ...func(v reflect.Value) error) []func(v reflect.Value) error {
 	return f
@@ -427,7 +549,7 @@ var validationMap = map[string]metaValidation{
 		func(v reflect.Value) error {
 			return validatePositiveNumber("LoadAvg", v)
 		})},
-	"Pulsar":     {kinds(reflect.String), nil},
+	"Pulsar":     {kinds(reflect.String, reflect.Slice), checkFuncs(validatePulsar)},
 	"Latitude":   {kinds(reflect.Float64, reflect.Int), checkFuncs(validateLatLong)},
 	"Longitude":  {kinds(reflect.Float64, reflect.Int), checkFuncs(validateLatLong)},
 	"Georegion":  {kinds(reflect.String, reflect.Slice), checkFuncs(validateGeoregion)},
@@ -445,8 +567,14 @@ var validationMap = map[string]metaValidation{
 		func(v reflect.Value) error {
 			return validatePositiveNumber("Weight", v)
 		})},
-	"LowWatermark":  {kinds(reflect.Int), nil},
-	"HighWatermark": {kinds(reflect.Int), nil},
+	"Cost": {kinds(reflect.Float64, reflect.Int), checkFuncs(
+		func(v reflect.Value) error {
+			return validatePositiveNumber("Cost", v)
+		})},
+	"LowWatermark":       {kinds(reflect.Int), nil},
+	"HighWatermark":      {kinds(reflect.Int), nil},
+	"Subdivisions":       {kinds(reflect.String, reflect.Map), nil},
+	"AdditionalMetadata": {kinds(reflect.String, reflect.Slice), checkFuncs(validateAdditionalMetadata)},
 }
 
 // validate takes a field name, a reflect value, and metaValidation and validates the given field

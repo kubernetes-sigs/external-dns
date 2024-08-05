@@ -18,6 +18,7 @@ package alidns
 // DomainLog is a nested struct in alidns response
 type DomainLog struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Action          string `json:"Action" xml:"Action"`
 	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
@@ -30,9 +31,22 @@ type DomainLog struct {
 	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
 	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	DomainName      string `json:"DomainName" xml:"DomainName"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
+	DomainName      string `json:"DomainName" xml:"DomainName"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Action          string `json:"Action" xml:"Action"`
-	Message         string `json:"Message" xml:"Message"`
-	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+	Message         string `json:"Message" xml:"Message"`
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+	DomainName      string `json:"DomainName" xml:"DomainName"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

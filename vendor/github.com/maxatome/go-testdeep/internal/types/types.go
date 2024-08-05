@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -95,6 +96,10 @@ func AsOperatorNotJSONMarshallableError(err error) (OperatorNotJSONMarshallableE
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"encoding/json"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"strconv"
 )
 
@@ -106,12 +111,12 @@ type TestDeepStringer interface {
 }
 
 // TestDeepStamp is a useful type providing the _TestDeep() method
-// needed to implement TestDeepStringer interface.
+// needed to implement [TestDeepStringer] interface.
 type TestDeepStamp struct{}
 
 func (t TestDeepStamp) _TestDeep() {}
 
-// RawString implements TestDeepStringer interface.
+// RawString implements [TestDeepStringer] interface.
 type RawString string
 
 func (s RawString) _TestDeep() {}
@@ -120,7 +125,7 @@ func (s RawString) String() string {
 	return string(s)
 }
 
-// RawInt implements TestDeepStringer interface.
+// RawInt implements [TestDeepStringer] interface.
 type RawInt int
 
 func (i RawInt) _TestDeep() {}
@@ -243,3 +248,56 @@ func (i RawInt) String() string {
 	return strconv.Itoa(int(i))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
+
+var _ = []TestDeepStringer{RawString(""), RawInt(0)}
+
+// OperatorNotJSONMarshallableError implements error interface. It
+// is returned by (*td.TestDeep).MarshalJSON() to notice the user an
+// operator cannot be JSON Marshal'ed.
+type OperatorNotJSONMarshallableError string
+
+// Error implements error interface.
+func (e OperatorNotJSONMarshallableError) Error() string {
+	return string(e) + " TestDeep operator cannot be json.Marshal'led"
+}
+
+// Operator returns the operator behind this error.
+func (e OperatorNotJSONMarshallableError) Operator() string {
+	return string(e)
+}
+
+// AsOperatorNotJSONMarshallableError checks that err is or contains
+// an [OperatorNotJSONMarshallableError] and if yes, returns it and
+// true.
+func AsOperatorNotJSONMarshallableError(err error) (OperatorNotJSONMarshallableError, bool) {
+	switch err := err.(type) {
+	case OperatorNotJSONMarshallableError:
+		return err, true
+
+	case *json.MarshalerError:
+		if err, ok := err.Err.(OperatorNotJSONMarshallableError); ok {
+			return err, true
+		}
+	}
+
+	return "", false
+}
+
+type RecvKind bool
+
+const (
+	_ RecvKind = (iota & 1) == 0
+	RecvNothing
+	RecvClosed
+)
+
+func (r RecvKind) _TestDeep() {}
+
+func (r RecvKind) String() string {
+	if r == RecvNothing {
+		return "nothing received on channel"
+	}
+	return "channel is closed"
+}
+
+var _ = []TestDeepStringer{RecvNothing, RecvClosed}

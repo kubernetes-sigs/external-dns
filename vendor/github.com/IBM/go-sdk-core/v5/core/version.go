@@ -15,4 +15,9 @@ package core
 // limitations under the License.
 
 // Version of the SDK
+<<<<<<< HEAD
 const __VERSION__ = "5.8.0"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+const __VERSION__ = "5.17.2"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

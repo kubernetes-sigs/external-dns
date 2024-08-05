@@ -21,6 +21,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 <<<<<<< HEAD
@@ -242,12 +243,19 @@ func (c *FakeDiscovery) OpenAPIV3() openapi.Client {
 	panic("unimplemented")
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"net/http"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-	"github.com/googleapis/gnostic/OpenAPIv2"
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/openapi"
 	kubeversion "k8s.io/client-go/pkg/version"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/testing"
@@ -273,14 +281,13 @@ func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 			return resourceList, nil
 		}
 	}
-	return nil, fmt.Errorf("GroupVersion %q not found", groupVersion)
-}
-
-// ServerResources returns the supported resources for all groups and versions.
-// Deprecated: use ServerGroupsAndResources instead.
-func (c *FakeDiscovery) ServerResources() ([]*metav1.APIResourceList, error) {
-	_, rs, err := c.ServerGroupsAndResources()
-	return rs, err
+	return nil, &errors.StatusError{
+		ErrStatus: metav1.Status{
+			Status:  metav1.StatusFailure,
+			Code:    http.StatusNotFound,
+			Reason:  metav1.StatusReasonNotFound,
+			Message: fmt.Sprintf("the server could not find the requested resource, GroupVersion %q not found", groupVersion),
+		}}
 }
 
 // ServerGroupsAndResources returns the supported groups and resources for all groups and versions.
@@ -362,7 +369,10 @@ func (c *FakeDiscovery) ServerVersion() (*version.Info, error) {
 	action := testing.ActionImpl{}
 	action.Verb = "get"
 	action.Resource = schema.GroupVersionResource{Resource: "version"}
-	c.Invokes(action, nil)
+	_, err := c.Invokes(action, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if c.FakedServerVersion != nil {
 		return c.FakedServerVersion, nil
@@ -378,8 +388,16 @@ func (c *FakeDiscovery) OpenAPISchema() (*openapi_v2.Document, error) {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
+func (c *FakeDiscovery) OpenAPIV3() openapi.Client {
+	panic("unimplemented")
+}
+
 // RESTClient returns a RESTClient that is used to communicate with API server
 // by this client implementation.
 func (c *FakeDiscovery) RESTClient() restclient.Interface {
 	return nil
+}
+
+func (c *FakeDiscovery) WithLegacy() discovery.DiscoveryInterface {
+	panic("unimplemented")
 }

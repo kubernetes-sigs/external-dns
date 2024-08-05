@@ -167,7 +167,12 @@ const (
 	UntypedNilUse
 
 	// WrongAssignCount occurs when the number of values on the right-hand side
+<<<<<<< HEAD
 	// of an assignment or or initialization expression does not match the number
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// of an assignment or initialization expression does not match the number
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// of variables on the left-hand side.
 	//
 	// Example:

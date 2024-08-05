@@ -60,12 +60,19 @@ func (s *statefulSetLister) GetPodStatefulSets(pod *v1.Pod) ([]*apps.StatefulSet
 		selector, err = metav1.LabelSelectorAsSelector(ps.Spec.Selector)
 		if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			// This object has an invalid selector, it does not match the pod
 			continue
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			return nil, fmt.Errorf("invalid selector: %v", err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			return nil, fmt.Errorf("invalid selector: %v", err)
+=======
+			// This object has an invalid selector, it does not match the pod
+			continue
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 
 		// If a StatefulSet with a nil or empty selector creeps in, it should match nothing, not everything.

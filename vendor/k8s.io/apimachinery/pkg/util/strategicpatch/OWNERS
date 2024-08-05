@@ -2,6 +2,7 @@
 
 approvers:
 <<<<<<< HEAD
+<<<<<<< HEAD
   - pwittrock
 reviewers:
   - apelisse
@@ -11,7 +12,23 @@ emeritus_approvers:
 =======
 - pwittrock
 - mengqiy
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- pwittrock
+- mengqiy
+=======
+  - apelisse
+  - pwittrock
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 reviewers:
+<<<<<<< HEAD
 - mengqiy
 - apelisse
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- mengqiy
+- apelisse
+=======
+  - apelisse
+emeritus_approvers:
+  - mengqiy
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

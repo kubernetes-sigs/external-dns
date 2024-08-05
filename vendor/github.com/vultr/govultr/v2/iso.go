@@ -23,6 +23,7 @@ type ISOServiceHandler struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	client *Client
 }
 
@@ -296,6 +297,11 @@ func (i *ISOServiceHandler) ListPublic(ctx context.Context, options *ListOptions
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Client *Client
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Client *Client
+=======
+	client *Client
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ISO represents ISOs currently available on this account.
@@ -340,13 +346,13 @@ type publicIsosBase struct {
 func (i *ISOServiceHandler) Create(ctx context.Context, isoReq *ISOReq) (*ISO, error) {
 	uri := "/v2/iso"
 
-	req, err := i.Client.NewRequest(ctx, http.MethodPost, uri, isoReq)
+	req, err := i.client.NewRequest(ctx, http.MethodPost, uri, isoReq)
 	if err != nil {
 		return nil, err
 	}
 
 	iso := new(isoBase)
-	if err = i.Client.DoWithContext(ctx, req, iso); err != nil {
+	if err = i.client.DoWithContext(ctx, req, iso); err != nil {
 		return nil, err
 	}
 
@@ -357,13 +363,13 @@ func (i *ISOServiceHandler) Create(ctx context.Context, isoReq *ISOReq) (*ISO, e
 func (i *ISOServiceHandler) Get(ctx context.Context, isoID string) (*ISO, error) {
 	uri := fmt.Sprintf("/v2/iso/%s", isoID)
 
-	req, err := i.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := i.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	iso := new(isoBase)
-	if err := i.Client.DoWithContext(ctx, req, iso); err != nil {
+	if err := i.client.DoWithContext(ctx, req, iso); err != nil {
 		return nil, err
 	}
 	return iso.ISO, nil
@@ -373,19 +379,19 @@ func (i *ISOServiceHandler) Get(ctx context.Context, isoID string) (*ISO, error)
 func (i *ISOServiceHandler) Delete(ctx context.Context, isoID string) error {
 	uri := fmt.Sprintf("/v2/iso/%s", isoID)
 
-	req, err := i.Client.NewRequest(ctx, http.MethodDelete, uri, nil)
+	req, err := i.client.NewRequest(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
 		return err
 	}
 
-	return i.Client.DoWithContext(ctx, req, nil)
+	return i.client.DoWithContext(ctx, req, nil)
 }
 
 // List will list all ISOs currently available on your account
 func (i *ISOServiceHandler) List(ctx context.Context, options *ListOptions) ([]ISO, *Meta, error) {
 	uri := "/v2/iso"
 
-	req, err := i.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := i.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -398,7 +404,7 @@ func (i *ISOServiceHandler) List(ctx context.Context, options *ListOptions) ([]I
 	req.URL.RawQuery = newValues.Encode()
 
 	iso := new(isosBase)
-	if err = i.Client.DoWithContext(ctx, req, iso); err != nil {
+	if err = i.client.DoWithContext(ctx, req, iso); err != nil {
 		return nil, nil, err
 	}
 
@@ -409,7 +415,7 @@ func (i *ISOServiceHandler) List(ctx context.Context, options *ListOptions) ([]I
 func (i *ISOServiceHandler) ListPublic(ctx context.Context, options *ListOptions) ([]PublicISO, *Meta, error) {
 	uri := "/v2/iso-public"
 
-	req, err := i.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := i.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -422,8 +428,14 @@ func (i *ISOServiceHandler) ListPublic(ctx context.Context, options *ListOptions
 	req.URL.RawQuery = newValues.Encode()
 
 	iso := new(publicIsosBase)
+<<<<<<< HEAD
 	if err = i.Client.DoWithContext(ctx, req, iso); err != nil {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if err = i.Client.DoWithContext(ctx, req, iso); err != nil {
+=======
+	if err = i.client.DoWithContext(ctx, req, iso); err != nil {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return nil, nil, err
 	}
 

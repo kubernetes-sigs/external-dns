@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteZone(request *DeleteZoneRequest) (response *DeleteZoneResponse, err error) {
 	response = CreateDeleteZoneResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,10 @@ func CreateDeleteZoneRequest() (request *DeleteZoneRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/deletezone.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/deletezone.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DeleteZone(request *DeleteZoneRequest) (response *DeleteZoneResponse, err error) {
 	response = CreateDeleteZoneResponse()
 	err = client.DoAction(request, response)
@@ -184,8 +189,6 @@ func (client *Client) DeleteZone(request *DeleteZoneRequest) (response *DeleteZo
 }
 
 // DeleteZoneWithChan invokes the pvtz.DeleteZone API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/deletezone.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteZoneWithChan(request *DeleteZoneRequest) (<-chan *DeleteZoneResponse, <-chan error) {
 	responseChan := make(chan *DeleteZoneResponse, 1)
 	errChan := make(chan error, 1)
@@ -208,8 +211,6 @@ func (client *Client) DeleteZoneWithChan(request *DeleteZoneRequest) (<-chan *De
 }
 
 // DeleteZoneWithCallback invokes the pvtz.DeleteZone API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/deletezone.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteZoneWithCallback(request *DeleteZoneRequest, callback func(response *DeleteZoneResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -249,7 +250,12 @@ func CreateDeleteZoneRequest() (request *DeleteZoneRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DeleteZone", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

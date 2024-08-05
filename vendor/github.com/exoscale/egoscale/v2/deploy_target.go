@@ -13,6 +13,7 @@ type DeployTarget struct {
 	ID          *string
 	Name        *string
 	Type        *string
+<<<<<<< HEAD
 }
 
 // ToAPIMock returns the low-level representation of the resource. This is intended for testing purposes.
@@ -72,6 +73,60 @@ func (c *Client) ListDeployTargets(ctx context.Context, zone string) ([]*DeployT
 	if resp.JSON200.DeployTargets != nil {
 		for i := range *resp.JSON200.DeployTargets {
 			list = append(list, deployTargetFromAPI(&(*resp.JSON200.DeployTargets)[i]))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Zone        *string
+}
+
+func deployTargetFromAPI(d *oapi.DeployTarget, zone string) *DeployTarget {
+	return &DeployTarget{
+		Description: d.Description,
+		ID:          &d.Id,
+		Name:        d.Name,
+		Type:        (*string)(d.Type),
+		Zone:        &zone,
+	}
+}
+
+// FindDeployTarget attempts to find a Deploy Target by name or ID.
+func (c *Client) FindDeployTarget(ctx context.Context, zone, x string) (*DeployTarget, error) {
+	res, err := c.ListDeployTargets(ctx, zone)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, r := range res {
+		if *r.ID == x || *r.Name == x {
+			return c.GetDeployTarget(ctx, zone, *r.ID)
+		}
+	}
+
+	return nil, apiv2.ErrNotFound
+}
+
+// GetDeployTarget returns the Deploy Target corresponding to the specified ID.
+func (c *Client) GetDeployTarget(ctx context.Context, zone, id string) (*DeployTarget, error) {
+	resp, err := c.GetDeployTargetWithResponse(apiv2.WithZone(ctx, zone), id)
+	if err != nil {
+		return nil, err
+	}
+
+	return deployTargetFromAPI(resp.JSON200, zone), nil
+}
+
+// ListDeployTargets returns the list of existing Deploy Targets.
+func (c *Client) ListDeployTargets(ctx context.Context, zone string) ([]*DeployTarget, error) {
+	list := make([]*DeployTarget, 0)
+
+	resp, err := c.ListDeployTargetsWithResponse(apiv2.WithZone(ctx, zone))
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.JSON200.DeployTargets != nil {
+		for i := range *resp.JSON200.DeployTargets {
+			list = append(list, deployTargetFromAPI(&(*resp.JSON200.DeployTargets)[i], zone))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 

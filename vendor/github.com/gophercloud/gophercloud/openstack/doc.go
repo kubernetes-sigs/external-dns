@@ -14,6 +14,7 @@ Example of Creating a Service Client
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	client, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -46,6 +47,11 @@ Example of Creating a Service Client
 =======
 	client, err := openstack.NewNetworkV2(client, gophercloud.EndpointOpts{
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	client, err := openstack.NewNetworkV2(client, gophercloud.EndpointOpts{
+=======
+	client, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		Region: os.Getenv("OS_REGION_NAME"),
 	})
 */

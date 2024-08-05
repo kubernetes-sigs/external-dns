@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) OperateBatchDomain(request *OperateBatchDomainRequest) (response *OperateBatchDomainResponse, err error) {
 	response = CreateOperateBatchDomainResponse()
 	err = client.DoAction(request, response)
@@ -207,6 +208,10 @@ func CreateOperateBatchDomainRequest() (request *OperateBatchDomainRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/operatebatchdomain.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/operatebatchdomain.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) OperateBatchDomain(request *OperateBatchDomainRequest) (response *OperateBatchDomainResponse, err error) {
 	response = CreateOperateBatchDomainResponse()
 	err = client.DoAction(request, response)
@@ -214,8 +219,6 @@ func (client *Client) OperateBatchDomain(request *OperateBatchDomainRequest) (re
 }
 
 // OperateBatchDomainWithChan invokes the alidns.OperateBatchDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/operatebatchdomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) OperateBatchDomainWithChan(request *OperateBatchDomainRequest) (<-chan *OperateBatchDomainResponse, <-chan error) {
 	responseChan := make(chan *OperateBatchDomainResponse, 1)
 	errChan := make(chan error, 1)
@@ -238,8 +241,6 @@ func (client *Client) OperateBatchDomainWithChan(request *OperateBatchDomainRequ
 }
 
 // OperateBatchDomainWithCallback invokes the alidns.OperateBatchDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/operatebatchdomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) OperateBatchDomainWithCallback(request *OperateBatchDomainRequest, callback func(response *OperateBatchDomainResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -284,8 +285,8 @@ type OperateBatchDomainDomainRecordInfo struct {
 // OperateBatchDomainResponse is the response struct for api OperateBatchDomain
 type OperateBatchDomainResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    int64  `json:"TaskId" xml:"TaskId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateOperateBatchDomainRequest creates a request to invoke OperateBatchDomain API
@@ -294,7 +295,12 @@ func CreateOperateBatchDomainRequest() (request *OperateBatchDomainRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "OperateBatchDomain", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

@@ -12,6 +12,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"golang.org/x/sys/windows"
 )
@@ -151,30 +152,40 @@ func checkIfTerminal(w io.Writer) bool {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"syscall"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"syscall"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-	sequences "github.com/konsorten/go-windows-terminal-sequences"
+	"golang.org/x/sys/windows"
 )
 
-func initTerminal(w io.Writer) {
-	switch v := w.(type) {
-	case *os.File:
-		sequences.EnableVirtualTerminalProcessing(syscall.Handle(v.Fd()), true)
-	}
-}
-
 func checkIfTerminal(w io.Writer) bool {
-	var ret bool
 	switch v := w.(type) {
 	case *os.File:
+		handle := windows.Handle(v.Fd())
 		var mode uint32
-		err := syscall.GetConsoleMode(syscall.Handle(v.Fd()), &mode)
-		ret = (err == nil)
-	default:
-		ret = false
+		if err := windows.GetConsoleMode(handle, &mode); err != nil {
+			return false
+		}
+		mode |= windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
+		if err := windows.SetConsoleMode(handle, mode); err != nil {
+			return false
+		}
+		return true
 	}
+<<<<<<< HEAD
 	if ret {
 		initTerminal(w)
 	}
 	return ret
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if ret {
+		initTerminal(w)
+	}
+	return ret
+=======
+	return false
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

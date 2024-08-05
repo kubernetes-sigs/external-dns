@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmAccessStrategies(request *DescribeGtmAccessStrategiesRequest) (response *DescribeGtmAccessStrategiesResponse, err error) {
 	response = CreateDescribeGtmAccessStrategiesResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,10 @@ func CreateDescribeGtmAccessStrategiesRequest() (request *DescribeGtmAccessStrat
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmAccessStrategies(request *DescribeGtmAccessStrategiesRequest) (response *DescribeGtmAccessStrategiesResponse, err error) {
 	response = CreateDescribeGtmAccessStrategiesResponse()
 	err = client.DoAction(request, response)
@@ -196,8 +201,6 @@ func (client *Client) DescribeGtmAccessStrategies(request *DescribeGtmAccessStra
 }
 
 // DescribeGtmAccessStrategiesWithChan invokes the alidns.DescribeGtmAccessStrategies API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAccessStrategiesWithChan(request *DescribeGtmAccessStrategiesRequest) (<-chan *DescribeGtmAccessStrategiesResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmAccessStrategiesResponse, 1)
 	errChan := make(chan error, 1)
@@ -220,8 +223,6 @@ func (client *Client) DescribeGtmAccessStrategiesWithChan(request *DescribeGtmAc
 }
 
 // DescribeGtmAccessStrategiesWithCallback invokes the alidns.DescribeGtmAccessStrategies API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAccessStrategiesWithCallback(request *DescribeGtmAccessStrategiesRequest, callback func(response *DescribeGtmAccessStrategiesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -253,12 +254,12 @@ type DescribeGtmAccessStrategiesRequest struct {
 // DescribeGtmAccessStrategiesResponse is the response struct for api DescribeGtmAccessStrategies
 type DescribeGtmAccessStrategiesResponse struct {
 	*responses.BaseResponse
-	RequestId  string     `json:"RequestId" xml:"RequestId"`
-	TotalItems int        `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int        `json:"TotalPages" xml:"TotalPages"`
-	PageNumber int        `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int        `json:"PageSize" xml:"PageSize"`
-	Strategies Strategies `json:"Strategies" xml:"Strategies"`
+	PageSize   int                                     `json:"PageSize" xml:"PageSize"`
+	RequestId  string                                  `json:"RequestId" xml:"RequestId"`
+	PageNumber int                                     `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                                     `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                                     `json:"TotalItems" xml:"TotalItems"`
+	Strategies StrategiesInDescribeGtmAccessStrategies `json:"Strategies" xml:"Strategies"`
 }
 
 // CreateDescribeGtmAccessStrategiesRequest creates a request to invoke DescribeGtmAccessStrategies API
@@ -267,7 +268,12 @@ func CreateDescribeGtmAccessStrategiesRequest() (request *DescribeGtmAccessStrat
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAccessStrategies", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

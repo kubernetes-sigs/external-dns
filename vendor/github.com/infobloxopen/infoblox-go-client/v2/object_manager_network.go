@@ -108,12 +108,29 @@ func (objMgr *ObjectManager) UpdateNetwork(
 	nw.Ea = setEas
 	nw.Comment = comment
 
+<<<<<<< HEAD
 	newRef, err := objMgr.connector.UpdateObject(nw, ref)
 	if err != nil {
 		return nil, err
 	}
 
 	nw.Ref = newRef
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// Network view is not allowed to be updated,
+	// thus making its name empty (will not appear among data which we update).
+	netViewSaved := nw.NetviewName
+	nw.NetviewName = ""
+
+	newRef, err := objMgr.connector.UpdateObject(nw, ref)
+	if err != nil {
+		return nil, err
+	}
+
+	nw.Ref = newRef
+	nw.NetviewName = netViewSaved
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return nw, nil
 }
 

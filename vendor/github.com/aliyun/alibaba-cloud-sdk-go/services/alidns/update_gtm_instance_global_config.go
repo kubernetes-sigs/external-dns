@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGlobalConfigRequest) (response *UpdateGtmInstanceGlobalConfigResponse, err error) {
 	response = CreateUpdateGtmInstanceGlobalConfigResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,10 @@ func CreateUpdateGtmInstanceGlobalConfigRequest() (request *UpdateGtmInstanceGlo
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGlobalConfigRequest) (response *UpdateGtmInstanceGlobalConfigResponse, err error) {
 	response = CreateUpdateGtmInstanceGlobalConfigResponse()
 	err = client.DoAction(request, response)
@@ -196,8 +201,6 @@ func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGl
 }
 
 // UpdateGtmInstanceGlobalConfigWithChan invokes the alidns.UpdateGtmInstanceGlobalConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmInstanceGlobalConfigWithChan(request *UpdateGtmInstanceGlobalConfigRequest) (<-chan *UpdateGtmInstanceGlobalConfigResponse, <-chan error) {
 	responseChan := make(chan *UpdateGtmInstanceGlobalConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -220,8 +223,6 @@ func (client *Client) UpdateGtmInstanceGlobalConfigWithChan(request *UpdateGtmIn
 }
 
 // UpdateGtmInstanceGlobalConfigWithCallback invokes the alidns.UpdateGtmInstanceGlobalConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmInstanceGlobalConfigWithCallback(request *UpdateGtmInstanceGlobalConfigRequest, callback func(response *UpdateGtmInstanceGlobalConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -267,7 +268,12 @@ func CreateUpdateGtmInstanceGlobalConfigRequest() (request *UpdateGtmInstanceGlo
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmInstanceGlobalConfig", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

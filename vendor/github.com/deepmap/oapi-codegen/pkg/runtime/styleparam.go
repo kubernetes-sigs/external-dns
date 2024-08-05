@@ -14,6 +14,7 @@
 package runtime
 
 import (
+<<<<<<< HEAD
 	"fmt"
 	"net/url"
 	"reflect"
@@ -186,6 +187,180 @@ func styleStruct(style string, explode bool, paramName string, paramLocation Par
 		styledVal, err := stylePrimitive(style, explode, paramName, paramLocation, timeVal)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to style time")
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+	"fmt"
+	"net/url"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/deepmap/oapi-codegen/pkg/types"
+)
+
+// Parameter escaping works differently based on where a header is found
+type ParamLocation int
+
+const (
+	ParamLocationUndefined ParamLocation = iota
+	ParamLocationQuery
+	ParamLocationPath
+	ParamLocationHeader
+	ParamLocationCookie
+)
+
+// This function is used by older generated code, and must remain compatible
+// with that code. It is not to be used in new templates. Please see the
+// function below, which can specialize its output based on the location of
+// the parameter.
+func StyleParam(style string, explode bool, paramName string, value interface{}) (string, error) {
+	return StyleParamWithLocation(style, explode, paramName, ParamLocationUndefined, value)
+}
+
+// Given an input value, such as a primitive type, array or object, turn it
+// into a parameter based on style/explode definition, performing whatever
+// escaping is necessary based on parameter location
+func StyleParamWithLocation(style string, explode bool, paramName string, paramLocation ParamLocation, value interface{}) (string, error) {
+	t := reflect.TypeOf(value)
+	v := reflect.ValueOf(value)
+
+	// Things may be passed in by pointer, we need to dereference, so return
+	// error on nil.
+	if t.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return "", fmt.Errorf("value is a nil pointer")
+		}
+		v = reflect.Indirect(v)
+		t = v.Type()
+	}
+
+	switch t.Kind() {
+	case reflect.Slice:
+		n := v.Len()
+		sliceVal := make([]interface{}, n)
+		for i := 0; i < n; i++ {
+			sliceVal[i] = v.Index(i).Interface()
+		}
+		return styleSlice(style, explode, paramName, paramLocation, sliceVal)
+	case reflect.Struct:
+		return styleStruct(style, explode, paramName, paramLocation, value)
+	case reflect.Map:
+		return styleMap(style, explode, paramName, paramLocation, value)
+	default:
+		return stylePrimitive(style, explode, paramName, paramLocation, value)
+	}
+}
+
+func styleSlice(style string, explode bool, paramName string, paramLocation ParamLocation, values []interface{}) (string, error) {
+	if style == "deepObject" {
+		if !explode {
+			return "", errors.New("deepObjects must be exploded")
+		}
+		return MarshalDeepObject(values, paramName)
+	}
+
+	var prefix string
+	var separator string
+
+	switch style {
+	case "simple":
+		separator = ","
+	case "label":
+		prefix = "."
+		if explode {
+			separator = "."
+		} else {
+			separator = ","
+		}
+	case "matrix":
+		prefix = fmt.Sprintf(";%s=", paramName)
+		if explode {
+			separator = prefix
+		} else {
+			separator = ","
+		}
+	case "form":
+		prefix = fmt.Sprintf("%s=", paramName)
+		if explode {
+			separator = "&" + prefix
+		} else {
+			separator = ","
+		}
+	case "spaceDelimited":
+		prefix = fmt.Sprintf("%s=", paramName)
+		if explode {
+			separator = "&" + prefix
+		} else {
+			separator = " "
+		}
+	case "pipeDelimited":
+		prefix = fmt.Sprintf("%s=", paramName)
+		if explode {
+			separator = "&" + prefix
+		} else {
+			separator = "|"
+		}
+	default:
+		return "", fmt.Errorf("unsupported style '%s'", style)
+	}
+
+	// We're going to assume here that the array is one of simple types.
+	var err error
+	var part string
+	parts := make([]string, len(values))
+	for i, v := range values {
+		part, err = primitiveToString(v)
+		part = escapeParameterString(part, paramLocation)
+		parts[i] = part
+		if err != nil {
+			return "", fmt.Errorf("error formatting '%s': %s", paramName, err)
+		}
+	}
+	return prefix + strings.Join(parts, separator), nil
+}
+
+func sortedKeys(strMap map[string]string) []string {
+	keys := make([]string, len(strMap))
+	i := 0
+	for k := range strMap {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// This is a special case. The struct may be a date or time, in
+// which case, marshal it in correct format.
+func marshalDateTimeValue(value interface{}) (string, bool) {
+	v := reflect.Indirect(reflect.ValueOf(value))
+	t := v.Type()
+
+	if t.ConvertibleTo(reflect.TypeOf(time.Time{})) {
+		tt := v.Convert(reflect.TypeOf(time.Time{}))
+		timeVal := tt.Interface().(time.Time)
+		return timeVal.Format(time.RFC3339Nano), true
+	}
+
+	if t.ConvertibleTo(reflect.TypeOf(types.Date{})) {
+		d := v.Convert(reflect.TypeOf(types.Date{}))
+		dateVal := d.Interface().(types.Date)
+		return dateVal.Format(types.DateFormat), true
+	}
+
+	return "", false
+}
+
+func styleStruct(style string, explode bool, paramName string, paramLocation ParamLocation, value interface{}) (string, error) {
+
+	if timeVal, ok := marshalDateTimeValue(value); ok {
+		styledVal, err := stylePrimitive(style, explode, paramName, paramLocation, timeVal)
+		if err != nil {
+			return "", fmt.Errorf("failed to style time: %w", err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 		return styledVal, nil
 	}

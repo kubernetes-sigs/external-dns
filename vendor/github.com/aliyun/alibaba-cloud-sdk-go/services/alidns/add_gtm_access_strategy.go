@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddGtmAccessStrategy(request *AddGtmAccessStrategyRequest) (response *AddGtmAccessStrategyResponse, err error) {
 	response = CreateAddGtmAccessStrategyResponse()
 	err = client.DoAction(request, response)
@@ -185,6 +186,10 @@ func CreateAddGtmAccessStrategyRequest() (request *AddGtmAccessStrategyRequest) 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/addgtmaccessstrategy.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/addgtmaccessstrategy.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) AddGtmAccessStrategy(request *AddGtmAccessStrategyRequest) (response *AddGtmAccessStrategyResponse, err error) {
 	response = CreateAddGtmAccessStrategyResponse()
 	err = client.DoAction(request, response)
@@ -192,8 +197,6 @@ func (client *Client) AddGtmAccessStrategy(request *AddGtmAccessStrategyRequest)
 }
 
 // AddGtmAccessStrategyWithChan invokes the alidns.AddGtmAccessStrategy API asynchronously
-// api document: https://help.aliyun.com/api/alidns/addgtmaccessstrategy.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddGtmAccessStrategyWithChan(request *AddGtmAccessStrategyRequest) (<-chan *AddGtmAccessStrategyResponse, <-chan error) {
 	responseChan := make(chan *AddGtmAccessStrategyResponse, 1)
 	errChan := make(chan error, 1)
@@ -216,8 +219,6 @@ func (client *Client) AddGtmAccessStrategyWithChan(request *AddGtmAccessStrategy
 }
 
 // AddGtmAccessStrategyWithCallback invokes the alidns.AddGtmAccessStrategy API asynchronously
-// api document: https://help.aliyun.com/api/alidns/addgtmaccessstrategy.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddGtmAccessStrategyWithCallback(request *AddGtmAccessStrategyRequest, callback func(response *AddGtmAccessStrategyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -261,7 +262,12 @@ func CreateAddGtmAccessStrategyRequest() (request *AddGtmAccessStrategyRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddGtmAccessStrategy", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

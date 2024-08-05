@@ -16,6 +16,7 @@ func (d *Decoder) parseNumberValue() (Token, bool) {
 		numAttrs |= isNegative
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	tok := Token{
 		kind:     Scalar,
 		attrs:    numberValue,
@@ -216,12 +217,20 @@ func parseNumber(input []byte) number {
 	if num.kind == numFloat && (d.in[last] == 'f' || d.in[last] == 'F') {
 		strSize = last
 	}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	strSize := num.size
+	last := num.size - 1
+	if num.kind == numFloat && (d.in[last] == 'f' || d.in[last] == 'F') {
+		strSize = last
+	}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	tok := Token{
 		kind:     Scalar,
 		attrs:    numberValue,
 		pos:      len(d.orig) - len(d.in),
 		raw:      d.in[:num.size],
-		str:      string(d.in[:strSize]),
+		str:      num.string(d.in),
 		numAttrs: numAttrs,
 	}
 	d.consume(num.size)
@@ -242,12 +251,35 @@ type number struct {
 	kind uint8
 	neg  bool
 	size int
+	// if neg, this is the length of whitespace and comments between
+	// the minus sign and the rest fo the number literal
+	sep int
+}
+
+func (num number) string(data []byte) string {
+	strSize := num.size
+	last := num.size - 1
+	if num.kind == numFloat && (data[last] == 'f' || data[last] == 'F') {
+		strSize = last
+	}
+	if num.neg && num.sep > 0 {
+		// strip whitespace/comments between negative sign and the rest
+		strLen := strSize - num.sep
+		str := make([]byte, strLen)
+		str[0] = data[0]
+		copy(str[1:], data[num.sep+1:strSize])
+		return string(str)
+	}
+	return string(data[:strSize])
+
 }
 
 // parseNumber constructs a number object from given input. It allows for the
 // following patterns:
-//   integer: ^-?([1-9][0-9]*|0[xX][0-9a-fA-F]+|0[0-7]*)
-//   float: ^-?((0|[1-9][0-9]*)?([.][0-9]*)?([eE][+-]?[0-9]+)?[fF]?)
+//
+//	integer: ^-?([1-9][0-9]*|0[xX][0-9a-fA-F]+|0[0-7]*)
+//	float: ^-?((0|[1-9][0-9]*)?([.][0-9]*)?([eE][+-]?[0-9]+)?[fF]?)
+//
 // It also returns the number of parsed bytes for the given number, 0 if it is
 // not a number.
 func parseNumber(input []byte) number {
@@ -261,18 +293,21 @@ func parseNumber(input []byte) number {
 	}
 
 	// Optional -
+	var sep int
 	if s[0] == '-' {
 		neg = true
 		s = s[1:]
 		size++
+		// Consume any whitespace or comments between the
+		// negative sign and the rest of the number
+		lenBefore := len(s)
+		s = consume(s, 0)
+		sep = lenBefore - len(s)
+		size += sep
 		if len(s) == 0 {
 			return number{}
 		}
 	}
-
-	// C++ allows for whitespace and comments in between the negative sign and
-	// the rest of the number. This logic currently does not but is consistent
-	// with v1.
 
 	switch {
 	case s[0] == '0':
@@ -310,7 +345,7 @@ func parseNumber(input []byte) number {
 				if len(s) > 0 && !isDelim(s[0]) {
 					return number{}
 				}
-				return number{kind: kind, neg: neg, size: size}
+				return number{kind: kind, neg: neg, size: size, sep: sep}
 			}
 		}
 		s = s[1:]
@@ -382,6 +417,12 @@ func parseNumber(input []byte) number {
 		return number{}
 	}
 
+<<<<<<< HEAD
 	return number{kind: kind, neg: neg, size: size}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return number{kind: kind, neg: neg, size: size}
+=======
+	return number{kind: kind, neg: neg, size: size, sep: sep}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

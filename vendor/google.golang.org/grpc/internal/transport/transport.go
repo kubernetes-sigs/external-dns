@@ -28,8 +28,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -2835,15 +2837,24 @@ func (e ConnectionError) Origin() error {
 func (e ConnectionError) Unwrap() error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"time"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/internal/channelz"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/tap"
 )
+
+const logLevel = 2
 
 type bufferPool struct {
 	pool sync.Pool
@@ -2852,7 +2863,7 @@ type bufferPool struct {
 func newBufferPool() *bufferPool {
 	return &bufferPool{
 		pool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return new(bytes.Buffer)
 			},
 		},
@@ -3043,6 +3054,7 @@ type Stream struct {
 	ctx          context.Context    // the associated context of the stream
 	cancel       context.CancelFunc // always nil for client side Stream
 	done         chan struct{}      // closed at the end of stream to unblock writers. On the client side.
+	doneFunc     func()             // invoked at the end of stream on client side.
 	ctxDone      <-chan struct{}    // same as done chan but for server side. Cache of ctx.Done() (for performance)
 	method       string             // the associated RPC method of the stream
 	recvCompress string
@@ -3052,6 +3064,9 @@ type Stream struct {
 	fc           *inFlow
 	wq           *writeQuota
 
+	// Holds compressor names passed in grpc-accept-encoding metadata from the
+	// client. This is empty for the client side stream.
+	clientAdvertisedCompressors string
 	// Callback to state application's intentions to read data. This
 	// is used to adjust flow control, if needed.
 	requestRead func(int)
@@ -3061,7 +3076,8 @@ type Stream struct {
 	// headerValid indicates whether a valid header was received.  Only
 	// meaningful after headerChan is closed (always call waitOnHeader() before
 	// reading its value).  Not valid on server side.
-	headerValid bool
+	headerValid      bool
+	headerWireLength int // Only set on server side.
 
 	// hdrMu protects header and trailer metadata on the server-side.
 	hdrMu sync.Mutex
@@ -3140,8 +3156,28 @@ func (s *Stream) RecvCompress() string {
 }
 
 // SetSendCompress sets the compression algorithm to the stream.
-func (s *Stream) SetSendCompress(str string) {
-	s.sendCompress = str
+func (s *Stream) SetSendCompress(name string) error {
+	if s.isHeaderSent() || s.getState() == streamDone {
+		return errors.New("transport: set send compressor called after headers sent or stream done")
+	}
+
+	s.sendCompress = name
+	return nil
+}
+
+// SendCompress returns the send compressor name.
+func (s *Stream) SendCompress() string {
+	return s.sendCompress
+}
+
+// ClientAdvertisedCompressors returns the compressor names advertised by the
+// client via grpc-accept-encoding header.
+func (s *Stream) ClientAdvertisedCompressors() []string {
+	values := strings.Split(s.clientAdvertisedCompressors, ",")
+	for i, v := range values {
+		values[i] = strings.TrimSpace(v)
+	}
+	return values
 }
 
 // Done returns a channel which is closed when it receives the final status
@@ -3165,9 +3201,11 @@ func (s *Stream) Header() (metadata.MD, error) {
 		return s.header.Copy(), nil
 	}
 	s.waitOnHeader()
-	if !s.headerValid {
+
+	if !s.headerValid || s.noHeaders {
 		return nil, s.status.Err()
 	}
+
 	return s.header.Copy(), nil
 }
 
@@ -3203,6 +3241,12 @@ func (s *Stream) Context() context.Context {
 	return s.ctx
 }
 
+// SetContext sets the context of the stream. This will be deleted once the
+// stats handler callouts all move to gRPC layer.
+func (s *Stream) SetContext(ctx context.Context) {
+	s.ctx = ctx
+}
+
 // Method returns the method for the stream.
 func (s *Stream) Method() string {
 	return s.method
@@ -3213,6 +3257,12 @@ func (s *Stream) Method() string {
 // that is, after Done() is closed.
 func (s *Stream) Status() *status.Status {
 	return s.status
+}
+
+// HeaderWireLength returns the size of the headers of the stream as received
+// from the wire. Valid only on the server.
+func (s *Stream) HeaderWireLength() int {
+	return s.headerWireLength
 }
 
 // SetHeader sets the header metadata. This can be called multiple times.
@@ -3319,24 +3369,20 @@ const (
 // ServerConfig consists of all the configurations to establish a server transport.
 type ServerConfig struct {
 	MaxStreams            uint32
-	AuthInfo              credentials.AuthInfo
+	ConnectionTimeout     time.Duration
+	Credentials           credentials.TransportCredentials
 	InTapHandle           tap.ServerInHandle
-	StatsHandler          stats.Handler
+	StatsHandlers         []stats.Handler
 	KeepaliveParams       keepalive.ServerParameters
 	KeepalivePolicy       keepalive.EnforcementPolicy
 	InitialWindowSize     int32
 	InitialConnWindowSize int32
 	WriteBufferSize       int
 	ReadBufferSize        int
-	ChannelzParentID      int64
+	SharedWriteBuffer     bool
+	ChannelzParent        *channelz.Server
 	MaxHeaderListSize     *uint32
 	HeaderTableSize       *uint32
-}
-
-// NewServerTransport creates a ServerTransport with conn or non-nil error
-// if it fails.
-func NewServerTransport(protocol string, conn net.Conn, config *ServerConfig) (ServerTransport, error) {
-	return newHTTP2Server(conn, config)
 }
 
 // ConnectOptions covers all relevant options for communicating with the server.
@@ -3357,8 +3403,8 @@ type ConnectOptions struct {
 	CredsBundle credentials.Bundle
 	// KeepaliveParams stores the keepalive parameters.
 	KeepaliveParams keepalive.ClientParameters
-	// StatsHandler stores the handler for stats.
-	StatsHandler stats.Handler
+	// StatsHandlers stores the handler for stats.
+	StatsHandlers []stats.Handler
 	// InitialWindowSize sets the initial window size for a stream.
 	InitialWindowSize int32
 	// InitialConnWindowSize sets the initial window size for a connection.
@@ -3367,23 +3413,20 @@ type ConnectOptions struct {
 	WriteBufferSize int
 	// ReadBufferSize sets the size of read buffer, which in turn determines how much data can be read at most for one read syscall.
 	ReadBufferSize int
-	// ChannelzParentID sets the addrConn id which initiate the creation of this client transport.
-	ChannelzParentID int64
+	// SharedWriteBuffer indicates whether connections should reuse write buffer
+	SharedWriteBuffer bool
+	// ChannelzParent sets the addrConn id which initiated the creation of this client transport.
+	ChannelzParent *channelz.SubChannel
 	// MaxHeaderListSize sets the max (uncompressed) size of header list that is prepared to be received.
 	MaxHeaderListSize *uint32
-}
-
-// TargetInfo contains the information of the target such as network address and metadata.
-type TargetInfo struct {
-	Addr      string
-	Metadata  interface{}
-	Authority string
+	// UseProxy specifies if a proxy should be used.
+	UseProxy bool
 }
 
 // NewClientTransport establishes the transport with the required ConnectOptions
 // and returns it to the caller.
-func NewClientTransport(connectCtx, ctx context.Context, target TargetInfo, opts ConnectOptions, onPrefaceReceipt func(), onGoAway func(GoAwayReason), onClose func()) (ClientTransport, error) {
-	return newHTTP2Client(connectCtx, ctx, target, opts, onPrefaceReceipt, onGoAway, onClose)
+func NewClientTransport(connectCtx, ctx context.Context, addr resolver.Address, opts ConnectOptions, onClose func(GoAwayReason)) (ClientTransport, error) {
+	return newHTTP2Client(connectCtx, ctx, addr, opts, onClose)
 }
 
 // Options provides additional hints and information for message
@@ -3418,6 +3461,8 @@ type CallHdr struct {
 	ContentSubtype string
 
 	PreviousAttempts int // value of grpc-previous-rpc-attempts header to set
+
+	DoneFunc func() // called when the stream is finished
 }
 
 // ClientTransport is the common interface for all gRPC client-side transport
@@ -3426,7 +3471,7 @@ type ClientTransport interface {
 	// Close tears down this transport. Once it returns, the transport
 	// should not be accessed any more. The caller must make sure this
 	// is called only once.
-	Close() error
+	Close(err error)
 
 	// GracefulClose starts to tear down the transport: the transport will stop
 	// accepting new RPCs and NewStream will return error. Once all streams are
@@ -3460,8 +3505,9 @@ type ClientTransport interface {
 	// HTTP/2).
 	GoAway() <-chan struct{}
 
-	// GetGoAwayReason returns the reason why GoAway frame was received.
-	GetGoAwayReason() GoAwayReason
+	// GetGoAwayReason returns the reason why GoAway frame was received, along
+	// with a human readable string with debug info.
+	GetGoAwayReason() (GoAwayReason, string)
 
 	// RemoteAddr returns the remote network address.
 	RemoteAddr() net.Addr
@@ -3480,7 +3526,7 @@ type ClientTransport interface {
 // Write methods for a given Stream will be called serially.
 type ServerTransport interface {
 	// HandleStreams receives incoming streams using the given handler.
-	HandleStreams(func(*Stream), func(context.Context, string) context.Context)
+	HandleStreams(context.Context, func(*Stream))
 
 	// WriteHeader sends the header metadata for the given stream.
 	// WriteHeader may not be called on all streams.
@@ -3497,13 +3543,13 @@ type ServerTransport interface {
 	// Close tears down the transport. Once it is called, the transport
 	// should not be accessed any more. All the pending streams and their
 	// handlers will be terminated asynchronously.
-	Close() error
+	Close(err error)
 
-	// RemoteAddr returns the remote network address.
-	RemoteAddr() net.Addr
+	// Peer returns the peer of the server transport.
+	Peer() *peer.Peer
 
 	// Drain notifies the client this ServerTransport stops accepting new RPCs.
-	Drain()
+	Drain(debugData string)
 
 	// IncrMsgSent increments the number of message sent through this transport.
 	IncrMsgSent()
@@ -3513,7 +3559,7 @@ type ServerTransport interface {
 }
 
 // connectionErrorf creates an ConnectionError with the specified error description.
-func connectionErrorf(temp bool, e error, format string, a ...interface{}) ConnectionError {
+func connectionErrorf(temp bool, e error, format string, a ...any) ConnectionError {
 	return ConnectionError{
 		Desc: fmt.Sprintf(format, a...),
 		temp: temp,
@@ -3549,6 +3595,12 @@ func (e ConnectionError) Origin() error {
 	return e.err
 }
 
+// Unwrap returns the original error of this connection error or nil when the
+// origin is nil.
+func (e ConnectionError) Unwrap() error {
+	return e.err
+}
+
 var (
 	// ErrConnClosing indicates that the transport is closing.
 	ErrConnClosing = connectionErrorf(true, nil, "transport is closing")
@@ -3577,30 +3629,6 @@ const (
 	// "too_many_pings".
 	GoAwayTooManyPings GoAwayReason = 2
 )
-
-// channelzData is used to store channelz related data for http2Client and http2Server.
-// These fields cannot be embedded in the original structs (e.g. http2Client), since to do atomic
-// operation on int64 variable on 32-bit machine, user is responsible to enforce memory alignment.
-// Here, by grouping those int64 fields inside a struct, we are enforcing the alignment.
-type channelzData struct {
-	kpCount int64
-	// The number of streams that have started, including already finished ones.
-	streamsStarted int64
-	// Client side: The number of streams that have ended successfully by receiving
-	// EoS bit set frame from server.
-	// Server side: The number of streams that have ended successfully by sending
-	// frame with EoS bit set.
-	streamsSucceeded int64
-	streamsFailed    int64
-	// lastStreamCreatedTime stores the timestamp that the last stream gets created. It is of int64 type
-	// instead of time.Time since it's more costly to atomically update time.Time variable than int64
-	// variable. The same goes for lastMsgSentTime and lastMsgRecvTime.
-	lastStreamCreatedTime int64
-	msgSent               int64
-	msgRecv               int64
-	lastMsgSentTime       int64
-	lastMsgRecvTime       int64
-}
 
 // ContextErr converts the error from context package into a status error.
 func ContextErr(err error) error {

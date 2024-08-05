@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateZoneRemark(request *UpdateZoneRemarkRequest) (response *UpdateZoneRemarkResponse, err error) {
 	response = CreateUpdateZoneRemarkResponse()
 	err = client.DoAction(request, response)
@@ -179,6 +180,10 @@ func CreateUpdateZoneRemarkRequest() (request *UpdateZoneRemarkRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) UpdateZoneRemark(request *UpdateZoneRemarkRequest) (response *UpdateZoneRemarkResponse, err error) {
 	response = CreateUpdateZoneRemarkResponse()
 	err = client.DoAction(request, response)
@@ -186,8 +191,6 @@ func (client *Client) UpdateZoneRemark(request *UpdateZoneRemarkRequest) (respon
 }
 
 // UpdateZoneRemarkWithChan invokes the pvtz.UpdateZoneRemark API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateZoneRemarkWithChan(request *UpdateZoneRemarkRequest) (<-chan *UpdateZoneRemarkResponse, <-chan error) {
 	responseChan := make(chan *UpdateZoneRemarkResponse, 1)
 	errChan := make(chan error, 1)
@@ -210,8 +213,6 @@ func (client *Client) UpdateZoneRemarkWithChan(request *UpdateZoneRemarkRequest)
 }
 
 // UpdateZoneRemarkWithCallback invokes the pvtz.UpdateZoneRemark API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateZoneRemarkWithCallback(request *UpdateZoneRemarkRequest, callback func(response *UpdateZoneRemarkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -252,7 +253,12 @@ func CreateUpdateZoneRemarkRequest() (request *UpdateZoneRemarkRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "UpdateZoneRemark", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

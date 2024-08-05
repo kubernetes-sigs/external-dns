@@ -13,6 +13,7 @@
 // limitations under the License.
 syntax = "proto3";
 
+import "google/protobuf/duration.proto";
 import "google/api/field_behavior.proto";
 
 // $schema: istio.security.v1beta1.JWTRule
@@ -25,6 +26,9 @@ package istio.security.v1beta1;
 
 option go_package="istio.io/api/security/v1beta1";
 
+// <!-- istio code generation tags
+// +istio.io/sync-start
+// -->
 // JSON Web Token (JWT) token format for authentication as defined by
 // [RFC 7519](https://tools.ietf.org/html/rfc7519). See [OAuth 2.0](https://tools.ietf.org/html/rfc6749) and
 // [OIDC 1.0](http://openid.net/connect) for how this is used in the whole
@@ -34,8 +38,8 @@ option go_package="istio.io/api/security/v1beta1";
 //
 // Spec for a JWT that is issued by `https://example.com`, with the audience claims must be either
 // `bookstore_android.apps.example.com` or `bookstore_web.apps.example.com`.
-// The token should be presented at the `Authorization` header (default). The Json web key set (JWKS)
-// will be discovered followwing OpenID Connect protocol.
+// The token should be presented at the `Authorization` header (default). The JSON Web Key Set (JWKS)
+// will be discovered following OpenID Connect protocol.
 //
 // ```yaml
 // issuer: https://example.com
@@ -44,13 +48,13 @@ option go_package="istio.io/api/security/v1beta1";
 //   bookstore_web.apps.example.com
 // ```
 //
-// This example specifies token in non-default location (`x-goog-iap-jwt-assertion` header). It also
+// This example specifies a token in a non-default location (`x-goog-iap-jwt-assertion` header). It also
 // defines the URI to fetch JWKS explicitly.
 //
 // ```yaml
 // issuer: https://example.com
 // jwksUri: https://example.com/.secret/jwks.json
-// jwtHeaders:
+// fromHeaders:
 // - "x-goog-iap-jwt-assertion"
 // ```
 message JWTRule {
@@ -58,12 +62,12 @@ message JWTRule {
   // [issuer](https://tools.ietf.org/html/rfc7519#section-4.1.1)
   // A JWT with different `iss` claim will be rejected.
   //
-  // Example: https://foobar.auth0.com
-  // Example: 1234567-compute@developer.gserviceaccount.com
+  // Example: `https://foobar.auth0.com`
+  // Example: `1234567-compute@developer.gserviceaccount.com`
   string issuer = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of JWT
-  // [audiences](https://tools.ietf.org/html/rfc7519#section-4.1.3).
+  // [audiences](https://tools.ietf.org/html/rfc7519#section-4.1.3)
   // that are allowed to access. A JWT containing any of these
   // audiences will be accepted.
   //
@@ -89,13 +93,14 @@ message JWTRule {
   //
   // Example: `https://www.googleapis.com/oauth2/v1/certs`
   //
-  // Note: Only one of jwks_uri and jwks should be used. jwks_uri will be ignored if it does.
+  // Note: Only one of `jwksUri` and `jwks` should be used.
+  // +kubebuilder:altName=jwks_uri
   string jwks_uri = 3;
 
   // JSON Web Key Set of public keys to validate signature of the JWT.
   // See https://auth0.com/docs/jwks.
   //
-  // Note: Only one of jwks_uri and jwks should be used. jwks_uri will be ignored if it does.
+  // Note: Only one of `jwksUri` and `jwks` should be used.
   string jwks = 10;
 
   // The next two fields define how to extract the JWT from an HTTP request.
@@ -112,20 +117,28 @@ message JWTRule {
   //     [URI Query Parameter](https://tools.ietf.org/html/rfc6750#section-2.3))
 
   // List of header locations from which JWT is expected. For example, below is the location spec
-  // if JWT is expected to be found in `x-jwt-assertion` header, and have "Bearer " prefix:
-  // ```
+  // if JWT is expected to be found in `x-jwt-assertion` header, and have `Bearer` prefix:
+  //
+  // ```yaml
   //   fromHeaders:
   //   - name: x-jwt-assertion
   //     prefix: "Bearer "
   // ```
+  //
+  // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+  // such requests is undefined.
   repeated JWTHeader from_headers = 6;
 
   // List of query parameters from which JWT is expected. For example, if JWT is provided via query
-  // parameter `my_token` (e.g /path?my_token=<JWT>), the config is:
-  // ```
+  // parameter `my_token` (e.g `/path?my_token=<JWT>`), the config is:
+  //
+  // ```yaml
   //   fromParams:
   //   - "my_token"
   // ```
+  //
+  // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+  // such requests is undefined.
   repeated string from_params = 7;
 
   // This field specifies the header name to output a successfully verified JWT payload to the
@@ -133,8 +146,44 @@ message JWTRule {
   // the payload will not be emitted.
   string output_payload_to_header = 8;
 
-  // If set to true, the orginal token will be kept for the ustream request. Default is false.
+  // List of cookie names from which JWT is expected.	//
+  // For example, if config is:
+  //
+  // ``` yaml
+  //   from_cookies:
+  //   - auth-token
+  // ```
+  // Then JWT will be extracted from ``auth-token`` cookie in the request.
+  //
+  // Note: Requests with multiple tokens (at different locations) are not supported, the output principal of
+  // such requests is undefined.
+  repeated string from_cookies = 12;
+
+  // If set to true, the original token will be kept for the upstream request. Default is false.
   bool forward_original_token = 9;
+
+
+  // This field specifies a list of operations to copy the claim to HTTP headers on a successfully verified token.
+  // This differs from the `output_payload_to_header` by allowing outputting individual claims instead of the whole payload.
+  // The header specified in each operation in the list must be unique. Nested claims of type string/int/bool is supported as well.
+  // ```
+  //   outputClaimToHeaders:
+  //   - header: x-my-company-jwt-group
+  //     claim: my-group
+  //   - header: x-test-environment-flag
+  //     claim: test-flag
+  //   - header: x-jwt-claim-group
+  //     claim: nested.key.group
+  // ```
+  // [Experimental] This feature is a experimental feature.
+  repeated ClaimToHeader output_claim_to_headers = 11; // [TODO:Update the status whenever this feature is promoted.]
+
+  // The maximum amount of time that the resolver, determined by the PILOT_JWT_ENABLE_REMOTE_JWKS environment variable,
+  // will spend waiting for the JWKS to be fetched. Default is 5s.
+  google.protobuf.Duration timeout = 13;
+
+  // $hide_from_docs
+  // Next available field number: 14
 }
 
 // This message specifies a header location to extract JWT token.
@@ -143,7 +192,17 @@ message JWTHeader {
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The prefix that should be stripped before decoding the token.
-  // For example, for "Authorization: Bearer <token>", prefix="Bearer " with a space at the end.
-  // If the header doesn't have this exact prefix, it is considerred invalid.
+  // For example, for `Authorization: Bearer <token>`, prefix=`Bearer` with a space at the end.
+  // If the header doesn't have this exact prefix, it is considered invalid.
   string prefix = 2;
+}
+
+// This message specifies the detail for copying claim to header.
+message ClaimToHeader {
+  // The name of the header to be created. The header will be overridden if it already exists in the request.
+  string header = 1;
+
+  // The name of the claim to be copied from. Only claim of type string/int/bool is supported.
+  // The header will not be there if the claim does not exist or the type of the claim is not supported.
+  string claim = 2;
 }

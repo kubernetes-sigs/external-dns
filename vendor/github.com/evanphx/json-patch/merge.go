@@ -45,6 +45,7 @@ func mergeDocs(doc, patch *partialDoc, mergeMerge bool) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				if !mergeMerge {
 					pruneNulls(v)
 				}
@@ -1218,6 +1219,14 @@ func matchesValue(av, bv interface{}) bool {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 				pruneNulls(v)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				pruneNulls(v)
+=======
+				if !mergeMerge {
+					pruneNulls(v)
+				}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				(*doc)[k] = v
 			} else {
 				(*doc)[k] = merge(cur, v, mergeMerge)
@@ -1258,8 +1267,8 @@ func pruneAryNulls(ary *partialArray) *partialArray {
 	for _, v := range *ary {
 		if v != nil {
 			pruneNulls(v)
-			newAry = append(newAry, v)
 		}
+		newAry = append(newAry, v)
 	}
 
 	*ary = newAry
@@ -1267,8 +1276,8 @@ func pruneAryNulls(ary *partialArray) *partialArray {
 	return ary
 }
 
-var errBadJSONDoc = fmt.Errorf("Invalid JSON Document")
-var errBadJSONPatch = fmt.Errorf("Invalid JSON Patch")
+var ErrBadJSONDoc = fmt.Errorf("Invalid JSON Document")
+var ErrBadJSONPatch = fmt.Errorf("Invalid JSON Patch")
 var errBadMergeTypes = fmt.Errorf("Mismatched JSON Documents")
 
 // MergeMergePatches merges two merge patches together, such that
@@ -1293,19 +1302,19 @@ func doMergePatch(docData, patchData []byte, mergeMerge bool) ([]byte, error) {
 	patchErr := json.Unmarshal(patchData, patch)
 
 	if _, ok := docErr.(*json.SyntaxError); ok {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	if _, ok := patchErr.(*json.SyntaxError); ok {
-		return nil, errBadJSONPatch
+		return nil, ErrBadJSONPatch
 	}
 
 	if docErr == nil && *doc == nil {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	if patchErr == nil && *patch == nil {
-		return nil, errBadJSONPatch
+		return nil, ErrBadJSONPatch
 	}
 
 	if docErr != nil || patchErr != nil {
@@ -1321,7 +1330,7 @@ func doMergePatch(docData, patchData []byte, mergeMerge bool) ([]byte, error) {
 			patchErr = json.Unmarshal(patchData, patchAry)
 
 			if patchErr != nil {
-				return nil, errBadJSONPatch
+				return nil, ErrBadJSONPatch
 			}
 
 			pruneAryNulls(patchAry)
@@ -1329,7 +1338,7 @@ func doMergePatch(docData, patchData []byte, mergeMerge bool) ([]byte, error) {
 			out, patchErr := json.Marshal(patchAry)
 
 			if patchErr != nil {
-				return nil, errBadJSONPatch
+				return nil, ErrBadJSONPatch
 			}
 
 			return out, nil
@@ -1386,12 +1395,12 @@ func createObjectMergePatch(originalJSON, modifiedJSON []byte) ([]byte, error) {
 
 	err := json.Unmarshal(originalJSON, &originalDoc)
 	if err != nil {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	err = json.Unmarshal(modifiedJSON, &modifiedDoc)
 	if err != nil {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	dest, err := getDiff(originalDoc, modifiedDoc)
@@ -1412,17 +1421,17 @@ func createArrayMergePatch(originalJSON, modifiedJSON []byte) ([]byte, error) {
 
 	err := json.Unmarshal(originalJSON, &originalDocs)
 	if err != nil {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	err = json.Unmarshal(modifiedJSON, &modifiedDocs)
 	if err != nil {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	total := len(originalDocs)
 	if len(modifiedDocs) != total {
-		return nil, errBadJSONDoc
+		return nil, ErrBadJSONDoc
 	}
 
 	result := []json.RawMessage{}
@@ -1486,14 +1495,23 @@ func matchesValue(av, bv interface{}) bool {
 		return true
 	case map[string]interface{}:
 		bt := bv.(map[string]interface{})
-		for key := range at {
-			if !matchesValue(at[key], bt[key]) {
-				return false
-			}
+		if len(bt) != len(at) {
+			return false
 		}
 		for key := range bt {
+<<<<<<< HEAD
 			if !matchesValue(at[key], bt[key]) {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			if !matchesValue(at[key], bt[key]) {
+=======
+			av, aOK := at[key]
+			bv, bOK := bt[key]
+			if aOK != bOK {
+				return false
+			}
+			if !matchesValue(av, bv) {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				return false
 			}
 		}

@@ -26,6 +26,7 @@ const urlPrefix = "type.googleapis.com/"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: Call the any.MessageName method instead.
 func AnyMessageName(any *anypb.Any) (string, error) {
@@ -514,6 +515,11 @@ func Is(any *anypb.Any, m proto.Message) bool {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// Deprecated: Call the any.MessageName method instead.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func AnyMessageName(any *anypb.Any) (string, error) {
 	name, err := anyMessageName(any)
 	return string(name), err
@@ -533,6 +539,8 @@ func anyMessageName(any *anypb.Any) (protoreflect.FullName, error) {
 }
 
 // MarshalAny marshals the given message m into an anypb.Any message.
+//
+// Deprecated: Call the anypb.New function instead.
 func MarshalAny(m proto.Message) (*anypb.Any, error) {
 	switch dm := m.(type) {
 	case DynamicAny:
@@ -553,6 +561,9 @@ func MarshalAny(m proto.Message) (*anypb.Any, error) {
 // Empty returns a new message of the type specified in an anypb.Any message.
 // It returns protoregistry.NotFound if the corresponding message type could not
 // be resolved in the global registry.
+//
+// Deprecated: Use protoregistry.GlobalTypes.FindMessageByName instead
+// to resolve the message name and create a new instance of it.
 func Empty(any *anypb.Any) (proto.Message, error) {
 	name, err := anyMessageName(any)
 	if err != nil {
@@ -571,6 +582,8 @@ func Empty(any *anypb.Any) (proto.Message, error) {
 //
 // The target message m may be a *DynamicAny message. If the underlying message
 // type could not be resolved, then this returns protoregistry.NotFound.
+//
+// Deprecated: Call the any.UnmarshalTo method instead.
 func UnmarshalAny(any *anypb.Any, m proto.Message) error {
 	if dm, ok := m.(*DynamicAny); ok {
 		if dm.Message == nil {
@@ -595,6 +608,8 @@ func UnmarshalAny(any *anypb.Any, m proto.Message) error {
 }
 
 // Is reports whether the Any message contains a message of the specified type.
+//
+// Deprecated: Call the any.MessageIs method instead.
 func Is(any *anypb.Any, m proto.Message) bool {
 	if any == nil || m == nil {
 		return false
@@ -611,10 +626,24 @@ func Is(any *anypb.Any, m proto.Message) bool {
 // The allocated message is stored in the embedded proto.Message.
 //
 // Example:
+<<<<<<< HEAD
 //   var x ptypes.DynamicAny
 //   if err := ptypes.UnmarshalAny(a, &x); err != nil { ... }
 //   fmt.Printf("unmarshaled message: %v", x.Message)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   var x ptypes.DynamicAny
+//   if err := ptypes.UnmarshalAny(a, &x); err != nil { ... }
+//   fmt.Printf("unmarshaled message: %v", x.Message)
+=======
+//
+//	var x ptypes.DynamicAny
+//	if err := ptypes.UnmarshalAny(a, &x); err != nil { ... }
+//	fmt.Printf("unmarshaled message: %v", x.Message)
+//
+// Deprecated: Use the any.UnmarshalNew method instead to unmarshal
+// the any message contents into a new instance of the underlying message.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type DynamicAny struct{ proto.Message }
 
 func (m DynamicAny) String() string {

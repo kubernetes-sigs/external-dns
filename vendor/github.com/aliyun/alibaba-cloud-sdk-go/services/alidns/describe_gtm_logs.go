@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmLogs(request *DescribeGtmLogsRequest) (response *DescribeGtmLogsResponse, err error) {
 	response = CreateDescribeGtmLogsResponse()
 	err = client.DoAction(request, response)
@@ -195,6 +196,10 @@ func CreateDescribeGtmLogsRequest() (request *DescribeGtmLogsRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmlogs.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmlogs.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmLogs(request *DescribeGtmLogsRequest) (response *DescribeGtmLogsResponse, err error) {
 	response = CreateDescribeGtmLogsResponse()
 	err = client.DoAction(request, response)
@@ -202,8 +207,6 @@ func (client *Client) DescribeGtmLogs(request *DescribeGtmLogsRequest) (response
 }
 
 // DescribeGtmLogsWithChan invokes the alidns.DescribeGtmLogs API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmlogs.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmLogsWithChan(request *DescribeGtmLogsRequest) (<-chan *DescribeGtmLogsResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmLogsResponse, 1)
 	errChan := make(chan error, 1)
@@ -226,8 +229,6 @@ func (client *Client) DescribeGtmLogsWithChan(request *DescribeGtmLogsRequest) (
 }
 
 // DescribeGtmLogsWithCallback invokes the alidns.DescribeGtmLogs API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmlogs.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmLogsWithCallback(request *DescribeGtmLogsRequest, callback func(response *DescribeGtmLogsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -262,12 +263,12 @@ type DescribeGtmLogsRequest struct {
 // DescribeGtmLogsResponse is the response struct for api DescribeGtmLogs
 type DescribeGtmLogsResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
-	TotalItems int    `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int    `json:"TotalPages" xml:"TotalPages"`
-	PageSize   int    `json:"PageSize" xml:"PageSize"`
-	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
-	Logs       Logs   `json:"Logs" xml:"Logs"`
+	PageSize   int                   `json:"PageSize" xml:"PageSize"`
+	RequestId  string                `json:"RequestId" xml:"RequestId"`
+	PageNumber int                   `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                   `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                   `json:"TotalItems" xml:"TotalItems"`
+	Logs       LogsInDescribeGtmLogs `json:"Logs" xml:"Logs"`
 }
 
 // CreateDescribeGtmLogsRequest creates a request to invoke DescribeGtmLogs API
@@ -276,7 +277,12 @@ func CreateDescribeGtmLogsRequest() (request *DescribeGtmLogsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmLogs", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

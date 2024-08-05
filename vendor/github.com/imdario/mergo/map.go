@@ -44,7 +44,7 @@ func deepMap(dst, src reflect.Value, visited map[uintptr]*visit, depth int, conf
 			}
 		}
 		// Remember, remember...
-		visited[h] = &visit{addr, typ, seen}
+		visited[h] = &visit{typ, seen, addr}
 	}
 	zeroValue := reflect.Value{}
 	switch dst.Kind() {
@@ -58,7 +58,7 @@ func deepMap(dst, src reflect.Value, visited map[uintptr]*visit, depth int, conf
 			}
 			fieldName := field.Name
 			fieldName = changeInitialCase(fieldName, unicode.ToLower)
-			if v, ok := dstMap[fieldName]; !ok || (isEmptyValue(reflect.ValueOf(v)) || overwrite) {
+			if v, ok := dstMap[fieldName]; !ok || (isEmptyValue(reflect.ValueOf(v), !config.ShouldNotDereference) || overwrite) {
 				dstMap[fieldName] = src.Field(i).Interface()
 			}
 		}
@@ -99,6 +99,7 @@ func deepMap(dst, src reflect.Value, visited map[uintptr]*visit, depth int, conf
 				continue
 			}
 			if srcKind == dstKind {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -405,10 +406,15 @@ func _map(dst, src interface{}, opts ...func(*Config)) error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+=======
+				if err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 					return
 				}
 			} else if dstKind == reflect.Interface && dstElement.Kind() == reflect.Interface {
-				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+				if err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
 					return
 				}
 			} else if srcKind == reflect.Map {
@@ -446,6 +452,9 @@ func MapWithOverwrite(dst, src interface{}, opts ...func(*Config)) error {
 }
 
 func _map(dst, src interface{}, opts ...func(*Config)) error {
+	if dst != nil && reflect.ValueOf(dst).Kind() != reflect.Ptr {
+		return ErrNonPointerArgument
+	}
 	var (
 		vDst, vSrc reflect.Value
 		err        error
@@ -462,9 +471,16 @@ func _map(dst, src interface{}, opts ...func(*Config)) error {
 	// To be friction-less, we redirect equal-type arguments
 	// to deepMerge. Only because arguments can be anything.
 	if vSrc.Kind() == vDst.Kind() {
+<<<<<<< HEAD
 		_, err := deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
 		return err
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		_, err := deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
+		return err
+=======
+		return deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	switch vSrc.Kind() {
 	case reflect.Struct:

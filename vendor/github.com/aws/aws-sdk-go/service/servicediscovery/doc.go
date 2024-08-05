@@ -10,6 +10,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // With Cloud Map, you can configure public DNS, private DNS, or HTTP namespaces
 // that your microservice applications run in. When an instance becomes available,
 // you can call the Cloud Map API to register the instance with Cloud Map. For
@@ -114,14 +115,37 @@
 // creates DNS records and an optional health check. Clients that submit public
 // or private DNS queries, or HTTP requests, for the service receive an answer
 // that contains up to eight healthy records.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// AWS Cloud Map lets you configure public DNS, private DNS, or HTTP namespaces
+// that your microservice applications run in. When an instance of the service
+// becomes available, you can call the AWS Cloud Map API to register the instance
+// with AWS Cloud Map. For public or private DNS namespaces, AWS Cloud Map automatically
+// creates DNS records and an optional health check. Clients that submit public
+// or private DNS queries, or HTTP requests, for the service receive an answer
+// that contains up to eight healthy records.
+=======
+// With Cloud Map, you can configure public DNS, private DNS, or HTTP namespaces
+// that your microservice applications run in. When an instance becomes available,
+// you can call the Cloud Map API to register the instance with Cloud Map. For
+// public or private DNS namespaces, Cloud Map automatically creates DNS records
+// and an optional health check. Clients that submit public or private DNS queries,
+// or HTTP requests, for the service receive an answer that contains up to eight
+// healthy records.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // See https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14 for more information on this service.
 //
 // See servicediscovery package documentation for more information.
 // https://docs.aws.amazon.com/sdk-for-go/api/service/servicediscovery/
 //
+<<<<<<< HEAD
 // Using the Client
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Using the Client
+=======
+// # Using the Client
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // To contact AWS Cloud Map with the SDK use the New function to create
 // a new service client. With that client you can make API requests to the service.

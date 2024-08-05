@@ -33,10 +33,15 @@ type FilterFunc func(in Event) (out Event, keep bool)
 // Type field (Add/Modified/Deleted) to reflect items beginning to pass the
 // filter when they previously didn't.
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func Filter(w Interface, f FilterFunc) Interface {
 	fw := &filteredWatch{
 		incoming: w,

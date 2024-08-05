@@ -2,10 +2,19 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // APIToken is the full API token.

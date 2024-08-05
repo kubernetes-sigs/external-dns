@@ -5,4 +5,5 @@ type Team struct {
 	ID          string         `json:"id,omitempty"`
 	Name        string         `json:"name"`
 	Permissions PermissionsMap `json:"permissions"`
+	IPWhitelist []IPWhitelist  `json:"ip_whitelist"`
 }

@@ -18,6 +18,7 @@ limitations under the License.
 
 package v1
 
+<<<<<<< HEAD
 import (
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
@@ -38,6 +39,25 @@ func IngressStatus() *IngressStatusApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LoadBalancer field is set to the value of the last call.
 func (b *IngressStatusApplyConfiguration) WithLoadBalancer(value *v1.LoadBalancerStatusApplyConfiguration) *IngressStatusApplyConfiguration {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// IngressStatusApplyConfiguration represents an declarative configuration of the IngressStatus type for use
+// with apply.
+type IngressStatusApplyConfiguration struct {
+	LoadBalancer *IngressLoadBalancerStatusApplyConfiguration `json:"loadBalancer,omitempty"`
+}
+
+// IngressStatusApplyConfiguration constructs an declarative configuration of the IngressStatus type for use with
+// apply.
+func IngressStatus() *IngressStatusApplyConfiguration {
+	return &IngressStatusApplyConfiguration{}
+}
+
+// WithLoadBalancer sets the LoadBalancer field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the LoadBalancer field is set to the value of the last call.
+func (b *IngressStatusApplyConfiguration) WithLoadBalancer(value *IngressLoadBalancerStatusApplyConfiguration) *IngressStatusApplyConfiguration {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	b.LoadBalancer = value
 	return b
 }

@@ -7,6 +7,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"unicode"
 )
 
@@ -401,6 +402,10 @@ func newValue(t ValueType, base int, raw []rune) (Value, error) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"unicode"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 var (
@@ -415,7 +420,7 @@ var literalValues = [][]rune{
 
 func isBoolValue(b []rune) bool {
 	for _, lv := range literalValues {
-		if isLitValue(lv, b) {
+		if isCaselessLitValue(lv, b) {
 			return true
 		}
 	}
@@ -429,6 +434,21 @@ func isLitValue(want, have []rune) bool {
 
 	for i := 0; i < len(want); i++ {
 		if want[i] != have[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// isCaselessLitValue is a caseless value comparison, assumes want is already lower-cased for efficiency.
+func isCaselessLitValue(want, have []rune) bool {
+	if len(have) < len(want) {
+		return false
+	}
+
+	for i := 0; i < len(want); i++ {
+		if want[i] != unicode.ToLower(have[i]) {
 			return false
 		}
 	}
@@ -535,11 +555,11 @@ func (v ValueType) String() string {
 // ValueType enums
 const (
 	NoneType = ValueType(iota)
-	DecimalType
-	IntegerType
+	DecimalType // deprecated
+	IntegerType // deprecated
 	StringType
 	QuotedStringType
-	BoolType
+	BoolType // deprecated
 )
 
 // Value is a union container
@@ -547,9 +567,9 @@ type Value struct {
 	Type ValueType
 	raw  []rune
 
-	integer int64
-	decimal float64
-	boolean bool
+	integer int64 // deprecated
+	decimal float64 // deprecated
+	boolean bool // deprecated
 	str     string
 }
 
@@ -574,8 +594,14 @@ func newValue(t ValueType, base int, raw []rune) (Value, error) {
 	case QuotedStringType:
 		v.str = string(raw[1 : len(raw)-1])
 	case BoolType:
+<<<<<<< HEAD
 		v.boolean = runeCompare(v.raw, runesTrue)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		v.boolean = runeCompare(v.raw, runesTrue)
+=======
+		v.boolean = isCaselessLitValue(runesTrue, v.raw)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	// issue 2253
@@ -635,24 +661,6 @@ func newLitToken(b []rune) (Token, int, error) {
 		}
 
 		token = newToken(TokenLit, b[:n], QuotedStringType)
-	} else if isNumberValue(b) {
-		var base int
-		base, n, err = getNumericalValue(b)
-		if err != nil {
-			return token, 0, err
-		}
-
-		value := b[:n]
-		vType := IntegerType
-		if contains(value, '.') || hasExponent(value) {
-			vType = DecimalType
-		}
-		token = newToken(TokenLit, value, vType)
-		token.base = base
-	} else if isBoolValue(b) {
-		n, err = getBoolValue(b)
-
-		token = newToken(TokenLit, b[:n], BoolType)
 	} else {
 		n, err = getValue(b)
 		token = newToken(TokenLit, b[:n], StringType)
@@ -662,18 +670,33 @@ func newLitToken(b []rune) (Token, int, error) {
 }
 
 // IntValue returns an integer value
-func (v Value) IntValue() int64 {
-	return v.integer
+func (v Value) IntValue() (int64, bool) {
+	i, err := strconv.ParseInt(string(v.raw), 0, 64)
+	if err != nil {
+		return 0, false
+	}
+	return i, true
 }
 
 // FloatValue returns a float value
-func (v Value) FloatValue() float64 {
-	return v.decimal
+func (v Value) FloatValue() (float64, bool) {
+	f, err := strconv.ParseFloat(string(v.raw), 64)
+	if err != nil {
+		return 0, false
+	}
+	return f, true
 }
 
 // BoolValue returns a bool value
-func (v Value) BoolValue() bool {
-	return v.boolean
+func (v Value) BoolValue() (bool, bool) {
+	// we don't use ParseBool as it recognizes more than what we've
+	// historically supported
+	if isCaselessLitValue(runesTrue, v.raw) {
+		return true, true
+	} else if isCaselessLitValue(runesFalse, v.raw) {
+		return false, true
+	}
+	return false, false
 }
 
 func isTrimmable(r rune) bool {

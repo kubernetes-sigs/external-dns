@@ -1,6 +1,11 @@
 package common
 
+<<<<<<< HEAD
 import "encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+import "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/json"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 type actionResult map[string]interface{}
 type CommonResponse struct {

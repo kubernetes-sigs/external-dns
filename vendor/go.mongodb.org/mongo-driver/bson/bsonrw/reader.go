@@ -58,6 +58,12 @@ type ValueReader interface {
 // types that implement ValueReader may also implement this interface.
 //
 // The bytes of the value will be appended to dst.
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// Deprecated: BytesReader will not be supported in Go Driver 2.0.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type BytesReader interface {
 	ReadValueBytes(dst []byte) (bsontype.Type, []byte, error)
 }

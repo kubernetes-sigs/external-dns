@@ -3,8 +3,12 @@
 // license that can be found in the LICENSE file.
 
 //go:build (freebsd || netbsd || openbsd) && gc
+<<<<<<< HEAD
 // +build freebsd netbsd openbsd
 // +build gc
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 #include "textflag.h"
 

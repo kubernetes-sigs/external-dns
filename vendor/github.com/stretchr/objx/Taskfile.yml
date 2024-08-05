@@ -1,7 +1,4 @@
-version: '2'
-
-env:
-  GOFLAGS: -mod=vendor
+version: '3'
 
 tasks:
   default:
@@ -26,10 +23,16 @@ tasks:
 
   test-coverage:
 <<<<<<< HEAD
+<<<<<<< HEAD
     desc: Runs go tests and calculates test coverage
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
     desc: Runs go tests and calucates test coverage
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+    desc: Runs go tests and calucates test coverage
+=======
+    desc: Runs go tests and calculates test coverage
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
     cmds:
       - go test -race -coverprofile=c.out ./...

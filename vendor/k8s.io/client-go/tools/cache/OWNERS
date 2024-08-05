@@ -2,6 +2,7 @@
 
 approvers:
 <<<<<<< HEAD
+<<<<<<< HEAD
   - thockin
   - lavalamp
   - smarterclayton
@@ -189,7 +190,26 @@ reviewers:
 - caesarxuchao
 - liggitt
 - ncdc
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- thockin
+- lavalamp
+- smarterclayton
+- wojtek-t
+- deads2k
+- caesarxuchao
+- liggitt
+- ncdc
+=======
+  - thockin
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - caesarxuchao
+  - liggitt
+  - ncdc
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 reviewers:
+<<<<<<< HEAD
 - thockin
 - lavalamp
 - smarterclayton
@@ -224,3 +244,56 @@ reviewers:
 - sdminonne
 - ncdc
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- thockin
+- lavalamp
+- smarterclayton
+- wojtek-t
+- deads2k
+- brendandburns
+- derekwaynecarr
+- caesarxuchao
+- mikedanese
+- liggitt
+- nikhiljindal
+- erictune
+- davidopp
+- pmorie
+- janetkuo
+- justinsb
+- eparis
+- soltysh
+- jsafrane
+- dims
+- madhusudancs
+- hongchaodeng
+- krousey
+- xiang90
+- mml
+- ingvagabund
+- resouer
+- jessfraz
+- david-mcmahon
+- mfojtik
+- mqliang
+- sdminonne
+- ncdc
+=======
+  - thockin
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - derekwaynecarr
+  - caesarxuchao
+  - mikedanese
+  - liggitt
+  - janetkuo
+  - justinsb
+  - soltysh
+  - jsafrane
+  - dims
+  - ingvagabund
+  - ncdc
+emeritus_approvers:
+  - lavalamp
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

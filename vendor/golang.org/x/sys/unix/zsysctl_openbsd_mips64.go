@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build mips64 && openbsd
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -155,6 +156,11 @@ var sysctlMib = []mibentry{
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build mips64,openbsd
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build mips64,openbsd
+=======
+//go:build mips64 && openbsd
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -188,6 +194,7 @@ var sysctlMib = []mibentry{
 	{"hw.pagesize", []_C_int{6, 7}},
 	{"hw.perfpolicy", []_C_int{6, 23}},
 	{"hw.physmem", []_C_int{6, 19}},
+	{"hw.power", []_C_int{6, 26}},
 	{"hw.product", []_C_int{6, 15}},
 	{"hw.serialno", []_C_int{6, 17}},
 	{"hw.setperf", []_C_int{6, 13}},
@@ -238,7 +245,6 @@ var sysctlMib = []mibentry{
 	{"kern.ngroups", []_C_int{1, 18}},
 	{"kern.nosuidcoredump", []_C_int{1, 32}},
 	{"kern.nprocs", []_C_int{1, 47}},
-	{"kern.nselcoll", []_C_int{1, 43}},
 	{"kern.nthreads", []_C_int{1, 26}},
 	{"kern.numvnodes", []_C_int{1, 58}},
 	{"kern.osrelease", []_C_int{1, 2}},
@@ -275,7 +281,12 @@ var sysctlMib = []mibentry{
 	{"kern.ttycount", []_C_int{1, 57}},
 	{"kern.utc_offset", []_C_int{1, 88}},
 	{"kern.version", []_C_int{1, 4}},
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	{"kern.video", []_C_int{1, 89}},
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	{"kern.watchdog.auto", []_C_int{1, 64, 2}},
 	{"kern.watchdog.period", []_C_int{1, 64, 1}},
 	{"kern.witnesswatch", []_C_int{1, 53}},

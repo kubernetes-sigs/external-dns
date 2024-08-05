@@ -12,10 +12,23 @@ limitations under the License.
 
 package vinyldns
 
-// recordSetsList retrieves the list of record sets with the List criteria passed.
+// recordSetsList retrieves the list of record sets with the List criteria passed,
+// for the specified zone.
 func (c *Client) recordSetsList(zoneID string, filter ListFilter) (*RecordSetsResponse, error) {
 	recordSets := &RecordSetsResponse{}
 	err := resourceRequest(c, recordSetsListEP(c, zoneID, filter), "GET", nil, recordSets)
+	if err != nil {
+		return recordSets, err
+	}
+
+	return recordSets, nil
+}
+
+// recordSetsGlobalList retrieves the list of record sets with the List criteria passed,
+// across all zones.
+func (c *Client) recordSetsGlobalList(filter GlobalListFilter) (*RecordSetsResponse, error) {
+	recordSets := &RecordSetsResponse{}
+	err := resourceRequest(c, recordSetsGlobalListEP(c, filter), "GET", nil, recordSets)
 	if err != nil {
 		return recordSets, err
 	}

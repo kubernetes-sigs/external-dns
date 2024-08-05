@@ -3,7 +3,35 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
-## [1.3.5]
+## [1.3.7] 
+BUG FIXES:
+* Resource Rrset:
+  - Added "TTL" field in DirPoolProfile to make it compatible with DirPoolDTO.
+
+## [1.3.6] - 2020-06-17
+ENHANCEMENTS:
+* Resource Zone:
+  - Zone DTO now includes Zone Services that enables reading (GET) of zones.
+  - Special Characters are now allowed when reading (GET) resources.
+  - Integration and Unit testcases have been added.
+
+* Resource Rrset:
+  - Now supports the use of “limits” and “offset” for pagination. 
+  - Client Name is now used as an identifier during create (POST) calls.
+  - Added interfaces in RRSet service as to make it mockable in unit tests.
+  - Added additional unit testcases to comply with coding conventions.
+
+* Resource Udnssdk:
+  - Integration tests for zone service can now be enabled.
+
+BUG FIXES:
+* Resource Rrset 
+  - Special characters are now supported when creating (POST) and reading (GET) other resources.
+  - In the SBPoolProfile, the weight parameter will not be set by default when left empty.
+* Resource Udnssdk
+  - API version dependency has been removed allowing for compatibility with latest API.
+
+## [1.3.5] - 2020-04-14
 - Added 'availableToServe' to BackupRecord DTO
 - Added 'status' to TCPool profile DTO
 - Improved the testing steps used latest `go 1.14` and `go mod`
@@ -65,7 +93,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Support for API endpoints for `RRSets`, `Accounts`,  `DirectionalPools`, Traffic Controller Pool `Probes`, `Events`, `Notifications` & `Alerts`
 * `Client` wraps common API access including OAuth, deferred tasks and retries
 
-[Unreleased]: https://github.com/Ensighten/udnssdk/compare/v1.3.2...HEAD
+
 [1.3.2]: https://github.com/Ensighten/udnssdk/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Ensighten/udnssdk/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Ensighten/udnssdk/compare/v1.2.1...v1.3.0

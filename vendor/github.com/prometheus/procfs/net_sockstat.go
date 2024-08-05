@@ -16,7 +16,6 @@ package procfs
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -70,6 +69,7 @@ func readSockstat(name string) (*NetSockstat, error) {
 
 	stat, err := parseSockstat(bytes.NewReader(b))
 	if err != nil {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -206,6 +206,11 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
+=======
+		return nil, fmt.Errorf("%s: sockstats from %q: %w", ErrFileRead, name, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return stat, nil
@@ -219,14 +224,20 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 		// Expect a minimum of a protocol and one key/value pair.
 		fields := strings.Split(s.Text(), " ")
 		if len(fields) < 3 {
-			return nil, fmt.Errorf("malformed sockstat line: %q", s.Text())
+			return nil, fmt.Errorf("%w: Malformed sockstat line: %q", ErrFileParse, s.Text())
 		}
 
 		// The remaining fields are key/value pairs.
 		kvs, err := parseSockstatKVs(fields[1:])
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
+=======
+			return nil, fmt.Errorf("%s: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 
 		// The first field is the protocol. We must trim its colon suffix.
@@ -255,7 +266,7 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 // parseSockstatKVs parses a string slice into a map of key/value pairs.
 func parseSockstatKVs(kvs []string) (map[string]int, error) {
 	if len(kvs)%2 != 0 {
-		return nil, errors.New("odd number of fields in key/value pairs")
+		return nil, fmt.Errorf("%w:: Odd number of fields in key/value pairs %q", ErrFileParse, kvs)
 	}
 
 	// Iterate two values at a time to gather key/value pairs.

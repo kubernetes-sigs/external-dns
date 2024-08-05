@@ -64,6 +64,7 @@ type nothingSelector struct{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (n nothingSelector) Matches(_ Fields) bool      { return false }
 func (n nothingSelector) Empty() bool                { return false }
 func (n nothingSelector) String() string             { return "" }
@@ -170,6 +171,25 @@ func (n nothingSelector) DeepCopySelector() Selector                            
 func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
 func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
+func (n nothingSelector) Empty() bool                                                { return false }
+func (n nothingSelector) String() string                                             { return "" }
+func (n nothingSelector) Requirements() Requirements                                 { return nil }
+func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
+func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
+func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
+=======
+func (n nothingSelector) Matches(_ Fields) bool      { return false }
+func (n nothingSelector) Empty() bool                { return false }
+func (n nothingSelector) String() string             { return "" }
+func (n nothingSelector) Requirements() Requirements { return nil }
+func (n nothingSelector) DeepCopySelector() Selector { return n }
+func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) {
+	return "", false
+}
+func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Nothing returns a selector that matches no fields
 func Nothing() Selector {

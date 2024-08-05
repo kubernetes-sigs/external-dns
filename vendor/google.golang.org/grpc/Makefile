@@ -7,6 +7,7 @@ all: vet test testrace
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 build:
 	go build google.golang.org/grpc/...
 
@@ -230,13 +231,18 @@ vetdeps:
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 build: deps
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+build: deps
+=======
+build:
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	go build google.golang.org/grpc/...
 
 clean:
 	go clean -i google.golang.org/grpc/...
 
 deps:
-	go get -d -v google.golang.org/grpc/...
+	GO111MODULE=on go get -d -v google.golang.org/grpc/...
 
 proto:
 	@ if ! which protoc > /dev/null; then \
@@ -245,26 +251,18 @@ proto:
 	fi
 	go generate google.golang.org/grpc/...
 
-test: testdeps
+test:
 	go test -cpu 1,4 -timeout 7m google.golang.org/grpc/...
 
-testappengine: testappenginedeps
-	goapp test -cpu 1,4 -timeout 7m google.golang.org/grpc/...
+testsubmodule:
+	cd security/advancedtls && go test -cpu 1,4 -timeout 7m google.golang.org/grpc/security/advancedtls/...
+	cd security/authorization && go test -cpu 1,4 -timeout 7m google.golang.org/grpc/security/authorization/...
 
-testappenginedeps:
-	goapp get -d -v -t -tags 'appengine appenginevm' google.golang.org/grpc/...
-
-testdeps:
-	go get -d -v -t google.golang.org/grpc/...
-
-testrace: testdeps
+testrace:
 	go test -race -cpu 1,4 -timeout 7m google.golang.org/grpc/...
 
-updatedeps:
-	go get -d -v -u -f google.golang.org/grpc/...
-
-updatetestdeps:
-	go get -d -v -t -u -f google.golang.org/grpc/...
+testdeps:
+	GO111MODULE=on go get -d -v -t google.golang.org/grpc/...
 
 vet: vetdeps
 	./vet.sh
@@ -276,15 +274,17 @@ vetdeps:
 	all \
 	build \
 	clean \
-	deps \
 	proto \
 	test \
-	testappengine \
-	testappenginedeps \
-	testdeps \
 	testrace \
+<<<<<<< HEAD
 	updatedeps \
 	updatetestdeps \
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	updatedeps \
+	updatetestdeps \
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	vet \
 	vetdeps

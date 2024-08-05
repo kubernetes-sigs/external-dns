@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -56,6 +57,11 @@ import (
 =======
 	"k8s.io/klog"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -91,24 +97,8 @@ func ListAll(store Store, selector labels.Selector, appendFn AppendFunc) error {
 
 // ListAllByNamespace used to list items belongs to namespace from Indexer.
 func ListAllByNamespace(indexer Indexer, namespace string, selector labels.Selector, appendFn AppendFunc) error {
-	selectAll := selector.Empty()
 	if namespace == metav1.NamespaceAll {
-		for _, m := range indexer.List() {
-			if selectAll {
-				// Avoid computing labels of the objects to speed up common flows
-				// of listing all objects.
-				appendFn(m)
-				continue
-			}
-			metadata, err := meta.Accessor(m)
-			if err != nil {
-				return err
-			}
-			if selector.Matches(labels.Set(metadata.GetLabels())) {
-				appendFn(m)
-			}
-		}
-		return nil
+		return ListAll(indexer, selector, appendFn)
 	}
 
 	items, err := indexer.Index(NamespaceIndex, &metav1.ObjectMeta{Namespace: namespace})
@@ -127,6 +117,8 @@ func ListAllByNamespace(indexer Indexer, namespace string, selector labels.Selec
 		}
 		return nil
 	}
+
+	selectAll := selector.Empty()
 	for _, m := range items {
 		if selectAll {
 			// Avoid computing labels of the objects to speed up common flows

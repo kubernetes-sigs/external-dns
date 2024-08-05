@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -99,6 +100,141 @@ type TeamsLoggingSettings struct {
 type TeamsDeviceSettings struct {
 	GatewayProxyEnabled    bool `json:"gateway_proxy_enabled"`
 	GatewayProxyUDPEnabled bool `json:"gateway_udp_proxy_enabled"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+)
+
+type TeamsAccount struct {
+	GatewayTag   string `json:"gateway_tag"`   // Internal teams ID
+	ProviderName string `json:"provider_name"` // Auth provider
+	ID           string `json:"id"`            // cloudflare account ID
+}
+
+// TeamsAccountResponse is the API response, containing information on teams
+// account.
+type TeamsAccountResponse struct {
+	Response
+	Result TeamsAccount `json:"result"`
+}
+
+// TeamsConfigResponse is the API response, containing information on teams
+// account config.
+type TeamsConfigResponse struct {
+	Response
+	Result TeamsConfiguration `json:"result"`
+}
+
+// TeamsConfiguration data model.
+type TeamsConfiguration struct {
+	Settings  TeamsAccountSettings `json:"settings"`
+	CreatedAt time.Time            `json:"created_at,omitempty"`
+	UpdatedAt time.Time            `json:"updated_at,omitempty"`
+}
+
+type TeamsAccountSettings struct {
+	Antivirus             *TeamsAntivirus             `json:"antivirus,omitempty"`
+	TLSDecrypt            *TeamsTLSDecrypt            `json:"tls_decrypt,omitempty"`
+	ActivityLog           *TeamsActivityLog           `json:"activity_log,omitempty"`
+	BlockPage             *TeamsBlockPage             `json:"block_page,omitempty"`
+	BrowserIsolation      *BrowserIsolation           `json:"browser_isolation,omitempty"`
+	FIPS                  *TeamsFIPS                  `json:"fips,omitempty"`
+	ProtocolDetection     *TeamsProtocolDetection     `json:"protocol_detection,omitempty"`
+	BodyScanning          *TeamsBodyScanning          `json:"body_scanning,omitempty"`
+	ExtendedEmailMatching *TeamsExtendedEmailMatching `json:"extended_email_matching,omitempty"`
+	CustomCertificate     *TeamsCustomCertificate     `json:"custom_certificate,omitempty"`
+}
+
+type BrowserIsolation struct {
+	UrlBrowserIsolationEnabled *bool `json:"url_browser_isolation_enabled,omitempty"`
+	NonIdentityEnabled         *bool `json:"non_identity_enabled,omitempty"`
+}
+
+type TeamsAntivirus struct {
+	EnabledDownloadPhase bool                       `json:"enabled_download_phase"`
+	EnabledUploadPhase   bool                       `json:"enabled_upload_phase"`
+	FailClosed           bool                       `json:"fail_closed"`
+	NotificationSettings *TeamsNotificationSettings `json:"notification_settings"`
+}
+
+type TeamsFIPS struct {
+	TLS bool `json:"tls"`
+}
+
+type TeamsTLSDecrypt struct {
+	Enabled bool `json:"enabled"`
+}
+
+type TeamsProtocolDetection struct {
+	Enabled bool `json:"enabled"`
+}
+
+type TeamsActivityLog struct {
+	Enabled bool `json:"enabled"`
+}
+
+type TeamsBlockPage struct {
+	Enabled         *bool  `json:"enabled,omitempty"`
+	FooterText      string `json:"footer_text,omitempty"`
+	HeaderText      string `json:"header_text,omitempty"`
+	LogoPath        string `json:"logo_path,omitempty"`
+	BackgroundColor string `json:"background_color,omitempty"`
+	Name            string `json:"name,omitempty"`
+	MailtoAddress   string `json:"mailto_address,omitempty"`
+	MailtoSubject   string `json:"mailto_subject,omitempty"`
+	SuppressFooter  *bool  `json:"suppress_footer,omitempty"`
+}
+
+type TeamsInspectionMode = string
+
+const (
+	TeamsShallowInspectionMode TeamsInspectionMode = "shallow"
+	TeamsDeepInspectionMode    TeamsInspectionMode = "deep"
+)
+
+type TeamsBodyScanning struct {
+	InspectionMode TeamsInspectionMode `json:"inspection_mode,omitempty"`
+}
+
+type TeamsExtendedEmailMatching struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type TeamsCustomCertificate struct {
+	Enabled       *bool      `json:"enabled,omitempty"`
+	ID            string     `json:"id,omitempty"`
+	BindingStatus string     `json:"binding_status,omitempty"`
+	QsPackId      string     `json:"qs_pack_id,omitempty"`
+	UpdatedAt     *time.Time `json:"updated_at,omitempty"`
+}
+
+type TeamsRuleType = string
+
+const (
+	TeamsHttpRuleType TeamsRuleType = "http"
+	TeamsDnsRuleType  TeamsRuleType = "dns"
+	TeamsL4RuleType   TeamsRuleType = "l4"
+)
+
+type TeamsAccountLoggingConfiguration struct {
+	LogAll    bool `json:"log_all"`
+	LogBlocks bool `json:"log_blocks"`
+}
+
+type TeamsLoggingSettings struct {
+	LoggingSettingsByRuleType map[TeamsRuleType]TeamsAccountLoggingConfiguration `json:"settings_by_rule_type"`
+	RedactPii                 bool                                               `json:"redact_pii,omitempty"`
+}
+
+type TeamsDeviceSettings struct {
+	GatewayProxyEnabled                bool `json:"gateway_proxy_enabled"`
+	GatewayProxyUDPEnabled             bool `json:"gateway_udp_proxy_enabled"`
+	RootCertificateInstallationEnabled bool `json:"root_certificate_installation_enabled"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 type TeamsDeviceSettingsResponse struct {

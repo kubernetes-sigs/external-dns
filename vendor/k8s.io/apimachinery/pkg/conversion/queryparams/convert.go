@@ -56,6 +56,7 @@ func jsonTag(field reflect.StructField) (string, bool) {
 
 func isPointerKind(kind reflect.Kind) bool {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return kind == reflect.Pointer
 }
 
@@ -144,6 +145,11 @@ func Convert(obj interface{}) (url.Values, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return kind == reflect.Ptr
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return kind == reflect.Ptr
+=======
+	return kind == reflect.Pointer
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func isStructKind(kind reflect.Kind) bool {
@@ -227,8 +233,14 @@ func Convert(obj interface{}) (url.Values, error) {
 	}
 	var sv reflect.Value
 	switch reflect.TypeOf(obj).Kind() {
+<<<<<<< HEAD
 	case reflect.Ptr, reflect.Interface:
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	case reflect.Ptr, reflect.Interface:
+=======
+	case reflect.Pointer, reflect.Interface:
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		sv = reflect.ValueOf(obj).Elem()
 	default:
 		return nil, fmt.Errorf("expecting a pointer or interface")

@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+<<<<<<< HEAD
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
 	"math"
@@ -569,6 +570,582 @@ func (ejvw *extJSONValueWriter) WriteDocumentEnd() error {
 	case mDocument:
 		ejvw.buf = append(ejvw.buf, ',')
 	case mTopLevel:
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"io"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+	"unicode/utf8"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// ExtJSONValueWriterPool is a pool for ExtJSON ValueWriters.
+//
+// Deprecated: ExtJSONValueWriterPool will not be supported in Go Driver 2.0.
+type ExtJSONValueWriterPool struct {
+	pool sync.Pool
+}
+
+// NewExtJSONValueWriterPool creates a new pool for ValueWriter instances that write to ExtJSON.
+//
+// Deprecated: ExtJSONValueWriterPool will not be supported in Go Driver 2.0.
+func NewExtJSONValueWriterPool() *ExtJSONValueWriterPool {
+	return &ExtJSONValueWriterPool{
+		pool: sync.Pool{
+			New: func() interface{} {
+				return new(extJSONValueWriter)
+			},
+		},
+	}
+}
+
+// Get retrieves a ExtJSON ValueWriter from the pool and resets it to use w as the destination.
+//
+// Deprecated: ExtJSONValueWriterPool will not be supported in Go Driver 2.0.
+func (bvwp *ExtJSONValueWriterPool) Get(w io.Writer, canonical, escapeHTML bool) ValueWriter {
+	vw := bvwp.pool.Get().(*extJSONValueWriter)
+	if writer, ok := w.(*SliceWriter); ok {
+		vw.reset(*writer, canonical, escapeHTML)
+		vw.w = writer
+		return vw
+	}
+	vw.buf = vw.buf[:0]
+	vw.w = w
+	return vw
+}
+
+// Put inserts a ValueWriter into the pool. If the ValueWriter is not a ExtJSON ValueWriter, nothing
+// happens and ok will be false.
+//
+// Deprecated: ExtJSONValueWriterPool will not be supported in Go Driver 2.0.
+func (bvwp *ExtJSONValueWriterPool) Put(vw ValueWriter) (ok bool) {
+	bvw, ok := vw.(*extJSONValueWriter)
+	if !ok {
+		return false
+	}
+
+	if _, ok := bvw.w.(*SliceWriter); ok {
+		bvw.buf = nil
+	}
+	bvw.w = nil
+
+	bvwp.pool.Put(bvw)
+	return true
+}
+
+type ejvwState struct {
+	mode mode
+}
+
+type extJSONValueWriter struct {
+	w   io.Writer
+	buf []byte
+
+	stack      []ejvwState
+	frame      int64
+	canonical  bool
+	escapeHTML bool
+	newlines   bool
+}
+
+// NewExtJSONValueWriter creates a ValueWriter that writes Extended JSON to w.
+func NewExtJSONValueWriter(w io.Writer, canonical, escapeHTML bool) (ValueWriter, error) {
+	if w == nil {
+		return nil, errNilWriter
+	}
+
+	// Enable newlines for all Extended JSON value writers created by NewExtJSONValueWriter. We
+	// expect these value writers to be used with an Encoder, which should add newlines after
+	// encoded Extended JSON documents.
+	return newExtJSONWriter(w, canonical, escapeHTML, true), nil
+}
+
+func newExtJSONWriter(w io.Writer, canonical, escapeHTML, newlines bool) *extJSONValueWriter {
+	stack := make([]ejvwState, 1, 5)
+	stack[0] = ejvwState{mode: mTopLevel}
+
+	return &extJSONValueWriter{
+		w:          w,
+		buf:        []byte{},
+		stack:      stack,
+		canonical:  canonical,
+		escapeHTML: escapeHTML,
+		newlines:   newlines,
+	}
+}
+
+func newExtJSONWriterFromSlice(buf []byte, canonical, escapeHTML bool) *extJSONValueWriter {
+	stack := make([]ejvwState, 1, 5)
+	stack[0] = ejvwState{mode: mTopLevel}
+
+	return &extJSONValueWriter{
+		buf:        buf,
+		stack:      stack,
+		canonical:  canonical,
+		escapeHTML: escapeHTML,
+	}
+}
+
+func (ejvw *extJSONValueWriter) reset(buf []byte, canonical, escapeHTML bool) {
+	if ejvw.stack == nil {
+		ejvw.stack = make([]ejvwState, 1, 5)
+	}
+
+	ejvw.stack = ejvw.stack[:1]
+	ejvw.stack[0] = ejvwState{mode: mTopLevel}
+	ejvw.canonical = canonical
+	ejvw.escapeHTML = escapeHTML
+	ejvw.frame = 0
+	ejvw.buf = buf
+	ejvw.w = nil
+}
+
+func (ejvw *extJSONValueWriter) advanceFrame() {
+	if ejvw.frame+1 >= int64(len(ejvw.stack)) { // We need to grow the stack
+		length := len(ejvw.stack)
+		if length+1 >= cap(ejvw.stack) {
+			// double it
+			buf := make([]ejvwState, 2*cap(ejvw.stack)+1)
+			copy(buf, ejvw.stack)
+			ejvw.stack = buf
+		}
+		ejvw.stack = ejvw.stack[:length+1]
+	}
+	ejvw.frame++
+}
+
+func (ejvw *extJSONValueWriter) push(m mode) {
+	ejvw.advanceFrame()
+
+	ejvw.stack[ejvw.frame].mode = m
+}
+
+func (ejvw *extJSONValueWriter) pop() {
+	switch ejvw.stack[ejvw.frame].mode {
+	case mElement, mValue:
+		ejvw.frame--
+	case mDocument, mArray, mCodeWithScope:
+		ejvw.frame -= 2 // we pop twice to jump over the mElement: mDocument -> mElement -> mDocument/mTopLevel/etc...
+	}
+}
+
+func (ejvw *extJSONValueWriter) invalidTransitionErr(destination mode, name string, modes []mode) error {
+	te := TransitionError{
+		name:        name,
+		current:     ejvw.stack[ejvw.frame].mode,
+		destination: destination,
+		modes:       modes,
+		action:      "write",
+	}
+	if ejvw.frame != 0 {
+		te.parent = ejvw.stack[ejvw.frame-1].mode
+	}
+	return te
+}
+
+func (ejvw *extJSONValueWriter) ensureElementValue(destination mode, callerName string, addmodes ...mode) error {
+	switch ejvw.stack[ejvw.frame].mode {
+	case mElement, mValue:
+	default:
+		modes := []mode{mElement, mValue}
+		if addmodes != nil {
+			modes = append(modes, addmodes...)
+		}
+		return ejvw.invalidTransitionErr(destination, callerName, modes)
+	}
+
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) writeExtendedSingleValue(key string, value string, quotes bool) {
+	var s string
+	if quotes {
+		s = fmt.Sprintf(`{"$%s":"%s"}`, key, value)
+	} else {
+		s = fmt.Sprintf(`{"$%s":%s}`, key, value)
+	}
+
+	ejvw.buf = append(ejvw.buf, []byte(s)...)
+}
+
+func (ejvw *extJSONValueWriter) WriteArray() (ArrayWriter, error) {
+	if err := ejvw.ensureElementValue(mArray, "WriteArray"); err != nil {
+		return nil, err
+	}
+
+	ejvw.buf = append(ejvw.buf, '[')
+
+	ejvw.push(mArray)
+	return ejvw, nil
+}
+
+func (ejvw *extJSONValueWriter) WriteBinary(b []byte) error {
+	return ejvw.WriteBinaryWithSubtype(b, 0x00)
+}
+
+func (ejvw *extJSONValueWriter) WriteBinaryWithSubtype(b []byte, btype byte) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteBinaryWithSubtype"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(`{"$binary":{"base64":"`)
+	buf.WriteString(base64.StdEncoding.EncodeToString(b))
+	buf.WriteString(fmt.Sprintf(`","subType":"%02x"}},`, btype))
+
+	ejvw.buf = append(ejvw.buf, buf.Bytes()...)
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteBoolean(b bool) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteBoolean"); err != nil {
+		return err
+	}
+
+	ejvw.buf = append(ejvw.buf, []byte(strconv.FormatBool(b))...)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteCodeWithScope(code string) (DocumentWriter, error) {
+	if err := ejvw.ensureElementValue(mCodeWithScope, "WriteCodeWithScope"); err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(`{"$code":`)
+	writeStringWithEscapes(code, &buf, ejvw.escapeHTML)
+	buf.WriteString(`,"$scope":{`)
+
+	ejvw.buf = append(ejvw.buf, buf.Bytes()...)
+
+	ejvw.push(mCodeWithScope)
+	return ejvw, nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDBPointer(ns string, oid primitive.ObjectID) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteDBPointer"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(`{"$dbPointer":{"$ref":"`)
+	buf.WriteString(ns)
+	buf.WriteString(`","$id":{"$oid":"`)
+	buf.WriteString(oid.Hex())
+	buf.WriteString(`"}}},`)
+
+	ejvw.buf = append(ejvw.buf, buf.Bytes()...)
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDateTime(dt int64) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteDateTime"); err != nil {
+		return err
+	}
+
+	t := time.Unix(dt/1e3, dt%1e3*1e6).UTC()
+
+	if ejvw.canonical || t.Year() < 1970 || t.Year() > 9999 {
+		s := fmt.Sprintf(`{"$numberLong":"%d"}`, dt)
+		ejvw.writeExtendedSingleValue("date", s, false)
+	} else {
+		ejvw.writeExtendedSingleValue("date", t.Format(rfc3339Milli), true)
+	}
+
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDecimal128(d primitive.Decimal128) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteDecimal128"); err != nil {
+		return err
+	}
+
+	ejvw.writeExtendedSingleValue("numberDecimal", d.String(), true)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDocument() (DocumentWriter, error) {
+	if ejvw.stack[ejvw.frame].mode == mTopLevel {
+		ejvw.buf = append(ejvw.buf, '{')
+		return ejvw, nil
+	}
+
+	if err := ejvw.ensureElementValue(mDocument, "WriteDocument", mTopLevel); err != nil {
+		return nil, err
+	}
+
+	ejvw.buf = append(ejvw.buf, '{')
+	ejvw.push(mDocument)
+	return ejvw, nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDouble(f float64) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteDouble"); err != nil {
+		return err
+	}
+
+	s := formatDouble(f)
+
+	if ejvw.canonical {
+		ejvw.writeExtendedSingleValue("numberDouble", s, true)
+	} else {
+		switch s {
+		case "Infinity":
+			fallthrough
+		case "-Infinity":
+			fallthrough
+		case "NaN":
+			s = fmt.Sprintf(`{"$numberDouble":"%s"}`, s)
+		}
+		ejvw.buf = append(ejvw.buf, []byte(s)...)
+	}
+
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteInt32(i int32) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteInt32"); err != nil {
+		return err
+	}
+
+	s := strconv.FormatInt(int64(i), 10)
+
+	if ejvw.canonical {
+		ejvw.writeExtendedSingleValue("numberInt", s, true)
+	} else {
+		ejvw.buf = append(ejvw.buf, []byte(s)...)
+	}
+
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteInt64(i int64) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteInt64"); err != nil {
+		return err
+	}
+
+	s := strconv.FormatInt(i, 10)
+
+	if ejvw.canonical {
+		ejvw.writeExtendedSingleValue("numberLong", s, true)
+	} else {
+		ejvw.buf = append(ejvw.buf, []byte(s)...)
+	}
+
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteJavascript(code string) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteJavascript"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	writeStringWithEscapes(code, &buf, ejvw.escapeHTML)
+
+	ejvw.writeExtendedSingleValue("code", buf.String(), false)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteMaxKey() error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteMaxKey"); err != nil {
+		return err
+	}
+
+	ejvw.writeExtendedSingleValue("maxKey", "1", false)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteMinKey() error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteMinKey"); err != nil {
+		return err
+	}
+
+	ejvw.writeExtendedSingleValue("minKey", "1", false)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteNull() error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteNull"); err != nil {
+		return err
+	}
+
+	ejvw.buf = append(ejvw.buf, []byte("null")...)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteObjectID(oid primitive.ObjectID) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteObjectID"); err != nil {
+		return err
+	}
+
+	ejvw.writeExtendedSingleValue("oid", oid.Hex(), true)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteRegex(pattern string, options string) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteRegex"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(`{"$regularExpression":{"pattern":`)
+	writeStringWithEscapes(pattern, &buf, ejvw.escapeHTML)
+	buf.WriteString(`,"options":"`)
+	buf.WriteString(sortStringAlphebeticAscending(options))
+	buf.WriteString(`"}},`)
+
+	ejvw.buf = append(ejvw.buf, buf.Bytes()...)
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteString(s string) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteString"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	writeStringWithEscapes(s, &buf, ejvw.escapeHTML)
+
+	ejvw.buf = append(ejvw.buf, buf.Bytes()...)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteSymbol(symbol string) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteSymbol"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	writeStringWithEscapes(symbol, &buf, ejvw.escapeHTML)
+
+	ejvw.writeExtendedSingleValue("symbol", buf.String(), false)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteTimestamp(t uint32, i uint32) error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteTimestamp"); err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(`{"$timestamp":{"t":`)
+	buf.WriteString(strconv.FormatUint(uint64(t), 10))
+	buf.WriteString(`,"i":`)
+	buf.WriteString(strconv.FormatUint(uint64(i), 10))
+	buf.WriteString(`}},`)
+
+	ejvw.buf = append(ejvw.buf, buf.Bytes()...)
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteUndefined() error {
+	if err := ejvw.ensureElementValue(mode(0), "WriteUndefined"); err != nil {
+		return err
+	}
+
+	ejvw.writeExtendedSingleValue("undefined", "true", false)
+	ejvw.buf = append(ejvw.buf, ',')
+
+	ejvw.pop()
+	return nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDocumentElement(key string) (ValueWriter, error) {
+	switch ejvw.stack[ejvw.frame].mode {
+	case mDocument, mTopLevel, mCodeWithScope:
+		var buf bytes.Buffer
+		writeStringWithEscapes(key, &buf, ejvw.escapeHTML)
+
+		ejvw.buf = append(ejvw.buf, []byte(fmt.Sprintf(`%s:`, buf.String()))...)
+		ejvw.push(mElement)
+	default:
+		return nil, ejvw.invalidTransitionErr(mElement, "WriteDocumentElement", []mode{mDocument, mTopLevel, mCodeWithScope})
+	}
+
+	return ejvw, nil
+}
+
+func (ejvw *extJSONValueWriter) WriteDocumentEnd() error {
+	switch ejvw.stack[ejvw.frame].mode {
+	case mDocument, mTopLevel, mCodeWithScope:
+	default:
+		return fmt.Errorf("incorrect mode to end document: %s", ejvw.stack[ejvw.frame].mode)
+	}
+
+	// close the document
+	if ejvw.buf[len(ejvw.buf)-1] == ',' {
+		ejvw.buf[len(ejvw.buf)-1] = '}'
+	} else {
+		ejvw.buf = append(ejvw.buf, '}')
+	}
+
+	switch ejvw.stack[ejvw.frame].mode {
+	case mCodeWithScope:
+		ejvw.buf = append(ejvw.buf, '}')
+		fallthrough
+	case mDocument:
+		ejvw.buf = append(ejvw.buf, ',')
+	case mTopLevel:
+		// If the value writer has newlines enabled, end top-level documents with a newline so that
+		// multiple documents encoded to the same writer are separated by newlines. That matches the
+		// Go json.Encoder behavior and also works with bsonrw.NewExtJSONValueReader.
+		if ejvw.newlines {
+			ejvw.buf = append(ejvw.buf, '\n')
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		if ejvw.w != nil {
 			if _, err := ejvw.w.Write(ejvw.buf); err != nil {
 				return err

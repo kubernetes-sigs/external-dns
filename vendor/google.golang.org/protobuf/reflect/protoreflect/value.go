@@ -27,16 +27,16 @@ type Enum interface {
 // Message is a reflective interface for a concrete message value,
 // encapsulating both type and value information for the message.
 //
-// Accessor/mutators for individual fields are keyed by FieldDescriptor.
+// Accessor/mutators for individual fields are keyed by [FieldDescriptor].
 // For non-extension fields, the descriptor must exactly match the
 // field known by the parent message.
-// For extension fields, the descriptor must implement ExtensionTypeDescriptor,
-// extend the parent message (i.e., have the same message FullName), and
+// For extension fields, the descriptor must implement [ExtensionTypeDescriptor],
+// extend the parent message (i.e., have the same message [FullName]), and
 // be within the parent's extension range.
 //
-// Each field Value can be a scalar or a composite type (Message, List, or Map).
-// See Value for the Go types associated with a FieldDescriptor.
-// Providing a Value that is invalid or of an incorrect type panics.
+// Each field [Value] can be a scalar or a composite type ([Message], [List], or [Map]).
+// See [Value] for the Go types associated with a [FieldDescriptor].
+// Providing a [Value] that is invalid or of an incorrect type panics.
 type Message interface {
 	// Descriptor returns message descriptor, which contains only the protobuf
 	// type information for the message.
@@ -149,15 +149,21 @@ type Message interface {
 	IsValid() bool
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// ProtoMethods returns optional fast-path implementations of various operations.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// ProtoMethods returns optional fast-path implementions of various operations.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// ProtoMethods returns optional fast-path implementions of various operations.
+=======
+	// ProtoMethods returns optional fast-path implementations of various operations.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// This method may return nil.
 	//
 	// The returned methods type is identical to
-	// "google.golang.org/protobuf/runtime/protoiface".Methods.
+	// google.golang.org/protobuf/runtime/protoiface.Methods.
 	// Consult the protoiface package documentation for details.
 	ProtoMethods() *methods
 }
@@ -180,8 +186,8 @@ func (b RawFields) IsValid() bool {
 }
 
 // List is a zero-indexed, ordered list.
-// The element Value type is determined by FieldDescriptor.Kind.
-// Providing a Value that is invalid or of an incorrect type panics.
+// The element [Value] type is determined by [FieldDescriptor.Kind].
+// Providing a [Value] that is invalid or of an incorrect type panics.
 type List interface {
 	// Len reports the number of entries in the List.
 	// Get, Set, and Truncate panic with out of bound indexes.
@@ -231,9 +237,9 @@ type List interface {
 }
 
 // Map is an unordered, associative map.
-// The entry MapKey type is determined by FieldDescriptor.MapKey.Kind.
-// The entry Value type is determined by FieldDescriptor.MapValue.Kind.
-// Providing a MapKey or Value that is invalid or of an incorrect type panics.
+// The entry [MapKey] type is determined by [FieldDescriptor.MapKey].Kind.
+// The entry [Value] type is determined by [FieldDescriptor.MapValue].Kind.
+// Providing a [MapKey] or [Value] that is invalid or of an incorrect type panics.
 type Map interface {
 	// Len reports the number of elements in the map.
 	Len() int

@@ -2,6 +2,7 @@ package dnsv2
 
 import (
 	"fmt"
+
 	client "github.com/akamai/AkamaiOPEN-edgegrid-golang/client-v1"
 )
 

@@ -47,6 +47,7 @@ type BareMetalServerServiceHandler struct {
 type BareMetalServer struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ID              string   `json:"id"`
 	Os              string   `json:"os"`
 	RAM             string   `json:"ram"`
@@ -309,6 +310,56 @@ type BareMetalUpdate struct {
 	OsID            int      `json:"os_id"`
 	AppID           int      `json:"app_id"`
 	Features        []string `json:"features"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	ID              string   `json:"id"`
+	Os              string   `json:"os"`
+	RAM             string   `json:"ram"`
+	Disk            string   `json:"disk"`
+	MainIP          string   `json:"main_ip"`
+	CPUCount        int      `json:"cpu_count"`
+	Region          string   `json:"region"`
+	DefaultPassword string   `json:"default_password"`
+	DateCreated     string   `json:"date_created"`
+	Status          string   `json:"status"`
+	NetmaskV4       string   `json:"netmask_v4"`
+	GatewayV4       string   `json:"gateway_v4"`
+	Plan            string   `json:"plan"`
+	V6Network       string   `json:"v6_network"`
+	V6MainIP        string   `json:"v6_main_ip"`
+	V6NetworkSize   int      `json:"v6_network_size"`
+	MacAddress      int      `json:"mac_address"`
+	Label           string   `json:"label"`
+	Tag             string   `json:"tag"`
+	OsID            int      `json:"os_id"`
+	AppID           int      `json:"app_id"`
+	Features        []string `json:"features"`
+=======
+	ID              string `json:"id"`
+	Os              string `json:"os"`
+	RAM             string `json:"ram"`
+	Disk            string `json:"disk"`
+	MainIP          string `json:"main_ip"`
+	CPUCount        int    `json:"cpu_count"`
+	Region          string `json:"region"`
+	DefaultPassword string `json:"default_password"`
+	DateCreated     string `json:"date_created"`
+	Status          string `json:"status"`
+	NetmaskV4       string `json:"netmask_v4"`
+	GatewayV4       string `json:"gateway_v4"`
+	Plan            string `json:"plan"`
+	V6Network       string `json:"v6_network"`
+	V6MainIP        string `json:"v6_main_ip"`
+	V6NetworkSize   int    `json:"v6_network_size"`
+	MacAddress      int    `json:"mac_address"`
+	Label           string `json:"label"`
+	// Deprecated: Tag should no longer be used. Instead, use Tags.
+	Tag      string   `json:"tag"`
+	OsID     int      `json:"os_id"`
+	AppID    int      `json:"app_id"`
+	ImageID  string   `json:"image_id"`
+	Features []string `json:"features"`
+	Tags     []string `json:"tags"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // BareMetalCreate represents the optional parameters that can be set when creating a Bare Metal server
@@ -322,11 +373,15 @@ type BareMetalCreate struct {
 	Label           string   `json:"label,omitempty"`
 	SSHKeyIDs       []string `json:"sshkey_id,omitempty"`
 	AppID           int      `json:"app_id,omitempty"`
+	ImageID         string   `json:"image_id,omitempty"`
 	UserData        string   `json:"user_data,omitempty"`
 	ActivationEmail *bool    `json:"activation_email,omitempty"`
 	Hostname        string   `json:"hostname,omitempty"`
-	Tag             string   `json:"tag,omitempty"`
-	ReservedIPv4    string   `json:"reserved_ipv4,omitempty"`
+	// Deprecated: Tag should no longer be used. Instead, use Tags.
+	Tag           string   `json:"tag,omitempty"`
+	ReservedIPv4  string   `json:"reserved_ipv4,omitempty"`
+	PersistentPxe *bool    `json:"persistent_pxe,omitempty"`
+	Tags          []string `json:"tags"`
 }
 
 // BareMetalUpdate represents the optional parameters that can be set when updating a Bare Metal server
@@ -335,9 +390,18 @@ type BareMetalUpdate struct {
 	EnableIPv6 *bool  `json:"enable_ipv6,omitempty"`
 	Label      string `json:"label,omitempty"`
 	AppID      int    `json:"app_id,omitempty"`
+	ImageID    string `json:"image_id,omitempty"`
 	UserData   string `json:"user_data,omitempty"`
+<<<<<<< HEAD
 	Tag        string `json:"tag,omitempty"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Tag        string `json:"tag,omitempty"`
+=======
+	// Deprecated: Tag should no longer be used. Instead, use Tags.
+	Tag  *string  `json:"tag,omitempty"`
+	Tags []string `json:"tags"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // BareMetalServerBandwidth represents bandwidth information for a Bare Metal server

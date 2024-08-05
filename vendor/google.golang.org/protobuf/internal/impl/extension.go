@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/runtime/protoiface"
 )
@@ -157,6 +158,13 @@ func (xtd *extensionTypeDescriptor) Descriptor() protoreflect.ExtensionDescripto
 =======
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 	piface "google.golang.org/protobuf/runtime/protoiface"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	pref "google.golang.org/protobuf/reflect/protoreflect"
+	piface "google.golang.org/protobuf/runtime/protoiface"
+=======
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/runtime/protoiface"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // ExtensionInfo implements ExtensionType.
@@ -191,7 +199,7 @@ type ExtensionInfo struct {
 	// since the message may no longer implement the MessageV1 interface.
 	//
 	// Deprecated: Use the ExtendedType method instead.
-	ExtendedType piface.MessageV1
+	ExtendedType protoiface.MessageV1
 
 	// ExtensionType is the zero value of the extension type.
 	//
@@ -229,31 +237,31 @@ const (
 	extensionInfoFullInit      = 2
 )
 
-func InitExtensionInfo(xi *ExtensionInfo, xd pref.ExtensionDescriptor, goType reflect.Type) {
+func InitExtensionInfo(xi *ExtensionInfo, xd protoreflect.ExtensionDescriptor, goType reflect.Type) {
 	xi.goType = goType
 	xi.desc = extensionTypeDescriptor{xd, xi}
 	xi.init = extensionInfoDescInit
 }
 
-func (xi *ExtensionInfo) New() pref.Value {
+func (xi *ExtensionInfo) New() protoreflect.Value {
 	return xi.lazyInit().New()
 }
-func (xi *ExtensionInfo) Zero() pref.Value {
+func (xi *ExtensionInfo) Zero() protoreflect.Value {
 	return xi.lazyInit().Zero()
 }
-func (xi *ExtensionInfo) ValueOf(v interface{}) pref.Value {
+func (xi *ExtensionInfo) ValueOf(v interface{}) protoreflect.Value {
 	return xi.lazyInit().PBValueOf(reflect.ValueOf(v))
 }
-func (xi *ExtensionInfo) InterfaceOf(v pref.Value) interface{} {
+func (xi *ExtensionInfo) InterfaceOf(v protoreflect.Value) interface{} {
 	return xi.lazyInit().GoValueOf(v).Interface()
 }
-func (xi *ExtensionInfo) IsValidValue(v pref.Value) bool {
+func (xi *ExtensionInfo) IsValidValue(v protoreflect.Value) bool {
 	return xi.lazyInit().IsValidPB(v)
 }
 func (xi *ExtensionInfo) IsValidInterface(v interface{}) bool {
 	return xi.lazyInit().IsValidGo(reflect.ValueOf(v))
 }
-func (xi *ExtensionInfo) TypeDescriptor() pref.ExtensionTypeDescriptor {
+func (xi *ExtensionInfo) TypeDescriptor() protoreflect.ExtensionTypeDescriptor {
 	if atomic.LoadUint32(&xi.init) < extensionInfoDescInit {
 		xi.lazyInitSlow()
 	}
@@ -290,14 +298,20 @@ func (xi *ExtensionInfo) lazyInitSlow() {
 }
 
 type extensionTypeDescriptor struct {
-	pref.ExtensionDescriptor
+	protoreflect.ExtensionDescriptor
 	xi *ExtensionInfo
 }
 
-func (xtd *extensionTypeDescriptor) Type() pref.ExtensionType {
+func (xtd *extensionTypeDescriptor) Type() protoreflect.ExtensionType {
 	return xtd.xi
 }
+<<<<<<< HEAD
 func (xtd *extensionTypeDescriptor) Descriptor() pref.ExtensionDescriptor {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (xtd *extensionTypeDescriptor) Descriptor() pref.ExtensionDescriptor {
+=======
+func (xtd *extensionTypeDescriptor) Descriptor() protoreflect.ExtensionDescriptor {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return xtd.ExtensionDescriptor
 }

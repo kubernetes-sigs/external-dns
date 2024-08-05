@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+<<<<<<< HEAD
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -72,6 +73,73 @@ func (s *SecurityProviderExoscale) signRequest(req *http.Request, expiration tim
 		}
 		body = string(data)
 		req.Body = ioutil.NopCloser(bytes.NewReader(data))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"io"
+	"net/http"
+	"sort"
+	"strings"
+	"time"
+)
+
+// SecurityProviderExoscale represents an Exoscale public API security
+// provider.
+type SecurityProviderExoscale struct {
+	// ReqExpire represents the request expiration duration.
+	ReqExpire time.Duration
+
+	apiKey    string
+	apiSecret string
+}
+
+// NewSecurityProvider returns a new Exoscale public API security
+// provider to sign API requests using the specified API key/secret.
+func NewSecurityProvider(apiKey, apiSecret string) (*SecurityProviderExoscale, error) {
+	if apiKey == "" {
+		return nil, errors.New("missing API key")
+	}
+
+	if apiSecret == "" {
+		return nil, errors.New("missing API secret")
+	}
+
+	return &SecurityProviderExoscale{
+		ReqExpire: 10 * time.Minute,
+		apiKey:    apiKey,
+		apiSecret: apiSecret,
+	}, nil
+}
+
+// Intercept is an HTTP middleware that intercepts and signs client requests
+// before sending them to the API endpoint.
+func (s *SecurityProviderExoscale) Intercept(_ context.Context, req *http.Request) error {
+	return s.signRequest(req, time.Now().UTC().Add(s.ReqExpire))
+}
+
+func (s *SecurityProviderExoscale) signRequest(req *http.Request, expiration time.Time) error {
+	var (
+		sigParts    []string
+		headerParts []string
+	)
+
+	// Request method/URL path
+	sigParts = append(sigParts, fmt.Sprintf("%s %s", req.Method, req.URL.EscapedPath()))
+	headerParts = append(headerParts, "EXO2-HMAC-SHA256 credential="+s.apiKey)
+
+	// Request body if present
+	body := ""
+	if req.Body != nil {
+		data, err := io.ReadAll(req.Body)
+		if err != nil {
+			return err
+		}
+		err = req.Body.Close()
+		if err != nil {
+			return err
+		}
+		body = string(data)
+		req.Body = io.NopCloser(bytes.NewReader(data))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	sigParts = append(sigParts, body)
 

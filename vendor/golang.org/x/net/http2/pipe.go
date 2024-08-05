@@ -33,6 +33,7 @@ type pipeBuffer interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // setBuffer initializes the pipe buffer.
 // It has no effect if the pipe is already closed.
 func (p *pipe) setBuffer(b pipeBuffer) {
@@ -112,6 +113,20 @@ func (p *pipe) Write(d []byte) (n int, err error) {
 		return 0, errClosedPipeWrite
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// setBuffer initializes the pipe buffer.
+// It has no effect if the pipe is already closed.
+func (p *pipe) setBuffer(b pipeBuffer) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.err != nil || p.breakErr != nil {
+		return
+	}
+	p.b = b
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (p *pipe) Len() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -148,7 +163,10 @@ func (p *pipe) Read(d []byte) (n int, err error) {
 	}
 }
 
-var errClosedPipeWrite = errors.New("write on closed buffer")
+var (
+	errClosedPipeWrite        = errors.New("write on closed buffer")
+	errUninitializedPipeWrite = errors.New("write on uninitialized buffer")
+)
 
 // Write copies bytes from p into the buffer and wakes a reader.
 // It is an error to write more data than the buffer can hold.
@@ -159,13 +177,25 @@ func (p *pipe) Write(d []byte) (n int, err error) {
 		p.c.L = &p.mu
 	}
 	defer p.c.Signal()
-	if p.err != nil {
+	if p.err != nil || p.breakErr != nil {
 		return 0, errClosedPipeWrite
 	}
+<<<<<<< HEAD
 	if p.breakErr != nil {
 		p.unread += len(d)
 		return len(d), nil // discard when there is no reader
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if p.breakErr != nil {
+		p.unread += len(d)
+		return len(d), nil // discard when there is no reader
+=======
+	// pipe.setBuffer is never invoked, leaving the buffer uninitialized.
+	// We shouldn't try to write to an uninitialized pipe,
+	// but returning an error is better than panicking.
+	if p.b == nil {
+		return 0, errUninitializedPipeWrite
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return p.b.Write(d)
 }

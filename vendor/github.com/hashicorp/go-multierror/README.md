@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![CircleCI](https://img.shields.io/circleci/build/github/hashicorp/go-multierror/master)](https://circleci.com/gh/hashicorp/go-multierror)
 [![Go Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-multierror.svg)](https://pkg.go.dev/github.com/hashicorp/go-multierror)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hashicorp/go-multierror)
@@ -111,9 +112,17 @@ you're on an older version of go:
 =======
 [![Build Status](http://img.shields.io/travis/hashicorp/go-multierror.svg?style=flat-square)][travis]
 [![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)][godocs]
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+[![Build Status](http://img.shields.io/travis/hashicorp/go-multierror.svg?style=flat-square)][travis]
+[![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)][godocs]
+=======
+[![CircleCI](https://img.shields.io/circleci/build/github/hashicorp/go-multierror/master)](https://circleci.com/gh/hashicorp/go-multierror)
+[![Go Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-multierror.svg)](https://pkg.go.dev/github.com/hashicorp/go-multierror)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hashicorp/go-multierror)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-[travis]: https://travis-ci.org/hashicorp/go-multierror
-[godocs]: https://godoc.org/github.com/hashicorp/go-multierror
+[circleci]: https://app.circleci.com/pipelines/github/hashicorp/go-multierror
+[godocs]: https://pkg.go.dev/github.com/hashicorp/go-multierror
 
 `go-multierror` is a package for Go that provides a mechanism for
 representing a list of `error` values as a single `error`.
@@ -133,8 +142,32 @@ for introspecting on error values.
 Install using `go get github.com/hashicorp/go-multierror`.
 
 Full documentation is available at
+<<<<<<< HEAD
 http://godoc.org/github.com/hashicorp/go-multierror
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+http://godoc.org/github.com/hashicorp/go-multierror
+=======
+https://pkg.go.dev/github.com/hashicorp/go-multierror
+
+### Requires go version 1.13 or newer
+
+`go-multierror` requires go version 1.13 or newer. Go 1.13 introduced
+[error wrapping](https://golang.org/doc/go1.13#error_wrapping), which
+this library takes advantage of.
+
+If you need to use an earlier version of go, you can use the
+[v1.0.0](https://github.com/hashicorp/go-multierror/tree/v1.0.0)
+tag, which doesn't rely on features in go 1.13.
+
+If you see compile errors that look like the below, it's likely that
+you're on an older version of go:
+
+```
+/go/src/github.com/hashicorp/go-multierror/multierror.go:112:9: undefined: errors.As
+/go/src/github.com/hashicorp/go-multierror/multierror.go:117:9: undefined: errors.Is
+```
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 ## Usage
 

@@ -18,9 +18,15 @@ package opencensus // import "go.opencensus.io"
 // Version is the current release version of OpenCensus in use.
 func Version() string {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return "0.24.0"
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return "0.23.0"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return "0.23.0"
+=======
+	return "0.24.0"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

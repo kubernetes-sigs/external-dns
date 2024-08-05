@@ -5,9 +5,11 @@
 package gensupport
 
 import (
+	"net/http"
 	"net/url"
 
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/internal"
 )
 
 // URLParams is a simplified replacement for url.Values
@@ -37,6 +39,7 @@ func (u URLParams) SetMulti(key string, values []string) {
 	u[key] = values
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // Encode encodes the values into “URL encoded” form
 // ("bar=baz&foo=quux") sorted by key.
@@ -125,15 +128,49 @@ func SetOptions(u URLParams, opts ...googleapi.CallOption) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Encode encodes the values into ``URL encoded'' form
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Encode encodes the values into ``URL encoded'' form
+=======
+// Encode encodes the values into “URL encoded” form
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // ("bar=baz&foo=quux") sorted by key.
 func (u URLParams) Encode() string {
 	return url.Values(u).Encode()
 }
 
-// SetOptions sets the URL params and any additional call options.
+// SetOptions sets the URL params and any additional `CallOption` or
+// `MultiCallOption` passed in.
 func SetOptions(u URLParams, opts ...googleapi.CallOption) {
 	for _, o := range opts {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		m, ok := o.(googleapi.MultiCallOption)
+		if ok {
+			u.SetMulti(m.GetMulti())
+			continue
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		u.Set(o.Get())
 	}
+}
+
+// SetHeaders sets common headers for all requests. The keyvals header pairs
+// should have a corresponding value for every key provided. If there is an odd
+// number of keyvals this method will panic.
+func SetHeaders(userAgent, contentType string, userHeaders http.Header, keyvals ...string) http.Header {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+GoVersion()+" gdcl/"+internal.Version)
+	for i := 0; i < len(keyvals); i = i + 2 {
+		reqHeaders.Set(keyvals[i], keyvals[i+1])
+	}
+	reqHeaders.Set("User-Agent", userAgent)
+	if contentType != "" {
+		reqHeaders.Set("Content-Type", contentType)
+	}
+	for k, v := range userHeaders {
+		reqHeaders[k] = v
+	}
+	return reqHeaders
 }

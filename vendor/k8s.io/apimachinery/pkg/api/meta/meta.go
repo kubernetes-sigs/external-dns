@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -810,6 +811,11 @@ func (a genericAccessor) SetOwnerReferences(references []metav1.OwnerReference) 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // errNotList is returned when an object implements the Object style interfaces but not the List style
@@ -823,8 +829,6 @@ var errNotCommon = fmt.Errorf("object does not implement the common interface fo
 func CommonAccessor(obj interface{}) (metav1.Common, error) {
 	switch t := obj.(type) {
 	case List:
-		return t, nil
-	case metav1.ListInterface:
 		return t, nil
 	case ListMetaAccessor:
 		if m := t.GetListMeta(); m != nil {
@@ -855,8 +859,6 @@ func CommonAccessor(obj interface{}) (metav1.Common, error) {
 func ListAccessor(obj interface{}) (List, error) {
 	switch t := obj.(type) {
 	case List:
-		return t, nil
-	case metav1.ListInterface:
 		return t, nil
 	case ListMetaAccessor:
 		if m := t.GetListMeta(); m != nil {
@@ -918,7 +920,6 @@ func AsPartialObjectMetadata(m metav1.Object) *metav1.PartialObjectMetadata {
 				Annotations:                m.GetAnnotations(),
 				OwnerReferences:            m.GetOwnerReferences(),
 				Finalizers:                 m.GetFinalizers(),
-				ClusterName:                m.GetClusterName(),
 				ManagedFields:              m.GetManagedFields(),
 			},
 		}
@@ -1388,7 +1389,7 @@ func (a genericAccessor) SetFinalizers(finalizers []string) {
 func (a genericAccessor) GetOwnerReferences() []metav1.OwnerReference {
 	var ret []metav1.OwnerReference
 	s := a.ownerReferences
-	if s.Kind() != reflect.Ptr || s.Elem().Kind() != reflect.Slice {
+	if s.Kind() != reflect.Pointer || s.Elem().Kind() != reflect.Slice {
 		klog.Errorf("expect %v to be a pointer to slice", s)
 		return ret
 	}
@@ -1406,8 +1407,14 @@ func (a genericAccessor) GetOwnerReferences() []metav1.OwnerReference {
 
 func (a genericAccessor) SetOwnerReferences(references []metav1.OwnerReference) {
 	s := a.ownerReferences
+<<<<<<< HEAD
 	if s.Kind() != reflect.Ptr || s.Elem().Kind() != reflect.Slice {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if s.Kind() != reflect.Ptr || s.Elem().Kind() != reflect.Slice {
+=======
+	if s.Kind() != reflect.Pointer || s.Elem().Kind() != reflect.Slice {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		klog.Errorf("expect %v to be a pointer to slice", s)
 	}
 	s = s.Elem()

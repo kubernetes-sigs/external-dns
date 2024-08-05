@@ -19,6 +19,7 @@ type RamRoleArnCredential struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	StsRegion             string
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -30,6 +31,11 @@ type RamRoleArnCredential struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	StsRegion             string
+	ExternalId            string
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // Deprecated: Use RamRoleArnCredential in this package instead.
@@ -71,5 +77,17 @@ func NewRamRoleArnWithPolicyCredential(accessKeyId, accessKeySecret, roleArn, ro
 		RoleSessionName:       roleSessionName,
 		RoleSessionExpiration: roleSessionExpiration,
 		Policy:                policy,
+	}
+}
+
+func NewRamRoleArnWithPolicyAndExternalIdCredential(accessKeyId, accessKeySecret, roleArn, roleSessionName, policy, externalId string, roleSessionExpiration int) *RamRoleArnCredential {
+	return &RamRoleArnCredential{
+		AccessKeyId:           accessKeyId,
+		AccessKeySecret:       accessKeySecret,
+		RoleArn:               roleArn,
+		RoleSessionName:       roleSessionName,
+		RoleSessionExpiration: roleSessionExpiration,
+		Policy:                policy,
+		ExternalId:            externalId,
 	}
 }

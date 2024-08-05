@@ -74,6 +74,7 @@ A not-so-up-to-date-list-that-may-be-actually-current:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
@@ -83,6 +84,23 @@ A not-so-up-to-date-list-that-may-be-actually-current:
 * https://ping.sx/dig
 * https://fleetdeck.io/
 * https://github.com/markdingo/autoreverse
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+* https://github.com/v2fly/v2ray-core (test only)
+* https://kuma.io/
+* https://www.misaka.io/services/dns
+* https://ping.sx/dig
+* https://fleetdeck.io/
+* https://github.com/markdingo/autoreverse
+* https://github.com/slackhq/nebula
+* https://addr.tools/
+* https://dnscheck.tools/
+* https://github.com/egbakou/domainverifier
+* https://github.com/semihalev/sdns
+* https://github.com/wintbiit/NineDNS
+* https://linuxcontainers.org/incus/
+* https://ifconfig.es
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 
 Send pull request if you want to be listed here.
@@ -126,6 +144,7 @@ Example programs can be found in the `github.com/miekg/exdns` repository.
 *all of them*
 
 * 103{4,5} - DNS standard
+* 1183 - ISDN, X25 and other deprecated records
 * 1348 - NSAP record (removed the record)
 * 1982 - Serial Arithmetic
 * 1876 - LOC record
@@ -146,6 +165,7 @@ Example programs can be found in the `github.com/miekg/exdns` repository.
 * 340{1,2,3} - NAPTR record
 * 3445 - Limiting the scope of (DNS)KEY
 * 3597 - Unknown RRs
+* 4025 - A Method for Storing IPsec Keying Material in DNS
 * 403{3,4,5} - DNSSEC + validation functions
 * 4255 - SSHFP record
 * 4343 - Case insensitivity
@@ -181,6 +201,7 @@ Example programs can be found in the `github.com/miekg/exdns` repository.
 * 8080 - EdDSA for DNSSEC
 * 8499 - DNS Terminology
 * 8659 - DNS Certification Authority Authorization (CAA) Resource Record
+<<<<<<< HEAD
 * 8914 - Extended DNS Errors
 * 8976 - Message Digest for DNS Zones (ZONEMD RR)
 <<<<<<< HEAD
@@ -385,6 +406,12 @@ Example programs can be found in the `github.com/miekg/exdns` repository.
 * 8080 - EdDSA for DNSSEC
 * 8499 - DNS Terminology
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+* 8777 - DNS Reverse IP Automatic Multicast Tunneling (AMT) Discovery
+* 8914 - Extended DNS Errors
+* 8976 - Message Digest for DNS Zones (ZONEMD RR)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 ## Loosely Based Upon
 

@@ -15,6 +15,7 @@ Example to List Tenants
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	listOpts := &tenants.ListOpts{
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -47,6 +48,11 @@ Example to List Tenants
 =======
 	listOpts := tenants.ListOpts{
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	listOpts := tenants.ListOpts{
+=======
+	listOpts := &tenants.ListOpts{
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		Limit: 2,
 	}
 

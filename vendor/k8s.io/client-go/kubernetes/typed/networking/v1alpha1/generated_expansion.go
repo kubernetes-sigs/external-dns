@@ -18,4 +18,11 @@ limitations under the License.
 
 package v1alpha1
 
+<<<<<<< HEAD
 type ClusterCIDRExpansion interface{}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+type IPAddressExpansion interface{}
+
+type ServiceCIDRExpansion interface{}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

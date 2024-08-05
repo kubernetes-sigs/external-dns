@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && netbsd
 // +build amd64,netbsd
 
@@ -1989,6 +1990,11 @@ type Uvmexp struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build amd64,netbsd
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build amd64,netbsd
+=======
+//go:build amd64 && netbsd
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -2242,6 +2248,7 @@ const (
 	SizeofSockaddrUnix     = 0x6a
 	SizeofSockaddrDatalink = 0x14
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -2438,8 +2445,10 @@ type Ptmget struct {
 
 const (
 	AT_FDCWD            = -0x64
-	AT_SYMLINK_FOLLOW   = 0x400
+	AT_EACCESS          = 0x100
 	AT_SYMLINK_NOFOLLOW = 0x200
+	AT_SYMLINK_FOLLOW   = 0x400
+	AT_REMOVEDIR        = 0x800
 )
 
 type PollFd struct {
@@ -2481,6 +2490,90 @@ type Utsname struct {
 	Version  [256]byte
 	Machine  [256]byte
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+const SizeofUvmexp = 0x278
+
+type Uvmexp struct {
+	Pagesize           int64
+	Pagemask           int64
+	Pageshift          int64
+	Npages             int64
+	Free               int64
+	Active             int64
+	Inactive           int64
+	Paging             int64
+	Wired              int64
+	Zeropages          int64
+	Reserve_pagedaemon int64
+	Reserve_kernel     int64
+	Freemin            int64
+	Freetarg           int64
+	Inactarg           int64
+	Wiredmax           int64
+	Nswapdev           int64
+	Swpages            int64
+	Swpginuse          int64
+	Swpgonly           int64
+	Nswget             int64
+	Unused1            int64
+	Cpuhit             int64
+	Cpumiss            int64
+	Faults             int64
+	Traps              int64
+	Intrs              int64
+	Swtch              int64
+	Softs              int64
+	Syscalls           int64
+	Pageins            int64
+	Swapins            int64
+	Swapouts           int64
+	Pgswapin           int64
+	Pgswapout          int64
+	Forks              int64
+	Forks_ppwait       int64
+	Forks_sharevm      int64
+	Pga_zerohit        int64
+	Pga_zeromiss       int64
+	Zeroaborts         int64
+	Fltnoram           int64
+	Fltnoanon          int64
+	Fltpgwait          int64
+	Fltpgrele          int64
+	Fltrelck           int64
+	Fltrelckok         int64
+	Fltanget           int64
+	Fltanretry         int64
+	Fltamcopy          int64
+	Fltnamap           int64
+	Fltnomap           int64
+	Fltlget            int64
+	Fltget             int64
+	Flt_anon           int64
+	Flt_acow           int64
+	Flt_obj            int64
+	Flt_prcopy         int64
+	Flt_przero         int64
+	Pdwoke             int64
+	Pdrevs             int64
+	Unused4            int64
+	Pdfreed            int64
+	Pdscans            int64
+	Pdanscan           int64
+	Pdobscan           int64
+	Pdreact            int64
+	Pdbusy             int64
+	Pdpageouts         int64
+	Pdpending          int64
+	Pddeact            int64
+	Anonpages          int64
+	Filepages          int64
+	Execpages          int64
+	Colorhit           int64
+	Colormiss          int64
+	Ncolors            int64
+	Bootpages          int64
+	Poolpages          int64
 }
 
 const SizeofClockinfo = 0x14

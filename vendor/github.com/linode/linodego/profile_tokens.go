@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/linode/linodego/internal/parseabletime"
 )
 
@@ -92,23 +93,25 @@ type TokensPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for Token
-func (TokensPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.Tokens.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-	return endpoint
+func (TokensPagedResponse) endpoint(_ ...any) string {
+	return "profile/tokens"
 }
 
-// appendData appends Tokens when processing paginated Token responses
-func (resp *TokensPagedResponse) appendData(r *TokensPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *TokensPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(TokensPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*TokensPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListTokens lists Tokens
 func (c *Client) ListTokens(ctx context.Context, opts *ListOptions) ([]Token, error) {
 	response := TokensPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -473,6 +476,10 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -480,13 +487,10 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 }
 
 // GetToken gets the token with the provided ID
-func (c *Client) GetToken(ctx context.Context, id int) (*Token, error) {
-	e, err := c.Tokens.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Token{}).Get(e))
+func (c *Client) GetToken(ctx context.Context, tokenID int) (*Token, error) {
+	e := fmt.Sprintf("profile/tokens/%d", tokenID)
+	req := c.R(ctx).SetResult(&Token{})
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -494,38 +498,28 @@ func (c *Client) GetToken(ctx context.Context, id int) (*Token, error) {
 }
 
 // CreateToken creates a Token
-func (c *Client) CreateToken(ctx context.Context, createOpts TokenCreateOptions) (*Token, error) {
-	var body string
-	e, err := c.Tokens.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	req := c.R(ctx).SetResult(&Token{})
-
+func (c *Client) CreateToken(ctx context.Context, opts TokenCreateOptions) (*Token, error) {
 	// Format the Time as a string to meet the ISO8601 requirement
 	createOptsFixed := struct {
 		Label  string  `json:"label"`
 		Scopes string  `json:"scopes"`
 		Expiry *string `json:"expiry"`
 	}{}
-	createOptsFixed.Label = createOpts.Label
-	createOptsFixed.Scopes = createOpts.Scopes
-	if createOpts.Expiry != nil {
-		iso8601Expiry := createOpts.Expiry.UTC().Format("2006-01-02T15:04:05")
+	createOptsFixed.Label = opts.Label
+	createOptsFixed.Scopes = opts.Scopes
+	if opts.Expiry != nil {
+		iso8601Expiry := opts.Expiry.UTC().Format("2006-01-02T15:04:05")
 		createOptsFixed.Expiry = &iso8601Expiry
 	}
 
-	if bodyData, err := json.Marshal(createOptsFixed); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
+	body, err := json.Marshal(createOptsFixed)
+	if err != nil {
+		return nil, err
 	}
 
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
+	e := "profile/tokens"
+	req := c.R(ctx).SetResult(&Token{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -533,27 +527,20 @@ func (c *Client) CreateToken(ctx context.Context, createOpts TokenCreateOptions)
 }
 
 // UpdateToken updates the Token with the specified id
-func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdateOptions) (*Token, error) {
-	var body string
-	e, err := c.Tokens.Endpoint()
+func (c *Client) UpdateToken(ctx context.Context, tokenID int, opts TokenUpdateOptions) (*Token, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
-	e = fmt.Sprintf("%s/%d", e, id)
 
-	req := c.R(ctx).SetResult(&Token{})
-
-	if bodyData, err := json.Marshal(updateOpts); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	e := fmt.Sprintf("profile/tokens/%d", tokenID)
+	req := c.R(ctx).SetResult(&Token{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -561,13 +548,8 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 }
 
 // DeleteToken deletes the Token with the specified id
-func (c *Client) DeleteToken(ctx context.Context, id int) error {
-	e, err := c.Tokens.Endpoint()
-	if err != nil {
-		return err
-	}
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+func (c *Client) DeleteToken(ctx context.Context, tokenID int) error {
+	e := fmt.Sprintf("profile/tokens/%d", tokenID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 }

@@ -25,6 +25,7 @@
 //
 // The text format is almost a superset of JSON except:
 <<<<<<< HEAD
+<<<<<<< HEAD
 //   - message keys are not quoted strings, but identifiers
 //   - the top-level value must be a message without the delimiters
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -32,4 +33,11 @@
 //	* message keys are not quoted strings, but identifiers
 //	* the top-level value must be a message without the delimiters
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//	* message keys are not quoted strings, but identifiers
+//	* the top-level value must be a message without the delimiters
+=======
+//   - message keys are not quoted strings, but identifiers
+//   - the top-level value must be a message without the delimiters
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 package text

@@ -1,0 +1,139 @@
+// Copyright 2021 Istio Authors
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "type/v1beta1/selector.proto";
+
+// $schema: istio.networking.v1beta1.ProxyConfig
+// $title: ProxyConfig
+// $description: Provides configuration for individual workloads.
+// $location: https://istio.io/docs/reference/config/networking/proxy-config.html
+// $aliases: [/docs/reference/config/networking/v1beta1/proxy-config]
+// $mode: file
+
+// `ProxyConfig` exposes proxy level configuration options. `ProxyConfig` can be configured on a per-workload basis,
+// a per-namespace basis, or mesh-wide. `ProxyConfig` is not a required resource; there are default values in place, which are documented
+// inline with each field.
+//
+// **NOTE**: fields in ProxyConfig are not dynamically configured - changes will require restart of workloads to take effect.
+//
+// For any namespace, including the root configuration namespace, it is only valid
+// to have a single workload selector-less `ProxyConfig` resource.
+//
+// For resources with a workload selector, it is only valid to have one resource selecting
+// any given workload.
+//
+// For mesh level configuration, put the resource in the root configuration namespace for
+// your Istio installation *without* a workload selector:
+//
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: ProxyConfig
+// metadata:
+//   name: my-proxyconfig
+//   namespace: istio-system
+// spec:
+//   concurrency: 0
+//   image:
+//     imageType: distroless
+// ```
+//
+// For namespace level configuration, put the resource in the desired namespace without a workload selector:
+//
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: ProxyConfig
+// metadata:
+//   name: my-ns-proxyconfig
+//   namespace: user-namespace
+// spec:
+//   concurrency: 0
+// ```
+//
+// For workload level configuration, set the `selector` field on the `ProxyConfig` resource:
+//
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: ProxyConfig
+// metadata:
+//   name: per-workload-proxyconfig
+//   namespace: example
+// spec:
+//   selector:
+//     matchLabels:
+//       app: ratings
+//   concurrency: 0
+//   image:
+//     imageType: debug
+// ```
+//
+// If a `ProxyConfig` CR is defined that matches a workload it will merge with its `proxy.istio.io/config` annotation if present,
+// with the CR taking precedence over the annotation for overlapping fields. Similarly, if a mesh wide `ProxyConfig` CR is defined and
+// `meshConfig.DefaultConfig` is set, the two resources will be merged with the CR taking precedence for overlapping fields.
+//
+package istio.networking.v1beta1;
+
+option go_package= "istio.io/api/networking/v1beta1";
+
+// `ProxyConfig` exposes proxy level configuration options.
+//
+// <!-- crd generation tags
+// +cue-gen:ProxyConfig:groupName:networking.istio.io
+// +cue-gen:ProxyConfig:version:v1beta1
+// +cue-gen:ProxyConfig:storageVersion
+// +cue-gen:ProxyConfig:annotations:helm.sh/resource-policy=keep
+// +cue-gen:ProxyConfig:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
+// +cue-gen:ProxyConfig:subresource:status
+// +cue-gen:ProxyConfig:scope:Namespaced
+// +cue-gen:ProxyConfig:resource:categories=istio-io,networking-istio-io,plural=proxyconfigs
+// +cue-gen:ProxyConfig:preserveUnknownFields:false
+// -->
+//
+// <!-- go code generation tags
+// +kubetype-gen
+// +kubetype-gen:groupVersion=networking.istio.io/v1beta1
+// +genclient
+// +k8s:deepcopy-gen=true
+// -->
+message ProxyConfig {
+  // Optional. Selectors specify the set of pods/VMs on which this `ProxyConfig` resource should be applied.
+  // If not set, the `ProxyConfig` resource will be applied to all workloads in the namespace where this resource is defined.
+  istio.type.v1beta1.WorkloadSelector selector = 1;
+
+  // The number of worker threads to run.
+  // If unset, this will be automatically determined based on CPU requests/limits.
+  // If set to 0, all cores on the machine will be used.
+  google.protobuf.Int32Value concurrency = 2;
+
+  // Additional environment variables for the proxy.
+  // Names starting with `ISTIO_META_` will be included in the generated bootstrap configuration and sent to the XDS server.
+  map<string,string> environment_variables = 3;
+
+  // Specifies the details of the proxy image.
+  ProxyImage image = 4;
+}
+
+// The following values are used to construct proxy image url.
+// format: `${hub}/${image_name}/${tag}-${image_type}`,
+// example: `docker.io/istio/proxyv2:1.11.1` or `docker.io/istio/proxyv2:1.11.1-distroless`.
+// This information was previously part of the Values API.
+message ProxyImage {
+  // The image type of the image.
+  // Istio publishes default, debug, and distroless images.
+  // Other values are allowed if those image types (example: centos) are published to the specified hub.
+  // supported values: default, debug, distroless.
+  string image_type = 1;
+}

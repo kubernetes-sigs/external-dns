@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"testing"
 
 	"github.com/maxatome/go-testdeep/internal/anchors"
@@ -681,20 +682,26 @@ func newBooleanContext() ctxerr.Context {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"testing"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"github.com/maxatome/go-testdeep/internal/anchors"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
+	"github.com/maxatome/go-testdeep/internal/hooks"
 	"github.com/maxatome/go-testdeep/internal/visited"
 )
 
 // ContextConfig allows to configure finely how tests failures are rendered.
 //
-// See NewT function to use it.
+// See [NewT] function to use it.
 type ContextConfig struct {
 	// RootName is the string used to represent the root of got data. It
 	// defaults to "DATA". For an HTTP response body, it could be "BODY"
 	// for example.
-	RootName string
+	RootName      string
+	forkedFromCtx *ctxerr.Context
 	// MaxErrors is the maximal number of errors to dump in case of Cmp*
 	// failure.
 	//
@@ -709,8 +716,9 @@ type ContextConfig struct {
 	// will be dumped.
 	MaxErrors int
 	anchors   *anchors.Info
+	hooks     *hooks.Info
 	// FailureIsFatal allows to Fatal() (instead of Error()) when a test
-	// fails. Using *testing.T instance as t.TestingFT value, FailNow()
+	// fails. Using *testing.T or *testing.B instance as t.TB value, FailNow()
 	// is called behind the scenes when Fatal() is called. See testing
 	// documentation for details.
 	FailureIsFatal bool
@@ -722,6 +730,9 @@ type ContextConfig struct {
 	// with B assignable to A.
 	//
 	// See time.Time as an example of accepted Equal() method.
+	//
+	// See (*T).UseEqual method to only apply this property to some
+	// specific types.
 	UseEqual bool
 	// BeLax allows to compare different but convertible types. If set
 	// to false (default), got and expected types must be the same. If
@@ -730,16 +741,44 @@ type ContextConfig struct {
 	// function/method and Lax operator to set this flag without
 	// providing a specific configuration.
 	BeLax bool
+	// IgnoreUnexported allows to ignore unexported struct fields. Be
+	// careful about structs entirely composed of unexported fields
+	// (like time.Time for example). With this flag set to true, they
+	// are all equal. In such case it is advised to set UseEqual flag,
+	// to use (*T).UseEqual method or to add a Cmp hook using
+	// (*T).WithCmpHooks method.
+	//
+	// See (*T).IgnoreUnexported method to only apply this property to some
+	// specific types.
+	IgnoreUnexported bool
+	// TestDeepInGotOK allows to accept TestDeep operator in got Cmp*
+	// parameter. By default it is forbidden and a panic occurs, because
+	// most of the time it is a mistake to compare (expected, got)
+	// instead of official (got, expected).
+	TestDeepInGotOK bool
 }
 
-// Equal returns true if both ContextConfig are equal. Only public
-// fields are taken into account to check equality.
+// Equal returns true if both c and o are equal. Only public fields
+// are taken into account to check equality.
 func (c ContextConfig) Equal(o ContextConfig) bool {
 	return c.RootName == o.RootName &&
 		c.MaxErrors == o.MaxErrors &&
 		c.FailureIsFatal == o.FailureIsFatal &&
 		c.UseEqual == o.UseEqual &&
-		c.BeLax == o.BeLax
+		c.BeLax == o.BeLax &&
+		c.IgnoreUnexported == o.IgnoreUnexported &&
+		c.TestDeepInGotOK == o.TestDeepInGotOK
+}
+
+// OriginalPath returns the current path when the [ContextConfig] has
+// been built. It always returns ContextConfig.RootName except if c
+// has been built by [Code] operator. See [Code] documentation for an
+// example of use.
+func (c ContextConfig) OriginalPath() string {
+	if c.forkedFromCtx == nil {
+		return c.RootName
+	}
+	return c.forkedFromCtx.Path.String()
 }
 
 const (
@@ -761,13 +800,15 @@ func getMaxErrorsFromEnv() int {
 
 // DefaultContextConfig is the default configuration used to render
 // tests failures. If overridden, new settings will impact all Cmp*
-// functions and *T methods (if not specifically configured.)
+// functions and [*T] methods (if not specifically configured.)
 var DefaultContextConfig = ContextConfig{
-	RootName:       contextDefaultRootName,
-	MaxErrors:      getMaxErrorsFromEnv(),
-	FailureIsFatal: false,
-	UseEqual:       false,
-	BeLax:          false,
+	RootName:         contextDefaultRootName,
+	MaxErrors:        getMaxErrorsFromEnv(),
+	FailureIsFatal:   false,
+	UseEqual:         false,
+	BeLax:            false,
+	IgnoreUnexported: false,
+	TestDeepInGotOK:  false,
 }
 
 func (c *ContextConfig) sanitize() {
@@ -781,23 +822,31 @@ func (c *ContextConfig) sanitize() {
 
 // newContext creates a new ctxerr.Context using DefaultContextConfig
 // configuration.
-func newContext() ctxerr.Context {
-	return newContextWithConfig(DefaultContextConfig)
+func newContext(t TestingT) ctxerr.Context {
+	if tt, ok := t.(*T); ok {
+		return newContextWithConfig(tt, tt.Config)
+	}
+	tb, _ := t.(testing.TB)
+	return newContextWithConfig(tb, DefaultContextConfig)
 }
 
 // newContextWithConfig creates a new ctxerr.Context using a specific
 // configuration.
-func newContextWithConfig(config ContextConfig) (ctx ctxerr.Context) {
+func newContextWithConfig(tb testing.TB, config ContextConfig) (ctx ctxerr.Context) {
 	config.sanitize()
 
 	ctx = ctxerr.Context{
-		Path:           ctxerr.NewPath(config.RootName),
-		Visited:        visited.NewVisited(),
-		MaxErrors:      config.MaxErrors,
-		Anchors:        config.anchors,
-		FailureIsFatal: config.FailureIsFatal,
-		UseEqual:       config.UseEqual,
-		BeLax:          config.BeLax,
+		Path:             ctxerr.NewPath(config.RootName),
+		Visited:          visited.NewVisited(),
+		MaxErrors:        config.MaxErrors,
+		Anchors:          config.anchors,
+		Hooks:            config.hooks,
+		OriginalTB:       tb,
+		FailureIsFatal:   config.FailureIsFatal,
+		UseEqual:         config.UseEqual,
+		BeLax:            config.BeLax,
+		IgnoreUnexported: config.IgnoreUnexported,
+		TestDeepInGotOK:  config.TestDeepInGotOK,
 	}
 
 	ctx.InitErrors()
@@ -807,10 +856,24 @@ func newContextWithConfig(config ContextConfig) (ctx ctxerr.Context) {
 // newBooleanContext creates a new boolean ctxerr.Context.
 func newBooleanContext() ctxerr.Context {
 	return ctxerr.Context{
+<<<<<<< HEAD
 		Visited:      visited.NewVisited(),
 		BooleanError: true,
 		UseEqual:     DefaultContextConfig.UseEqual,
 		BeLax:        DefaultContextConfig.BeLax,
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		Visited:      visited.NewVisited(),
+		BooleanError: true,
+		UseEqual:     DefaultContextConfig.UseEqual,
+		BeLax:        DefaultContextConfig.BeLax,
+=======
+		Visited:          visited.NewVisited(),
+		BooleanError:     true,
+		UseEqual:         DefaultContextConfig.UseEqual,
+		BeLax:            DefaultContextConfig.BeLax,
+		IgnoreUnexported: DefaultContextConfig.IgnoreUnexported,
+		TestDeepInGotOK:  DefaultContextConfig.TestDeepInGotOK,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 }

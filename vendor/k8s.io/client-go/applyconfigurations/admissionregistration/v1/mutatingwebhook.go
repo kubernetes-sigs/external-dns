@@ -37,6 +37,7 @@ type MutatingWebhookApplyConfiguration struct {
 	TimeoutSeconds          *int32                                          `json:"timeoutSeconds,omitempty"`
 	AdmissionReviewVersions []string                                        `json:"admissionReviewVersions,omitempty"`
 	ReinvocationPolicy      *admissionregistrationv1.ReinvocationPolicyType `json:"reinvocationPolicy,omitempty"`
+<<<<<<< HEAD
 }
 
 // MutatingWebhookApplyConfiguration constructs an declarative configuration of the MutatingWebhook type for use with
@@ -137,5 +138,122 @@ func (b *MutatingWebhookApplyConfiguration) WithAdmissionReviewVersions(values .
 // If called multiple times, the ReinvocationPolicy field is set to the value of the last call.
 func (b *MutatingWebhookApplyConfiguration) WithReinvocationPolicy(value admissionregistrationv1.ReinvocationPolicyType) *MutatingWebhookApplyConfiguration {
 	b.ReinvocationPolicy = &value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	MatchConditions         []MatchConditionApplyConfiguration              `json:"matchConditions,omitempty"`
+}
+
+// MutatingWebhookApplyConfiguration constructs an declarative configuration of the MutatingWebhook type for use with
+// apply.
+func MutatingWebhook() *MutatingWebhookApplyConfiguration {
+	return &MutatingWebhookApplyConfiguration{}
+}
+
+// WithName sets the Name field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Name field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithName(value string) *MutatingWebhookApplyConfiguration {
+	b.Name = &value
+	return b
+}
+
+// WithClientConfig sets the ClientConfig field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClientConfig field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithClientConfig(value *WebhookClientConfigApplyConfiguration) *MutatingWebhookApplyConfiguration {
+	b.ClientConfig = value
+	return b
+}
+
+// WithRules adds the given value to the Rules field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Rules field.
+func (b *MutatingWebhookApplyConfiguration) WithRules(values ...*RuleWithOperationsApplyConfiguration) *MutatingWebhookApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithRules")
+		}
+		b.Rules = append(b.Rules, *values[i])
+	}
+	return b
+}
+
+// WithFailurePolicy sets the FailurePolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the FailurePolicy field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithFailurePolicy(value admissionregistrationv1.FailurePolicyType) *MutatingWebhookApplyConfiguration {
+	b.FailurePolicy = &value
+	return b
+}
+
+// WithMatchPolicy sets the MatchPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MatchPolicy field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithMatchPolicy(value admissionregistrationv1.MatchPolicyType) *MutatingWebhookApplyConfiguration {
+	b.MatchPolicy = &value
+	return b
+}
+
+// WithNamespaceSelector sets the NamespaceSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the NamespaceSelector field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithNamespaceSelector(value *metav1.LabelSelectorApplyConfiguration) *MutatingWebhookApplyConfiguration {
+	b.NamespaceSelector = value
+	return b
+}
+
+// WithObjectSelector sets the ObjectSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ObjectSelector field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithObjectSelector(value *metav1.LabelSelectorApplyConfiguration) *MutatingWebhookApplyConfiguration {
+	b.ObjectSelector = value
+	return b
+}
+
+// WithSideEffects sets the SideEffects field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SideEffects field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithSideEffects(value admissionregistrationv1.SideEffectClass) *MutatingWebhookApplyConfiguration {
+	b.SideEffects = &value
+	return b
+}
+
+// WithTimeoutSeconds sets the TimeoutSeconds field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TimeoutSeconds field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithTimeoutSeconds(value int32) *MutatingWebhookApplyConfiguration {
+	b.TimeoutSeconds = &value
+	return b
+}
+
+// WithAdmissionReviewVersions adds the given value to the AdmissionReviewVersions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the AdmissionReviewVersions field.
+func (b *MutatingWebhookApplyConfiguration) WithAdmissionReviewVersions(values ...string) *MutatingWebhookApplyConfiguration {
+	for i := range values {
+		b.AdmissionReviewVersions = append(b.AdmissionReviewVersions, values[i])
+	}
+	return b
+}
+
+// WithReinvocationPolicy sets the ReinvocationPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ReinvocationPolicy field is set to the value of the last call.
+func (b *MutatingWebhookApplyConfiguration) WithReinvocationPolicy(value admissionregistrationv1.ReinvocationPolicyType) *MutatingWebhookApplyConfiguration {
+	b.ReinvocationPolicy = &value
+	return b
+}
+
+// WithMatchConditions adds the given value to the MatchConditions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the MatchConditions field.
+func (b *MutatingWebhookApplyConfiguration) WithMatchConditions(values ...*MatchConditionApplyConfiguration) *MutatingWebhookApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithMatchConditions")
+		}
+		b.MatchConditions = append(b.MatchConditions, *values[i])
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

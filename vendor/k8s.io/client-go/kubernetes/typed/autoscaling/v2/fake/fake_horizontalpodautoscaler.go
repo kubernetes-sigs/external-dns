@@ -26,6 +26,7 @@ import (
 	v2 "k8s.io/api/autoscaling/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
+<<<<<<< HEAD
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -42,6 +43,24 @@ type FakeHorizontalPodAutoscalers struct {
 var horizontalpodautoscalersResource = schema.GroupVersionResource{Group: "autoscaling", Version: "v2", Resource: "horizontalpodautoscalers"}
 
 var horizontalpodautoscalersKind = schema.GroupVersionKind{Group: "autoscaling", Version: "v2", Kind: "HorizontalPodAutoscaler"}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	autoscalingv2 "k8s.io/client-go/applyconfigurations/autoscaling/v2"
+	testing "k8s.io/client-go/testing"
+)
+
+// FakeHorizontalPodAutoscalers implements HorizontalPodAutoscalerInterface
+type FakeHorizontalPodAutoscalers struct {
+	Fake *FakeAutoscalingV2
+	ns   string
+}
+
+var horizontalpodautoscalersResource = v2.SchemeGroupVersion.WithResource("horizontalpodautoscalers")
+
+var horizontalpodautoscalersKind = v2.SchemeGroupVersion.WithKind("HorizontalPodAutoscaler")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Get takes name of the horizontalPodAutoscaler, and returns the corresponding horizontalPodAutoscaler object, and an error if there is any.
 func (c *FakeHorizontalPodAutoscalers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v2.HorizontalPodAutoscaler, err error) {

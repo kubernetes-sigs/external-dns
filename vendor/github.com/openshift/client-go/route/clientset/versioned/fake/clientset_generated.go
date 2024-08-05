@@ -58,7 +58,15 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
+<<<<<<< HEAD
 var _ clientset.Interface = &Clientset{}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // RouteV1 retrieves the RouteV1Client
 func (c *Clientset) RouteV1() routev1.RouteV1Interface {

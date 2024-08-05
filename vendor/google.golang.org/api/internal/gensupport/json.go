@@ -14,6 +14,7 @@ import (
 // MarshalJSON returns a JSON encoding of schema containing only selected fields.
 // A field is selected if any of the following is true:
 <<<<<<< HEAD
+<<<<<<< HEAD
 //   - it has a non-empty value
 //   - its field name is present in forceSendFields and it is not a nil pointer or nil interface
 //   - its field name is present in nullFields.
@@ -148,6 +149,16 @@ func initMapSlow(rv reflect.Value, fieldName string, useNullMaps map[string]map[
 //   * it has a non-empty value
 //   * its field name is present in forceSendFields and it is not a nil pointer or nil interface
 //   * its field name is present in nullFields.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   * it has a non-empty value
+//   * its field name is present in forceSendFields and it is not a nil pointer or nil interface
+//   * its field name is present in nullFields.
+=======
+//   - it has a non-empty value
+//   - its field name is present in forceSendFields and it is not a nil pointer or nil interface
+//   - its field name is present in nullFields.
+//
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // The JSON key for each selected field is taken from the field's json: struct tag.
 func MarshalJSON(schema interface{}, forceSendFields, nullFields []string) ([]byte, error) {
 	if len(forceSendFields) == 0 && len(nullFields) == 0 {
@@ -217,7 +228,12 @@ func schemaToMap(schema interface{}, mustInclude, useNull map[string]bool, useNu
 		if f.Type.Kind() == reflect.Map && useNullMaps[f.Name] != nil {
 			ms, ok := v.Interface().(map[string]string)
 			if !ok {
-				return nil, fmt.Errorf("field %q has keys in NullFields but is not a map[string]string", f.Name)
+				mi, err := initMapSlow(v, f.Name, useNullMaps)
+				if err != nil {
+					return nil, err
+				}
+				m[tag.apiName] = mi
+				continue
 			}
 			mi := map[string]interface{}{}
 			for k, v := range ms {
@@ -250,6 +266,25 @@ func schemaToMap(schema interface{}, mustInclude, useNull map[string]bool, useNu
 	}
 	return m, nil
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// initMapSlow uses reflection to build up a map object. This is slower than
+// the default behavior so it should be used only as a fallback.
+func initMapSlow(rv reflect.Value, fieldName string, useNullMaps map[string]map[string]bool) (map[string]interface{}, error) {
+	mi := map[string]interface{}{}
+	iter := rv.MapRange()
+	for iter.Next() {
+		k, ok := iter.Key().Interface().(string)
+		if !ok {
+			return nil, fmt.Errorf("field %q has keys in NullFields but is not a map[string]any", fieldName)
+		}
+		v := iter.Value().Interface()
+		mi[k] = v
+	}
+	for k := range useNullMaps[fieldName] {
+		mi[k] = nil
+	}
+	return mi, nil
 }
 
 // formatAsString returns a string representation of v, dereferencing it first if possible.

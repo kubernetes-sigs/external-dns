@@ -5,6 +5,7 @@ package route53
 const (
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// ErrCodeCidrBlockInUseException for service response error code
 	// "CidrBlockInUseException".
 	//
@@ -1818,6 +1819,35 @@ const (
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// ErrCodeCidrBlockInUseException for service response error code
+	// "CidrBlockInUseException".
+	//
+	// This CIDR block is already in use.
+	ErrCodeCidrBlockInUseException = "CidrBlockInUseException"
+
+	// ErrCodeCidrCollectionAlreadyExistsException for service response error code
+	// "CidrCollectionAlreadyExistsException".
+	//
+	// A CIDR collection with this name and a different caller reference already
+	// exists in this account.
+	ErrCodeCidrCollectionAlreadyExistsException = "CidrCollectionAlreadyExistsException"
+
+	// ErrCodeCidrCollectionInUseException for service response error code
+	// "CidrCollectionInUseException".
+	//
+	// This CIDR collection is in use, and isn't empty.
+	ErrCodeCidrCollectionInUseException = "CidrCollectionInUseException"
+
+	// ErrCodeCidrCollectionVersionMismatchException for service response error code
+	// "CidrCollectionVersionMismatchException".
+	//
+	// The CIDR collection version you provided, doesn't match the one in the ListCidrCollections
+	// operation.
+	ErrCodeCidrCollectionVersionMismatchException = "CidrCollectionVersionMismatchException"
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// ErrCodeConcurrentModification for service response error code
 	// "ConcurrentModification".
 	//
@@ -1853,6 +1883,12 @@ const (
 	// that has a different DNS type than the current type for the instance. You
 	// specified the type in the JSON document in the CreateTrafficPolicy or CreateTrafficPolicyVersionrequest.
 	ErrCodeConflictingTypes = "ConflictingTypes"
+
+	// ErrCodeDNSSECNotFound for service response error code
+	// "DNSSECNotFound".
+	//
+	// The hosted zone doesn't have any DNSSEC resources.
+	ErrCodeDNSSECNotFound = "DNSSECNotFound"
 
 	// ErrCodeDelegationSetAlreadyCreated for service response error code
 	// "DelegationSetAlreadyCreated".
@@ -1943,6 +1979,13 @@ const (
 	// The specified hosted zone is a public hosted zone, not a private hosted zone.
 	ErrCodeHostedZoneNotPrivate = "HostedZoneNotPrivate"
 
+	// ErrCodeHostedZonePartiallyDelegated for service response error code
+	// "HostedZonePartiallyDelegated".
+	//
+	// The hosted zone nameservers don't match the parent nameservers. The hosted
+	// zone and parent must have the same nameservers.
+	ErrCodeHostedZonePartiallyDelegated = "HostedZonePartiallyDelegated"
+
 	// ErrCodeIncompatibleVersion for service response error code
 	// "IncompatibleVersion".
 	//
@@ -1963,12 +2006,20 @@ const (
 	//    Resource doesn't have the necessary permissions.
 	//
 	//    * The resource policy hasn't finished propagating yet.
+	//
+	//    * The Key management service (KMS) key you specified doesn’t exist or
+	//    it can’t be used with the log group associated with query log. Update
+	//    or provide a resource policy to grant permissions for the KMS key.
+	//
+	//    * The Key management service (KMS) key you specified is marked as disabled
+	//    for the log group associated with query log. Update or provide a resource
+	//    policy to grant permissions for the KMS key.
 	ErrCodeInsufficientCloudWatchLogsResourcePolicy = "InsufficientCloudWatchLogsResourcePolicy"
 
 	// ErrCodeInvalidArgument for service response error code
 	// "InvalidArgument".
 	//
-	// Parameter name is invalid.
+	// Parameter name is not valid.
 	ErrCodeInvalidArgument = "InvalidArgument"
 
 	// ErrCodeInvalidChangeBatch for service response error code
@@ -1990,6 +2041,26 @@ const (
 	// The input is not valid.
 	ErrCodeInvalidInput = "InvalidInput"
 
+	// ErrCodeInvalidKMSArn for service response error code
+	// "InvalidKMSArn".
+	//
+	// The KeyManagementServiceArn that you specified isn't valid to use with DNSSEC
+	// signing.
+	ErrCodeInvalidKMSArn = "InvalidKMSArn"
+
+	// ErrCodeInvalidKeySigningKeyName for service response error code
+	// "InvalidKeySigningKeyName".
+	//
+	// The key-signing key (KSK) name that you specified isn't a valid name.
+	ErrCodeInvalidKeySigningKeyName = "InvalidKeySigningKeyName"
+
+	// ErrCodeInvalidKeySigningKeyStatus for service response error code
+	// "InvalidKeySigningKeyStatus".
+	//
+	// The key-signing key (KSK) status isn't valid or another KSK has the status
+	// INTERNAL_FAILURE.
+	ErrCodeInvalidKeySigningKeyStatus = "InvalidKeySigningKeyStatus"
+
 	// ErrCodeInvalidPaginationToken for service response error code
 	// "InvalidPaginationToken".
 	//
@@ -1997,11 +2068,18 @@ const (
 	// is invalid.
 	ErrCodeInvalidPaginationToken = "InvalidPaginationToken"
 
+	// ErrCodeInvalidSigningStatus for service response error code
+	// "InvalidSigningStatus".
+	//
+	// Your hosted zone status isn't valid for this operation. In the hosted zone,
+	// change the status to enable DNSSEC or disable DNSSEC.
+	ErrCodeInvalidSigningStatus = "InvalidSigningStatus"
+
 	// ErrCodeInvalidTrafficPolicyDocument for service response error code
 	// "InvalidTrafficPolicyDocument".
 	//
 	// The format of the traffic policy document that you specified in the Document
-	// element is invalid.
+	// element is not valid.
 	ErrCodeInvalidTrafficPolicyDocument = "InvalidTrafficPolicyDocument"
 
 	// ErrCodeInvalidVPCId for service response error code
@@ -2010,6 +2088,33 @@ const (
 	// The VPC ID that you specified either isn't a valid ID or the current account
 	// is not authorized to access this VPC.
 	ErrCodeInvalidVPCId = "InvalidVPCId"
+
+	// ErrCodeKeySigningKeyAlreadyExists for service response error code
+	// "KeySigningKeyAlreadyExists".
+	//
+	// You've already created a key-signing key (KSK) with this name or with the
+	// same customer managed key ARN.
+	ErrCodeKeySigningKeyAlreadyExists = "KeySigningKeyAlreadyExists"
+
+	// ErrCodeKeySigningKeyInParentDSRecord for service response error code
+	// "KeySigningKeyInParentDSRecord".
+	//
+	// The key-signing key (KSK) is specified in a parent DS record.
+	ErrCodeKeySigningKeyInParentDSRecord = "KeySigningKeyInParentDSRecord"
+
+	// ErrCodeKeySigningKeyInUse for service response error code
+	// "KeySigningKeyInUse".
+	//
+	// The key-signing key (KSK) that you specified can't be deactivated because
+	// it's the only KSK for a currently-enabled DNSSEC. Disable DNSSEC signing,
+	// or add or enable another KSK.
+	ErrCodeKeySigningKeyInUse = "KeySigningKeyInUse"
+
+	// ErrCodeKeySigningKeyWithActiveStatusNotFound for service response error code
+	// "KeySigningKeyWithActiveStatusNotFound".
+	//
+	// A key-signing key (KSK) with ACTIVE status wasn't found.
+	ErrCodeKeySigningKeyWithActiveStatusNotFound = "KeySigningKeyWithActiveStatusNotFound"
 
 	// ErrCodeLastVPCAssociation for service response error code
 	// "LastVPCAssociation".
@@ -2022,15 +2127,10 @@ const (
 	// ErrCodeLimitsExceeded for service response error code
 	// "LimitsExceeded".
 	//
-	// This operation can't be completed either because the current account has
-	// reached the limit on reusable delegation sets that it can create or because
-	// you've reached the limit on the number of Amazon VPCs that you can associate
-	// with a private hosted zone. To get the current limit on the number of reusable
-	// delegation sets, see GetAccountLimit (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetAccountLimit.html).
-	// To get the current limit on the number of Amazon VPCs that you can associate
-	// with a private hosted zone, see GetHostedZoneLimit (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetHostedZoneLimit.html).
-	// To request a higher limit, create a case (http://aws.amazon.com/route53-request)
-	// with the AWS Support Center.
+	// This operation can't be completed because the current account has reached
+	// the limit on the resource you are trying to create. To request a higher limit,
+	// create a case (http://aws.amazon.com/route53-request) with the Amazon Web
+	// Services Support Center.
 	ErrCodeLimitsExceeded = "LimitsExceeded"
 
 	// ErrCodeNoSuchChange for service response error code
@@ -2038,6 +2138,18 @@ const (
 	//
 	// A change with the specified change ID does not exist.
 	ErrCodeNoSuchChange = "NoSuchChange"
+
+	// ErrCodeNoSuchCidrCollectionException for service response error code
+	// "NoSuchCidrCollectionException".
+	//
+	// The CIDR collection you specified, doesn't exist.
+	ErrCodeNoSuchCidrCollectionException = "NoSuchCidrCollectionException"
+
+	// ErrCodeNoSuchCidrLocationException for service response error code
+	// "NoSuchCidrLocationException".
+	//
+	// The CIDR collection location doesn't match any locations in your account.
+	ErrCodeNoSuchCidrLocationException = "NoSuchCidrLocationException"
 
 	// ErrCodeNoSuchCloudWatchLogsLogGroup for service response error code
 	// "NoSuchCloudWatchLogsLogGroup".
@@ -2070,6 +2182,12 @@ const (
 	//
 	// No hosted zone exists with the ID that you specified.
 	ErrCodeNoSuchHostedZone = "NoSuchHostedZone"
+
+	// ErrCodeNoSuchKeySigningKey for service response error code
+	// "NoSuchKeySigningKey".
+	//
+	// The specified key-signing key (KSK) doesn't exist.
+	ErrCodeNoSuchKeySigningKey = "NoSuchKeySigningKey"
 
 	// ErrCodeNoSuchQueryLoggingConfig for service response error code
 	// "NoSuchQueryLoggingConfig".
@@ -2138,11 +2256,11 @@ const (
 	// For information about how to get the current limit for an account, see GetAccountLimit
 	// (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetAccountLimit.html).
 	// To request a higher limit, create a case (http://aws.amazon.com/route53-request)
-	// with the AWS Support Center.
+	// with the Amazon Web Services Support Center.
 	//
-	// You have reached the maximum number of active health checks for an AWS account.
-	// To request a higher limit, create a case (http://aws.amazon.com/route53-request)
-	// with the AWS Support Center.
+	// You have reached the maximum number of active health checks for an Amazon
+	// Web Services account. To request a higher limit, create a case (http://aws.amazon.com/route53-request)
+	// with the Amazon Web Services Support Center.
 	ErrCodeTooManyHealthChecks = "TooManyHealthChecks"
 
 	// ErrCodeTooManyHostedZones for service response error code
@@ -2163,8 +2281,15 @@ const (
 	// delegation set, see GetReusableDelegationSetLimit (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetReusableDelegationSetLimit.html).
 	//
 	// To request a higher limit, create a case (http://aws.amazon.com/route53-request)
-	// with the AWS Support Center.
+	// with the Amazon Web Services Support Center.
 	ErrCodeTooManyHostedZones = "TooManyHostedZones"
+
+	// ErrCodeTooManyKeySigningKeys for service response error code
+	// "TooManyKeySigningKeys".
+	//
+	// You've reached the limit for the number of key-signing keys (KSKs). Remove
+	// at least one KSK, and then try again.
+	ErrCodeTooManyKeySigningKeys = "TooManyKeySigningKeys"
 
 	// ErrCodeTooManyTrafficPolicies for service response error code
 	// "TooManyTrafficPolicies".
@@ -2178,7 +2303,7 @@ const (
 	// To get the current limit for an account, see GetAccountLimit (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetAccountLimit.html).
 	//
 	// To request a higher limit, create a case (http://aws.amazon.com/route53-request)
-	// with the AWS Support Center.
+	// with the Amazon Web Services Support Center.
 	ErrCodeTooManyTrafficPolicies = "TooManyTrafficPolicies"
 
 	// ErrCodeTooManyTrafficPolicyInstances for service response error code
@@ -2194,8 +2319,14 @@ const (
 	// (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetAccountLimit.html).
 	//
 	// To request a higher limit, create a case (http://aws.amazon.com/route53-request)
+<<<<<<< HEAD
 	// with the AWS Support Center.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// with the AWS Support Center.
+=======
+	// with the Amazon Web Services Support Center.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	ErrCodeTooManyTrafficPolicyInstances = "TooManyTrafficPolicyInstances"
 
 	// ErrCodeTooManyTrafficPolicyVersionsForCurrentPolicy for service response error code

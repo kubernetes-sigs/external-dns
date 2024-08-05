@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2019 Jeevanandam M (jeeva@myjeeva.com), All rights reserved.
+// Copyright (c) 2015-2023 Jeevanandam M (jeeva@myjeeva.com), All rights reserved.
 // resty source code and usage is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -6,7 +6,7 @@ package resty
 
 import (
 	"bytes"
-	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 )
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -65,6 +66,16 @@ func (l *logger) output(format string, v ...interface{}) {
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+// Rate Limiter interface
+//_______________________________________________________________________
+
+type RateLimiter interface {
+	Allow() bool
+}
+
+var ErrRateLimitExceeded = errors.New("rate limit exceeded")
+
+//‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Package Helper methods
 //_______________________________________________________________________
 
@@ -108,7 +119,7 @@ func Unmarshalc(c *Client, ct string, b []byte, d interface{}) (err error) {
 	if IsJSONType(ct) {
 		err = c.JSONUnmarshal(b, d)
 	} else if IsXMLType(ct) {
-		err = xml.Unmarshal(b, d)
+		err = c.XMLUnmarshal(b, d)
 	}
 
 	return
@@ -139,13 +150,19 @@ type ResponseLog struct {
 //_______________________________________________________________________
 
 // way to disable the HTML escape as opt-in
-func jsonMarshal(c *Client, r *Request, d interface{}) ([]byte, error) {
-	if !r.jsonEscapeHTML {
-		return noescapeJSONMarshal(d)
-	} else if !c.jsonEscapeHTML {
+func jsonMarshal(c *Client, r *Request, d interface{}) (*bytes.Buffer, error) {
+	if !r.jsonEscapeHTML || !c.jsonEscapeHTML {
 		return noescapeJSONMarshal(d)
 	}
-	return c.JSONMarshal(d)
+
+	data, err := c.JSONMarshal(d)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := acquireBuffer()
+	_, _ = buf.Write(data)
+	return buf, nil
 }
 
 func firstNonEmpty(v ...string) string {
@@ -195,11 +212,11 @@ func writeMultipartFormFile(w *multipart.Writer, fieldName, fileName string, r i
 	// Auto detect actual multipart content type
 	cbuf := make([]byte, 512)
 	size, err := r.Read(cbuf)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return err
 	}
 
-	partWriter, err := w.CreatePart(createMultipartHeader(fieldName, fileName, http.DetectContentType(cbuf)))
+	partWriter, err := w.CreatePart(createMultipartHeader(fieldName, fileName, http.DetectContentType(cbuf[:size])))
 	if err != nil {
 		return err
 	}
@@ -283,34 +300,46 @@ func releaseBuffer(buf *bytes.Buffer) {
 	}
 }
 
-func closeq(v interface{}) {
-	if c, ok := v.(io.Closer); ok {
-		sliently(c.Close())
+// requestBodyReleaser wraps requests's body and implements custom Close for it.
+// The Close method closes original body and releases request body back to sync.Pool.
+type requestBodyReleaser struct {
+	releaseOnce sync.Once
+	reqBuf      *bytes.Buffer
+	io.ReadCloser
+}
+
+func newRequestBodyReleaser(respBody io.ReadCloser, reqBuf *bytes.Buffer) io.ReadCloser {
+	if reqBuf == nil {
+		return respBody
+	}
+
+	return &requestBodyReleaser{
+		reqBuf:     reqBuf,
+		ReadCloser: respBody,
 	}
 }
 
-func sliently(_ ...interface{}) {}
+func (rr *requestBodyReleaser) Close() error {
+	err := rr.ReadCloser.Close()
+	rr.releaseOnce.Do(func() {
+		releaseBuffer(rr.reqBuf)
+	})
+
+	return err
+}
+
+func closeq(v interface{}) {
+	if c, ok := v.(io.Closer); ok {
+		silently(c.Close())
+	}
+}
+
+func silently(_ ...interface{}) {}
 
 func composeHeaders(c *Client, r *Request, hdrs http.Header) string {
 	str := make([]string, 0, len(hdrs))
 	for _, k := range sortHeaderKeys(hdrs) {
-		var v string
-		if k == "Cookie" {
-			cv := strings.TrimSpace(strings.Join(hdrs[k], ", "))
-			for _, c := range c.GetClient().Jar.Cookies(r.RawRequest.URL) {
-				if cv != "" {
-					cv = cv + "; " + c.String()
-				} else {
-					cv = c.String()
-				}
-			}
-			v = strings.TrimSpace(fmt.Sprintf("%25s: %s", k, cv))
-		} else {
-			v = strings.TrimSpace(fmt.Sprintf("%25s: %s", k, strings.Join(hdrs[k], ", ")))
-		}
-		if v != "" {
-			str = append(str, "\t"+v)
-		}
+		str = append(str, "\t"+strings.TrimSpace(fmt.Sprintf("%25s: %s", k, strings.Join(hdrs[k], ", "))))
 	}
 	return strings.Join(str, "\n")
 }
@@ -330,4 +359,26 @@ func copyHeaders(hdrs http.Header) http.Header {
 		nh[k] = v
 	}
 	return nh
+}
+
+type noRetryErr struct {
+	err error
+}
+
+func (e *noRetryErr) Error() string {
+	return e.err.Error()
+}
+
+func wrapNoRetryErr(err error) error {
+	if err != nil {
+		err = &noRetryErr{err: err}
+	}
+	return err
+}
+
+func unwrapNoRetryErr(err error) error {
+	if e, ok := err.(*noRetryErr); ok {
+		err = e.err
+	}
+	return err
 }

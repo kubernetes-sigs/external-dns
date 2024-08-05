@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddDomain(request *AddDomainRequest) (response *AddDomainResponse, err error) {
 	response = CreateAddDomainResponse()
 	err = client.DoAction(request, response)
@@ -191,6 +192,10 @@ func CreateAddDomainRequest() (request *AddDomainRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/adddomain.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/adddomain.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) AddDomain(request *AddDomainRequest) (response *AddDomainResponse, err error) {
 	response = CreateAddDomainResponse()
 	err = client.DoAction(request, response)
@@ -198,8 +203,6 @@ func (client *Client) AddDomain(request *AddDomainRequest) (response *AddDomainR
 }
 
 // AddDomainWithChan invokes the alidns.AddDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/adddomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddDomainWithChan(request *AddDomainRequest) (<-chan *AddDomainResponse, <-chan error) {
 	responseChan := make(chan *AddDomainResponse, 1)
 	errChan := make(chan error, 1)
@@ -222,8 +225,6 @@ func (client *Client) AddDomainWithChan(request *AddDomainRequest) (<-chan *AddD
 }
 
 // AddDomainWithCallback invokes the alidns.AddDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/adddomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddDomainWithCallback(request *AddDomainRequest, callback func(response *AddDomainResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -255,12 +256,12 @@ type AddDomainRequest struct {
 // AddDomainResponse is the response struct for api AddDomain
 type AddDomainResponse struct {
 	*responses.BaseResponse
-	RequestId  string                `json:"RequestId" xml:"RequestId"`
+	GroupName  string                `json:"GroupName" xml:"GroupName"`
 	DomainId   string                `json:"DomainId" xml:"DomainId"`
+	RequestId  string                `json:"RequestId" xml:"RequestId"`
 	DomainName string                `json:"DomainName" xml:"DomainName"`
 	PunyCode   string                `json:"PunyCode" xml:"PunyCode"`
 	GroupId    string                `json:"GroupId" xml:"GroupId"`
-	GroupName  string                `json:"GroupName" xml:"GroupName"`
 	DnsServers DnsServersInAddDomain `json:"DnsServers" xml:"DnsServers"`
 }
 
@@ -270,7 +271,12 @@ func CreateAddDomainRequest() (request *AddDomainRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddDomain", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

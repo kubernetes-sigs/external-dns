@@ -3,6 +3,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 //go:build plan9 && amd64
@@ -12,6 +13,10 @@
 //go:build plan9 && amd64
 >>>>>>> 4d7e5ad26 (update vendored files)
 // +build plan9,amd64
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//go:build plan9 && amd64
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package plan9
 

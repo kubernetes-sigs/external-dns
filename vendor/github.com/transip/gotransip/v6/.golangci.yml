@@ -1,6 +1,6 @@
 run:
   # timeout for analysis, e.g. 30s, 5m, default is 1m
-  deadline: 30s
+  deadline: 1m
 
   # exit code when at least one issue was found, default is 1
   issues-exit-code: 1
@@ -108,30 +108,109 @@ issues:
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
   depguard:
+    rules:
+      Main:
+        files:
+          - "!**/internal/**/*.go"
+          - "$all"
+          - "!$test"
+        allow:
+          - "$gostd"
+          - github.com/transip/gotransip/v6
+          - github.com/transip/gotransip/v6/rest
+          - github.com/transip/gotransip/v6/repository
+          - github.com/transip/gotransip/v6/vps
+      Internal:
+        files:
+          - "**/internal/**/*.go"
+        allow:
+          - "$gostd"
+          - github.com/transip/gotransip/v6
+          - github.com/transip/gotransip/v6/rest
+          - github.com/transip/gotransip/v6/repository
+          - github.com/transip/gotransip/v6/vps
+          - github.com/stretchr/testify/assert
+          - github.com/stretchr/testify/require
+      Tests:
+        files:
+          - "$test"
+        allow:
+          - "$gostd"
+          - github.com/transip/gotransip/v6
+          - github.com/transip/gotransip/v6/rest
+          - github.com/transip/gotransip/v6/repository
+          - github.com/transip/gotransip/v6/ipaddress
+          - github.com/transip/gotransip/v6/vps
+          - github.com/transip/gotransip/v6/jwt
+          - github.com/transip/gotransip/v6/internal/testutil
+          - github.com/stretchr/testify/require
+          - github.com/stretchr/testify/assert
+
+      
   lll:
     line-length: 160
   nakedret:
     max-func-lines: 10
+    
 
 linters:
   enable:
-    - megacheck
-    - govet
-    - golint
-    - gosec
-    - unconvert
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - decorder
+    - depguard
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - forcetypeassert
+    - gocognit
     - goconst
+    - gocritic
     - gocyclo
+    - godox
     - gofmt
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - grouper
+    - importas
+    - ineffassign
     - lll
-    - unparam
-    - nakedret
+    - maintidx
+    - makezero
     - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tenv
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - wastedassign
   enable-all: false
   disable-all: false
-  presets:
-    - bugs
-    - unused
   fast: false
 
 issues:
@@ -139,9 +218,20 @@ issues:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
-        - lll
+        - dupl
         - goconst
+        - ifshort
+        - lll
     - path: jwt/token_test.go
       linters:
         - gosec
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+        - gosec
+=======
+    - path: mocks/*
+      linters:
+        - typecheck
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

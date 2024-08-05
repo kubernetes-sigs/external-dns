@@ -55,7 +55,7 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 		parts := strings.Fields(line)
 
 		if len(parts) < 4 {
-			return nil, fmt.Errorf("invalid number of fields when parsing buddyinfo")
+			return nil, fmt.Errorf("%w: Invalid number of fields, found: %v", ErrFileParse, parts)
 		}
 
 		node := strings.TrimRight(parts[1], ",")
@@ -66,7 +66,7 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 			bucketCount = arraySize
 		} else {
 			if bucketCount != arraySize {
-				return nil, fmt.Errorf("mismatch in number of buddyinfo buckets, previous count %d, new count %d", bucketCount, arraySize)
+				return nil, fmt.Errorf("%w: mismatch in number of buddyinfo buckets, previous count %d, new count %d", ErrFileParse, bucketCount, arraySize)
 			}
 		}
 
@@ -74,6 +74,7 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 		for i := 0; i < arraySize; i++ {
 			sizes[i], err = strconv.ParseFloat(parts[i+4], 64)
 			if err != nil {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -113,6 +114,11 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 =======
 				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
+=======
+				return nil, fmt.Errorf("%s: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			}
 		}
 

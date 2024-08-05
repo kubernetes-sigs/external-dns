@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeCustomLine(request *DescribeCustomLineRequest) (response *DescribeCustomLineResponse, err error) {
 	response = CreateDescribeCustomLineResponse()
 	err = client.DoAction(request, response)
@@ -191,6 +192,10 @@ func CreateDescribeCustomLineRequest() (request *DescribeCustomLineRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describecustomline.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describecustomline.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeCustomLine(request *DescribeCustomLineRequest) (response *DescribeCustomLineResponse, err error) {
 	response = CreateDescribeCustomLineResponse()
 	err = client.DoAction(request, response)
@@ -198,8 +203,6 @@ func (client *Client) DescribeCustomLine(request *DescribeCustomLineRequest) (re
 }
 
 // DescribeCustomLineWithChan invokes the alidns.DescribeCustomLine API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describecustomline.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeCustomLineWithChan(request *DescribeCustomLineRequest) (<-chan *DescribeCustomLineResponse, <-chan error) {
 	responseChan := make(chan *DescribeCustomLineResponse, 1)
 	errChan := make(chan error, 1)
@@ -222,8 +225,6 @@ func (client *Client) DescribeCustomLineWithChan(request *DescribeCustomLineRequ
 }
 
 // DescribeCustomLineWithCallback invokes the alidns.DescribeCustomLine API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describecustomline.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeCustomLineWithCallback(request *DescribeCustomLineRequest, callback func(response *DescribeCustomLineResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -254,13 +255,13 @@ type DescribeCustomLineRequest struct {
 type DescribeCustomLineResponse struct {
 	*responses.BaseResponse
 	RequestId       string      `json:"RequestId" xml:"RequestId"`
-	Id              int64       `json:"Id" xml:"Id"`
-	Name            string      `json:"Name" xml:"Name"`
 	DomainName      string      `json:"DomainName" xml:"DomainName"`
 	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Id              int64       `json:"Id" xml:"Id"`
 	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
 	Code            string      `json:"Code" xml:"Code"`
+	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Name            string      `json:"Name" xml:"Name"`
 	IpSegmentList   []IpSegment `json:"IpSegmentList" xml:"IpSegmentList"`
 }
 
@@ -270,7 +271,12 @@ func CreateDescribeCustomLineRequest() (request *DescribeCustomLineRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeCustomLine", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

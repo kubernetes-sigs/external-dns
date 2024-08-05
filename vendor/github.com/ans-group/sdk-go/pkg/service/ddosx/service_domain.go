@@ -1322,6 +1322,7 @@ func (s *Service) DownloadDomainVerificationFileStream(domainName string) (conte
 }
 
 func (s *Service) downloadDomainVerificationFileResponse(domainName string) (*connection.APIResponse, error) {
+<<<<<<< HEAD
 	body := &connection.APIResponseBody{}
 	response := &connection.APIResponse{}
 
@@ -1339,6 +1340,25 @@ func (s *Service) downloadDomainVerificationFileResponse(domainName string) (*co
 	}
 
 	return response, response.ValidateStatusCode([]int{}, body)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	response := &connection.APIResponse{}
+
+	if domainName == "" {
+		return response, fmt.Errorf("invalid domain name")
+	}
+
+	response, err := s.connection.Get(fmt.Sprintf("/ddosx/v1/domains/%s/verify/file-upload", domainName), connection.APIRequestParameters{})
+	if err != nil {
+		return response, err
+	}
+
+	if response.StatusCode == 404 {
+		return response, &DomainNotFoundError{Name: domainName}
+	}
+
+	return response, response.HandleResponse(nil)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // VerifyDomainDNS verifies a domain via DNS method

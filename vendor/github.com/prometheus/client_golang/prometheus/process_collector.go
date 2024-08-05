@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -634,7 +635,13 @@ func NewPidFileFn(pidFilePath string) func() (int, error) {
 	}
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"os"
+	"strconv"
+	"strings"
 )
 
 type processCollector struct {
@@ -669,16 +676,10 @@ type ProcessCollectorOpts struct {
 	ReportErrors bool
 }
 
-// NewProcessCollector returns a collector which exports the current state of
-// process metrics including CPU, memory and file descriptor usage as well as
-// the process start time. The detailed behavior is defined by the provided
-// ProcessCollectorOpts. The zero value of ProcessCollectorOpts creates a
-// collector for the current process with an empty namespace string and no error
-// reporting.
+// NewProcessCollector is the obsolete version of collectors.NewProcessCollector.
+// See there for documentation.
 //
-// The collector only works on operating systems with a Linux-style proc
-// filesystem and on Microsoft Windows. On other operating systems, it will not
-// collect any metrics.
+// Deprecated: Use collectors.NewProcessCollector instead.
 func NewProcessCollector(opts ProcessCollectorOpts) Collector {
 	ns := ""
 	if len(opts.Namespace) > 0 {
@@ -725,8 +726,7 @@ func NewProcessCollector(opts ProcessCollectorOpts) Collector {
 	}
 
 	if opts.PidFn == nil {
-		pid := os.Getpid()
-		c.pidFn = func() (int, error) { return pid, nil }
+		c.pidFn = getPIDFn()
 	} else {
 		c.pidFn = opts.PidFn
 	}
@@ -768,4 +768,21 @@ func (c *processCollector) reportError(ch chan<- Metric, desc *Desc, err error) 
 	}
 	ch <- NewInvalidMetric(desc, err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// NewPidFileFn returns a function that retrieves a pid from the specified file.
+// It is meant to be used for the PidFn field in ProcessCollectorOpts.
+func NewPidFileFn(pidFilePath string) func() (int, error) {
+	return func() (int, error) {
+		content, err := os.ReadFile(pidFilePath)
+		if err != nil {
+			return 0, fmt.Errorf("can't read pid file %q: %w", pidFilePath, err)
+		}
+		pid, err := strconv.Atoi(strings.TrimSpace(string(content)))
+		if err != nil {
+			return 0, fmt.Errorf("can't parse pid file %q: %w", pidFilePath, err)
+		}
+
+		return pid, nil
+	}
 }

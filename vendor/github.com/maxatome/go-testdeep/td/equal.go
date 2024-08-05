@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/color"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/dark"
@@ -1449,6 +1450,10 @@ func EqDeeplyError(got, expected any) error {
 	err := deepValueEqualFinal(newContext(nil),
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"github.com/maxatome/go-testdeep/internal/color"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/dark"
 	"github.com/maxatome/go-testdeep/internal/types"
@@ -1473,6 +1478,13 @@ func deepValueEqualFinal(ctx ctxerr.Context, got, expected reflect.Value) (err *
 	return
 }
 
+func deepValueEqualFinalOK(ctx ctxerr.Context, got, expected reflect.Value) bool {
+	ctx = ctx.ResetErrors()
+	ctx.BooleanError = true
+
+	return deepValueEqualFinal(ctx, got, expected) == nil
+}
+
 // nilHandler is called when one of got or expected is nil (but never
 // both, it is caller responsibility).
 func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
@@ -1480,8 +1492,10 @@ func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
 
 	if expected.IsValid() { // here: !got.IsValid()
 		if expected.Type().Implements(testDeeper) {
-			curOperator := expected.Interface().(TestDeep)
-			ctx.CurOperator = curOperator
+			curOperator := dark.MustGetInterface(expected).(TestDeep)
+			if curOperator.GetLocation().IsInitialized() {
+				ctx.CurOperator = curOperator
+			}
 			if curOperator.HandleInvalid() {
 				return curOperator.Match(ctx, got)
 			}
@@ -1489,9 +1503,9 @@ func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
 				return ctxerr.BooleanError
 			}
 
-			// Special case if "expected" is a TestDeep operator which
-			// does not handle invalid values: the operator is not called,
-			// but for the user the error comes from it
+			// Special case if expected is a TestDeep operator which does
+			// not handle invalid values: the operator is not called, but
+			// for the user the error comes from it
 		} else if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
@@ -1499,8 +1513,8 @@ func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
 		err.Expected = expected
 	} else { // here: !expected.IsValid() && got.IsValid()
 		switch got.Kind() {
-		// Special case: "got" is a nil interface, so consider as equal
-		// to "expected" nil.
+		// Special case: got is a nil interface, so consider as equal
+		// to expected nil.
 		case reflect.Interface:
 			if got.IsNil() {
 				return nil
@@ -1533,7 +1547,7 @@ func isCustomEqual(a, b reflect.Value) (bool, bool) {
 			ft.NumIn() == 2 &&
 			ft.NumOut() == 1 &&
 			ft.In(0).AssignableTo(ft.In(1)) &&
-			ft.Out(0) == boolType &&
+			ft.Out(0) == types.Bool &&
 			bType.AssignableTo(ft.In(1)) {
 			return true, equal.Func.Call([]reflect.Value{a, b})[0].Bool()
 		}
@@ -1541,7 +1555,29 @@ func isCustomEqual(a, b reflect.Value) (bool, bool) {
 	return false, false
 }
 
+// resolveAnchor does the same as ctx.Anchors.ResolveAnchor but checks
+// whether v is valid and not already a TestDeep operator first.
+func resolveAnchor(ctx ctxerr.Context, v reflect.Value) (reflect.Value, bool) {
+	if !v.IsValid() || v.Type().Implements(testDeeper) {
+		return v, false
+	}
+	return ctx.Anchors.ResolveAnchor(v)
+}
+
 func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxerr.Error) {
+	if !ctx.TestDeepInGotOK {
+		// got must not implement testDeeper
+		if got.IsValid() && got.Type().Implements(testDeeper) {
+			panic(color.Bad("Found a TestDeep operator in got param, " +
+				"can only use it in expected one!"))
+		}
+	}
+
+	// Try to see if a TestDeep operator is anchored in expected
+	if op, ok := resolveAnchor(ctx, expected); ok {
+		expected = op
+	}
+
 	if !got.IsValid() || !expected.IsValid() {
 		if got.IsValid() == expected.IsValid() {
 			return
@@ -1549,13 +1585,33 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		return nilHandler(ctx, got, expected)
 	}
 
-	// "got" must not implement testDeeper
-	if got.Type().Implements(testDeeper) {
-		panic("Found a TestDeep operator in got param, " +
-			"can only use it in expected one!")
+	// Check if a Smuggle hook matches got type
+	if handled, e := ctx.Hooks.Smuggle(&got); handled {
+		if e != nil {
+			// ctx.BooleanError is always false here as hooks cannot be set globally
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  e.Error(),
+				Got:      got,
+				Expected: expected,
+			})
+		}
 	}
 
-	if ctx.UseEqual {
+	// Check if a Cmp hook matches got & expected types
+	if handled, e := ctx.Hooks.Cmp(got, expected); handled {
+		if e == nil {
+			return
+		}
+		// ctx.BooleanError is always false here as hooks cannot be set globally
+		return ctx.CollectError(&ctxerr.Error{
+			Message:  e.Error(),
+			Got:      got,
+			Expected: expected,
+		})
+	}
+
+	// Look for an Equal() method
+	if ctx.UseEqual || ctx.Hooks.UseEqual(got.Type()) {
 		hasEqual, isEqual := isCustomEqual(got, expected)
 		if hasEqual {
 			if isEqual {
@@ -1574,7 +1630,7 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 
 	if got.Type() != expected.Type() {
 		if expected.Type().Implements(testDeeper) {
-			curOperator := expected.Interface().(TestDeep)
+			curOperator := dark.MustGetInterface(expected).(TestDeep)
 
 			// Resolve interface
 			if got.Kind() == reflect.Interface {
@@ -1585,20 +1641,33 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 				}
 			}
 
-			ctx.CurOperator = curOperator
+			if curOperator.GetLocation().IsInitialized() {
+				ctx.CurOperator = curOperator
+			}
 			return curOperator.Match(ctx, got)
 		}
 
-		// "expected" is not a TestDeep operator
+		// expected is not a TestDeep operator
 
-		if ctx.BeLax && expected.Type().ConvertibleTo(got.Type()) {
+		if got.Type() == recvKindType || expected.Type() == recvKindType {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  "values differ",
+				Got:      got,
+				Expected: expected,
+			})
+		}
+
+		if ctx.BeLax && types.IsConvertible(expected, got.Type()) {
 			return deepValueEqual(ctx, got, expected.Convert(got.Type()))
 		}
 
-		// If "got" is an interface, try to see what is behind before failing
+		// If got is an interface, try to see what is behind before failing
 		// Used by Set/Bag Match method in such cases:
-		//     []interface{}{123, "foo"}  →  Bag("foo", 123)
-		//    Interface kind -^-----^   but String-^ and ^- Int kinds
+		//           []any{123, "foo"}  →  Bag("foo", 123)
+		// Interface kind -^-----^   but String-^ and ^- Int kinds
 		if got.Kind() == reflect.Interface {
 			return deepValueEqual(ctx, got.Elem(), expected)
 		}
@@ -1606,11 +1675,7 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
-		return ctx.CollectError(&ctxerr.Error{
-			Message:  "type mismatch",
-			Got:      types.RawString(got.Type().String()),
-			Expected: types.RawString(expected.Type().String()),
-		})
+		return ctx.CollectError(ctxerr.TypeMismatch(got.Type(), expected.Type()))
 	}
 
 	// if ctx.Depth > 10 { panic("deepValueEqual") } // for debugging
@@ -1618,11 +1683,6 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 	// Avoid looping forever on cyclic references
 	if ctx.Visited.Record(got, expected) {
 		return
-	}
-
-	// Try to see if a TestDeep operator is anchored in expected
-	if op, ok := ctx.Anchors.ResolveAnchor(expected); ok {
-		return deepValueEqual(ctx, got, op)
 	}
 
 	switch got.Kind() {
@@ -1671,6 +1731,13 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 			maxLen = gotLen
 		}
 
+		// Special case for internal tuple type: it is clearer to read
+		// TUPLE instead of DATA when an error occurs when using this type
+		if got.Type() == tupleType &&
+			ctx.Path.Len() == 1 && ctx.Path.String() == contextDefaultRootName {
+			ctx = ctx.ResetPath("TUPLE")
+		}
+
 		for i := 0; i < maxLen; i++ {
 			err = deepValueEqual(ctx.AddArrayIndex(i),
 				got.Index(i), expected.Index(i))
@@ -1705,19 +1772,6 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		return
 
 	case reflect.Interface:
-		if got.IsNil() || expected.IsNil() {
-			if got.IsNil() == expected.IsNil() {
-				return
-			}
-			if ctx.BooleanError {
-				return ctxerr.BooleanError
-			}
-			return ctx.CollectError(&ctxerr.Error{
-				Message:  "nil interface",
-				Got:      isNilStr(got.IsNil()),
-				Expected: isNilStr(expected.IsNil()),
-			})
-		}
 		return deepValueEqual(ctx, got.Elem(), expected.Elem())
 
 	case reflect.Ptr:
@@ -1728,8 +1782,13 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 
 	case reflect.Struct:
 		sType := got.Type()
+		ignoreUnexported := ctx.IgnoreUnexported || ctx.Hooks.IgnoreUnexported(sType)
 		for i, n := 0, got.NumField(); i < n; i++ {
-			err = deepValueEqual(ctx.AddField(sType.Field(i).Name),
+			field := sType.Field(i)
+			if ignoreUnexported && field.PkgPath != "" {
+				continue
+			}
+			err = deepValueEqual(ctx.AddField(field.Name),
 				got.Field(i), expected.Field(i))
 			if err != nil {
 				return
@@ -1759,7 +1818,7 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		}
 
 		var notFoundKeys []reflect.Value
-		foundKeys := map[interface{}]bool{}
+		foundKeys := map[any]bool{}
 
 		for _, vkey := range tdutil.MapSortedKeys(expected) {
 			gotValue := got.MapIndex(vkey)
@@ -1802,9 +1861,9 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 			Sort:    true,
 		}
 
-		for _, k := range tdutil.MapSortedKeys(got) {
-			if !foundKeys[k.Interface()] {
-				res.Extra = append(res.Extra, k)
+		for _, vkey := range tdutil.MapSortedKeys(got) {
+			if !foundKeys[dark.MustGetInterface(vkey)] {
+				res.Extra = append(res.Extra, vkey)
 			}
 		}
 
@@ -1846,21 +1905,22 @@ func deepValueEqualOK(got, expected reflect.Value) bool {
 	return deepValueEqualFinal(newBooleanContext(), got, expected) == nil
 }
 
-// EqDeeply returns true if "got" matches "expected". "expected" can
-// be the same type as "got" is, or contains some TestDeep operators.
+// EqDeeply returns true if got matches expected. expected can
+// be the same type as got is, or contains some [TestDeep] operators.
 //
-//   got := "foobar"
-//   td.EqDeeply(got, "foobar")            // returns true
-//   td.EqDeeply(got, td.HasPrefix("foo")) // returns true
-func EqDeeply(got, expected interface{}) bool {
+//	got := "foobar"
+//	td.EqDeeply(got, "foobar")            // returns true
+//	td.EqDeeply(got, td.HasPrefix("foo")) // returns true
+func EqDeeply(got, expected any) bool {
 	return deepValueEqualOK(reflect.ValueOf(got), reflect.ValueOf(expected))
 }
 
-// EqDeeplyError returns nil if "got" matches "expected". "expected"
-// can be the same type as got is, or contains some TestDeep
-// operators. If "got" does not match "expected", the returned *ctxerr.Error
-// contains the reason of the first mismatch detected.
+// EqDeeplyError returns nil if got matches expected. expected can be
+// the same type as got is, or contains some [TestDeep] operators. If
+// got does not match expected, the returned [*ctxerr.Error] contains
+// the reason of the first mismatch detected.
 //
+<<<<<<< HEAD
 //   got := "foobar"
 //   if err := td.EqDeeplyError(got, "foobar"); err != nil {
 //     // …
@@ -1871,6 +1931,27 @@ func EqDeeply(got, expected interface{}) bool {
 func EqDeeplyError(got, expected interface{}) error {
 	err := deepValueEqualFinal(newContext(),
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   got := "foobar"
+//   if err := td.EqDeeplyError(got, "foobar"); err != nil {
+//     // …
+//   }
+//   if err := td.EqDeeplyError(got, td.HasPrefix("foo")); err != nil {
+//     // …
+//   }
+func EqDeeplyError(got, expected interface{}) error {
+	err := deepValueEqualFinal(newContext(),
+=======
+//	got := "foobar"
+//	if err := td.EqDeeplyError(got, "foobar"); err != nil {
+//	  // …
+//	}
+//	if err := td.EqDeeplyError(got, td.HasPrefix("foo")); err != nil {
+//	  // …
+//	}
+func EqDeeplyError(got, expected any) error {
+	err := deepValueEqualFinal(newContext(nil),
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		reflect.ValueOf(got), reflect.ValueOf(expected))
 	if err == nil {
 		return nil

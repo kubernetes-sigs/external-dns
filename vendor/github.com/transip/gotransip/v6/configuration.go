@@ -2,6 +2,7 @@ package gotransip
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"io"
 	"net/http"
 	"time"
@@ -53,14 +54,26 @@ const (
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"github.com/transip/gotransip/v6/authenticator"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"github.com/transip/gotransip/v6/authenticator"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/transip/gotransip/v6/authenticator"
 )
 
 const (
+<<<<<<< HEAD
 	libraryVersion  = "6.6.0"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	libraryVersion  = "6.6.0"
+=======
+	libraryVersion  = "6.24.0"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	defaultBasePath = "https://api.transip.nl/v6"
 	userAgent       = "go-client-gotransip/" + libraryVersion
 )

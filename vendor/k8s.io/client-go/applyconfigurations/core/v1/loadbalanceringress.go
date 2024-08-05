@@ -18,6 +18,7 @@ limitations under the License.
 
 package v1
 
+<<<<<<< HEAD
 // LoadBalancerIngressApplyConfiguration represents an declarative configuration of the LoadBalancerIngress type for use
 // with apply.
 type LoadBalancerIngressApplyConfiguration struct {
@@ -45,6 +46,49 @@ func (b *LoadBalancerIngressApplyConfiguration) WithIP(value string) *LoadBalanc
 // If called multiple times, the Hostname field is set to the value of the last call.
 func (b *LoadBalancerIngressApplyConfiguration) WithHostname(value string) *LoadBalancerIngressApplyConfiguration {
 	b.Hostname = &value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+import (
+	v1 "k8s.io/api/core/v1"
+)
+
+// LoadBalancerIngressApplyConfiguration represents an declarative configuration of the LoadBalancerIngress type for use
+// with apply.
+type LoadBalancerIngressApplyConfiguration struct {
+	IP       *string                        `json:"ip,omitempty"`
+	Hostname *string                        `json:"hostname,omitempty"`
+	IPMode   *v1.LoadBalancerIPMode         `json:"ipMode,omitempty"`
+	Ports    []PortStatusApplyConfiguration `json:"ports,omitempty"`
+}
+
+// LoadBalancerIngressApplyConfiguration constructs an declarative configuration of the LoadBalancerIngress type for use with
+// apply.
+func LoadBalancerIngress() *LoadBalancerIngressApplyConfiguration {
+	return &LoadBalancerIngressApplyConfiguration{}
+}
+
+// WithIP sets the IP field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the IP field is set to the value of the last call.
+func (b *LoadBalancerIngressApplyConfiguration) WithIP(value string) *LoadBalancerIngressApplyConfiguration {
+	b.IP = &value
+	return b
+}
+
+// WithHostname sets the Hostname field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Hostname field is set to the value of the last call.
+func (b *LoadBalancerIngressApplyConfiguration) WithHostname(value string) *LoadBalancerIngressApplyConfiguration {
+	b.Hostname = &value
+	return b
+}
+
+// WithIPMode sets the IPMode field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the IPMode field is set to the value of the last call.
+func (b *LoadBalancerIngressApplyConfiguration) WithIPMode(value v1.LoadBalancerIPMode) *LoadBalancerIngressApplyConfiguration {
+	b.IPMode = &value
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }
 

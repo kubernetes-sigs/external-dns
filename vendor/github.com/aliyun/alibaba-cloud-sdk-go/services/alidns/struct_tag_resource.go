@@ -18,6 +18,7 @@ package alidns
 // TagResource is a nested struct in alidns response
 type TagResource struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ResourceType string `json:"ResourceType" xml:"ResourceType"`
 	TagValue     string `json:"TagValue" xml:"TagValue"`
 	ResourceId   string `json:"ResourceId" xml:"ResourceId"`
@@ -25,8 +26,19 @@ type TagResource struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	TagKey       string `json:"TagKey" xml:"TagKey"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	TagKey       string `json:"TagKey" xml:"TagKey"`
+=======
+	ResourceType string `json:"ResourceType" xml:"ResourceType"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	TagValue     string `json:"TagValue" xml:"TagValue"`
 	ResourceId   string `json:"ResourceId" xml:"ResourceId"`
+<<<<<<< HEAD
 	ResourceType string `json:"ResourceType" xml:"ResourceType"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	ResourceType string `json:"ResourceType" xml:"ResourceType"`
+=======
+	TagKey       string `json:"TagKey" xml:"TagKey"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

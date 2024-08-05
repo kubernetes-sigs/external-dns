@@ -28,8 +28,22 @@ type ACMEProviderSpec struct {
 	// Specifies who to talk ACME with to get certs. Defaults to Let's
 	// Encrypt; if "none" (case-insensitive), do not try to do ACME for
 	// this Host.
-	Authority        string                       `json:"authority,omitempty"`
-	Email            string                       `json:"email,omitempty"`
+	Authority string `json:"authority,omitempty"`
+	Email     string `json:"email,omitempty"`
+
+	// Specifies the Kubernetes Secret to use to store the private key of the ACME
+	// account (essentially, where to store the auto-generated password for the
+	// auto-created ACME account).  You should not normally need to set this--the
+	// default value is based on a combination of the ACME authority being registered
+	// wit and the email address associated with the account.
+	//
+	// Note that this is a native-Kubernetes-style core.v1.LocalObjectReference, not
+	// an Ambassador-style `{name}.{namespace}` string.  Because we're opinionated, it
+	// does not support referencing a Secret in another namespace (because most native
+	// Kubernetes resources don't support that), but if we ever abandon that opinion
+	// and decide to support non-local references it, it would be by adding a
+	// `namespace:` field by changing it from a core.v1.LocalObjectReference to a
+	// core.v1.SecretReference, not by adopting the `{name}.{namespace}` notation.
 	PrivateKeySecret *corev1.LocalObjectReference `json:"privateKeySecret,omitempty"`
 
 	// This is normally set automatically
@@ -39,7 +53,7 @@ type ACMEProviderSpec struct {
 type InsecureRequestPolicy struct {
 	// +kubebuilder:validation:Enum={"Redirect","Reject","Route"}
 	Action         string `json:"action,omitempty"`
-	AdditionalPort int    `json:"additional_port,omitempty"`
+	AdditionalPort *int   `json:"additionalPort,omitempty"`
 }
 
 type RequestPolicy struct {
@@ -50,7 +64,7 @@ type RequestPolicy struct {
 
 type PreviewURLSpec struct {
 	// Is the Preview URL feature enabled?
-	Enabled bool `json:"enabled,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
 
 	// What type of Preview URL is allowed?
 	Type PreviewURLType `json:"type,omitempty"`
@@ -62,7 +76,7 @@ type PreviewURLSpec struct {
 //  - wildcard
 //  - datawire // FIXME rename this before release
 //
-// +kubebuilder:validation:Enum={"path"}
+// +kubebuilder:validation:Enum={"Path"}
 type PreviewURLType string
 
 // HostSpec defines the desired state of Host
@@ -90,6 +104,14 @@ type HostSpec struct {
 	// certificates.  If ACME is enabled (see $acmeProvider), then the
 	// default is $hostname; otherwise the default is "".  If the value
 	// is "", then we do not do TLS for this Host.
+	//
+	// Note that this is a native-Kubernetes-style core.v1.LocalObjectReference, not
+	// an Ambassador-style `{name}.{namespace}` string.  Because we're opinionated, it
+	// does not support referencing a Secret in another namespace (because most native
+	// Kubernetes resources don't support that), but if we ever abandon that opinion
+	// and decide to support non-local references it, it would be by adding a
+	// `namespace:` field by changing it from a core.v1.LocalObjectReference to a
+	// core.v1.SecretReference, not by adopting the `{name}.{namespace}` notation.
 	TLSSecret *corev1.LocalObjectReference `json:"tlsSecret,omitempty"`
 
 	// Request policy definition.
@@ -100,6 +122,14 @@ type HostSpec struct {
 
 	// Name of the TLSContext the Host resource is linked with.
 	// It is not valid to specify both `tlsContext` and `tls`.
+	//
+	// Note that this is a native-Kubernetes-style core.v1.LocalObjectReference, not
+	// an Ambassador-style `{name}.{namespace}` string.  Because we're opinionated, it
+	// does not support referencing a Secret in another namespace (because most native
+	// Kubernetes resources don't support that), but if we ever abandon that opinion
+	// and decide to support non-local references it, it would be by adding a
+	// `namespace:` field by changing it from a core.v1.LocalObjectReference to a
+	// core.v1.SecretReference, not by adopting the `{name}.{namespace}` notation.
 	TLSContext *corev1.LocalObjectReference `json:"tlsContext,omitempty"`
 
 	// TLS configuration.  It is not valid to specify both
@@ -113,12 +143,12 @@ type TLSConfig struct {
 	CASecret              string   `json:"ca_secret,omitempty"`
 	CAcertChainFile       string   `json:"cacert_chain_file,omitempty"`
 	AlpnProtocols         string   `json:"alpn_protocols,omitempty"`
-	CertRequired          bool     `json:"cert_required,omitempty"`
+	CertRequired          *bool    `json:"cert_required,omitempty"`
 	MinTLSVersion         string   `json:"min_tls_version,omitempty"`
 	MaxTLSVersion         string   `json:"max_tls_version,omitempty"`
 	CipherSuites          []string `json:"cipher_suites,omitempty"`
 	ECDHCurves            []string `json:"ecdh_curves,omitempty"`
-	RedirectCleartextFrom int      `json:"redirect_cleartext_from,omitempty"`
+	RedirectCleartextFrom *int     `json:"redirect_cleartext_from,omitempty"`
 	SNI                   string   `json:"sni,omitempty"`
 }
 

@@ -121,7 +121,12 @@ func (d *Decoder) Read() (Token, error) {
 
 	case ObjectClose:
 		if len(d.openStack) == 0 ||
+<<<<<<< HEAD
 			d.lastToken.kind == comma ||
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+			d.lastToken.kind&(Name|comma) != 0 ||
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			d.openStack[len(d.openStack)-1] != ObjectOpen {
 			return Token{}, d.newSyntaxError(tok.pos, unexpectedFmt, tok.RawString())
 		}

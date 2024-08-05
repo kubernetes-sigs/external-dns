@@ -62,6 +62,7 @@ type LoadBalancerReq struct {
 	BalancingAlgorithm string           `json:"balancing_algorithm,omitempty"`
 	FirewallRules      []LBFirewallRule `json:"firewall_rules"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Deprecated:  PrivateNetwork should no longer be used. Instead, use VPC.
 	PrivateNetwork *string `json:"private_network,omitempty"`
 	VPC            *string `json:"vpc,omitempty"`
@@ -142,6 +143,13 @@ type SSL struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	PrivateNetwork     *string          `json:"private_network,omitempty"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	PrivateNetwork     *string          `json:"private_network,omitempty"`
+=======
+	// Deprecated:  PrivateNetwork should no longer be used. Instead, use VPC.
+	PrivateNetwork *string `json:"private_network,omitempty"`
+	VPC            *string `json:"vpc,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // InstanceList represents instances that are attached to your load balancer
@@ -166,7 +174,9 @@ type GenericInfo struct {
 	SSLRedirect        *bool           `json:"ssl_redirect,omitempty"`
 	StickySessions     *StickySessions `json:"sticky_sessions,omitempty"`
 	ProxyProtocol      *bool           `json:"proxy_protocol,omitempty"`
-	PrivateNetwork     string          `json:"private_network,omitempty"`
+	// Deprecated:  PrivateNetwork should no longer be used. Instead, use VPC.
+	PrivateNetwork string `json:"private_network,omitempty"`
+	VPC            string `json:"vpc,omitempty"`
 }
 
 // StickySessions represents cookie for your load balancer
@@ -198,9 +208,17 @@ type LBFirewallRule struct {
 
 // SSL represents valid SSL config
 type SSL struct {
+<<<<<<< HEAD
 	PrivateKey  string `json:"ssl_private_key,omitempty"`
 	Certificate string `json:"ssl_certificate,omitempty"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	PrivateKey  string `json:"ssl_private_key,omitempty"`
+	Certificate string `json:"ssl_certificate,omitempty"`
+=======
+	PrivateKey  string `json:"private_key,omitempty"`
+	Certificate string `json:"certificate,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Chain       string `json:"chain,omitempty"`
 }
 

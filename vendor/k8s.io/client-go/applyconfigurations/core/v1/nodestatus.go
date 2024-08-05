@@ -36,6 +36,7 @@ type NodeStatusApplyConfiguration struct {
 	VolumesInUse    []v1.UniqueVolumeName                  `json:"volumesInUse,omitempty"`
 	VolumesAttached []AttachedVolumeApplyConfiguration     `json:"volumesAttached,omitempty"`
 	Config          *NodeConfigStatusApplyConfiguration    `json:"config,omitempty"`
+<<<<<<< HEAD
 }
 
 // NodeStatusApplyConfiguration constructs an declarative configuration of the NodeStatus type for use with
@@ -151,5 +152,137 @@ func (b *NodeStatusApplyConfiguration) WithVolumesAttached(values ...*AttachedVo
 // If called multiple times, the Config field is set to the value of the last call.
 func (b *NodeStatusApplyConfiguration) WithConfig(value *NodeConfigStatusApplyConfiguration) *NodeStatusApplyConfiguration {
 	b.Config = value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	RuntimeHandlers []NodeRuntimeHandlerApplyConfiguration `json:"runtimeHandlers,omitempty"`
+}
+
+// NodeStatusApplyConfiguration constructs an declarative configuration of the NodeStatus type for use with
+// apply.
+func NodeStatus() *NodeStatusApplyConfiguration {
+	return &NodeStatusApplyConfiguration{}
+}
+
+// WithCapacity sets the Capacity field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Capacity field is set to the value of the last call.
+func (b *NodeStatusApplyConfiguration) WithCapacity(value v1.ResourceList) *NodeStatusApplyConfiguration {
+	b.Capacity = &value
+	return b
+}
+
+// WithAllocatable sets the Allocatable field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Allocatable field is set to the value of the last call.
+func (b *NodeStatusApplyConfiguration) WithAllocatable(value v1.ResourceList) *NodeStatusApplyConfiguration {
+	b.Allocatable = &value
+	return b
+}
+
+// WithPhase sets the Phase field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Phase field is set to the value of the last call.
+func (b *NodeStatusApplyConfiguration) WithPhase(value v1.NodePhase) *NodeStatusApplyConfiguration {
+	b.Phase = &value
+	return b
+}
+
+// WithConditions adds the given value to the Conditions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Conditions field.
+func (b *NodeStatusApplyConfiguration) WithConditions(values ...*NodeConditionApplyConfiguration) *NodeStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithConditions")
+		}
+		b.Conditions = append(b.Conditions, *values[i])
+	}
+	return b
+}
+
+// WithAddresses adds the given value to the Addresses field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Addresses field.
+func (b *NodeStatusApplyConfiguration) WithAddresses(values ...*NodeAddressApplyConfiguration) *NodeStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithAddresses")
+		}
+		b.Addresses = append(b.Addresses, *values[i])
+	}
+	return b
+}
+
+// WithDaemonEndpoints sets the DaemonEndpoints field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DaemonEndpoints field is set to the value of the last call.
+func (b *NodeStatusApplyConfiguration) WithDaemonEndpoints(value *NodeDaemonEndpointsApplyConfiguration) *NodeStatusApplyConfiguration {
+	b.DaemonEndpoints = value
+	return b
+}
+
+// WithNodeInfo sets the NodeInfo field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the NodeInfo field is set to the value of the last call.
+func (b *NodeStatusApplyConfiguration) WithNodeInfo(value *NodeSystemInfoApplyConfiguration) *NodeStatusApplyConfiguration {
+	b.NodeInfo = value
+	return b
+}
+
+// WithImages adds the given value to the Images field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Images field.
+func (b *NodeStatusApplyConfiguration) WithImages(values ...*ContainerImageApplyConfiguration) *NodeStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithImages")
+		}
+		b.Images = append(b.Images, *values[i])
+	}
+	return b
+}
+
+// WithVolumesInUse adds the given value to the VolumesInUse field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the VolumesInUse field.
+func (b *NodeStatusApplyConfiguration) WithVolumesInUse(values ...v1.UniqueVolumeName) *NodeStatusApplyConfiguration {
+	for i := range values {
+		b.VolumesInUse = append(b.VolumesInUse, values[i])
+	}
+	return b
+}
+
+// WithVolumesAttached adds the given value to the VolumesAttached field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the VolumesAttached field.
+func (b *NodeStatusApplyConfiguration) WithVolumesAttached(values ...*AttachedVolumeApplyConfiguration) *NodeStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithVolumesAttached")
+		}
+		b.VolumesAttached = append(b.VolumesAttached, *values[i])
+	}
+	return b
+}
+
+// WithConfig sets the Config field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Config field is set to the value of the last call.
+func (b *NodeStatusApplyConfiguration) WithConfig(value *NodeConfigStatusApplyConfiguration) *NodeStatusApplyConfiguration {
+	b.Config = value
+	return b
+}
+
+// WithRuntimeHandlers adds the given value to the RuntimeHandlers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the RuntimeHandlers field.
+func (b *NodeStatusApplyConfiguration) WithRuntimeHandlers(values ...*NodeRuntimeHandlerApplyConfiguration) *NodeStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithRuntimeHandlers")
+		}
+		b.RuntimeHandlers = append(b.RuntimeHandlers, *values[i])
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

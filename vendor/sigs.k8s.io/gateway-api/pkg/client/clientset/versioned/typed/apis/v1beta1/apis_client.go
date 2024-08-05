@@ -31,6 +31,7 @@ type GatewayV1beta1Interface interface {
 	GatewaysGetter
 	GatewayClassesGetter
 	HTTPRoutesGetter
+<<<<<<< HEAD
 }
 
 // GatewayV1beta1Client is used to interact with features provided by the gateway.networking.k8s.io group.
@@ -48,6 +49,31 @@ func (c *GatewayV1beta1Client) GatewayClasses() GatewayClassInterface {
 
 func (c *GatewayV1beta1Client) HTTPRoutes(namespace string) HTTPRouteInterface {
 	return newHTTPRoutes(c, namespace)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	ReferenceGrantsGetter
+}
+
+// GatewayV1beta1Client is used to interact with features provided by the gateway.networking.k8s.io group.
+type GatewayV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *GatewayV1beta1Client) Gateways(namespace string) GatewayInterface {
+	return newGateways(c, namespace)
+}
+
+func (c *GatewayV1beta1Client) GatewayClasses() GatewayClassInterface {
+	return newGatewayClasses(c)
+}
+
+func (c *GatewayV1beta1Client) HTTPRoutes(namespace string) HTTPRouteInterface {
+	return newHTTPRoutes(c, namespace)
+}
+
+func (c *GatewayV1beta1Client) ReferenceGrants(namespace string) ReferenceGrantInterface {
+	return newReferenceGrants(c, namespace)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // NewForConfig creates a new GatewayV1beta1Client for the given config.

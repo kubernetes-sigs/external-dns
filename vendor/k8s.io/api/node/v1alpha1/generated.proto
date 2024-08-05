@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.node.v1alpha1;
@@ -422,6 +423,11 @@ message Scheduling {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package k8s.io.api.node.v1alpha1;
 
@@ -432,11 +438,11 @@ import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
-option go_package = "v1alpha1";
+option go_package = "k8s.io/api/node/v1alpha1";
 
 // Overhead structure represents the resource overhead associated with running a pod.
 message Overhead {
-  // PodFixed represents the fixed resource overhead associated with running a pod.
+  // podFixed represents the fixed resource overhead associated with running a pod.
   // +optional
   map<string, k8s.io.apimachinery.pkg.api.resource.Quantity> podFixed = 1;
 }
@@ -447,13 +453,13 @@ message Overhead {
 // user or cluster provisioner, and referenced in the PodSpec. The Kubelet is
 // responsible for resolving the RuntimeClassName reference before running the
 // pod.  For more details, see
-// https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md
+// https://git.k8s.io/enhancements/keps/sig-node/585-runtime-class
 message RuntimeClass {
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  // Specification of the RuntimeClass
+  // spec represents specification of the RuntimeClass
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
   optional RuntimeClassSpec spec = 2;
 }
@@ -465,7 +471,7 @@ message RuntimeClassList {
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  // Items is a list of schema objects.
+  // items is a list of schema objects.
   repeated RuntimeClass items = 2;
 }
 
@@ -474,7 +480,7 @@ message RuntimeClassList {
 // Interface (CRI) implementation, as well as any other components that need to
 // understand how the pod will be run. The RuntimeClassSpec is immutable.
 message RuntimeClassSpec {
-  // RuntimeHandler specifies the underlying runtime and configuration that the
+  // runtimeHandler specifies the underlying runtime and configuration that the
   // CRI implementation will use to handle pods of this class. The possible
   // values are specific to the node & CRI configuration.  It is assumed that
   // all handlers are available on every node, and handlers of the same name are
@@ -482,18 +488,17 @@ message RuntimeClassSpec {
   // For example, a handler called "runc" might specify that the runc OCI
   // runtime (using native Linux containers) will be used to run the containers
   // in a pod.
-  // The RuntimeHandler must conform to the DNS Label (RFC 1123) requirements
-  // and is immutable.
+  // The runtimeHandler must be lowercase, conform to the DNS Label (RFC 1123)
+  // requirements, and is immutable.
   optional string runtimeHandler = 1;
 
-  // Overhead represents the resource overhead associated with running a pod for a
+  // overhead represents the resource overhead associated with running a pod for a
   // given RuntimeClass. For more details, see
-  // https://git.k8s.io/enhancements/keps/sig-node/20190226-pod-overhead.md
-  // This field is alpha-level as of Kubernetes v1.15, and is only honored by servers that enable the PodOverhead feature.
+  // https://git.k8s.io/enhancements/keps/sig-node/688-pod-overhead/README.md
   // +optional
   optional Overhead overhead = 2;
 
-  // Scheduling holds the scheduling constraints to ensure that pods running
+  // scheduling holds the scheduling constraints to ensure that pods running
   // with this RuntimeClass are scheduled to nodes that support it.
   // If scheduling is nil, this RuntimeClass is assumed to be supported by all
   // nodes.
@@ -510,7 +515,12 @@ message Scheduling {
   // with a pod's existing nodeSelector. Any conflicts will cause the pod to
   // be rejected in admission.
   // +optional
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+  // +mapType=atomic
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   map<string, string> nodeSelector = 1;
 
   // tolerations are appended (excluding duplicates) to pods running with this

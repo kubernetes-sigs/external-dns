@@ -117,6 +117,7 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if signer.credential.StsRegion != "" {
 		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
 	} else {
@@ -136,6 +137,14 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if signer.credential.StsRegion != "" {
+		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
+	} else {
+		request.Domain = "sts.aliyuncs.com"
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	request.Product = "Sts"
 	request.Version = "2015-04-01"
 	request.ApiName = "AssumeRole"
@@ -143,6 +152,9 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 	request.QueryParams["RoleArn"] = signer.credential.RoleArn
 	if signer.credential.Policy != "" {
 		request.QueryParams["Policy"] = signer.credential.Policy
+	}
+	if signer.credential.ExternalId != "" {
+		request.QueryParams["ExternalId"] = signer.credential.ExternalId
 	}
 	request.QueryParams["RoleSessionName"] = signer.credential.RoleSessionName
 	request.QueryParams["DurationSeconds"] = strconv.Itoa(signer.credentialExpiration)

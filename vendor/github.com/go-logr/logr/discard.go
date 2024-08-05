@@ -20,6 +20,7 @@ package logr
 // used whenever the caller is not interested in the logs.  Logger instances
 // produced by this function always compare as equal.
 func Discard() Logger {
+<<<<<<< HEAD
 	return Logger{
 		level: 0,
 		sink:  discardLogSink{},
@@ -51,4 +52,8 @@ func (l discardLogSink) WithValues(...interface{}) LogSink {
 
 func (l discardLogSink) WithName(string) LogSink {
 	return l
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	return New(nil)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

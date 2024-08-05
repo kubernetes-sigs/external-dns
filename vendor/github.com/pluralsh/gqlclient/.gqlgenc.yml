@@ -17,7 +17,13 @@ models:
     model: github.com/99designs/gqlgen/graphql.String
   UploadOrUrl:
     model: github.com/99designs/gqlgen/graphql.String
+<<<<<<< HEAD
 endpoint:
   url: https://app.plural.sh/gql # Where do you want to send your request?
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+schema:
+  - "schema/*.graphql"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 query:
   - "graph/*.graphql" # Where are all the query files located?

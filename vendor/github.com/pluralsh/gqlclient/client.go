@@ -18,6 +18,7 @@ func NewClient(cli *http.Client, baseURL string, options ...client.HTTPRequestOp
 }
 
 type RootQueryType struct {
+<<<<<<< HEAD
 	AuditMetrics           []*GeoMetric                      "json:\"auditMetrics\" graphql:\"auditMetrics\""
 	Audits                 *AuditConnection                  "json:\"audits\" graphql:\"audits\""
 	Categories             []*CategoryInfo                   "json:\"categories\" graphql:\"categories\""
@@ -3144,6 +3145,4360 @@ func (c *Client) UpdateVersion(ctx context.Context, spec *VersionSpec, attribute
 
 	var res UpdateVersion
 	if err := c.Client.Post(ctx, "UpdateVersion", UpdateVersionDocument, &res, vars, httpRequestOptions...); err != nil {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Me                     *User                             "json:\"me\" graphql:\"me\""
+	User                   *User                             "json:\"user\" graphql:\"user\""
+	LoginMethod            *LoginMethodResponse              "json:\"loginMethod\" graphql:\"loginMethod\""
+	ResetToken             *ResetToken                       "json:\"resetToken\" graphql:\"resetToken\""
+	Tokens                 *PersistedTokenConnection         "json:\"tokens\" graphql:\"tokens\""
+	Token                  *PersistedToken                   "json:\"token\" graphql:\"token\""
+	Publisher              *Publisher                        "json:\"publisher\" graphql:\"publisher\""
+	Users                  *UserConnection                   "json:\"users\" graphql:\"users\""
+	SearchUsers            *UserConnection                   "json:\"searchUsers\" graphql:\"searchUsers\""
+	Publishers             *PublisherConnection              "json:\"publishers\" graphql:\"publishers\""
+	Webhooks               *WebhookConnection                "json:\"webhooks\" graphql:\"webhooks\""
+	PublicKeys             *PublicKeyConnection              "json:\"publicKeys\" graphql:\"publicKeys\""
+	EabCredential          *EabCredential                    "json:\"eabCredential\" graphql:\"eabCredential\""
+	EabCredentials         []*EabCredential                  "json:\"eabCredentials\" graphql:\"eabCredentials\""
+	KeyBackups             *KeyBackupConnection              "json:\"keyBackups\" graphql:\"keyBackups\""
+	KeyBackup              *KeyBackup                        "json:\"keyBackup\" graphql:\"keyBackup\""
+	OidcToken              *string                           "json:\"oidcToken\" graphql:\"oidcToken\""
+	RepositorySubscription *RepositorySubscription           "json:\"repositorySubscription\" graphql:\"repositorySubscription\""
+	Subscriptions          *RepositorySubscriptionConnection "json:\"subscriptions\" graphql:\"subscriptions\""
+	PlatformPlans          []*PlatformPlan                   "json:\"platformPlans\" graphql:\"platformPlans\""
+	PlatformSubscription   *PlatformSubscription             "json:\"platformSubscription\" graphql:\"platformSubscription\""
+	Invoices               *InvoiceConnection                "json:\"invoices\" graphql:\"invoices\""
+	Repository             *Repository                       "json:\"repository\" graphql:\"repository\""
+	Installation           *Installation                     "json:\"installation\" graphql:\"installation\""
+	Repositories           *RepositoryConnection             "json:\"repositories\" graphql:\"repositories\""
+	SearchRepositories     *RepositoryConnection             "json:\"searchRepositories\" graphql:\"searchRepositories\""
+	Installations          *InstallationConnection           "json:\"installations\" graphql:\"installations\""
+	Integrations           *IntegrationConnection            "json:\"integrations\" graphql:\"integrations\""
+	Closure                []*ClosureItem                    "json:\"closure\" graphql:\"closure\""
+	Categories             []*CategoryInfo                   "json:\"categories\" graphql:\"categories\""
+	Category               *CategoryInfo                     "json:\"category\" graphql:\"category\""
+	Scaffold               []*ScaffoldFile                   "json:\"scaffold\" graphql:\"scaffold\""
+	Recipe                 *Recipe                           "json:\"recipe\" graphql:\"recipe\""
+	Stack                  *Stack                            "json:\"stack\" graphql:\"stack\""
+	Recipes                *RecipeConnection                 "json:\"recipes\" graphql:\"recipes\""
+	Stacks                 *StackConnection                  "json:\"stacks\" graphql:\"stacks\""
+	Chart                  *Chart                            "json:\"chart\" graphql:\"chart\""
+	Charts                 *ChartConnection                  "json:\"charts\" graphql:\"charts\""
+	ChartInstallations     *ChartInstallationConnection      "json:\"chartInstallations\" graphql:\"chartInstallations\""
+	TerraformModule        *Terraform                        "json:\"terraformModule\" graphql:\"terraformModule\""
+	Terraform              *TerraformConnection              "json:\"terraform\" graphql:\"terraform\""
+	TerraformInstallations *TerraformInstallationConnection  "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
+	DockerRepositories     *DockerRepositoryConnection       "json:\"dockerRepositories\" graphql:\"dockerRepositories\""
+	DockerImages           *DockerImageConnection            "json:\"dockerImages\" graphql:\"dockerImages\""
+	DockerImage            *DockerImage                      "json:\"dockerImage\" graphql:\"dockerImage\""
+	Versions               *VersionConnection                "json:\"versions\" graphql:\"versions\""
+	Account                *Account                          "json:\"account\" graphql:\"account\""
+	Invite                 *Invite                           "json:\"invite\" graphql:\"invite\""
+	Invites                *InviteConnection                 "json:\"invites\" graphql:\"invites\""
+	Groups                 *GroupConnection                  "json:\"groups\" graphql:\"groups\""
+	GroupMembers           *GroupMemberConnection            "json:\"groupMembers\" graphql:\"groupMembers\""
+	Role                   *Role                             "json:\"role\" graphql:\"role\""
+	Roles                  *RoleConnection                   "json:\"roles\" graphql:\"roles\""
+	IntegrationWebhooks    *IntegrationWebhookConnection     "json:\"integrationWebhooks\" graphql:\"integrationWebhooks\""
+	IntegrationWebhook     *IntegrationWebhook               "json:\"integrationWebhook\" graphql:\"integrationWebhook\""
+	OauthIntegrations      []*OauthIntegration               "json:\"oauthIntegrations\" graphql:\"oauthIntegrations\""
+	Incidents              *IncidentConnection               "json:\"incidents\" graphql:\"incidents\""
+	Incident               *Incident                         "json:\"incident\" graphql:\"incident\""
+	Notifications          *NotificationConnection           "json:\"notifications\" graphql:\"notifications\""
+	Audits                 *AuditConnection                  "json:\"audits\" graphql:\"audits\""
+	AuditMetrics           []*GeoMetric                      "json:\"auditMetrics\" graphql:\"auditMetrics\""
+	UpgradeQueues          []*UpgradeQueue                   "json:\"upgradeQueues\" graphql:\"upgradeQueues\""
+	DeferredUpdates        *DeferredUpdateConnection         "json:\"deferredUpdates\" graphql:\"deferredUpdates\""
+	UpgradeQueue           *UpgradeQueue                     "json:\"upgradeQueue\" graphql:\"upgradeQueue\""
+	Rollouts               *RolloutConnection                "json:\"rollouts\" graphql:\"rollouts\""
+	OauthLogin             *Repository                       "json:\"oauthLogin\" graphql:\"oauthLogin\""
+	OauthConsent           *Repository                       "json:\"oauthConsent\" graphql:\"oauthConsent\""
+	OidcLogin              *OidcStepResponse                 "json:\"oidcLogin\" graphql:\"oidcLogin\""
+	OidcConsent            *OidcStepResponse                 "json:\"oidcConsent\" graphql:\"oidcConsent\""
+	OauthUrls              []*OauthInfo                      "json:\"oauthUrls\" graphql:\"oauthUrls\""
+	OidcLogins             *OidcLoginConnection              "json:\"oidcLogins\" graphql:\"oidcLogins\""
+	LoginMetrics           []*GeoMetric                      "json:\"loginMetrics\" graphql:\"loginMetrics\""
+	DNSDomain              *DNSDomain                        "json:\"dnsDomain\" graphql:\"dnsDomain\""
+	DNSDomains             *DNSDomainConnection              "json:\"dnsDomains\" graphql:\"dnsDomains\""
+	DNSRecords             *DNSRecordConnection              "json:\"dnsRecords\" graphql:\"dnsRecords\""
+	Shell                  *CloudShell                       "json:\"shell\" graphql:\"shell\""
+	ShellConfiguration     *ShellConfiguration               "json:\"shellConfiguration\" graphql:\"shellConfiguration\""
+	ShellApplications      []*ApplicationInformation         "json:\"shellApplications\" graphql:\"shellApplications\""
+	ScmAuthorization       []*AuthorizationURL               "json:\"scmAuthorization\" graphql:\"scmAuthorization\""
+	ScmToken               *string                           "json:\"scmToken\" graphql:\"scmToken\""
+	DemoProject            *DemoProject                      "json:\"demoProject\" graphql:\"demoProject\""
+	PlatformMetrics        *PlatformMetrics                  "json:\"platformMetrics\" graphql:\"platformMetrics\""
+	TerraformProviders     []*Provider                       "json:\"terraformProviders\" graphql:\"terraformProviders\""
+	TerraformProvider      *TerraformProvider                "json:\"terraformProvider\" graphql:\"terraformProvider\""
+	Tests                  *TestConnection                   "json:\"tests\" graphql:\"tests\""
+	Test                   *Test                             "json:\"test\" graphql:\"test\""
+	TestLogs               *string                           "json:\"testLogs\" graphql:\"testLogs\""
+	Chat                   *ChatMessage                      "json:\"chat\" graphql:\"chat\""
+	HelpQuestion           *string                           "json:\"helpQuestion\" graphql:\"helpQuestion\""
+	Cluster                *Cluster                          "json:\"cluster\" graphql:\"cluster\""
+	Clusters               *ClusterConnection                "json:\"clusters\" graphql:\"clusters\""
+	Configuration          *PluralConfiguration              "json:\"configuration\" graphql:\"configuration\""
+	Tags                   *GroupedTagConnection             "json:\"tags\" graphql:\"tags\""
+}
+type RootMutationType struct {
+	Login                      *User                   "json:\"login\" graphql:\"login\""
+	DeviceLogin                *DeviceLogin            "json:\"deviceLogin\" graphql:\"deviceLogin\""
+	PasswordlessLogin          *User                   "json:\"passwordlessLogin\" graphql:\"passwordlessLogin\""
+	LoginToken                 *User                   "json:\"loginToken\" graphql:\"loginToken\""
+	ExternalToken              *string                 "json:\"externalToken\" graphql:\"externalToken\""
+	CreateResetToken           *bool                   "json:\"createResetToken\" graphql:\"createResetToken\""
+	RealizeResetToken          *bool                   "json:\"realizeResetToken\" graphql:\"realizeResetToken\""
+	CreateToken                *PersistedToken         "json:\"createToken\" graphql:\"createToken\""
+	DeleteToken                *PersistedToken         "json:\"deleteToken\" graphql:\"deleteToken\""
+	Signup                     *User                   "json:\"signup\" graphql:\"signup\""
+	UpdateUser                 *User                   "json:\"updateUser\" graphql:\"updateUser\""
+	DeleteUser                 *User                   "json:\"deleteUser\" graphql:\"deleteUser\""
+	CreatePublisher            *Publisher              "json:\"createPublisher\" graphql:\"createPublisher\""
+	CreateWebhook              *Webhook                "json:\"createWebhook\" graphql:\"createWebhook\""
+	PingWebhook                *WebhookResponse        "json:\"pingWebhook\" graphql:\"pingWebhook\""
+	UpdatePublisher            *Publisher              "json:\"updatePublisher\" graphql:\"updatePublisher\""
+	CreatePublicKey            *PublicKey              "json:\"createPublicKey\" graphql:\"createPublicKey\""
+	DeletePublicKey            *PublicKey              "json:\"deletePublicKey\" graphql:\"deletePublicKey\""
+	DeleteEabKey               *EabCredential          "json:\"deleteEabKey\" graphql:\"deleteEabKey\""
+	CreateUserEvent            *bool                   "json:\"createUserEvent\" graphql:\"createUserEvent\""
+	DestroyCluster             *bool                   "json:\"destroyCluster\" graphql:\"destroyCluster\""
+	CreateKeyBackup            *KeyBackup              "json:\"createKeyBackup\" graphql:\"createKeyBackup\""
+	DeleteKeyBackup            *KeyBackup              "json:\"deleteKeyBackup\" graphql:\"deleteKeyBackup\""
+	CreateTrustRelationship    *OidcTrustRelationship  "json:\"createTrustRelationship\" graphql:\"createTrustRelationship\""
+	DeleteTrustRelationship    *OidcTrustRelationship  "json:\"deleteTrustRelationship\" graphql:\"deleteTrustRelationship\""
+	CreateCard                 *Account                "json:\"createCard\" graphql:\"createCard\""
+	SetupIntent                *SetupIntent            "json:\"setupIntent\" graphql:\"setupIntent\""
+	DefaultPaymentMethod       *bool                   "json:\"defaultPaymentMethod\" graphql:\"defaultPaymentMethod\""
+	DeleteCard                 *Account                "json:\"deleteCard\" graphql:\"deleteCard\""
+	DeletePaymentMethod        *PaymentMethod          "json:\"deletePaymentMethod\" graphql:\"deletePaymentMethod\""
+	LinkPublisher              *Publisher              "json:\"linkPublisher\" graphql:\"linkPublisher\""
+	CreatePlan                 *Plan                   "json:\"createPlan\" graphql:\"createPlan\""
+	UpdatePlanAttributes       *Plan                   "json:\"updatePlanAttributes\" graphql:\"updatePlanAttributes\""
+	CreateSubscription         *RepositorySubscription "json:\"createSubscription\" graphql:\"createSubscription\""
+	UpdatePlan                 *RepositorySubscription "json:\"updatePlan\" graphql:\"updatePlan\""
+	UpdateLineItem             *RepositorySubscription "json:\"updateLineItem\" graphql:\"updateLineItem\""
+	CreatePlatformSubscription *PlatformSubscription   "json:\"createPlatformSubscription\" graphql:\"createPlatformSubscription\""
+	BeginTrial                 *PlatformSubscription   "json:\"beginTrial\" graphql:\"beginTrial\""
+	DeletePlatformSubscription *Account                "json:\"deletePlatformSubscription\" graphql:\"deletePlatformSubscription\""
+	CancelPlatformSubscription *PlatformSubscription   "json:\"cancelPlatformSubscription\" graphql:\"cancelPlatformSubscription\""
+	UpdatePlatformPlan         *PlatformSubscription   "json:\"updatePlatformPlan\" graphql:\"updatePlatformPlan\""
+	CreateRepository           *Repository             "json:\"createRepository\" graphql:\"createRepository\""
+	UpdateRepository           *Repository             "json:\"updateRepository\" graphql:\"updateRepository\""
+	UpsertRepository           *Repository             "json:\"upsertRepository\" graphql:\"upsertRepository\""
+	DeleteRepository           *Repository             "json:\"deleteRepository\" graphql:\"deleteRepository\""
+	CreateInstallation         *Installation           "json:\"createInstallation\" graphql:\"createInstallation\""
+	UpdateInstallation         *Installation           "json:\"updateInstallation\" graphql:\"updateInstallation\""
+	DeleteInstallation         *Installation           "json:\"deleteInstallation\" graphql:\"deleteInstallation\""
+	ResetInstallations         *int64                  "json:\"resetInstallations\" graphql:\"resetInstallations\""
+	CreateIntegration          *Integration            "json:\"createIntegration\" graphql:\"createIntegration\""
+	CreateArtifact             *Artifact               "json:\"createArtifact\" graphql:\"createArtifact\""
+	CreateOidcProvider         *OidcProvider           "json:\"createOidcProvider\" graphql:\"createOidcProvider\""
+	UpdateOidcProvider         *OidcProvider           "json:\"updateOidcProvider\" graphql:\"updateOidcProvider\""
+	UpsertOidcProvider         *OidcProvider           "json:\"upsertOidcProvider\" graphql:\"upsertOidcProvider\""
+	AcquireLock                *ApplyLock              "json:\"acquireLock\" graphql:\"acquireLock\""
+	ReleaseLock                *ApplyLock              "json:\"releaseLock\" graphql:\"releaseLock\""
+	Synced                     *bool                   "json:\"synced\" graphql:\"synced\""
+	CreateRecipe               *Recipe                 "json:\"createRecipe\" graphql:\"createRecipe\""
+	DeleteRecipe               *Recipe                 "json:\"deleteRecipe\" graphql:\"deleteRecipe\""
+	CreateStack                *Stack                  "json:\"createStack\" graphql:\"createStack\""
+	QuickStack                 *Stack                  "json:\"quickStack\" graphql:\"quickStack\""
+	DeleteStack                *Stack                  "json:\"deleteStack\" graphql:\"deleteStack\""
+	InstallRecipe              []*Installation         "json:\"installRecipe\" graphql:\"installRecipe\""
+	InstallStack               []*Recipe               "json:\"installStack\" graphql:\"installStack\""
+	UpdateChart                *Chart                  "json:\"updateChart\" graphql:\"updateChart\""
+	CreateCrd                  *Crd                    "json:\"createCrd\" graphql:\"createCrd\""
+	InstallChart               *ChartInstallation      "json:\"installChart\" graphql:\"installChart\""
+	UpdateChartInstallation    *ChartInstallation      "json:\"updateChartInstallation\" graphql:\"updateChartInstallation\""
+	DeleteChartInstallation    *ChartInstallation      "json:\"deleteChartInstallation\" graphql:\"deleteChartInstallation\""
+	CreateTerraform            *Terraform              "json:\"createTerraform\" graphql:\"createTerraform\""
+	UpdateTerraform            *Terraform              "json:\"updateTerraform\" graphql:\"updateTerraform\""
+	DeleteTerraform            *Terraform              "json:\"deleteTerraform\" graphql:\"deleteTerraform\""
+	UploadTerraform            *Terraform              "json:\"uploadTerraform\" graphql:\"uploadTerraform\""
+	InstallTerraform           *TerraformInstallation  "json:\"installTerraform\" graphql:\"installTerraform\""
+	UninstallTerraform         *TerraformInstallation  "json:\"uninstallTerraform\" graphql:\"uninstallTerraform\""
+	Release                    *bool                   "json:\"release\" graphql:\"release\""
+	UpdateVersion              *Version                "json:\"updateVersion\" graphql:\"updateVersion\""
+	InstallVersion             *bool                   "json:\"installVersion\" graphql:\"installVersion\""
+	CreateServiceAccount       *User                   "json:\"createServiceAccount\" graphql:\"createServiceAccount\""
+	UpdateServiceAccount       *User                   "json:\"updateServiceAccount\" graphql:\"updateServiceAccount\""
+	ImpersonateServiceAccount  *User                   "json:\"impersonateServiceAccount\" graphql:\"impersonateServiceAccount\""
+	UpdateAccount              *Account                "json:\"updateAccount\" graphql:\"updateAccount\""
+	CreateInvite               *Invite                 "json:\"createInvite\" graphql:\"createInvite\""
+	DeleteInvite               *Invite                 "json:\"deleteInvite\" graphql:\"deleteInvite\""
+	RealizeInvite              *User                   "json:\"realizeInvite\" graphql:\"realizeInvite\""
+	CreateGroup                *Group                  "json:\"createGroup\" graphql:\"createGroup\""
+	DeleteGroup                *Group                  "json:\"deleteGroup\" graphql:\"deleteGroup\""
+	UpdateGroup                *Group                  "json:\"updateGroup\" graphql:\"updateGroup\""
+	CreateGroupMember          *GroupMember            "json:\"createGroupMember\" graphql:\"createGroupMember\""
+	DeleteGroupMember          *GroupMember            "json:\"deleteGroupMember\" graphql:\"deleteGroupMember\""
+	CreateRole                 *Role                   "json:\"createRole\" graphql:\"createRole\""
+	UpdateRole                 *Role                   "json:\"updateRole\" graphql:\"updateRole\""
+	DeleteRole                 *Role                   "json:\"deleteRole\" graphql:\"deleteRole\""
+	CreateIntegrationWebhook   *IntegrationWebhook     "json:\"createIntegrationWebhook\" graphql:\"createIntegrationWebhook\""
+	UpdateIntegrationWebhook   *IntegrationWebhook     "json:\"updateIntegrationWebhook\" graphql:\"updateIntegrationWebhook\""
+	DeleteIntegrationWebhook   *IntegrationWebhook     "json:\"deleteIntegrationWebhook\" graphql:\"deleteIntegrationWebhook\""
+	CreateOauthIntegration     *OauthIntegration       "json:\"createOauthIntegration\" graphql:\"createOauthIntegration\""
+	CreateZoom                 *ZoomMeeting            "json:\"createZoom\" graphql:\"createZoom\""
+	CreateIncident             *Incident               "json:\"createIncident\" graphql:\"createIncident\""
+	UpdateIncident             *Incident               "json:\"updateIncident\" graphql:\"updateIncident\""
+	DeleteIncident             *Incident               "json:\"deleteIncident\" graphql:\"deleteIncident\""
+	AcceptIncident             *Incident               "json:\"acceptIncident\" graphql:\"acceptIncident\""
+	CompleteIncident           *Incident               "json:\"completeIncident\" graphql:\"completeIncident\""
+	FollowIncident             *Follower               "json:\"followIncident\" graphql:\"followIncident\""
+	UnfollowIncident           *Follower               "json:\"unfollowIncident\" graphql:\"unfollowIncident\""
+	CreateMessage              *IncidentMessage        "json:\"createMessage\" graphql:\"createMessage\""
+	UpdateMessage              *IncidentMessage        "json:\"updateMessage\" graphql:\"updateMessage\""
+	DeleteMessage              *IncidentMessage        "json:\"deleteMessage\" graphql:\"deleteMessage\""
+	CreateReaction             *IncidentMessage        "json:\"createReaction\" graphql:\"createReaction\""
+	DeleteReaction             *IncidentMessage        "json:\"deleteReaction\" graphql:\"deleteReaction\""
+	ReadNotifications          *int64                  "json:\"readNotifications\" graphql:\"readNotifications\""
+	CreateQueue                *UpgradeQueue           "json:\"createQueue\" graphql:\"createQueue\""
+	CreateUpgrade              *Upgrade                "json:\"createUpgrade\" graphql:\"createUpgrade\""
+	AcceptLogin                *OauthResponse          "json:\"acceptLogin\" graphql:\"acceptLogin\""
+	OauthConsent               *OauthResponse          "json:\"oauthConsent\" graphql:\"oauthConsent\""
+	OauthCallback              *User                   "json:\"oauthCallback\" graphql:\"oauthCallback\""
+	SsoCallback                *User                   "json:\"ssoCallback\" graphql:\"ssoCallback\""
+	UpdateDockerRepository     *DockerRepository       "json:\"updateDockerRepository\" graphql:\"updateDockerRepository\""
+	CreateDomain               *DNSDomain              "json:\"createDomain\" graphql:\"createDomain\""
+	UpdateDomain               *DNSDomain              "json:\"updateDomain\" graphql:\"updateDomain\""
+	DeleteDomain               *DNSDomain              "json:\"deleteDomain\" graphql:\"deleteDomain\""
+	ProvisionDomain            *DNSDomain              "json:\"provisionDomain\" graphql:\"provisionDomain\""
+	CreateDNSRecord            *DNSRecord              "json:\"createDnsRecord\" graphql:\"createDnsRecord\""
+	DeleteDNSRecord            *DNSRecord              "json:\"deleteDnsRecord\" graphql:\"deleteDnsRecord\""
+	CreateShell                *CloudShell             "json:\"createShell\" graphql:\"createShell\""
+	SetupShell                 *CloudShell             "json:\"setupShell\" graphql:\"setupShell\""
+	UpdateShell                *CloudShell             "json:\"updateShell\" graphql:\"updateShell\""
+	UpdateShellConfiguration   *bool                   "json:\"updateShellConfiguration\" graphql:\"updateShellConfiguration\""
+	InstallBundle              []*Installation         "json:\"installBundle\" graphql:\"installBundle\""
+	InstallStackShell          []*Recipe               "json:\"installStackShell\" graphql:\"installStackShell\""
+	RebootShell                *CloudShell             "json:\"rebootShell\" graphql:\"rebootShell\""
+	DeleteShell                *CloudShell             "json:\"deleteShell\" graphql:\"deleteShell\""
+	CreateDemoProject          *DemoProject            "json:\"createDemoProject\" graphql:\"createDemoProject\""
+	TransferDemoProject        *DemoProject            "json:\"transferDemoProject\" graphql:\"transferDemoProject\""
+	DeleteDemoProject          *DemoProject            "json:\"deleteDemoProject\" graphql:\"deleteDemoProject\""
+	StopShell                  *bool                   "json:\"stopShell\" graphql:\"stopShell\""
+	RestartShell               *bool                   "json:\"restartShell\" graphql:\"restartShell\""
+	UnlockRepository           *int64                  "json:\"unlockRepository\" graphql:\"unlockRepository\""
+	CreateTest                 *Test                   "json:\"createTest\" graphql:\"createTest\""
+	UpdateTest                 *Test                   "json:\"updateTest\" graphql:\"updateTest\""
+	UpdateStep                 *TestStep               "json:\"updateStep\" graphql:\"updateStep\""
+	PublishLogs                *TestStep               "json:\"publishLogs\" graphql:\"publishLogs\""
+	CreateCluster              *Cluster                "json:\"createCluster\" graphql:\"createCluster\""
+	CreateClusterDependency    *ClusterDependency      "json:\"createClusterDependency\" graphql:\"createClusterDependency\""
+	DeleteClusterDependency    *ClusterDependency      "json:\"deleteClusterDependency\" graphql:\"deleteClusterDependency\""
+	Promote                    *User                   "json:\"promote\" graphql:\"promote\""
+	TransferOwnership          *Cluster                "json:\"transferOwnership\" graphql:\"transferOwnership\""
+	DeleteCluster              *Cluster                "json:\"deleteCluster\" graphql:\"deleteCluster\""
+}
+type ApplyLockFragment struct {
+	ID   string  "json:\"id\" graphql:\"id\""
+	Lock *string "json:\"lock\" graphql:\"lock\""
+}
+type ArtifactFragment struct {
+	ID       *string           "json:\"id\" graphql:\"id\""
+	Name     *string           "json:\"name\" graphql:\"name\""
+	Readme   *string           "json:\"readme\" graphql:\"readme\""
+	Platform *ArtifactPlatform "json:\"platform\" graphql:\"platform\""
+	Arch     *string           "json:\"arch\" graphql:\"arch\""
+	Blob     *string           "json:\"blob\" graphql:\"blob\""
+	Sha      *string           "json:\"sha\" graphql:\"sha\""
+	Filesize *int64            "json:\"filesize\" graphql:\"filesize\""
+}
+type ChartFragment struct {
+	ID            *string "json:\"id\" graphql:\"id\""
+	Name          string  "json:\"name\" graphql:\"name\""
+	Description   *string "json:\"description\" graphql:\"description\""
+	LatestVersion *string "json:\"latestVersion\" graphql:\"latestVersion\""
+}
+type ChartInstallationFragment struct {
+	ID    *string "json:\"id\" graphql:\"id\""
+	Chart *struct {
+		ID            *string               "json:\"id\" graphql:\"id\""
+		Name          string                "json:\"name\" graphql:\"name\""
+		Description   *string               "json:\"description\" graphql:\"description\""
+		LatestVersion *string               "json:\"latestVersion\" graphql:\"latestVersion\""
+		Dependencies  *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
+	} "json:\"chart\" graphql:\"chart\""
+	Version *VersionFragment "json:\"version\" graphql:\"version\""
+}
+type ChatMessageFragment struct {
+	Role    string  "json:\"role\" graphql:\"role\""
+	Content string  "json:\"content\" graphql:\"content\""
+	Name    *string "json:\"name\" graphql:\"name\""
+}
+type CloudShellFragment struct {
+	ID     string "json:\"id\" graphql:\"id\""
+	AesKey string "json:\"aesKey\" graphql:\"aesKey\""
+	GitURL string "json:\"gitUrl\" graphql:\"gitUrl\""
+}
+type ClusterFragment struct {
+	ID       string        "json:\"id\" graphql:\"id\""
+	Name     string        "json:\"name\" graphql:\"name\""
+	Provider Provider      "json:\"provider\" graphql:\"provider\""
+	Source   *Source       "json:\"source\" graphql:\"source\""
+	GitURL   *string       "json:\"gitUrl\" graphql:\"gitUrl\""
+	Owner    *UserFragment "json:\"owner\" graphql:\"owner\""
+}
+type CrdFragment struct {
+	ID   string  "json:\"id\" graphql:\"id\""
+	Name string  "json:\"name\" graphql:\"name\""
+	Blob *string "json:\"blob\" graphql:\"blob\""
+}
+type DependenciesFragment struct {
+	Dependencies []*struct {
+		Type     *DependencyType "json:\"type\" graphql:\"type\""
+		Name     *string         "json:\"name\" graphql:\"name\""
+		Repo     *string         "json:\"repo\" graphql:\"repo\""
+		Optional *bool           "json:\"optional\" graphql:\"optional\""
+		Version  *string         "json:\"version\" graphql:\"version\""
+	} "json:\"dependencies\" graphql:\"dependencies\""
+	Breaking     *bool "json:\"breaking\" graphql:\"breaking\""
+	Instructions *struct {
+		Instructions *string "json:\"instructions\" graphql:\"instructions\""
+		Script       *string "json:\"script\" graphql:\"script\""
+	} "json:\"instructions\" graphql:\"instructions\""
+	Wait        *bool       "json:\"wait\" graphql:\"wait\""
+	Application *bool       "json:\"application\" graphql:\"application\""
+	Providers   []*Provider "json:\"providers\" graphql:\"providers\""
+	Secrets     []*string   "json:\"secrets\" graphql:\"secrets\""
+	Wirings     *struct {
+		Terraform map[string]interface{} "json:\"terraform\" graphql:\"terraform\""
+		Helm      map[string]interface{} "json:\"helm\" graphql:\"helm\""
+	} "json:\"wirings\" graphql:\"wirings\""
+	ProviderWirings map[string]interface{} "json:\"providerWirings\" graphql:\"providerWirings\""
+	Outputs         map[string]interface{} "json:\"outputs\" graphql:\"outputs\""
+	ProviderVsn     *string                "json:\"providerVsn\" graphql:\"providerVsn\""
+	CliVsn          *string                "json:\"cliVsn\" graphql:\"cliVsn\""
+}
+type DNSDomainFragment struct {
+	ID   string "json:\"id\" graphql:\"id\""
+	Name string "json:\"name\" graphql:\"name\""
+}
+type DNSRecordFragment struct {
+	Type    DNSRecordType "json:\"type\" graphql:\"type\""
+	Name    string        "json:\"name\" graphql:\"name\""
+	Records []*string     "json:\"records\" graphql:\"records\""
+}
+type EabCredentialFragment struct {
+	ID       string   "json:\"id\" graphql:\"id\""
+	KeyID    string   "json:\"keyId\" graphql:\"keyId\""
+	HmacKey  string   "json:\"hmacKey\" graphql:\"hmacKey\""
+	Cluster  string   "json:\"cluster\" graphql:\"cluster\""
+	Provider Provider "json:\"provider\" graphql:\"provider\""
+}
+type InstallationFragment struct {
+	ID           string                 "json:\"id\" graphql:\"id\""
+	Context      map[string]interface{} "json:\"context\" graphql:\"context\""
+	LicenseKey   *string                "json:\"licenseKey\" graphql:\"licenseKey\""
+	AcmeKeyID    *string                "json:\"acmeKeyId\" graphql:\"acmeKeyId\""
+	AcmeSecret   *string                "json:\"acmeSecret\" graphql:\"acmeSecret\""
+	Repository   *RepositoryFragment    "json:\"repository\" graphql:\"repository\""
+	OidcProvider *OIDCProvider          "json:\"oidcProvider\" graphql:\"oidcProvider\""
+}
+type KeyBackupFragment struct {
+	ID           string   "json:\"id\" graphql:\"id\""
+	Name         string   "json:\"name\" graphql:\"name\""
+	Digest       string   "json:\"digest\" graphql:\"digest\""
+	Repositories []string "json:\"repositories\" graphql:\"repositories\""
+	InsertedAt   *string  "json:\"insertedAt\" graphql:\"insertedAt\""
+}
+type OIDCProvider struct {
+	ID           string    "json:\"id\" graphql:\"id\""
+	ClientID     string    "json:\"clientId\" graphql:\"clientId\""
+	ClientSecret string    "json:\"clientSecret\" graphql:\"clientSecret\""
+	RedirectUris []*string "json:\"redirectUris\" graphql:\"redirectUris\""
+	Bindings     []*struct {
+		User *struct {
+			ID    string "json:\"id\" graphql:\"id\""
+			Email string "json:\"email\" graphql:\"email\""
+		} "json:\"user\" graphql:\"user\""
+		Group *struct {
+			ID   string "json:\"id\" graphql:\"id\""
+			Name string "json:\"name\" graphql:\"name\""
+		} "json:\"group\" graphql:\"group\""
+	} "json:\"bindings\" graphql:\"bindings\""
+	Configuration *struct {
+		Issuer                *string "json:\"issuer\" graphql:\"issuer\""
+		AuthorizationEndpoint *string "json:\"authorizationEndpoint\" graphql:\"authorizationEndpoint\""
+		TokenEndpoint         *string "json:\"tokenEndpoint\" graphql:\"tokenEndpoint\""
+		JwksURI               *string "json:\"jwksUri\" graphql:\"jwksUri\""
+		UserinfoEndpoint      *string "json:\"userinfoEndpoint\" graphql:\"userinfoEndpoint\""
+	} "json:\"configuration\" graphql:\"configuration\""
+}
+type OidcTrustRelationshipFragment struct {
+	ID         string   "json:\"id\" graphql:\"id\""
+	Issuer     string   "json:\"issuer\" graphql:\"issuer\""
+	Trust      string   "json:\"trust\" graphql:\"trust\""
+	Scopes     []string "json:\"scopes\" graphql:\"scopes\""
+	InsertedAt *string  "json:\"insertedAt\" graphql:\"insertedAt\""
+}
+type PublicKeyFragment struct {
+	ID      string       "json:\"id\" graphql:\"id\""
+	Content string       "json:\"content\" graphql:\"content\""
+	User    UserFragment "json:\"user\" graphql:\"user\""
+}
+type RecipeConfigurationFragment struct {
+	Name          *string   "json:\"name\" graphql:\"name\""
+	Type          *Datatype "json:\"type\" graphql:\"type\""
+	Default       *string   "json:\"default\" graphql:\"default\""
+	Documentation *string   "json:\"documentation\" graphql:\"documentation\""
+	Optional      *bool     "json:\"optional\" graphql:\"optional\""
+	Placeholder   *string   "json:\"placeholder\" graphql:\"placeholder\""
+	FunctionName  *string   "json:\"functionName\" graphql:\"functionName\""
+	Condition     *struct {
+		Field     string    "json:\"field\" graphql:\"field\""
+		Operation Operation "json:\"operation\" graphql:\"operation\""
+		Value     *string   "json:\"value\" graphql:\"value\""
+	} "json:\"condition\" graphql:\"condition\""
+	Validation *struct {
+		Type    ValidationType "json:\"type\" graphql:\"type\""
+		Regex   *string        "json:\"regex\" graphql:\"regex\""
+		Message string         "json:\"message\" graphql:\"message\""
+	} "json:\"validation\" graphql:\"validation\""
+}
+type RecipeFragment struct {
+	ID          string    "json:\"id\" graphql:\"id\""
+	Name        string    "json:\"name\" graphql:\"name\""
+	Primary     *bool     "json:\"primary\" graphql:\"primary\""
+	Description *string   "json:\"description\" graphql:\"description\""
+	Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
+	Provider    *Provider "json:\"provider\" graphql:\"provider\""
+	Tests       []*struct {
+		Type    TestType "json:\"type\" graphql:\"type\""
+		Name    string   "json:\"name\" graphql:\"name\""
+		Message *string  "json:\"message\" graphql:\"message\""
+		Args    []*struct {
+			Name string "json:\"name\" graphql:\"name\""
+			Repo string "json:\"repo\" graphql:\"repo\""
+			Key  string "json:\"key\" graphql:\"key\""
+		} "json:\"args\" graphql:\"args\""
+	} "json:\"tests\" graphql:\"tests\""
+	Repository *struct {
+		ID   string "json:\"id\" graphql:\"id\""
+		Name string "json:\"name\" graphql:\"name\""
+	} "json:\"repository\" graphql:\"repository\""
+	OidcSettings *struct {
+		URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
+		URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
+		AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+		DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
+		Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
+	} "json:\"oidcSettings\" graphql:\"oidcSettings\""
+	RecipeSections []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
+}
+type RecipeItemFragment struct {
+	ID            *string                        "json:\"id\" graphql:\"id\""
+	Chart         *ChartFragment                 "json:\"chart\" graphql:\"chart\""
+	Terraform     *TerraformFragment             "json:\"terraform\" graphql:\"terraform\""
+	Configuration []*RecipeConfigurationFragment "json:\"configuration\" graphql:\"configuration\""
+}
+type RecipeSectionFragment struct {
+	Index         *int64                         "json:\"index\" graphql:\"index\""
+	Repository    *RepositoryFragment            "json:\"repository\" graphql:\"repository\""
+	RecipeItems   []*RecipeItemFragment          "json:\"recipeItems\" graphql:\"recipeItems\""
+	Configuration []*RecipeConfigurationFragment "json:\"configuration\" graphql:\"configuration\""
+}
+type RepositoryFragment struct {
+	ID          string  "json:\"id\" graphql:\"id\""
+	Name        string  "json:\"name\" graphql:\"name\""
+	Notes       *string "json:\"notes\" graphql:\"notes\""
+	Icon        *string "json:\"icon\" graphql:\"icon\""
+	DarkIcon    *string "json:\"darkIcon\" graphql:\"darkIcon\""
+	Description *string "json:\"description\" graphql:\"description\""
+	Publisher   *struct {
+		Name string "json:\"name\" graphql:\"name\""
+	} "json:\"publisher\" graphql:\"publisher\""
+	Recipes []*struct {
+		Name string "json:\"name\" graphql:\"name\""
+	} "json:\"recipes\" graphql:\"recipes\""
+}
+type StackFragment struct {
+	ID          string            "json:\"id\" graphql:\"id\""
+	Name        string            "json:\"name\" graphql:\"name\""
+	Featured    *bool             "json:\"featured\" graphql:\"featured\""
+	Description *string           "json:\"description\" graphql:\"description\""
+	Bundles     []*RecipeFragment "json:\"bundles\" graphql:\"bundles\""
+}
+type TerraformFragment struct {
+	ID             *string               "json:\"id\" graphql:\"id\""
+	Name           *string               "json:\"name\" graphql:\"name\""
+	Package        *string               "json:\"package\" graphql:\"package\""
+	Description    *string               "json:\"description\" graphql:\"description\""
+	Dependencies   *DependenciesFragment "json:\"dependencies\" graphql:\"dependencies\""
+	ValuesTemplate *string               "json:\"valuesTemplate\" graphql:\"valuesTemplate\""
+}
+type TerraformInstallationFragment struct {
+	ID        *string            "json:\"id\" graphql:\"id\""
+	Terraform *TerraformFragment "json:\"terraform\" graphql:\"terraform\""
+	Version   *VersionFragment   "json:\"version\" graphql:\"version\""
+}
+type TestFragment struct {
+	ID         string     "json:\"id\" graphql:\"id\""
+	Name       *string    "json:\"name\" graphql:\"name\""
+	Status     TestStatus "json:\"status\" graphql:\"status\""
+	PromoteTag string     "json:\"promoteTag\" graphql:\"promoteTag\""
+	Steps      []*struct {
+		ID          string     "json:\"id\" graphql:\"id\""
+		Name        string     "json:\"name\" graphql:\"name\""
+		Description string     "json:\"description\" graphql:\"description\""
+		Status      TestStatus "json:\"status\" graphql:\"status\""
+	} "json:\"steps\" graphql:\"steps\""
+}
+type UserFragment struct {
+	ID    string "json:\"id\" graphql:\"id\""
+	Name  string "json:\"name\" graphql:\"name\""
+	Email string "json:\"email\" graphql:\"email\""
+}
+type VersionFragment struct {
+	ID             string                 "json:\"id\" graphql:\"id\""
+	Helm           map[string]interface{} "json:\"helm\" graphql:\"helm\""
+	Readme         *string                "json:\"readme\" graphql:\"readme\""
+	Version        string                 "json:\"version\" graphql:\"version\""
+	ValuesTemplate *string                "json:\"valuesTemplate\" graphql:\"valuesTemplate\""
+	TemplateType   *TemplateType          "json:\"templateType\" graphql:\"templateType\""
+	Package        *string                "json:\"package\" graphql:\"package\""
+	Crds           []*CrdFragment         "json:\"crds\" graphql:\"crds\""
+	Dependencies   *DependenciesFragment  "json:\"dependencies\" graphql:\"dependencies\""
+	InsertedAt     *string                "json:\"insertedAt\" graphql:\"insertedAt\""
+}
+type AcquireLock struct {
+	AcquireLock *ApplyLockFragment "json:\"acquireLock\" graphql:\"acquireLock\""
+}
+type Backup struct {
+	KeyBackup *struct {
+		ID           string   "json:\"id\" graphql:\"id\""
+		Name         string   "json:\"name\" graphql:\"name\""
+		Digest       string   "json:\"digest\" graphql:\"digest\""
+		Repositories []string "json:\"repositories\" graphql:\"repositories\""
+		InsertedAt   *string  "json:\"insertedAt\" graphql:\"insertedAt\""
+		Value        string   "json:\"value\" graphql:\"value\""
+	} "json:\"keyBackup\" graphql:\"keyBackup\""
+}
+type Backups struct {
+	KeyBackups *struct {
+		Edges []*struct {
+			Node *KeyBackupFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"keyBackups\" graphql:\"keyBackups\""
+}
+type Chat struct {
+	Chat *ChatMessageFragment "json:\"chat\" graphql:\"chat\""
+}
+type ClusterInfo struct {
+	Cluster *struct {
+		ID          string        "json:\"id\" graphql:\"id\""
+		Name        string        "json:\"name\" graphql:\"name\""
+		Provider    Provider      "json:\"provider\" graphql:\"provider\""
+		Source      *Source       "json:\"source\" graphql:\"source\""
+		GitURL      *string       "json:\"gitUrl\" graphql:\"gitUrl\""
+		Owner       *UserFragment "json:\"owner\" graphql:\"owner\""
+		UpgradeInfo []*struct {
+			Installation *struct {
+				Repository *RepositoryFragment "json:\"repository\" graphql:\"repository\""
+			} "json:\"installation\" graphql:\"installation\""
+			Count *int64 "json:\"count\" graphql:\"count\""
+		} "json:\"upgradeInfo\" graphql:\"upgradeInfo\""
+	} "json:\"cluster\" graphql:\"cluster\""
+}
+type Clusters struct {
+	Clusters *struct {
+		PageInfo struct {
+			HasNextPage bool    "json:\"hasNextPage\" graphql:\"hasNextPage\""
+			EndCursor   *string "json:\"endCursor\" graphql:\"endCursor\""
+		} "json:\"pageInfo\" graphql:\"pageInfo\""
+		Edges []*struct {
+			Node *ClusterFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"clusters\" graphql:\"clusters\""
+}
+type CreateAccessToken struct {
+	CreateToken *struct {
+		Token *string "json:\"token\" graphql:\"token\""
+	} "json:\"createToken\" graphql:\"createToken\""
+}
+type CreateArtifact struct {
+	CreateArtifact *ArtifactFragment "json:\"createArtifact\" graphql:\"createArtifact\""
+}
+type CreateBackup struct {
+	CreateKeyBackup *KeyBackupFragment "json:\"createKeyBackup\" graphql:\"createKeyBackup\""
+}
+type CreateCrd struct {
+	CreateCrd *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createCrd\" graphql:\"createCrd\""
+}
+type CreateDependency struct {
+	CreateClusterDependency *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createClusterDependency\" graphql:\"createClusterDependency\""
+}
+type CreateDNSRecord struct {
+	CreateDNSRecord *DNSRecordFragment "json:\"createDnsRecord\" graphql:\"createDnsRecord\""
+}
+type CreateDomain struct {
+	ProvisionDomain *DNSDomainFragment "json:\"provisionDomain\" graphql:\"provisionDomain\""
+}
+type CreateEvent struct {
+	CreateUserEvent *bool "json:\"createUserEvent\" graphql:\"createUserEvent\""
+}
+type CreateInstallation struct {
+	CreateInstallation *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createInstallation\" graphql:\"createInstallation\""
+}
+type CreateIntegration struct {
+	CreateIntegration *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createIntegration\" graphql:\"createIntegration\""
+}
+type CreateKey struct {
+	CreatePublicKey *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createPublicKey\" graphql:\"createPublicKey\""
+}
+type CreateRecipe struct {
+	CreateRecipe *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createRecipe\" graphql:\"createRecipe\""
+}
+type CreateRepository struct {
+	UpsertRepository *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"upsertRepository\" graphql:\"upsertRepository\""
+}
+type CreateResourceDefinition struct {
+	UpdateRepository *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"updateRepository\" graphql:\"updateRepository\""
+}
+type CreateStack struct {
+	CreateStack *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createStack\" graphql:\"createStack\""
+}
+type CreateTest struct {
+	CreateTest *TestFragment "json:\"createTest\" graphql:\"createTest\""
+}
+type CreateTrust struct {
+	CreateTrustRelationship *OidcTrustRelationshipFragment "json:\"createTrustRelationship\" graphql:\"createTrustRelationship\""
+}
+type CreateUpgrade struct {
+	CreateUpgrade *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"createUpgrade\" graphql:\"createUpgrade\""
+}
+type DeleteDNSRecord struct {
+	DeleteDNSRecord *DNSRecordFragment "json:\"deleteDnsRecord\" graphql:\"deleteDnsRecord\""
+}
+type DeleteEabCredential struct {
+	DeleteEabKey *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"deleteEabKey\" graphql:\"deleteEabKey\""
+}
+type DeleteInstallation struct {
+	DeleteInstallation *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"deleteInstallation\" graphql:\"deleteInstallation\""
+}
+type DeleteRepository struct {
+	DeleteRepository *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"deleteRepository\" graphql:\"deleteRepository\""
+}
+type DeleteShell struct {
+	DeleteShell *CloudShellFragment "json:\"deleteShell\" graphql:\"deleteShell\""
+}
+type DeleteTrust struct {
+	DeleteTrustRelationship *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"deleteTrustRelationship\" graphql:\"deleteTrustRelationship\""
+}
+type DestroyCluster struct {
+	DestroyCluster *bool "json:\"destroyCluster\" graphql:\"destroyCluster\""
+}
+type DevLogin struct {
+	DeviceLogin *struct {
+		LoginURL    string "json:\"loginUrl\" graphql:\"loginUrl\""
+		DeviceToken string "json:\"deviceToken\" graphql:\"deviceToken\""
+	} "json:\"deviceLogin\" graphql:\"deviceLogin\""
+}
+type GetChartInstallations struct {
+	ChartInstallations *struct {
+		Edges []*struct {
+			Node *ChartInstallationFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"chartInstallations\" graphql:\"chartInstallations\""
+}
+type GetCharts struct {
+	Charts *struct {
+		Edges []*struct {
+			Node *ChartFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"charts\" graphql:\"charts\""
+}
+type GetDNSRecords struct {
+	DNSRecords *struct {
+		Edges []*struct {
+			Node *DNSRecordFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"dnsRecords\" graphql:\"dnsRecords\""
+}
+type GetEabCredential struct {
+	EabCredential *EabCredentialFragment "json:\"eabCredential\" graphql:\"eabCredential\""
+}
+type GetHelp struct {
+	HelpQuestion *string "json:\"helpQuestion\" graphql:\"helpQuestion\""
+}
+type GetInstallation struct {
+	Installation *InstallationFragment "json:\"installation\" graphql:\"installation\""
+}
+type GetInstallationByID struct {
+	Installation *InstallationFragment "json:\"installation\" graphql:\"installation\""
+}
+type GetInstallations struct {
+	Installations *struct {
+		Edges []*struct {
+			Node *InstallationFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"installations\" graphql:\"installations\""
+}
+type GetLoginMethod struct {
+	LoginMethod *struct {
+		LoginMethod LoginMethod "json:\"loginMethod\" graphql:\"loginMethod\""
+		Token       *string     "json:\"token\" graphql:\"token\""
+	} "json:\"loginMethod\" graphql:\"loginMethod\""
+}
+type GetPackageInstallations struct {
+	ChartInstallations *struct {
+		Edges []*struct {
+			Node *ChartInstallationFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"chartInstallations\" graphql:\"chartInstallations\""
+	TerraformInstallations *struct {
+		Edges []*struct {
+			Node *TerraformInstallationFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
+}
+type GetRecipe struct {
+	Recipe *struct {
+		ID          string    "json:\"id\" graphql:\"id\""
+		Name        string    "json:\"name\" graphql:\"name\""
+		Primary     *bool     "json:\"primary\" graphql:\"primary\""
+		Description *string   "json:\"description\" graphql:\"description\""
+		Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
+		Provider    *Provider "json:\"provider\" graphql:\"provider\""
+		Tests       []*struct {
+			Type    TestType "json:\"type\" graphql:\"type\""
+			Name    string   "json:\"name\" graphql:\"name\""
+			Message *string  "json:\"message\" graphql:\"message\""
+			Args    []*struct {
+				Name string "json:\"name\" graphql:\"name\""
+				Repo string "json:\"repo\" graphql:\"repo\""
+				Key  string "json:\"key\" graphql:\"key\""
+			} "json:\"args\" graphql:\"args\""
+		} "json:\"tests\" graphql:\"tests\""
+		Repository *struct {
+			ID   string "json:\"id\" graphql:\"id\""
+			Name string "json:\"name\" graphql:\"name\""
+		} "json:\"repository\" graphql:\"repository\""
+		OidcSettings *struct {
+			URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
+			URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
+			AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+			DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
+			Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
+		} "json:\"oidcSettings\" graphql:\"oidcSettings\""
+		RecipeSections     []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
+		RecipeDependencies []*RecipeFragment        "json:\"recipeDependencies\" graphql:\"recipeDependencies\""
+	} "json:\"recipe\" graphql:\"recipe\""
+}
+type GetRecipeByID struct {
+	Recipe *struct {
+		ID          string    "json:\"id\" graphql:\"id\""
+		Name        string    "json:\"name\" graphql:\"name\""
+		Primary     *bool     "json:\"primary\" graphql:\"primary\""
+		Description *string   "json:\"description\" graphql:\"description\""
+		Restricted  *bool     "json:\"restricted\" graphql:\"restricted\""
+		Provider    *Provider "json:\"provider\" graphql:\"provider\""
+		Tests       []*struct {
+			Type    TestType "json:\"type\" graphql:\"type\""
+			Name    string   "json:\"name\" graphql:\"name\""
+			Message *string  "json:\"message\" graphql:\"message\""
+			Args    []*struct {
+				Name string "json:\"name\" graphql:\"name\""
+				Repo string "json:\"repo\" graphql:\"repo\""
+				Key  string "json:\"key\" graphql:\"key\""
+			} "json:\"args\" graphql:\"args\""
+		} "json:\"tests\" graphql:\"tests\""
+		Repository *struct {
+			ID   string "json:\"id\" graphql:\"id\""
+			Name string "json:\"name\" graphql:\"name\""
+		} "json:\"repository\" graphql:\"repository\""
+		OidcSettings *struct {
+			URIFormat  *string        "json:\"uriFormat\" graphql:\"uriFormat\""
+			URIFormats []*string      "json:\"uriFormats\" graphql:\"uriFormats\""
+			AuthMethod OidcAuthMethod "json:\"authMethod\" graphql:\"authMethod\""
+			DomainKey  *string        "json:\"domainKey\" graphql:\"domainKey\""
+			Subdomain  *bool          "json:\"subdomain\" graphql:\"subdomain\""
+		} "json:\"oidcSettings\" graphql:\"oidcSettings\""
+		RecipeSections     []*RecipeSectionFragment "json:\"recipeSections\" graphql:\"recipeSections\""
+		RecipeDependencies []*RecipeFragment        "json:\"recipeDependencies\" graphql:\"recipeDependencies\""
+	} "json:\"recipe\" graphql:\"recipe\""
+}
+type GetRepository struct {
+	Repository *RepositoryFragment "json:\"repository\" graphql:\"repository\""
+}
+type GetShell struct {
+	Shell *CloudShellFragment "json:\"shell\" graphql:\"shell\""
+}
+type GetStack struct {
+	Stack *StackFragment "json:\"stack\" graphql:\"stack\""
+}
+type GetTerraform struct {
+	Terraform *struct {
+		Edges []*struct {
+			Node *TerraformFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"terraform\" graphql:\"terraform\""
+}
+type GetTerraformInstallations struct {
+	TerraformInstallations *struct {
+		Edges []*struct {
+			Node *TerraformInstallationFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"terraformInstallations\" graphql:\"terraformInstallations\""
+}
+type GetTerraformVersions struct {
+	Versions *struct {
+		Edges []*struct {
+			Node *VersionFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"versions\" graphql:\"versions\""
+}
+type GetTfProviderScaffold struct {
+	TerraformProvider *struct {
+		Name    *Provider "json:\"name\" graphql:\"name\""
+		Content *string   "json:\"content\" graphql:\"content\""
+	} "json:\"terraformProvider\" graphql:\"terraformProvider\""
+}
+type GetTfProviders struct {
+	TerraformProviders []*Provider "json:\"terraformProviders\" graphql:\"terraformProviders\""
+}
+type GetVersions struct {
+	Versions *struct {
+		Edges []*struct {
+			Node *VersionFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"versions\" graphql:\"versions\""
+}
+type ImpersonateServiceAccount struct {
+	ImpersonateServiceAccount *struct {
+		Jwt   *string "json:\"jwt\" graphql:\"jwt\""
+		Email string  "json:\"email\" graphql:\"email\""
+	} "json:\"impersonateServiceAccount\" graphql:\"impersonateServiceAccount\""
+}
+type InstallRecipe struct {
+	InstallRecipe []*struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"installRecipe\" graphql:\"installRecipe\""
+}
+type InstallVersion struct {
+	InstallVersion *bool "json:\"installVersion\" graphql:\"installVersion\""
+}
+type ListAllRecipes struct {
+	Recipes *struct {
+		Edges []*struct {
+			Node *RecipeFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"recipes\" graphql:\"recipes\""
+}
+type ListArtifacts struct {
+	Repository *struct {
+		Artifacts []*ArtifactFragment "json:\"artifacts\" graphql:\"artifacts\""
+	} "json:\"repository\" graphql:\"repository\""
+}
+type ListKeys struct {
+	PublicKeys *struct {
+		Edges []*struct {
+			Node *PublicKeyFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"publicKeys\" graphql:\"publicKeys\""
+}
+type ListRecipes struct {
+	Recipes *struct {
+		Edges []*struct {
+			Node *RecipeFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"recipes\" graphql:\"recipes\""
+}
+type ListRepositories struct {
+	Repositories *struct {
+		Edges []*struct {
+			Node *RepositoryFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"repositories\" graphql:\"repositories\""
+}
+type ListStacks struct {
+	Stacks *struct {
+		Edges []*struct {
+			Node *StackFragment "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"stacks\" graphql:\"stacks\""
+}
+type ListTokens struct {
+	Tokens *struct {
+		Edges []*struct {
+			Node *struct {
+				Token *string "json:\"token\" graphql:\"token\""
+			} "json:\"node\" graphql:\"node\""
+		} "json:\"edges\" graphql:\"edges\""
+	} "json:\"tokens\" graphql:\"tokens\""
+}
+type Login struct {
+	Login *struct {
+		Jwt *string "json:\"jwt\" graphql:\"jwt\""
+	} "json:\"login\" graphql:\"login\""
+}
+type MarkSynced struct {
+	Synced *bool "json:\"synced\" graphql:\"synced\""
+}
+type Me struct {
+	Me *struct {
+		ID                 string                           "json:\"id\" graphql:\"id\""
+		Email              string                           "json:\"email\" graphql:\"email\""
+		Demoing            *bool                            "json:\"demoing\" graphql:\"demoing\""
+		TrustRelationships []*OidcTrustRelationshipFragment "json:\"trustRelationships\" graphql:\"trustRelationships\""
+	} "json:\"me\" graphql:\"me\""
+}
+type OidcToken struct {
+	OidcToken *string "json:\"oidcToken\" graphql:\"oidcToken\""
+}
+type PollLoginToken struct {
+	LoginToken *struct {
+		Jwt *string "json:\"jwt\" graphql:\"jwt\""
+	} "json:\"loginToken\" graphql:\"loginToken\""
+}
+type PromoteCluster struct {
+	Promote *UserFragment "json:\"promote\" graphql:\"promote\""
+}
+type PublishLogs struct {
+	PublishLogs *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"publishLogs\" graphql:\"publishLogs\""
+}
+type Release struct {
+	Release *bool "json:\"release\" graphql:\"release\""
+}
+type ReleaseLock struct {
+	ReleaseLock *ApplyLockFragment "json:\"releaseLock\" graphql:\"releaseLock\""
+}
+type ResetInstallations struct {
+	ResetInstallations *int64 "json:\"resetInstallations\" graphql:\"resetInstallations\""
+}
+type Scaffolds struct {
+	Scaffold []*struct {
+		Path    *string "json:\"path\" graphql:\"path\""
+		Content *string "json:\"content\" graphql:\"content\""
+	} "json:\"scaffold\" graphql:\"scaffold\""
+}
+type TransferOwnership struct {
+	TransferOwnership *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"transferOwnership\" graphql:\"transferOwnership\""
+}
+type UninstallChart struct {
+	DeleteChartInstallation *struct {
+		ID *string "json:\"id\" graphql:\"id\""
+	} "json:\"deleteChartInstallation\" graphql:\"deleteChartInstallation\""
+}
+type UninstallTerraform struct {
+	UninstallTerraform *struct {
+		ID *string "json:\"id\" graphql:\"id\""
+	} "json:\"uninstallTerraform\" graphql:\"uninstallTerraform\""
+}
+type UnlockRepository struct {
+	UnlockRepository *int64 "json:\"unlockRepository\" graphql:\"unlockRepository\""
+}
+type UpdateRepository struct {
+	UpdateRepository *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"updateRepository\" graphql:\"updateRepository\""
+}
+type UpdateStep struct {
+	UpdateStep *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"updateStep\" graphql:\"updateStep\""
+}
+type UpdateTest struct {
+	UpdateTest *TestFragment "json:\"updateTest\" graphql:\"updateTest\""
+}
+type UpdateVersion struct {
+	UpdateVersion *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"updateVersion\" graphql:\"updateVersion\""
+}
+type UploadTerraform struct {
+	UploadTerraform *TerraformFragment "json:\"uploadTerraform\" graphql:\"uploadTerraform\""
+}
+type UpsertOidcProvider struct {
+	UpsertOidcProvider *struct {
+		ID string "json:\"id\" graphql:\"id\""
+	} "json:\"upsertOidcProvider\" graphql:\"upsertOidcProvider\""
+}
+
+const AcquireLockDocument = `mutation AcquireLock ($name: String!) {
+	acquireLock(repository: $name) {
+		... ApplyLockFragment
+	}
+}
+fragment ApplyLockFragment on ApplyLock {
+	id
+	lock
+}
+`
+
+func (c *Client) AcquireLock(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*AcquireLock, error) {
+	vars := map[string]interface{}{
+		"name": name,
+	}
+
+	var res AcquireLock
+	if err := c.Client.Post(ctx, "AcquireLock", AcquireLockDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const BackupDocument = `query Backup ($name: String!) {
+	keyBackup(name: $name) {
+		... KeyBackupFragment
+		value
+	}
+}
+fragment KeyBackupFragment on KeyBackup {
+	id
+	name
+	digest
+	repositories
+	insertedAt
+}
+`
+
+func (c *Client) Backup(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*Backup, error) {
+	vars := map[string]interface{}{
+		"name": name,
+	}
+
+	var res Backup
+	if err := c.Client.Post(ctx, "Backup", BackupDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const BackupsDocument = `query Backups ($cursor: String) {
+	keyBackups(first: 50, after: $cursor) {
+		edges {
+			node {
+				... KeyBackupFragment
+			}
+		}
+	}
+}
+fragment KeyBackupFragment on KeyBackup {
+	id
+	name
+	digest
+	repositories
+	insertedAt
+}
+`
+
+func (c *Client) Backups(ctx context.Context, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*Backups, error) {
+	vars := map[string]interface{}{
+		"cursor": cursor,
+	}
+
+	var res Backups
+	if err := c.Client.Post(ctx, "Backups", BackupsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ChatDocument = `query Chat ($history: [ChatMessageAttributes]) {
+	chat(history: $history) {
+		... ChatMessageFragment
+	}
+}
+fragment ChatMessageFragment on ChatMessage {
+	role
+	content
+	name
+}
+`
+
+func (c *Client) Chat(ctx context.Context, history []*ChatMessageAttributes, httpRequestOptions ...client.HTTPRequestOption) (*Chat, error) {
+	vars := map[string]interface{}{
+		"history": history,
+	}
+
+	var res Chat
+	if err := c.Client.Post(ctx, "Chat", ChatDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ClusterInfoDocument = `query ClusterInfo ($id: ID!) {
+	cluster(id: $id) {
+		... ClusterFragment
+		upgradeInfo {
+			installation {
+				repository {
+					... RepositoryFragment
+				}
+			}
+			count
+		}
+	}
+}
+fragment ClusterFragment on Cluster {
+	id
+	name
+	provider
+	source
+	gitUrl
+	owner {
+		... UserFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment UserFragment on User {
+	id
+	name
+	email
+}
+`
+
+func (c *Client) ClusterInfo(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*ClusterInfo, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res ClusterInfo
+	if err := c.Client.Post(ctx, "ClusterInfo", ClusterInfoDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ClustersDocument = `query Clusters ($cursor: String) {
+	clusters(first: 50, after: $cursor) {
+		pageInfo {
+			hasNextPage
+			endCursor
+		}
+		edges {
+			node {
+				... ClusterFragment
+			}
+		}
+	}
+}
+fragment ClusterFragment on Cluster {
+	id
+	name
+	provider
+	source
+	gitUrl
+	owner {
+		... UserFragment
+	}
+}
+fragment UserFragment on User {
+	id
+	name
+	email
+}
+`
+
+func (c *Client) Clusters(ctx context.Context, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*Clusters, error) {
+	vars := map[string]interface{}{
+		"cursor": cursor,
+	}
+
+	var res Clusters
+	if err := c.Client.Post(ctx, "Clusters", ClustersDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateAccessTokenDocument = `mutation CreateAccessToken {
+	createToken {
+		token
+	}
+}
+`
+
+func (c *Client) CreateAccessToken(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*CreateAccessToken, error) {
+	vars := map[string]interface{}{}
+
+	var res CreateAccessToken
+	if err := c.Client.Post(ctx, "CreateAccessToken", CreateAccessTokenDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateArtifactDocument = `mutation CreateArtifact ($repoName: String!, $name: String!, $readme: String!, $artifactType: String!, $platform: String!, $blob: UploadOrUrl!, $arch: String) {
+	createArtifact(repositoryName: $repoName, attributes: {name:$name,blob:$blob,readme:$readme,type:$artifactType,platform:$platform,arch:$arch}) {
+		... ArtifactFragment
+	}
+}
+fragment ArtifactFragment on Artifact {
+	id
+	name
+	readme
+	platform
+	arch
+	blob
+	sha
+	filesize
+}
+`
+
+func (c *Client) CreateArtifact(ctx context.Context, repoName string, name string, readme string, artifactType string, platform string, blob string, arch *string, httpRequestOptions ...client.HTTPRequestOption) (*CreateArtifact, error) {
+	vars := map[string]interface{}{
+		"repoName":     repoName,
+		"name":         name,
+		"readme":       readme,
+		"artifactType": artifactType,
+		"platform":     platform,
+		"blob":         blob,
+		"arch":         arch,
+	}
+
+	var res CreateArtifact
+	if err := c.Client.Post(ctx, "CreateArtifact", CreateArtifactDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateBackupDocument = `mutation CreateBackup ($attrs: KeyBackupAttributes!) {
+	createKeyBackup(attributes: $attrs) {
+		... KeyBackupFragment
+	}
+}
+fragment KeyBackupFragment on KeyBackup {
+	id
+	name
+	digest
+	repositories
+	insertedAt
+}
+`
+
+func (c *Client) CreateBackup(ctx context.Context, attrs KeyBackupAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateBackup, error) {
+	vars := map[string]interface{}{
+		"attrs": attrs,
+	}
+
+	var res CreateBackup
+	if err := c.Client.Post(ctx, "CreateBackup", CreateBackupDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateCrdDocument = `mutation CreateCrd ($chartName: ChartName!, $name: String!, $blob: UploadOrUrl!) {
+	createCrd(chartName: $chartName, attributes: {name:$name,blob:$blob}) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateCrd(ctx context.Context, chartName ChartName, name string, blob string, httpRequestOptions ...client.HTTPRequestOption) (*CreateCrd, error) {
+	vars := map[string]interface{}{
+		"chartName": chartName,
+		"name":      name,
+		"blob":      blob,
+	}
+
+	var res CreateCrd
+	if err := c.Client.Post(ctx, "CreateCrd", CreateCrdDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateDependencyDocument = `mutation CreateDependency ($sourceId: ID!, $destId: ID!) {
+	createClusterDependency(sourceId: $sourceId, destId: $destId) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateDependency(ctx context.Context, sourceID string, destID string, httpRequestOptions ...client.HTTPRequestOption) (*CreateDependency, error) {
+	vars := map[string]interface{}{
+		"sourceId": sourceID,
+		"destId":   destID,
+	}
+
+	var res CreateDependency
+	if err := c.Client.Post(ctx, "CreateDependency", CreateDependencyDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateDNSRecordDocument = `mutation CreateDnsRecord ($cluster: String!, $provider: Provider!, $attributes: DnsRecordAttributes!) {
+	createDnsRecord(cluster: $cluster, provider: $provider, attributes: $attributes) {
+		... DnsRecordFragment
+	}
+}
+fragment DnsRecordFragment on DnsRecord {
+	type
+	name
+	records
+}
+`
+
+func (c *Client) CreateDNSRecord(ctx context.Context, cluster string, provider Provider, attributes DNSRecordAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateDNSRecord, error) {
+	vars := map[string]interface{}{
+		"cluster":    cluster,
+		"provider":   provider,
+		"attributes": attributes,
+	}
+
+	var res CreateDNSRecord
+	if err := c.Client.Post(ctx, "CreateDnsRecord", CreateDNSRecordDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateDomainDocument = `mutation CreateDomain ($name: String!) {
+	provisionDomain(name: $name) {
+		... DnsDomainFragment
+	}
+}
+fragment DnsDomainFragment on DnsDomain {
+	id
+	name
+}
+`
+
+func (c *Client) CreateDomain(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*CreateDomain, error) {
+	vars := map[string]interface{}{
+		"name": name,
+	}
+
+	var res CreateDomain
+	if err := c.Client.Post(ctx, "CreateDomain", CreateDomainDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateEventDocument = `mutation CreateEvent ($attrs: UserEventAttributes!) {
+	createUserEvent(attributes: $attrs)
+}
+`
+
+func (c *Client) CreateEvent(ctx context.Context, attrs UserEventAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateEvent, error) {
+	vars := map[string]interface{}{
+		"attrs": attrs,
+	}
+
+	var res CreateEvent
+	if err := c.Client.Post(ctx, "CreateEvent", CreateEventDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateInstallationDocument = `mutation CreateInstallation ($id: ID!) {
+	createInstallation(repositoryId: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateInstallation(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*CreateInstallation, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res CreateInstallation
+	if err := c.Client.Post(ctx, "CreateInstallation", CreateInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateIntegrationDocument = `mutation CreateIntegration ($name: String!, $attrs: IntegrationAttributes!) {
+	createIntegration(repositoryName: $name, attributes: $attrs) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateIntegration(ctx context.Context, name string, attrs IntegrationAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateIntegration, error) {
+	vars := map[string]interface{}{
+		"name":  name,
+		"attrs": attrs,
+	}
+
+	var res CreateIntegration
+	if err := c.Client.Post(ctx, "CreateIntegration", CreateIntegrationDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateKeyDocument = `mutation CreateKey ($key: String!, $name: String!) {
+	createPublicKey(attributes: {content:$key,name:$name}) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateKey(ctx context.Context, key string, name string, httpRequestOptions ...client.HTTPRequestOption) (*CreateKey, error) {
+	vars := map[string]interface{}{
+		"key":  key,
+		"name": name,
+	}
+
+	var res CreateKey
+	if err := c.Client.Post(ctx, "CreateKey", CreateKeyDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateRecipeDocument = `mutation CreateRecipe ($name: String!, $attributes: RecipeAttributes!) {
+	createRecipe(repositoryName: $name, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateRecipe(ctx context.Context, name string, attributes RecipeAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateRecipe, error) {
+	vars := map[string]interface{}{
+		"name":       name,
+		"attributes": attributes,
+	}
+
+	var res CreateRecipe
+	if err := c.Client.Post(ctx, "CreateRecipe", CreateRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateRepositoryDocument = `mutation CreateRepository ($name: String!, $publisher: String!, $attributes: RepositoryAttributes!) {
+	upsertRepository(name: $name, publisher: $publisher, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateRepository(ctx context.Context, name string, publisher string, attributes RepositoryAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateRepository, error) {
+	vars := map[string]interface{}{
+		"name":       name,
+		"publisher":  publisher,
+		"attributes": attributes,
+	}
+
+	var res CreateRepository
+	if err := c.Client.Post(ctx, "CreateRepository", CreateRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateResourceDefinitionDocument = `mutation CreateResourceDefinition ($name: String!, $input: ResourceDefinitionAttributes!) {
+	updateRepository(repositoryName: $name, attributes: {integrationResourceDefinition:$input}) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateResourceDefinition(ctx context.Context, name string, input ResourceDefinitionAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateResourceDefinition, error) {
+	vars := map[string]interface{}{
+		"name":  name,
+		"input": input,
+	}
+
+	var res CreateResourceDefinition
+	if err := c.Client.Post(ctx, "CreateResourceDefinition", CreateResourceDefinitionDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateStackDocument = `mutation CreateStack ($attributes: StackAttributes!) {
+	createStack(attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateStack(ctx context.Context, attributes StackAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateStack, error) {
+	vars := map[string]interface{}{
+		"attributes": attributes,
+	}
+
+	var res CreateStack
+	if err := c.Client.Post(ctx, "CreateStack", CreateStackDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateTestDocument = `mutation CreateTest ($name: String!, $attrs: TestAttributes!) {
+	createTest(name: $name, attributes: $attrs) {
+		... TestFragment
+	}
+}
+fragment TestFragment on Test {
+	id
+	name
+	status
+	promoteTag
+	steps {
+		id
+		name
+		description
+		status
+	}
+}
+`
+
+func (c *Client) CreateTest(ctx context.Context, name string, attrs TestAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateTest, error) {
+	vars := map[string]interface{}{
+		"name":  name,
+		"attrs": attrs,
+	}
+
+	var res CreateTest
+	if err := c.Client.Post(ctx, "CreateTest", CreateTestDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateTrustDocument = `mutation CreateTrust ($attributes: TrustRelationshipAttributes!) {
+	createTrustRelationship(attributes: $attributes) {
+		... OidcTrustRelationshipFragment
+	}
+}
+fragment OidcTrustRelationshipFragment on OidcTrustRelationship {
+	id
+	issuer
+	trust
+	scopes
+	insertedAt
+}
+`
+
+func (c *Client) CreateTrust(ctx context.Context, attributes TrustRelationshipAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateTrust, error) {
+	vars := map[string]interface{}{
+		"attributes": attributes,
+	}
+
+	var res CreateTrust
+	if err := c.Client.Post(ctx, "CreateTrust", CreateTrustDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateUpgradeDocument = `mutation CreateUpgrade ($queue: String!, $repository: String!, $attributes: UpgradeAttributes!) {
+	createUpgrade(queue: $queue, repositoryName: $repository, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateUpgrade(ctx context.Context, queue string, repository string, attributes UpgradeAttributes, httpRequestOptions ...client.HTTPRequestOption) (*CreateUpgrade, error) {
+	vars := map[string]interface{}{
+		"queue":      queue,
+		"repository": repository,
+		"attributes": attributes,
+	}
+
+	var res CreateUpgrade
+	if err := c.Client.Post(ctx, "CreateUpgrade", CreateUpgradeDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteDNSRecordDocument = `mutation DeleteDnsRecord ($name: String!, $type: DnsRecordType!) {
+	deleteDnsRecord(name: $name, type: $type) {
+		... DnsRecordFragment
+	}
+}
+fragment DnsRecordFragment on DnsRecord {
+	type
+	name
+	records
+}
+`
+
+func (c *Client) DeleteDNSRecord(ctx context.Context, name string, typeArg DNSRecordType, httpRequestOptions ...client.HTTPRequestOption) (*DeleteDNSRecord, error) {
+	vars := map[string]interface{}{
+		"name": name,
+		"type": typeArg,
+	}
+
+	var res DeleteDNSRecord
+	if err := c.Client.Post(ctx, "DeleteDnsRecord", DeleteDNSRecordDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteEabCredentialDocument = `mutation DeleteEabCredential ($cluster: String!, $provider: Provider!) {
+	deleteEabKey(cluster: $cluster, provider: $provider) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteEabCredential(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*DeleteEabCredential, error) {
+	vars := map[string]interface{}{
+		"cluster":  cluster,
+		"provider": provider,
+	}
+
+	var res DeleteEabCredential
+	if err := c.Client.Post(ctx, "DeleteEabCredential", DeleteEabCredentialDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteInstallationDocument = `mutation DeleteInstallation ($id: ID!) {
+	deleteInstallation(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteInstallation(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteInstallation, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res DeleteInstallation
+	if err := c.Client.Post(ctx, "DeleteInstallation", DeleteInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteRepositoryDocument = `mutation DeleteRepository ($id: ID!) {
+	deleteRepository(repositoryId: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteRepository(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteRepository, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res DeleteRepository
+	if err := c.Client.Post(ctx, "DeleteRepository", DeleteRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteShellDocument = `mutation DeleteShell {
+	deleteShell {
+		... CloudShellFragment
+	}
+}
+fragment CloudShellFragment on CloudShell {
+	id
+	aesKey
+	gitUrl
+}
+`
+
+func (c *Client) DeleteShell(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*DeleteShell, error) {
+	vars := map[string]interface{}{}
+
+	var res DeleteShell
+	if err := c.Client.Post(ctx, "DeleteShell", DeleteShellDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteTrustDocument = `mutation DeleteTrust ($id: ID!) {
+	deleteTrustRelationship(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) DeleteTrust(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*DeleteTrust, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res DeleteTrust
+	if err := c.Client.Post(ctx, "DeleteTrust", DeleteTrustDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DestroyClusterDocument = `mutation DestroyCluster ($domain: String!, $name: String!, $provider: Provider!) {
+	destroyCluster(domain: $domain, name: $name, provider: $provider)
+}
+`
+
+func (c *Client) DestroyCluster(ctx context.Context, domain string, name string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*DestroyCluster, error) {
+	vars := map[string]interface{}{
+		"domain":   domain,
+		"name":     name,
+		"provider": provider,
+	}
+
+	var res DestroyCluster
+	if err := c.Client.Post(ctx, "DestroyCluster", DestroyClusterDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DevLoginDocument = `mutation DevLogin {
+	deviceLogin {
+		loginUrl
+		deviceToken
+	}
+}
+`
+
+func (c *Client) DevLogin(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*DevLogin, error) {
+	vars := map[string]interface{}{}
+
+	var res DevLogin
+	if err := c.Client.Post(ctx, "DevLogin", DevLoginDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetChartInstallationsDocument = `query GetChartInstallations ($id: ID!) {
+	chartInstallations(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... ChartInstallationFragment
+			}
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment ChartInstallationFragment on ChartInstallation {
+	id
+	chart {
+		... ChartFragment
+		dependencies {
+			... DependenciesFragment
+		}
+	}
+	version {
+		... VersionFragment
+	}
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment VersionFragment on Version {
+	id
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
+	insertedAt
+}
+`
+
+func (c *Client) GetChartInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetChartInstallations, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetChartInstallations
+	if err := c.Client.Post(ctx, "GetChartInstallations", GetChartInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetChartsDocument = `query GetCharts ($id: ID!) {
+	charts(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... ChartFragment
+			}
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+`
+
+func (c *Client) GetCharts(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetCharts, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetCharts
+	if err := c.Client.Post(ctx, "GetCharts", GetChartsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetDNSRecordsDocument = `query GetDnsRecords ($cluster: String!, $provider: Provider!) {
+	dnsRecords(cluster: $cluster, provider: $provider, first: 500) {
+		edges {
+			node {
+				... DnsRecordFragment
+			}
+		}
+	}
+}
+fragment DnsRecordFragment on DnsRecord {
+	type
+	name
+	records
+}
+`
+
+func (c *Client) GetDNSRecords(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetDNSRecords, error) {
+	vars := map[string]interface{}{
+		"cluster":  cluster,
+		"provider": provider,
+	}
+
+	var res GetDNSRecords
+	if err := c.Client.Post(ctx, "GetDnsRecords", GetDNSRecordsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetEabCredentialDocument = `query GetEabCredential ($cluster: String!, $provider: Provider!) {
+	eabCredential(cluster: $cluster, provider: $provider) {
+		... EabCredentialFragment
+	}
+}
+fragment EabCredentialFragment on EabCredential {
+	id
+	keyId
+	hmacKey
+	cluster
+	provider
+}
+`
+
+func (c *Client) GetEabCredential(ctx context.Context, cluster string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetEabCredential, error) {
+	vars := map[string]interface{}{
+		"cluster":  cluster,
+		"provider": provider,
+	}
+
+	var res GetEabCredential
+	if err := c.Client.Post(ctx, "GetEabCredential", GetEabCredentialDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetHelpDocument = `query GetHelp ($prompt: String!) {
+	helpQuestion(prompt: $prompt)
+}
+`
+
+func (c *Client) GetHelp(ctx context.Context, prompt string, httpRequestOptions ...client.HTTPRequestOption) (*GetHelp, error) {
+	vars := map[string]interface{}{
+		"prompt": prompt,
+	}
+
+	var res GetHelp
+	if err := c.Client.Post(ctx, "GetHelp", GetHelpDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetInstallationDocument = `query GetInstallation ($name: String) {
+	installation(name: $name) {
+		... InstallationFragment
+	}
+}
+fragment InstallationFragment on Installation {
+	id
+	context
+	licenseKey
+	acmeKeyId
+	acmeSecret
+	repository {
+		... RepositoryFragment
+	}
+	oidcProvider {
+		... OIDCProvider
+	}
+}
+fragment OIDCProvider on OidcProvider {
+	id
+	clientId
+	clientSecret
+	redirectUris
+	bindings {
+		user {
+			id
+			email
+		}
+		group {
+			id
+			name
+		}
+	}
+	configuration {
+		issuer
+		authorizationEndpoint
+		tokenEndpoint
+		jwksUri
+		userinfoEndpoint
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+`
+
+func (c *Client) GetInstallation(ctx context.Context, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallation, error) {
+	vars := map[string]interface{}{
+		"name": name,
+	}
+
+	var res GetInstallation
+	if err := c.Client.Post(ctx, "GetInstallation", GetInstallationDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetInstallationByIDDocument = `query GetInstallationById ($id: ID) {
+	installation(id: $id) {
+		... InstallationFragment
+	}
+}
+fragment InstallationFragment on Installation {
+	id
+	context
+	licenseKey
+	acmeKeyId
+	acmeSecret
+	repository {
+		... RepositoryFragment
+	}
+	oidcProvider {
+		... OIDCProvider
+	}
+}
+fragment OIDCProvider on OidcProvider {
+	id
+	clientId
+	clientSecret
+	redirectUris
+	bindings {
+		user {
+			id
+			email
+		}
+		group {
+			id
+			name
+		}
+	}
+	configuration {
+		issuer
+		authorizationEndpoint
+		tokenEndpoint
+		jwksUri
+		userinfoEndpoint
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+`
+
+func (c *Client) GetInstallationByID(ctx context.Context, id *string, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallationByID, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetInstallationByID
+	if err := c.Client.Post(ctx, "GetInstallationById", GetInstallationByIDDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetInstallationsDocument = `query GetInstallations {
+	installations(first: 100) {
+		edges {
+			node {
+				... InstallationFragment
+			}
+		}
+	}
+}
+fragment InstallationFragment on Installation {
+	id
+	context
+	licenseKey
+	acmeKeyId
+	acmeSecret
+	repository {
+		... RepositoryFragment
+	}
+	oidcProvider {
+		... OIDCProvider
+	}
+}
+fragment OIDCProvider on OidcProvider {
+	id
+	clientId
+	clientSecret
+	redirectUris
+	bindings {
+		user {
+			id
+			email
+		}
+		group {
+			id
+			name
+		}
+	}
+	configuration {
+		issuer
+		authorizationEndpoint
+		tokenEndpoint
+		jwksUri
+		userinfoEndpoint
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+`
+
+func (c *Client) GetInstallations(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetInstallations, error) {
+	vars := map[string]interface{}{}
+
+	var res GetInstallations
+	if err := c.Client.Post(ctx, "GetInstallations", GetInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetLoginMethodDocument = `query GetLoginMethod ($email: String!) {
+	loginMethod(email: $email) {
+		loginMethod
+		token
+	}
+}
+`
+
+func (c *Client) GetLoginMethod(ctx context.Context, email string, httpRequestOptions ...client.HTTPRequestOption) (*GetLoginMethod, error) {
+	vars := map[string]interface{}{
+		"email": email,
+	}
+
+	var res GetLoginMethod
+	if err := c.Client.Post(ctx, "GetLoginMethod", GetLoginMethodDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetPackageInstallationsDocument = `query GetPackageInstallations ($id: ID!) {
+	chartInstallations(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... ChartInstallationFragment
+			}
+		}
+	}
+	terraformInstallations(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... TerraformInstallationFragment
+			}
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment ChartInstallationFragment on ChartInstallation {
+	id
+	chart {
+		... ChartFragment
+		dependencies {
+			... DependenciesFragment
+		}
+	}
+	version {
+		... VersionFragment
+	}
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+fragment TerraformInstallationFragment on TerraformInstallation {
+	id
+	terraform {
+		... TerraformFragment
+	}
+	version {
+		... VersionFragment
+	}
+}
+fragment VersionFragment on Version {
+	id
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
+	insertedAt
+}
+`
+
+func (c *Client) GetPackageInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetPackageInstallations, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetPackageInstallations
+	if err := c.Client.Post(ctx, "GetPackageInstallations", GetPackageInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetRecipeDocument = `query GetRecipe ($repo: String, $name: String) {
+	recipe(repo: $repo, name: $name) {
+		... RecipeFragment
+		recipeDependencies {
+			... RecipeFragment
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) GetRecipe(ctx context.Context, repo *string, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRecipe, error) {
+	vars := map[string]interface{}{
+		"repo": repo,
+		"name": name,
+	}
+
+	var res GetRecipe
+	if err := c.Client.Post(ctx, "GetRecipe", GetRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetRecipeByIDDocument = `query GetRecipeByID ($id: ID) {
+	recipe(id: $id) {
+		... RecipeFragment
+		recipeDependencies {
+			... RecipeFragment
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) GetRecipeByID(ctx context.Context, id *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRecipeByID, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetRecipeByID
+	if err := c.Client.Post(ctx, "GetRecipeByID", GetRecipeByIDDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetRepositoryDocument = `query GetRepository ($name: String) {
+	repository(name: $name) {
+		... RepositoryFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+`
+
+func (c *Client) GetRepository(ctx context.Context, name *string, httpRequestOptions ...client.HTTPRequestOption) (*GetRepository, error) {
+	vars := map[string]interface{}{
+		"name": name,
+	}
+
+	var res GetRepository
+	if err := c.Client.Post(ctx, "GetRepository", GetRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetShellDocument = `query GetShell {
+	shell {
+		... CloudShellFragment
+	}
+}
+fragment CloudShellFragment on CloudShell {
+	id
+	aesKey
+	gitUrl
+}
+`
+
+func (c *Client) GetShell(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetShell, error) {
+	vars := map[string]interface{}{}
+
+	var res GetShell
+	if err := c.Client.Post(ctx, "GetShell", GetShellDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetStackDocument = `query GetStack ($name: String!, $provider: Provider!) {
+	stack(name: $name, provider: $provider) {
+		... StackFragment
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment StackFragment on Stack {
+	id
+	name
+	featured
+	description
+	bundles {
+		... RecipeFragment
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) GetStack(ctx context.Context, name string, provider Provider, httpRequestOptions ...client.HTTPRequestOption) (*GetStack, error) {
+	vars := map[string]interface{}{
+		"name":     name,
+		"provider": provider,
+	}
+
+	var res GetStack
+	if err := c.Client.Post(ctx, "GetStack", GetStackDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTerraformDocument = `query GetTerraform ($id: ID!) {
+	terraform(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... TerraformFragment
+			}
+		}
+	}
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) GetTerraform(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraform, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetTerraform
+	if err := c.Client.Post(ctx, "GetTerraform", GetTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTerraformInstallationsDocument = `query GetTerraformInstallations ($id: ID!) {
+	terraformInstallations(repositoryId: $id, first: 100) {
+		edges {
+			node {
+				... TerraformInstallationFragment
+			}
+		}
+	}
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+fragment TerraformInstallationFragment on TerraformInstallation {
+	id
+	terraform {
+		... TerraformFragment
+	}
+	version {
+		... VersionFragment
+	}
+}
+fragment VersionFragment on Version {
+	id
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
+	insertedAt
+}
+`
+
+func (c *Client) GetTerraformInstallations(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraformInstallations, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetTerraformInstallations
+	if err := c.Client.Post(ctx, "GetTerraformInstallations", GetTerraformInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTerraformVersionsDocument = `query GetTerraformVersions ($id: ID!) {
+	versions(terraformId: $id, first: 100) {
+		edges {
+			node {
+				... VersionFragment
+			}
+		}
+	}
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment VersionFragment on Version {
+	id
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
+	insertedAt
+}
+`
+
+func (c *Client) GetTerraformVersions(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetTerraformVersions, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetTerraformVersions
+	if err := c.Client.Post(ctx, "GetTerraformVersions", GetTerraformVersionsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTfProviderScaffoldDocument = `query GetTfProviderScaffold ($name: Provider!, $vsn: String) {
+	terraformProvider(name: $name, vsn: $vsn) {
+		name
+		content
+	}
+}
+`
+
+func (c *Client) GetTfProviderScaffold(ctx context.Context, name Provider, vsn *string, httpRequestOptions ...client.HTTPRequestOption) (*GetTfProviderScaffold, error) {
+	vars := map[string]interface{}{
+		"name": name,
+		"vsn":  vsn,
+	}
+
+	var res GetTfProviderScaffold
+	if err := c.Client.Post(ctx, "GetTfProviderScaffold", GetTfProviderScaffoldDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetTfProvidersDocument = `query GetTfProviders {
+	terraformProviders
+}
+`
+
+func (c *Client) GetTfProviders(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*GetTfProviders, error) {
+	vars := map[string]interface{}{}
+
+	var res GetTfProviders
+	if err := c.Client.Post(ctx, "GetTfProviders", GetTfProvidersDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetVersionsDocument = `query GetVersions ($id: ID!) {
+	versions(chartId: $id, first: 100) {
+		edges {
+			node {
+				... VersionFragment
+			}
+		}
+	}
+}
+fragment CrdFragment on Crd {
+	id
+	name
+	blob
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment VersionFragment on Version {
+	id
+	helm
+	readme
+	version
+	valuesTemplate
+	templateType
+	package
+	crds {
+		... CrdFragment
+	}
+	dependencies {
+		... DependenciesFragment
+	}
+	insertedAt
+}
+`
+
+func (c *Client) GetVersions(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*GetVersions, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res GetVersions
+	if err := c.Client.Post(ctx, "GetVersions", GetVersionsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ImpersonateServiceAccountDocument = `mutation ImpersonateServiceAccount ($email: String) {
+	impersonateServiceAccount(email: $email) {
+		jwt
+		email
+	}
+}
+`
+
+func (c *Client) ImpersonateServiceAccount(ctx context.Context, email *string, httpRequestOptions ...client.HTTPRequestOption) (*ImpersonateServiceAccount, error) {
+	vars := map[string]interface{}{
+		"email": email,
+	}
+
+	var res ImpersonateServiceAccount
+	if err := c.Client.Post(ctx, "ImpersonateServiceAccount", ImpersonateServiceAccountDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const InstallRecipeDocument = `mutation InstallRecipe ($id: ID!) {
+	installRecipe(recipeId: $id, context: "{}") {
+		id
+	}
+}
+`
+
+func (c *Client) InstallRecipe(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*InstallRecipe, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res InstallRecipe
+	if err := c.Client.Post(ctx, "InstallRecipe", InstallRecipeDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const InstallVersionDocument = `mutation InstallVersion ($type: DependencyType!, $repo: String!, $package: String!, $vsn: String!) {
+	installVersion(type: $type, repository: $repo, package: $package, vsn: $vsn)
+}
+`
+
+func (c *Client) InstallVersion(ctx context.Context, typeArg DependencyType, repo string, packageArg string, vsn string, httpRequestOptions ...client.HTTPRequestOption) (*InstallVersion, error) {
+	vars := map[string]interface{}{
+		"type":    typeArg,
+		"repo":    repo,
+		"package": packageArg,
+		"vsn":     vsn,
+	}
+
+	var res InstallVersion
+	if err := c.Client.Post(ctx, "InstallVersion", InstallVersionDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListAllRecipesDocument = `query ListAllRecipes ($repo: String) {
+	recipes(repositoryName: $repo, first: 500) {
+		edges {
+			node {
+				... RecipeFragment
+			}
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) ListAllRecipes(ctx context.Context, repo *string, httpRequestOptions ...client.HTTPRequestOption) (*ListAllRecipes, error) {
+	vars := map[string]interface{}{
+		"repo": repo,
+	}
+
+	var res ListAllRecipes
+	if err := c.Client.Post(ctx, "ListAllRecipes", ListAllRecipesDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListArtifactsDocument = `query ListArtifacts ($id: ID!) {
+	repository(id: $id) {
+		artifacts {
+			... ArtifactFragment
+		}
+	}
+}
+fragment ArtifactFragment on Artifact {
+	id
+	name
+	readme
+	platform
+	arch
+	blob
+	sha
+	filesize
+}
+`
+
+func (c *Client) ListArtifacts(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*ListArtifacts, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res ListArtifacts
+	if err := c.Client.Post(ctx, "ListArtifacts", ListArtifactsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListKeysDocument = `query ListKeys ($emails: [String]) {
+	publicKeys(emails: $emails, first: 1000) {
+		edges {
+			node {
+				... PublicKeyFragment
+			}
+		}
+	}
+}
+fragment PublicKeyFragment on PublicKey {
+	id
+	content
+	user {
+		... UserFragment
+	}
+}
+fragment UserFragment on User {
+	id
+	name
+	email
+}
+`
+
+func (c *Client) ListKeys(ctx context.Context, emails []*string, httpRequestOptions ...client.HTTPRequestOption) (*ListKeys, error) {
+	vars := map[string]interface{}{
+		"emails": emails,
+	}
+
+	var res ListKeys
+	if err := c.Client.Post(ctx, "ListKeys", ListKeysDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListRecipesDocument = `query ListRecipes ($repo: String, $provider: Provider) {
+	recipes(repositoryName: $repo, provider: $provider, first: 500) {
+		edges {
+			node {
+				... RecipeFragment
+			}
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) ListRecipes(ctx context.Context, repo *string, provider *Provider, httpRequestOptions ...client.HTTPRequestOption) (*ListRecipes, error) {
+	vars := map[string]interface{}{
+		"repo":     repo,
+		"provider": provider,
+	}
+
+	var res ListRecipes
+	if err := c.Client.Post(ctx, "ListRecipes", ListRecipesDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListRepositoriesDocument = `query ListRepositories ($q: String) {
+	repositories(q: $q, first: 100) {
+		edges {
+			node {
+				... RepositoryFragment
+			}
+		}
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+`
+
+func (c *Client) ListRepositories(ctx context.Context, q *string, httpRequestOptions ...client.HTTPRequestOption) (*ListRepositories, error) {
+	vars := map[string]interface{}{
+		"q": q,
+	}
+
+	var res ListRepositories
+	if err := c.Client.Post(ctx, "ListRepositories", ListRepositoriesDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListStacksDocument = `query ListStacks ($featured: Boolean, $cursor: String) {
+	stacks(first: 100, after: $cursor, featured: $featured) {
+		edges {
+			node {
+				... StackFragment
+			}
+		}
+	}
+}
+fragment ChartFragment on Chart {
+	id
+	name
+	description
+	latestVersion
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment RecipeConfigurationFragment on RecipeConfiguration {
+	name
+	type
+	default
+	documentation
+	optional
+	placeholder
+	functionName
+	condition {
+		field
+		operation
+		value
+	}
+	validation {
+		type
+		regex
+		message
+	}
+}
+fragment RecipeFragment on Recipe {
+	id
+	name
+	primary
+	description
+	restricted
+	provider
+	tests {
+		type
+		name
+		message
+		args {
+			name
+			repo
+			key
+		}
+	}
+	repository {
+		id
+		name
+	}
+	oidcSettings {
+		uriFormat
+		uriFormats
+		authMethod
+		domainKey
+		subdomain
+	}
+	recipeSections {
+		... RecipeSectionFragment
+	}
+}
+fragment RecipeItemFragment on RecipeItem {
+	id
+	chart {
+		... ChartFragment
+	}
+	terraform {
+		... TerraformFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RecipeSectionFragment on RecipeSection {
+	index
+	repository {
+		... RepositoryFragment
+	}
+	recipeItems {
+		... RecipeItemFragment
+	}
+	configuration {
+		... RecipeConfigurationFragment
+	}
+}
+fragment RepositoryFragment on Repository {
+	id
+	name
+	notes
+	icon
+	darkIcon
+	description
+	publisher {
+		name
+	}
+	recipes {
+		name
+	}
+}
+fragment StackFragment on Stack {
+	id
+	name
+	featured
+	description
+	bundles {
+		... RecipeFragment
+	}
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) ListStacks(ctx context.Context, featured *bool, cursor *string, httpRequestOptions ...client.HTTPRequestOption) (*ListStacks, error) {
+	vars := map[string]interface{}{
+		"featured": featured,
+		"cursor":   cursor,
+	}
+
+	var res ListStacks
+	if err := c.Client.Post(ctx, "ListStacks", ListStacksDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ListTokensDocument = `query ListTokens {
+	tokens(first: 3) {
+		edges {
+			node {
+				token
+			}
+		}
+	}
+}
+`
+
+func (c *Client) ListTokens(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*ListTokens, error) {
+	vars := map[string]interface{}{}
+
+	var res ListTokens
+	if err := c.Client.Post(ctx, "ListTokens", ListTokensDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const LoginDocument = `mutation Login ($email: String!, $pwd: String!) {
+	login(email: $email, password: $pwd) {
+		jwt
+	}
+}
+`
+
+func (c *Client) Login(ctx context.Context, email string, pwd string, httpRequestOptions ...client.HTTPRequestOption) (*Login, error) {
+	vars := map[string]interface{}{
+		"email": email,
+		"pwd":   pwd,
+	}
+
+	var res Login
+	if err := c.Client.Post(ctx, "Login", LoginDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const MarkSyncedDocument = `mutation MarkSynced ($repository: String!) {
+	synced(repository: $repository)
+}
+`
+
+func (c *Client) MarkSynced(ctx context.Context, repository string, httpRequestOptions ...client.HTTPRequestOption) (*MarkSynced, error) {
+	vars := map[string]interface{}{
+		"repository": repository,
+	}
+
+	var res MarkSynced
+	if err := c.Client.Post(ctx, "MarkSynced", MarkSyncedDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const MeDocument = `query Me {
+	me {
+		id
+		email
+		demoing
+		trustRelationships {
+			... OidcTrustRelationshipFragment
+		}
+	}
+}
+fragment OidcTrustRelationshipFragment on OidcTrustRelationship {
+	id
+	issuer
+	trust
+	scopes
+	insertedAt
+}
+`
+
+func (c *Client) Me(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*Me, error) {
+	vars := map[string]interface{}{}
+
+	var res Me
+	if err := c.Client.Post(ctx, "Me", MeDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const OidcTokenDocument = `query OidcToken ($provider: ExternalOidcProvider!, $token: String!, $email: String!) {
+	oidcToken(provider: $provider, idToken: $token, email: $email)
+}
+`
+
+func (c *Client) OidcToken(ctx context.Context, provider ExternalOidcProvider, token string, email string, httpRequestOptions ...client.HTTPRequestOption) (*OidcToken, error) {
+	vars := map[string]interface{}{
+		"provider": provider,
+		"token":    token,
+		"email":    email,
+	}
+
+	var res OidcToken
+	if err := c.Client.Post(ctx, "OidcToken", OidcTokenDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const PollLoginTokenDocument = `mutation PollLoginToken ($token: String!) {
+	loginToken(token: $token) {
+		jwt
+	}
+}
+`
+
+func (c *Client) PollLoginToken(ctx context.Context, token string, httpRequestOptions ...client.HTTPRequestOption) (*PollLoginToken, error) {
+	vars := map[string]interface{}{
+		"token": token,
+	}
+
+	var res PollLoginToken
+	if err := c.Client.Post(ctx, "PollLoginToken", PollLoginTokenDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const PromoteClusterDocument = `mutation PromoteCluster {
+	promote {
+		... UserFragment
+	}
+}
+fragment UserFragment on User {
+	id
+	name
+	email
+}
+`
+
+func (c *Client) PromoteCluster(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*PromoteCluster, error) {
+	vars := map[string]interface{}{}
+
+	var res PromoteCluster
+	if err := c.Client.Post(ctx, "PromoteCluster", PromoteClusterDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const PublishLogsDocument = `mutation PublishLogs ($id: ID!, $logs: String!) {
+	publishLogs(id: $id, logs: $logs) {
+		id
+	}
+}
+`
+
+func (c *Client) PublishLogs(ctx context.Context, id string, logs string, httpRequestOptions ...client.HTTPRequestOption) (*PublishLogs, error) {
+	vars := map[string]interface{}{
+		"id":   id,
+		"logs": logs,
+	}
+
+	var res PublishLogs
+	if err := c.Client.Post(ctx, "PublishLogs", PublishLogsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ReleaseDocument = `mutation Release ($name: String!, $tags: [String!]) {
+	release(repositoryName: $name, tags: $tags)
+}
+`
+
+func (c *Client) Release(ctx context.Context, name string, tags []string, httpRequestOptions ...client.HTTPRequestOption) (*Release, error) {
+	vars := map[string]interface{}{
+		"name": name,
+		"tags": tags,
+	}
+
+	var res Release
+	if err := c.Client.Post(ctx, "Release", ReleaseDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ReleaseLockDocument = `mutation ReleaseLock ($name: String!, $attrs: LockAttributes!) {
+	releaseLock(repository: $name, attributes: $attrs) {
+		... ApplyLockFragment
+	}
+}
+fragment ApplyLockFragment on ApplyLock {
+	id
+	lock
+}
+`
+
+func (c *Client) ReleaseLock(ctx context.Context, name string, attrs LockAttributes, httpRequestOptions ...client.HTTPRequestOption) (*ReleaseLock, error) {
+	vars := map[string]interface{}{
+		"name":  name,
+		"attrs": attrs,
+	}
+
+	var res ReleaseLock
+	if err := c.Client.Post(ctx, "ReleaseLock", ReleaseLockDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ResetInstallationsDocument = `mutation ResetInstallations {
+	resetInstallations
+}
+`
+
+func (c *Client) ResetInstallations(ctx context.Context, httpRequestOptions ...client.HTTPRequestOption) (*ResetInstallations, error) {
+	vars := map[string]interface{}{}
+
+	var res ResetInstallations
+	if err := c.Client.Post(ctx, "ResetInstallations", ResetInstallationsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ScaffoldsDocument = `query Scaffolds ($app: String!, $pub: String!, $cat: Category!, $ing: Boolean, $pg: Boolean) {
+	scaffold(application: $app, publisher: $pub, category: $cat, ingress: $ing, postgres: $pg) {
+		path
+		content
+	}
+}
+`
+
+func (c *Client) Scaffolds(ctx context.Context, app string, pub string, cat Category, ing *bool, pg *bool, httpRequestOptions ...client.HTTPRequestOption) (*Scaffolds, error) {
+	vars := map[string]interface{}{
+		"app": app,
+		"pub": pub,
+		"cat": cat,
+		"ing": ing,
+		"pg":  pg,
+	}
+
+	var res Scaffolds
+	if err := c.Client.Post(ctx, "Scaffolds", ScaffoldsDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const TransferOwnershipDocument = `mutation TransferOwnership ($name: String!, $email: String!) {
+	transferOwnership(name: $name, email: $email) {
+		id
+	}
+}
+`
+
+func (c *Client) TransferOwnership(ctx context.Context, name string, email string, httpRequestOptions ...client.HTTPRequestOption) (*TransferOwnership, error) {
+	vars := map[string]interface{}{
+		"name":  name,
+		"email": email,
+	}
+
+	var res TransferOwnership
+	if err := c.Client.Post(ctx, "TransferOwnership", TransferOwnershipDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UninstallChartDocument = `mutation UninstallChart ($id: ID!) {
+	deleteChartInstallation(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) UninstallChart(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*UninstallChart, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res UninstallChart
+	if err := c.Client.Post(ctx, "UninstallChart", UninstallChartDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UninstallTerraformDocument = `mutation UninstallTerraform ($id: ID!) {
+	uninstallTerraform(id: $id) {
+		id
+	}
+}
+`
+
+func (c *Client) UninstallTerraform(ctx context.Context, id string, httpRequestOptions ...client.HTTPRequestOption) (*UninstallTerraform, error) {
+	vars := map[string]interface{}{
+		"id": id,
+	}
+
+	var res UninstallTerraform
+	if err := c.Client.Post(ctx, "UninstallTerraform", UninstallTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UnlockRepositoryDocument = `mutation UnlockRepository ($name: String!) {
+	unlockRepository(name: $name)
+}
+`
+
+func (c *Client) UnlockRepository(ctx context.Context, name string, httpRequestOptions ...client.HTTPRequestOption) (*UnlockRepository, error) {
+	vars := map[string]interface{}{
+		"name": name,
+	}
+
+	var res UnlockRepository
+	if err := c.Client.Post(ctx, "UnlockRepository", UnlockRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateRepositoryDocument = `mutation UpdateRepository ($name: String!, $attrs: RepositoryAttributes!) {
+	updateRepository(repositoryName: $name, attributes: $attrs) {
+		id
+	}
+}
+`
+
+func (c *Client) UpdateRepository(ctx context.Context, name string, attrs RepositoryAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateRepository, error) {
+	vars := map[string]interface{}{
+		"name":  name,
+		"attrs": attrs,
+	}
+
+	var res UpdateRepository
+	if err := c.Client.Post(ctx, "UpdateRepository", UpdateRepositoryDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateStepDocument = `mutation UpdateStep ($id: ID!, $logs: UploadOrUrl!) {
+	updateStep(id: $id, attributes: {logs:$logs}) {
+		id
+	}
+}
+`
+
+func (c *Client) UpdateStep(ctx context.Context, id string, logs string, httpRequestOptions ...client.HTTPRequestOption) (*UpdateStep, error) {
+	vars := map[string]interface{}{
+		"id":   id,
+		"logs": logs,
+	}
+
+	var res UpdateStep
+	if err := c.Client.Post(ctx, "UpdateStep", UpdateStepDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateTestDocument = `mutation UpdateTest ($id: ID!, $attrs: TestAttributes!) {
+	updateTest(id: $id, attributes: $attrs) {
+		... TestFragment
+	}
+}
+fragment TestFragment on Test {
+	id
+	name
+	status
+	promoteTag
+	steps {
+		id
+		name
+		description
+		status
+	}
+}
+`
+
+func (c *Client) UpdateTest(ctx context.Context, id string, attrs TestAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateTest, error) {
+	vars := map[string]interface{}{
+		"id":    id,
+		"attrs": attrs,
+	}
+
+	var res UpdateTest
+	if err := c.Client.Post(ctx, "UpdateTest", UpdateTestDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateVersionDocument = `mutation UpdateVersion ($spec: VersionSpec, $attributes: VersionAttributes!) {
+	updateVersion(spec: $spec, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) UpdateVersion(ctx context.Context, spec *VersionSpec, attributes VersionAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpdateVersion, error) {
+	vars := map[string]interface{}{
+		"spec":       spec,
+		"attributes": attributes,
+	}
+
+	var res UpdateVersion
+	if err := c.Client.Post(ctx, "UpdateVersion", UpdateVersionDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UploadTerraformDocument = `mutation UploadTerraform ($repoName: String!, $name: String!, $uploadOrUrl: UploadOrUrl!) {
+	uploadTerraform(repositoryName: $repoName, name: $name, attributes: {name:$name,package:$uploadOrUrl}) {
+		... TerraformFragment
+	}
+}
+fragment DependenciesFragment on Dependencies {
+	dependencies {
+		type
+		name
+		repo
+		optional
+		version
+	}
+	breaking
+	instructions {
+		instructions
+		script
+	}
+	wait
+	application
+	providers
+	secrets
+	wirings {
+		terraform
+		helm
+	}
+	providerWirings
+	outputs
+	providerVsn
+	cliVsn
+}
+fragment TerraformFragment on Terraform {
+	id
+	name
+	package
+	description
+	dependencies {
+		... DependenciesFragment
+	}
+	valuesTemplate
+}
+`
+
+func (c *Client) UploadTerraform(ctx context.Context, repoName string, name string, uploadOrURL string, httpRequestOptions ...client.HTTPRequestOption) (*UploadTerraform, error) {
+	vars := map[string]interface{}{
+		"repoName":    repoName,
+		"name":        name,
+		"uploadOrUrl": uploadOrURL,
+	}
+
+	var res UploadTerraform
+	if err := c.Client.Post(ctx, "UploadTerraform", UploadTerraformDocument, &res, vars, httpRequestOptions...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpsertOidcProviderDocument = `mutation UpsertOidcProvider ($id: ID!, $attributes: OidcAttributes!) {
+	upsertOidcProvider(installationId: $id, attributes: $attributes) {
+		id
+	}
+}
+`
+
+func (c *Client) UpsertOidcProvider(ctx context.Context, id string, attributes OidcAttributes, httpRequestOptions ...client.HTTPRequestOption) (*UpsertOidcProvider, error) {
+	vars := map[string]interface{}{
+		"id":         id,
+		"attributes": attributes,
+	}
+
+	var res UpsertOidcProvider
+	if err := c.Client.Post(ctx, "UpsertOidcProvider", UpsertOidcProviderDocument, &res, vars, httpRequestOptions...); err != nil {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return nil, err
 	}
 

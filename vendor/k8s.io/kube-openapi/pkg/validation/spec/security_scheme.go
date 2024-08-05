@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/go-openapi/swag"
+<<<<<<< HEAD
 )
 
 // SecuritySchemeProps describes a swagger security scheme in the securityDefinitions section
@@ -61,4 +62,78 @@ func (s *SecurityScheme) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return json.Unmarshal(data, &s.VendorExtensible)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"k8s.io/kube-openapi/pkg/internal"
+	jsonv2 "k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json"
+)
+
+// SecuritySchemeProps describes a swagger security scheme in the securityDefinitions section
+type SecuritySchemeProps struct {
+	Description      string            `json:"description,omitempty"`
+	Type             string            `json:"type"`
+	Name             string            `json:"name,omitempty"`             // api key
+	In               string            `json:"in,omitempty"`               // api key
+	Flow             string            `json:"flow,omitempty"`             // oauth2
+	AuthorizationURL string            `json:"authorizationUrl,omitempty"` // oauth2
+	TokenURL         string            `json:"tokenUrl,omitempty"`         // oauth2
+	Scopes           map[string]string `json:"scopes,omitempty"`           // oauth2
+}
+
+// SecurityScheme allows the definition of a security scheme that can be used by the operations.
+// Supported schemes are basic authentication, an API key (either as a header or as a query parameter)
+// and OAuth2's common flows (implicit, password, application and access code).
+//
+// For more information: http://goo.gl/8us55a#securitySchemeObject
+type SecurityScheme struct {
+	VendorExtensible
+	SecuritySchemeProps
+}
+
+// MarshalJSON marshal this to JSON
+func (s SecurityScheme) MarshalJSON() ([]byte, error) {
+	if internal.UseOptimizedJSONMarshaling {
+		return internal.DeterministicMarshal(s)
+	}
+	b1, err := json.Marshal(s.SecuritySchemeProps)
+	if err != nil {
+		return nil, err
+	}
+	b2, err := json.Marshal(s.VendorExtensible)
+	if err != nil {
+		return nil, err
+	}
+	return swag.ConcatJSON(b1, b2), nil
+}
+
+func (s SecurityScheme) MarshalNextJSON(opts jsonv2.MarshalOptions, enc *jsonv2.Encoder) error {
+	var x struct {
+		Extensions
+		SecuritySchemeProps
+	}
+	x.Extensions = internal.SanitizeExtensions(s.Extensions)
+	x.SecuritySchemeProps = s.SecuritySchemeProps
+	return opts.MarshalNext(enc, x)
+}
+
+// UnmarshalJSON marshal this from JSON
+func (s *SecurityScheme) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &s.SecuritySchemeProps); err != nil {
+		return err
+	}
+	return json.Unmarshal(data, &s.VendorExtensible)
+}
+
+func (s *SecurityScheme) UnmarshalNextJSON(opts jsonv2.UnmarshalOptions, dec *jsonv2.Decoder) error {
+	var x struct {
+		Extensions
+		SecuritySchemeProps
+	}
+	if err := opts.UnmarshalNext(dec, &x); err != nil {
+		return err
+	}
+	s.Extensions = internal.SanitizeExtensions(x.Extensions)
+	s.SecuritySchemeProps = x.SecuritySchemeProps
+	return nil
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

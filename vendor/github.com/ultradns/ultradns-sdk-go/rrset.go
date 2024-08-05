@@ -171,6 +171,7 @@ type DPRDataInfo struct {
 	AllNonConfigured bool     `json:"allNonConfigured,omitempty" terraform:"all_non_configured"`
 	IPInfo           *IPInfo  `json:"ipInfo,omitempty" terraform:"ip_info"`
 	GeoInfo          *GeoInfo `json:"geoInfo,omitempty" terraform:"geo_info"`
+	TTL              uint32      `json:"ttl,omitempty" terraform:"ttl"`
 	Type             string   `json:"type,omitempty" terraform:"type"` // not mentioned in REST API doc
 }
 

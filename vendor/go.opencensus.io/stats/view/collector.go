@@ -42,6 +42,7 @@ func (c *collector) addSample(s string, v float64, attachments map[string]interf
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		aggregator = c.a.newData(t)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -105,6 +106,11 @@ func encodeWithKeys(m *tag.Map, keys []tag.Key) []byte {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		aggregator = c.a.newData()
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		aggregator = c.a.newData()
+=======
+		aggregator = c.a.newData(t)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		c.signatures[s] = aggregator
 	}
 	aggregator.addSample(v, attachments, t)
@@ -128,9 +134,22 @@ func (c *collector) clearRows() {
 // encodeWithKeys encodes the map by using values
 // only associated with the keys provided.
 func encodeWithKeys(m *tag.Map, keys []tag.Key) []byte {
+	// Compute the buffer length we will need ahead of time to avoid resizing later
+	reqLen := 0
+	for _, k := range keys {
+		s, _ := m.Value(k)
+		// We will store each key + its length
+		reqLen += len(s) + 1
+	}
 	vb := &tagencoding.Values{
+<<<<<<< HEAD
 		Buffer: make([]byte, len(keys)),
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		Buffer: make([]byte, len(keys)),
+=======
+		Buffer: make([]byte, reqLen),
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	for _, k := range keys {
 		v, _ := m.Value(k)

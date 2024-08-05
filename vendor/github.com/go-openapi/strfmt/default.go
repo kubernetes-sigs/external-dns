@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+<<<<<<< HEAD
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -117,6 +118,117 @@ func IsUUID4(str string) bool {
 // IsUUID5 returns true is the string matches a UUID, upper case is allowed
 func IsUUID5(str string) bool {
 	return rxUUID5.MatchString(str)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+)
+
+const (
+	// HostnamePattern http://json-schema.org/latest/json-schema-validation.html#anchor114
+	//  A string instance is valid against this attribute if it is a valid
+	//  representation for an Internet host name, as defined by RFC 1034, section 3.1 [RFC1034].
+	//  http://tools.ietf.org/html/rfc1034#section-3.5
+	//  <digit> ::= any one of the ten digits 0 through 9
+	//  var digit = /[0-9]/;
+	//  <letter> ::= any one of the 52 alphabetic characters A through Z in upper case and a through z in lower case
+	//  var letter = /[a-zA-Z]/;
+	//  <let-dig> ::= <letter> | <digit>
+	//  var letDig = /[0-9a-zA-Z]/;
+	//  <let-dig-hyp> ::= <let-dig> | "-"
+	//  var letDigHyp = /[-0-9a-zA-Z]/;
+	//  <ldh-str> ::= <let-dig-hyp> | <let-dig-hyp> <ldh-str>
+	//  var ldhStr = /[-0-9a-zA-Z]+/;
+	//  <label> ::= <letter> [ [ <ldh-str> ] <let-dig> ]
+	//  var label = /[a-zA-Z](([-0-9a-zA-Z]+)?[0-9a-zA-Z])?/;
+	//  <subdomain> ::= <label> | <subdomain> "." <label>
+	//  var subdomain = /^[a-zA-Z](([-0-9a-zA-Z]+)?[0-9a-zA-Z])?(\.[a-zA-Z](([-0-9a-zA-Z]+)?[0-9a-zA-Z])?)*$/;
+	//  <domain> ::= <subdomain> | " "
+	//
+	// Additional validations:
+	//   - for FDQNs, top-level domain (e.g. ".com"), is at least to letters long (no special characters here)
+	//   - hostnames may start with a digit [RFC1123]
+	//   - special registered names with an underscore ('_') are not allowed in this context
+	//   - dashes are permitted, but not at the start or the end of a segment
+	//   - long top-level domain names (e.g. example.london) are permitted
+	//   - symbol unicode points are permitted (e.g. emoji) (not for top-level domain)
+	HostnamePattern = `^([a-zA-Z0-9\p{S}\p{L}]((-?[a-zA-Z0-9\p{S}\p{L}]{0,62})?)|([a-zA-Z0-9\p{S}\p{L}](([a-zA-Z0-9-\p{S}\p{L}]{0,61}[a-zA-Z0-9\p{S}\p{L}])?)(\.)){1,}([a-zA-Z\p{L}]){2,63})$`
+
+	// json null type
+	jsonNull = "null"
+)
+
+const (
+	// UUIDPattern Regex for UUID that allows uppercase
+	//
+	// Deprecated: strfmt no longer uses regular expressions to validate UUIDs.
+	UUIDPattern = `(?i)(^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$)|(^[0-9a-f]{32}$)`
+
+	// UUID3Pattern Regex for UUID3 that allows uppercase
+	//
+	// Deprecated: strfmt no longer uses regular expressions to validate UUIDs.
+	UUID3Pattern = `(?i)(^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$)|(^[0-9a-f]{12}3[0-9a-f]{3}?[0-9a-f]{16}$)`
+
+	// UUID4Pattern Regex for UUID4 that allows uppercase
+	//
+	// Deprecated: strfmt no longer uses regular expressions to validate UUIDs.
+	UUID4Pattern = `(?i)(^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$)|(^[0-9a-f]{12}4[0-9a-f]{3}[89ab][0-9a-f]{15}$)`
+
+	// UUID5Pattern Regex for UUID5 that allows uppercase
+	//
+	// Deprecated: strfmt no longer uses regular expressions to validate UUIDs.
+	UUID5Pattern = `(?i)(^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$)|(^[0-9a-f]{12}5[0-9a-f]{3}[89ab][0-9a-f]{15}$)`
+)
+
+var (
+	rxHostname = regexp.MustCompile(HostnamePattern)
+)
+
+// IsHostname returns true when the string is a valid hostname
+func IsHostname(str string) bool {
+	if !rxHostname.MatchString(str) {
+		return false
+	}
+
+	// the sum of all label octets and label lengths is limited to 255.
+	if len(str) > 255 {
+		return false
+	}
+
+	// Each node has a label, which is zero to 63 octets in length
+	parts := strings.Split(str, ".")
+	valid := true
+	for _, p := range parts {
+		if len(p) > 63 {
+			valid = false
+		}
+	}
+	return valid
+}
+
+// IsUUID returns true is the string matches a UUID (in any version, including v6 and v7), upper case is allowed
+func IsUUID(str string) bool {
+	_, err := uuid.Parse(str)
+	return err == nil
+}
+
+// IsUUID3 returns true is the string matches a UUID v3, upper case is allowed
+func IsUUID3(str string) bool {
+	id, err := uuid.Parse(str)
+	return err == nil && id.Version() == uuid.Version(3)
+}
+
+// IsUUID4 returns true is the string matches a UUID v4, upper case is allowed
+func IsUUID4(str string) bool {
+	id, err := uuid.Parse(str)
+	return err == nil && id.Version() == uuid.Version(4)
+}
+
+// IsUUID5 returns true is the string matches a UUID v5, upper case is allowed
+func IsUUID5(str string) bool {
+	id, err := uuid.Parse(str)
+	return err == nil && id.Version() == uuid.Version(5)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // IsEmail validates an email address.

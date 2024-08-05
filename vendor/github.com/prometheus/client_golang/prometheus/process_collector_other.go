@@ -12,11 +12,18 @@
 // limitations under the License.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build !windows
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build !windows
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build !windows
+=======
+//go:build !windows && !js && !wasip1
+// +build !windows,!js,!wasip1
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package prometheus
 

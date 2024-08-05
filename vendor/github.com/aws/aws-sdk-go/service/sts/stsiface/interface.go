@@ -24,6 +24,7 @@ import (
 // to inject custom request handlers into the SDK's request pipeline.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	// myFunc uses an SDK service client to make a request to
 //	// AWS Security Token Service.
 //	func myFunc(svc stsiface.STSAPI) bool {
@@ -62,33 +63,54 @@ import (
 //    func myFunc(svc stsiface.STSAPI) bool {
 //        // Make svc.AssumeRole request
 //    }
-//
-//    func main() {
-//        sess := session.New()
-//        svc := sts.New(sess)
-//
-//        myFunc(svc)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//    // myFunc uses an SDK service client to make a request to
+//    // AWS Security Token Service.
+//    func myFunc(svc stsiface.STSAPI) bool {
+//        // Make svc.AssumeRole request
 //    }
+=======
+//	// myFunc uses an SDK service client to make a request to
+//	// AWS Security Token Service.
+//	func myFunc(svc stsiface.STSAPI) bool {
+//	    // Make svc.AssumeRole request
+//	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//
+//	func main() {
+//	    sess := session.New()
+//	    svc := sts.New(sess)
+//
+//	    myFunc(svc)
+//	}
 //
 // In your _test.go file:
 //
-//    // Define a mock struct to be used in your unit tests of myFunc.
-//    type mockSTSClient struct {
-//        stsiface.STSAPI
-//    }
-//    func (m *mockSTSClient) AssumeRole(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
-//        // mock response/functionality
-//    }
+//	// Define a mock struct to be used in your unit tests of myFunc.
+//	type mockSTSClient struct {
+//	    stsiface.STSAPI
+//	}
+//	func (m *mockSTSClient) AssumeRole(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+//	    // mock response/functionality
+//	}
 //
-//    func TestMyFunc(t *testing.T) {
-//        // Setup Test
-//        mockSvc := &mockSTSClient{}
+//	func TestMyFunc(t *testing.T) {
+//	    // Setup Test
+//	    mockSvc := &mockSTSClient{}
 //
-//        myfunc(mockSvc)
+//	    myfunc(mockSvc)
 //
+<<<<<<< HEAD
 //        // Verify myFunc's functionality
 //    }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//        // Verify myFunc's functionality
+//    }
+=======
+//	    // Verify myFunc's functionality
+//	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // It is important to note that this interface will have breaking changes
 // when the service model is updated and adds new API operations, paginators,

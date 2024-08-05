@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummaryRequest) (response *DescribeStatisticSummaryResponse, err error) {
 	response = CreateDescribeStatisticSummaryResponse()
 	err = client.DoAction(request, response)
@@ -179,6 +180,10 @@ func CreateDescribeStatisticSummaryRequest() (request *DescribeStatisticSummaryR
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummaryRequest) (response *DescribeStatisticSummaryResponse, err error) {
 	response = CreateDescribeStatisticSummaryResponse()
 	err = client.DoAction(request, response)
@@ -186,8 +191,6 @@ func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummary
 }
 
 // DescribeStatisticSummaryWithChan invokes the pvtz.DescribeStatisticSummary API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeStatisticSummaryWithChan(request *DescribeStatisticSummaryRequest) (<-chan *DescribeStatisticSummaryResponse, <-chan error) {
 	responseChan := make(chan *DescribeStatisticSummaryResponse, 1)
 	errChan := make(chan error, 1)
@@ -210,8 +213,6 @@ func (client *Client) DescribeStatisticSummaryWithChan(request *DescribeStatisti
 }
 
 // DescribeStatisticSummaryWithCallback invokes the pvtz.DescribeStatisticSummary API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeStatisticSummaryWithCallback(request *DescribeStatisticSummaryRequest, callback func(response *DescribeStatisticSummaryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -252,7 +253,12 @@ func CreateDescribeStatisticSummaryRequest() (request *DescribeStatisticSummaryR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeStatisticSummary", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

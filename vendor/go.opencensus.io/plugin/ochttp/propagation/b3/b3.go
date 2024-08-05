@@ -75,6 +75,7 @@ func ParseTraceID(tid string) (trace.TraceID, bool) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil || len(b) > 16 {
 		return trace.TraceID{}, false
 	}
@@ -212,6 +213,11 @@ func ParseSpanID(sid string) (spanID trace.SpanID, ok bool) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if err != nil {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if err != nil {
+=======
+	if err != nil || len(b) > 16 {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return trace.TraceID{}, false
 	}
 	var traceID trace.TraceID
@@ -233,8 +239,14 @@ func ParseSpanID(sid string) (spanID trace.SpanID, ok bool) {
 		return trace.SpanID{}, false
 	}
 	b, err := hex.DecodeString(sid)
+<<<<<<< HEAD
 	if err != nil {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if err != nil {
+=======
+	if err != nil || len(b) > 8 {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return trace.SpanID{}, false
 	}
 	start := 8 - len(b)

@@ -1,0 +1,6 @@
+{
+  "AssetsRepo": "Azure/azure-sdk-assets",
+  "AssetsRepoPrefixPath": "go",
+  "TagPrefix": "go/resourcemanager/privatedns/armprivatedns",
+  "Tag": "go/resourcemanager/privatedns/armprivatedns_329737d335"
+}

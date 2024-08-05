@@ -21,6 +21,7 @@ type tdIgnore struct {
 
 // Ignore operator is always true, whatever data is. It is useful when
 <<<<<<< HEAD
+<<<<<<< HEAD
 // comparing a slice with [Slice] and wanting to ignore some indexes,
 // for example (if you don't want to use [SuperSliceOf]). Or comparing
 // a struct with [SStruct] and wanting to ignore some fields:
@@ -94,7 +95,17 @@ type tdIgnore struct {
 // comparing a slice with Slice and wanting to ignore some indexes,
 // for example. Or comparing a struct with SStruct and wanting to
 // ignore some fields:
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// comparing a slice with Slice and wanting to ignore some indexes,
+// for example. Or comparing a struct with SStruct and wanting to
+// ignore some fields:
+=======
+// comparing a slice with [Slice] and wanting to ignore some indexes,
+// for example (if you don't want to use [SuperSliceOf]). Or comparing
+// a struct with [SStruct] and wanting to ignore some fields:
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
+<<<<<<< HEAD
 //   td.Cmp(t, td.SStruct(
 //     Person{
 //       Name: "John Doe",
@@ -105,6 +116,27 @@ type tdIgnore struct {
 //     }),
 //   )
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   td.Cmp(t, td.SStruct(
+//     Person{
+//       Name: "John Doe",
+//     },
+//     td.StructFields{
+//       Age:      td.Between(40, 45),
+//       Children: td.Ignore(),
+//     }),
+//   )
+=======
+//	td.Cmp(t, got, td.SStruct(
+//	  Person{
+//	    Name: "John Doe",
+//	  },
+//	  td.StructFields{
+//	    Age:      td.Between(40, 45),
+//	    Children: td.Ignore(),
+//	  }),
+//	)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func Ignore() TestDeep {
 	return &tdIgnore{
 		baseOKNil: newBaseOKNil(3),

@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -104,10 +105,25 @@
   revision = "e0a39a4cb4216ea8db28e22a69f4ec25610d513a"
   version = "1.0.0"
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+[[projects]]
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  revision = "e0a39a4cb4216ea8db28e22a69f4ec25610d513a"
+  version = "1.0.0"
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
+<<<<<<< HEAD
   inputs-digest = "daee8a88b3498b61c5640056665b8b9eea062006f5e596bbb6a3ed9119a11ec7"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+  inputs-digest = "daee8a88b3498b61c5640056665b8b9eea062006f5e596bbb6a3ed9119a11ec7"
+=======
+  input-imports = []
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   solver-name = "gps-cdcl"
   solver-version = 1

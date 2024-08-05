@@ -6,6 +6,11 @@
 // format. It follows the guide at
 // https://protobuf.dev/programming-guides/proto3#json.
 //
+<<<<<<< HEAD
 // This package produces a different output than the standard "encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// This package produces a different output than the standard [encoding/json]
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // package, which does not operate correctly on protocol buffer messages.
 package protojson

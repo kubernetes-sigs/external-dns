@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmInstanceAddressPools(request *DescribeGtmInstanceAddressPoolsRequest) (response *DescribeGtmInstanceAddressPoolsResponse, err error) {
 	response = CreateDescribeGtmInstanceAddressPoolsResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,10 @@ func CreateDescribeGtmInstanceAddressPoolsRequest() (request *DescribeGtmInstanc
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmInstanceAddressPools(request *DescribeGtmInstanceAddressPoolsRequest) (response *DescribeGtmInstanceAddressPoolsResponse, err error) {
 	response = CreateDescribeGtmInstanceAddressPoolsResponse()
 	err = client.DoAction(request, response)
@@ -196,8 +201,6 @@ func (client *Client) DescribeGtmInstanceAddressPools(request *DescribeGtmInstan
 }
 
 // DescribeGtmInstanceAddressPoolsWithChan invokes the alidns.DescribeGtmInstanceAddressPools API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceAddressPoolsWithChan(request *DescribeGtmInstanceAddressPoolsRequest) (<-chan *DescribeGtmInstanceAddressPoolsResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstanceAddressPoolsResponse, 1)
 	errChan := make(chan error, 1)
@@ -220,8 +223,6 @@ func (client *Client) DescribeGtmInstanceAddressPoolsWithChan(request *DescribeG
 }
 
 // DescribeGtmInstanceAddressPoolsWithCallback invokes the alidns.DescribeGtmInstanceAddressPools API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceAddressPoolsWithCallback(request *DescribeGtmInstanceAddressPoolsRequest, callback func(response *DescribeGtmInstanceAddressPoolsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -253,11 +254,11 @@ type DescribeGtmInstanceAddressPoolsRequest struct {
 // DescribeGtmInstanceAddressPoolsResponse is the response struct for api DescribeGtmInstanceAddressPools
 type DescribeGtmInstanceAddressPoolsResponse struct {
 	*responses.BaseResponse
-	RequestId  string                                     `json:"RequestId" xml:"RequestId"`
-	TotalItems int                                        `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                                        `json:"TotalPages" xml:"TotalPages"`
-	PageNumber int                                        `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int                                        `json:"PageSize" xml:"PageSize"`
+	RequestId  string                                     `json:"RequestId" xml:"RequestId"`
+	PageNumber int                                        `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                                        `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                                        `json:"TotalItems" xml:"TotalItems"`
 	AddrPools  AddrPoolsInDescribeGtmInstanceAddressPools `json:"AddrPools" xml:"AddrPools"`
 }
 
@@ -267,7 +268,12 @@ func CreateDescribeGtmInstanceAddressPoolsRequest() (request *DescribeGtmInstanc
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceAddressPools", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

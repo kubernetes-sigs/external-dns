@@ -2,10 +2,19 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/goccy/go-json"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // ErrMissingDomain is for when domain is needed but not given.

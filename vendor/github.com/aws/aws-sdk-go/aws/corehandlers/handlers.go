@@ -185,6 +185,7 @@ var ValidateResponseHandler = request.NamedHandler{Name: "core.ValidateResponseH
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		r.Error = awserr.New("UnknownError", "unknown error", r.Error)
 	}
 }}
@@ -420,6 +421,11 @@ var ValidateEndpointHandler = request.NamedHandler{Name: "core.ValidateEndpointH
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		r.Error = awserr.New("UnknownError", "unknown error", nil)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		r.Error = awserr.New("UnknownError", "unknown error", nil)
+=======
+		r.Error = awserr.New("UnknownError", "unknown error", r.Error)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 }}
 
@@ -466,7 +472,13 @@ var ValidateEndpointHandler = request.NamedHandler{Name: "core.ValidateEndpointH
 	if r.ClientInfo.SigningRegion == "" && aws.StringValue(r.Config.Region) == "" {
 		r.Error = aws.ErrMissingRegion
 	} else if r.ClientInfo.Endpoint == "" {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		// Was any endpoint provided by the user, or one was derived by the
+		// SDK's endpoint resolver?
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		r.Error = aws.ErrMissingEndpoint
 	}
 }}

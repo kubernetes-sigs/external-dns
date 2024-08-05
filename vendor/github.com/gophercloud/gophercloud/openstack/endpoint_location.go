@@ -36,6 +36,7 @@ func V2EndpointURL(catalog *tokens2.ServiceCatalog, opts gophercloud.EndpointOpt
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// If multiple endpoints were found, use the first result
 	// and disregard the other endpoints.
 	//
@@ -357,10 +358,16 @@ func V3EndpointURL(catalog *tokens3.ServiceCatalog, opts gophercloud.EndpointOpt
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// Report an error if the options were ambiguous.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// Report an error if the options were ambiguous.
+=======
+	// If multiple endpoints were found, use the first result
+	// and disregard the other endpoints.
+	//
+	// This behavior matches the Python library. See GH-1764.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if len(endpoints) > 1 {
-		err := &ErrMultipleMatchingEndpointsV2{}
-		err.Endpoints = endpoints
-		return "", err
+		endpoints = endpoints[0:1]
 	}
 
 	// Extract the appropriate URL from the matching Endpoint.
@@ -418,10 +425,19 @@ func V3EndpointURL(catalog *tokens3.ServiceCatalog, opts gophercloud.EndpointOpt
 		}
 	}
 
-	// Report an error if the options were ambiguous.
+	// If multiple endpoints were found, use the first result
+	// and disregard the other endpoints.
+	//
+	// This behavior matches the Python library. See GH-1764.
 	if len(endpoints) > 1 {
+<<<<<<< HEAD
 		return "", ErrMultipleMatchingEndpointsV3{Endpoints: endpoints}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return "", ErrMultipleMatchingEndpointsV3{Endpoints: endpoints}
+=======
+		endpoints = endpoints[0:1]
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	// Extract the URL from the matching Endpoint.

@@ -36,6 +36,7 @@ func NewURLs(strs []string) (URLs, error) {
 		if err != nil {
 			return nil, err
 		}
+<<<<<<< HEAD
 		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "unix" && u.Scheme != "unixs" {
 			return nil, fmt.Errorf("URL scheme must be http, https, unix, or unixs: %s", in)
 		}
@@ -50,6 +51,28 @@ func NewURLs(strs []string) (URLs, error) {
 	us := URLs(all)
 	us.Sort()
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+		switch u.Scheme {
+		case "http", "https":
+			if _, _, err := net.SplitHostPort(u.Host); err != nil {
+				return nil, fmt.Errorf(`URL address does not have the form "host:port": %s`, in)
+			}
+
+			if u.Path != "" {
+				return nil, fmt.Errorf("URL must not contain a path: %s", in)
+			}
+		case "unix", "unixs":
+			break
+		default:
+			return nil, fmt.Errorf("URL scheme must be http, https, unix, or unixs: %s", in)
+		}
+		all[i] = *u
+	}
+	us := URLs(all)
+	us.Sort()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return us, nil
 }
 

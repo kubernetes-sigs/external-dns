@@ -60,6 +60,7 @@ func logRequest(r *request.Request) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if !r.Config.LogLevel.AtLeast(aws.LogDebug) || r.Config.Logger == nil {
 		return
 	}
@@ -650,6 +651,13 @@ func logResponseHeader(r *request.Request) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if !r.Config.LogLevel.AtLeast(aws.LogDebug) || r.Config.Logger == nil {
+		return
+	}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	logBody := r.Config.LogLevel.Matches(aws.LogDebugWithHTTPBody)
 	bodySeekable := aws.IsReaderSeekable(r.Body)
 
@@ -687,6 +695,10 @@ var LogHTTPRequestHeaderHandler = request.NamedHandler{
 }
 
 func logRequestHeader(r *request.Request) {
+	if !r.Config.LogLevel.AtLeast(aws.LogDebug) || r.Config.Logger == nil {
+		return
+	}
+
 	b, err := httputil.DumpRequestOut(r.HTTPRequest, false)
 	if err != nil {
 		r.Config.Logger.Log(fmt.Sprintf(logReqErrMsg,
@@ -717,6 +729,10 @@ var LogHTTPResponseHandler = request.NamedHandler{
 }
 
 func logResponse(r *request.Request) {
+	if !r.Config.LogLevel.AtLeast(aws.LogDebug) || r.Config.Logger == nil {
+		return
+	}
+
 	lw := &logWriter{r.Config.Logger, bytes.NewBuffer(nil)}
 
 	if r.HTTPResponse == nil {
@@ -775,8 +791,14 @@ var LogHTTPResponseHeaderHandler = request.NamedHandler{
 }
 
 func logResponseHeader(r *request.Request) {
+<<<<<<< HEAD
 	if r.Config.Logger == nil {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if r.Config.Logger == nil {
+=======
+	if !r.Config.LogLevel.AtLeast(aws.LogDebug) || r.Config.Logger == nil {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return
 	}
 

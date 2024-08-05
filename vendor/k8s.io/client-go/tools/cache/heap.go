@@ -311,6 +311,7 @@ func (h *Heap) IsClosed() bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return h.closed
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -364,6 +365,14 @@ func (h *Heap) IsClosed() bool {
 	}
 	return false
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if h.closed {
+		return true
+	}
+	return false
+=======
+	return h.closed
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // NewHeap returns a Heap which can be used to queue up items to process.

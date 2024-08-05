@@ -21,9 +21,10 @@ func (e *Error) Error() string {
 // Response will contain a body (which can be empty), status code and the Method.
 // This struct will be used to decode a response from the api server.
 type Response struct {
-	Body       []byte
-	StatusCode int
-	Method     Method
+	Body            []byte
+	StatusCode      int
+	Method          Method
+	ContentLocation string
 }
 
 // Time is defined because the transip api server does not return a rfc 3339 time string
@@ -91,7 +92,7 @@ func (r *Response) ParseResponse(dest interface{}) error {
 		return nil
 	}
 
-	return json.Unmarshal(r.Body, &dest)
+	return json.Unmarshal(r.Body, dest)
 }
 
 // parseErrorResponse tries to unmarshal the error response body

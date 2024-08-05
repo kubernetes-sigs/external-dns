@@ -3,21 +3,21 @@
 // Provides request signing for request that need to be signed with
 // AWS V4 Signatures.
 //
-// Standalone Signer
+// # Standalone Signer
 //
 // Generally using the signer outside of the SDK should not require any additional
 // logic when using Go v1.5 or higher. The signer does this by taking advantage
 // of the URL.EscapedPath method. If your request URI requires additional escaping
-// you many need to use the URL.Opaque to define what the raw URI should be sent
+// you may need to use the URL.Opaque to define what the raw URI should be sent
 // to the service as.
 //
 // The signer will first check the URL.Opaque field, and use its value if set.
 // The signer does require the URL.Opaque field to be set in the form of:
 //
-//     "//<hostname>/<path>"
+//	"//<hostname>/<path>"
 //
-//     // e.g.
-//     "//example.com/some/path"
+//	// e.g.
+//	"//example.com/some/path"
 //
 // The leading "//" and hostname are required or the URL.Opaque escaping will
 // not work correctly.
@@ -90,6 +90,7 @@ const (
 )
 
 var ignoredHeaders = rules{
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -2574,6 +2575,11 @@ func (ctx *signingCtx) buildBodyDigest() error {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	blacklist{
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	blacklist{
+=======
+	excludeList{
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		mapRule{
 			authorizationHeader: struct{}{},
 			"User-Agent":        struct{}{},
@@ -2582,9 +2588,9 @@ func (ctx *signingCtx) buildBodyDigest() error {
 	},
 }
 
-// requiredSignedHeaders is a whitelist for build canonical headers.
+// requiredSignedHeaders is a allow list for build canonical headers.
 var requiredSignedHeaders = rules{
-	whitelist{
+	allowList{
 		mapRule{
 			"Cache-Control":                         struct{}{},
 			"Content-Disposition":                   struct{}{},
@@ -2608,6 +2614,7 @@ var requiredSignedHeaders = rules{
 			"X-Amz-Copy-Source-Server-Side-Encryption-Customer-Algorithm": struct{}{},
 			"X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key":       struct{}{},
 			"X-Amz-Copy-Source-Server-Side-Encryption-Customer-Key-Md5":   struct{}{},
+			"X-Amz-Expected-Bucket-Owner":                                 struct{}{},
 			"X-Amz-Grant-Full-control":                                    struct{}{},
 			"X-Amz-Grant-Read":                                            struct{}{},
 			"X-Amz-Grant-Read-Acp":                                        struct{}{},
@@ -2618,6 +2625,7 @@ var requiredSignedHeaders = rules{
 			"X-Amz-Request-Payer":                                         struct{}{},
 			"X-Amz-Server-Side-Encryption":                                struct{}{},
 			"X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id":                 struct{}{},
+			"X-Amz-Server-Side-Encryption-Context":                        struct{}{},
 			"X-Amz-Server-Side-Encryption-Customer-Algorithm":             struct{}{},
 			"X-Amz-Server-Side-Encryption-Customer-Key":                   struct{}{},
 			"X-Amz-Server-Side-Encryption-Customer-Key-Md5":               struct{}{},
@@ -2628,12 +2636,13 @@ var requiredSignedHeaders = rules{
 		},
 	},
 	patterns{"X-Amz-Meta-"},
+	patterns{"X-Amz-Object-Lock-"},
 }
 
-// allowedHoisting is a whitelist for build query headers. The boolean value
+// allowedHoisting is a allow list for build query headers. The boolean value
 // represents whether or not it is a pattern.
 var allowedQueryHoisting = inclusiveRules{
-	blacklist{requiredSignedHeaders},
+	excludeList{requiredSignedHeaders},
 	patterns{"X-Amz-"},
 }
 
@@ -2900,7 +2909,7 @@ var SignRequestHandler = request.NamedHandler{
 // request handler should only be used with the SDK's built in service client's
 // API operation requests.
 //
-// This function should not be used on its on its own, but in conjunction with
+// This function should not be used on its own, but in conjunction with
 // an AWS service client's API operation call. To sign a standalone request
 // not created by a service client's API operation method use the "Sign" or
 // "Presign" functions of the "Signer" type.
@@ -3116,21 +3125,25 @@ func (ctx *signingCtx) buildCanonicalHeaders(r rule, header http.Header) {
 		ctx.Query.Set("X-Amz-SignedHeaders", ctx.signedHeaders)
 	}
 
-	headerValues := make([]string, len(headers))
+	headerItems := make([]string, len(headers))
 	for i, k := range headers {
 		if k == "host" {
 			if ctx.Request.Host != "" {
-				headerValues[i] = "host:" + ctx.Request.Host
+				headerItems[i] = "host:" + ctx.Request.Host
 			} else {
-				headerValues[i] = "host:" + ctx.Request.URL.Host
+				headerItems[i] = "host:" + ctx.Request.URL.Host
 			}
 		} else {
-			headerValues[i] = k + ":" +
-				strings.Join(ctx.SignedHeaderVals[k], ",")
+			headerValues := make([]string, len(ctx.SignedHeaderVals[k]))
+			for i, v := range ctx.SignedHeaderVals[k] {
+				headerValues[i] = strings.TrimSpace(v)
+			}
+			headerItems[i] = k + ":" +
+				strings.Join(headerValues, ",")
 		}
 	}
-	stripExcessSpaces(headerValues)
-	ctx.canonicalHeaders = strings.Join(headerValues, "\n")
+	stripExcessSpaces(headerItems)
+	ctx.canonicalHeaders = strings.Join(headerItems, "\n")
 }
 
 func (ctx *signingCtx) buildCanonicalString() {
@@ -3172,10 +3185,20 @@ func (ctx *signingCtx) buildBodyDigest() error {
 	if hash == "" {
 		includeSHA256Header := ctx.unsignedPayload ||
 			ctx.ServiceName == "s3" ||
-			ctx.ServiceName == "glacier"
+			ctx.ServiceName == "s3-object-lambda" ||
+			ctx.ServiceName == "glacier" ||
+			ctx.ServiceName == "s3-outposts"
 
+<<<<<<< HEAD
 		s3Presign := ctx.isPresign && ctx.ServiceName == "s3"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		s3Presign := ctx.isPresign && ctx.ServiceName == "s3"
+=======
+		s3Presign := ctx.isPresign &&
+			(ctx.ServiceName == "s3" ||
+				ctx.ServiceName == "s3-object-lambda")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 		if ctx.unsignedPayload || s3Presign {
 			hash = "UNSIGNED-PAYLOAD"

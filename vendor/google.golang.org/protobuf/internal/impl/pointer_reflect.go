@@ -3,6 +3,10 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //go:build purego || appengine
 // +build purego appengine
 
@@ -123,6 +127,7 @@ func (p pointer) String() *string          { return p.v.Interface().(*string) }
 func (p pointer) StringPtr() **string      { return p.v.Interface().(**string) }
 func (p pointer) StringSlice() *[]string   { return p.v.Interface().(*[]string) }
 func (p pointer) Bytes() *[]byte           { return p.v.Interface().(*[]byte) }
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -273,6 +278,10 @@ func (p pointer) StringPtr() **string      { return p.v.Interface().(**string) }
 func (p pointer) StringSlice() *[]string   { return p.v.Interface().(*[]string) }
 func (p pointer) Bytes() *[]byte           { return p.v.Interface().(*[]byte) }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func (p pointer) BytesPtr() **[]byte       { return p.v.Interface().(**[]byte) }
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (p pointer) BytesSlice() *[][]byte    { return p.v.Interface().(*[][]byte) }
 func (p pointer) WeakFields() *weakFields  { return (*weakFields)(p.v.Interface().(*WeakFields)) }
 func (p pointer) Extensions() *map[int32]ExtensionField {
@@ -307,6 +316,42 @@ func (p pointer) AppendPointerSlice(v pointer) {
 // SetPointer sets *p to v.
 func (p pointer) SetPointer(v pointer) {
 	p.v.Elem().Set(v.v)
+}
+
+func growSlice(p pointer, addCap int) {
+	// TODO: Once we only support Go 1.20 and newer, use reflect.Grow.
+	in := p.v.Elem()
+	out := reflect.MakeSlice(in.Type(), in.Len(), in.Len()+addCap)
+	reflect.Copy(out, in)
+	p.v.Elem().Set(out)
+}
+
+func (p pointer) growBoolSlice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growInt32Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growUint32Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growInt64Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growUint64Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growFloat64Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growFloat32Slice(addCap int) {
+	growSlice(p, addCap)
 }
 
 func (Export) MessageStateOf(p Pointer) *messageState     { panic("not supported") }

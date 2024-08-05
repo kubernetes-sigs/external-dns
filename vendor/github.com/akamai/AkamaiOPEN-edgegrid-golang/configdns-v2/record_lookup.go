@@ -3,9 +3,11 @@ package dnsv2
 import (
 	"encoding/hex"
 	"fmt"
+	"net"
+
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/client-v1"
 	edge "github.com/akamai/AkamaiOPEN-edgegrid-golang/edgegrid"
-	"net"
+
 	//"sort"
 	"strconv"
 	"strings"
@@ -452,6 +454,7 @@ func ParseRData(rtype string, rdata []string) map[string]interface{} {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	case "SVCB":
 		for _, rcontent := range rdata {
 			parts := strings.SplitN(rcontent, " ", 3)
@@ -593,6 +596,39 @@ func ParseRData(rtype string, rdata []string) map[string]interface{} {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	case "SVCB":
+		for _, rcontent := range rdata {
+			parts := strings.SplitN(rcontent, " ", 3)
+			// has to be at least two fields.
+			if len(parts) < 2 {
+				break
+			}
+			fieldMap["svc_priority"], _ = strconv.Atoi(parts[0])
+			fieldMap["target_name"] = parts[1]
+			if len(parts) > 2 {
+				fieldMap["svc_params"] = parts[2]
+			}
+			break
+		}
+
+	case "HTTPS":
+		for _, rcontent := range rdata {
+			parts := strings.SplitN(rcontent, " ", 3)
+			// has to be at least two fields.
+			if len(parts) < 2 {
+				break
+			}
+			fieldMap["svc_priority"], _ = strconv.Atoi(parts[0])
+			fieldMap["target_name"] = parts[1]
+			if len(parts) > 2 {
+				fieldMap["svc_params"] = parts[2]
+			}
+			break
+		}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	default:
 		for _, rcontent := range rdata {
 			newrdata = append(newrdata, rcontent)

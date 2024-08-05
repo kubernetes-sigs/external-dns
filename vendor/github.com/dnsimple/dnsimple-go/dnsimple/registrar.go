@@ -68,6 +68,7 @@ type DomainPremiumPriceOptions struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Deprecated: GetDomainPremiumPrice has been deprecated, use GetDomainPrices instead.
 //
 // You must specify an action to get the price for. Valid actions are:
@@ -588,6 +589,11 @@ type RenewDomainInput struct {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Deprecated: GetDomainPremiumPrice has been deprecated, use GetDomainPrices instead.
+//
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // You must specify an action to get the price for. Valid actions are:
 // - registration
 // - transfer
@@ -615,11 +621,42 @@ func (s *RegistrarService) GetDomainPremiumPrice(ctx context.Context, accountID 
 	return priceResponse, nil
 }
 
-// DomainRegistration represents the result of a domain renewal call.
+// DomainPrice represents the result of a domain prices call.
+type DomainPrice struct {
+	Domain            string  `json:"domain"`
+	Premium           bool    `json:"premium"`
+	RegistrationPrice float64 `json:"registration_price"`
+	RenewalPrice      float64 `json:"renewal_price"`
+	TransferPrice     float64 `json:"transfer_price"`
+}
+
+// DomainPriceResponse represents a response from an API method that returns a DomainPrice struct.
+type DomainPriceResponse struct {
+	Response
+	Data *DomainPrice `json:"data"`
+}
+
+// GetDomainPrices get prices for a domain.
+//
+// See https://developer.dnsimple.com/v2/registrar/#getDomainPrices
+func (s *RegistrarService) GetDomainPrices(ctx context.Context, accountID string, domainName string) (*DomainPriceResponse, error) {
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/prices", accountID, domainName))
+	pricesResponse := &DomainPriceResponse{}
+
+	resp, err := s.client.get(ctx, path, pricesResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	pricesResponse.HTTPResponse = resp
+	return pricesResponse, nil
+}
+
+// DomainRegistration represents the result of a domain registration call.
 type DomainRegistration struct {
-	ID           int    `json:"id"`
-	DomainID     int    `json:"domain_id"`
-	RegistrantID int    `json:"registrant_id"`
+	ID           int64  `json:"id"`
+	DomainID     int64  `json:"domain_id"`
+	RegistrantID int64  `json:"registrant_id"`
 	Period       int    `json:"period"`
 	State        string `json:"state"`
 	AutoRenew    bool   `json:"auto_renew"`
@@ -632,6 +669,23 @@ type DomainRegistration struct {
 type DomainRegistrationResponse struct {
 	Response
 	Data *DomainRegistration `json:"data"`
+}
+
+// GetDomainRegistration gets the details of an existing domain registration.
+//
+// See https://developer.dnsimple.com/v2/registrar/#getDomainRegistration
+func (s *RegistrarService) GetDomainRegistration(ctx context.Context, accountID string, domainName string, domainRegistrationID string) (*DomainRegistrationResponse, error) {
+	var err error
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/registrations/%v", accountID, domainName, domainRegistrationID))
+	res := &DomainRegistrationResponse{}
+
+	resp, err := s.client.get(ctx, path, res)
+	if err != nil {
+		return nil, err
+	}
+
+	res.HTTPResponse = resp
+	return res, nil
 }
 
 // RegisterDomainInput represents the attributes you can pass to a register API request.
@@ -653,7 +707,7 @@ type RegisterDomainInput struct {
 
 // RegisterDomain registers a domain name.
 //
-// See https://developer.dnsimple.com/v2/registrar/#register
+// See https://developer.dnsimple.com/v2/registrar/#registerDomain
 func (s *RegistrarService) RegisterDomain(ctx context.Context, accountID string, domainName string, input *RegisterDomainInput) (*DomainRegistrationResponse, error) {
 	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/registrations", accountID, domainName))
 	registrationResponse := &DomainRegistrationResponse{}
@@ -669,16 +723,17 @@ func (s *RegistrarService) RegisterDomain(ctx context.Context, accountID string,
 	return registrationResponse, nil
 }
 
-// DomainTransfer represents the result of a domain renewal call.
+// DomainTransfer represents the result of a domain transfer call.
 type DomainTransfer struct {
-	ID           int    `json:"id"`
-	DomainID     int    `json:"domain_id"`
-	RegistrantID int    `json:"registrant_id"`
-	State        string `json:"state"`
-	AutoRenew    bool   `json:"auto_renew"`
-	WhoisPrivacy bool   `json:"whois_privacy"`
-	CreatedAt    string `json:"created_at,omitempty"`
-	UpdatedAt    string `json:"updated_at,omitempty"`
+	ID                int64  `json:"id"`
+	DomainID          int64  `json:"domain_id"`
+	RegistrantID      int64  `json:"registrant_id"`
+	State             string `json:"state"`
+	AutoRenew         bool   `json:"auto_renew"`
+	WhoisPrivacy      bool   `json:"whois_privacy"`
+	StatusDescription string `json:"status_description"`
+	CreatedAt         string `json:"created_at,omitempty"`
+	UpdatedAt         string `json:"updated_at,omitempty"`
 }
 
 // DomainTransferResponse represents a response from an API method that results in a domain transfer.
@@ -725,6 +780,38 @@ func (s *RegistrarService) TransferDomain(ctx context.Context, accountID string,
 	return transferResponse, nil
 }
 
+// GetDomainTransfer fetches a domain transfer.
+//
+// See https://developer.dnsimple.com/v2/registrar/#getDomainTransfer
+func (s *RegistrarService) GetDomainTransfer(ctx context.Context, accountID string, domainName string, domainTransferID int64) (*DomainTransferResponse, error) {
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/transfers/%v", accountID, domainName, domainTransferID))
+	transferResponse := &DomainTransferResponse{}
+
+	resp, err := s.client.get(ctx, path, transferResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	transferResponse.HTTPResponse = resp
+	return transferResponse, nil
+}
+
+// CancelDomainTransfer cancels an in progress domain transfer.
+//
+// See https://developer.dnsimple.com/v2/registrar/#cancelDomainTransfer
+func (s *RegistrarService) CancelDomainTransfer(ctx context.Context, accountID string, domainName string, domainTransferID int64) (*DomainTransferResponse, error) {
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/transfers/%v", accountID, domainName, domainTransferID))
+	transferResponse := &DomainTransferResponse{}
+
+	resp, err := s.client.delete(ctx, path, nil, transferResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	transferResponse.HTTPResponse = resp
+	return transferResponse, nil
+}
+
 // DomainTransferOutResponse represents a response from an API method that results in a domain transfer out.
 type DomainTransferOutResponse struct {
 	Response
@@ -749,8 +836,8 @@ func (s *RegistrarService) TransferDomainOut(ctx context.Context, accountID stri
 
 // DomainRenewal represents the result of a domain renewal call.
 type DomainRenewal struct {
-	ID        int    `json:"id"`
-	DomainID  int    `json:"domain_id"`
+	ID        int64  `json:"id"`
+	DomainID  int64  `json:"domain_id"`
 	Period    int    `json:"period"`
 	State     string `json:"state"`
 	CreatedAt string `json:"created_at,omitempty"`
@@ -761,6 +848,38 @@ type DomainRenewal struct {
 type DomainRenewalResponse struct {
 	Response
 	Data *DomainRenewal `json:"data"`
+}
+
+// DomainRestore represents the result of a domain restore call.
+type DomainRestore struct {
+	ID        int64  `json:"id"`
+	DomainID  int64  `json:"domain_id"`
+	State     string `json:"state"`
+	CreatedAt string `json:"created_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty"`
+}
+
+// DomainRestoreResponse represents a response from an API method that returns a domain restore.
+type DomainRestoreResponse struct {
+	Response
+	Data *DomainRestore `json:"data"`
+}
+
+// GetDomainRenewal gets the details of an existing domain renewal.
+//
+// See https://developer.dnsimple.com/v2/registrar/#getDomainRenewal
+func (s *RegistrarService) GetDomainRenewal(ctx context.Context, accountID string, domainName string, domainRenewalID string) (*DomainRenewalResponse, error) {
+	var err error
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/renewals/%v", accountID, domainName, domainRenewalID))
+	res := &DomainRenewalResponse{}
+
+	resp, err := s.client.get(ctx, path, res)
+	if err != nil {
+		return nil, err
+	}
+
+	res.HTTPResponse = resp
+	return res, nil
 }
 
 // RenewDomainInput represents the attributes you can pass to a renew API request.
@@ -774,8 +893,14 @@ type RenewDomainInput struct {
 
 // RenewDomain renews a domain name.
 //
+<<<<<<< HEAD
 // See https://developer.dnsimple.com/v2/registrar/#register
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See https://developer.dnsimple.com/v2/registrar/#register
+=======
+// See https://developer.dnsimple.com/v2/registrar/#renewDomain
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (s *RegistrarService) RenewDomain(ctx context.Context, accountID string, domainName string, input *RenewDomainInput) (*DomainRenewalResponse, error) {
 	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/renewals", accountID, domainName))
 	renewalResponse := &DomainRenewalResponse{}
@@ -787,4 +912,37 @@ func (s *RegistrarService) RenewDomain(ctx context.Context, accountID string, do
 
 	renewalResponse.HTTPResponse = resp
 	return renewalResponse, nil
+}
+
+// RestoreDomain restores a domain name.
+//
+// See https://developer.dnsimple.com/v2/registrar/#renewDomain
+func (s *RegistrarService) RestoreDomain(ctx context.Context, accountID string, domainName string, input *RenewDomainInput) (*DomainRenewalResponse, error) {
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/restores", accountID, domainName))
+	renewalResponse := &DomainRenewalResponse{}
+
+	resp, err := s.client.post(ctx, path, input, renewalResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	renewalResponse.HTTPResponse = resp
+	return renewalResponse, nil
+}
+
+// GetDomainRestore gets the details of an existing domain restore.
+//
+// See https://developer.dnsimple.com/v2/registrar/#getDomainRestore
+func (s *RegistrarService) GetDomainRestore(ctx context.Context, accountID string, domainName string, domainRestoreID string) (*DomainRestoreResponse, error) {
+	var err error
+	path := versioned(fmt.Sprintf("/%v/registrar/domains/%v/restores/%v", accountID, domainName, domainRestoreID))
+	res := &DomainRestoreResponse{}
+
+	resp, err := s.client.get(ctx, path, res)
+	if err != nil {
+		return nil, err
+	}
+
+	res.HTTPResponse = resp
+	return res, nil
 }

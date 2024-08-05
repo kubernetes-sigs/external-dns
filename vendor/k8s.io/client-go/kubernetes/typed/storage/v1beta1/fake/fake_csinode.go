@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -523,13 +524,18 @@ func (c *FakeCSINodes) Apply(ctx context.Context, cSINode *storagev1beta1.CSINod
 		Invokes(testing.NewRootPatchSubresourceAction(csinodesResource, *name, types.ApplyPatchType, data), &v1beta1.CSINode{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	v1beta1 "k8s.io/api/storage/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	storagev1beta1 "k8s.io/client-go/applyconfigurations/storage/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -538,9 +544,9 @@ type FakeCSINodes struct {
 	Fake *FakeStorageV1beta1
 }
 
-var csinodesResource = schema.GroupVersionResource{Group: "storage.k8s.io", Version: "v1beta1", Resource: "csinodes"}
+var csinodesResource = v1beta1.SchemeGroupVersion.WithResource("csinodes")
 
-var csinodesKind = schema.GroupVersionKind{Group: "storage.k8s.io", Version: "v1beta1", Kind: "CSINode"}
+var csinodesKind = v1beta1.SchemeGroupVersion.WithKind("CSINode")
 
 // Get takes name of the cSINode, and returns the corresponding cSINode object, and an error if there is any.
 func (c *FakeCSINodes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.CSINode, err error) {
@@ -602,7 +608,7 @@ func (c *FakeCSINodes) Update(ctx context.Context, cSINode *v1beta1.CSINode, opt
 // Delete takes name of the cSINode and deletes it. Returns an error if one occurs.
 func (c *FakeCSINodes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(csinodesResource, name), &v1beta1.CSINode{})
+		Invokes(testing.NewRootDeleteActionWithOptions(csinodesResource, name, opts), &v1beta1.CSINode{})
 	return err
 }
 
@@ -619,6 +625,27 @@ func (c *FakeCSINodes) Patch(ctx context.Context, name string, pt types.PatchTyp
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(csinodesResource, name, pt, data, subresources...), &v1beta1.CSINode{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CSINode), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied cSINode.
+func (c *FakeCSINodes) Apply(ctx context.Context, cSINode *storagev1beta1.CSINodeApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CSINode, err error) {
+	if cSINode == nil {
+		return nil, fmt.Errorf("cSINode provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(cSINode)
+	if err != nil {
+		return nil, err
+	}
+	name := cSINode.Name
+	if name == nil {
+		return nil, fmt.Errorf("cSINode.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(csinodesResource, *name, types.ApplyPatchType, data), &v1beta1.CSINode{})
 	if obj == nil {
 		return nil, err
 	}

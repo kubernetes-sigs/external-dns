@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -161,6 +162,10 @@ func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (bool, *Modul
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"time"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"golang.org/x/mod/semver"
 )
@@ -168,11 +173,15 @@ func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (bool, *Modul
 // ModuleJSON holds information about a module.
 type ModuleJSON struct {
 	Path      string      // module path
+	Version   string      // module version
+	Versions  []string    // available module versions (with -versions)
 	Replace   *ModuleJSON // replaced by this module
+	Time      *time.Time  // time version was created
+	Update    *ModuleJSON // available update, if any (with -u)
 	Main      bool        // is this the main module?
 	Indirect  bool        // is this module only an indirect dependency of main module?
 	Dir       string      // directory holding files for this module, if any
-	GoMod     string      // path to go.mod file for this module, if any
+	GoMod     string      // path to go.mod file used when loading this module, if any
 	GoVersion string      // go version used in module
 }
 
@@ -182,10 +191,10 @@ var modFlagRegexp = regexp.MustCompile(`-mod[ =](\w+)`)
 // with the supplied context.Context and Invocation. The Invocation can contain pre-defined fields,
 // of which only Verb and Args are modified to run the appropriate Go command.
 // Inspired by setDefaultBuildMod in modload/init.go
-func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (*ModuleJSON, bool, error) {
+func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (bool, *ModuleJSON, error) {
 	mainMod, go114, err := getMainModuleAnd114(ctx, inv, r)
 	if err != nil {
-		return nil, false, err
+		return false, nil, err
 	}
 
 	// We check the GOFLAGS to see if there is anything overridden or not.
@@ -193,7 +202,7 @@ func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (*ModuleJSON,
 	inv.Args = []string{"GOFLAGS"}
 	stdout, err := r.Run(ctx, inv)
 	if err != nil {
-		return nil, false, err
+		return false, nil, err
 	}
 	goflags := string(bytes.TrimSpace(stdout.Bytes()))
 	matches := modFlagRegexp.FindStringSubmatch(goflags)
@@ -201,26 +210,34 @@ func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (*ModuleJSON,
 	if len(matches) != 0 {
 		modFlag = matches[1]
 	}
-	if modFlag != "" {
-		// Don't override an explicit '-mod=' argument.
-		return mainMod, modFlag == "vendor", nil
+	// Don't override an explicit '-mod=' argument.
+	if modFlag == "vendor" {
+		return true, mainMod, nil
+	} else if modFlag != "" {
+		return false, nil, nil
 	}
 	if mainMod == nil || !go114 {
-		return mainMod, false, nil
+		return false, nil, nil
 	}
 	// Check 1.14's automatic vendor mode.
 	if fi, err := os.Stat(filepath.Join(mainMod.Dir, "vendor")); err == nil && fi.IsDir() {
 		if mainMod.GoVersion != "" && semver.Compare("v"+mainMod.GoVersion, "v1.14") >= 0 {
 			// The Go version is at least 1.14, and a vendor directory exists.
 			// Set -mod=vendor by default.
-			return mainMod, true, nil
+			return true, mainMod, nil
 		}
 	}
-	return mainMod, false, nil
+	return false, nil, nil
 }
 
+<<<<<<< HEAD
 // getMainModuleAnd114 gets the main module's information and whether the
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// getMainModuleAnd114 gets the main module's information and whether the
+=======
+// getMainModuleAnd114 gets one of the main modules' information and whether the
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // go command in use is 1.14+. This is the information needed to figure out
 // if vendoring should be enabled.
 func getMainModuleAnd114(ctx context.Context, inv Invocation, r *Runner) (*ModuleJSON, bool, error) {

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+<<<<<<< HEAD
 	"sort"
 
 	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
@@ -57,6 +58,60 @@ func checkAuthParams(request tchttp.Request, credential CredentialIface, method 
 	}
 	params["SignatureMethod"] = method
 	delete(params, "Signature")
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"hash"
+	"sort"
+
+	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
+)
+
+const (
+	SHA256 = "HmacSHA256"
+	SHA1   = "HmacSHA1"
+)
+
+func Sign(s, secretKey, method string) string {
+	var hashed hash.Hash
+	switch method {
+	case SHA256:
+		hashed = hmac.New(sha256.New, []byte(secretKey))
+	default:
+		hashed = hmac.New(sha1.New, []byte(secretKey))
+	}
+	hashed.Write([]byte(s))
+
+	return base64.StdEncoding.EncodeToString(hashed.Sum(nil))
+}
+
+func sha256hex(s string) string {
+	b := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(b[:])
+}
+
+func hmacsha256(s, key string) string {
+	hashed := hmac.New(sha256.New, []byte(key))
+	hashed.Write([]byte(s))
+	return string(hashed.Sum(nil))
+}
+
+func signRequest(request tchttp.Request, credential CredentialIface, method string) (err error) {
+	if method != SHA256 {
+		method = SHA1
+	}
+	params := request.GetParams()
+	secId, secKey, token := credential.GetCredential()
+	params["SecretId"] = secId
+	if len(token) != 0 {
+		params["Token"] = token
+	}
+	params["SignatureMethod"] = method
+	delete(params, "Signature")
+	s := getStringToSign(request)
+	signature := Sign(s, secKey, method)
+	request.GetParams()["Signature"] = signature
+	return
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func getStringToSign(request tchttp.Request) string {

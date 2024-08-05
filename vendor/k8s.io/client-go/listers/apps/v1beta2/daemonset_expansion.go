@@ -61,6 +61,7 @@ func (s *daemonSetLister) GetPodDaemonSets(pod *v1.Pod) ([]*apps.DaemonSet, erro
 		selector, err = metav1.LabelSelectorAsSelector(daemonSet.Spec.Selector)
 		if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			// This object has an invalid selector, it does not match the pod
 			continue
 		}
@@ -103,6 +104,13 @@ func (s *daemonSetLister) GetHistoryDaemonSets(history *apps.ControllerRevision)
 =======
 			// this should not happen if the DaemonSet passed validation
 			return nil, err
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			// this should not happen if the DaemonSet passed validation
+			return nil, err
+=======
+			// This object has an invalid selector, it does not match the pod
+			continue
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 
 		// If a daemonSet with a nil or empty selector creeps in, it should match nothing, not everything.
@@ -137,8 +145,15 @@ func (s *daemonSetLister) GetHistoryDaemonSets(history *apps.ControllerRevision)
 	for _, ds := range list {
 		selector, err := metav1.LabelSelectorAsSelector(ds.Spec.Selector)
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("invalid label selector: %v", err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			return nil, fmt.Errorf("invalid label selector: %v", err)
+=======
+			// This object has an invalid selector, it does not match the history object
+			continue
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 		// If a DaemonSet with a nil or empty selector creeps in, it should match nothing, not everything.
 		if selector.Empty() || !selector.Matches(labels.Set(history.Labels)) {

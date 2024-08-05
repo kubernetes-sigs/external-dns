@@ -88,5 +88,18 @@ type Config struct {
 	// PermitWithoutStream when set will allow client to send keepalive pings to server without any active streams(RPCs).
 	PermitWithoutStream bool `json:"permit-without-stream"`
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// MaxUnaryRetries is the maximum number of retries for unary RPCs.
+	MaxUnaryRetries uint `json:"max-unary-retries"`
+
+	// BackoffWaitBetween is the wait time before retrying an RPC.
+	BackoffWaitBetween time.Duration `json:"backoff-wait-between"`
+
+	// BackoffJitterFraction is the jitter fraction to randomize backoff wait time.
+	BackoffJitterFraction float64 `json:"backoff-jitter-fraction"`
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// TODO: support custom balancer picker
 }

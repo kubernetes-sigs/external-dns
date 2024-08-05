@@ -23,6 +23,7 @@ package types
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NamespacedName comprises a resource name, with a mandatory namespace,
 // rendered as "<namespace>/<name>".  Being a type captures intent and
 // helps make sure that UIDs, namespaced names and non-namespaced names
@@ -169,6 +170,13 @@ import (
 	"fmt"
 )
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+import (
+	"fmt"
+)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // NamespacedName comprises a resource name, with a mandatory namespace,
 // rendered as "<namespace>/<name>".  Being a type captures intent and
 // helps make sure that UIDs, namespaced names and non-namespaced names
@@ -188,6 +196,23 @@ const (
 
 // String returns the general purpose string representation
 func (n NamespacedName) String() string {
+<<<<<<< HEAD
 	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
+=======
+	return n.Namespace + string(Separator) + n.Name
+}
+
+// MarshalLog emits a struct containing required key/value pair
+func (n NamespacedName) MarshalLog() interface{} {
+	return struct {
+		Name      string `json:"name"`
+		Namespace string `json:"namespace,omitempty"`
+	}{
+		Name:      n.Name,
+		Namespace: n.Namespace,
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

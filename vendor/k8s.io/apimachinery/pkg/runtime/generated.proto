@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -126,11 +127,16 @@ message RawExtension {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package k8s.io.apimachinery.pkg.runtime;
 
 // Package-wide variables from generator "generated".
-option go_package = "runtime";
+option go_package = "k8s.io/apimachinery/pkg/runtime";
 
 // RawExtension is used to hold extensions in external versions.
 //
@@ -139,32 +145,37 @@ option go_package = "runtime";
 // various plugin types.
 //
 // // Internal package:
-// type MyAPIObject struct {
-// 	runtime.TypeMeta `json:",inline"`
-// 	MyPlugin runtime.Object `json:"myPlugin"`
-// }
-// type PluginA struct {
-// 	AOption string `json:"aOption"`
-// }
+//
+// 	type MyAPIObject struct {
+// 		runtime.TypeMeta `json:",inline"`
+// 		MyPlugin runtime.Object `json:"myPlugin"`
+// 	}
+//
+// 	type PluginA struct {
+// 		AOption string `json:"aOption"`
+// 	}
 //
 // // External package:
-// type MyAPIObject struct {
-// 	runtime.TypeMeta `json:",inline"`
-// 	MyPlugin runtime.RawExtension `json:"myPlugin"`
-// }
-// type PluginA struct {
-// 	AOption string `json:"aOption"`
-// }
+//
+// 	type MyAPIObject struct {
+// 		runtime.TypeMeta `json:",inline"`
+// 		MyPlugin runtime.RawExtension `json:"myPlugin"`
+// 	}
+//
+// 	type PluginA struct {
+// 		AOption string `json:"aOption"`
+// 	}
 //
 // // On the wire, the JSON will look something like this:
-// {
-// 	"kind":"MyAPIObject",
-// 	"apiVersion":"v1",
-// 	"myPlugin": {
-// 		"kind":"PluginA",
-// 		"aOption":"foo",
-// 	},
-// }
+//
+// 	{
+// 		"kind":"MyAPIObject",
+// 		"apiVersion":"v1",
+// 		"myPlugin": {
+// 			"kind":"PluginA",
+// 			"aOption":"foo",
+// 		},
+// 	}
 //
 // So what happens? Decode first uses json or yaml to unmarshal the serialized data into
 // your external MyAPIObject. That causes the raw JSON to be stored, but not unpacked.
@@ -186,11 +197,25 @@ message RawExtension {
 
 // TypeMeta is shared by all top level objects. The proper way to use it is to inline it in your type,
 // like this:
+<<<<<<< HEAD
 // type MyAwesomeAPIObject struct {
 //      runtime.TypeMeta    `json:",inline"`
 //      ... // other fields
 // }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// type MyAwesomeAPIObject struct {
+//      runtime.TypeMeta    `json:",inline"`
+//      ... // other fields
+// }
+=======
+//
+// 	type MyAwesomeAPIObject struct {
+// 	     runtime.TypeMeta    `json:",inline"`
+// 	     ... // other fields
+// 	}
+//
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // func (obj *MyAwesomeAPIObject) SetGroupVersionKind(gvk *metav1.GroupVersionKind) { metav1.UpdateTypeMeta(obj,gvk) }; GroupVersionKind() *GroupVersionKind
 //
 // TypeMeta is provided here for convenience. You may use it directly from this package or define

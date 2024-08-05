@@ -67,7 +67,15 @@ type UDPRouteRule struct {
 	// the packets, then 80% of packets must be dropped instead.
 	//
 	// Support: Core for Kubernetes Service
+<<<<<<< HEAD
 	// Support: Custom for any other resource
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	//
+	// Support: Extended for Kubernetes ServiceImport
+	//
+	// Support: Implementation-specific for any other resource
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	//
 	// Support for weight: Extended
 	//

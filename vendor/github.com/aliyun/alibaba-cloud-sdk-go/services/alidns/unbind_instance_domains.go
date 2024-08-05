@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UnbindInstanceDomains(request *UnbindInstanceDomainsRequest) (response *UnbindInstanceDomainsResponse, err error) {
 	response = CreateUnbindInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -181,6 +182,10 @@ func CreateUnbindInstanceDomainsRequest() (request *UnbindInstanceDomainsRequest
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) UnbindInstanceDomains(request *UnbindInstanceDomainsRequest) (response *UnbindInstanceDomainsResponse, err error) {
 	response = CreateUnbindInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -188,8 +193,6 @@ func (client *Client) UnbindInstanceDomains(request *UnbindInstanceDomainsReques
 }
 
 // UnbindInstanceDomainsWithChan invokes the alidns.UnbindInstanceDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UnbindInstanceDomainsWithChan(request *UnbindInstanceDomainsRequest) (<-chan *UnbindInstanceDomainsResponse, <-chan error) {
 	responseChan := make(chan *UnbindInstanceDomainsResponse, 1)
 	errChan := make(chan error, 1)
@@ -212,8 +215,6 @@ func (client *Client) UnbindInstanceDomainsWithChan(request *UnbindInstanceDomai
 }
 
 // UnbindInstanceDomainsWithCallback invokes the alidns.UnbindInstanceDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UnbindInstanceDomainsWithCallback(request *UnbindInstanceDomainsRequest, callback func(response *UnbindInstanceDomainsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -245,8 +246,8 @@ type UnbindInstanceDomainsRequest struct {
 type UnbindInstanceDomainsResponse struct {
 	*responses.BaseResponse
 	RequestId    string `json:"RequestId" xml:"RequestId"`
-	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
 	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
+	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
 }
 
 // CreateUnbindInstanceDomainsRequest creates a request to invoke UnbindInstanceDomains API
@@ -255,7 +256,12 @@ func CreateUnbindInstanceDomainsRequest() (request *UnbindInstanceDomainsRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UnbindInstanceDomains", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

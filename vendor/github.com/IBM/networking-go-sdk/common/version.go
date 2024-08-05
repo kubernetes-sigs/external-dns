@@ -17,4 +17,9 @@
 package common
 
 // Version of the SDK
+<<<<<<< HEAD
 const Version = "0.32.0"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+const Version = "0.46.1"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

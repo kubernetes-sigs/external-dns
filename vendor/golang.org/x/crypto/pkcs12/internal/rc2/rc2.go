@@ -15,6 +15,7 @@ import (
 	"crypto/cipher"
 	"encoding/binary"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"math/bits"
 )
 
@@ -259,6 +260,10 @@ func (c *rc2Cipher) Decrypt(dst, src []byte) {
 		r0 = bits.RotateLeft16(r0, 16-1)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"math/bits"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // The rc2 block size in bytes
@@ -325,10 +330,6 @@ func expandKey(key []byte, t1 int) [64]uint16 {
 	return k
 }
 
-func rotl16(x uint16, b uint) uint16 {
-	return (x >> (16 - b)) | (x << b)
-}
-
 func (c *rc2Cipher) Encrypt(dst, src []byte) {
 
 	r0 := binary.LittleEndian.Uint16(src[0:])
@@ -341,22 +342,22 @@ func (c *rc2Cipher) Encrypt(dst, src []byte) {
 	for j <= 16 {
 		// mix r0
 		r0 = r0 + c.k[j] + (r3 & r2) + ((^r3) & r1)
-		r0 = rotl16(r0, 1)
+		r0 = bits.RotateLeft16(r0, 1)
 		j++
 
 		// mix r1
 		r1 = r1 + c.k[j] + (r0 & r3) + ((^r0) & r2)
-		r1 = rotl16(r1, 2)
+		r1 = bits.RotateLeft16(r1, 2)
 		j++
 
 		// mix r2
 		r2 = r2 + c.k[j] + (r1 & r0) + ((^r1) & r3)
-		r2 = rotl16(r2, 3)
+		r2 = bits.RotateLeft16(r2, 3)
 		j++
 
 		// mix r3
 		r3 = r3 + c.k[j] + (r2 & r1) + ((^r2) & r0)
-		r3 = rotl16(r3, 5)
+		r3 = bits.RotateLeft16(r3, 5)
 		j++
 
 	}
@@ -369,22 +370,22 @@ func (c *rc2Cipher) Encrypt(dst, src []byte) {
 	for j <= 40 {
 		// mix r0
 		r0 = r0 + c.k[j] + (r3 & r2) + ((^r3) & r1)
-		r0 = rotl16(r0, 1)
+		r0 = bits.RotateLeft16(r0, 1)
 		j++
 
 		// mix r1
 		r1 = r1 + c.k[j] + (r0 & r3) + ((^r0) & r2)
-		r1 = rotl16(r1, 2)
+		r1 = bits.RotateLeft16(r1, 2)
 		j++
 
 		// mix r2
 		r2 = r2 + c.k[j] + (r1 & r0) + ((^r1) & r3)
-		r2 = rotl16(r2, 3)
+		r2 = bits.RotateLeft16(r2, 3)
 		j++
 
 		// mix r3
 		r3 = r3 + c.k[j] + (r2 & r1) + ((^r2) & r0)
-		r3 = rotl16(r3, 5)
+		r3 = bits.RotateLeft16(r3, 5)
 		j++
 
 	}
@@ -397,22 +398,22 @@ func (c *rc2Cipher) Encrypt(dst, src []byte) {
 	for j <= 60 {
 		// mix r0
 		r0 = r0 + c.k[j] + (r3 & r2) + ((^r3) & r1)
-		r0 = rotl16(r0, 1)
+		r0 = bits.RotateLeft16(r0, 1)
 		j++
 
 		// mix r1
 		r1 = r1 + c.k[j] + (r0 & r3) + ((^r0) & r2)
-		r1 = rotl16(r1, 2)
+		r1 = bits.RotateLeft16(r1, 2)
 		j++
 
 		// mix r2
 		r2 = r2 + c.k[j] + (r1 & r0) + ((^r1) & r3)
-		r2 = rotl16(r2, 3)
+		r2 = bits.RotateLeft16(r2, 3)
 		j++
 
 		// mix r3
 		r3 = r3 + c.k[j] + (r2 & r1) + ((^r2) & r0)
-		r3 = rotl16(r3, 5)
+		r3 = bits.RotateLeft16(r3, 5)
 		j++
 	}
 
@@ -433,22 +434,22 @@ func (c *rc2Cipher) Decrypt(dst, src []byte) {
 
 	for j >= 44 {
 		// unmix r3
-		r3 = rotl16(r3, 16-5)
+		r3 = bits.RotateLeft16(r3, 16-5)
 		r3 = r3 - c.k[j] - (r2 & r1) - ((^r2) & r0)
 		j--
 
 		// unmix r2
-		r2 = rotl16(r2, 16-3)
+		r2 = bits.RotateLeft16(r2, 16-3)
 		r2 = r2 - c.k[j] - (r1 & r0) - ((^r1) & r3)
 		j--
 
 		// unmix r1
-		r1 = rotl16(r1, 16-2)
+		r1 = bits.RotateLeft16(r1, 16-2)
 		r1 = r1 - c.k[j] - (r0 & r3) - ((^r0) & r2)
 		j--
 
 		// unmix r0
-		r0 = rotl16(r0, 16-1)
+		r0 = bits.RotateLeft16(r0, 16-1)
 		r0 = r0 - c.k[j] - (r3 & r2) - ((^r3) & r1)
 		j--
 	}
@@ -460,22 +461,22 @@ func (c *rc2Cipher) Decrypt(dst, src []byte) {
 
 	for j >= 20 {
 		// unmix r3
-		r3 = rotl16(r3, 16-5)
+		r3 = bits.RotateLeft16(r3, 16-5)
 		r3 = r3 - c.k[j] - (r2 & r1) - ((^r2) & r0)
 		j--
 
 		// unmix r2
-		r2 = rotl16(r2, 16-3)
+		r2 = bits.RotateLeft16(r2, 16-3)
 		r2 = r2 - c.k[j] - (r1 & r0) - ((^r1) & r3)
 		j--
 
 		// unmix r1
-		r1 = rotl16(r1, 16-2)
+		r1 = bits.RotateLeft16(r1, 16-2)
 		r1 = r1 - c.k[j] - (r0 & r3) - ((^r0) & r2)
 		j--
 
 		// unmix r0
-		r0 = rotl16(r0, 16-1)
+		r0 = bits.RotateLeft16(r0, 16-1)
 		r0 = r0 - c.k[j] - (r3 & r2) - ((^r3) & r1)
 		j--
 
@@ -488,23 +489,29 @@ func (c *rc2Cipher) Decrypt(dst, src []byte) {
 
 	for j >= 0 {
 		// unmix r3
-		r3 = rotl16(r3, 16-5)
+		r3 = bits.RotateLeft16(r3, 16-5)
 		r3 = r3 - c.k[j] - (r2 & r1) - ((^r2) & r0)
 		j--
 
 		// unmix r2
-		r2 = rotl16(r2, 16-3)
+		r2 = bits.RotateLeft16(r2, 16-3)
 		r2 = r2 - c.k[j] - (r1 & r0) - ((^r1) & r3)
 		j--
 
 		// unmix r1
-		r1 = rotl16(r1, 16-2)
+		r1 = bits.RotateLeft16(r1, 16-2)
 		r1 = r1 - c.k[j] - (r0 & r3) - ((^r0) & r2)
 		j--
 
 		// unmix r0
+<<<<<<< HEAD
 		r0 = rotl16(r0, 16-1)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		r0 = rotl16(r0, 16-1)
+=======
+		r0 = bits.RotateLeft16(r0, 16-1)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		r0 = r0 - c.k[j] - (r3 & r2) - ((^r3) & r1)
 		j--
 

@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -345,6 +346,365 @@ func (api *API) ListListItems(ctx context.Context, rc *ResourceContainer, params
 		list = append(list, result.Result...)
 		if cursor = result.ResultInfo.Cursors.After; cursor == "" {
 			break
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+)
+
+const (
+	// ListTypeIP specifies a list containing IP addresses.
+	ListTypeIP = "ip"
+	// ListTypeRedirect specifies a list containing redirects.
+	ListTypeRedirect = "redirect"
+	// ListTypeHostname specifies a list containing hostnames.
+	ListTypeHostname = "hostname"
+	// ListTypeHostname specifies a list containing autonomous system numbers (ASNs).
+	ListTypeASN = "asn"
+)
+
+// ListBulkOperation contains information about a Bulk Operation.
+type ListBulkOperation struct {
+	ID        string     `json:"id"`
+	Status    string     `json:"status"`
+	Error     string     `json:"error"`
+	Completed *time.Time `json:"completed"`
+}
+
+// List contains information about a List.
+type List struct {
+	ID                    string     `json:"id"`
+	Name                  string     `json:"name"`
+	Description           string     `json:"description"`
+	Kind                  string     `json:"kind"`
+	NumItems              int        `json:"num_items"`
+	NumReferencingFilters int        `json:"num_referencing_filters"`
+	CreatedOn             *time.Time `json:"created_on"`
+	ModifiedOn            *time.Time `json:"modified_on"`
+}
+
+// Redirect represents a redirect item in a List.
+type Redirect struct {
+	SourceUrl           string `json:"source_url"`
+	IncludeSubdomains   *bool  `json:"include_subdomains,omitempty"`
+	TargetUrl           string `json:"target_url"`
+	StatusCode          *int   `json:"status_code,omitempty"`
+	PreserveQueryString *bool  `json:"preserve_query_string,omitempty"`
+	SubpathMatching     *bool  `json:"subpath_matching,omitempty"`
+	PreservePathSuffix  *bool  `json:"preserve_path_suffix,omitempty"`
+}
+
+type Hostname struct {
+	UrlHostname string `json:"url_hostname"`
+}
+
+// ListItem contains information about a single List Item.
+type ListItem struct {
+	ID         string     `json:"id"`
+	IP         *string    `json:"ip,omitempty"`
+	Redirect   *Redirect  `json:"redirect,omitempty"`
+	Hostname   *Hostname  `json:"hostname,omitempty"`
+	ASN        *uint32    `json:"asn,omitempty"`
+	Comment    string     `json:"comment"`
+	CreatedOn  *time.Time `json:"created_on"`
+	ModifiedOn *time.Time `json:"modified_on"`
+}
+
+// ListCreateRequest contains data for a new List.
+type ListCreateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Kind        string `json:"kind"`
+}
+
+// ListItemCreateRequest contains data for a new List Item.
+type ListItemCreateRequest struct {
+	IP       *string   `json:"ip,omitempty"`
+	Redirect *Redirect `json:"redirect,omitempty"`
+	Hostname *Hostname `json:"hostname,omitempty"`
+	ASN      *uint32   `json:"asn,omitempty"`
+	Comment  string    `json:"comment"`
+}
+
+// ListItemDeleteRequest wraps List Items that shall be deleted.
+type ListItemDeleteRequest struct {
+	Items []ListItemDeleteItemRequest `json:"items"`
+}
+
+// ListItemDeleteItemRequest contains single List Items that shall be deleted.
+type ListItemDeleteItemRequest struct {
+	ID string `json:"id"`
+}
+
+// ListUpdateRequest contains data for a List update.
+type ListUpdateRequest struct {
+	Description string `json:"description"`
+}
+
+// ListResponse contains a single List.
+type ListResponse struct {
+	Response
+	Result List `json:"result"`
+}
+
+// ListItemCreateResponse contains information about the creation of a List Item.
+type ListItemCreateResponse struct {
+	Response
+	Result struct {
+		OperationID string `json:"operation_id"`
+	} `json:"result"`
+}
+
+// ListListResponse contains a slice of Lists.
+type ListListResponse struct {
+	Response
+	Result []List `json:"result"`
+}
+
+// ListBulkOperationResponse contains information about a Bulk Operation.
+type ListBulkOperationResponse struct {
+	Response
+	Result ListBulkOperation `json:"result"`
+}
+
+// ListDeleteResponse contains information about the deletion of a List.
+type ListDeleteResponse struct {
+	Response
+	Result struct {
+		ID string `json:"id"`
+	} `json:"result"`
+}
+
+// ListItemsListResponse contains information about List Items.
+type ListItemsListResponse struct {
+	Response
+	ResultInfo `json:"result_info"`
+	Result     []ListItem `json:"result"`
+}
+
+// ListItemDeleteResponse contains information about the deletion of a List Item.
+type ListItemDeleteResponse struct {
+	Response
+	Result struct {
+		OperationID string `json:"operation_id"`
+	} `json:"result"`
+}
+
+// ListItemsGetResponse contains information about a single List Item.
+type ListItemsGetResponse struct {
+	Response
+	Result ListItem `json:"result"`
+}
+
+type ListListsParams struct {
+}
+
+type ListCreateParams struct {
+	Name        string
+	Description string
+	Kind        string
+}
+
+type ListGetParams struct {
+	ID string
+}
+
+type ListUpdateParams struct {
+	ID          string
+	Description string
+}
+
+type ListDeleteParams struct {
+	ID string
+}
+
+type ListListItemsParams struct {
+	ID      string `url:"-"`
+	Search  string `url:"search,omitempty"`
+	PerPage int    `url:"per_page,omitempty"`
+	Cursor  string `url:"cursor,omitempty"`
+}
+
+type ListCreateItemsParams struct {
+	ID    string
+	Items []ListItemCreateRequest
+}
+
+type ListCreateItemParams struct {
+	ID   string
+	Item ListItemCreateRequest
+}
+
+type ListReplaceItemsParams struct {
+	ID    string
+	Items []ListItemCreateRequest
+}
+
+type ListDeleteItemsParams struct {
+	ID    string
+	Items ListItemDeleteRequest
+}
+
+type ListGetItemParams struct {
+	ListID string
+	ID     string
+}
+
+type ListGetBulkOperationParams struct {
+	ID string
+}
+
+// ListLists lists all Lists.
+//
+// API reference: https://api.cloudflare.com/#rules-lists-list-lists
+func (api *API) ListLists(ctx context.Context, rc *ResourceContainer, params ListListsParams) ([]List, error) {
+	if rc.Identifier == "" {
+		return []List{}, ErrMissingAccountID
+	}
+
+	uri := fmt.Sprintf("/accounts/%s/rules/lists", rc.Identifier)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return []List{}, err
+	}
+
+	result := ListListResponse{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return []List{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return result.Result, nil
+}
+
+// CreateList creates a new List.
+//
+// API reference: https://api.cloudflare.com/#rules-lists-create-list
+func (api *API) CreateList(ctx context.Context, rc *ResourceContainer, params ListCreateParams) (List, error) {
+	if rc.Identifier == "" {
+		return List{}, ErrMissingAccountID
+	}
+
+	uri := fmt.Sprintf("/accounts/%s/rules/lists", rc.Identifier)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, ListCreateRequest{Name: params.Name, Description: params.Description, Kind: params.Kind})
+	if err != nil {
+		return List{}, err
+	}
+
+	result := ListResponse{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return List{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return result.Result, nil
+}
+
+// GetList returns a single List.
+//
+// API reference: https://api.cloudflare.com/#rules-lists-get-list
+func (api *API) GetList(ctx context.Context, rc *ResourceContainer, listID string) (List, error) {
+	if rc.Identifier == "" {
+		return List{}, ErrMissingAccountID
+	}
+
+	if listID == "" {
+		return List{}, ErrMissingListID
+	}
+
+	uri := fmt.Sprintf("/accounts/%s/rules/lists/%s", rc.Identifier, listID)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return List{}, err
+	}
+
+	result := ListResponse{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return List{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return result.Result, nil
+}
+
+// UpdateList updates the description of an existing List.
+//
+// API reference: https://api.cloudflare.com/#rules-lists-update-list
+func (api *API) UpdateList(ctx context.Context, rc *ResourceContainer, params ListUpdateParams) (List, error) {
+	if rc.Identifier == "" {
+		return List{}, ErrMissingAccountID
+	}
+
+	if params.ID == "" {
+		return List{}, ErrMissingListID
+	}
+
+	uri := fmt.Sprintf("/accounts/%s/rules/lists/%s", rc.Identifier, params.ID)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, ListUpdateRequest{Description: params.Description})
+	if err != nil {
+		return List{}, err
+	}
+
+	result := ListResponse{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return List{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return result.Result, nil
+}
+
+// DeleteList deletes a List.
+//
+// API reference: https://api.cloudflare.com/#rules-lists-delete-list
+func (api *API) DeleteList(ctx context.Context, rc *ResourceContainer, listID string) (ListDeleteResponse, error) {
+	if rc.Identifier == "" {
+		return ListDeleteResponse{}, ErrMissingAccountID
+	}
+
+	if listID == "" {
+		return ListDeleteResponse{}, ErrMissingListID
+	}
+
+	uri := fmt.Sprintf("/accounts/%s/rules/lists/%s", rc.Identifier, listID)
+	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
+	if err != nil {
+		return ListDeleteResponse{}, err
+	}
+
+	result := ListDeleteResponse{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return ListDeleteResponse{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return result, nil
+}
+
+// ListListItems returns a list with all items in a List.
+//
+// API reference: https://api.cloudflare.com/#rules-lists-list-list-items
+func (api *API) ListListItems(ctx context.Context, rc *ResourceContainer, params ListListItemsParams) ([]ListItem, error) {
+	var list []ListItem
+
+	for {
+		uri := buildURI(fmt.Sprintf("/accounts/%s/rules/lists/%s/items", rc.Identifier, params.ID), params)
+
+		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+		if err != nil {
+			return []ListItem{}, err
+		}
+
+		result := ListItemsListResponse{}
+		if err := json.Unmarshal(res, &result); err != nil {
+			return []ListItem{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+		}
+
+		list = append(list, result.Result...)
+		if cursor := result.ResultInfo.Cursors.After; cursor == "" {
+			break
+		} else {
+			params.Cursor = cursor
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 

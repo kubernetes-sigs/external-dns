@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -175,6 +176,207 @@ type DevicePostureRuleInput struct {
 	Domain           string `json:"domain,omitempty"`
 	ComplianceStatus string `json:"compliance_status,omitempty"`
 	ConnectionID     string `json:"connection_id,omitempty"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+	"net/http"
+
+	"github.com/goccy/go-json"
+)
+
+// DevicePostureIntegrationConfig contains authentication information
+// for a device posture integration.
+type DevicePostureIntegrationConfig struct {
+	ClientID           string `json:"client_id,omitempty"`
+	ClientSecret       string `json:"client_secret,omitempty"`
+	AuthUrl            string `json:"auth_url,omitempty"`
+	ApiUrl             string `json:"api_url,omitempty"`
+	ClientKey          string `json:"client_key,omitempty"`
+	CustomerID         string `json:"customer_id,omitempty"`
+	AccessClientID     string `json:"access_client_id,omitempty"`
+	AccessClientSecret string `json:"access_client_secret,omitempty"`
+}
+
+// DevicePostureIntegration represents a device posture integration.
+type DevicePostureIntegration struct {
+	IntegrationID string                         `json:"id,omitempty"`
+	Name          string                         `json:"name,omitempty"`
+	Type          string                         `json:"type,omitempty"`
+	Interval      string                         `json:"interval,omitempty"`
+	Config        DevicePostureIntegrationConfig `json:"config,omitempty"`
+}
+
+// DevicePostureIntegrationResponse represents the response from the get
+// device posture integrations endpoint.
+type DevicePostureIntegrationResponse struct {
+	Result DevicePostureIntegration `json:"result"`
+	Response
+	ResultInfo `json:"result_info"`
+}
+
+// DevicePostureIntegrationListResponse represents the response from the list
+// device posture integrations endpoint.
+type DevicePostureIntegrationListResponse struct {
+	Result []DevicePostureIntegration `json:"result"`
+	Response
+	ResultInfo `json:"result_info"`
+}
+
+// CreateDevicePostureIntegration creates a device posture integration within an account.
+//
+// API reference: https://api.cloudflare.com/#device-posture-integrations-create-device-posture-integration
+func (api *API) CreateDevicePostureIntegration(ctx context.Context, accountID string, integration DevicePostureIntegration) (DevicePostureIntegration, error) {
+	uri := fmt.Sprintf("/%s/%s/devices/posture/integration", AccountRouteRoot, accountID)
+
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, integration)
+	if err != nil {
+		fmt.Printf("err:%+v res:%+v\n", err, res)
+		return DevicePostureIntegration{}, err
+	}
+
+	var devicePostureIntegrationResponse DevicePostureIntegrationResponse
+	err = json.Unmarshal(res, &devicePostureIntegrationResponse)
+	if err != nil {
+		return DevicePostureIntegration{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return devicePostureIntegrationResponse.Result, nil
+}
+
+// UpdateDevicePostureIntegration updates a device posture integration within an account.
+//
+// API reference: https://api.cloudflare.com/#device-posture-integrations-update-device-posture-integration
+func (api *API) UpdateDevicePostureIntegration(ctx context.Context, accountID string, integration DevicePostureIntegration) (DevicePostureIntegration, error) {
+	uri := fmt.Sprintf("/%s/%s/devices/posture/integration/%s", AccountRouteRoot, accountID, integration.IntegrationID)
+
+	res, err := api.makeRequestContext(ctx, http.MethodPatch, uri, integration)
+	if err != nil {
+		return DevicePostureIntegration{}, err
+	}
+
+	var devicePostureIntegrationResponse DevicePostureIntegrationResponse
+	err = json.Unmarshal(res, &devicePostureIntegrationResponse)
+	if err != nil {
+		return DevicePostureIntegration{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return devicePostureIntegrationResponse.Result, nil
+}
+
+// DevicePostureIntegration returns a specific device posture integrations within an account.
+//
+// API reference: https://api.cloudflare.com/#device-posture-integrations-device-posture-integration-details
+func (api *API) DevicePostureIntegration(ctx context.Context, accountID, integrationID string) (DevicePostureIntegration, error) {
+	uri := fmt.Sprintf("/%s/%s/devices/posture/integration/%s", AccountRouteRoot, accountID, integrationID)
+
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return DevicePostureIntegration{}, err
+	}
+
+	var devicePostureIntegrationResponse DevicePostureIntegrationResponse
+	err = json.Unmarshal(res, &devicePostureIntegrationResponse)
+	if err != nil {
+		return DevicePostureIntegration{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return devicePostureIntegrationResponse.Result, nil
+}
+
+// DevicePostureIntegrations returns all device posture integrations within an account.
+//
+// API reference: https://api.cloudflare.com/#device-posture-integrations-list-device-posture-integrations
+func (api *API) DevicePostureIntegrations(ctx context.Context, accountID string) ([]DevicePostureIntegration, ResultInfo, error) {
+	uri := fmt.Sprintf("/%s/%s/devices/posture/integration", AccountRouteRoot, accountID)
+
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return []DevicePostureIntegration{}, ResultInfo{}, err
+	}
+
+	var devicePostureIntegrationListResponse DevicePostureIntegrationListResponse
+	err = json.Unmarshal(res, &devicePostureIntegrationListResponse)
+	if err != nil {
+		return []DevicePostureIntegration{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return devicePostureIntegrationListResponse.Result, devicePostureIntegrationListResponse.ResultInfo, nil
+}
+
+// DeleteDevicePostureIntegration deletes a device posture integration.
+//
+// API reference: https://api.cloudflare.com/#device-posture-integrations-delete-device-posture-integration
+func (api *API) DeleteDevicePostureIntegration(ctx context.Context, accountID, ruleID string) error {
+	uri := fmt.Sprintf(
+		"/%s/%s/devices/posture/integration/%s",
+		AccountRouteRoot,
+		accountID,
+		ruleID,
+	)
+
+	_, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DevicePostureRule represents a device posture rule.
+type DevicePostureRule struct {
+	ID          string                   `json:"id,omitempty"`
+	Type        string                   `json:"type"`
+	Name        string                   `json:"name"`
+	Description string                   `json:"description,omitempty"`
+	Schedule    string                   `json:"schedule,omitempty"`
+	Match       []DevicePostureRuleMatch `json:"match,omitempty"`
+	Input       DevicePostureRuleInput   `json:"input,omitempty"`
+	Expiration  string                   `json:"expiration,omitempty"`
+}
+
+// DevicePostureRuleMatch represents the conditions that the client must match to run the rule.
+type DevicePostureRuleMatch struct {
+	Platform string `json:"platform,omitempty"`
+}
+
+// DevicePostureRuleInput represents the value to be checked against.
+type DevicePostureRuleInput struct {
+	ID               string   `json:"id,omitempty"`
+	Path             string   `json:"path,omitempty"`
+	Exists           bool     `json:"exists,omitempty"`
+	Thumbprint       string   `json:"thumbprint,omitempty"`
+	Sha256           string   `json:"sha256,omitempty"`
+	Running          bool     `json:"running,omitempty"`
+	RequireAll       bool     `json:"requireAll,omitempty"`
+	CheckDisks       []string `json:"checkDisks,omitempty"`
+	Enabled          bool     `json:"enabled,omitempty"`
+	Version          string   `json:"version,omitempty"`
+	VersionOperator  string   `json:"versionOperator,omitempty"`
+	Overall          string   `json:"overall,omitempty"`
+	SensorConfig     string   `json:"sensor_config,omitempty"`
+	Os               string   `json:"os,omitempty"`
+	OsDistroName     string   `json:"os_distro_name,omitempty"`
+	OsDistroRevision string   `json:"os_distro_revision,omitempty"`
+	OSVersionExtra   string   `json:"os_version_extra,omitempty"`
+	Operator         string   `json:"operator,omitempty"`
+	Domain           string   `json:"domain,omitempty"`
+	ComplianceStatus string   `json:"compliance_status,omitempty"`
+	ConnectionID     string   `json:"connection_id,omitempty"`
+	IssueCount       string   `json:"issue_count,omitempty"`
+	CountOperator    string   `json:"countOperator,omitempty"`
+	TotalScore       int      `json:"total_score,omitempty"`
+	ScoreOperator    string   `json:"scoreOperator,omitempty"`
+	CertificateID    string   `json:"certificate_id,omitempty"`
+	CommonName       string   `json:"cn,omitempty"`
+	ActiveThreats    int      `json:"active_threats,omitempty"`
+	NetworkStatus    string   `json:"network_status,omitempty"`
+	Infected         bool     `json:"infected,omitempty"`
+	IsActive         bool     `json:"is_active,omitempty"`
+	EidLastSeen      string   `json:"eid_last_seen,omitempty"`
+	RiskLevel        string   `json:"risk_level,omitempty"`
+	State            string   `json:"state,omitempty"`
+	LastSeen         string   `json:"last_seen,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // DevicePostureRuleListResponse represents the response from the list

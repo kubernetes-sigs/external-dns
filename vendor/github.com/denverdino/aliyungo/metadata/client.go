@@ -14,8 +14,9 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/denverdino/aliyungo/util"
 	"os"
+
+	"github.com/denverdino/aliyungo/util"
 )
 
 const (
@@ -44,7 +45,7 @@ const (
 	VSWITCH_CIDR_BLOCK = "vswitch-cidr-block"
 	VSWITCH_ID         = "vswitch-id"
 	ZONE               = "zone-id"
-	RAM_SECURITY       = "Ram/security-credentials"
+	RAM_SECURITY       = "ram/security-credentials"
 )
 
 type IMetaDataRequest interface {
@@ -58,9 +59,9 @@ type IMetaDataRequest interface {
 
 type MetaData struct {
 	// mock for unit test.
-	mock    requestMock
+	mock requestMock
 
-	client 	*http.Client
+	client *http.Client
 }
 
 func NewMetaData(client *http.Client) *MetaData {
@@ -351,7 +352,7 @@ func (vpc *MetaDataRequest) Do(api interface{}) (err error) {
 func (vpc *MetaDataRequest) Decode(data string, api interface{}) error {
 	if data == "" {
 		url, _ := vpc.Url()
-		return errors.New(fmt.Sprintf("metadata: alivpc decode data must not be nil. url=[%s]\n", url))
+		return fmt.Errorf("metadata: alivpc decode data must not be nil. url=[%s]\n", url)
 	}
 	switch api.(type) {
 	case *ResultList:
@@ -360,7 +361,7 @@ func (vpc *MetaDataRequest) Decode(data string, api interface{}) error {
 	case *RoleAuth:
 		return json.Unmarshal([]byte(data), api)
 	default:
-		return errors.New(fmt.Sprintf("metadata: unknow type to decode, type=%s\n", reflect.TypeOf(api)))
+		return fmt.Errorf("metadata: unknow type to decode, type=%s\n", reflect.TypeOf(api))
 	}
 }
 

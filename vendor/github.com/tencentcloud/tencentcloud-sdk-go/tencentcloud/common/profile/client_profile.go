@@ -40,6 +40,15 @@ type ClientProfile struct {
 	NetworkFailureRetryDuration    DurationFunc
 	RateLimitExceededMaxRetries    int
 	RateLimitExceededRetryDuration DurationFunc
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	// Configure this client to retry or not when a connectivity problem is encountered.
+	// This differs from NetworkFailureMaxRetries that it will retry regardless of any request.
+	// NetworkFailureMaxRetries only retry request with field "ClientToken".
+	UnsafeRetryOnConnectionFailure bool
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func NewClientProfile() *ClientProfile {

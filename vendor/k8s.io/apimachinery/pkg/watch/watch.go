@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1100,19 +1101,24 @@ func (f *RaceFreeFakeWatcher) Action(action EventType, obj runtime.Object) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Interface can be implemented by anything that knows how to watch and report changes.
 type Interface interface {
-	// Stops watching. Will close the channel returned by ResultChan(). Releases
+	// Stop stops watching. Will close the channel returned by ResultChan(). Releases
 	// any resources used by the watch.
 	Stop()
 
-	// Returns a chan which will receive all the events. If an error occurs
-	// or Stop() is called, this channel will be closed, in which case the
-	// watch should be completely cleaned up.
+	// ResultChan returns a chan which will receive all the events. If an error occurs
+	// or Stop() is called, the implementation will close this channel and
+	// release any resources used by the watch.
 	ResultChan() <-chan Event
 }
 
@@ -1125,7 +1131,9 @@ const (
 	Deleted  EventType = "DELETED"
 	Bookmark EventType = "BOOKMARK"
 	Error    EventType = "ERROR"
+)
 
+var (
 	DefaultChanSize int32 = 100
 )
 
@@ -1353,8 +1361,14 @@ func (f *RaceFreeFakeWatcher) Action(action EventType, obj runtime.Object) {
 	}
 }
 
+<<<<<<< HEAD
 // ProxyWatcher lets you wrap your channel in watch Interface. Threadsafe.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// ProxyWatcher lets you wrap your channel in watch Interface. Threadsafe.
+=======
+// ProxyWatcher lets you wrap your channel in watch Interface. threadsafe.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ProxyWatcher struct {
 	result chan Event
 	stopCh chan struct{}

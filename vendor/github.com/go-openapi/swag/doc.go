@@ -17,6 +17,7 @@ Package swag contains a bunch of helper functions for go-openapi and go-swagger 
 
 You may also use it standalone for your projects.
 
+<<<<<<< HEAD
   * convert between value and pointers for builtin types
   * convert from string to builtin types (wraps strconv)
   * fast json concatenation
@@ -28,5 +29,18 @@ You may also use it standalone for your projects.
 This repo has only few dependencies outside of the standard library:
 
   * YAML utilities depend on gopkg.in/yaml.v2
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+  - convert between value and pointers for builtin types
+  - convert from string to builtin types (wraps strconv)
+  - fast json concatenation
+  - search in path
+  - load from file or http
+  - name mangling
+
+This repo has only few dependencies outside of the standard library:
+
+  - YAML utilities depend on gopkg.in/yaml.v2
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 */
 package swag

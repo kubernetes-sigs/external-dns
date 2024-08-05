@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"fmt"
 
+	v1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,6 +27,7 @@ import (
 // +genclient:nonNamespaced
 // +genclient:onlyVerbs=create
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -143,20 +145,34 @@ type TokenReview struct {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// +k8s:prerelease-lifecycle-gen:introduced=1.4
+// +k8s:prerelease-lifecycle-gen:deprecated=1.19
+// +k8s:prerelease-lifecycle-gen:replacement=authentication.k8s.io,v1,TokenReview
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // TokenReview attempts to authenticate a token to a known user.
 // Note: TokenReview requests may be cached by the webhook token authenticator
 // plugin in the kube-apiserver.
 type TokenReview struct {
 	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Spec holds information about the request being evaluated
 	Spec TokenReviewSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 
+<<<<<<< HEAD
 	// Status is filled in by the server and indicates whether the request can be authenticated.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// Status is filled in by the server and indicates whether the request can be authenticated.
+=======
+	// Status is filled in by the server and indicates whether the token can be authenticated.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// +optional
 	Status TokenReviewStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
@@ -172,6 +188,7 @@ type TokenReviewSpec struct {
 	// this list. If no audiences are provided, the audience will default to the
 	// audience of the Kubernetes apiserver.
 	// +optional
+	// +listType=atomic
 	Audiences []string `json:"audiences,omitempty" protobuf:"bytes,2,rep,name=audiences"`
 }
 
@@ -193,6 +210,7 @@ type TokenReviewStatus struct {
 	// status.audience field where status.authenticated is "true", the token is
 	// valid against the audience of the Kubernetes API server.
 	// +optional
+	// +listType=atomic
 	Audiences []string `json:"audiences,omitempty" protobuf:"bytes,4,rep,name=audiences"`
 	// Error indicates that the token couldn't be checked
 	// +optional
@@ -212,6 +230,7 @@ type UserInfo struct {
 	UID string `json:"uid,omitempty" protobuf:"bytes,2,opt,name=uid"`
 	// The names of groups this user is a part of.
 	// +optional
+	// +listType=atomic
 	Groups []string `json:"groups,omitempty" protobuf:"bytes,3,rep,name=groups"`
 	// Any additional information provided by the authenticator.
 	// +optional
@@ -225,4 +244,30 @@ type ExtraValue []string
 
 func (t ExtraValue) String() string {
 	return fmt.Sprintf("%v", []string(t))
+}
+
+// +genclient
+// +genclient:nonNamespaced
+// +genclient:onlyVerbs=create
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.27
+
+// SelfSubjectReview contains the user information that the kube-apiserver has about the user making this request.
+// When using impersonation, users will receive the user info of the user being impersonated.  If impersonation or
+// request header authentication is used, any extra keys will have their case ignored and returned as lowercase.
+type SelfSubjectReview struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	// Status is filled in by the server with the user attributes.
+	Status SelfSubjectReviewStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status"`
+}
+
+// SelfSubjectReviewStatus is filled by the kube-apiserver and sent back to a user.
+type SelfSubjectReviewStatus struct {
+	// User attributes of the user making this request.
+	// +optional
+	UserInfo v1.UserInfo `json:"userInfo,omitempty" protobuf:"bytes,1,opt,name=userInfo"`
 }

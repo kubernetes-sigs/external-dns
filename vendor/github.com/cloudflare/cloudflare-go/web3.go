@@ -2,11 +2,21 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 var (

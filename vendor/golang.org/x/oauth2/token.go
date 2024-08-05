@@ -17,6 +17,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // defaultExpiryDelta determines how earlier a token should be considered
 // expired than its actual expiration time. It is used to avoid late
 // expirations due to client-server time mismatches.
@@ -140,9 +141,14 @@ func (t *Token) expired() bool {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // expiryDelta determines how earlier a token should be considered
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// expiryDelta determines how earlier a token should be considered
+=======
+// defaultExpiryDelta determines how earlier a token should be considered
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // expired than its actual expiration time. It is used to avoid late
 // expirations due to client-server time mismatches.
-const expiryDelta = 10 * time.Second
+const defaultExpiryDelta = 10 * time.Second
 
 // Token represents the credentials used to authorize
 // the requests to access protected resources on the OAuth 2.0
@@ -175,6 +181,11 @@ type Token struct {
 	// raw optionally contains extra metadata from the server
 	// when updating a token.
 	raw interface{}
+
+	// expiryDelta is used to calculate when a token is considered
+	// expired, by subtracting from Expiry. If zero, defaultExpiryDelta
+	// is used.
+	expiryDelta time.Duration
 }
 
 // Type returns t.TokenType if non-empty, else "Bearer".
@@ -251,6 +262,11 @@ func (t *Token) expired() bool {
 		return false
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
+
+	expiryDelta := defaultExpiryDelta
+	if t.expiryDelta != 0 {
+		expiryDelta = t.expiryDelta
+	}
 	return t.Expiry.Round(0).Add(-expiryDelta).Before(timeNow())
 }
 
@@ -278,7 +294,7 @@ func tokenFromInternal(t *internal.Token) *Token {
 // This token is then mapped from *internal.Token into an *oauth2.Token which is returned along
 // with an error..
 func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error) {
-	tk, err := internal.RetrieveToken(ctx, c.ClientID, c.ClientSecret, c.Endpoint.TokenURL, v, internal.AuthStyle(c.Endpoint.AuthStyle))
+	tk, err := internal.RetrieveToken(ctx, c.ClientID, c.ClientSecret, c.Endpoint.TokenURL, v, internal.AuthStyle(c.Endpoint.AuthStyle), c.authStyleCache.Get())
 	if err != nil {
 		if rErr, ok := err.(*internal.RetrieveError); ok {
 			return nil, (*RetrieveError)(rErr)
@@ -289,14 +305,31 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 }
 
 // RetrieveError is the error returned when the token endpoint returns a
-// non-2XX HTTP status code.
+// non-2XX HTTP status code or populates RFC 6749's 'error' parameter.
+// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
 type RetrieveError struct {
 	Response *http.Response
 	// Body is the body that was consumed by reading Response.Body.
 	// It may be truncated.
 	Body []byte
+	// ErrorCode is RFC 6749's 'error' parameter.
+	ErrorCode string
+	// ErrorDescription is RFC 6749's 'error_description' parameter.
+	ErrorDescription string
+	// ErrorURI is RFC 6749's 'error_uri' parameter.
+	ErrorURI string
 }
 
 func (r *RetrieveError) Error() string {
+	if r.ErrorCode != "" {
+		s := fmt.Sprintf("oauth2: %q", r.ErrorCode)
+		if r.ErrorDescription != "" {
+			s += fmt.Sprintf(" %q", r.ErrorDescription)
+		}
+		if r.ErrorURI != "" {
+			s += fmt.Sprintf(" %q", r.ErrorURI)
+		}
+		return s
+	}
 	return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
 }

@@ -23,6 +23,7 @@ func (uuid *UUID) UnmarshalText(data []byte) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return err
 	}
@@ -95,9 +96,23 @@ func (uuid *UUID) UnmarshalText(data []byte) error {
 =======
 	if err == nil {
 		*uuid = id
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if err == nil {
+		*uuid = id
+=======
+	if err != nil {
+		return err
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
+<<<<<<< HEAD
 	return err
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return err
+=======
+	*uuid = id
+	return nil
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler.

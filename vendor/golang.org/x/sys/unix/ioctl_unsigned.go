@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 <<<<<<< HEAD:vendor/golang.org/x/sys/unix/ioctl.go
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -39,6 +40,10 @@
 //go:build darwin || dragonfly || freebsd || hurd || linux || netbsd || openbsd
 // +build darwin dragonfly freebsd hurd linux netbsd openbsd
 >>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0):vendor/golang.org/x/sys/unix/ioctl_unsigned.go
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//go:build darwin || dragonfly || freebsd || hurd || linux || netbsd || openbsd
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 

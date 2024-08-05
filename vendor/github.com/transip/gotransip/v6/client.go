@@ -3,14 +3,14 @@ package gotransip
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/transip/gotransip/v6/authenticator"
 	"github.com/transip/gotransip/v6/jwt"
 	"github.com/transip/gotransip/v6/repository"
 	"github.com/transip/gotransip/v6/rest"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
 )
 
 // client manages communication with the TransIP API
@@ -74,7 +74,7 @@ func newClient(config ClientConfiguration) (*client, error) {
 
 	if config.PrivateKeyReader != nil {
 		var err error
-		privateKeyBody, err = ioutil.ReadAll(config.PrivateKeyReader)
+		privateKeyBody, err = io.ReadAll(config.PrivateKeyReader)
 
 		if err != nil {
 			return &client{}, fmt.Errorf("error while reading private key: %w", err)
@@ -119,10 +119,10 @@ func newClient(config ClientConfiguration) (*client, error) {
 // This method is used by all rest client methods, thus: 'get','post','put','delete'
 // It uses the authenticator to get a token, either statically provided by the user or requested from the authentication server
 // Then decodes the json response to a supplied interface
-func (c *client) call(method rest.Method, request rest.Request, result interface{}) error {
+func (c *client) call(method rest.Method, request rest.Request, result any) (rest.Response, error) {
 	token, err := c.authenticator.GetToken()
 	if err != nil {
-		return fmt.Errorf("could not get token from authenticator: %w", err)
+		return rest.Response{}, fmt.Errorf("could not get token from authenticator: %w", err)
 	}
 
 	// if test mode is enabled we always want to change rest requests to add a HTTP test=1 query string
@@ -133,7 +133,7 @@ func (c *client) call(method rest.Method, request rest.Request, result interface
 
 	httpRequest, err := request.GetHTTPRequest(c.config.URL, method.Method)
 	if err != nil {
-		return fmt.Errorf("error during request creation: %w", err)
+		return rest.Response{}, fmt.Errorf("error during request creation: %w", err)
 	}
 
 	httpRequest.Header.Add("Authorization", token.GetAuthenticationHeaderValue())
@@ -141,7 +141,7 @@ func (c *client) call(method rest.Method, request rest.Request, result interface
 	client := c.config.HTTPClient
 	httpResponse, err := client.Do(httpRequest)
 	if err != nil {
-		return fmt.Errorf("request error: %w", err)
+		return rest.Response{}, fmt.Errorf("request error: %w", err)
 	}
 
 	defer httpResponse.Body.Close()
@@ -149,18 +149,23 @@ func (c *client) call(method rest.Method, request rest.Request, result interface
 	bodyReader := io.LimitReader(httpResponse.Body, httpBodyLimit)
 
 	// read entire httpResponse body
-	b, err := ioutil.ReadAll(bodyReader)
+	b, err := io.ReadAll(bodyReader)
 	if err != nil {
-		return fmt.Errorf("error reading http response body: %w", err)
+		return rest.Response{}, fmt.Errorf("error reading http response body: %w", err)
 	}
+
+	contentLocation := httpResponse.Header.Get("Content-Location")
 
 	restResponse := rest.Response{
-		Body:       b,
-		StatusCode: httpResponse.StatusCode,
-		Method:     method,
+		Body:            b,
+		StatusCode:      httpResponse.StatusCode,
+		Method:          method,
+		ContentLocation: contentLocation,
 	}
 
-	return restResponse.ParseResponse(&result)
+	err = restResponse.ParseResponse(result)
+
+	return restResponse, err
 }
 
 // ChangeBasePath changes base path to allow switching to mocks
@@ -182,29 +187,59 @@ func (c *client) GetAuthenticator() *authenticator.Authenticator {
 
 // This method will create and execute a http Get request
 func (c *client) Get(request rest.Request, responseObject interface{}) error {
-	return c.call(rest.GetMethod, request, responseObject)
+	_, err := c.call(rest.GetMethod, request, responseObject)
+	return err
 }
 
 // This method will create and execute a http Post request
 // It expects no response, that is why it does not ask for a responseObject
 func (c *client) Post(request rest.Request) error {
-	return c.call(rest.PostMethod, request, nil)
+	var response any
+	_, err := c.call(rest.PostMethod, request, &response)
+	return err
+}
+
+// This method will create and execute a http Post request
+// It expects a response
+func (c *client) PostWithResponse(request rest.Request) (rest.Response, error) {
+	var response any
+	return c.call(rest.PostMethod, request, &response)
 }
 
 // This method will create and execute a http Put request
 // It expects no response, that is why it does not ask for a responseObject
 func (c *client) Put(request rest.Request) error {
-	return c.call(rest.PutMethod, request, nil)
+	var response any
+	_, err := c.call(rest.PutMethod, request, &response)
+	return err
+}
+
+// This method will create and execute a http Put request
+// It expects a response
+func (c *client) PutWithResponse(request rest.Request) (rest.Response, error) {
+	var response any
+	return c.call(rest.PutMethod, request, &response)
 }
 
 // This method will create and execute a http Delete request
 // It expects no response, that is why it does not ask for a responseObject
 func (c *client) Delete(request rest.Request) error {
-	return c.call(rest.DeleteMethod, request, nil)
+	var response any
+	_, err := c.call(rest.DeleteMethod, request, &response)
+	return err
 }
 
 // This method will create and execute a http Patch request
 // It expects no response, that is why it does not ask for a responseObject
 func (c *client) Patch(request rest.Request) error {
-	return c.call(rest.PatchMethod, request, nil)
+	var response any
+	_, err := c.call(rest.PatchMethod, request, &response)
+	return err
+}
+
+// This method will create and execute a http Patch request
+// It expects a response
+func (c *client) PatchWithResponse(request rest.Request) (rest.Response, error) {
+	var response any
+	return c.call(rest.PatchMethod, request, &response)
 }

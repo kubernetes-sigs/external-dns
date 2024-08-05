@@ -37,6 +37,17 @@ func (c *CvmRoleCredential) GetSecretKey() string {
 	return c.tmpSecretKey
 }
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func (c *CvmRoleCredential) GetCredential() (string, string, string) {
+	if c.needRefresh() {
+		c.refresh()
+	}
+	return c.tmpSecretId, c.tmpSecretKey, c.token
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (c *CvmRoleCredential) needRefresh() bool {
 	if c.tmpSecretId == "" || c.tmpSecretKey == "" || c.token == "" || c.expiredTime-ExpiredTimeout <= time.Now().Unix() {
 		return true

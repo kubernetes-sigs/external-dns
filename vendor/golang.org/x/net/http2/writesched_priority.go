@@ -384,6 +384,7 @@ func (ws *priorityWriteScheduler) AdjustStream(streamID uint32, priority Priorit
 func (ws *priorityWriteScheduler) Push(wr FrameWriteRequest) {
 	var n *priorityNode
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if wr.isControl() {
 		n = &ws.root
 	} else {
@@ -396,16 +397,32 @@ func (ws *priorityWriteScheduler) Push(wr FrameWriteRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if id := wr.StreamID(); id == 0 {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if id := wr.StreamID(); id == 0 {
+=======
+	if wr.isControl() {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		n = &ws.root
 	} else {
+		id := wr.StreamID()
 		n = ws.nodes[id]
 		if n == nil {
 			// id is an idle or closed stream. wr should not be a HEADERS or
+<<<<<<< HEAD
 			// DATA frame. However, wr can be a RST_STREAM. In this case, we
 			// push wr onto the root, rather than creating a new priorityNode,
 			// since RST_STREAM is tiny and the stream's priority is unknown
 			// anyway. See issue #17919.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			// DATA frame. However, wr can be a RST_STREAM. In this case, we
+			// push wr onto the root, rather than creating a new priorityNode,
+			// since RST_STREAM is tiny and the stream's priority is unknown
+			// anyway. See issue #17919.
+=======
+			// DATA frame. In other case, we push wr onto the root, rather
+			// than creating a new priorityNode.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			if wr.DataSize() > 0 {
 				panic("add DATA on non-open stream")
 			}

@@ -17,6 +17,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // DEPRECATED - do not use
 type ContextFlags asn1.BitString
 
@@ -41,10 +42,21 @@ type ContextFlags asn1.BitString
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// DEPRECATED - do not use
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ContextFlags asn1.BitString
 
+<<<<<<< HEAD
 // NewContextFlags creates a new ContextFlags instance.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// NewContextFlags creates a new ContextFlags instance.
+=======
+// NewContextFlags creates a new ContextFlags instance
+// DEPRECATED - do not use
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NewContextFlags() ContextFlags {
 	var c ContextFlags
 	c.BitLength = 32

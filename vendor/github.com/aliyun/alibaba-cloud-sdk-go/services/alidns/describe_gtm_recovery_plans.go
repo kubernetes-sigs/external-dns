@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmRecoveryPlans(request *DescribeGtmRecoveryPlansRequest) (response *DescribeGtmRecoveryPlansResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlansResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,10 @@ func CreateDescribeGtmRecoveryPlansRequest() (request *DescribeGtmRecoveryPlansR
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplans.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplans.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmRecoveryPlans(request *DescribeGtmRecoveryPlansRequest) (response *DescribeGtmRecoveryPlansResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlansResponse()
 	err = client.DoAction(request, response)
@@ -196,8 +201,6 @@ func (client *Client) DescribeGtmRecoveryPlans(request *DescribeGtmRecoveryPlans
 }
 
 // DescribeGtmRecoveryPlansWithChan invokes the alidns.DescribeGtmRecoveryPlans API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplans.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlansWithChan(request *DescribeGtmRecoveryPlansRequest) (<-chan *DescribeGtmRecoveryPlansResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmRecoveryPlansResponse, 1)
 	errChan := make(chan error, 1)
@@ -220,8 +223,6 @@ func (client *Client) DescribeGtmRecoveryPlansWithChan(request *DescribeGtmRecov
 }
 
 // DescribeGtmRecoveryPlansWithCallback invokes the alidns.DescribeGtmRecoveryPlans API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplans.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlansWithCallback(request *DescribeGtmRecoveryPlansRequest, callback func(response *DescribeGtmRecoveryPlansResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -253,11 +254,11 @@ type DescribeGtmRecoveryPlansRequest struct {
 // DescribeGtmRecoveryPlansResponse is the response struct for api DescribeGtmRecoveryPlans
 type DescribeGtmRecoveryPlansResponse struct {
 	*responses.BaseResponse
-	RequestId     string        `json:"RequestId" xml:"RequestId"`
-	TotalItems    int           `json:"TotalItems" xml:"TotalItems"`
-	TotalPages    int           `json:"TotalPages" xml:"TotalPages"`
-	PageNumber    int           `json:"PageNumber" xml:"PageNumber"`
 	PageSize      int           `json:"PageSize" xml:"PageSize"`
+	RequestId     string        `json:"RequestId" xml:"RequestId"`
+	PageNumber    int           `json:"PageNumber" xml:"PageNumber"`
+	TotalPages    int           `json:"TotalPages" xml:"TotalPages"`
+	TotalItems    int           `json:"TotalItems" xml:"TotalItems"`
 	RecoveryPlans RecoveryPlans `json:"RecoveryPlans" xml:"RecoveryPlans"`
 }
 
@@ -267,7 +268,12 @@ func CreateDescribeGtmRecoveryPlansRequest() (request *DescribeGtmRecoveryPlansR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmRecoveryPlans", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

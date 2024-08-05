@@ -18,7 +18,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+<<<<<<< HEAD
 <<<<<<< HEAD
 )
 
@@ -233,6 +235,11 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 =======
 
 	"golang.org/x/net/context/ctxhttp"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+	"golang.org/x/net/context/ctxhttp"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // Token represents the credentials used to authorize
@@ -269,12 +276,18 @@ type Token struct {
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
-// providers returning a token in JSON form.
+// providers returning a token or error in JSON form.
+// https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
 type tokenJSON struct {
 	AccessToken  string         `json:"access_token"`
 	TokenType    string         `json:"token_type"`
 	RefreshToken string         `json:"refresh_token"`
 	ExpiresIn    expirationTime `json:"expires_in"` // at least PayPal returns string, while most return number
+	// error fields
+	// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
+	ErrorCode        string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+	ErrorURI         string `json:"error_uri"`
 }
 
 func (e *tokenJSON) expiry() (t time.Time) {
@@ -323,41 +336,60 @@ const (
 	AuthStyleInHeader AuthStyle = 2
 )
 
-// authStyleCache is the set of tokenURLs we've successfully used via
+// LazyAuthStyleCache is a backwards compatibility compromise to let Configs
+// have a lazily-initialized AuthStyleCache.
+//
+// The two users of this, oauth2.Config and oauth2/clientcredentials.Config,
+// both would ideally just embed an unexported AuthStyleCache but because both
+// were historically allowed to be copied by value we can't retroactively add an
+// uncopyable Mutex to them.
+//
+// We could use an atomic.Pointer, but that was added recently enough (in Go
+// 1.18) that we'd break Go 1.17 users where the tests as of 2023-08-03
+// still pass. By using an atomic.Value, it supports both Go 1.17 and
+// copying by value, even if that's not ideal.
+type LazyAuthStyleCache struct {
+	v atomic.Value // of *AuthStyleCache
+}
+
+func (lc *LazyAuthStyleCache) Get() *AuthStyleCache {
+	if c, ok := lc.v.Load().(*AuthStyleCache); ok {
+		return c
+	}
+	c := new(AuthStyleCache)
+	if !lc.v.CompareAndSwap(nil, c) {
+		c = lc.v.Load().(*AuthStyleCache)
+	}
+	return c
+}
+
+// AuthStyleCache is the set of tokenURLs we've successfully used via
 // RetrieveToken and which style auth we ended up using.
 // It's called a cache, but it doesn't (yet?) shrink. It's expected that
 // the set of OAuth2 servers a program contacts over time is fixed and
 // small.
-var authStyleCache struct {
-	sync.Mutex
-	m map[string]AuthStyle // keyed by tokenURL
-}
-
-// ResetAuthCache resets the global authentication style cache used
-// for AuthStyleUnknown token requests.
-func ResetAuthCache() {
-	authStyleCache.Lock()
-	defer authStyleCache.Unlock()
-	authStyleCache.m = nil
+type AuthStyleCache struct {
+	mu sync.Mutex
+	m  map[string]AuthStyle // keyed by tokenURL
 }
 
 // lookupAuthStyle reports which auth style we last used with tokenURL
 // when calling RetrieveToken and whether we have ever done so.
-func lookupAuthStyle(tokenURL string) (style AuthStyle, ok bool) {
-	authStyleCache.Lock()
-	defer authStyleCache.Unlock()
-	style, ok = authStyleCache.m[tokenURL]
+func (c *AuthStyleCache) lookupAuthStyle(tokenURL string) (style AuthStyle, ok bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	style, ok = c.m[tokenURL]
 	return
 }
 
 // setAuthStyle adds an entry to authStyleCache, documented above.
-func setAuthStyle(tokenURL string, v AuthStyle) {
-	authStyleCache.Lock()
-	defer authStyleCache.Unlock()
-	if authStyleCache.m == nil {
-		authStyleCache.m = make(map[string]AuthStyle)
+func (c *AuthStyleCache) setAuthStyle(tokenURL string, v AuthStyle) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.m == nil {
+		c.m = make(map[string]AuthStyle)
 	}
-	authStyleCache.m[tokenURL] = v
+	c.m[tokenURL] = v
 }
 
 // newTokenRequest returns a new *http.Request to retrieve a new token
@@ -397,10 +429,10 @@ func cloneURLValues(v url.Values) url.Values {
 	return v2
 }
 
-func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*Token, error) {
+func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle, styleCache *AuthStyleCache) (*Token, error) {
 	needsAuthStyleProbe := authStyle == 0
 	if needsAuthStyleProbe {
-		if style, ok := lookupAuthStyle(tokenURL); ok {
+		if style, ok := styleCache.lookupAuthStyle(tokenURL); ok {
 			authStyle = style
 			needsAuthStyleProbe = false
 		} else {
@@ -430,7 +462,7 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 		token, err = doTokenRoundTrip(ctx, req)
 	}
 	if needsAuthStyleProbe && err == nil {
-		setAuthStyle(tokenURL, authStyle)
+		styleCache.setAuthStyle(tokenURL, authStyle)
 	}
 	// Don't overwrite `RefreshToken` with an empty value
 	// if this was a token refreshing request.
@@ -441,8 +473,14 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 }
 
 func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
+<<<<<<< HEAD
 	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
+=======
+	r, err := ContextClient(ctx).Do(req.WithContext(ctx))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -451,21 +489,29 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
-	if code := r.StatusCode; code < 200 || code > 299 {
-		return nil, &RetrieveError{
-			Response: r,
-			Body:     body,
-		}
+
+	failureStatus := r.StatusCode < 200 || r.StatusCode > 299
+	retrieveError := &RetrieveError{
+		Response: r,
+		Body:     body,
+		// attempt to populate error detail below
 	}
 
 	var token *Token
 	content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	switch content {
 	case "application/x-www-form-urlencoded", "text/plain":
+		// some endpoints return a query string
 		vals, err := url.ParseQuery(string(body))
 		if err != nil {
-			return nil, err
+			if failureStatus {
+				return nil, retrieveError
+			}
+			return nil, fmt.Errorf("oauth2: cannot parse response: %v", err)
 		}
+		retrieveError.ErrorCode = vals.Get("error")
+		retrieveError.ErrorDescription = vals.Get("error_description")
+		retrieveError.ErrorURI = vals.Get("error_uri")
 		token = &Token{
 			AccessToken:  vals.Get("access_token"),
 			TokenType:    vals.Get("token_type"),
@@ -480,8 +526,14 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	default:
 		var tj tokenJSON
 		if err = json.Unmarshal(body, &tj); err != nil {
-			return nil, err
+			if failureStatus {
+				return nil, retrieveError
+			}
+			return nil, fmt.Errorf("oauth2: cannot parse json: %v", err)
 		}
+		retrieveError.ErrorCode = tj.ErrorCode
+		retrieveError.ErrorDescription = tj.ErrorDescription
+		retrieveError.ErrorURI = tj.ErrorURI
 		token = &Token{
 			AccessToken:  tj.AccessToken,
 			TokenType:    tj.TokenType,
@@ -491,17 +543,37 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		}
 		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
 	}
+	// according to spec, servers should respond status 400 in error case
+	// https://www.rfc-editor.org/rfc/rfc6749#section-5.2
+	// but some unorthodox servers respond 200 in error case
+	if failureStatus || retrieveError.ErrorCode != "" {
+		return nil, retrieveError
+	}
 	if token.AccessToken == "" {
 		return nil, errors.New("oauth2: server response missing access_token")
 	}
 	return token, nil
 }
 
+// mirrors oauth2.RetrieveError
 type RetrieveError struct {
-	Response *http.Response
-	Body     []byte
+	Response         *http.Response
+	Body             []byte
+	ErrorCode        string
+	ErrorDescription string
+	ErrorURI         string
 }
 
 func (r *RetrieveError) Error() string {
+	if r.ErrorCode != "" {
+		s := fmt.Sprintf("oauth2: %q", r.ErrorCode)
+		if r.ErrorDescription != "" {
+			s += fmt.Sprintf(" %q", r.ErrorDescription)
+		}
+		if r.ErrorURI != "" {
+			s += fmt.Sprintf(" %q", r.ErrorURI)
+		}
+		return s
+	}
 	return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
 }

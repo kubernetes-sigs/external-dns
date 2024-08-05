@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/utils/clock"
 )
 
@@ -536,6 +537,11 @@ func (q *Type) shutdown() {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/apimachinery/pkg/util/clock"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/apimachinery/pkg/util/clock"
+=======
+	"k8s.io/utils/clock"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 type Interface interface {
@@ -544,24 +550,68 @@ type Interface interface {
 	Get() (item interface{}, shutdown bool)
 	Done(item interface{})
 	ShutDown()
+	ShutDownWithDrain()
 	ShuttingDown() bool
+}
+
+// QueueConfig specifies optional configurations to customize an Interface.
+type QueueConfig struct {
+	// Name for the queue. If unnamed, the metrics will not be registered.
+	Name string
+
+	// MetricsProvider optionally allows specifying a metrics provider to use for the queue
+	// instead of the global provider.
+	MetricsProvider MetricsProvider
+
+	// Clock ability to inject real or fake clock for testing purposes.
+	Clock clock.WithTicker
 }
 
 // New constructs a new work queue (see the package comment).
 func New() *Type {
-	return NewNamed("")
+	return NewWithConfig(QueueConfig{
+		Name: "",
+	})
 }
 
+// NewWithConfig constructs a new workqueue with ability to
+// customize different properties.
+func NewWithConfig(config QueueConfig) *Type {
+	return newQueueWithConfig(config, defaultUnfinishedWorkUpdatePeriod)
+}
+
+// NewNamed creates a new named queue.
+// Deprecated: Use NewWithConfig instead.
 func NewNamed(name string) *Type {
-	rc := clock.RealClock{}
+	return NewWithConfig(QueueConfig{
+		Name: name,
+	})
+}
+
+// newQueueWithConfig constructs a new named workqueue
+// with the ability to customize different properties for testing purposes
+func newQueueWithConfig(config QueueConfig, updatePeriod time.Duration) *Type {
+	var metricsFactory *queueMetricsFactory
+	if config.MetricsProvider != nil {
+		metricsFactory = &queueMetricsFactory{
+			metricsProvider: config.MetricsProvider,
+		}
+	} else {
+		metricsFactory = &globalMetricsFactory
+	}
+
+	if config.Clock == nil {
+		config.Clock = clock.RealClock{}
+	}
+
 	return newQueue(
-		rc,
-		globalMetricsFactory.newQueueMetrics(name, rc),
-		defaultUnfinishedWorkUpdatePeriod,
+		config.Clock,
+		metricsFactory.newQueueMetrics(config.Name, config.Clock),
+		updatePeriod,
 	)
 }
 
-func newQueue(c clock.Clock, metrics queueMetrics, updatePeriod time.Duration) *Type {
+func newQueue(c clock.WithTicker, metrics queueMetrics, updatePeriod time.Duration) *Type {
 	t := &Type{
 		clock:                      c,
 		dirty:                      set{},
@@ -570,7 +620,13 @@ func newQueue(c clock.Clock, metrics queueMetrics, updatePeriod time.Duration) *
 		metrics:                    metrics,
 		unfinishedWorkUpdatePeriod: updatePeriod,
 	}
-	go t.updateUnfinishedWorkLoop()
+
+	// Don't start the goroutine for a type of noMetrics so we don't consume
+	// resources unnecessarily
+	if _, ok := metrics.(noMetrics); !ok {
+		go t.updateUnfinishedWorkLoop()
+	}
+
 	return t
 }
 
@@ -595,11 +651,12 @@ type Type struct {
 	cond *sync.Cond
 
 	shuttingDown bool
+	drain        bool
 
 	metrics queueMetrics
 
 	unfinishedWorkUpdatePeriod time.Duration
-	clock                      clock.Clock
+	clock                      clock.WithTicker
 }
 
 type empty struct{}
@@ -617,6 +674,10 @@ func (s set) insert(item t) {
 
 func (s set) delete(item t) {
 	delete(s, item)
+}
+
+func (s set) len() int {
+	return len(s)
 }
 
 // Add marks item as needing processing.
@@ -664,7 +725,10 @@ func (q *Type) Get() (item interface{}, shutdown bool) {
 		return nil, true
 	}
 
-	item, q.queue = q.queue[0], q.queue[1:]
+	item = q.queue[0]
+	// The underlying array still exists and reference this object, so the object will not be garbage collected.
+	q.queue[0] = nil
+	q.queue = q.queue[1:]
 
 	q.metrics.get(item)
 
@@ -687,18 +751,43 @@ func (q *Type) Done(item interface{}) {
 	if q.dirty.has(item) {
 		q.queue = append(q.queue, item)
 		q.cond.Signal()
+	} else if q.processing.len() == 0 {
+		q.cond.Signal()
 	}
 }
 
-// ShutDown will cause q to ignore all new items added to it. As soon as the
-// worker goroutines have drained the existing items in the queue, they will be
-// instructed to exit.
+// ShutDown will cause q to ignore all new items added to it and
+// immediately instruct the worker goroutines to exit.
 func (q *Type) ShutDown() {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
+
+	q.drain = false
 	q.shuttingDown = true
 	q.cond.Broadcast()
+}
+
+// ShutDownWithDrain will cause q to ignore all new items added to it. As soon
+// as the worker goroutines have "drained", i.e: finished processing and called
+// Done on all existing items in the queue; they will be instructed to exit and
+// ShutDownWithDrain will return. Hence: a strict requirement for using this is;
+// your workers must ensure that Done is called on all items in the queue once
+// the shut down has been initiated, if that is not the case: this will block
+// indefinitely. It is, however, safe to call ShutDown after having called
+// ShutDownWithDrain, as to force the queue shut down to terminate immediately
+// without waiting for the drainage.
+func (q *Type) ShutDownWithDrain() {
+	q.cond.L.Lock()
+	defer q.cond.L.Unlock()
+
+	q.drain = true
+	q.shuttingDown = true
+	q.cond.Broadcast()
+
+	for q.processing.len() != 0 && q.drain {
+		q.cond.Wait()
+	}
 }
 
 func (q *Type) ShuttingDown() bool {

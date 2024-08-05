@@ -24,6 +24,7 @@ var _ TestDeep = &tdPtr{}
 
 // Ptr is a smuggler operator. It takes the address of data and
 <<<<<<< HEAD
+<<<<<<< HEAD
 // compares it to val.
 //
 // val depends on data type. For example, if the compared data is an
@@ -761,39 +762,52 @@ func (p *tdPPtr) TypeBehind() reflect.Type {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // compares it to "val".
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// compares it to "val".
+=======
+// compares it to val.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
-// "val" depends on data type. For example, if the compared data is an
+// val depends on data type. For example, if the compared data is an
 // *int, one can have:
 //
-//   num := 12
-//   td.Cmp(t, &num, td.Ptr(12)) // succeeds
+//	num := 12
+//	td.Cmp(t, &num, td.Ptr(12)) // succeeds
 //
 // as well as an other operator:
 //
-//   num := 3
-//   td.Cmp(t, &num, td.Ptr(td.Between(3, 4)))
+//	num := 3
+//	td.Cmp(t, &num, td.Ptr(td.Between(3, 4)))
 //
-// TypeBehind method returns the reflect.Type of a pointer on "val",
-// except if "val" is a TestDeep operator. In this case, it delegates
-// TypeBehind() to the operator and returns the reflect.Type of a
+// TypeBehind method returns the [reflect.Type] of a pointer on val,
+// except if val is a [TestDeep] operator. In this case, it delegates
+// TypeBehind() to the operator and returns the [reflect.Type] of a
 // pointer on the returned value (if non-nil of course).
-func Ptr(val interface{}) TestDeep {
-	vval := reflect.ValueOf(val)
-	if vval.IsValid() {
-		p := tdPtr{
-			tdSmugglerBase: newSmugglerBase(val),
-		}
+//
+// See also [PPtr] and [Shallow].
+func Ptr(val any) TestDeep {
+	p := tdPtr{
+		tdSmugglerBase: newSmugglerBase(val),
+	}
 
-		if !p.isTestDeeper {
-			p.expectedValue = reflect.New(vval.Type())
-			p.expectedValue.Elem().Set(vval)
-		}
+	vval := reflect.ValueOf(val)
+	if !vval.IsValid() {
+		p.err = ctxerr.OpBadUsage("Ptr", "(NON_NIL_VALUE)", val, 1, true)
 		return &p
 	}
-	panic("usage: Ptr(NON_NIL_VALUE)")
+
+	if !p.isTestDeeper {
+		p.expectedValue = reflect.New(vval.Type())
+		p.expectedValue.Elem().Set(vval)
+	}
+	return &p
 }
 
 func (p *tdPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if p.err != nil {
+		return ctx.CollectError(p.err)
+	}
+
 	if got.Kind() != reflect.Ptr {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -812,6 +826,10 @@ func (p *tdPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (p *tdPtr) String() string {
+	if p.err != nil {
+		return p.stringError()
+	}
+
 	if p.isTestDeeper {
 		return "*<something>"
 	}
@@ -819,6 +837,10 @@ func (p *tdPtr) String() string {
 }
 
 func (p *tdPtr) TypeBehind() reflect.Type {
+	if p.err != nil {
+		return nil
+	}
+
 	// If the expected value is a TestDeep operator, delegate TypeBehind to it
 	if p.isTestDeeper {
 		typ := p.expectedValue.Interface().(TestDeep).TypeBehind()
@@ -841,50 +863,58 @@ var _ TestDeep = &tdPPtr{}
 // input(PPtr): ptr
 
 // PPtr is a smuggler operator. It takes the address of the address of
-// data and compares it to "val".
+// data and compares it to val.
 //
-// "val" depends on data type. For example, if the compared data is an
+// val depends on data type. For example, if the compared data is an
 // **int, one can have:
 //
-//   num := 12
-//   pnum = &num
-//   td.Cmp(t, &pnum, td.PPtr(12)) // succeeds
+//	num := 12
+//	pnum = &num
+//	td.Cmp(t, &pnum, td.PPtr(12)) // succeeds
 //
 // as well as an other operator:
 //
-//   num := 3
-//   pnum = &num
-//   td.Cmp(t, &pnum, td.PPtr(td.Between(3, 4))) // succeeds
+//	num := 3
+//	pnum = &num
+//	td.Cmp(t, &pnum, td.PPtr(td.Between(3, 4))) // succeeds
 //
 // It is more efficient and shorter to write than:
 //
-//   td.Cmp(t, &pnum, td.Ptr(td.Ptr(val))) // succeeds too
+//	td.Cmp(t, &pnum, td.Ptr(td.Ptr(val))) // succeeds too
 //
-// TypeBehind method returns the reflect.Type of a pointer on a
-// pointer on "val", except if "val" is a TestDeep operator. In this
+// TypeBehind method returns the [reflect.Type] of a pointer on a
+// pointer on val, except if val is a [TestDeep] operator. In this
 // case, it delegates TypeBehind() to the operator and returns the
-// reflect.Type of a pointer on a pointer on the returned value (if
+// [reflect.Type] of a pointer on a pointer on the returned value (if
 // non-nil of course).
-func PPtr(val interface{}) TestDeep {
+//
+// See also [Ptr].
+func PPtr(val any) TestDeep {
+	p := tdPPtr{
+		tdSmugglerBase: newSmugglerBase(val),
+	}
+
 	vval := reflect.ValueOf(val)
-	if vval.IsValid() {
-		p := tdPPtr{
-			tdSmugglerBase: newSmugglerBase(val),
-		}
-
-		if !p.isTestDeeper {
-			pVval := reflect.New(vval.Type())
-			pVval.Elem().Set(vval)
-
-			p.expectedValue = reflect.New(pVval.Type())
-			p.expectedValue.Elem().Set(pVval)
-		}
+	if !vval.IsValid() {
+		p.err = ctxerr.OpBadUsage("PPtr", "(NON_NIL_VALUE)", val, 1, true)
 		return &p
 	}
-	panic("usage: PPtr(NON_NIL_VALUE)")
+
+	if !p.isTestDeeper {
+		pVval := reflect.New(vval.Type())
+		pVval.Elem().Set(vval)
+
+		p.expectedValue = reflect.New(pVval.Type())
+		p.expectedValue.Elem().Set(pVval)
+	}
+	return &p
 }
 
 func (p *tdPPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if p.err != nil {
+		return ctx.CollectError(p.err)
+	}
+
 	if got.Kind() != reflect.Ptr || got.Elem().Kind() != reflect.Ptr {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -903,6 +933,10 @@ func (p *tdPPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (p *tdPPtr) String() string {
+	if p.err != nil {
+		return p.stringError()
+	}
+
 	if p.isTestDeeper {
 		return "**<something>"
 	}
@@ -910,7 +944,15 @@ func (p *tdPPtr) String() string {
 }
 
 func (p *tdPPtr) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if p.err != nil {
+		return nil
+	}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// If the expected value is a TestDeep operator, delegate TypeBehind to it
 	if p.isTestDeeper {
 		typ := p.expectedValue.Interface().(TestDeep).TypeBehind()

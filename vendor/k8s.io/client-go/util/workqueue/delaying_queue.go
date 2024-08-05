@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/clock"
 )
@@ -217,7 +218,12 @@ func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayin
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/apimachinery/pkg/util/clock"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/apimachinery/pkg/util/clock"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/clock"
 )
 
 // DelayingInterface is an Interface that can Add an item at a later time. This makes it easier to
@@ -228,31 +234,91 @@ type DelayingInterface interface {
 	AddAfter(item interface{}, duration time.Duration)
 }
 
-// NewDelayingQueue constructs a new workqueue with delayed queuing ability
-func NewDelayingQueue() DelayingInterface {
-	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
+// DelayingQueueConfig specifies optional configurations to customize a DelayingInterface.
+type DelayingQueueConfig struct {
+	// Name for the queue. If unnamed, the metrics will not be registered.
+	Name string
+
+	// MetricsProvider optionally allows specifying a metrics provider to use for the queue
+	// instead of the global provider.
+	MetricsProvider MetricsProvider
+
+	// Clock optionally allows injecting a real or fake clock for testing purposes.
+	Clock clock.WithTicker
+
+	// Queue optionally allows injecting custom queue Interface instead of the default one.
+	Queue Interface
 }
 
-// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
+// NewDelayingQueue constructs a new workqueue with delayed queuing ability.
+// NewDelayingQueue does not emit metrics. For use with a MetricsProvider, please use
+// NewDelayingQueueWithConfig instead and specify a name.
+func NewDelayingQueue() DelayingInterface {
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{})
+}
+
+// NewDelayingQueueWithConfig constructs a new workqueue with options to
+// customize different properties.
+func NewDelayingQueueWithConfig(config DelayingQueueConfig) DelayingInterface {
+	if config.Clock == nil {
+		config.Clock = clock.RealClock{}
+	}
+
+	if config.Queue == nil {
+		config.Queue = NewWithConfig(QueueConfig{
+			Name:            config.Name,
+			MetricsProvider: config.MetricsProvider,
+			Clock:           config.Clock,
+		})
+	}
+
+	return newDelayingQueue(config.Clock, config.Queue, config.Name, config.MetricsProvider)
+}
+
+// NewDelayingQueueWithCustomQueue constructs a new workqueue with ability to
+// inject custom queue Interface instead of the default one
+// Deprecated: Use NewDelayingQueueWithConfig instead.
+func NewDelayingQueueWithCustomQueue(q Interface, name string) DelayingInterface {
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{
+		Name:  name,
+		Queue: q,
+	})
+}
+
+// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability.
+// Deprecated: Use NewDelayingQueueWithConfig instead.
 func NewNamedDelayingQueue(name string) DelayingInterface {
-	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{Name: name})
 }
 
 // NewDelayingQueueWithCustomClock constructs a new named workqueue
-// with ability to inject real or fake clock for testing purposes
-func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
+// with ability to inject real or fake clock for testing purposes.
+// Deprecated: Use NewDelayingQueueWithConfig instead.
+func NewDelayingQueueWithCustomClock(clock clock.WithTicker, name string) DelayingInterface {
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{
+		Name:  name,
+		Clock: clock,
+	})
+}
+
+func newDelayingQueue(clock clock.WithTicker, q Interface, name string, provider MetricsProvider) *delayingType {
 	ret := &delayingType{
-		Interface:       NewNamed(name),
+		Interface:       q,
 		clock:           clock,
 		heartbeat:       clock.NewTicker(maxWait),
 		stopCh:          make(chan struct{}),
 		waitingForAddCh: make(chan *waitFor, 1000),
-		metrics:         newRetryMetrics(name),
+		metrics:         newRetryMetrics(name, provider),
 	}
 
 	go ret.waitingLoop()
+<<<<<<< HEAD
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return ret
 }
 

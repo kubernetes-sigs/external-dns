@@ -26,6 +26,7 @@ var _ TestDeep = &tdContainsKey{}
 
 // ContainsKey is a smuggler operator and works on maps only. It
 <<<<<<< HEAD
+<<<<<<< HEAD
 // compares each key of map against expectedValue.
 //
 //	hash := map[string]int{"foo": 12, "bar": 34, "zip": 28}
@@ -242,29 +243,36 @@ func (c *tdContainsKey) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Err
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // compares each key of map against "expectedValue".
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// compares each key of map against "expectedValue".
+=======
+// compares each key of map against expectedValue.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
-//   hash := map[string]int{"foo": 12, "bar": 34, "zip": 28}
-//   td.Cmp(t, hash, td.ContainsKey("foo"))             // succeeds
-//   td.Cmp(t, hash, td.ContainsKey(td.HasPrefix("z"))) // succeeds
-//   td.Cmp(t, hash, td.ContainsKey(td.HasPrefix("x"))) // fails
+//	hash := map[string]int{"foo": 12, "bar": 34, "zip": 28}
+//	td.Cmp(t, hash, td.ContainsKey("foo"))             // succeeds
+//	td.Cmp(t, hash, td.ContainsKey(td.HasPrefix("z"))) // succeeds
+//	td.Cmp(t, hash, td.ContainsKey(td.HasPrefix("x"))) // fails
 //
-//   hnum := map[int]string{1: "foo", 42: "bar"}
-//   td.Cmp(t, hash, td.ContainsKey(42))                 // succeeds
-//   td.Cmp(t, hash, td.ContainsKey(td.Between(40, 45))) // succeeds
+//	hnum := map[int]string{1: "foo", 42: "bar"}
+//	td.Cmp(t, hash, td.ContainsKey(42))                 // succeeds
+//	td.Cmp(t, hash, td.ContainsKey(td.Between(40, 45))) // succeeds
 //
 // When ContainsKey(nil) is used, nil is automatically converted to a
 // typed nil on the fly to avoid confusion (if the map key type allows
-// it of course.) So all following Cmp calls are equivalent
+// it of course.) So all following [Cmp] calls are equivalent
 // (except the (*byte)(nil) one):
 //
-//   num := 123
-//   hnum := map[*int]bool{&num: true, nil: true}
-//   td.Cmp(t, hnum, td.ContainsKey(nil))         // succeeds → (*int)(nil)
-//   td.Cmp(t, hnum, td.ContainsKey((*int)(nil))) // succeeds
-//   td.Cmp(t, hnum, td.ContainsKey(td.Nil()))    // succeeds
-//   // But...
-//   td.Cmp(t, hnum, td.ContainsKey((*byte)(nil))) // fails: (*byte)(nil) ≠ (*int)(nil)
-func ContainsKey(expectedValue interface{}) TestDeep {
+//	num := 123
+//	hnum := map[*int]bool{&num: true, nil: true}
+//	td.Cmp(t, hnum, td.ContainsKey(nil))         // succeeds → (*int)(nil)
+//	td.Cmp(t, hnum, td.ContainsKey((*int)(nil))) // succeeds
+//	td.Cmp(t, hnum, td.ContainsKey(td.Nil()))    // succeeds
+//	// But...
+//	td.Cmp(t, hnum, td.ContainsKey((*byte)(nil))) // fails: (*byte)(nil) ≠ (*int)(nil)
+//
+// See also [Contains].
+func ContainsKey(expectedValue any) TestDeep {
 	c := tdContainsKey{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 	}
@@ -297,7 +305,7 @@ func (c *tdContainsKey) doesNotContainKey(ctx ctxerr.Context, got reflect.Value)
 // getExpectedValue returns the expected value handling the
 // Contains(nil) case: in this case it returns a typed nil (same type
 // as the keys of got).
-// got is a map (it's the caller responsibility to check)
+// got is a map (it's the caller responsibility to check).
 func (c *tdContainsKey) getExpectedValue(got reflect.Value) reflect.Value {
 	// If the expectValue is non-typed nil
 	if !c.expectedValue.IsValid() {
@@ -316,10 +324,10 @@ func (c *tdContainsKey) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Err
 	if got.Kind() == reflect.Map {
 		expectedValue := c.getExpectedValue(got)
 
-		// If expected value is a TestDeep operator, check each key
-		if c.isTestDeeper {
+		// If expected value is a TestDeep operator OR BeLax, check each key
+		if c.isTestDeeper || ctx.BeLax {
 			for _, k := range got.MapKeys() {
-				if deepValueEqualOK(k, expectedValue) {
+				if deepValueEqualFinalOK(ctx, k, expectedValue) {
 					return nil
 				}
 			}
@@ -334,8 +342,14 @@ func (c *tdContainsKey) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Err
 	if ctx.BooleanError {
 		return ctxerr.BooleanError
 	}
+<<<<<<< HEAD
 	var expectedType interface{}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	var expectedType interface{}
+=======
+	var expectedType any
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if c.expectedValue.IsValid() {
 		expectedType = types.RawString(c.expectedValue.Type().String())
 	} else {

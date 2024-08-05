@@ -294,6 +294,7 @@ func (l *lessor) KeepAlive(ctx context.Context, id LeaseID) (<-chan *LeaseKeepAl
 	}
 	l.mu.Unlock()
 
+<<<<<<< HEAD
 	go l.keepAliveCtxCloser(ctx, id, ka.donec)
 	l.firstKeepAliveOnce.Do(func() {
 		go l.recvKeepAliveLoop()
@@ -417,6 +418,143 @@ func (l *lessor) keepAliveOnce(ctx context.Context, id LeaseID) (*LeaseKeepAlive
 	}
 
 	karesp := &LeaseKeepAliveResponse{
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if ctx.Done() != nil {
+		go l.keepAliveCtxCloser(ctx, id, ka.donec)
+	}
+	l.firstKeepAliveOnce.Do(func() {
+		go l.recvKeepAliveLoop()
+		go l.deadlineLoop()
+	})
+
+	return ch, nil
+}
+
+func (l *lessor) KeepAliveOnce(ctx context.Context, id LeaseID) (*LeaseKeepAliveResponse, error) {
+	for {
+		resp, err := l.keepAliveOnce(ctx, id)
+		if err == nil {
+			if resp.TTL <= 0 {
+				err = rpctypes.ErrLeaseNotFound
+			}
+			return resp, err
+		}
+		if isHaltErr(ctx, err) {
+			return nil, toErr(ctx, err)
+		}
+	}
+}
+
+func (l *lessor) Close() error {
+	l.stopCancel()
+	// close for synchronous teardown if stream goroutines never launched
+	l.firstKeepAliveOnce.Do(func() { close(l.donec) })
+	<-l.donec
+	return nil
+}
+
+func (l *lessor) keepAliveCtxCloser(ctx context.Context, id LeaseID, donec <-chan struct{}) {
+	select {
+	case <-donec:
+		return
+	case <-l.donec:
+		return
+	case <-ctx.Done():
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	ka, ok := l.keepAlives[id]
+	if !ok {
+		return
+	}
+
+	// close channel and remove context if still associated with keep alive
+	for i, c := range ka.ctxs {
+		if c == ctx {
+			close(ka.chs[i])
+			ka.ctxs = append(ka.ctxs[:i], ka.ctxs[i+1:]...)
+			ka.chs = append(ka.chs[:i], ka.chs[i+1:]...)
+			break
+		}
+	}
+	// remove if no one more listeners
+	if len(ka.chs) == 0 {
+		delete(l.keepAlives, id)
+	}
+}
+
+// closeRequireLeader scans keepAlives for ctxs that have require leader
+// and closes the associated channels.
+func (l *lessor) closeRequireLeader() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for _, ka := range l.keepAlives {
+		reqIdxs := 0
+		// find all required leader channels, close, mark as nil
+		for i, ctx := range ka.ctxs {
+			md, ok := metadata.FromOutgoingContext(ctx)
+			if !ok {
+				continue
+			}
+			ks := md[rpctypes.MetadataRequireLeaderKey]
+			if len(ks) < 1 || ks[0] != rpctypes.MetadataHasLeader {
+				continue
+			}
+			close(ka.chs[i])
+			ka.chs[i] = nil
+			reqIdxs++
+		}
+		if reqIdxs == 0 {
+			continue
+		}
+		// remove all channels that required a leader from keepalive
+		newChs := make([]chan<- *LeaseKeepAliveResponse, len(ka.chs)-reqIdxs)
+		newCtxs := make([]context.Context, len(newChs))
+		newIdx := 0
+		for i := range ka.chs {
+			if ka.chs[i] == nil {
+				continue
+			}
+			newChs[newIdx], newCtxs[newIdx] = ka.chs[i], ka.ctxs[newIdx]
+			newIdx++
+		}
+		ka.chs, ka.ctxs = newChs, newCtxs
+	}
+}
+
+func (l *lessor) keepAliveOnce(ctx context.Context, id LeaseID) (karesp *LeaseKeepAliveResponse, ferr error) {
+	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	stream, err := l.remote.LeaseKeepAlive(cctx, l.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	defer func() {
+		if err := stream.CloseSend(); err != nil {
+			if ferr == nil {
+				ferr = toErr(ctx, err)
+			}
+			return
+		}
+	}()
+
+	err = stream.Send(&pb.LeaseKeepAliveRequest{ID: int64(id)})
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	resp, rerr := stream.Recv()
+	if rerr != nil {
+		return nil, toErr(ctx, rerr)
+	}
+
+	karesp = &LeaseKeepAliveResponse{
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		ResponseHeader: resp.GetHeader(),
 		ID:             LeaseID(resp.ID),
 		TTL:            resp.TTL,

@@ -28,6 +28,7 @@ type AuthConfig struct {
 }
 
 type HostConfig struct {
+<<<<<<< HEAD
 	Host    string
 	Version string
 	Port    string
@@ -352,6 +353,387 @@ func (c *Connector) CreateObject(obj IBObject) (ref string, err error) {
 func (c *Connector) GetObject(
 	// TODO: distinguish between "not found" and other kinds of errors.
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Scheme  string
+	Host    string
+	Version string
+	Port    string
+}
+
+type TransportConfig struct {
+	SslVerify           bool
+	certPool            *x509.CertPool
+	HttpRequestTimeout  time.Duration // in seconds
+	HttpPoolConnections int
+	ProxyUrl            *url.URL
+}
+
+func NewTransportConfig(sslVerify string, httpRequestTimeout int, httpPoolConnections int) (cfg TransportConfig) {
+	switch {
+	case "false" == strings.ToLower(sslVerify):
+		cfg.SslVerify = false
+	case "true" == strings.ToLower(sslVerify):
+		cfg.SslVerify = true
+	default:
+		caPool := x509.NewCertPool()
+		cert, err := ioutil.ReadFile(sslVerify)
+		if err != nil {
+			log.Printf("Cannot load certificate file '%s'", sslVerify)
+			return
+		}
+		if !caPool.AppendCertsFromPEM(cert) {
+			err = fmt.Errorf("cannot append certificate from file '%s'", sslVerify)
+			return
+		}
+		cfg.certPool = caPool
+		cfg.SslVerify = true
+	}
+
+	cfg.HttpPoolConnections = httpPoolConnections
+	cfg.HttpRequestTimeout = time.Duration(httpRequestTimeout)
+
+	return
+}
+
+type HttpRequestBuilder interface {
+	Init(HostConfig, AuthConfig)
+	BuildUrl(r RequestType, objType string, ref string, returnFields []string, queryParams *QueryParams) (urlStr string)
+	BuildBody(r RequestType, obj IBObject) (jsonStr []byte)
+	BuildRequest(r RequestType, obj IBObject, ref string, queryParams *QueryParams) (req *http.Request, err error)
+}
+
+type HttpRequestor interface {
+	Init(AuthConfig, TransportConfig)
+	SendRequest(*http.Request) ([]byte, error)
+}
+
+type WapiRequestBuilder struct {
+	hostCfg HostConfig
+	authCfg AuthConfig
+}
+
+type WapiRequestBuilderWithHeaders struct {
+	HttpRequestBuilder
+	header http.Header
+}
+
+func NewWapiRequestBuilderWithHeaders(wrb *WapiRequestBuilder, header http.Header) (*WapiRequestBuilderWithHeaders, error) {
+	return &WapiRequestBuilderWithHeaders{
+		HttpRequestBuilder: wrb,
+		header:             header,
+	}, nil
+}
+
+func (wrbh *WapiRequestBuilderWithHeaders) BuildRequest(r RequestType, obj IBObject, ref string, queryParams *QueryParams) (req *http.Request, err error) {
+	req, err = wrbh.HttpRequestBuilder.BuildRequest(r, obj, ref, queryParams)
+	if err != nil {
+		return req, err
+	}
+	for h, values := range wrbh.header {
+		for _, v := range values {
+			req.Header.Add(h, v)
+		}
+	}
+	return req, nil
+}
+
+type WapiHttpRequestor struct {
+	client http.Client
+}
+
+type IBConnector interface {
+	CreateObject(obj IBObject) (ref string, err error)
+	GetObject(obj IBObject, ref string, queryParams *QueryParams, res interface{}) error
+	DeleteObject(ref string) (refRes string, err error)
+	UpdateObject(obj IBObject, ref string) (refRes string, err error)
+}
+
+type Connector struct {
+	hostCfg        HostConfig
+	authCfg        AuthConfig
+	transportCfg   TransportConfig
+	requestBuilder HttpRequestBuilder
+	requestor      HttpRequestor
+}
+
+type RequestType int
+
+const (
+	CREATE RequestType = iota
+	GET
+	DELETE
+	UPDATE
+)
+
+func (r RequestType) toMethod() string {
+	switch r {
+	case CREATE:
+		return "POST"
+	case GET:
+		return "GET"
+	case DELETE:
+		return "DELETE"
+	case UPDATE:
+		return "PUT"
+	}
+
+	return ""
+}
+
+func getHTTPResponseError(resp *http.Response) error {
+	defer resp.Body.Close()
+	content, _ := ioutil.ReadAll(resp.Body)
+	msg := fmt.Sprintf("WAPI request error: %d('%s')\nContents:\n%s\n", resp.StatusCode, resp.Status, content)
+	if resp.StatusCode == http.StatusNotFound {
+		return NewNotFoundError(msg)
+	}
+	return errors.New(msg)
+}
+
+func (whr *WapiHttpRequestor) Init(authCfg AuthConfig, trCfg TransportConfig) {
+	var certList []tls.Certificate
+
+	clientAuthType := tls.NoClientCert
+
+	if authCfg.ClientKey != nil && authCfg.ClientCert != nil {
+		cert, err := tls.X509KeyPair(authCfg.ClientCert, authCfg.ClientKey)
+		if err != nil {
+			log.Fatal("Invalid certificate key pair (PEM format error): ", err)
+		}
+
+		certList = []tls.Certificate{cert}
+		clientAuthType = tls.RequestClientCert
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs:            trCfg.certPool,
+			ClientAuth:         clientAuthType,
+			Certificates:       certList,
+			InsecureSkipVerify: !trCfg.SslVerify,
+			Renegotiation:      tls.RenegotiateOnceAsClient,
+		},
+		MaxIdleConnsPerHost: trCfg.HttpPoolConnections,
+		Proxy:               http.ProxyFromEnvironment,
+	}
+
+	if trCfg.ProxyUrl != nil {
+		tr.Proxy = http.ProxyURL(trCfg.ProxyUrl)
+	}
+
+	// All users of cookiejar should import "golang.org/x/net/publicsuffix"
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	whr.client = http.Client{
+		Jar:       jar,
+		Transport: tr,
+		Timeout:   trCfg.HttpRequestTimeout * time.Second,
+	}
+}
+
+func (whr *WapiHttpRequestor) SendRequest(req *http.Request) (res []byte, err error) {
+	var resp *http.Response
+	resp, err = whr.client.Do(req)
+	if err != nil {
+		return
+	} else if !(resp.StatusCode == http.StatusOK ||
+		(resp.StatusCode == http.StatusCreated &&
+			req.Method == CREATE.toMethod())) {
+		err := getHTTPResponseError(resp)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	res, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Http Reponse ioutil.ReadAll() Error: '%s'", err)
+		return
+	}
+
+	return
+}
+
+func NewWapiRequestBuilder(hostCfg HostConfig, authCfg AuthConfig) (*WapiRequestBuilder, error) {
+	wrb := WapiRequestBuilder{
+		hostCfg: hostCfg,
+		authCfg: authCfg,
+	}
+
+	return &wrb, nil
+}
+
+func (wrb *WapiRequestBuilder) Init(hostCfg HostConfig, authCfg AuthConfig) {
+	wrb.hostCfg = hostCfg
+	wrb.authCfg = authCfg
+}
+
+func (wrb *WapiRequestBuilder) BuildUrl(t RequestType, objType string, ref string, returnFields []string, queryParams *QueryParams) (urlStr string) {
+	path := []string{"wapi", "v" + wrb.hostCfg.Version}
+	if len(ref) > 0 {
+		path = append(path, ref)
+	} else {
+		path = append(path, objType)
+	}
+
+	qry := ""
+	vals := url.Values{}
+	if t == GET {
+		if len(returnFields) > 0 {
+			vals.Set("_return_fields", strings.Join(returnFields, ","))
+		}
+		if queryParams != nil {
+			// TODO need to get this from individual objects in future
+			if queryParams.forceProxy {
+				vals.Set("_proxy_search", "GM")
+			}
+			for k, v := range queryParams.searchFields {
+				if res, ok := ValidateMultiValue(v); ok {
+					for _, mv := range res {
+						vals.Add(k, strings.TrimSpace(mv))
+					}
+				} else {
+					vals.Set(k, v)
+				}
+			}
+		}
+
+		qry = vals.Encode()
+	}
+
+	scheme := "https"
+	if wrb.hostCfg.Scheme == "http" {
+		scheme = "http"
+	}
+	u := url.URL{
+		Scheme:   scheme,
+		Host:     wrb.hostCfg.Host + ":" + wrb.hostCfg.Port,
+		Path:     strings.Join(path, "/"),
+		RawQuery: qry,
+	}
+
+	return u.String()
+}
+
+// populateNilLists fills nil lists in IBObject structs, since NIOS doesn't accept a null list in JSON payload.
+func (wrb *WapiRequestBuilder) populateNilLists(obj IBObject) IBObject {
+	objVal := reflect.ValueOf(obj)
+	if reflect.ValueOf(obj).Kind() == reflect.Ptr {
+		objVal = objVal.Elem()
+	}
+
+	for i := 0; i < objVal.NumField(); i++ {
+		fieldVal := objVal.Field(i)
+		if fieldVal.Type().Kind() == reflect.Slice && fieldVal.CanSet() {
+			if fieldVal.IsNil() == true {
+				fieldVal.Set(reflect.MakeSlice(fieldVal.Type(), 0, 0))
+			}
+		}
+	}
+
+	return obj
+}
+
+func (wrb *WapiRequestBuilder) BuildBody(t RequestType, obj IBObject) []byte {
+	var objJSON []byte
+	var err error
+
+	obj = wrb.populateNilLists(obj)
+
+	objJSON, err = json.Marshal(obj)
+	if err != nil {
+		log.Printf("Cannot marshal object '%s': %s", obj, err)
+		return nil
+	}
+
+	eaSearch := obj.EaSearch()
+	if t == GET && len(eaSearch) > 0 {
+		eaSearchJSON, err := json.Marshal(eaSearch)
+		if err != nil {
+			log.Printf("Cannot marshal EA Search attributes. '%s'\n", err)
+			return nil
+		}
+		objJSON = append(append(objJSON[:len(objJSON)-1], byte(',')), eaSearchJSON[1:]...)
+	}
+
+	return objJSON
+}
+
+func (wrb *WapiRequestBuilder) BuildRequest(t RequestType, obj IBObject, ref string, queryParams *QueryParams) (req *http.Request, err error) {
+	var (
+		objType      string
+		returnFields []string
+	)
+	if obj != nil {
+		objType = obj.ObjectType()
+		returnFields = obj.ReturnFields()
+	}
+	urlStr := wrb.BuildUrl(t, objType, ref, returnFields, queryParams)
+
+	var bodyStr []byte
+	if obj != nil && (t == CREATE || t == UPDATE) {
+		bodyStr = wrb.BuildBody(t, obj)
+	}
+
+	req, err = http.NewRequest(t.toMethod(), urlStr, bytes.NewBuffer(bodyStr))
+	if err != nil {
+		log.Printf("cannot build request: '%s'", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if wrb.authCfg.Username != "" {
+		req.SetBasicAuth(wrb.authCfg.Username, wrb.authCfg.Password)
+	}
+
+	return
+}
+
+func (c *Connector) makeRequest(t RequestType, obj IBObject, ref string, queryParams *QueryParams) (res []byte, err error) {
+	var req *http.Request
+	req, err = c.requestBuilder.BuildRequest(t, obj, ref, queryParams)
+	if err != nil {
+		return
+	}
+	res, err = c.requestor.SendRequest(req)
+	if err != nil {
+		if queryParams != nil {
+			/* Forcing the request to redirect to Grid Master by making forcedProxy=true */
+			queryParams.forceProxy = true
+			req, err = c.requestBuilder.BuildRequest(t, obj, ref, queryParams)
+			if err != nil {
+				return
+			}
+			res, err = c.requestor.SendRequest(req)
+		} else {
+			return nil, err
+		}
+	}
+
+	return
+}
+
+func (c *Connector) CreateObject(obj IBObject) (ref string, err error) {
+	ref = ""
+	queryParams := NewQueryParams(false, nil)
+	resp, err := c.makeRequest(CREATE, obj, "", queryParams)
+	if err != nil || len(resp) == 0 {
+		log.Printf("CreateObject request error: '%s'\n", err)
+		return
+	}
+
+	err = json.Unmarshal(resp, &ref)
+	if err != nil {
+		log.Printf("cannot unmarshall '%s', err: '%s'\n", string(resp), err)
+		return
+	}
+
+	return
+}
+
+func (c *Connector) GetObject(
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	obj IBObject, ref string,
 	queryParams *QueryParams, res interface{}) (err error) {
 

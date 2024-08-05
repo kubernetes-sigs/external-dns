@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && openbsd
 // +build amd64,openbsd
 
@@ -2068,6 +2069,11 @@ type Clockinfo struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build amd64,openbsd
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build amd64,openbsd
+=======
+//go:build amd64 && openbsd
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -2138,7 +2144,6 @@ type Stat_t struct {
 	Blksize int32
 	Flags   uint32
 	Gen     uint32
-	_       [4]byte
 	_       Timespec
 }
 
@@ -2146,7 +2151,6 @@ type Statfs_t struct {
 	F_flags       uint32
 	F_bsize       uint32
 	F_iosize      uint32
-	_             [4]byte
 	F_blocks      uint64
 	F_bfree       uint64
 	F_bavail      int64
@@ -2161,10 +2165,10 @@ type Statfs_t struct {
 	F_namemax     uint32
 	F_owner       uint32
 	F_ctime       uint64
-	F_fstypename  [16]int8
-	F_mntonname   [90]int8
-	F_mntfromname [90]int8
-	F_mntfromspec [90]int8
+	F_fstypename  [16]byte
+	F_mntonname   [90]byte
+	F_mntfromname [90]byte
+	F_mntfromspec [90]byte
 	_             [2]byte
 	Mount_info    [160]byte
 }
@@ -2265,10 +2269,8 @@ type IPv6Mreq struct {
 type Msghdr struct {
 	Name       *byte
 	Namelen    uint32
-	_          [4]byte
 	Iov        *Iovec
 	Iovlen     uint32
-	_          [4]byte
 	Control    *byte
 	Controllen uint32
 	Flags      int32
@@ -2301,6 +2303,7 @@ const (
 	SizeofSockaddrUnix     = 0x6a
 	SizeofSockaddrDatalink = 0x20
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -2375,7 +2378,6 @@ type IfData struct {
 	Oqdrops      uint64
 	Noproto      uint64
 	Capabilities uint32
-	_            [4]byte
 	Lastchange   Timeval
 }
 
@@ -2437,14 +2439,12 @@ type RtMetrics struct {
 	Pad      uint32
 }
 
-type Mclpool struct{}
-
 const (
 	SizeofBpfVersion = 0x4
 	SizeofBpfStat    = 0x8
 	SizeofBpfProgram = 0x10
 	SizeofBpfInsn    = 0x8
-	SizeofBpfHdr     = 0x14
+	SizeofBpfHdr     = 0x18
 )
 
 type BpfVersion struct {
@@ -2459,7 +2459,6 @@ type BpfStat struct {
 
 type BpfProgram struct {
 	Len   uint32
-	_     [4]byte
 	Insns *BpfInsn
 }
 
@@ -2475,7 +2474,10 @@ type BpfHdr struct {
 	Caplen  uint32
 	Datalen uint32
 	Hdrlen  uint16
-	_       [2]byte
+	Ifidx   uint16
+	Flowid  uint16
+	Flags   uint8
+	Drops   uint8
 }
 
 type BpfTimeval struct {
@@ -2502,8 +2504,10 @@ type Winsize struct {
 
 const (
 	AT_FDCWD            = -0x64
-	AT_SYMLINK_FOLLOW   = 0x4
+	AT_EACCESS          = 0x1
 	AT_SYMLINK_NOFOLLOW = 0x2
+	AT_SYMLINK_FOLLOW   = 0x4
+	AT_REMOVEDIR        = 0x8
 )
 
 type PollFd struct {
@@ -2550,7 +2554,7 @@ type Uvmexp struct {
 	Zeropages          int32
 	Reserve_pagedaemon int32
 	Reserve_kernel     int32
-	Anonpages          int32
+	Unused01           int32
 	Vnodepages         int32
 	Vtextpages         int32
 	Freemin            int32
@@ -2569,8 +2573,8 @@ type Uvmexp struct {
 	Swpgonly           int32
 	Nswget             int32
 	Nanon              int32
-	Nanonneeded        int32
-	Nfreeanon          int32
+	Unused05           int32
+	Unused06           int32
 	Faults             int32
 	Traps              int32
 	Intrs              int32
@@ -2578,8 +2582,8 @@ type Uvmexp struct {
 	Softs              int32
 	Syscalls           int32
 	Pageins            int32
-	Obsolete_swapins   int32
-	Obsolete_swapouts  int32
+	Unused07           int32
+	Unused08           int32
 	Pgswapin           int32
 	Pgswapout          int32
 	Forks              int32
@@ -2587,7 +2591,7 @@ type Uvmexp struct {
 	Forks_sharevm      int32
 	Pga_zerohit        int32
 	Pga_zeromiss       int32
-	Zeroaborts         int32
+	Unused09           int32
 	Fltnoram           int32
 	Fltnoanon          int32
 	Fltnoamap          int32
@@ -2619,20 +2623,33 @@ type Uvmexp struct {
 	Pdpageouts         int32
 	Pdpending          int32
 	Pddeact            int32
-	Pdreanon           int32
-	Pdrevnode          int32
-	Pdrevtext          int32
+	Unused11           int32
+	Unused12           int32
+	Unused13           int32
 	Fpswtch            int32
 	Kmapent            int32
 }
 
-const SizeofClockinfo = 0x14
+const SizeofClockinfo = 0x10
 
 type Clockinfo struct {
+<<<<<<< HEAD
 	Hz      int32
 	Tick    int32
 	Tickadj int32
 	Stathz  int32
 	Profhz  int32
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Hz      int32
+	Tick    int32
+	Tickadj int32
+	Stathz  int32
+	Profhz  int32
+=======
+	Hz     int32
+	Tick   int32
+	Stathz int32
+	Profhz int32
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -88,6 +89,11 @@ func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package value
 
@@ -95,6 +101,8 @@ import (
 	"reflect"
 	"strconv"
 )
+
+var anyType = reflect.TypeOf((*interface{})(nil)).Elem()
 
 // TypeString is nearly identical to reflect.Type.String,
 // but has an additional option to specify that full type names be used.
@@ -107,6 +115,11 @@ func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte 
 	// of the same name and within the same package,
 	// but declared within the namespace of different functions.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	// Use the "any" alias instead of "interface{}" for better readability.
+	if t == anyType {
+		return append(b, "any"...)
+	}
 
 	// Named type.
 	if t.Name() != "" {

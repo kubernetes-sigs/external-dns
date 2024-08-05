@@ -4,6 +4,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -301,10 +302,18 @@ func (api *API) ListUserAgentRules(ctx context.Context, zoneID string, page int)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"encoding/json"
+=======
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net/url"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // UserAgentRule represents a User-Agent Block. These rules can be used to
@@ -339,24 +348,24 @@ type UserAgentRuleListResponse struct {
 // CreateUserAgentRule creates a User-Agent Block rule for the given zone ID.
 //
 // API reference: https://api.cloudflare.com/#user-agent-blocking-rules-create-a-useragent-rule
-func (api *API) CreateUserAgentRule(zoneID string, ld UserAgentRule) (*UserAgentRuleResponse, error) {
+func (api *API) CreateUserAgentRule(ctx context.Context, zoneID string, ld UserAgentRule) (*UserAgentRuleResponse, error) {
 	switch ld.Mode {
-	case "block", "challenge", "js_challenge", "whitelist":
+	case "block", "challenge", "js_challenge", "managed_challenge":
 		break
 	default:
-		return nil, errors.New(`the User-Agent Block rule mode must be one of "block", "challenge", "js_challenge", "whitelist"`)
+		return nil, errors.New(`the User-Agent Block rule mode must be one of "block", "challenge", "js_challenge", "managed_challenge"`)
 	}
 
-	uri := "/zones/" + zoneID + "/firewall/ua_rules"
-	res, err := api.makeRequest("POST", uri, ld)
+	uri := fmt.Sprintf("/zones/%s/firewall/ua_rules", zoneID)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, ld)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -365,17 +374,17 @@ func (api *API) CreateUserAgentRule(zoneID string, ld UserAgentRule) (*UserAgent
 // UpdateUserAgentRule updates a User-Agent Block rule (based on the ID) for the given zone ID.
 //
 // API reference: https://api.cloudflare.com/#user-agent-blocking-rules-update-useragent-rule
-func (api *API) UpdateUserAgentRule(zoneID string, id string, ld UserAgentRule) (*UserAgentRuleResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/ua_rules/" + id
-	res, err := api.makeRequest("PUT", uri, ld)
+func (api *API) UpdateUserAgentRule(ctx context.Context, zoneID string, id string, ld UserAgentRule) (*UserAgentRuleResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/ua_rules/%s", zoneID, id)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, ld)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -384,17 +393,17 @@ func (api *API) UpdateUserAgentRule(zoneID string, id string, ld UserAgentRule) 
 // DeleteUserAgentRule deletes a User-Agent Block rule (based on the ID) for the given zone ID.
 //
 // API reference: https://api.cloudflare.com/#user-agent-blocking-rules-delete-useragent-rule
-func (api *API) DeleteUserAgentRule(zoneID string, id string) (*UserAgentRuleResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/ua_rules/" + id
-	res, err := api.makeRequest("DELETE", uri, nil)
+func (api *API) DeleteUserAgentRule(ctx context.Context, zoneID string, id string) (*UserAgentRuleResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/ua_rules/%s", zoneID, id)
+	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -403,17 +412,17 @@ func (api *API) DeleteUserAgentRule(zoneID string, id string) (*UserAgentRuleRes
 // UserAgentRule retrieves a User-Agent Block rule (based on the ID) for the given zone ID.
 //
 // API reference: https://api.cloudflare.com/#user-agent-blocking-rules-useragent-rule-details
-func (api *API) UserAgentRule(zoneID string, id string) (*UserAgentRuleResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/ua_rules/" + id
-	res, err := api.makeRequest("GET", uri, nil)
+func (api *API) UserAgentRule(ctx context.Context, zoneID string, id string) (*UserAgentRuleResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/ua_rules/%s", zoneID, id)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -422,7 +431,7 @@ func (api *API) UserAgentRule(zoneID string, id string) (*UserAgentRuleResponse,
 // ListUserAgentRules retrieves a list of User-Agent Block rules for a given zone ID by page number.
 //
 // API reference: https://api.cloudflare.com/#user-agent-blocking-rules-list-useragent-rules
-func (api *API) ListUserAgentRules(zoneID string, page int) (*UserAgentRuleListResponse, error) {
+func (api *API) ListUserAgentRules(ctx context.Context, zoneID string, page int) (*UserAgentRuleListResponse, error) {
 	v := url.Values{}
 	if page <= 0 {
 		page = 1
@@ -430,19 +439,24 @@ func (api *API) ListUserAgentRules(zoneID string, page int) (*UserAgentRuleListR
 
 	v.Set("page", strconv.Itoa(page))
 	v.Set("per_page", strconv.Itoa(100))
-	query := "?" + v.Encode()
 
-	uri := "/zones/" + zoneID + "/firewall/ua_rules" + query
-	res, err := api.makeRequest("GET", uri, nil)
+	uri := fmt.Sprintf("/zones/%s/firewall/ua_rules?%s", zoneID, v.Encode())
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &UserAgentRuleListResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, errors.Wrap(err, errUnmarshalError)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return nil, errors.Wrap(err, errUnmarshalError)
+=======
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return response, nil

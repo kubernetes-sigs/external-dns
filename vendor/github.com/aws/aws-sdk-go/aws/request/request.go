@@ -7,6 +7,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -1137,6 +1138,10 @@ func (r *Request) Send() error {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"io/ioutil"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"net/http"
 	"net/url"
 	"reflect"
@@ -1262,10 +1267,25 @@ func New(cfg aws.Config, clientInfo metadata.ClientInfo, handlers Handlers,
 	httpReq, _ := http.NewRequest(method, "", nil)
 
 	var err error
-	httpReq.URL, err = url.Parse(clientInfo.Endpoint + operation.HTTPPath)
+	httpReq.URL, err = url.Parse(clientInfo.Endpoint)
 	if err != nil {
 		httpReq.URL = &url.URL{}
 		err = awserr.New("InvalidEndpointURL", "invalid endpoint uri", err)
+	}
+
+	if len(operation.HTTPPath) != 0 {
+		opHTTPPath := operation.HTTPPath
+		var opQueryString string
+		if idx := strings.Index(opHTTPPath, "?"); idx >= 0 {
+			opQueryString = opHTTPPath[idx+1:]
+			opHTTPPath = opHTTPPath[:idx]
+		}
+
+		if strings.HasSuffix(httpReq.URL.Path, "/") && strings.HasPrefix(opHTTPPath, "/") {
+			opHTTPPath = opHTTPPath[1:]
+		}
+		httpReq.URL.Path += opHTTPPath
+		httpReq.URL.RawQuery = opQueryString
 	}
 
 	r := &Request{
@@ -1643,7 +1663,19 @@ func (r *Request) GetBody() io.ReadSeeker {
 // Send will not close the request.Request's body.
 func (r *Request) Send() error {
 	defer func() {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		// Ensure a non-nil HTTPResponse parameter is set to ensure handlers
+		// checking for HTTPResponse values, don't fail.
+		if r.HTTPResponse == nil {
+			r.HTTPResponse = &http.Response{
+				Header: http.Header{},
+				Body:   ioutil.NopCloser(&bytes.Buffer{}),
+			}
+		}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		// Regardless of success or failure of the request trigger the Complete
 		// request handlers.
 		r.Handlers.Complete.Run(r)

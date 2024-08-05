@@ -8,6 +8,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"reflect"
 	"runtime"
 	"sync"
@@ -1267,7 +1268,13 @@ func UnsafeCastString(str string) []byte {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"github.com/modern-go/concurrent"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"github.com/modern-go/concurrent"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"reflect"
+	"runtime"
+	"sync"
 	"unsafe"
 )
 
@@ -1395,13 +1402,13 @@ var ConfigSafe = Config{UseSafeImplementation: true}.Froze()
 
 type frozenConfig struct {
 	useSafeImplementation bool
-	cache                 *concurrent.Map
+	cache                 *sync.Map
 }
 
 func (cfg Config) Froze() *frozenConfig {
 	return &frozenConfig{
 		useSafeImplementation: cfg.UseSafeImplementation,
-		cache: concurrent.NewMap(),
+		cache:                 new(sync.Map),
 	}
 }
 
@@ -1553,7 +1560,9 @@ func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 }
 
 func UnsafeCastString(str string) []byte {
+	bytes := make([]byte, 0)
 	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&str))
+<<<<<<< HEAD
 	sliceHeader := &reflect.SliceHeader{
 		Data: stringHeader.Data,
 		Cap: stringHeader.Len,
@@ -1561,4 +1570,19 @@ func UnsafeCastString(str string) []byte {
 	}
 	return *(*[]byte)(unsafe.Pointer(sliceHeader))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	sliceHeader := &reflect.SliceHeader{
+		Data: stringHeader.Data,
+		Cap: stringHeader.Len,
+		Len: stringHeader.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(sliceHeader))
+=======
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
+	sliceHeader.Data = stringHeader.Data
+	sliceHeader.Cap = stringHeader.Len
+	sliceHeader.Len = stringHeader.Len
+	runtime.KeepAlive(str)
+	return bytes
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

@@ -118,6 +118,10 @@ Example to Create a Token using OAuth1 method
 	if err != nil {
 		panic(err)
 	}
+<<<<<<< HEAD
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 */
 package oauth1

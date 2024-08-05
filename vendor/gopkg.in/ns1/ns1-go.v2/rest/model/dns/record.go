@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,13 +13,15 @@ import (
 type Record struct {
 	Meta *data.Meta `json:"meta,omitempty"`
 
-	ID              string `json:"id,omitempty"`
-	Zone            string `json:"zone"`
-	Domain          string `json:"domain"`
-	Type            string `json:"type"`
-	Link            string `json:"link,omitempty"`
-	TTL             int    `json:"ttl,omitempty"`
-	UseClientSubnet *bool  `json:"use_client_subnet,omitempty"`
+	ID                     string `json:"id,omitempty"`
+	Zone                   string `json:"zone"`
+	Domain                 string `json:"domain"`
+	Type                   string `json:"type"`
+	Link                   string `json:"link,omitempty"`
+	TTL                    int    `json:"ttl,omitempty"`
+	OverrideTTL            *bool  `json:"override_ttl,omitempty"`
+	OverrideAddressRecords *bool  `json:"override_address_records,omitempty"`
+	UseClientSubnet        *bool  `json:"use_client_subnet,omitempty"`
 
 	// Answers must all be of the same type as the record.
 	Answers []*Answer `json:"answers"`
@@ -26,26 +29,38 @@ type Record struct {
 	Filters []*filter.Filter `json:"filters"`
 	// The records' regions.
 	Regions data.Regions `json:"regions,omitempty"`
+
+	// Contains the key/value tag information associated to the record
+	Tags map[string]string `json:"tags,omitempty"` // Only relevant for DDI
+
+	// List of tag key names that should not inherit from the parent zone
+	BlockedTags []string `json:"blocked_tags,omitempty"` //Only relevant for DDI
+
+	// Read-only fields
+	LocalTags []string `json:"local_tags,omitempty"` // Only relevant for DDI
 }
 
-func (r Record) String() string {
+// String returns the domain rtype in string format of record
+func (r *Record) String() string {
 	return fmt.Sprintf("%s %s", r.Domain, r.Type)
 }
 
 // NewRecord takes a zone, domain and record type t and creates a *Record with
 // UseClientSubnet: true & empty Answers.
-func NewRecord(zone string, domain string, t string) *Record {
-	if !strings.HasSuffix(domain, zone) {
+func NewRecord(zone string, domain string, t string, tags map[string]string, blockedTags []string) *Record {
+	if !strings.HasSuffix(strings.ToLower(domain), strings.ToLower(zone)) {
 		domain = fmt.Sprintf("%s.%s", domain, zone)
 	}
 	return &Record{
-		Meta:    &data.Meta{},
-		Zone:    zone,
-		Domain:  domain,
-		Type:    t,
-		Answers: []*Answer{},
-		Filters: []*filter.Filter{},
-		Regions: data.Regions{},
+		Meta:        &data.Meta{},
+		Zone:        zone,
+		Domain:      domain,
+		Type:        t,
+		Answers:     []*Answer{},
+		Filters:     []*filter.Filter{},
+		Regions:     data.Regions{},
+		Tags:        tags,
+		BlockedTags: blockedTags,
 	}
 }
 
@@ -74,4 +89,41 @@ func (r *Record) AddFilter(fil *filter.Filter) {
 	}
 
 	r.Filters = append(r.Filters, fil)
+}
+
+// MarshalJSON attempts to convert any Rdata elements that cannot be passed as
+// strings to the API to their correct type.
+func (r *Record) MarshalJSON() ([]byte, error) {
+	if r.Type == "URLFWD" {
+		prepared, err := prepareURLFWDRecord(r)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(prepared)
+	}
+	// avoid an infinite loop
+	type Alias Record
+	return json.Marshal((*Alias)(r))
+}
+
+// returns Record with Answers as list of interface, with the Answer RData
+// typed correctly for the API.
+func prepareURLFWDRecord(r *Record) (interface{}, error) {
+	as := []interface{}{}
+	for i := range r.Answers {
+		a, err := prepareURLFWDAnswer(r.Answers[i])
+		if err != nil {
+			return nil, err
+		}
+		as = append(as, a)
+	}
+	type Alias Record
+	prepared := &struct {
+		Answers []interface{} `json:"answers"`
+		*Alias
+	}{
+		Answers: as,
+		Alias:   (*Alias)(r),
+	}
+	return prepared, nil
 }

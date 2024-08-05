@@ -34,6 +34,7 @@ const (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NewPath returns a new [Path] initialized with root root node.
 func NewPath(root string) Path {
 	return Path{
@@ -196,6 +197,11 @@ func (p Path) String() string {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // NewPath returns a new Path initialized with "root" root node.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// NewPath returns a new Path initialized with "root" root node.
+=======
+// NewPath returns a new [Path] initialized with root root node.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func NewPath(root string) Path {
 	return Path{
 		{
@@ -210,7 +216,7 @@ func (p Path) Len() int {
 	return len(p)
 }
 
-// Equal returns true if "p" and "o" are equal, false otherwise.
+// Equal returns true if p and o are equal, false otherwise.
 func (p Path) Equal(o Path) bool {
 	if len(p) != len(o) {
 		return false
@@ -224,20 +230,20 @@ func (p Path) Equal(o Path) bool {
 }
 
 func (p Path) addLevel(level pathLevel) Path {
-	new := make(Path, len(p), len(p)+1)
-	copy(new, p)
-	return append(new, level)
+	np := make(Path, len(p), len(p)+1)
+	copy(np, p)
+	return append(np, level)
 }
 
-// Copy returns a new Path, exact but independent copy of "p".
+// Copy returns a new [Path], exact but independent copy of p.
 func (p Path) Copy() Path {
 	if p == nil {
 		return nil
 	}
 
-	new := make(Path, len(p))
-	copy(new, p)
-	return new
+	np := make(Path, len(p))
+	copy(np, p)
+	return np
 }
 
 // AddField adds a level corresponding to a struct field.
@@ -246,16 +252,16 @@ func (p Path) AddField(field string) Path {
 		return nil
 	}
 
-	new := p.addLevel(pathLevel{
+	np := p.addLevel(pathLevel{
 		Kind:    levelStruct,
 		Content: field,
 	})
 
-	if len(new) > 1 && new[len(new)-2].Pointers > 0 {
-		new[len(new)-2].Pointers--
+	if len(np) > 1 && np[len(np)-2].Pointers > 0 {
+		np[len(np)-2].Pointers--
 	}
 
-	return new
+	return np
 }
 
 // AddArrayIndex adds a level corresponding to an array index.
@@ -271,7 +277,7 @@ func (p Path) AddArrayIndex(index int) Path {
 }
 
 // AddMapKey adds a level corresponding to a map key.
-func (p Path) AddMapKey(key interface{}) Path {
+func (p Path) AddMapKey(key any) Path {
 	if p == nil {
 		return nil
 	}
@@ -282,16 +288,16 @@ func (p Path) AddMapKey(key interface{}) Path {
 	})
 }
 
-// AddPtr adds "num" pointers levels.
+// AddPtr adds num pointers levels.
 func (p Path) AddPtr(num int) Path {
 	if p == nil {
 		return nil
 	}
 
-	new := p.Copy()
-	// Do not check len(new) > 0, as it should
-	new[len(new)-1].Pointers += num
-	return new
+	np := p.Copy()
+	// Do not check len(np) > 0, as it should
+	np[len(np)-1].Pointers += num
+	return np
 }
 
 // AddFunctionCall adds a level corresponding to a function call.
@@ -354,6 +360,7 @@ func (p Path) String() string {
 
 	return str
 }
+<<<<<<< HEAD
 
 /*
 func setPtrs(buf []byte, num int) {
@@ -438,3 +445,89 @@ func (p Path) String() string {
 }
 */
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+/*
+func setPtrs(buf []byte, num int) {
+	for i := 0; i < num; i++ {
+		buf[i] = '*'
+	}
+}
+
+func (p Path) String() string {
+	if len(p) == 0 {
+		return ""
+	}
+
+	size := 0
+	for i, level := range p {
+		size += level.Pointers + len(level.Content)
+
+		if level.Kind == levelFunc || (i > 0 && p[i-1].Pointers > 0) {
+			size += 2 // () ⇒ content(x) || (x)content
+		}
+
+		switch level.Kind {
+		case levelStruct:
+			size++ // "."
+		case levelArray, levelMap:
+			size += 2 // []
+		}
+	}
+
+	buf := make([]byte, size)
+	curLen := 0
+
+	for i, level := range p {
+		if level.Kind == levelFunc {
+			// **content(prev)
+			levelLen := level.Pointers + len(level.Content) + 1
+			copy(buf[levelLen:], buf[:curLen])
+			setPtrs(buf, level.Pointers)
+			copy(buf[level.Pointers:], []byte(level.Content))
+			buf[levelLen-1] = '('
+			curLen += levelLen
+			buf[curLen] = ')'
+			curLen++
+		} else {
+			if i > 0 && p[i-1].Pointers > 0 {
+				// **(prev)content
+				copy(buf[level.Pointers+1:], buf[:curLen])
+				setPtrs(buf, level.Pointers)
+				buf[level.Pointers] = '('
+				curLen += level.Pointers + 1
+				buf[curLen] = ')'
+				curLen++
+			} else {
+				// **prevcontent
+				if level.Pointers > 0 {
+					copy(buf[level.Pointers:], buf[:curLen])
+					setPtrs(buf, level.Pointers)
+					curLen += level.Pointers
+				}
+			}
+			switch level.Kind {
+			case levelStruct:
+				buf[curLen] = '.'
+				curLen++
+				copy(buf[curLen:], []byte(level.Content))
+				curLen += len(level.Content)
+			case levelArray, levelMap:
+				buf[curLen] = '['
+				curLen++
+				copy(buf[curLen:], []byte(level.Content))
+				curLen += len(level.Content)
+				buf[curLen] = ']'
+				curLen++
+			default:
+				copy(buf[curLen:], []byte(level.Content))
+				curLen += len(level.Content)
+			}
+		}
+	}
+
+	return string(buf)
+}
+*/
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

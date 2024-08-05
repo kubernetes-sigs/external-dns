@@ -19,6 +19,7 @@ type InstanceType struct {
 	Size       *string
 }
 
+<<<<<<< HEAD
 // ToAPIMock returns the low-level representation of the resource. This is intended for testing purposes.
 func (t InstanceType) ToAPIMock() interface{} {
 	return oapi.InstanceType{
@@ -32,6 +33,9 @@ func (t InstanceType) ToAPIMock() interface{} {
 	}
 }
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func instanceTypeFromAPI(t *oapi.InstanceType) *InstanceType {
 	return &InstanceType{
 		Authorized: t.Authorized,

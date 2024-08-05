@@ -43,6 +43,7 @@ func (e *Error) GoString() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // WrappedErrors returns the list of errors that this Error is wrapping. It is
 // an implementation of the errwrap.Wrapper interface so that multierror.Error
 // can be used with that library.
@@ -86,12 +87,28 @@ func (e *Error) WrappedErrors() []error {
 // WrappedErrors returns the list of errors that this Error is wrapping.
 // It is an implementation of the errwrap.Wrapper interface so that
 // multierror.Error can be used with that library.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// WrappedErrors returns the list of errors that this Error is wrapping.
+// It is an implementation of the errwrap.Wrapper interface so that
+// multierror.Error can be used with that library.
+=======
+// WrappedErrors returns the list of errors that this Error is wrapping. It is
+// an implementation of the errwrap.Wrapper interface so that multierror.Error
+// can be used with that library.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
-// This method is not safe to be called concurrently and is no different
-// than accessing the Errors field directly. It is implemented only to
-// satisfy the errwrap.Wrapper interface.
+// This method is not safe to be called concurrently. Unlike accessing the
+// Errors field directly, this function also checks if the multierror is nil to
+// prevent a null-pointer panic. It satisfies the errwrap.Wrapper interface.
 func (e *Error) WrappedErrors() []error {
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if e == nil {
+		return nil
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return e.Errors
 }
 

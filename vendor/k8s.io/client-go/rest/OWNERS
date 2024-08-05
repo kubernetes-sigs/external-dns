@@ -3,6 +3,7 @@
 reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - thockin
 - smarterclayton
 - caesarxuchao
@@ -122,3 +123,39 @@ reviewers:
 - juanvallejo
 - lojies
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+- thockin
+- smarterclayton
+- caesarxuchao
+- wojtek-t
+- deads2k
+- brendandburns
+- liggitt
+- nikhiljindal
+- gmarek
+- erictune
+- sttts
+- luxas
+- dims
+- errordeveloper
+- hongchaodeng
+- krousey
+- resouer
+- cjcullen
+- rmmh
+- asalkeld
+- juanvallejo
+- lojies
+=======
+  - thockin
+  - smarterclayton
+  - caesarxuchao
+  - wojtek-t
+  - deads2k
+  - liggitt
+  - sttts
+  - luxas
+  - dims
+  - cjcullen
+  - lojies
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

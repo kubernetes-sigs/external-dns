@@ -15,6 +15,7 @@ func New() UUID {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NewString creates a new random UUID and returns it as a string or panics.
 // NewString is equivalent to the expression
 //
@@ -142,10 +143,23 @@ func newRandomFromPool() (UUID, error) {
 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// NewString creates a new random UUID and returns it as a string or panics.
+// NewString is equivalent to the expression
+//
+//    uuid.New().String()
+func NewString() string {
+	return Must(NewRandom()).String()
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // NewRandom returns a Random (Version 4) UUID.
 //
 // The strength of the UUIDs is based on the strength of the crypto/rand
 // package.
+//
+// Uses the randomness pool if it was enabled with EnableRandPool.
 //
 // A note about uniqueness derived from the UUID Wikipedia entry:
 //
@@ -155,12 +169,40 @@ func newRandomFromPool() (UUID, error) {
 //  equivalent to the odds of creating a few tens of trillions of UUIDs in a
 //  year and having one duplicate.
 func NewRandom() (UUID, error) {
+	if !poolEnabled {
+		return NewRandomFromReader(rander)
+	}
+	return newRandomFromPool()
+}
+
+// NewRandomFromReader returns a UUID based on bytes read from a given io.Reader.
+func NewRandomFromReader(r io.Reader) (UUID, error) {
 	var uuid UUID
-	_, err := io.ReadFull(rander, uuid[:])
+	_, err := io.ReadFull(r, uuid[:])
 	if err != nil {
 		return Nil, err
 	}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
+	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
+	return uuid, nil
+}
+
+func newRandomFromPool() (UUID, error) {
+	var uuid UUID
+	poolMu.Lock()
+	if poolPos == randPoolSize {
+		_, err := io.ReadFull(rander, pool[:])
+		if err != nil {
+			poolMu.Unlock()
+			return Nil, err
+		}
+		poolPos = 0
+	}
+	copy(uuid[:], pool[poolPos:(poolPos+16)])
+	poolPos += 16
+	poolMu.Unlock()
+
 	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
 	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
 	return uuid, nil

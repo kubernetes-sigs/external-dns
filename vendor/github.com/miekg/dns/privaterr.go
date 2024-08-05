@@ -9,6 +9,7 @@ type PrivateRdata interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// String returns the text presentation of the Rdata of the Private RR.
 	String() string
 	// Parse parses the Rdata of the private RR.
@@ -196,6 +197,11 @@ func (r *PrivateRR) isDuplicate(r2 RR) bool { return false }
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// String returns the text presentaton of the Rdata of the Private RR.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// String returns the text presentaton of the Rdata of the Private RR.
+=======
+	// String returns the text presentation of the Rdata of the Private RR.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	String() string
 	// Parse parses the Rdata of the private RR.
 	Parse([]string) error
@@ -273,14 +279,20 @@ Fetch:
 
 	err := r.Data.Parse(text)
 	if err != nil {
-		return &ParseError{"", err.Error(), l}
+		return &ParseError{wrappedErr: err, lex: l}
 	}
 
 	return nil
 }
 
+<<<<<<< HEAD
 func (r1 *PrivateRR) isDuplicate(r2 RR) bool { return false }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (r1 *PrivateRR) isDuplicate(r2 RR) bool { return false }
+=======
+func (r *PrivateRR) isDuplicate(r2 RR) bool { return false }
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // PrivateHandle registers a private resource record type. It requires
 // string and numeric representation of private RR type and generator function as argument.

@@ -28,6 +28,7 @@ golint:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	@cd tools && go install golang.org/x/lint/golint
 	@$(GOBIN)/golint ./...
 
@@ -145,11 +146,16 @@ update-license:
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	@go install golang.org/x/lint/golint
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	@go install golang.org/x/lint/golint
+=======
+	@cd tools && go install golang.org/x/lint/golint
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	@$(GOBIN)/golint ./...
 
 .PHONY: staticcheck
 staticcheck:
-	@go install honnef.co/go/tools/cmd/staticcheck
+	@cd tools && go install honnef.co/go/tools/cmd/staticcheck
 	@$(GOBIN)/staticcheck ./...
 
 .PHONY: lint
@@ -157,10 +163,18 @@ lint: gofmt golint staticcheck
 
 .PHONY: cover
 cover:
-	go test -coverprofile=cover.out -coverpkg=./... -v ./...
+	go test -race -coverprofile=cover.out -coverpkg=./... -v ./...
 	go tool cover -html=cover.out -o cover.html
+<<<<<<< HEAD
 
 update-license:
 	@go install go.uber.org/tools/update-license
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	@$(GOBIN)/update-license $(GO_FILES)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+update-license:
+	@go install go.uber.org/tools/update-license
+	@$(GOBIN)/update-license $(GO_FILES)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

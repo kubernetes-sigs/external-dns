@@ -24,8 +24,10 @@ import (
 )
 
 // DestinationRuleLister helps list DestinationRules.
+// All objects returned here must be treated as read-only.
 type DestinationRuleLister interface {
 	// List lists all DestinationRules in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.DestinationRule, err error)
 	// DestinationRules returns an object that can list and get DestinationRules.
 	DestinationRules(namespace string) DestinationRuleNamespaceLister
@@ -56,10 +58,13 @@ func (s *destinationRuleLister) DestinationRules(namespace string) DestinationRu
 }
 
 // DestinationRuleNamespaceLister helps list and get DestinationRules.
+// All objects returned here must be treated as read-only.
 type DestinationRuleNamespaceLister interface {
 	// List lists all DestinationRules in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.DestinationRule, err error)
 	// Get retrieves the DestinationRule from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.DestinationRule, error)
 	DestinationRuleNamespaceListerExpansion
 }

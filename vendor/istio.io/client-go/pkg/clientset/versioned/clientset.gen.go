@@ -18,11 +18,16 @@ package versioned
 
 import (
 	"fmt"
+	"net/http"
 
-	configv1alpha2 "istio.io/client-go/pkg/clientset/versioned/typed/config/v1alpha2"
+	extensionsv1alpha1 "istio.io/client-go/pkg/clientset/versioned/typed/extensions/v1alpha1"
+	networkingv1 "istio.io/client-go/pkg/clientset/versioned/typed/networking/v1"
 	networkingv1alpha3 "istio.io/client-go/pkg/clientset/versioned/typed/networking/v1alpha3"
 	networkingv1beta1 "istio.io/client-go/pkg/clientset/versioned/typed/networking/v1beta1"
+	securityv1 "istio.io/client-go/pkg/clientset/versioned/typed/security/v1"
 	securityv1beta1 "istio.io/client-go/pkg/clientset/versioned/typed/security/v1beta1"
+	telemetryv1 "istio.io/client-go/pkg/clientset/versioned/typed/telemetry/v1"
+	telemetryv1alpha1 "istio.io/client-go/pkg/clientset/versioned/typed/telemetry/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -30,25 +35,32 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	ConfigV1alpha2() configv1alpha2.ConfigV1alpha2Interface
+	ExtensionsV1alpha1() extensionsv1alpha1.ExtensionsV1alpha1Interface
 	NetworkingV1alpha3() networkingv1alpha3.NetworkingV1alpha3Interface
 	NetworkingV1beta1() networkingv1beta1.NetworkingV1beta1Interface
+	NetworkingV1() networkingv1.NetworkingV1Interface
 	SecurityV1beta1() securityv1beta1.SecurityV1beta1Interface
+	SecurityV1() securityv1.SecurityV1Interface
+	TelemetryV1alpha1() telemetryv1alpha1.TelemetryV1alpha1Interface
+	TelemetryV1() telemetryv1.TelemetryV1Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	configV1alpha2     *configv1alpha2.ConfigV1alpha2Client
+	extensionsV1alpha1 *extensionsv1alpha1.ExtensionsV1alpha1Client
 	networkingV1alpha3 *networkingv1alpha3.NetworkingV1alpha3Client
 	networkingV1beta1  *networkingv1beta1.NetworkingV1beta1Client
+	networkingV1       *networkingv1.NetworkingV1Client
 	securityV1beta1    *securityv1beta1.SecurityV1beta1Client
+	securityV1         *securityv1.SecurityV1Client
+	telemetryV1alpha1  *telemetryv1alpha1.TelemetryV1alpha1Client
+	telemetryV1        *telemetryv1.TelemetryV1Client
 }
 
-// ConfigV1alpha2 retrieves the ConfigV1alpha2Client
-func (c *Clientset) ConfigV1alpha2() configv1alpha2.ConfigV1alpha2Interface {
-	return c.configV1alpha2
+// ExtensionsV1alpha1 retrieves the ExtensionsV1alpha1Client
+func (c *Clientset) ExtensionsV1alpha1() extensionsv1alpha1.ExtensionsV1alpha1Interface {
+	return c.extensionsV1alpha1
 }
 
 // NetworkingV1alpha3 retrieves the NetworkingV1alpha3Client
@@ -61,9 +73,29 @@ func (c *Clientset) NetworkingV1beta1() networkingv1beta1.NetworkingV1beta1Inter
 	return c.networkingV1beta1
 }
 
+// NetworkingV1 retrieves the NetworkingV1Client
+func (c *Clientset) NetworkingV1() networkingv1.NetworkingV1Interface {
+	return c.networkingV1
+}
+
 // SecurityV1beta1 retrieves the SecurityV1beta1Client
 func (c *Clientset) SecurityV1beta1() securityv1beta1.SecurityV1beta1Interface {
 	return c.securityV1beta1
+}
+
+// SecurityV1 retrieves the SecurityV1Client
+func (c *Clientset) SecurityV1() securityv1.SecurityV1Interface {
+	return c.securityV1
+}
+
+// TelemetryV1alpha1 retrieves the TelemetryV1alpha1Client
+func (c *Clientset) TelemetryV1alpha1() telemetryv1alpha1.TelemetryV1alpha1Interface {
+	return c.telemetryV1alpha1
+}
+
+// TelemetryV1 retrieves the TelemetryV1Client
+func (c *Clientset) TelemetryV1() telemetryv1.TelemetryV1Interface {
+	return c.telemetryV1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -77,7 +109,29 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 // NewForConfig creates a new Clientset for the given config.
 // If config's RateLimiter is not set and QPS and Burst are acceptable,
 // NewForConfig will generate a rate-limiter in configShallowCopy.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*Clientset, error) {
+	configShallowCopy := *c
+
+	if configShallowCopy.UserAgent == "" {
+		configShallowCopy.UserAgent = rest.DefaultKubernetesUserAgent()
+	}
+
+	// share the transport between all clients
+	httpClient, err := rest.HTTPClientFor(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewForConfigAndClient(&configShallowCopy, httpClient)
+}
+
+// NewForConfigAndClient creates a new Clientset for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
+// If config's RateLimiter is not set and QPS and Burst are acceptable,
+// NewForConfigAndClient will generate a rate-limiter in configShallowCopy.
+func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
 		if configShallowCopy.Burst <= 0 {
@@ -85,26 +139,43 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
+
 	var cs Clientset
 	var err error
-	cs.configV1alpha2, err = configv1alpha2.NewForConfig(&configShallowCopy)
+	cs.extensionsV1alpha1, err = extensionsv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	cs.networkingV1alpha3, err = networkingv1alpha3.NewForConfig(&configShallowCopy)
+	cs.networkingV1alpha3, err = networkingv1alpha3.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	cs.networkingV1beta1, err = networkingv1beta1.NewForConfig(&configShallowCopy)
+	cs.networkingV1beta1, err = networkingv1beta1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	cs.securityV1beta1, err = securityv1beta1.NewForConfig(&configShallowCopy)
+	cs.networkingV1, err = networkingv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	cs.securityV1beta1, err = securityv1beta1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	cs.securityV1, err = securityv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	cs.telemetryV1alpha1, err = telemetryv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	cs.telemetryV1, err = telemetryv1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
+	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -114,23 +185,24 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // NewForConfigOrDie creates a new Clientset for the given config and
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
-	var cs Clientset
-	cs.configV1alpha2 = configv1alpha2.NewForConfigOrDie(c)
-	cs.networkingV1alpha3 = networkingv1alpha3.NewForConfigOrDie(c)
-	cs.networkingV1beta1 = networkingv1beta1.NewForConfigOrDie(c)
-	cs.securityV1beta1 = securityv1beta1.NewForConfigOrDie(c)
-
-	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
-	return &cs
+	cs, err := NewForConfig(c)
+	if err != nil {
+		panic(err)
+	}
+	return cs
 }
 
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.configV1alpha2 = configv1alpha2.New(c)
+	cs.extensionsV1alpha1 = extensionsv1alpha1.New(c)
 	cs.networkingV1alpha3 = networkingv1alpha3.New(c)
 	cs.networkingV1beta1 = networkingv1beta1.New(c)
+	cs.networkingV1 = networkingv1.New(c)
 	cs.securityV1beta1 = securityv1beta1.New(c)
+	cs.securityV1 = securityv1.New(c)
+	cs.telemetryV1alpha1 = telemetryv1alpha1.New(c)
+	cs.telemetryV1 = telemetryv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

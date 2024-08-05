@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDNSSLBSubDomains(request *DescribeDNSSLBSubDomainsRequest) (response *DescribeDNSSLBSubDomainsResponse, err error) {
 	response = CreateDescribeDNSSLBSubDomainsResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,10 @@ func CreateDescribeDNSSLBSubDomainsRequest() (request *DescribeDNSSLBSubDomainsR
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describednsslbsubdomains.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describednsslbsubdomains.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeDNSSLBSubDomains(request *DescribeDNSSLBSubDomainsRequest) (response *DescribeDNSSLBSubDomainsResponse, err error) {
 	response = CreateDescribeDNSSLBSubDomainsResponse()
 	err = client.DoAction(request, response)
@@ -196,8 +201,6 @@ func (client *Client) DescribeDNSSLBSubDomains(request *DescribeDNSSLBSubDomains
 }
 
 // DescribeDNSSLBSubDomainsWithChan invokes the alidns.DescribeDNSSLBSubDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsslbsubdomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDNSSLBSubDomainsWithChan(request *DescribeDNSSLBSubDomainsRequest) (<-chan *DescribeDNSSLBSubDomainsResponse, <-chan error) {
 	responseChan := make(chan *DescribeDNSSLBSubDomainsResponse, 1)
 	errChan := make(chan error, 1)
@@ -220,8 +223,6 @@ func (client *Client) DescribeDNSSLBSubDomainsWithChan(request *DescribeDNSSLBSu
 }
 
 // DescribeDNSSLBSubDomainsWithCallback invokes the alidns.DescribeDNSSLBSubDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsslbsubdomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDNSSLBSubDomainsWithCallback(request *DescribeDNSSLBSubDomainsRequest, callback func(response *DescribeDNSSLBSubDomainsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -243,6 +244,7 @@ func (client *Client) DescribeDNSSLBSubDomainsWithCallback(request *DescribeDNSS
 // DescribeDNSSLBSubDomainsRequest is the request struct for api DescribeDNSSLBSubDomains
 type DescribeDNSSLBSubDomainsRequest struct {
 	*requests.RpcRequest
+	Rr           string           `position:"Query" name:"Rr"`
 	DomainName   string           `position:"Query" name:"DomainName"`
 	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
@@ -253,10 +255,10 @@ type DescribeDNSSLBSubDomainsRequest struct {
 // DescribeDNSSLBSubDomainsResponse is the response struct for api DescribeDNSSLBSubDomains
 type DescribeDNSSLBSubDomainsResponse struct {
 	*responses.BaseResponse
-	RequestId     string        `json:"RequestId" xml:"RequestId"`
 	TotalCount    int64         `json:"TotalCount" xml:"TotalCount"`
-	PageNumber    int64         `json:"PageNumber" xml:"PageNumber"`
 	PageSize      int64         `json:"PageSize" xml:"PageSize"`
+	RequestId     string        `json:"RequestId" xml:"RequestId"`
+	PageNumber    int64         `json:"PageNumber" xml:"PageNumber"`
 	SlbSubDomains SlbSubDomains `json:"SlbSubDomains" xml:"SlbSubDomains"`
 }
 
@@ -266,7 +268,12 @@ func CreateDescribeDNSSLBSubDomainsRequest() (request *DescribeDNSSLBSubDomainsR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDNSSLBSubDomains", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

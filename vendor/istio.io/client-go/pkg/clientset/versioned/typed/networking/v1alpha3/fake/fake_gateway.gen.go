@@ -18,11 +18,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,9 +36,9 @@ type FakeGateways struct {
 	ns   string
 }
 
-var gatewaysResource = schema.GroupVersionResource{Group: "networking.istio.io", Version: "v1alpha3", Resource: "gateways"}
+var gatewaysResource = v1alpha3.SchemeGroupVersion.WithResource("gateways")
 
-var gatewaysKind = schema.GroupVersionKind{Group: "networking.istio.io", Version: "v1alpha3", Kind: "Gateway"}
+var gatewaysKind = v1alpha3.SchemeGroupVersion.WithKind("Gateway")
 
 // Get takes name of the gateway, and returns the corresponding gateway object, and an error if there is any.
 func (c *FakeGateways) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha3.Gateway, err error) {
@@ -115,7 +117,7 @@ func (c *FakeGateways) UpdateStatus(ctx context.Context, gateway *v1alpha3.Gatew
 // Delete takes name of the gateway and deletes it. Returns an error if one occurs.
 func (c *FakeGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(gatewaysResource, c.ns, name), &v1alpha3.Gateway{})
+		Invokes(testing.NewDeleteActionWithOptions(gatewaysResource, c.ns, name, opts), &v1alpha3.Gateway{})
 
 	return err
 }
@@ -132,6 +134,51 @@ func (c *FakeGateways) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 func (c *FakeGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.Gateway, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, name, pt, data, subresources...), &v1alpha3.Gateway{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha3.Gateway), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied gateway.
+func (c *FakeGateways) Apply(ctx context.Context, gateway *networkingv1alpha3.GatewayApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.Gateway, err error) {
+	if gateway == nil {
+		return nil, fmt.Errorf("gateway provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(gateway)
+	if err != nil {
+		return nil, err
+	}
+	name := gateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("gateway.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha3.Gateway{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha3.Gateway), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeGateways) ApplyStatus(ctx context.Context, gateway *networkingv1alpha3.GatewayApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.Gateway, err error) {
+	if gateway == nil {
+		return nil, fmt.Errorf("gateway provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(gateway)
+	if err != nil {
+		return nil, err
+	}
+	name := gateway.Name
+	if name == nil {
+		return nil, fmt.Errorf("gateway.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(gatewaysResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1alpha3.Gateway{})
 
 	if obj == nil {
 		return nil, err

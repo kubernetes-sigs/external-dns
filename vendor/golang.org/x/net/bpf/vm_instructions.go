@@ -95,6 +95,7 @@ func jumpIfCommon(cond JumpTest, skipTrue, skipFalse uint8, regA uint32, value u
 func loadAbsolute(ins LoadAbsolute, in []byte) (uint32, bool) {
 	offset := int(ins.Off)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	size := ins.Size
 
 	return loadCommon(in, offset, size)
@@ -126,6 +127,11 @@ func loadIndirect(ins LoadIndirect, in []byte, regX uint32) (uint32, bool) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	size := int(ins.Size)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	size := int(ins.Size)
+=======
+	size := ins.Size
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	return loadCommon(in, offset, size)
 }
@@ -152,8 +158,14 @@ func loadExtension(ins LoadExtension, in []byte) uint32 {
 
 func loadIndirect(ins LoadIndirect, in []byte, regX uint32) (uint32, bool) {
 	offset := int(ins.Off) + int(regX)
+<<<<<<< HEAD
 	size := int(ins.Size)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	size := int(ins.Size)
+=======
+	size := ins.Size
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	return loadCommon(in, offset, size)
 }

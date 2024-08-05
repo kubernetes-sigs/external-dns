@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/utils/clock"
 )
 
@@ -313,16 +314,21 @@ func (c *Expiring) gc(now time.Time) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	utilclock "k8s.io/apimachinery/pkg/util/clock"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	utilclock "k8s.io/apimachinery/pkg/util/clock"
+=======
+	"k8s.io/utils/clock"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // NewExpiring returns an initialized expiring cache.
 func NewExpiring() *Expiring {
-	return NewExpiringWithClock(utilclock.RealClock{})
+	return NewExpiringWithClock(clock.RealClock{})
 }
 
 // NewExpiringWithClock is like NewExpiring but allows passing in a custom
 // clock for testing.
-func NewExpiringWithClock(clock utilclock.Clock) *Expiring {
+func NewExpiringWithClock(clock clock.Clock) *Expiring {
 	return &Expiring{
 		clock: clock,
 		cache: make(map[interface{}]entry),
@@ -331,7 +337,14 @@ func NewExpiringWithClock(clock utilclock.Clock) *Expiring {
 
 // Expiring is a map whose entries expire after a per-entry timeout.
 type Expiring struct {
-	clock utilclock.Clock
+	// AllowExpiredGet causes the expiration check to be skipped on Get.
+	// It should only be used when a key always corresponds to the exact same value.
+	// Thus when this field is true, expired keys are considered valid
+	// until the next call to Set (which causes the GC to run).
+	// It may not be changed concurrently with calls to Get.
+	AllowExpiredGet bool
+
+	clock clock.Clock
 
 	// mu protects the below fields
 	mu sync.RWMutex
@@ -361,7 +374,10 @@ func (c *Expiring) Get(key interface{}) (val interface{}, ok bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	e, ok := c.cache[key]
-	if !ok || !c.clock.Now().Before(e.expiry) {
+	if !ok {
+		return nil, false
+	}
+	if !c.AllowExpiredGet && !c.clock.Now().Before(e.expiry) {
 		return nil, false
 	}
 	return e.val, true
@@ -436,8 +452,14 @@ func (c *Expiring) gc(now time.Time) {
 		// expired.
 		//
 		// heap[0] is a peek at the next element in the heap, which is not obvious
+<<<<<<< HEAD
 		// from looking at the (*expiringHeap).Pop() implmentation below.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		// from looking at the (*expiringHeap).Pop() implmentation below.
+=======
+		// from looking at the (*expiringHeap).Pop() implementation below.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		// heap.Pop() swaps the first entry with the last entry of the heap, then
 		// calls (*expiringHeap).Pop() which returns the last element.
 		if len(c.heap) == 0 || now.Before(c.heap[0].expiry) {

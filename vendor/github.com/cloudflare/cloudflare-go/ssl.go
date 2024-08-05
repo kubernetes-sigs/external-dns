@@ -4,6 +4,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -393,26 +394,33 @@ type SSLValidationRecord struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"encoding/json"
+=======
+	"context"
+	"fmt"
+	"net/http"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // ZoneCustomSSL represents custom SSL certificate metadata.
 type ZoneCustomSSL struct {
-	ID              string                       `json:"id"`
-	Hosts           []string                     `json:"hosts"`
-	Issuer          string                       `json:"issuer"`
-	Signature       string                       `json:"signature"`
-	Status          string                       `json:"status"`
-	BundleMethod    string                       `json:"bundle_method"`
-	GeoRestrictions ZoneCustomSSLGeoRestrictions `json:"geo_restrictions"`
-	ZoneID          string                       `json:"zone_id"`
-	UploadedOn      time.Time                    `json:"uploaded_on"`
-	ModifiedOn      time.Time                    `json:"modified_on"`
-	ExpiresOn       time.Time                    `json:"expires_on"`
-	Priority        int                          `json:"priority"`
-	KeylessServer   KeylessSSL                   `json:"keyless_server"`
+	ID              string                        `json:"id"`
+	Hosts           []string                      `json:"hosts"`
+	Issuer          string                        `json:"issuer"`
+	Signature       string                        `json:"signature"`
+	Status          string                        `json:"status"`
+	BundleMethod    string                        `json:"bundle_method"`
+	GeoRestrictions *ZoneCustomSSLGeoRestrictions `json:"geo_restrictions,omitempty"`
+	ZoneID          string                        `json:"zone_id"`
+	UploadedOn      time.Time                     `json:"uploaded_on"`
+	ModifiedOn      time.Time                     `json:"modified_on"`
+	ExpiresOn       time.Time                     `json:"expires_on"`
+	Priority        int                           `json:"priority"`
+	KeylessServer   KeylessSSL                    `json:"keyless_server"`
 }
 
 // ZoneCustomSSLGeoRestrictions represents the parameter to create or update
@@ -436,11 +444,11 @@ type zoneCustomSSLsResponse struct {
 // ZoneCustomSSLOptions represents the parameters to create or update an existing
 // custom SSL configuration.
 type ZoneCustomSSLOptions struct {
-	Certificate     string                       `json:"certificate"`
-	PrivateKey      string                       `json:"private_key"`
-	BundleMethod    string                       `json:"bundle_method,omitempty"`
-	GeoRestrictions ZoneCustomSSLGeoRestrictions `json:"geo_restrictions,omitempty"`
-	Type            string                       `json:"type,omitempty"`
+	Certificate     string                        `json:"certificate"`
+	PrivateKey      string                        `json:"private_key"`
+	BundleMethod    string                        `json:"bundle_method,omitempty"`
+	GeoRestrictions *ZoneCustomSSLGeoRestrictions `json:"geo_restrictions,omitempty"`
+	Type            string                        `json:"type,omitempty"`
 }
 
 // ZoneCustomSSLPriority represents a certificate's ID and priority. It is a
@@ -453,15 +461,15 @@ type ZoneCustomSSLPriority struct {
 // CreateSSL allows you to add a custom SSL certificate to the given zone.
 //
 // API reference: https://api.cloudflare.com/#custom-ssl-for-a-zone-create-ssl-configuration
-func (api *API) CreateSSL(zoneID string, options ZoneCustomSSLOptions) (ZoneCustomSSL, error) {
-	uri := "/zones/" + zoneID + "/custom_certificates"
-	res, err := api.makeRequest("POST", uri, options)
+func (api *API) CreateSSL(ctx context.Context, zoneID string, options ZoneCustomSSLOptions) (ZoneCustomSSL, error) {
+	uri := fmt.Sprintf("/zones/%s/custom_certificates", zoneID)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, options)
 	if err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errMakeRequestError)
+		return ZoneCustomSSL{}, err
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -469,15 +477,15 @@ func (api *API) CreateSSL(zoneID string, options ZoneCustomSSLOptions) (ZoneCust
 // ListSSL lists the custom certificates for the given zone.
 //
 // API reference: https://api.cloudflare.com/#custom-ssl-for-a-zone-list-ssl-configurations
-func (api *API) ListSSL(zoneID string) ([]ZoneCustomSSL, error) {
-	uri := "/zones/" + zoneID + "/custom_certificates"
-	res, err := api.makeRequest("GET", uri, nil)
+func (api *API) ListSSL(ctx context.Context, zoneID string) ([]ZoneCustomSSL, error) {
+	uri := fmt.Sprintf("/zones/%s/custom_certificates", zoneID)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 	var r zoneCustomSSLsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -485,15 +493,15 @@ func (api *API) ListSSL(zoneID string) ([]ZoneCustomSSL, error) {
 // SSLDetails returns the configuration details for a custom SSL certificate.
 //
 // API reference: https://api.cloudflare.com/#custom-ssl-for-a-zone-ssl-configuration-details
-func (api *API) SSLDetails(zoneID, certificateID string) (ZoneCustomSSL, error) {
-	uri := "/zones/" + zoneID + "/custom_certificates/" + certificateID
-	res, err := api.makeRequest("GET", uri, nil)
+func (api *API) SSLDetails(ctx context.Context, zoneID, certificateID string) (ZoneCustomSSL, error) {
+	uri := fmt.Sprintf("/zones/%s/custom_certificates/%s", zoneID, certificateID)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errMakeRequestError)
+		return ZoneCustomSSL{}, err
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -501,15 +509,15 @@ func (api *API) SSLDetails(zoneID, certificateID string) (ZoneCustomSSL, error) 
 // UpdateSSL updates (replaces) a custom SSL certificate.
 //
 // API reference: https://api.cloudflare.com/#custom-ssl-for-a-zone-update-ssl-configuration
-func (api *API) UpdateSSL(zoneID, certificateID string, options ZoneCustomSSLOptions) (ZoneCustomSSL, error) {
-	uri := "/zones/" + zoneID + "/custom_certificates/" + certificateID
-	res, err := api.makeRequest("PATCH", uri, options)
+func (api *API) UpdateSSL(ctx context.Context, zoneID, certificateID string, options ZoneCustomSSLOptions) (ZoneCustomSSL, error) {
+	uri := fmt.Sprintf("/zones/%s/custom_certificates/%s", zoneID, certificateID)
+	res, err := api.makeRequestContext(ctx, http.MethodPatch, uri, options)
 	if err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errMakeRequestError)
+		return ZoneCustomSSL{}, err
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -518,20 +526,20 @@ func (api *API) UpdateSSL(zoneID, certificateID string, options ZoneCustomSSLOpt
 // request) of custom SSL certificates associated with the given zone.
 //
 // API reference: https://api.cloudflare.com/#custom-ssl-for-a-zone-re-prioritize-ssl-certificates
-func (api *API) ReprioritizeSSL(zoneID string, p []ZoneCustomSSLPriority) ([]ZoneCustomSSL, error) {
-	uri := "/zones/" + zoneID + "/custom_certificates/prioritize"
+func (api *API) ReprioritizeSSL(ctx context.Context, zoneID string, p []ZoneCustomSSLPriority) ([]ZoneCustomSSL, error) {
+	uri := fmt.Sprintf("/zones/%s/custom_certificates/prioritize", zoneID)
 	params := struct {
 		Certificates []ZoneCustomSSLPriority `json:"certificates"`
 	}{
 		Certificates: p,
 	}
-	res, err := api.makeRequest("PUT", uri, params)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 	var r zoneCustomSSLsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -539,11 +547,25 @@ func (api *API) ReprioritizeSSL(zoneID string, p []ZoneCustomSSLPriority) ([]Zon
 // DeleteSSL deletes a custom SSL certificate from the given zone.
 //
 // API reference: https://api.cloudflare.com/#custom-ssl-for-a-zone-delete-an-ssl-certificate
-func (api *API) DeleteSSL(zoneID, certificateID string) error {
-	uri := "/zones/" + zoneID + "/custom_certificates/" + certificateID
-	if _, err := api.makeRequest("DELETE", uri, nil); err != nil {
-		return errors.Wrap(err, errMakeRequestError)
+func (api *API) DeleteSSL(ctx context.Context, zoneID, certificateID string) error {
+	uri := fmt.Sprintf("/zones/%s/custom_certificates/%s", zoneID, certificateID)
+	if _, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil); err != nil {
+		return err
 	}
 	return nil
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// SSLValidationRecord displays Domain Control Validation tokens.
+type SSLValidationRecord struct {
+	CnameTarget string `json:"cname_target,omitempty"`
+	CnameName   string `json:"cname,omitempty"`
+
+	TxtName  string `json:"txt_name,omitempty"`
+	TxtValue string `json:"txt_value,omitempty"`
+
+	HTTPUrl  string `json:"http_url,omitempty"`
+	HTTPBody string `json:"http_body,omitempty"`
+
+	Emails []string `json:"emails,omitempty"`
 }

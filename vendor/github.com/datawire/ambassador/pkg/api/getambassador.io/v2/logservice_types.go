@@ -25,9 +25,9 @@ import (
 
 type AdditionalLogHeaders struct {
 	HeaderName     string `json:"header_name,omitempty"`
-	DuringRequest  bool   `json:"during_request,omitempty"`
-	DuringResponse bool   `json:"during_response,omitempty"`
-	DuringTrailer  bool   `json:"during_trailer,omitempty"`
+	DuringRequest  *bool  `json:"during_request,omitempty"`
+	DuringResponse *bool  `json:"during_response,omitempty"`
+	DuringTrailer  *bool  `json:"during_trailer,omitempty"`
 }
 
 type DriverConfig struct {
@@ -42,9 +42,9 @@ type LogServiceSpec struct {
 	// +kubebuilder:validation:Enum={"tcp","http"}
 	Driver                string        `json:"driver,omitempty"`
 	DriverConfig          *DriverConfig `json:"driver_config,omitempty"`
-	FlushIntervalTime     int           `json:"flush_interval_time,omitempty"`
-	FlushIntervalByteSize int           `json:"flush_interval_byte_size,omitempty"`
-	GRPC                  bool          `json:"grpc,omitempty"`
+	FlushIntervalTime     *int          `json:"flush_interval_time,omitempty"`
+	FlushIntervalByteSize *int          `json:"flush_interval_byte_size,omitempty"`
+	GRPC                  *bool         `json:"grpc,omitempty"`
 }
 
 // LogService is the Schema for the logservices API

@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/utils/clock"
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -37,6 +38,11 @@ import (
 =======
 	"k8s.io/apimachinery/pkg/util/clock"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/apimachinery/pkg/util/clock"
+=======
+	"k8s.io/utils/clock"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // This file provides abstractions for setting the provider (e.g., prometheus)
@@ -260,13 +266,18 @@ func (f *queueMetricsFactory) newQueueMetrics(name string, clock clock.Clock) qu
 	}
 }
 
-func newRetryMetrics(name string) retryMetrics {
+func newRetryMetrics(name string, provider MetricsProvider) retryMetrics {
 	var ret *defaultRetryMetrics
 	if len(name) == 0 {
 		return ret
 	}
+
+	if provider == nil {
+		provider = globalMetricsFactory.metricsProvider
+	}
+
 	return &defaultRetryMetrics{
-		retries: globalMetricsFactory.metricsProvider.NewRetriesMetric(name),
+		retries: provider.NewRetriesMetric(name),
 	}
 }
 

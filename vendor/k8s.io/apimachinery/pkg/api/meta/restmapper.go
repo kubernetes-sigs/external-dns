@@ -72,6 +72,7 @@ func (m *DefaultRESTMapper) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if m == nil {
 		return "<nil>"
 	}
@@ -99,6 +100,12 @@ func (m *DefaultRESTMapper) String() string {
 		return "<nil>"
 	}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	if m == nil {
+		return "<nil>"
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return fmt.Sprintf("DefaultRESTMapper{kindToPluralResource=%v}", m.kindToPluralResource)
 }
 
@@ -557,6 +564,7 @@ func MaybeResetRESTMapper(mapper RESTMapper) {
 	if ok {
 		m.Reset()
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 	return ok
 <<<<<<< HEAD
@@ -1473,4 +1481,7 @@ func (m *DefaultRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string
 	}
 	return mappings, nil
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

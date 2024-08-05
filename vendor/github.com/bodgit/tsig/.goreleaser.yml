@@ -6,3 +6,9 @@ builds:
   - skip: true
 release:
   prerelease: auto
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+changelog:
+  use: github-native
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix
 // +build aix
 
@@ -276,10 +277,16 @@ const (
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build aix
+=======
+//go:build aix
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package ipv6
 
 const (
+<<<<<<< HEAD
 	sysIPV6_UNICAST_HOPS   = 0x4
 	sysIPV6_MULTICAST_IF   = 0x9
 	sysIPV6_MULTICAST_HOPS = 0xa
@@ -316,6 +323,44 @@ const (
 	sysIPV6_DONTFRAG = 0x2d
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	sysIPV6_UNICAST_HOPS   = 0x4
+	sysIPV6_MULTICAST_IF   = 0x9
+	sysIPV6_MULTICAST_HOPS = 0xa
+	sysIPV6_MULTICAST_LOOP = 0xb
+	sysIPV6_JOIN_GROUP     = 0xc
+	sysIPV6_LEAVE_GROUP    = 0xd
+	sysICMP6_FILTER        = 0x26
+
+	sysIPV6_CHECKSUM = 0x27
+	sysIPV6_V6ONLY   = 0x25
+
+	sysIPV6_RTHDRDSTOPTS = 0x37
+
+	sysIPV6_RECVPKTINFO  = 0x23
+	sysIPV6_RECVHOPLIMIT = 0x29
+	sysIPV6_RECVRTHDR    = 0x33
+	sysIPV6_RECVHOPOPTS  = 0x35
+	sysIPV6_RECVDSTOPTS  = 0x38
+
+	sysIPV6_USE_MIN_MTU = 0x2c
+	sysIPV6_RECVPATHMTU = 0x2f
+	sysIPV6_PATHMTU     = 0x2e
+
+	sysIPV6_PKTINFO  = 0x21
+	sysIPV6_HOPLIMIT = 0x28
+	sysIPV6_NEXTHOP  = 0x30
+	sysIPV6_HOPOPTS  = 0x34
+	sysIPV6_DSTOPTS  = 0x36
+	sysIPV6_RTHDR    = 0x32
+
+	sysIPV6_RECVTCLASS = 0x2a
+
+	sysIPV6_TCLASS   = 0x2b
+	sysIPV6_DONTFRAG = 0x2d
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	sizeofSockaddrStorage = 0x508
 	sizeofSockaddrInet6   = 0x1c
 	sizeofInet6Pktinfo    = 0x14

@@ -15,17 +15,17 @@ BuildRequestBody builds a map[string]interface from the given `struct`. If
 parent is not an empty string, the final map[string]interface returned will
 encapsulate the built one. For example:
 
-  disk := 1
-  createOpts := flavors.CreateOpts{
-    ID:         "1",
-    Name:       "m1.tiny",
-    Disk:       &disk,
-    RAM:        512,
-    VCPUs:      1,
-    RxTxFactor: 1.0,
-  }
+	disk := 1
+	createOpts := flavors.CreateOpts{
+	  ID:         "1",
+	  Name:       "m1.tiny",
+	  Disk:       &disk,
+	  RAM:        512,
+	  VCPUs:      1,
+	  RxTxFactor: 1.0,
+	}
 
-  body, err := gophercloud.BuildRequestBody(createOpts, "flavor")
+	body, err := gophercloud.BuildRequestBody(createOpts, "flavor")
 
 The above example can be run as-is, however it is recommended to look at how
 BuildRequestBody is used within Gophercloud to more fully understand how it
@@ -401,22 +401,22 @@ It accepts an arbitrary tagged structure and produces a string map that's
 suitable for use as the HTTP headers of an outgoing request. Field names are
 mapped to header names based in "h" tags.
 
-  type struct Something {
-    Bar string `h:"x_bar"`
-    Baz int    `h:"lorem_ipsum"`
-  }
+	type struct Something {
+	  Bar string `h:"x_bar"`
+	  Baz int    `h:"lorem_ipsum"`
+	}
 
-  instance := Something{
-    Bar: "AAA",
-    Baz: "BBB",
-  }
+	instance := Something{
+	  Bar: "AAA",
+	  Baz: "BBB",
+	}
 
 will be converted into:
 
-  map[string]string{
-    "x_bar": "AAA",
-    "lorem_ipsum": "BBB",
-  }
+	map[string]string{
+	  "x_bar": "AAA",
+	  "lorem_ipsum": "BBB",
+	}
 
 Untagged fields and fields left at their zero values are skipped. Integers,
 booleans and string values are supported.
@@ -448,9 +448,13 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 					if v.Kind() == reflect.Ptr {
 						v = v.Elem()
 					}
@@ -459,6 +463,7 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 						optsMap[tags[0]] = v.String()
 					case reflect.Int:
 						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -503,6 +508,11 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 					case reflect.Int:
 						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+					case reflect.Int64:
+						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 					case reflect.Bool:
 						optsMap[tags[0]] = strconv.FormatBool(v.Bool())
 					}

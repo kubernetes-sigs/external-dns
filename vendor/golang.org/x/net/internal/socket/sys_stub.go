@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -117,6 +118,11 @@ func sendmsg(s uintptr, buffers [][]byte, oob []byte, to net.Addr, flags int) (i
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
+=======
+//go:build !aix && !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris && !windows && !zos
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package socket
 
@@ -128,6 +134,9 @@ const (
 	sysAF_INET6  = 0xa
 
 	sysSOCK_RAW = 0x3
+
+	sizeofSockaddrInet4 = 0x10
+	sizeofSockaddrInet6 = 0x1c
 )
 
 func marshalInetAddr(ip net.IP, port int, zone string) []byte {
@@ -146,12 +155,18 @@ func setsockopt(s uintptr, level, name int, b []byte) error {
 	return errNotImplemented
 }
 
-func recvmsg(s uintptr, h *msghdr, flags int) (int, error) {
-	return 0, errNotImplemented
+func recvmsg(s uintptr, buffers [][]byte, oob []byte, flags int, network string) (n, oobn int, recvflags int, from net.Addr, err error) {
+	return 0, 0, 0, nil, errNotImplemented
 }
 
+<<<<<<< HEAD
 func sendmsg(s uintptr, h *msghdr, flags int) (int, error) {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func sendmsg(s uintptr, h *msghdr, flags int) (int, error) {
+=======
+func sendmsg(s uintptr, buffers [][]byte, oob []byte, to net.Addr, flags int) (int, error) {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return 0, errNotImplemented
 }
 

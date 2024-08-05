@@ -22,6 +22,7 @@ const (
 	// FormParameterKind = indicator of Request parameter type "form"
 	FormParameterKind
 
+<<<<<<< HEAD
 	// CollectionFormatCSV comma separated values `foo,bar`
 	CollectionFormatCSV = CollectionFormat("csv")
 
@@ -105,6 +106,100 @@ func (p *Parameter) beHeader() *Parameter {
 
 func (p *Parameter) beForm() *Parameter {
 	p.data.Kind = FormParameterKind
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// MultiPartFormParameterKind = indicator of Request parameter type "multipart/form-data"
+	MultiPartFormParameterKind
+
+	// CollectionFormatCSV comma separated values `foo,bar`
+	CollectionFormatCSV = CollectionFormat("csv")
+
+	// CollectionFormatSSV space separated values `foo bar`
+	CollectionFormatSSV = CollectionFormat("ssv")
+
+	// CollectionFormatTSV tab separated values `foo\tbar`
+	CollectionFormatTSV = CollectionFormat("tsv")
+
+	// CollectionFormatPipes pipe separated values `foo|bar`
+	CollectionFormatPipes = CollectionFormat("pipes")
+
+	// CollectionFormatMulti corresponds to multiple parameter instances instead of multiple values for a single
+	// instance `foo=bar&foo=baz`. This is valid only for QueryParameters and FormParameters
+	CollectionFormatMulti = CollectionFormat("multi")
+)
+
+type CollectionFormat string
+
+func (cf CollectionFormat) String() string {
+	return string(cf)
+}
+
+// Parameter is for documententing the parameter used in a Http Request
+// ParameterData kinds are Path,Query and Body
+type Parameter struct {
+	data *ParameterData
+}
+
+// ParameterData represents the state of a Parameter.
+// It is made public to make it accessible to e.g. the Swagger package.
+type ParameterData struct {
+	ExtensionProperties
+	Name, Description, DataType, DataFormat string
+	Kind                                    int
+	Required                                bool
+	// AllowableValues is deprecated. Use PossibleValues instead
+	AllowableValues  map[string]string
+	PossibleValues   []string
+	AllowMultiple    bool
+	AllowEmptyValue  bool
+	DefaultValue     string
+	CollectionFormat string
+	Pattern          string
+	Minimum          *float64
+	Maximum          *float64
+	MinLength        *int64
+	MaxLength        *int64
+	MinItems         *int64
+	MaxItems         *int64
+	UniqueItems      bool
+}
+
+// Data returns the state of the Parameter
+func (p *Parameter) Data() ParameterData {
+	return *p.data
+}
+
+// Kind returns the parameter type indicator (see const for valid values)
+func (p *Parameter) Kind() int {
+	return p.data.Kind
+}
+
+func (p *Parameter) bePath() *Parameter {
+	p.data.Kind = PathParameterKind
+	return p
+}
+func (p *Parameter) beQuery() *Parameter {
+	p.data.Kind = QueryParameterKind
+	return p
+}
+func (p *Parameter) beBody() *Parameter {
+	p.data.Kind = BodyParameterKind
+	return p
+}
+
+func (p *Parameter) beHeader() *Parameter {
+	p.data.Kind = HeaderParameterKind
+	return p
+}
+
+func (p *Parameter) beForm() *Parameter {
+	p.data.Kind = FormParameterKind
+	return p
+}
+
+func (p *Parameter) beMultiPartForm() *Parameter {
+	p.data.Kind = MultiPartFormParameterKind
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return p
 }
 

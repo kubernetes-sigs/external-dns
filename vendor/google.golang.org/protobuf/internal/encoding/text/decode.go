@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"strconv"
 	"unicode/utf8"
 
@@ -680,6 +681,10 @@ func errId(seq []byte) []byte {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"regexp"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"regexp"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"strconv"
 	"unicode/utf8"
 
@@ -1052,7 +1057,7 @@ func (d *Decoder) currentOpenKind() (Kind, byte) {
 	case '[':
 		return ListOpen, ']'
 	}
-	panic(fmt.Sprintf("Decoder: openStack contains invalid byte %s", string(openCh)))
+	panic(fmt.Sprintf("Decoder: openStack contains invalid byte %c", openCh))
 }
 
 func (d *Decoder) pushOpenStack(ch byte) {
@@ -1084,15 +1089,16 @@ func (d *Decoder) parseFieldName() (tok Token, err error) {
 	// Field number. Identify if input is a valid number that is not negative
 	// and is decimal integer within 32-bit range.
 	if num := parseNumber(d.in); num.size > 0 {
+		str := num.string(d.in)
 		if !num.neg && num.kind == numDec {
-			if _, err := strconv.ParseInt(string(d.in[:num.size]), 10, 32); err == nil {
+			if _, err := strconv.ParseInt(str, 10, 32); err == nil {
 				return d.consumeToken(Name, num.size, uint8(FieldNumber)), nil
 			}
 		}
-		return Token{}, d.newSyntaxError("invalid field number: %s", d.in[:num.size])
+		return Token{}, d.newSyntaxError("invalid field number: %s", str)
 	}
 
-	return Token{}, d.newSyntaxError("invalid field name: %s", errRegexp.Find(d.in))
+	return Token{}, d.newSyntaxError("invalid field name: %s", errId(d.in))
 }
 
 // parseTypeName parses Any type URL or extension field name. The name is
@@ -1242,7 +1248,7 @@ func (d *Decoder) parseScalar() (Token, error) {
 		return tok, nil
 	}
 
-	return Token{}, d.newSyntaxError("invalid scalar value: %s", errRegexp.Find(d.in))
+	return Token{}, d.newSyntaxError("invalid scalar value: %s", errId(d.in))
 }
 
 // parseLiteralValue parses a literal value. A literal value is used for
@@ -1324,9 +1330,38 @@ func consume(b []byte, n int) []byte {
 	return b
 }
 
+<<<<<<< HEAD
 // Any sequence that looks like a non-delimiter (for error reporting).
 var errRegexp = regexp.MustCompile(`^([-+._a-zA-Z0-9\/]+|.)`)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Any sequence that looks like a non-delimiter (for error reporting).
+var errRegexp = regexp.MustCompile(`^([-+._a-zA-Z0-9\/]+|.)`)
+=======
+// errId extracts a byte sequence that looks like an invalid ID
+// (for the purposes of error reporting).
+func errId(seq []byte) []byte {
+	const maxLen = 32
+	for i := 0; i < len(seq); {
+		if i > maxLen {
+			return append(seq[:i:i], "…"...)
+		}
+		r, size := utf8.DecodeRune(seq[i:])
+		if r > utf8.RuneSelf || (r != '/' && isDelim(byte(r))) {
+			if i == 0 {
+				// Either the first byte is invalid UTF-8 or a
+				// delimiter, or the first rune is non-ASCII.
+				// Return it as-is.
+				i = size
+			}
+			return seq[:i:i]
+		}
+		i += size
+	}
+	// No delimiter found.
+	return seq
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // isDelim returns true if given byte is a delimiter character.
 func isDelim(c byte) bool {

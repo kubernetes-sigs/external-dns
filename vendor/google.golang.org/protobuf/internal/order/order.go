@@ -33,7 +33,12 @@ var (
 			return !inOneof(ox) && inOneof(oy)
 		}
 		// Fields in disjoint oneof sets are sorted by declaration index.
+<<<<<<< HEAD
 		if ox != nil && oy != nil && ox != oy {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		if inOneof(ox) && inOneof(oy) && ox != oy {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			return ox.Index() < oy.Index()
 		}
 		// Fields sorted by field number.

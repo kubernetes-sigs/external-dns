@@ -46,7 +46,7 @@ func (s *APIKeysService) Get(keyID string) (*account.APIKey, *http.Response, err
 	if err != nil {
 		switch err.(type) {
 		case *Error:
-			if err.(*Error).Message == "unknown api key" {
+			if resourceMissingMatch(err.(*Error).Message) {
 				return nil, resp, ErrKeyMissing
 			}
 
@@ -61,9 +61,23 @@ func (s *APIKeysService) Get(keyID string) (*account.APIKey, *http.Response, err
 //
 // NS1 API docs: https://ns1.com/api/#apikeys-put
 func (s *APIKeysService) Create(a *account.APIKey) (*http.Response, error) {
-	req, err := s.client.NewRequest("PUT", "account/apikeys", &a)
-	if err != nil {
-		return nil, err
+	var (
+		req *http.Request
+		err error
+	)
+
+	// If this is DDI then the permissions need to be transformed to DDI-compatible permissions.
+	if s.client.DDI && a != nil {
+		ddiAPIKey := apiKeyToDDIAPIKey(a)
+		req, err = s.client.NewRequest("PUT", "account/apikeys", ddiAPIKey)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		req, err = s.client.NewRequest("PUT", "account/apikeys", a)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Update account fields with data from api(ensure consistent)
@@ -87,9 +101,23 @@ func (s *APIKeysService) Create(a *account.APIKey) (*http.Response, error) {
 func (s *APIKeysService) Update(a *account.APIKey) (*http.Response, error) {
 	path := fmt.Sprintf("account/apikeys/%s", a.ID)
 
-	req, err := s.client.NewRequest("POST", path, &a)
-	if err != nil {
-		return nil, err
+	var (
+		req *http.Request
+		err error
+	)
+
+	// If this is DDI then the permissions need to be transformed to DDI-compatible permissions.
+	if s.client.DDI && a != nil {
+		ddiAPIKey := apiKeyToDDIAPIKey(a)
+		req, err = s.client.NewRequest("POST", path, ddiAPIKey)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		req, err = s.client.NewRequest("POST", path, a)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Update apikey fields with data from api(ensure consistent)
@@ -97,7 +125,7 @@ func (s *APIKeysService) Update(a *account.APIKey) (*http.Response, error) {
 	if err != nil {
 		switch err.(type) {
 		case *Error:
-			if err.(*Error).Message == "unknown api key" {
+			if resourceMissingMatch(err.(*Error).Message) {
 				return resp, ErrKeyMissing
 			}
 		}
@@ -122,7 +150,7 @@ func (s *APIKeysService) Delete(keyID string) (*http.Response, error) {
 	if err != nil {
 		switch err.(type) {
 		case *Error:
-			if err.(*Error).Message == "unknown api key" {
+			if resourceMissingMatch(err.(*Error).Message) {
 				return resp, ErrKeyMissing
 			}
 		}
@@ -138,3 +166,40 @@ var (
 	// ErrKeyMissing bundles GET/POST/DELETE error.
 	ErrKeyMissing = errors.New("key does not exist")
 )
+
+func apiKeyToDDIAPIKey(k *account.APIKey) *ddiAPIKey {
+	ddiAPIKey := &ddiAPIKey{
+		ID:                k.ID,
+		Key:               k.Key,
+		LastAccess:        k.LastAccess,
+		Name:              k.Name,
+		TeamIDs:           k.TeamIDs,
+		IPWhitelist:       k.IPWhitelist,
+		IPWhitelistStrict: k.IPWhitelistStrict,
+		Permissions: ddiPermissionsMap{
+			DNS:  k.Permissions.DNS,
+			Data: k.Permissions.Data,
+			Account: permissionsDDIAccount{
+				ManageUsers:           k.Permissions.Account.ManageUsers,
+				ManageTeams:           k.Permissions.Account.ManageTeams,
+				ManageApikeys:         k.Permissions.Account.ManageApikeys,
+				ManageAccountSettings: k.Permissions.Account.ManageAccountSettings,
+				ViewActivityLog:       k.Permissions.Account.ViewActivityLog,
+			},
+		},
+	}
+
+	if k.Permissions.Security != nil {
+		ddiAPIKey.Permissions.Security = permissionsDDISecurity(*k.Permissions.Security)
+	}
+
+	if k.Permissions.DHCP != nil {
+		ddiAPIKey.Permissions.DHCP = *k.Permissions.DHCP
+	}
+
+	if k.Permissions.IPAM != nil {
+		ddiAPIKey.Permissions.IPAM = *k.Permissions.IPAM
+	}
+
+	return ddiAPIKey
+}

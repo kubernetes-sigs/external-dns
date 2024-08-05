@@ -132,7 +132,7 @@ func (o *HostPhase) UnmarshalJSON(data []byte) error {
 }
 
 const (
-	PreviewURLType_Path = "path"
+	PreviewURLType_Path = "Path"
 )
 
 const (

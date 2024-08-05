@@ -31,6 +31,7 @@ import (
 	"errors"
 	"fmt"
 
+<<<<<<< HEAD
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -132,6 +133,139 @@ func (s *Status) Details() []interface{} {
 			continue
 		}
 		details = append(details, detail.Message)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	spb "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
+	"google.golang.org/protobuf/types/known/anypb"
+)
+
+// Status represents an RPC status code, message, and details.  It is immutable
+// and should be created with New, Newf, or FromProto.
+type Status struct {
+	s *spb.Status
+}
+
+// NewWithProto returns a new status including details from statusProto.  This
+// is meant to be used by the gRPC library only.
+func NewWithProto(code codes.Code, message string, statusProto []string) *Status {
+	if len(statusProto) != 1 {
+		// No grpc-status-details bin header, or multiple; just ignore.
+		return &Status{s: &spb.Status{Code: int32(code), Message: message}}
+	}
+	st := &spb.Status{}
+	if err := proto.Unmarshal([]byte(statusProto[0]), st); err != nil {
+		// Probably not a google.rpc.Status proto; do not provide details.
+		return &Status{s: &spb.Status{Code: int32(code), Message: message}}
+	}
+	if st.Code == int32(code) {
+		// The codes match between the grpc-status header and the
+		// grpc-status-details-bin header; use the full details proto.
+		return &Status{s: st}
+	}
+	return &Status{
+		s: &spb.Status{
+			Code: int32(codes.Internal),
+			Message: fmt.Sprintf(
+				"grpc-status-details-bin mismatch: grpc-status=%v, grpc-message=%q, grpc-status-details-bin=%+v",
+				code, message, st,
+			),
+		},
+	}
+}
+
+// New returns a Status representing c and msg.
+func New(c codes.Code, msg string) *Status {
+	return &Status{s: &spb.Status{Code: int32(c), Message: msg}}
+}
+
+// Newf returns New(c, fmt.Sprintf(format, a...)).
+func Newf(c codes.Code, format string, a ...any) *Status {
+	return New(c, fmt.Sprintf(format, a...))
+}
+
+// FromProto returns a Status representing s.
+func FromProto(s *spb.Status) *Status {
+	return &Status{s: proto.Clone(s).(*spb.Status)}
+}
+
+// Err returns an error representing c and msg.  If c is OK, returns nil.
+func Err(c codes.Code, msg string) error {
+	return New(c, msg).Err()
+}
+
+// Errorf returns Error(c, fmt.Sprintf(format, a...)).
+func Errorf(c codes.Code, format string, a ...any) error {
+	return Err(c, fmt.Sprintf(format, a...))
+}
+
+// Code returns the status code contained in s.
+func (s *Status) Code() codes.Code {
+	if s == nil || s.s == nil {
+		return codes.OK
+	}
+	return codes.Code(s.s.Code)
+}
+
+// Message returns the message contained in s.
+func (s *Status) Message() string {
+	if s == nil || s.s == nil {
+		return ""
+	}
+	return s.s.Message
+}
+
+// Proto returns s's status as an spb.Status proto message.
+func (s *Status) Proto() *spb.Status {
+	if s == nil {
+		return nil
+	}
+	return proto.Clone(s.s).(*spb.Status)
+}
+
+// Err returns an immutable error representing s; returns nil if s.Code() is OK.
+func (s *Status) Err() error {
+	if s.Code() == codes.OK {
+		return nil
+	}
+	return &Error{s: s}
+}
+
+// WithDetails returns a new status with the provided details messages appended to the status.
+// If any errors are encountered, it returns nil and the first error encountered.
+func (s *Status) WithDetails(details ...protoadapt.MessageV1) (*Status, error) {
+	if s.Code() == codes.OK {
+		return nil, errors.New("no error details for status with code OK")
+	}
+	// s.Code() != OK implies that s.Proto() != nil.
+	p := s.Proto()
+	for _, detail := range details {
+		any, err := anypb.New(protoadapt.MessageV2Of(detail))
+		if err != nil {
+			return nil, err
+		}
+		p.Details = append(p.Details, any)
+	}
+	return &Status{s: p}, nil
+}
+
+// Details returns a slice of details messages attached to the status.
+// If a detail cannot be decoded, the error is returned in place of the detail.
+func (s *Status) Details() []any {
+	if s == nil || s.s == nil {
+		return nil
+	}
+	details := make([]any, 0, len(s.s.Details))
+	for _, any := range s.s.Details {
+		detail, err := any.UnmarshalNew()
+		if err != nil {
+			details = append(details, err)
+			continue
+		}
+		details = append(details, detail)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	return details
 }

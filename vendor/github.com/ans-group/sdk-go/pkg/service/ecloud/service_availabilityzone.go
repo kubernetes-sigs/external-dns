@@ -55,3 +55,44 @@ func (s *Service) getAvailabilityZoneResponseBody(azID string) (*connection.APIR
 		return nil
 	})
 }
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+// GetAvailabilityZones retrieves a list of azs
+func (s *Service) GetAvailabilityZoneIOPSTiers(azID string, parameters connection.APIRequestParameters) ([]IOPSTier, error) {
+	return connection.InvokeRequestAll(func(p connection.APIRequestParameters) (*connection.Paginated[IOPSTier], error) {
+		return s.GetAvailabilityZoneIOPSTiersPaginated(azID, p)
+	}, parameters)
+}
+
+// GetAvailabilityZonesPaginated retrieves a paginated list of azs
+func (s *Service) GetAvailabilityZoneIOPSTiersPaginated(azID string, parameters connection.APIRequestParameters) (*connection.Paginated[IOPSTier], error) {
+	body, err := s.getAvailabilityZoneIOPSTiersPaginatedResponseBody(azID, parameters)
+
+	return connection.NewPaginated(body, parameters, func(p connection.APIRequestParameters) (*connection.Paginated[IOPSTier], error) {
+		return s.GetAvailabilityZoneIOPSTiersPaginated(azID, p)
+	}), err
+}
+
+func (s *Service) getAvailabilityZoneIOPSTiersPaginatedResponseBody(azID string, parameters connection.APIRequestParameters) (*connection.APIResponseBodyData[[]IOPSTier], error) {
+	body := &connection.APIResponseBodyData[[]IOPSTier]{}
+
+	if azID == "" {
+		return body, fmt.Errorf("invalid az id")
+	}
+
+	response, err := s.connection.Get(fmt.Sprintf("/ecloud/v2/availability-zones/%s/iops", azID), parameters)
+	if err != nil {
+		return body, err
+	}
+
+	return body, response.HandleResponse(body, func(resp *connection.APIResponse) error {
+		if response.StatusCode == 404 {
+			return &AvailabilityZoneNotFoundError{ID: azID}
+		}
+
+		return nil
+	})
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

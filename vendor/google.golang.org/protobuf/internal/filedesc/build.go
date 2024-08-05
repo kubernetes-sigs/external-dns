@@ -10,6 +10,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // The types in this package implement interfaces in the protoreflect package
 // related to protobuf descripriptors.
@@ -623,14 +624,19 @@ func (db *Builder) unmarshalCounts(b []byte, isFile bool) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// The types in this package implement interfaces in the protoreflect package
+// related to protobuf descripriptors.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 package filedesc
 
 import (
 	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/internal/fieldnum"
+	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	pref "google.golang.org/protobuf/reflect/protoreflect"
-	preg "google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 // Builder construct a protoreflect.FileDescriptor from the raw descriptor.
@@ -655,7 +661,7 @@ type Builder struct {
 	// TypeResolver resolves extension field types for descriptor options.
 	// If nil, it uses protoregistry.GlobalTypes.
 	TypeResolver interface {
-		preg.ExtensionTypeResolver
+		protoregistry.ExtensionTypeResolver
 	}
 
 	// FileRegistry is use to lookup file, enum, and message dependencies.
@@ -663,8 +669,8 @@ type Builder struct {
 	// If nil, it uses protoregistry.GlobalFiles.
 	FileRegistry interface {
 		FindFileByPath(string) (protoreflect.FileDescriptor, error)
-		FindDescriptorByName(pref.FullName) (pref.Descriptor, error)
-		RegisterFile(pref.FileDescriptor) error
+		FindDescriptorByName(protoreflect.FullName) (protoreflect.Descriptor, error)
+		RegisterFile(protoreflect.FileDescriptor) error
 	}
 }
 
@@ -672,8 +678,8 @@ type Builder struct {
 // If so, it permits looking up an enum or message dependency based on the
 // sub-list and element index into filetype.Builder.DependencyIndexes.
 type resolverByIndex interface {
-	FindEnumByIndex(int32, int32, []Enum, []Message) pref.EnumDescriptor
-	FindMessageByIndex(int32, int32, []Enum, []Message) pref.MessageDescriptor
+	FindEnumByIndex(int32, int32, []Enum, []Message) protoreflect.EnumDescriptor
+	FindMessageByIndex(int32, int32, []Enum, []Message) protoreflect.MessageDescriptor
 }
 
 // Indexes of each sub-list in filetype.Builder.DependencyIndexes.
@@ -687,7 +693,7 @@ const (
 
 // Out is the output of the Builder.
 type Out struct {
-	File pref.FileDescriptor
+	File protoreflect.FileDescriptor
 
 	// Enums is all enum descriptors in "flattened ordering".
 	Enums []Enum
@@ -714,10 +720,10 @@ func (db Builder) Build() (out Out) {
 
 	// Initialize resolvers and registries if unpopulated.
 	if db.TypeResolver == nil {
-		db.TypeResolver = preg.GlobalTypes
+		db.TypeResolver = protoregistry.GlobalTypes
 	}
 	if db.FileRegistry == nil {
-		db.FileRegistry = preg.GlobalFiles
+		db.FileRegistry = protoregistry.GlobalFiles
 	}
 
 	fd := newRawFile(db)
@@ -746,25 +752,31 @@ func (db *Builder) unmarshalCounts(b []byte, isFile bool) {
 			b = b[m:]
 			if isFile {
 				switch num {
-				case fieldnum.FileDescriptorProto_EnumType:
+				case genid.FileDescriptorProto_EnumType_field_number:
 					db.NumEnums++
-				case fieldnum.FileDescriptorProto_MessageType:
+				case genid.FileDescriptorProto_MessageType_field_number:
 					db.unmarshalCounts(v, false)
 					db.NumMessages++
-				case fieldnum.FileDescriptorProto_Extension:
+				case genid.FileDescriptorProto_Extension_field_number:
 					db.NumExtensions++
-				case fieldnum.FileDescriptorProto_Service:
+				case genid.FileDescriptorProto_Service_field_number:
 					db.NumServices++
 				}
 			} else {
 				switch num {
-				case fieldnum.DescriptorProto_EnumType:
+				case genid.DescriptorProto_EnumType_field_number:
 					db.NumEnums++
-				case fieldnum.DescriptorProto_NestedType:
+				case genid.DescriptorProto_NestedType_field_number:
 					db.unmarshalCounts(v, false)
 					db.NumMessages++
+<<<<<<< HEAD
 				case fieldnum.DescriptorProto_Extension:
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+				case fieldnum.DescriptorProto_Extension:
+=======
+				case genid.DescriptorProto_Extension_field_number:
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 					db.NumExtensions++
 				}
 			}

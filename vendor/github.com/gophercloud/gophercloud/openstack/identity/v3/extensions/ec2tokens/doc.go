@@ -36,6 +36,10 @@ Example to auth a client using EC2 access and secret keys
 	if err != nil {
 		panic(err)
 	}
+<<<<<<< HEAD
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 */
 package ec2tokens

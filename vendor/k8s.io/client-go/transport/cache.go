@@ -18,6 +18,7 @@ package transport
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"fmt"
 	"net"
@@ -561,6 +562,10 @@ func tlsConfigKey(c *Config) (tlsCacheKey, bool, error) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"context"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"fmt"
 	"net"
 	"net/http"
@@ -570,6 +575,7 @@ func tlsConfigKey(c *Config) (tlsCacheKey, bool, error) {
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/metrics"
 )
 
 // TlsTransportCache caches TLS http.RoundTrippers different configurations. The
@@ -580,6 +586,11 @@ type tlsTransportCache struct {
 	transports map[tlsCacheKey]*http.Transport
 }
 
+// DialerStopCh is stop channel that is passed down to dynamic cert dialer.
+// It's exposed as variable for testing purposes to avoid testing for goroutine
+// leakages.
+var DialerStopCh = wait.NeverStop
+
 const idleConnsPerHost = 25
 
 var tlsCache = &tlsTransportCache{transports: make(map[tlsCacheKey]*http.Transport)}
@@ -588,14 +599,15 @@ type tlsCacheKey struct {
 	insecure           bool
 	caData             string
 	certData           string
-	keyData            string
+	keyData            string `datapolicy:"security-key"`
 	certFile           string
 	keyFile            string
-	getCert            string
 	serverName         string
 	nextProtos         string
-	dial               string
 	disableCompression bool
+	// these functions are wrapped to allow them to be used as map keys
+	getCert *GetCertHolder
+	dial    *DialHolder
 }
 
 func (t tlsCacheKey) String() string {
@@ -603,22 +615,30 @@ func (t tlsCacheKey) String() string {
 	if len(t.keyData) > 0 {
 		keyText = "<redacted>"
 	}
-	return fmt.Sprintf("insecure:%v, caData:%#v, certData:%#v, keyData:%s, getCert: %s, serverName:%s, dial:%s disableCompression:%t", t.insecure, t.caData, t.certData, keyText, t.getCert, t.serverName, t.dial, t.disableCompression)
+	return fmt.Sprintf("insecure:%v, caData:%#v, certData:%#v, keyData:%s, serverName:%s, disableCompression:%t, getCert:%p, dial:%p",
+		t.insecure, t.caData, t.certData, keyText, t.serverName, t.disableCompression, t.getCert, t.dial)
 }
 
 func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
-	key, err := tlsConfigKey(config)
+	key, canCache, err := tlsConfigKey(config)
 	if err != nil {
 		return nil, err
 	}
 
-	// Ensure we only create a single transport for the given TLS options
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	if canCache {
+		// Ensure we only create a single transport for the given TLS options
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		defer metrics.TransportCacheEntries.Observe(len(c.transports))
 
-	// See if we already have a custom transport for this config
-	if t, ok := c.transports[key]; ok {
-		return t, nil
+		// See if we already have a custom transport for this config
+		if t, ok := c.transports[key]; ok {
+			metrics.TransportCreateCalls.Increment("hit")
+			return t, nil
+		}
+		metrics.TransportCreateCalls.Increment("miss")
+	} else {
+		metrics.TransportCreateCalls.Increment("uncacheable")
 	}
 
 	// Get the TLS options for this client config
@@ -627,12 +647,14 @@ func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
 		return nil, err
 	}
 	// The options didn't require a custom TLS config
-	if tlsConfig == nil && config.Dial == nil {
+	if tlsConfig == nil && config.DialHolder == nil && config.Proxy == nil {
 		return http.DefaultTransport, nil
 	}
 
-	dial := config.Dial
-	if dial == nil {
+	var dial func(ctx context.Context, network, address string) (net.Conn, error)
+	if config.DialHolder != nil {
+		dial = config.DialHolder.Dial
+	} else {
 		dial = (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -641,39 +663,55 @@ func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
 
 	// If we use are reloading files, we need to handle certificate rotation properly
 	// TODO(jackkleeman): We can also add rotation here when config.HasCertCallback() is true
-	if config.TLS.ReloadTLSFiles {
+	if config.TLS.ReloadTLSFiles && tlsConfig != nil && tlsConfig.GetClientCertificate != nil {
 		dynamicCertDialer := certRotatingDialer(tlsConfig.GetClientCertificate, dial)
 		tlsConfig.GetClientCertificate = dynamicCertDialer.GetClientCertificate
 		dial = dynamicCertDialer.connDialer.DialContext
-		go dynamicCertDialer.Run(wait.NeverStop)
+		go dynamicCertDialer.Run(DialerStopCh)
 	}
 
-	// Cache a single transport for these options
-	c.transports[key] = utilnet.SetTransportDefaults(&http.Transport{
-		Proxy:               http.ProxyFromEnvironment,
+	proxy := http.ProxyFromEnvironment
+	if config.Proxy != nil {
+		proxy = config.Proxy
+	}
+
+	transport := utilnet.SetTransportDefaults(&http.Transport{
+		Proxy:               proxy,
 		TLSHandshakeTimeout: 10 * time.Second,
 		TLSClientConfig:     tlsConfig,
 		MaxIdleConnsPerHost: idleConnsPerHost,
 		DialContext:         dial,
 		DisableCompression:  config.DisableCompression,
 	})
-	return c.transports[key], nil
+
+	if canCache {
+		// Cache a single transport for these options
+		c.transports[key] = transport
+	}
+
+	return transport, nil
 }
 
 // tlsConfigKey returns a unique key for tls.Config objects returned from TLSConfigFor
-func tlsConfigKey(c *Config) (tlsCacheKey, error) {
+func tlsConfigKey(c *Config) (tlsCacheKey, bool, error) {
 	// Make sure ca/key/cert content is loaded
 	if err := loadTLSFiles(c); err != nil {
-		return tlsCacheKey{}, err
+		return tlsCacheKey{}, false, err
 	}
+
+	if c.Proxy != nil {
+		// cannot determine equality for functions
+		return tlsCacheKey{}, false, nil
+	}
+
 	k := tlsCacheKey{
 		insecure:           c.TLS.Insecure,
 		caData:             string(c.TLS.CAData),
-		getCert:            fmt.Sprintf("%p", c.TLS.GetCert),
 		serverName:         c.TLS.ServerName,
 		nextProtos:         strings.Join(c.TLS.NextProtos, ","),
-		dial:               fmt.Sprintf("%p", c.Dial),
 		disableCompression: c.DisableCompression,
+		getCert:            c.TLS.GetCertHolder,
+		dial:               c.DialHolder,
 	}
 
 	if c.TLS.ReloadTLSFiles {
@@ -684,6 +722,12 @@ func tlsConfigKey(c *Config) (tlsCacheKey, error) {
 		k.keyData = string(c.TLS.KeyData)
 	}
 
+<<<<<<< HEAD
 	return k, nil
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return k, nil
+=======
+	return k, true, nil
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

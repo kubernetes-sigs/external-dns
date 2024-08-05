@@ -7,7 +7,9 @@ type APIKey struct {
 	Key        string `json:"key,omitempty"`
 	LastAccess int    `json:"last_access,omitempty"`
 
-	Name        string         `json:"name"`
-	TeamIDs     []string       `json:"teams"`
-	Permissions PermissionsMap `json:"permissions"`
+	Name              string         `json:"name"`
+	TeamIDs           []string       `json:"teams"`
+	Permissions       PermissionsMap `json:"permissions"`
+	IPWhitelist       []string       `json:"ip_whitelist"`
+	IPWhitelistStrict bool           `json:"ip_whitelist_strict"`
 }

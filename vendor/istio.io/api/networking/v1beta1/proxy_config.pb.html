@@ -1,0 +1,156 @@
+---
+title: ProxyConfig
+description: Provides configuration for individual workloads.
+location: https://istio.io/docs/reference/config/networking/proxy-config.html
+layout: protoc-gen-docs
+generator: protoc-gen-docs
+schema: istio.networking.v1beta1.ProxyConfig
+aliases: [/docs/reference/config/networking/v1beta1/proxy-config]
+number_of_entries: 2
+---
+<p><code>ProxyConfig</code> exposes proxy level configuration options. <code>ProxyConfig</code> can be configured on a per-workload basis,
+a per-namespace basis, or mesh-wide. <code>ProxyConfig</code> is not a required resource; there are default values in place, which are documented
+inline with each field.</p>
+<p><strong>NOTE</strong>: fields in ProxyConfig are not dynamically configured - changes will require restart of workloads to take effect.</p>
+<p>For any namespace, including the root configuration namespace, it is only valid
+to have a single workload selector-less <code>ProxyConfig</code> resource.</p>
+<p>For resources with a workload selector, it is only valid to have one resource selecting
+any given workload.</p>
+<p>For mesh level configuration, put the resource in the root configuration namespace for
+your Istio installation <em>without</em> a workload selector:</p>
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+kind: ProxyConfig
+metadata:
+  name: my-proxyconfig
+  namespace: istio-system
+spec:
+  concurrency: 0
+  image:
+    imageType: distroless
+</code></pre>
+<p>For namespace level configuration, put the resource in the desired namespace without a workload selector:</p>
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+kind: ProxyConfig
+metadata:
+  name: my-ns-proxyconfig
+  namespace: user-namespace
+spec:
+  concurrency: 0
+</code></pre>
+<p>For workload level configuration, set the <code>selector</code> field on the <code>ProxyConfig</code> resource:</p>
+<pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+kind: ProxyConfig
+metadata:
+  name: per-workload-proxyconfig
+  namespace: example
+spec:
+  selector:
+    matchLabels:
+      app: ratings
+  concurrency: 0
+  image:
+    imageType: debug
+</code></pre>
+<p>If a <code>ProxyConfig</code> CR is defined that matches a workload it will merge with its <code>proxy.istio.io/config</code> annotation if present,
+with the CR taking precedence over the annotation for overlapping fields. Similarly, if a mesh wide <code>ProxyConfig</code> CR is defined and
+<code>meshConfig.DefaultConfig</code> is set, the two resources will be merged with the CR taking precedence for overlapping fields.</p>
+
+<h2 id="ProxyConfig">ProxyConfig</h2>
+<section>
+<p><code>ProxyConfig</code> exposes proxy level configuration options.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="ProxyConfig-selector">
+<td><code>selector</code></td>
+<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></code></td>
+<td>
+<p>Optional. Selectors specify the set of pods/VMs on which this <code>ProxyConfig</code> resource should be applied.
+If not set, the <code>ProxyConfig</code> resource will be applied to all workloads in the namespace where this resource is defined.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="ProxyConfig-concurrency">
+<td><code>concurrency</code></td>
+<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#int32value">Int32Value</a></code></td>
+<td>
+<p>The number of worker threads to run.
+If unset, this will be automatically determined based on CPU requests/limits.
+If set to 0, all cores on the machine will be used.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="ProxyConfig-environment_variables">
+<td><code>environmentVariables</code></td>
+<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td>
+<p>Additional environment variables for the proxy.
+Names starting with <code>ISTIO_META_</code> will be included in the generated bootstrap configuration and sent to the XDS server.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="ProxyConfig-image">
+<td><code>image</code></td>
+<td><code><a href="#ProxyImage">ProxyImage</a></code></td>
+<td>
+<p>Specifies the details of the proxy image.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="ProxyImage">ProxyImage</h2>
+<section>
+<p>The following values are used to construct proxy image url.
+format: <code>${hub}/${image_name}/${tag}-${image_type}</code>,
+example: <code>docker.io/istio/proxyv2:1.11.1</code> or <code>docker.io/istio/proxyv2:1.11.1-distroless</code>.
+This information was previously part of the Values API.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="ProxyImage-image_type">
+<td><code>imageType</code></td>
+<td><code>string</code></td>
+<td>
+<p>The image type of the image.
+Istio publishes default, debug, and distroless images.
+Other values are allowed if those image types (example: centos) are published to the specified hub.
+supported values: default, debug, distroless.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>

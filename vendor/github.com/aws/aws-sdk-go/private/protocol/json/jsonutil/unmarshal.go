@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"math/big"
 	"reflect"
 	"strings"
@@ -1177,6 +1178,11 @@ func (u unmarshaler) unmarshalScalar(value reflect.Value, data interface{}, tag 
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"math"
+	"math/big"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"reflect"
 	"strings"
 	"time"
@@ -1185,6 +1191,8 @@ func (u unmarshaler) unmarshalScalar(value reflect.Value, data interface{}, tag 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/private/protocol"
 )
+
+var millisecondsFloat = new(big.Float).SetInt64(1e3)
 
 // UnmarshalJSONError unmarshal's the reader's JSON document into the passed in
 // type. The value to unmarshal the json document into must be a pointer to the
@@ -1210,7 +1218,9 @@ func UnmarshalJSONError(v interface{}, stream io.Reader) error {
 func UnmarshalJSON(v interface{}, stream io.Reader) error {
 	var out interface{}
 
-	err := json.NewDecoder(stream).Decode(&out)
+	decoder := json.NewDecoder(stream)
+	decoder.UseNumber()
+	err := decoder.Decode(&out)
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
@@ -1225,7 +1235,9 @@ func UnmarshalJSON(v interface{}, stream io.Reader) error {
 func UnmarshalJSONCaseInsensitive(v interface{}, stream io.Reader) error {
 	var out interface{}
 
-	err := json.NewDecoder(stream).Decode(&out)
+	decoder := json.NewDecoder(stream)
+	decoder.UseNumber()
+	err := decoder.Decode(&out)
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
@@ -1422,20 +1434,55 @@ func (u unmarshaler) unmarshalScalar(value reflect.Value, data interface{}, tag 
 				return err
 			}
 			value.Set(reflect.ValueOf(v))
+		case *float64:
+			// These are regular strings when parsed by encoding/json's unmarshaler.
+			switch {
+			case strings.EqualFold(d, floatNaN):
+				value.Set(reflect.ValueOf(aws.Float64(math.NaN())))
+			case strings.EqualFold(d, floatInf):
+				value.Set(reflect.ValueOf(aws.Float64(math.Inf(1))))
+			case strings.EqualFold(d, floatNegInf):
+				value.Set(reflect.ValueOf(aws.Float64(math.Inf(-1))))
+			default:
+				return fmt.Errorf("unknown JSON number value: %s", d)
+			}
 		default:
 			return fmt.Errorf("unsupported value: %v (%s)", value.Interface(), value.Type())
 		}
-	case float64:
+	case json.Number:
 		switch value.Interface().(type) {
 		case *int64:
-			di := int64(d)
+			// Retain the old behavior where we would just truncate the float64
+			// calling d.Int64() here could cause an invalid syntax error due to the usage of strconv.ParseInt
+			f, err := d.Float64()
+			if err != nil {
+				return err
+			}
+			di := int64(f)
 			value.Set(reflect.ValueOf(&di))
 		case *float64:
-			value.Set(reflect.ValueOf(&d))
+			f, err := d.Float64()
+			if err != nil {
+				return err
+			}
+			value.Set(reflect.ValueOf(&f))
 		case *time.Time:
+<<<<<<< HEAD
 			// Time unmarshaled from a float64 can only be epoch seconds
 			t := time.Unix(int64(d), 0).UTC()
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			// Time unmarshaled from a float64 can only be epoch seconds
+			t := time.Unix(int64(d), 0).UTC()
+=======
+			float, ok := new(big.Float).SetString(d.String())
+			if !ok {
+				return fmt.Errorf("unsupported float time representation: %v", d.String())
+			}
+			float = float.Mul(float, millisecondsFloat)
+			ms, _ := float.Int64()
+			t := time.Unix(0, ms*1e6).UTC()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			value.Set(reflect.ValueOf(&t))
 		default:
 			return fmt.Errorf("unsupported value: %v (%s)", value.Interface(), value.Type())

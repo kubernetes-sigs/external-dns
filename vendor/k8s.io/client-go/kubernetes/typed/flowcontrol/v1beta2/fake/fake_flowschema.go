@@ -26,6 +26,7 @@ import (
 	v1beta2 "k8s.io/api/flowcontrol/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
+<<<<<<< HEAD
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,6 +42,23 @@ type FakeFlowSchemas struct {
 var flowschemasResource = schema.GroupVersionResource{Group: "flowcontrol.apiserver.k8s.io", Version: "v1beta2", Resource: "flowschemas"}
 
 var flowschemasKind = schema.GroupVersionKind{Group: "flowcontrol.apiserver.k8s.io", Version: "v1beta2", Kind: "FlowSchema"}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	flowcontrolv1beta2 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta2"
+	testing "k8s.io/client-go/testing"
+)
+
+// FakeFlowSchemas implements FlowSchemaInterface
+type FakeFlowSchemas struct {
+	Fake *FakeFlowcontrolV1beta2
+}
+
+var flowschemasResource = v1beta2.SchemeGroupVersion.WithResource("flowschemas")
+
+var flowschemasKind = v1beta2.SchemeGroupVersion.WithKind("FlowSchema")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // Get takes name of the flowSchema, and returns the corresponding flowSchema object, and an error if there is any.
 func (c *FakeFlowSchemas) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.FlowSchema, err error) {

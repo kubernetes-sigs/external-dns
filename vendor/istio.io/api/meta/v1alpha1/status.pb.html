@@ -23,10 +23,7 @@ number_of_entries: 2
 <td><code><a href="#IstioCondition">IstioCondition[]</a></code></td>
 <td>
 <p>Current service state of pod.
-More info: https://istio.io/docs/reference/config/config-status/
-+optional
-+patchMergeKey=type
-+patchStrategy=merge</p>
+More info: <a href="https://istio.io/docs/reference/config/config-status/">https://istio.io/docs/reference/config/config-status/</a></p>
 
 </td>
 <td>
@@ -37,10 +34,20 @@ No
 <td><code>validationMessages</code></td>
 <td><code><a href="https://istio.io/docs/reference/config/istio.analysis.v1alpha1.html#AnalysisMessageBase">AnalysisMessageBase[]</a></code></td>
 <td>
-<p>Includes any errors or warnings detected by Istio&rsquo;s analyzers.
-+optional
-+patchMergeKey=type
-+patchStrategy=merge</p>
+<p>Includes any errors or warnings detected by Istio&rsquo;s analyzers.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioStatus-observed_generation">
+<td><code>observedGeneration</code></td>
+<td><code>int64</code></td>
+<td>
+<p>Resource Generation to which the Reconciled Condition refers.
+When this value is not equal to the object&rsquo;s metadata generation, reconciled condition  calculation for the current
+generation is still in progress.  See <a href="https://istio.io/latest/docs/reference/config/config-status/">https://istio.io/latest/docs/reference/config/config-status/</a> for more info.</p>
 
 </td>
 <td>
@@ -89,8 +96,7 @@ No
 <td><code>lastProbeTime</code></td>
 <td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#timestamp">Timestamp</a></code></td>
 <td>
-<p>Last time we probed the condition.
-+optional</p>
+<p>Last time we probed the condition.</p>
 
 </td>
 <td>
@@ -101,8 +107,7 @@ No
 <td><code>lastTransitionTime</code></td>
 <td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#timestamp">Timestamp</a></code></td>
 <td>
-<p>Last time the condition transitioned from one status to another.
-+optional</p>
+<p>Last time the condition transitioned from one status to another.</p>
 
 </td>
 <td>
@@ -113,8 +118,7 @@ No
 <td><code>reason</code></td>
 <td><code>string</code></td>
 <td>
-<p>Unique, one-word, CamelCase reason for the condition&rsquo;s last transition.
-+optional</p>
+<p>Unique, one-word, CamelCase reason for the condition&rsquo;s last transition.</p>
 
 </td>
 <td>
@@ -125,8 +129,7 @@ No
 <td><code>message</code></td>
 <td><code>string</code></td>
 <td>
-<p>Human-readable message indicating details about last transition.
-+optional</p>
+<p>Human-readable message indicating details about last transition.</p>
 
 </td>
 <td>

@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"math"
@@ -1176,6 +1177,10 @@ func (i *Info) build(typ reflect.Type) (reflect.Value, interface{}, error) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"fmt"
 	"math"
 	"reflect"
@@ -1192,26 +1197,29 @@ type Info struct {
 	sync.Mutex
 	index   int
 	persist bool
-	anchors map[interface{}]anchor
+	anchors map[any]anchor
 }
 
-// NewInfo returns a new instance of *Info.
+// NewInfo returns a new instance of [*Info].
 func NewInfo() *Info {
 	return &Info{
-		anchors: map[interface{}]anchor{},
+		anchors: map[any]anchor{},
 	}
 }
 
 // AddAnchor anchors a new operator op, with type typ then returns the
 // anchor value.
-func (i *Info) AddAnchor(typ reflect.Type, op reflect.Value) reflect.Value {
+func (i *Info) AddAnchor(typ reflect.Type, op reflect.Value) (reflect.Value, error) {
 	i.Lock()
 	defer i.Unlock()
 
-	anc, key := i.build(typ)
+	anc, key, err := i.build(typ)
+	if err != nil {
+		return reflect.Value{}, err
+	}
 
 	if i.anchors == nil {
-		i.anchors = map[interface{}]anchor{}
+		i.anchors = map[any]anchor{}
 	}
 
 	i.anchors[key] = anchor{
@@ -1219,7 +1227,7 @@ func (i *Info) AddAnchor(typ reflect.Type, op reflect.Value) reflect.Value {
 		Operator: op,
 	}
 
-	return anc
+	return anc, nil
 }
 
 // DoAnchorsPersist returns true if anchors are persistent across tests.
@@ -1260,11 +1268,18 @@ func (i *Info) nextIndex() (n int) {
 // operator or not. If yes, this operator is returned with true. If
 // no, the value is returned as is with false.
 func (i *Info) ResolveAnchor(v reflect.Value) (reflect.Value, bool) {
-	if i == nil || len(i.anchors) == 0 || !v.CanInterface() {
+	if i == nil || !v.CanInterface() {
+		return v, false
+	}
+	// Shortcut
+	i.Lock()
+	la := len(i.anchors)
+	i.Unlock()
+	if la == 0 {
 		return v, false
 	}
 
-	var key interface{}
+	var key any
 sw:
 	switch v.Kind() {
 	case reflect.Int,
@@ -1296,7 +1311,7 @@ sw:
 		if typ.Comparable() {
 			// Check for anchorable types. No need of 2 passes here.
 			for _, at := range AnchorableTypes {
-				if typ == at.typ || at.typ.ConvertibleTo(typ) {
+				if typ == at.typ || at.typ.ConvertibleTo(typ) { // 1.17 ok as struct here
 					key = v.Interface()
 					break sw
 				}
@@ -1308,31 +1323,33 @@ sw:
 		return v, false
 	}
 
+	i.Lock()
+	defer i.Unlock()
 	if anchor, ok := i.anchors[key]; ok {
 		return anchor.Operator, true
 	}
 	return v, false
 }
 
-func (i *Info) setInt(typ reflect.Type, min int64) (reflect.Value, interface{}) {
+func (i *Info) setInt(typ reflect.Type, min int64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	nvm.SetInt(min + int64(i.nextIndex()))
 	return nvm, nvm.Interface()
 }
 
-func (i *Info) setUint(typ reflect.Type, max uint64) (reflect.Value, interface{}) {
+func (i *Info) setUint(typ reflect.Type, max uint64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	nvm.SetUint(max - uint64(i.nextIndex()))
 	return nvm, nvm.Interface()
 }
 
-func (i *Info) setFloat(typ reflect.Type, min float64) (reflect.Value, interface{}) {
+func (i *Info) setFloat(typ reflect.Type, min float64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	nvm.SetFloat(min + float64(i.nextIndex()))
 	return nvm, nvm.Interface()
 }
 
-func (i *Info) setComplex(typ reflect.Type, min float64) (reflect.Value, interface{}) {
+func (i *Info) setComplex(typ reflect.Type, min float64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	min += float64(i.nextIndex())
 	nvm.SetComplex(complex(min, min))
@@ -1342,74 +1359,92 @@ func (i *Info) setComplex(typ reflect.Type, min float64) (reflect.Value, interfa
 // build builds a new value of type "typ" and returns it under two
 // forms:
 //   - the new value itself as a reflect.Value;
-//   - an interface{} usable as a key in an AnchorsSet map.
-func (i *Info) build(typ reflect.Type) (reflect.Value, interface{}) {
+//   - an any usable as a key in an AnchorsSet map.
+//
+// It returns an error if "typ" kind is not recognized or if it is a
+// non-anchorable struct.
+func (i *Info) build(typ reflect.Type) (reflect.Value, any, error) {
 	// For each numeric type, anchor the operator on a number close to
 	// the limit of this type, but not at the extreme limit to avoid
 	// edge cases where these limits are used in real world and so avoid
 	// collisions
 	switch typ.Kind() {
 	case reflect.Int:
-		return i.setInt(typ, int64(^int(^uint(0)>>1))+1004293)
+		nvm, iface := i.setInt(typ, int64(^int(^uint(0)>>1))+1004293)
+		return nvm, iface, nil
 	case reflect.Int8:
-		return i.setInt(typ, math.MinInt8+13)
+		nvm, iface := i.setInt(typ, math.MinInt8+13)
+		return nvm, iface, nil
 	case reflect.Int16:
-		return i.setInt(typ, math.MinInt16+1049)
+		nvm, iface := i.setInt(typ, math.MinInt16+1049)
+		return nvm, iface, nil
 	case reflect.Int32:
-		return i.setInt(typ, math.MinInt32+1004293)
+		nvm, iface := i.setInt(typ, math.MinInt32+1004293)
+		return nvm, iface, nil
 	case reflect.Int64:
-		return i.setInt(typ, math.MinInt64+1000424443)
+		nvm, iface := i.setInt(typ, math.MinInt64+1000424443)
+		return nvm, iface, nil
 
 	case reflect.Uint:
-		return i.setUint(typ, uint64(^uint(0))-1004293)
+		nvm, iface := i.setUint(typ, uint64(^uint(0))-1004293)
+		return nvm, iface, nil
 	case reflect.Uint8:
-		return i.setUint(typ, math.MaxUint8-29)
+		nvm, iface := i.setUint(typ, math.MaxUint8-29)
+		return nvm, iface, nil
 	case reflect.Uint16:
-		return i.setUint(typ, math.MaxUint16-2099)
+		nvm, iface := i.setUint(typ, math.MaxUint16-2099)
+		return nvm, iface, nil
 	case reflect.Uint32:
-		return i.setUint(typ, math.MaxUint32-2008571)
+		nvm, iface := i.setUint(typ, math.MaxUint32-2008571)
+		return nvm, iface, nil
 	case reflect.Uint64:
-		return i.setUint(typ, math.MaxUint64-2000848901)
+		nvm, iface := i.setUint(typ, math.MaxUint64-2000848901)
+		return nvm, iface, nil
 	case reflect.Uintptr:
-		return i.setUint(typ, uint64(^uintptr(0))-2000848901)
+		nvm, iface := i.setUint(typ, uint64(^uintptr(0))-2000848901)
+		return nvm, iface, nil
 
 	case reflect.Float32:
-		return i.setFloat(typ, -(1<<24)+104243)
+		nvm, iface := i.setFloat(typ, -(1<<24)+104243)
+		return nvm, iface, nil
 	case reflect.Float64:
-		return i.setFloat(typ, -(1<<53)+100004243)
+		nvm, iface := i.setFloat(typ, -(1<<53)+100004243)
+		return nvm, iface, nil
 
 	case reflect.Complex64:
-		return i.setComplex(typ, -(1<<24)+104243)
+		nvm, iface := i.setComplex(typ, -(1<<24)+104243)
+		return nvm, iface, nil
 	case reflect.Complex128:
-		return i.setComplex(typ, -(1<<53)+100004243)
+		nvm, iface := i.setComplex(typ, -(1<<53)+100004243)
+		return nvm, iface, nil
 
 	case reflect.String:
 		nvm := reflect.New(typ).Elem()
 		nvm.SetString(fmt.Sprintf("<testdeep@anchor#%d>", i.nextIndex()))
-		return nvm, nvm.Interface()
+		return nvm, nvm.Interface(), nil
 
 	case reflect.Chan:
 		nvm := reflect.MakeChan(typ, 0)
-		return nvm, nvm.Pointer()
+		return nvm, nvm.Pointer(), nil
 
 	case reflect.Map:
 		nvm := reflect.MakeMap(typ)
-		return nvm, nvm.Pointer()
+		return nvm, nvm.Pointer(), nil
 
 	case reflect.Slice:
-		nvm := reflect.MakeSlice(typ, 0, 0)
-		return nvm, nvm.Pointer()
+		nvm := reflect.MakeSlice(typ, 0, 1) // cap=1 to avoid same ptr below
+		return nvm, nvm.Pointer(), nil
 
 	case reflect.Ptr:
 		nvm := reflect.New(typ.Elem())
-		return nvm, nvm.Pointer()
+		return nvm, nvm.Pointer(), nil
 
 	case reflect.Struct:
 		// First pass for the exact type
 		for _, at := range AnchorableTypes {
 			if typ == at.typ {
 				nvm := at.builder.Call([]reflect.Value{reflect.ValueOf(i.nextIndex())})[0]
-				return nvm, nvm.Interface()
+				return nvm, nvm.Interface(), nil
 			}
 		}
 		// Second pass for convertible type
@@ -1417,13 +1452,21 @@ func (i *Info) build(typ reflect.Type) (reflect.Value, interface{}) {
 			if at.typ.ConvertibleTo(typ) {
 				nvm := at.builder.Call([]reflect.Value{reflect.ValueOf(i.nextIndex())})[0].
 					Convert(typ)
-				return nvm, nvm.Interface()
+				return nvm, nvm.Interface(), nil
 			}
 		}
-		panic(typ.String() + " struct type is not supported as an anchor. Try AddAnchorableStructType")
+		return reflect.Value{}, nil,
+			errors.New(typ.String() + " struct type is not supported as an anchor. Try AddAnchorableStructType")
 
 	default:
+<<<<<<< HEAD
 		panic(typ.Kind().String() + " kind is not supported as an anchor")
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		panic(typ.Kind().String() + " kind is not supported as an anchor")
+=======
+		return reflect.Value{}, nil,
+			errors.New(typ.Kind().String() + " kind is not supported as an anchor")
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 }

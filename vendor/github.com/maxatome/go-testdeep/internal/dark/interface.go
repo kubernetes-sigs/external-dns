@@ -16,6 +16,7 @@ import (
 //
 // It returns (nil, false) if the data behind val can not be retrieved
 <<<<<<< HEAD
+<<<<<<< HEAD
 // as an any interface (aka struct private + non-copyable field).
 var GetInterface = func(val reflect.Value, force bool) (any, bool) {
 	if !val.IsValid() {
@@ -51,6 +52,13 @@ func MustGetInterface(val reflect.Value) any {
 =======
 // as an interface{} (aka struct private + non-copyable field).
 var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// as an interface{} (aka struct private + non-copyable field).
+var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
+=======
+// as an any interface (aka struct private + non-copyable field).
+var GetInterface = func(val reflect.Value, force bool) (any, bool) {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if !val.IsValid() {
 		return nil, true
 	}
@@ -79,8 +87,14 @@ var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
 
 // MustGetInterface does its best to return the data behind val. If it
 // fails (struct private + non-copyable field), it panics.
+<<<<<<< HEAD
 func MustGetInterface(val reflect.Value) interface{} {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func MustGetInterface(val reflect.Value) interface{} {
+=======
+func MustGetInterface(val reflect.Value) any {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	ret, ok := GetInterface(val, true)
 	if ok {
 		return ret

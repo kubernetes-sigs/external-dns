@@ -86,9 +86,16 @@ func (objMgr *ObjectManager) UpdateNetworkView(ref string, name string, comment 
 	}
 	cleanName := strings.TrimSpace(name)
 	if cleanName != "" {
+<<<<<<< HEAD
 		nv.Name = cleanName
 	}
 	nv.Comment = comment
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		nv.Name = &cleanName
+	}
+	nv.Comment = &comment
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	nv.Ea = setEas
 
 	updatedRef, err := objMgr.connector.UpdateObject(nv, ref)

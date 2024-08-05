@@ -42,6 +42,7 @@ const (
 	SSN               string = `^\d{3}[- ]?\d{2}[- ]?\d{4}$`
 	WinPath           string = `^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$`
 	UnixPath          string = `^(/[^/\x00]*)+/?$`
+<<<<<<< HEAD
 	Semver            string = "^v?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(-(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\\+[0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*)?$"
 	tagName           string = "valid"
 	hasLowerCase      string = ".*[[:lower:]]"
@@ -104,4 +105,75 @@ var (
 	rxHasWhitespaceOnly = regexp.MustCompile(hasWhitespaceOnly)
 	rxIMEI              = regexp.MustCompile(IMEI)
 	rxIMSI              = regexp.MustCompile(IMSI)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	WinARPath         string = `^(?:(?:[a-zA-Z]:|\\\\[a-z0-9_.$●-]+\\[a-z0-9_.$●-]+)\\|\\?[^\\/:*?"<>|\r\n]+\\?)(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$`
+	UnixARPath        string = `^((\.{0,2}/)?([^/\x00]*))+/?$`
+	Semver            string = "^v?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(-(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\\+[0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*)?$"
+	tagName           string = "valid"
+	hasLowerCase      string = ".*[[:lower:]]"
+	hasUpperCase      string = ".*[[:upper:]]"
+	hasWhitespace     string = ".*[[:space:]]"
+	hasWhitespaceOnly string = "^[[:space:]]+$"
+	IMEI              string = "^[0-9a-f]{14}$|^\\d{15}$|^\\d{18}$"
+	IMSI              string = "^\\d{14,15}$"
+	E164              string = `^\+?[1-9]\d{1,14}$`
+)
+
+// Used by IsFilePath func
+const (
+	// Unknown is unresolved OS type
+	Unknown = iota
+	// Win is Windows type
+	Win
+	// Unix is *nix OS types
+	Unix
+)
+
+var (
+	userRegexp          = regexp.MustCompile("^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+$")
+	hostRegexp          = regexp.MustCompile("^[^\\s]+\\.[^\\s]+$")
+	userDotRegexp       = regexp.MustCompile("(^[.]{1})|([.]{1}$)|([.]{2,})")
+	rxEmail             = regexp.MustCompile(Email)
+	rxCreditCard        = regexp.MustCompile(CreditCard)
+	rxISBN10            = regexp.MustCompile(ISBN10)
+	rxISBN13            = regexp.MustCompile(ISBN13)
+	rxUUID3             = regexp.MustCompile(UUID3)
+	rxUUID4             = regexp.MustCompile(UUID4)
+	rxUUID5             = regexp.MustCompile(UUID5)
+	rxUUID              = regexp.MustCompile(UUID)
+	rxAlpha             = regexp.MustCompile(Alpha)
+	rxAlphanumeric      = regexp.MustCompile(Alphanumeric)
+	rxNumeric           = regexp.MustCompile(Numeric)
+	rxInt               = regexp.MustCompile(Int)
+	rxFloat             = regexp.MustCompile(Float)
+	rxHexadecimal       = regexp.MustCompile(Hexadecimal)
+	rxHexcolor          = regexp.MustCompile(Hexcolor)
+	rxRGBcolor          = regexp.MustCompile(RGBcolor)
+	rxASCII             = regexp.MustCompile(ASCII)
+	rxPrintableASCII    = regexp.MustCompile(PrintableASCII)
+	rxMultibyte         = regexp.MustCompile(Multibyte)
+	rxFullWidth         = regexp.MustCompile(FullWidth)
+	rxHalfWidth         = regexp.MustCompile(HalfWidth)
+	rxBase64            = regexp.MustCompile(Base64)
+	rxDataURI           = regexp.MustCompile(DataURI)
+	rxMagnetURI         = regexp.MustCompile(MagnetURI)
+	rxLatitude          = regexp.MustCompile(Latitude)
+	rxLongitude         = regexp.MustCompile(Longitude)
+	rxDNSName           = regexp.MustCompile(DNSName)
+	rxURL               = regexp.MustCompile(URL)
+	rxSSN               = regexp.MustCompile(SSN)
+	rxWinPath           = regexp.MustCompile(WinPath)
+	rxUnixPath          = regexp.MustCompile(UnixPath)
+	rxARWinPath         = regexp.MustCompile(WinARPath)
+	rxARUnixPath        = regexp.MustCompile(UnixARPath)
+	rxSemver            = regexp.MustCompile(Semver)
+	rxHasLowerCase      = regexp.MustCompile(hasLowerCase)
+	rxHasUpperCase      = regexp.MustCompile(hasUpperCase)
+	rxHasWhitespace     = regexp.MustCompile(hasWhitespace)
+	rxHasWhitespaceOnly = regexp.MustCompile(hasWhitespaceOnly)
+	rxIMEI              = regexp.MustCompile(IMEI)
+	rxIMSI              = regexp.MustCompile(IMSI)
+	rxE164              = regexp.MustCompile(E164)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )

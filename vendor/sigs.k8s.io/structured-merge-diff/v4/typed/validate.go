@@ -33,6 +33,7 @@ func (tv TypedValue) walker() *validatingObjectWalker {
 	v.value = tv.value
 	v.schema = tv.schema
 	v.typeRef = tv.typeRef
+<<<<<<< HEAD
 	if v.allocator == nil {
 		v.allocator = value.NewFreelistAllocator()
 	}
@@ -132,6 +133,118 @@ func (v *validatingObjectWalker) visitListItems(t *schema.List, list value.List)
 				return
 			}
 			if observedKeys.Has(pe) {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	v.allowDuplicates = false
+	if v.allocator == nil {
+		v.allocator = value.NewFreelistAllocator()
+	}
+	return v
+}
+
+func (v *validatingObjectWalker) finished() {
+	v.schema = nil
+	v.typeRef = schema.TypeRef{}
+	vPool.Put(v)
+}
+
+type validatingObjectWalker struct {
+	value   value.Value
+	schema  *schema.Schema
+	typeRef schema.TypeRef
+	// If set to true, duplicates will be allowed in
+	// associativeLists/sets.
+	allowDuplicates bool
+
+	// Allocate only as many walkers as needed for the depth by storing them here.
+	spareWalkers *[]*validatingObjectWalker
+	allocator    value.Allocator
+}
+
+func (v *validatingObjectWalker) prepareDescent(tr schema.TypeRef) *validatingObjectWalker {
+	if v.spareWalkers == nil {
+		// first descent.
+		v.spareWalkers = &[]*validatingObjectWalker{}
+	}
+	var v2 *validatingObjectWalker
+	if n := len(*v.spareWalkers); n > 0 {
+		v2, *v.spareWalkers = (*v.spareWalkers)[n-1], (*v.spareWalkers)[:n-1]
+	} else {
+		v2 = &validatingObjectWalker{}
+	}
+	*v2 = *v
+	v2.typeRef = tr
+	return v2
+}
+
+func (v *validatingObjectWalker) finishDescent(v2 *validatingObjectWalker) {
+	// if the descent caused a realloc, ensure that we reuse the buffer
+	// for the next sibling.
+	*v.spareWalkers = append(*v.spareWalkers, v2)
+}
+
+func (v *validatingObjectWalker) validate(prefixFn func() string) ValidationErrors {
+	return resolveSchema(v.schema, v.typeRef, v.value, v).WithLazyPrefix(prefixFn)
+}
+
+func validateScalar(t *schema.Scalar, v value.Value, prefix string) (errs ValidationErrors) {
+	if v == nil {
+		return nil
+	}
+	if v.IsNull() {
+		return nil
+	}
+	switch *t {
+	case schema.Numeric:
+		if !v.IsFloat() && !v.IsInt() {
+			// TODO: should the schema separate int and float?
+			return errorf("%vexpected numeric (int or float), got %T", prefix, v.Unstructured())
+		}
+	case schema.String:
+		if !v.IsString() {
+			return errorf("%vexpected string, got %#v", prefix, v)
+		}
+	case schema.Boolean:
+		if !v.IsBool() {
+			return errorf("%vexpected boolean, got %v", prefix, v)
+		}
+	case schema.Untyped:
+		if !v.IsFloat() && !v.IsInt() && !v.IsString() && !v.IsBool() {
+			return errorf("%vexpected any scalar, got %v", prefix, v)
+		}
+	default:
+		return errorf("%vunexpected scalar type in schema: %v", prefix, *t)
+	}
+	return nil
+}
+
+func (v *validatingObjectWalker) doScalar(t *schema.Scalar) ValidationErrors {
+	if errs := validateScalar(t, v.value, ""); len(errs) > 0 {
+		return errs
+	}
+	return nil
+}
+
+func (v *validatingObjectWalker) visitListItems(t *schema.List, list value.List) (errs ValidationErrors) {
+	observedKeys := fieldpath.MakePathElementSet(list.Length())
+	for i := 0; i < list.Length(); i++ {
+		child := list.AtUsing(v.allocator, i)
+		defer v.allocator.Free(child)
+		var pe fieldpath.PathElement
+		if t.ElementRelationship != schema.Associative {
+			pe.Index = &i
+		} else {
+			var err error
+			pe, err = listItemToPathElement(v.allocator, v.schema, t, child)
+			if err != nil {
+				errs = append(errs, errorf("element %v: %v", i, err.Error())...)
+				// If we can't construct the path element, we can't
+				// even report errors deeper in the schema, so bail on
+				// this element.
+				return
+			}
+			if observedKeys.Has(pe) && !v.allowDuplicates {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 				errs = append(errs, errorf("duplicate entries for key %v", pe.String())...)
 			}
 			observedKeys.Insert(pe)

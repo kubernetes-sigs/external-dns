@@ -18,6 +18,9 @@ type AccountSettings struct {
 
 	// A plan name like "longview-3"..."longview-100", or a nil value for to cancel any existing subscription plan.
 	LongviewSubscription *string `json:"longview_subscription"`
+
+	// A string like "disabled", "suspended", or "active" describing the status of this account’s Object Storage service enrollment.
+	ObjectStorage *string `json:"object_storage"`
 }
 
 // AccountSettingsUpdateOptions are the updateable account wide flags or plans that effect new resources.
@@ -26,6 +29,7 @@ type AccountSettingsUpdateOptions struct {
 	BackupsEnabled *bool `json:"backups_enabled,omitempty"`
 
 	// A plan name like "longview-3"..."longview-100", or a nil value for to cancel any existing subscription plan.
+	// Deprecated: Use PUT /longview/plan instead to update the LongviewSubscription
 	LongviewSubscription *string `json:"longview_subscription,omitempty"`
 
 	// The default network helper setting for all new Linodes and Linode Configs for all users on the account.
@@ -34,6 +38,7 @@ type AccountSettingsUpdateOptions struct {
 
 // GetAccountSettings gets the account wide flags or plans that effect new resources
 func (c *Client) GetAccountSettings(ctx context.Context) (*AccountSettings, error) {
+<<<<<<< HEAD
 	e, err := c.AccountSettings.Endpoint()
 	if err != nil {
 		return nil, err
@@ -200,6 +205,19 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	e, err := c.AccountSettings.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&AccountSettings{}).Get(e))
+
+=======
+	req := c.R(ctx).SetResult(&AccountSettings{})
+	e := "account/settings"
+	r, err := coupleAPIErrors(req.Get(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}
@@ -208,15 +226,13 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 }
 
 // UpdateAccountSettings updates the settings associated with the account
-func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSettingsUpdateOptions) (*AccountSettings, error) {
-	var body string
-
-	e, err := c.AccountSettings.Endpoint()
-
+func (c *Client) UpdateAccountSettings(ctx context.Context, opts AccountSettingsUpdateOptions) (*AccountSettings, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	req := c.R(ctx).SetResult(&AccountSettings{})
 
 	if bodyData, err := json.Marshal(settings); err == nil {
@@ -230,6 +246,24 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 		Put(e))
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	req := c.R(ctx).SetResult(&AccountSettings{})
+
+	if bodyData, err := json.Marshal(settings); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+=======
+	req := c.R(ctx).SetResult(&AccountSettings{}).SetBody(string(body))
+	e := "account/settings"
+	r, err := coupleAPIErrors(req.Put(e))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

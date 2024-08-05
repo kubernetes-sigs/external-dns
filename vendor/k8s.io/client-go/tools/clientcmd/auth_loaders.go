@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -357,6 +357,11 @@ func promptForString(field string, r io.Reader, show bool) (result string, err e
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"golang.org/x/crypto/ssh/terminal"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"golang.org/x/crypto/ssh/terminal"
+=======
+	"golang.org/x/term"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	clientauth "k8s.io/client-go/tools/auth"
 )
@@ -384,15 +389,15 @@ func (a *PromptingAuthLoader) LoadAuth(path string) (*clientauth.Info, error) {
 	// Prompt for user/pass and write a file if none exists.
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		authPtr, err := a.Prompt()
-		auth := *authPtr
 		if err != nil {
 			return nil, err
 		}
+		auth := *authPtr
 		data, err := json.Marshal(auth)
 		if err != nil {
 			return &auth, err
 		}
-		err = ioutil.WriteFile(path, data, 0600)
+		err = os.WriteFile(path, data, 0600)
 		return &auth, err
 	}
 	authPtr, err := clientauth.LoadFromFile(path)
@@ -423,9 +428,17 @@ func promptForString(field string, r io.Reader, show bool) (result string, err e
 		_, err = fmt.Fscan(r, &result)
 	} else {
 		var data []byte
+<<<<<<< HEAD
 		if terminal.IsTerminal(int(os.Stdin.Fd())) {
 			data, err = terminal.ReadPassword(int(os.Stdin.Fd()))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			data, err = terminal.ReadPassword(int(os.Stdin.Fd()))
+=======
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			data, err = term.ReadPassword(int(os.Stdin.Fd()))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			result = string(data)
 		} else {
 			return "", fmt.Errorf("error reading input for %s", field)

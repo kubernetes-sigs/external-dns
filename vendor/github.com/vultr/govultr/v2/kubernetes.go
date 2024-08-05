@@ -68,6 +68,7 @@ type NodePool struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Nodes        []Node `json:"nodes"`
 }
 
@@ -217,6 +218,60 @@ type NodePoolReqUpdate struct {
 	MaxNodes     int     `json:"max_nodes,omitempty"`
 	AutoScaler   *bool   `json:"auto_scaler,omitempty"`
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	MinNodes     int    `json:"min_nodes"`
+	MaxNodes     int    `json:"max_nodes"`
+	AutoScaler   bool   `json:"auto_scaler"`
+	Tag          string `json:"tag"`
+	Nodes        []Node `json:"nodes"`
+}
+
+// Node represents a node that will live within a nodepool
+type Node struct {
+	ID          string `json:"id"`
+	DateCreated string `json:"date_created"`
+	Label       string `json:"label"`
+	Status      string `json:"status"`
+}
+
+// KubeConfig will contain the kubeconfig b64 encoded
+type KubeConfig struct {
+	KubeConfig string `json:"kube_config"`
+}
+
+// ClusterReq struct used to create a cluster
+type ClusterReq struct {
+	Label     string        `json:"label"`
+	Region    string        `json:"region"`
+	Version   string        `json:"version"`
+	NodePools []NodePoolReq `json:"node_pools"`
+}
+
+// ClusterReqUpdate struct used to update update a cluster
+type ClusterReqUpdate struct {
+	Label string `json:"label"`
+}
+
+// NodePoolReq struct used to create a node pool
+type NodePoolReq struct {
+	NodeQuantity int    `json:"node_quantity"`
+	Label        string `json:"label"`
+	Plan         string `json:"plan"`
+	Tag          string `json:"tag"`
+	MinNodes     int    `json:"min_nodes,omitempty"`
+	MaxNodes     int    `json:"max_nodes,omitempty"`
+	AutoScaler   *bool  `json:"auto_scaler"`
+}
+
+// NodePoolReqUpdate struct used to update a node pool
+type NodePoolReqUpdate struct {
+	NodeQuantity int     `json:"node_quantity,omitempty"`
+	Tag          *string `json:"tag,omitempty"`
+	MinNodes     int     `json:"min_nodes,omitempty"`
+	MaxNodes     int     `json:"max_nodes,omitempty"`
+	AutoScaler   *bool   `json:"auto_scaler,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 type vkeClustersBase struct {

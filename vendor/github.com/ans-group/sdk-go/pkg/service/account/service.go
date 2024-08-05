@@ -6,6 +6,17 @@ import (
 
 // AccountService is an interface for managing account
 type AccountService interface {
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	GetClients(parameters connection.APIRequestParameters) ([]Client, error)
+	GetClientsPaginated(parameters connection.APIRequestParameters) (*connection.Paginated[Client], error)
+	GetClient(clientID int) (Client, error)
+	CreateClient(req CreateClientRequest) (int, error)
+	PatchClient(clientID int, patch PatchClientRequest) error
+	DeleteClient(clientID int) error
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	GetContacts(parameters connection.APIRequestParameters) ([]Contact, error)
 	GetContactsPaginated(parameters connection.APIRequestParameters) (*connection.Paginated[Contact], error)
 	GetContact(contactID int) (Contact, error)

@@ -2,6 +2,7 @@ package godo
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"path"
 )
@@ -9,6 +10,7 @@ import (
 const certificatesBasePath = "/v2/certificates"
 
 // CertificatesService is an interface for managing certificates with the DigitalOcean API.
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -48,9 +50,15 @@ const certificatesBasePath = "/v2/certificates"
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#certificates
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2/#certificates
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Certificates
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type CertificatesService interface {
 	Get(context.Context, string) (*Certificate, *Response, error)
 	List(context.Context, *ListOptions) ([]Certificate, *Response, error)
+	ListByName(context.Context, string, *ListOptions) ([]Certificate, *Response, error)
 	Create(context.Context, *CertificateRequest) (*Certificate, *Response, error)
 	Delete(context.Context, string) (*Response, error)
 }
@@ -137,6 +145,39 @@ func (c *CertificatesServiceOp) List(ctx context.Context, opt *ListOptions) ([]C
 	}
 
 	return root.Certificates, resp, nil
+}
+
+func (c *CertificatesServiceOp) ListByName(ctx context.Context, name string, opt *ListOptions) ([]Certificate, *Response, error) {
+
+	if len(name) < 1 {
+		return nil, nil, NewArgError("name", "cannot be an empty string")
+	}
+
+	path := fmt.Sprintf("%s?name=%s", certificatesBasePath, name)
+	urlStr, err := addOptions(path, opt)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := c.client.NewRequest(ctx, http.MethodGet, urlStr, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	root := new(certificatesRoot)
+	resp, err := c.client.Do(ctx, req, root)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	if l := root.Links; l != nil {
+		resp.Links = l
+	}
+	if m := root.Meta; m != nil {
+		resp.Meta = m
+	}
+
+	return root.Certificates, resp, err
 }
 
 // Create a new certificate with provided configuration.

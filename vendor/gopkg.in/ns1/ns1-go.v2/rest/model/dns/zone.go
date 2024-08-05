@@ -1,7 +1,10 @@
 package dns
 
-import "encoding/json"
-import "gopkg.in/ns1/ns1-go.v2/rest/model/data"
+import (
+	"encoding/json"
+
+	"gopkg.in/ns1/ns1-go.v2/rest/model/data"
+)
 
 // Zone wraps an NS1 /zone resource
 type Zone struct {
@@ -11,18 +14,20 @@ type Zone struct {
 	// Read-only fields
 	DNSServers   []string `json:"dns_servers,omitempty"`
 	NetworkPools []string `json:"network_pools,omitempty"`
-	Pool         string   `json:"pool,omitempty"` // Deprecated
+	Pool         string   `json:"pool,omitempty"`       // Deprecated
+	LocalTags    []string `json:"local_tags,omitempty"` // Only relevant for DDI
 
 	ID   string `json:"id,omitempty"`
 	Zone string `json:"zone,omitempty"`
 
-	TTL        int    `json:"ttl,omitempty"`
-	NxTTL      int    `json:"nx_ttl,omitempty"`
-	Retry      int    `json:"retry,omitempty"`
-	Serial     int    `json:"serial,omitempty"`
-	Refresh    int    `json:"refresh,omitempty"`
-	Expiry     int    `json:"expiry,omitempty"`
-	Hostmaster string `json:"hostmaster,omitempty"`
+	TTL           int    `json:"ttl,omitempty"`
+	NxTTL         int    `json:"nx_ttl,omitempty"`
+	Retry         int    `json:"retry,omitempty"`
+	Serial        int    `json:"serial,omitempty"`
+	Refresh       int    `json:"refresh,omitempty"`
+	Expiry        int    `json:"expiry,omitempty"`
+	Hostmaster    string `json:"hostmaster,omitempty"`
+	PrimaryMaster string `json:"primary_master,omitempty"`
 
 	// If this is a linked zone, Link points to an existing standard zone,
 	// reusing its configuration and records. Link is a zones' domain name.
@@ -37,6 +42,13 @@ type Zone struct {
 	Primary *ZonePrimary `json:"primary,omitempty"`
 	// Secondary contains info for slaving the zone to a primary dns server.
 	Secondary *ZoneSecondary `json:"secondary,omitempty"`
+
+	// Whether or not DNSSEC is enabled on the zone. Note we use a pointer so
+	// leaving this unset will not change a previous setting.
+	DNSSEC *bool `json:"dnssec,omitempty"`
+
+	// Contains the key/value tag information associated to the zone
+	Tags map[string]string `json:"tags,omitempty"` // Only relevant for DDI
 }
 
 func (z Zone) String() string {
@@ -45,13 +57,19 @@ func (z Zone) String() string {
 
 // ZoneRecord wraps Zone's "records" attribute
 type ZoneRecord struct {
-	Domain   string      `json:"Domain,omitempty"`
+	Domain   string      `json:"domain,omitempty"`
 	ID       string      `json:"id,omitempty"`
 	Link     string      `json:"link,omitempty"`
 	ShortAns []string    `json:"short_answers,omitempty"`
 	Tier     json.Number `json:"tier,omitempty"`
 	TTL      int         `json:"ttl,omitempty"`
 	Type     string      `json:"type,omitempty"`
+
+	// Contains the key/value tag information associated to the zone
+	Tags map[string]string `json:"tags,omitempty"` // Only relevant for DDI
+
+	// Read-only fields
+	LocalTags []string `json:"local_tags,omitempty"` // Only relevant for DDI
 }
 
 // ZonePrimary wraps a Zone's "primary" attribute
@@ -83,6 +101,10 @@ type ZoneSecondary struct {
 	PrimaryIP   string `json:"primary_ip,omitempty"`
 	PrimaryPort int    `json:"primary_port,omitempty"`
 	Enabled     bool   `json:"enabled"`
+
+	OtherIPs      []string `json:"other_ips,omitempty"`
+	OtherPorts    []int    `json:"other_ports,omitempty"`
+	OtherNetworks []int    `json:"other_networks,omitempty"`
 
 	TSIG *TSIG `json:"tsig,omitempty"`
 }
@@ -122,7 +144,7 @@ func (z *Zone) MakePrimary(secondaries ...ZoneSecondaryServer) {
 }
 
 // MakeSecondary enables Secondary, disables Primary, and sets secondary's
-// Primary_ip to provided ip.
+// Primary_ip to provided ip.  Sets secondary's primary_port to default of 53.
 func (z *Zone) MakeSecondary(ip string) {
 	z.Secondary = &ZoneSecondary{
 		Enabled:     true,
@@ -155,4 +177,5 @@ func (z *Zone) LinkTo(to string) {
 	z.Pool = ""
 	z.Secondary = nil
 	z.Link = &to
+	z.DNSSEC = nil
 }

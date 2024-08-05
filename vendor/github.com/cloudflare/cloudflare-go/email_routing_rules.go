@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -103,6 +104,112 @@ func (api *API) ListEmailRoutingRules(ctx context.Context, rc *ResourceContainer
 	var rules []EmailRoutingRule
 	var rResponse ListEmailRoutingRuleResponse
 	for {
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/goccy/go-json"
+)
+
+var ErrMissingRuleID = errors.New("required rule id missing")
+
+type EmailRoutingRuleMatcher struct {
+	Type  string `json:"type,omitempty"`
+	Field string `json:"field,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type EmailRoutingRuleAction struct {
+	Type  string   `json:"type,omitempty"`
+	Value []string `json:"value,omitempty"`
+}
+
+type EmailRoutingRule struct {
+	Tag      string                    `json:"tag,omitempty"`
+	Name     string                    `json:"name,omitempty"`
+	Priority int                       `json:"priority,omitempty"`
+	Enabled  *bool                     `json:"enabled,omitempty"`
+	Matchers []EmailRoutingRuleMatcher `json:"matchers,omitempty"`
+	Actions  []EmailRoutingRuleAction  `json:"actions,omitempty"`
+}
+
+type ListEmailRoutingRulesParameters struct {
+	Enabled *bool `url:"enabled,omitempty"`
+	ResultInfo
+}
+
+type ListEmailRoutingRuleResponse struct {
+	Result     []EmailRoutingRule `json:"result"`
+	ResultInfo `json:"result_info,omitempty"`
+	Response
+}
+
+type CreateEmailRoutingRuleParameters struct {
+	Matchers []EmailRoutingRuleMatcher `json:"matchers,omitempty"`
+	Actions  []EmailRoutingRuleAction  `json:"actions,omitempty"`
+	Name     string                    `json:"name,omitempty"`
+	Enabled  *bool                     `json:"enabled,omitempty"`
+	Priority int                       `json:"priority,omitempty"`
+}
+
+type CreateEmailRoutingRuleResponse struct {
+	Result EmailRoutingRule `json:"result"`
+	Response
+}
+
+type GetEmailRoutingRuleResponse struct {
+	Result EmailRoutingRule `json:"result"`
+	Response
+}
+
+type UpdateEmailRoutingRuleParameters struct {
+	Matchers []EmailRoutingRuleMatcher `json:"matchers,omitempty"`
+	Actions  []EmailRoutingRuleAction  `json:"actions,omitempty"`
+	Name     string                    `json:"name,omitempty"`
+	Enabled  *bool                     `json:"enabled,omitempty"`
+	Priority int                       `json:"priority,omitempty"`
+	RuleID   string
+}
+
+type EmailRoutingCatchAllRule struct {
+	Tag      string                    `json:"tag,omitempty"`
+	Name     string                    `json:"name,omitempty"`
+	Enabled  *bool                     `json:"enabled,omitempty"`
+	Matchers []EmailRoutingRuleMatcher `json:"matchers,omitempty"`
+	Actions  []EmailRoutingRuleAction  `json:"actions,omitempty"`
+}
+
+type EmailRoutingCatchAllRuleResponse struct {
+	Result EmailRoutingCatchAllRule `json:"result"`
+	Response
+}
+
+// ListEmailRoutingRules Lists existing routing rules.
+//
+// API reference: https://api.cloudflare.com/#email-routing-routing-rules-list-routing-rules
+func (api *API) ListEmailRoutingRules(ctx context.Context, rc *ResourceContainer, params ListEmailRoutingRulesParameters) ([]EmailRoutingRule, *ResultInfo, error) {
+	if rc.Identifier == "" {
+		return []EmailRoutingRule{}, &ResultInfo{}, ErrMissingZoneID
+	}
+
+	autoPaginate := true
+	if params.PerPage >= 1 || params.Page >= 1 {
+		autoPaginate = false
+	}
+	if params.PerPage < 1 {
+		params.PerPage = 50
+	}
+	if params.Page < 1 {
+		params.Page = 1
+	}
+
+	var rules []EmailRoutingRule
+	var rResponse ListEmailRoutingRuleResponse
+	for {
+		rResponse = ListEmailRoutingRuleResponse{}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		uri := buildURI(fmt.Sprintf("/zones/%s/email/routing/rules", rc.Identifier), params)
 
 		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)

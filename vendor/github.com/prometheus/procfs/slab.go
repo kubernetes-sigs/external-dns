@@ -68,6 +68,7 @@ func parseV21SlabEntry(line string) (*Slab, error) {
 	l := slabSpace.ReplaceAllString(line, " ")
 	s := strings.Split(l, " ")
 	if len(s) != 16 {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("unable to parse: %q", line)
 	}
 	var err error
@@ -138,6 +139,79 @@ func parseSlabInfo21(r *bytes.Reader) (SlabInfo, error) {
 }
 
 // SlabInfo reads data from /proc/slabinfo
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		return nil, fmt.Errorf("%w: unable to parse: %q", ErrFileParse, line)
+	}
+	var err error
+	i := &Slab{Name: s[0]}
+	i.ObjActive, err = strconv.ParseInt(s[1], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.ObjNum, err = strconv.ParseInt(s[2], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.ObjSize, err = strconv.ParseInt(s[3], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.ObjPerSlab, err = strconv.ParseInt(s[4], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.PagesPerSlab, err = strconv.ParseInt(s[5], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.Limit, err = strconv.ParseInt(s[8], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.Batch, err = strconv.ParseInt(s[9], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.SharedFactor, err = strconv.ParseInt(s[10], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.SlabActive, err = strconv.ParseInt(s[13], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.SlabNum, err = strconv.ParseInt(s[14], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	i.SharedAvail, err = strconv.ParseInt(s[15], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
+}
+
+// parseSlabInfo21 is used to parse a slabinfo 2.1 file.
+func parseSlabInfo21(r *bytes.Reader) (SlabInfo, error) {
+	scanner := bufio.NewScanner(r)
+	s := SlabInfo{Slabs: []*Slab{}}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !shouldParseSlab(line) {
+			continue
+		}
+		slab, err := parseV21SlabEntry(line)
+		if err != nil {
+			return s, err
+		}
+		s.Slabs = append(s.Slabs, slab)
+	}
+	return s, nil
+}
+
+// SlabInfo reads data from `/proc/slabinfo`.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (fs FS) SlabInfo() (SlabInfo, error) {
 	// TODO: Consider passing options to allow for parsing different
 	// slabinfo versions. However, slabinfo 2.1 has been stable since

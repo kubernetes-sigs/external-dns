@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -34,6 +35,43 @@ type TeamsLocation struct {
 	AnonymizedLogsEnabled bool                   `json:"anonymized_logs_enabled"`
 	IPv4Destination       string                 `json:"ipv4_destination"`
 	ClientDefault         bool                   `json:"client_default"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+)
+
+type TeamsLocationsListResponse struct {
+	Response
+	ResultInfo `json:"result_info"`
+	Result     []TeamsLocation `json:"result"`
+}
+
+type TeamsLocationDetailResponse struct {
+	Response
+	Result TeamsLocation `json:"result"`
+}
+
+type TeamsLocationNetwork struct {
+	ID      string `json:"id"`
+	Network string `json:"network"`
+}
+
+type TeamsLocation struct {
+	ID                    string                 `json:"id"`
+	Name                  string                 `json:"name"`
+	Networks              []TeamsLocationNetwork `json:"networks"`
+	PolicyIDs             []string               `json:"policy_ids"`
+	Ip                    string                 `json:"ip,omitempty"`
+	Subdomain             string                 `json:"doh_subdomain"`
+	AnonymizedLogsEnabled bool                   `json:"anonymized_logs_enabled"`
+	IPv4Destination       string                 `json:"ipv4_destination"`
+	ClientDefault         bool                   `json:"client_default"`
+	ECSSupport            *bool                  `json:"ecs_support,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`

@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -46,6 +47,54 @@ type PagesDomainsResponse struct {
 type PagesDomainParameters struct {
 	AccountID   string
 	ProjectName string
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+)
+
+// PagesDomain represents a pages domain.
+type PagesDomain struct {
+	ID               string           `json:"id"`
+	Name             string           `json:"name"`
+	Status           string           `json:"status"`
+	VerificationData VerificationData `json:"verification_data"`
+	ValidationData   ValidationData   `json:"validation_data"`
+	ZoneTag          string           `json:"zone_tag"`
+	CreatedOn        *time.Time       `json:"created_on"`
+}
+
+// VerificationData represents verification data for a domain.
+type VerificationData struct {
+	Status string `json:"status"`
+}
+
+// ValidationData represents validation data for a domain.
+type ValidationData struct {
+	Status string `json:"status"`
+	Method string `json:"method"`
+}
+
+// PagesDomainsParameters represents parameters for a pages domains request.
+type PagesDomainsParameters struct {
+	AccountID   string
+	ProjectName string
+}
+
+// PagesDomainsResponse represents an API response for a pages domains request.
+type PagesDomainsResponse struct {
+	Response
+	Result []PagesDomain `json:"result,omitempty"`
+}
+
+// PagesDomainParameters represents parameters for a pages domain request.
+type PagesDomainParameters struct {
+	AccountID   string `json:"-"`
+	ProjectName string `json:"-"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	DomainName  string `json:"name,omitempty"`
 }
 

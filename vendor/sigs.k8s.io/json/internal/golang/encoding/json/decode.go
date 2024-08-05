@@ -75,6 +75,7 @@ import (
 // either be any string type, an integer, implement json.Unmarshaler, or
 // implement encoding.TextUnmarshaler.
 //
+<<<<<<< HEAD
 // If a JSON value is not appropriate for a given target type,
 // or if a JSON number overflows the target type, Unmarshal
 // skips that field and completes the unmarshaling as best it can.
@@ -93,6 +94,28 @@ import (
 // Instead, they are replaced by the Unicode replacement
 // character U+FFFD.
 //
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// If the JSON-encoded data contain a syntax error, Unmarshal returns a SyntaxError.
+//
+// If a JSON value is not appropriate for a given target type,
+// or if a JSON number overflows the target type, Unmarshal
+// skips that field and completes the unmarshaling as best it can.
+// If no more serious errors are encountered, Unmarshal returns
+// an UnmarshalTypeError describing the earliest such error. In any
+// case, it's not guaranteed that all the remaining fields following
+// the problematic one will be unmarshaled into the target object.
+//
+// The JSON null value unmarshals into an interface, map, pointer, or slice
+// by setting that Go value to nil. Because null is often used in JSON to mean
+// “not present,” unmarshaling a JSON null into any other Go type has no effect
+// on the value and produces no error.
+//
+// When unmarshaling quoted strings, invalid UTF-8 or
+// invalid UTF-16 surrogate pairs are not treated as an error.
+// Instead, they are replaced by the Unicode replacement
+// character U+FFFD.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func Unmarshal(data []byte, v any, opts ...UnmarshalOpt) error {
 	// Check for well-formedness.
 	// Avoids filling out half a data structure

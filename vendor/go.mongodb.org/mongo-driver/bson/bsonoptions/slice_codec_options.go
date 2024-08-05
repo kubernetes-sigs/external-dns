@@ -7,6 +7,7 @@
 package bsonoptions
 
 // SliceCodecOptions represents all possible options for slice encoding and decoding.
+<<<<<<< HEAD
 type SliceCodecOptions struct {
 	EncodeNilAsEmpty *bool // Specifies if a nil slice should encode as an empty array instead of null. Defaults to false.
 }
@@ -23,6 +24,36 @@ func (s *SliceCodecOptions) SetEncodeNilAsEmpty(b bool) *SliceCodecOptions {
 }
 
 // MergeSliceCodecOptions combines the given *SliceCodecOptions into a single *SliceCodecOptions in a last one wins fashion.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// Deprecated: Use the bson.Encoder and bson.Decoder configuration methods to set the desired BSON marshal
+// and unmarshal behavior instead.
+type SliceCodecOptions struct {
+	EncodeNilAsEmpty *bool // Specifies if a nil slice should encode as an empty array instead of null. Defaults to false.
+}
+
+// SliceCodec creates a new *SliceCodecOptions
+//
+// Deprecated: Use the bson.Encoder and bson.Decoder configuration methods to set the desired BSON marshal
+// and unmarshal behavior instead.
+func SliceCodec() *SliceCodecOptions {
+	return &SliceCodecOptions{}
+}
+
+// SetEncodeNilAsEmpty specifies  if a nil slice should encode as an empty array instead of null. Defaults to false.
+//
+// Deprecated: Use [go.mongodb.org/mongo-driver/bson.Encoder.NilSliceAsEmpty] instead.
+func (s *SliceCodecOptions) SetEncodeNilAsEmpty(b bool) *SliceCodecOptions {
+	s.EncodeNilAsEmpty = &b
+	return s
+}
+
+// MergeSliceCodecOptions combines the given *SliceCodecOptions into a single *SliceCodecOptions in a last one wins fashion.
+//
+// Deprecated: Merging options structs will not be supported in Go Driver 2.0. Users should create a
+// single options struct instead.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func MergeSliceCodecOptions(opts ...*SliceCodecOptions) *SliceCodecOptions {
 	s := SliceCodec()
 	for _, opt := range opts {

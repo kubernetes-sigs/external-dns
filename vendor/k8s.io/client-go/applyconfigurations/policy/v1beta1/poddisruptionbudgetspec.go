@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
+<<<<<<< HEAD
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
@@ -58,5 +59,57 @@ func (b *PodDisruptionBudgetSpecApplyConfiguration) WithSelector(value *v1.Label
 // If called multiple times, the MaxUnavailable field is set to the value of the last call.
 func (b *PodDisruptionBudgetSpecApplyConfiguration) WithMaxUnavailable(value intstr.IntOrString) *PodDisruptionBudgetSpecApplyConfiguration {
 	b.MaxUnavailable = &value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	v1beta1 "k8s.io/api/policy/v1beta1"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
+	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+)
+
+// PodDisruptionBudgetSpecApplyConfiguration represents an declarative configuration of the PodDisruptionBudgetSpec type for use
+// with apply.
+type PodDisruptionBudgetSpecApplyConfiguration struct {
+	MinAvailable               *intstr.IntOrString                     `json:"minAvailable,omitempty"`
+	Selector                   *v1.LabelSelectorApplyConfiguration     `json:"selector,omitempty"`
+	MaxUnavailable             *intstr.IntOrString                     `json:"maxUnavailable,omitempty"`
+	UnhealthyPodEvictionPolicy *v1beta1.UnhealthyPodEvictionPolicyType `json:"unhealthyPodEvictionPolicy,omitempty"`
+}
+
+// PodDisruptionBudgetSpecApplyConfiguration constructs an declarative configuration of the PodDisruptionBudgetSpec type for use with
+// apply.
+func PodDisruptionBudgetSpec() *PodDisruptionBudgetSpecApplyConfiguration {
+	return &PodDisruptionBudgetSpecApplyConfiguration{}
+}
+
+// WithMinAvailable sets the MinAvailable field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MinAvailable field is set to the value of the last call.
+func (b *PodDisruptionBudgetSpecApplyConfiguration) WithMinAvailable(value intstr.IntOrString) *PodDisruptionBudgetSpecApplyConfiguration {
+	b.MinAvailable = &value
+	return b
+}
+
+// WithSelector sets the Selector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Selector field is set to the value of the last call.
+func (b *PodDisruptionBudgetSpecApplyConfiguration) WithSelector(value *v1.LabelSelectorApplyConfiguration) *PodDisruptionBudgetSpecApplyConfiguration {
+	b.Selector = value
+	return b
+}
+
+// WithMaxUnavailable sets the MaxUnavailable field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MaxUnavailable field is set to the value of the last call.
+func (b *PodDisruptionBudgetSpecApplyConfiguration) WithMaxUnavailable(value intstr.IntOrString) *PodDisruptionBudgetSpecApplyConfiguration {
+	b.MaxUnavailable = &value
+	return b
+}
+
+// WithUnhealthyPodEvictionPolicy sets the UnhealthyPodEvictionPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the UnhealthyPodEvictionPolicy field is set to the value of the last call.
+func (b *PodDisruptionBudgetSpecApplyConfiguration) WithUnhealthyPodEvictionPolicy(value v1beta1.UnhealthyPodEvictionPolicyType) *PodDisruptionBudgetSpecApplyConfiguration {
+	b.UnhealthyPodEvictionPolicy = &value
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

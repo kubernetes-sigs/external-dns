@@ -51,6 +51,10 @@ type DeleteResult struct {
 
 // IsEmpty returns true if the page contains no results.
 func (r RecordSetPage) IsEmpty() (bool, error) {
+	if r.StatusCode == 204 {
+		return true, nil
+	}
+
 	s, err := ExtractRecordSets(r)
 	return len(s) == 0, err
 }
@@ -113,6 +117,7 @@ type RecordSet struct {
 	// reference.
 	Links []gophercloud.Link `json:"-"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	// Metadata contains the total_count of resources matching the filter
 	Metadata struct {
@@ -121,6 +126,14 @@ type RecordSet struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	// Metadata contains the total_count of resources matching the filter
+	Metadata struct {
+		TotalCount int `json:"total_count"`
+	} `json:"metadata"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (r *RecordSet) UnmarshalJSON(b []byte) error {

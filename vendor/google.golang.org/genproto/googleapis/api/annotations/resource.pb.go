@@ -158,6 +158,7 @@ func (ResourceDescriptor_Style) EnumDescriptor() ([]byte, []int) {
 // Example:
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //     message Topic {
 //       // Indicates this message defines a resource schema.
 //       // Declares the resource type in the format of {service}/{kind}.
@@ -369,6 +370,48 @@ func (ResourceDescriptor_Style) EnumDescriptor() ([]byte, []int) {
 //	  pattern: "organizations/{organization}/logs/{log}"
 //	  pattern: "billingAccounts/{billing_account}/logs/{log}"
 >>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//	message Topic {
+//	  // Indicates this message defines a resource schema.
+//	  // Declares the resource type in the format of {service}/{kind}.
+//	  // For Kubernetes resources, the format is {api group}/{kind}.
+//	  option (google.api.resource) = {
+//	    type: "pubsub.googleapis.com/Topic"
+//	    pattern: "projects/{project}/topics/{topic}"
+//	  };
+//	}
+//
+// The ResourceDescriptor Yaml config will look like:
+//
+//	resources:
+//	- type: "pubsub.googleapis.com/Topic"
+//	  pattern: "projects/{project}/topics/{topic}"
+//
+// Sometimes, resources have multiple patterns, typically because they can
+// live under multiple parents.
+//
+// Example:
+//
+//	message LogEntry {
+//	  option (google.api.resource) = {
+//	    type: "logging.googleapis.com/LogEntry"
+//	    pattern: "projects/{project}/logs/{log}"
+//	    pattern: "folders/{folder}/logs/{log}"
+//	    pattern: "organizations/{organization}/logs/{log}"
+//	    pattern: "billingAccounts/{billing_account}/logs/{log}"
+//	  };
+//	}
+//
+// The ResourceDescriptor Yaml config will look like:
+//
+//	resources:
+//	- type: 'logging.googleapis.com/LogEntry'
+//	  pattern: "projects/{project}/logs/{log}"
+//	  pattern: "folders/{folder}/logs/{log}"
+//	  pattern: "organizations/{organization}/logs/{log}"
+//	  pattern: "billingAccounts/{billing_account}/logs/{log}"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type ResourceDescriptor struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -42,6 +42,7 @@ message ServerStorageVersion {
   // The encodingVersion must be included in the decodableVersions.
   // +listType=set
   repeated string decodableVersions = 3;
+<<<<<<< HEAD
 }
 
 // Storage version of a specific resource.
@@ -73,6 +74,44 @@ message StorageVersionCondition {
 
   // Last time the condition transitioned from one status to another.
   // +required
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+  // The API server can serve these versions.
+  // DecodableVersions must include all ServedVersions.
+  // +listType=set
+  repeated string servedVersions = 4;
+}
+
+// Storage version of a specific resource.
+message StorageVersion {
+  // The name is <group>.<resource>.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // Spec is an empty spec. It is here to comply with Kubernetes API style.
+  optional StorageVersionSpec spec = 2;
+
+  // API server instances report the version they can decode and the version they
+  // encode objects to when persisting objects in the backend.
+  optional StorageVersionStatus status = 3;
+}
+
+// Describes the state of the storageVersion at a certain point.
+message StorageVersionCondition {
+  // Type of the condition.
+  // +required
+  optional string type = 1;
+
+  // Status of the condition, one of True, False, Unknown.
+  // +required
+  optional string status = 2;
+
+  // If set, this represents the .metadata.generation that the condition was set based upon.
+  // +optional
+  optional int64 observedGeneration = 3;
+
+  // Last time the condition transitioned from one status to another.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
 
   // The reason for the condition's last transition.

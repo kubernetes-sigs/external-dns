@@ -3,10 +3,11 @@ package authenticator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/transip/gotransip/v6/jwt"
-	"io/ioutil"
+	"io"
 	"os"
 	"sync"
+
+	"github.com/transip/gotransip/v6/jwt"
 )
 
 // cacheItem is one named item inside the filesystem cache
@@ -41,7 +42,7 @@ func NewFileTokenCache(path string) (*FileTokenCache, error) {
 	cache := FileTokenCache{File: file}
 
 	// try to read the File
-	fileContent, err := ioutil.ReadAll(file)
+	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		return &FileTokenCache{}, fmt.Errorf("error reading cache File: %w", err)
 	}

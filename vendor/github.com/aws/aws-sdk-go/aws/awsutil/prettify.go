@@ -57,6 +57,7 @@ func prettify(v reflect.Value, indent int, buf *bytes.Buffer) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			ft, ok := v.Type().FieldByName(n)
 			if !ok {
 				panic(fmt.Sprintf("expected to find field %v on type %v, but was not found", n, v.Type()))
@@ -147,10 +148,29 @@ func prettify(v reflect.Value, indent int, buf *bytes.Buffer) {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+			ft, ok := v.Type().FieldByName(n)
+			if !ok {
+				panic(fmt.Sprintf("expected to find field %v on type %v, but was not found", n, v.Type()))
+			}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			buf.WriteString(strings.Repeat(" ", indent+2))
 			buf.WriteString(n + ": ")
+<<<<<<< HEAD
 			prettify(val, indent+2, buf)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			prettify(val, indent+2, buf)
+=======
+
+			if tag := ft.Tag.Get("sensitive"); tag == "true" {
+				buf.WriteString("<sensitive>")
+			} else {
+				prettify(val, indent+2, buf)
+			}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 			if i < len(names)-1 {
 				buf.WriteString(",\n")

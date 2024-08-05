@@ -17,6 +17,7 @@ const tagsBasePath = "v2/tags"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Tags
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -49,6 +50,11 @@ const tagsBasePath = "v2/tags"
 =======
 // See: https://developers.digitalocean.com/documentation/v2#tags
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2#tags
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Tags
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type TagsService interface {
 	List(context.Context, *ListOptions) ([]Tag, *Response, error)
 	Get(context.Context, string) (*Tag, *Response, error)
@@ -133,7 +139,7 @@ type Tag struct {
 	Resources *TaggedResources `json:"resources,omitempty"`
 }
 
-//TagCreateRequest represents the JSON structure of a request of that type.
+// TagCreateRequest represents the JSON structure of a request of that type.
 type TagCreateRequest struct {
 	Name string `json:"name"`
 }

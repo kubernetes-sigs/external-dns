@@ -71,3 +71,11 @@ type WorkloadEntryListerExpansion interface{}
 // WorkloadEntryNamespaceListerExpansion allows custom methods to be added to
 // WorkloadEntryNamespaceLister.
 type WorkloadEntryNamespaceListerExpansion interface{}
+
+// WorkloadGroupListerExpansion allows custom methods to be added to
+// WorkloadGroupLister.
+type WorkloadGroupListerExpansion interface{}
+
+// WorkloadGroupNamespaceListerExpansion allows custom methods to be added to
+// WorkloadGroupNamespaceLister.
+type WorkloadGroupNamespaceListerExpansion interface{}

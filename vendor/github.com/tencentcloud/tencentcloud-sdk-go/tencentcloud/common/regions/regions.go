@@ -29,6 +29,7 @@ const (
 	GuangzhouOpen = "ap-guangzhou-open"
 	// 中国香港
 	HongKong = "ap-hongkong"
+<<<<<<< HEAD
 	// 孟买
 	Mumbai = "ap-mumbai"
 	// 首尔
@@ -55,4 +56,37 @@ const (
 	SiliconValley = "na-siliconvalley"
 	// 多伦多
 	Toronto = "na-toronto"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// 雅加达
+	Jakarta = "ap-jakarta"
+	// 孟买
+	Mumbai = "ap-mumbai"
+	// 首尔
+	Seoul = "ap-seoul"
+	// 上海
+	Shanghai = "ap-shanghai"
+	// 南京
+	Nanjing = "ap-nanjing"
+	// 上海金融
+	ShanghaiFSI = "ap-shanghai-fsi"
+	// 深圳金融
+	ShenzhenFSI = "ap-shenzhen-fsi"
+	// 新加坡
+	Singapore = "ap-singapore"
+	// 东京
+	Tokyo = "ap-tokyo"
+	// 法兰克福
+	Frankfurt = "eu-frankfurt"
+	// 莫斯科
+	Moscow = "eu-moscow"
+	// 阿什本
+	Ashburn = "na-ashburn"
+	// 硅谷
+	SiliconValley = "na-siliconvalley"
+	// 多伦多
+	Toronto = "na-toronto"
+	// 圣保罗
+	SaoPaulo = "sa-saopaulo"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )

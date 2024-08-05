@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+<<<<<<< HEAD
 type AccessUserEmail struct {
 	Email string `json:"email"`
 }
@@ -30,6 +31,19 @@ func (api *API) revokeUserTokens(ctx context.Context, id string, accessUserEmail
 	uri := fmt.Sprintf("/%s/%s/access/organizations/revoke_user", routeRoot, id)
 
 	_, err := api.makeRequestContext(ctx, http.MethodPost, uri, accessUserEmail)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+type RevokeAccessUserTokensParams struct {
+	Email string `json:"email"`
+}
+
+// RevokeAccessUserTokens revokes any outstanding tokens issued for a specific user
+// Access User.
+func (api *API) RevokeAccessUserTokens(ctx context.Context, rc *ResourceContainer, params RevokeAccessUserTokensParams) error {
+	uri := fmt.Sprintf("/%s/%s/access/organizations/revoke_user", rc.Level, rc.Identifier)
+
+	_, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return err
 	}

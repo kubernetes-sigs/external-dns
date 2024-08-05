@@ -30,6 +30,7 @@ type AccountsResponse struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // AccountInvitation represents an invitation to a DNSimple account.
 type AccountInvitation struct {
 	ID                   int64  `json:"id,omitempty"`
@@ -63,6 +64,21 @@ type AccountInvitation struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// AccountInvitation represents an invitation to a DNSimple account.
+type AccountInvitation struct {
+	ID                   int64  `json:"id,omitempty"`
+	Email                string `json:"email,omitempty"`
+	Token                string `json:"token,omitempty"`
+	AccountID            int64  `json:"account_id,omitempty"`
+	CreatedAt            string `json:"created_at,omitempty"`
+	UpdatedAt            string `json:"updated_at,omitempty"`
+	InvitationSentAt     string `json:"invitation_sent_at,omitempty"`
+	InvitationAcceptedAt string `json:"invitation_accepted_at,omitempty"`
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // ListAccounts list the accounts for an user.
 //
 // See https://developer.dnsimple.com/v2/accounts/#list

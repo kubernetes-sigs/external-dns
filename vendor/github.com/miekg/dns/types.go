@@ -65,6 +65,7 @@ const (
 	TypeAPL        uint16 = 42
 	TypeDS         uint16 = 43
 	TypeSSHFP      uint16 = 44
+	TypeIPSECKEY   uint16 = 45
 	TypeRRSIG      uint16 = 46
 	TypeNSEC       uint16 = 47
 	TypeDNSKEY     uint16 = 48
@@ -81,6 +82,7 @@ const (
 	TypeCDNSKEY    uint16 = 60
 	TypeOPENPGPKEY uint16 = 61
 	TypeCSYNC      uint16 = 62
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -2934,6 +2936,10 @@ func saltToString(s string) string {
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	TypeZONEMD     uint16 = 63
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	TypeSVCB       uint16 = 64
 	TypeHTTPS      uint16 = 65
 	TypeSPF        uint16 = 99
@@ -2950,6 +2956,7 @@ func saltToString(s string) string {
 	TypeURI        uint16 = 256
 	TypeCAA        uint16 = 257
 	TypeAVC        uint16 = 258
+	TypeAMTRELAY   uint16 = 260
 
 	TypeTKEY uint16 = 249
 	TypeTSIG uint16 = 250
@@ -2985,8 +2992,8 @@ func saltToString(s string) string {
 	RcodeNXRrset        = 8  // NXRRSet   - RR Set that should exist does not [DNS Update]
 	RcodeNotAuth        = 9  // NotAuth   - Server Not Authoritative for zone [DNS Update]
 	RcodeNotZone        = 10 // NotZone   - Name not contained in zone        [DNS Update/TSIG]
-	RcodeBadSig         = 16 // BADSIG    - TSIG Signature Failure            [TSIG]
-	RcodeBadVers        = 16 // BADVERS   - Bad OPT Version                   [EDNS0]
+	RcodeBadSig         = 16 // BADSIG    - TSIG Signature Failure            [TSIG]  https://www.rfc-editor.org/rfc/rfc6895.html#section-2.3
+	RcodeBadVers        = 16 // BADVERS   - Bad OPT Version                   [EDNS0] https://www.rfc-editor.org/rfc/rfc6895.html#section-2.3
 	RcodeBadKey         = 17 // BADKEY    - Key not recognized                [TSIG]
 	RcodeBadTime        = 18 // BADTIME   - Signature out of time window      [TSIG]
 	RcodeBadMode        = 19 // BADMODE   - Bad TKEY Mode                     [TKEY]
@@ -3001,6 +3008,30 @@ func saltToString(s string) string {
 	OpcodeStatus = 2
 	OpcodeNotify = 4
 	OpcodeUpdate = 5
+)
+
+// Used in ZONEMD https://tools.ietf.org/html/rfc8976
+const (
+	ZoneMDSchemeSimple = 1
+
+	ZoneMDHashAlgSHA384 = 1
+	ZoneMDHashAlgSHA512 = 2
+)
+
+// Used in IPSEC https://datatracker.ietf.org/doc/html/rfc4025#section-2.3
+const (
+	IPSECGatewayNone uint8 = iota
+	IPSECGatewayIPv4
+	IPSECGatewayIPv6
+	IPSECGatewayHost
+)
+
+// Used in AMTRELAY https://datatracker.ietf.org/doc/html/rfc8777#section-4.2.3
+const (
+	AMTRELAYNone = IPSECGatewayNone
+	AMTRELAYIPv4 = IPSECGatewayIPv4
+	AMTRELAYIPv6 = IPSECGatewayIPv6
+	AMTRELAYHost = IPSECGatewayHost
 )
 
 // Header is the wire format for the DNS packet header.
@@ -3024,7 +3055,7 @@ const (
 	_CD = 1 << 4  // checking disabled
 )
 
-// Various constants used in the LOC RR. See RFC 1887.
+// Various constants used in the LOC RR. See RFC 1876.
 const (
 	LOC_EQUATOR       = 1 << 31 // RFC 1876, Section 2.
 	LOC_PRIMEMERIDIAN = 1 << 31 // RFC 1876, Section 2.
@@ -3062,6 +3093,9 @@ var CertTypeToString = map[uint16]string{
 	CertOID:     "OID",
 }
 
+// Prefix for IPv4 encoded as IPv6 address
+const ipv4InIPv6Prefix = "::ffff:"
+
 //go:generate go run types_generate.go
 
 // Question holds a DNS question. Usually there is just one. While the
@@ -3098,8 +3132,8 @@ type ANY struct {
 
 func (rr *ANY) String() string { return rr.Hdr.String() }
 
-func (rr *ANY) parse(c *zlexer, origin string) *ParseError {
-	panic("dns: internal error: parse should never be called on ANY")
+func (*ANY) parse(c *zlexer, origin string) *ParseError {
+	return &ParseError{err: "ANY records do not have a presentation format"}
 }
 
 // NULL RR. See RFC 1035.
@@ -3113,8 +3147,8 @@ func (rr *NULL) String() string {
 	return ";" + rr.Hdr.String() + rr.Data
 }
 
-func (rr *NULL) parse(c *zlexer, origin string) *ParseError {
-	panic("dns: internal error: parse should never be called on NULL")
+func (*NULL) parse(c *zlexer, origin string) *ParseError {
+	return &ParseError{err: "NULL records do not have a presentation format"}
 }
 
 // CNAME RR. See RFC 1034.
@@ -3223,6 +3257,17 @@ type X25 struct {
 
 func (rr *X25) String() string {
 	return rr.Hdr.String() + rr.PSDNAddress
+}
+
+// ISDN RR. See RFC 1183, Section 3.2.
+type ISDN struct {
+	Hdr        RR_Header
+	Address    string
+	SubAddress string
+}
+
+func (rr *ISDN) String() string {
+	return rr.Hdr.String() + sprintTxt([]string{rr.Address, rr.SubAddress})
 }
 
 // RT RR. See RFC 1183, Section 3.3.
@@ -3457,8 +3502,8 @@ func nextByte(s string, offset int) (byte, int) {
 		return 0, 0
 	case 2, 3: // too short to be \ddd
 	default: // maybe \ddd
-		if isDigit(s[offset+1]) && isDigit(s[offset+2]) && isDigit(s[offset+3]) {
-			return dddStringToByte(s[offset+1:]), 4
+		if isDDD(s[offset+1:]) {
+			return dddToByte(s[offset+1:]), 4
 		}
 	}
 	// not \ddd, just an RFC 1035 "quoted" character
@@ -3577,6 +3622,11 @@ func (rr *AAAA) String() string {
 	if rr.AAAA == nil {
 		return rr.Hdr.String()
 	}
+
+	if rr.AAAA.To4() != nil {
+		return rr.Hdr.String() + ipv4InIPv6Prefix + rr.AAAA.String()
+	}
+
 	return rr.Hdr.String() + rr.AAAA.String()
 }
 
@@ -3604,7 +3654,7 @@ func (rr *GPOS) String() string {
 	return rr.Hdr.String() + rr.Longitude + " " + rr.Latitude + " " + rr.Altitude
 }
 
-// LOC RR. See RFC RFC 1876.
+// LOC RR. See RFC 1876.
 type LOC struct {
 	Hdr       RR_Header
 	Version   uint8
@@ -3618,7 +3668,10 @@ type LOC struct {
 
 // cmToM takes a cm value expressed in RFC 1876 SIZE mantissa/exponent
 // format and returns a string in m (two decimals for the cm).
-func cmToM(m, e uint8) string {
+func cmToM(x uint8) string {
+	m := x & 0xf0 >> 4
+	e := x & 0x0f
+
 	if e < 2 {
 		if e == 1 {
 			m *= 10
@@ -3674,10 +3727,9 @@ func (rr *LOC) String() string {
 		s += fmt.Sprintf("%.0fm ", alt)
 	}
 
-	s += cmToM(rr.Size&0xf0>>4, rr.Size&0x0f) + "m "
-	s += cmToM(rr.HorizPre&0xf0>>4, rr.HorizPre&0x0f) + "m "
-	s += cmToM(rr.VertPre&0xf0>>4, rr.VertPre&0x0f) + "m"
-
+	s += cmToM(rr.Size) + "m "
+	s += cmToM(rr.HorizPre) + "m "
+	s += cmToM(rr.VertPre) + "m"
 	return s
 }
 
@@ -3712,6 +3764,11 @@ func (rr *RRSIG) String() string {
 		" " + sprintName(rr.SignerName) +
 		" " + rr.Signature
 	return s
+}
+
+// NXT RR. See RFC 2535.
+type NXT struct {
+	NSEC
 }
 
 // NSEC RR. See RFC 4034 and RFC 3755.
@@ -3798,7 +3855,7 @@ func (rr *TALINK) String() string {
 		sprintName(rr.PreviousName) + " " + sprintName(rr.NextName)
 }
 
-// SSHFP RR. See RFC RFC 4255.
+// SSHFP RR. See RFC 4255.
 type SSHFP struct {
 	Hdr         RR_Header
 	Algorithm   uint8
@@ -3812,7 +3869,7 @@ func (rr *SSHFP) String() string {
 		" " + strings.ToUpper(rr.FingerPrint)
 }
 
-// KEY RR. See RFC RFC 2535.
+// KEY RR. See RFC 2535.
 type KEY struct {
 	DNSKEY
 }
@@ -3836,6 +3893,69 @@ func (rr *DNSKEY) String() string {
 		" " + strconv.Itoa(int(rr.Protocol)) +
 		" " + strconv.Itoa(int(rr.Algorithm)) +
 		" " + rr.PublicKey
+}
+
+// IPSECKEY RR. See RFC 4025.
+type IPSECKEY struct {
+	Hdr         RR_Header
+	Precedence  uint8
+	GatewayType uint8
+	Algorithm   uint8
+	GatewayAddr net.IP `dns:"-"` // packing/unpacking/parsing/etc handled together with GatewayHost
+	GatewayHost string `dns:"ipsechost"`
+	PublicKey   string `dns:"base64"`
+}
+
+func (rr *IPSECKEY) String() string {
+	var gateway string
+	switch rr.GatewayType {
+	case IPSECGatewayIPv4, IPSECGatewayIPv6:
+		gateway = rr.GatewayAddr.String()
+	case IPSECGatewayHost:
+		gateway = rr.GatewayHost
+	case IPSECGatewayNone:
+		fallthrough
+	default:
+		gateway = "."
+	}
+
+	return rr.Hdr.String() + strconv.Itoa(int(rr.Precedence)) +
+		" " + strconv.Itoa(int(rr.GatewayType)) +
+		" " + strconv.Itoa(int(rr.Algorithm)) +
+		" " + gateway +
+		" " + rr.PublicKey
+}
+
+// AMTRELAY RR. See RFC 8777.
+type AMTRELAY struct {
+	Hdr         RR_Header
+	Precedence  uint8
+	GatewayType uint8  // discovery is packed in here at bit 0x80
+	GatewayAddr net.IP `dns:"-"` // packing/unpacking/parsing/etc handled together with GatewayHost
+	GatewayHost string `dns:"amtrelayhost"`
+}
+
+func (rr *AMTRELAY) String() string {
+	var gateway string
+	switch rr.GatewayType & 0x7f {
+	case AMTRELAYIPv4, AMTRELAYIPv6:
+		gateway = rr.GatewayAddr.String()
+	case AMTRELAYHost:
+		gateway = rr.GatewayHost
+	case AMTRELAYNone:
+		fallthrough
+	default:
+		gateway = "."
+	}
+	boolS := "0"
+	if rr.GatewayType&0x80 == 0x80 {
+		boolS = "1"
+	}
+
+	return rr.Hdr.String() + strconv.Itoa(int(rr.Precedence)) +
+		" " + boolS +
+		" " + strconv.Itoa(int(rr.GatewayType&0x7f)) +
+		" " + gateway
 }
 
 // RKEY RR. See https://www.iana.org/assignments/dns-parameters/RKEY/rkey-completed-template.
@@ -4059,7 +4179,7 @@ type NINFO struct {
 
 func (rr *NINFO) String() string { return rr.Hdr.String() + sprintTxt(rr.ZSData) }
 
-// NID RR. See RFC RFC 6742.
+// NID RR. See RFC 6742.
 type NID struct {
 	Hdr        RR_Header
 	Preference uint16
@@ -4214,6 +4334,23 @@ func (rr *CSYNC) len(off int, compression map[string]struct{}) int {
 	return l
 }
 
+// ZONEMD RR, from draft-ietf-dnsop-dns-zone-digest
+type ZONEMD struct {
+	Hdr    RR_Header
+	Serial uint32
+	Scheme uint8
+	Hash   uint8
+	Digest string `dns:"hex"`
+}
+
+func (rr *ZONEMD) String() string {
+	return rr.Hdr.String() +
+		strconv.Itoa(int(rr.Serial)) +
+		" " + strconv.Itoa(int(rr.Scheme)) +
+		" " + strconv.Itoa(int(rr.Hash)) +
+		" " + rr.Digest
+}
+
 // APL RR. See RFC 3123.
 type APL struct {
 	Hdr      RR_Header
@@ -4240,13 +4377,13 @@ func (rr *APL) String() string {
 }
 
 // str returns presentation form of the APL prefix.
-func (p *APLPrefix) str() string {
+func (a *APLPrefix) str() string {
 	var sb strings.Builder
-	if p.Negation {
+	if a.Negation {
 		sb.WriteByte('!')
 	}
 
-	switch len(p.Network.IP) {
+	switch len(a.Network.IP) {
 	case net.IPv4len:
 		sb.WriteByte('1')
 	case net.IPv6len:
@@ -4255,20 +4392,20 @@ func (p *APLPrefix) str() string {
 
 	sb.WriteByte(':')
 
-	switch len(p.Network.IP) {
+	switch len(a.Network.IP) {
 	case net.IPv4len:
-		sb.WriteString(p.Network.IP.String())
+		sb.WriteString(a.Network.IP.String())
 	case net.IPv6len:
 		// add prefix for IPv4-mapped IPv6
-		if v4 := p.Network.IP.To4(); v4 != nil {
-			sb.WriteString("::ffff:")
+		if v4 := a.Network.IP.To4(); v4 != nil {
+			sb.WriteString(ipv4InIPv6Prefix)
 		}
-		sb.WriteString(p.Network.IP.String())
+		sb.WriteString(a.Network.IP.String())
 	}
 
 	sb.WriteByte('/')
 
-	prefix, _ := p.Network.Mask.Size()
+	prefix, _ := a.Network.Mask.Size()
 	sb.WriteString(strconv.Itoa(prefix))
 
 	return sb.String()
@@ -4277,22 +4414,22 @@ func (p *APLPrefix) str() string {
 // equals reports whether two APL prefixes are identical.
 func (a *APLPrefix) equals(b *APLPrefix) bool {
 	return a.Negation == b.Negation &&
-		bytes.Equal(a.Network.IP, b.Network.IP) &&
+		a.Network.IP.Equal(b.Network.IP) &&
 		bytes.Equal(a.Network.Mask, b.Network.Mask)
 }
 
 // copy returns a copy of the APL prefix.
-func (p *APLPrefix) copy() APLPrefix {
+func (a *APLPrefix) copy() APLPrefix {
 	return APLPrefix{
-		Negation: p.Negation,
-		Network:  copyNet(p.Network),
+		Negation: a.Negation,
+		Network:  copyNet(a.Network),
 	}
 }
 
 // len returns size of the prefix in wire format.
-func (p *APLPrefix) len() int {
+func (a *APLPrefix) len() int {
 	// 4-byte header and the network address prefix (see Section 4 of RFC 3123)
-	prefix, _ := p.Network.Mask.Size()
+	prefix, _ := a.Network.Mask.Size()
 	return 4 + (prefix+7)/8
 }
 
@@ -4325,8 +4462,14 @@ func StringToTime(s string) (uint32, error) {
 
 // saltToString converts a NSECX salt to uppercase and returns "-" when it is empty.
 func saltToString(s string) string {
+<<<<<<< HEAD
 	if len(s) == 0 {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if len(s) == 0 {
+=======
+	if s == "" {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return "-"
 	}
 	return strings.ToUpper(s)
@@ -4346,21 +4489,19 @@ func euiToString(eui uint64, bits int) (hex string) {
 	return
 }
 
-// copyIP returns a copy of ip.
-func copyIP(ip net.IP) net.IP {
-	p := make(net.IP, len(ip))
-	copy(p, ip)
-	return p
+// cloneSlice returns a shallow copy of s.
+func cloneSlice[E any, S ~[]E](s S) S {
+	if s == nil {
+		return nil
+	}
+	return append(S(nil), s...)
 }
 
 // copyNet returns a copy of a subnet.
 func copyNet(n net.IPNet) net.IPNet {
-	m := make(net.IPMask, len(n.Mask))
-	copy(m, n.Mask)
-
 	return net.IPNet{
-		IP:   copyIP(n.IP),
-		Mask: m,
+		IP:   cloneSlice(n.IP),
+		Mask: cloneSlice(n.Mask),
 	}
 }
 

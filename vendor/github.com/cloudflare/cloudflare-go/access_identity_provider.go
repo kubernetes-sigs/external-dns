@@ -4,6 +4,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -616,260 +617,187 @@ func (api *API) deleteAccessIdentityProvider(ctx context.Context, id string, ide
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"encoding/json"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"encoding/json"
+=======
+	"context"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"fmt"
+	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // AccessIdentityProvider is the structure of the provider object.
 type AccessIdentityProvider struct {
-	ID     string      `json:"id,omitemtpy"`
-	Name   string      `json:"name"`
-	Type   string      `json:"type"`
-	Config interface{} `json:"config"`
+	ID         string                                  `json:"id,omitempty"`
+	Name       string                                  `json:"name"`
+	Type       string                                  `json:"type"`
+	Config     AccessIdentityProviderConfiguration     `json:"config"`
+	ScimConfig AccessIdentityProviderScimConfiguration `json:"scim_config"`
 }
 
-// AccessAzureADConfiguration is the representation of the Azure AD identity
-// provider.
+// AccessIdentityProviderConfiguration is the combined structure of *all*
+// identity provider configuration fields. This is done to simplify the use of
+// Access products and their relationship to each other.
 //
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/azuread/
-type AccessAzureADConfiguration struct {
-	ClientID      string `json:"client_id"`
-	ClientSecret  string `json:"client_secret"`
-	DirectoryID   string `json:"directory_id"`
-	SupportGroups bool   `json:"support_groups"`
+// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/
+type AccessIdentityProviderConfiguration struct {
+	APIToken                  string   `json:"api_token,omitempty"`
+	AppsDomain                string   `json:"apps_domain,omitempty"`
+	Attributes                []string `json:"attributes,omitempty"`
+	AuthURL                   string   `json:"auth_url,omitempty"`
+	CentrifyAccount           string   `json:"centrify_account,omitempty"`
+	CentrifyAppID             string   `json:"centrify_app_id,omitempty"`
+	CertsURL                  string   `json:"certs_url,omitempty"`
+	ClientID                  string   `json:"client_id,omitempty"`
+	ClientSecret              string   `json:"client_secret,omitempty"`
+	Claims                    []string `json:"claims,omitempty"`
+	Scopes                    []string `json:"scopes,omitempty"`
+	DirectoryID               string   `json:"directory_id,omitempty"`
+	EmailAttributeName        string   `json:"email_attribute_name,omitempty"`
+	EmailClaimName            string   `json:"email_claim_name,omitempty"`
+	IdpPublicCert             string   `json:"idp_public_cert,omitempty"`
+	IssuerURL                 string   `json:"issuer_url,omitempty"`
+	OktaAccount               string   `json:"okta_account,omitempty"`
+	OktaAuthorizationServerID string   `json:"authorization_server_id,omitempty"`
+	OneloginAccount           string   `json:"onelogin_account,omitempty"`
+	PingEnvID                 string   `json:"ping_env_id,omitempty"`
+	RedirectURL               string   `json:"redirect_url,omitempty"`
+	SignRequest               bool     `json:"sign_request,omitempty"`
+	SsoTargetURL              string   `json:"sso_target_url,omitempty"`
+	SupportGroups             bool     `json:"support_groups,omitempty"`
+	TokenURL                  string   `json:"token_url,omitempty"`
+	PKCEEnabled               *bool    `json:"pkce_enabled,omitempty"`
+	ConditionalAccessEnabled  bool     `json:"conditional_access_enabled,omitempty"`
 }
 
-// AccessCentrifyConfiguration is the representation of the Centrify identity
-// provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/centrify/
-type AccessCentrifyConfiguration struct {
-	ClientID        string `json:"client_id"`
-	ClientSecret    string `json:"client_secret"`
-	CentrifyAccount string `json:"centrify_account"`
-	CentrifyAppID   string `json:"centrify_app_id"`
-}
-
-// AccessCentrifySAMLConfiguration is the representation of the Centrify
-// identity provider using SAML.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/saml-centrify/
-type AccessCentrifySAMLConfiguration struct {
-	IssuerURL          string   `json:"issuer_url"`
-	SsoTargetURL       string   `json:"sso_target_url"`
-	Attributes         []string `json:"attributes"`
-	EmailAttributeName string   `json:"email_attribute_name"`
-	SignRequest        bool     `json:"sign_request"`
-	IdpPublicCert      string   `json:"idp_public_cert"`
-}
-
-// AccessFacebookConfiguration is the representation of the Facebook identity
-// provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/facebook-login/
-type AccessFacebookConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-}
-
-// AccessGSuiteConfiguration is the representation of the GSuite identity
-// provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/gsuite/
-type AccessGSuiteConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	AppsDomain   string `json:"apps_domain"`
-}
-
-// AccessGenericOIDCConfiguration is the representation of the generic OpenID
-// Connect (OIDC) connector.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/generic-oidc/
-type AccessGenericOIDCConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	AuthURL      string `json:"auth_url"`
-	TokenURL     string `json:"token_url"`
-	CertsURL     string `json:"certs_url"`
-}
-
-// AccessGitHubConfiguration is the representation of the GitHub identity
-// provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/github/
-type AccessGitHubConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-}
-
-// AccessGoogleConfiguration is the representation of the Google identity
-// provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/google/
-type AccessGoogleConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-}
-
-// AccessJumpCloudSAMLConfiguration is the representation of the Jump Cloud
-// identity provider using SAML.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/jumpcloud-saml/
-type AccessJumpCloudSAMLConfiguration struct {
-	IssuerURL          string   `json:"issuer_url"`
-	SsoTargetURL       string   `json:"sso_target_url"`
-	Attributes         []string `json:"attributes"`
-	EmailAttributeName string   `json:"email_attribute_name"`
-	SignRequest        bool     `json:"sign_request"`
-	IdpPublicCert      string   `json:"idp_public_cert"`
-}
-
-// AccessOktaConfiguration is the representation of the Okta identity provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/okta/
-type AccessOktaConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	OktaAccount  string `json:"okta_account"`
-}
-
-// AccessOktaSAMLConfiguration is the representation of the Okta identity
-// provider using SAML.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/saml-okta/
-type AccessOktaSAMLConfiguration struct {
-	IssuerURL          string   `json:"issuer_url"`
-	SsoTargetURL       string   `json:"sso_target_url"`
-	Attributes         []string `json:"attributes"`
-	EmailAttributeName string   `json:"email_attribute_name"`
-	SignRequest        bool     `json:"sign_request"`
-	IdpPublicCert      string   `json:"idp_public_cert"`
-}
-
-// AccessOneTimePinConfiguration is the representation of the default One Time
-// Pin identity provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/one-time-pin/
-type AccessOneTimePinConfiguration struct{}
-
-// AccessOneLoginOIDCConfiguration is the representation of the OneLogin
-// OpenID connector as an identity provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/onelogin-oidc/
-type AccessOneLoginOIDCConfiguration struct {
-	ClientID        string `json:"client_id"`
-	ClientSecret    string `json:"client_secret"`
-	OneloginAccount string `json:"onelogin_account"`
-}
-
-// AccessOneLoginSAMLConfiguration is the representation of the OneLogin
-// identity provider using SAML.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/onelogin-saml/
-type AccessOneLoginSAMLConfiguration struct {
-	IssuerURL          string   `json:"issuer_url"`
-	SsoTargetURL       string   `json:"sso_target_url"`
-	Attributes         []string `json:"attributes"`
-	EmailAttributeName string   `json:"email_attribute_name"`
-	SignRequest        bool     `json:"sign_request"`
-	IdpPublicCert      string   `json:"idp_public_cert"`
-}
-
-// AccessPingSAMLConfiguration is the representation of the Ping identity
-// provider using SAML.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/ping-saml/
-type AccessPingSAMLConfiguration struct {
-	IssuerURL          string   `json:"issuer_url"`
-	SsoTargetURL       string   `json:"sso_target_url"`
-	Attributes         []string `json:"attributes"`
-	EmailAttributeName string   `json:"email_attribute_name"`
-	SignRequest        bool     `json:"sign_request"`
-	IdpPublicCert      string   `json:"idp_public_cert"`
-}
-
-// AccessYandexConfiguration is the representation of the Yandex identity provider.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/yandex/
-type AccessYandexConfiguration struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-}
-
-// AccessADSAMLConfiguration is the representation of the Active Directory
-// identity provider using SAML.
-//
-// API reference: https://developers.cloudflare.com/access/configuring-identity-providers/adfs/
-type AccessADSAMLConfiguration struct {
-	IssuerURL          string   `json:"issuer_url"`
-	SsoTargetURL       string   `json:"sso_target_url"`
-	Attributes         []string `json:"attributes"`
-	EmailAttributeName string   `json:"email_attribute_name"`
-	SignRequest        bool     `json:"sign_request"`
-	IdpPublicCert      string   `json:"idp_public_cert"`
+type AccessIdentityProviderScimConfiguration struct {
+	Enabled                bool   `json:"enabled,omitempty"`
+	Secret                 string `json:"secret,omitempty"`
+	UserDeprovision        bool   `json:"user_deprovision,omitempty"`
+	SeatDeprovision        bool   `json:"seat_deprovision,omitempty"`
+	GroupMemberDeprovision bool   `json:"group_member_deprovision,omitempty"`
 }
 
 // AccessIdentityProvidersListResponse is the API response for multiple
 // Access Identity Providers.
 type AccessIdentityProvidersListResponse struct {
-	Success  bool                     `json:"success"`
-	Errors   []string                 `json:"errors"`
-	Messages []string                 `json:"messages"`
-	Result   []AccessIdentityProvider `json:"result"`
+	Response
+	Result     []AccessIdentityProvider `json:"result"`
+	ResultInfo `json:"result_info"`
 }
 
-// AccessIdentityProviderListResponse is the API response for a single
+// AccessIdentityProviderResponse is the API response for a single
 // Access Identity Provider.
-type AccessIdentityProviderListResponse struct {
-	Success  bool                   `json:"success"`
-	Errors   []string               `json:"errors"`
-	Messages []string               `json:"messages"`
-	Result   AccessIdentityProvider `json:"result"`
+type AccessIdentityProviderResponse struct {
+	Response
+	Result AccessIdentityProvider `json:"result"`
 }
 
-// AccessIdentityProviders returns all Access Identity Providers for an
-// account.
-//
-// API reference: https://api.cloudflare.com/#access-identity-providers-list-access-identity-providers
-func (api *API) AccessIdentityProviders(accountID string) ([]AccessIdentityProvider, error) {
-	uri := "/accounts/" + accountID + "/access/identity_providers"
-
-	res, err := api.makeRequest("GET", uri, nil)
-	if err != nil {
-		return []AccessIdentityProvider{}, errors.Wrap(err, errMakeRequestError)
-	}
-
-	var accessIdentityProviderResponse AccessIdentityProvidersListResponse
-	err = json.Unmarshal(res, &accessIdentityProviderResponse)
-	if err != nil {
-		return []AccessIdentityProvider{}, errors.Wrap(err, errUnmarshalError)
-	}
-
-	return accessIdentityProviderResponse.Result, nil
+type ListAccessIdentityProvidersParams struct {
+	ResultInfo
 }
 
-// AccessIdentityProviderDetails returns a single Access Identity
-// Provider for an account.
+type CreateAccessIdentityProviderParams struct {
+	Name       string                                  `json:"name"`
+	Type       string                                  `json:"type"`
+	Config     AccessIdentityProviderConfiguration     `json:"config"`
+	ScimConfig AccessIdentityProviderScimConfiguration `json:"scim_config"`
+}
+
+type UpdateAccessIdentityProviderParams struct {
+	ID         string                                  `json:"-"`
+	Name       string                                  `json:"name"`
+	Type       string                                  `json:"type"`
+	Config     AccessIdentityProviderConfiguration     `json:"config"`
+	ScimConfig AccessIdentityProviderScimConfiguration `json:"scim_config"`
+}
+
+// AccessAuthContext represents an Access Azure Identity Provider Auth Context.
+type AccessAuthContext struct {
+	ID          string `json:"id"`
+	UID         string `json:"uid"`
+	ACID        string `json:"ac_id"`
+	DisplayName string `json:"display_name"`
+	Description string `json:"description"`
+}
+
+// AccessAuthContextsListResponse represents the response from the list
+// Access Auth Contexts endpoint.
+type AccessAuthContextsListResponse struct {
+	Result []AccessAuthContext `json:"result"`
+	Response
+}
+
+// ListAccessIdentityProviders returns all Access Identity Providers for an
+// account or zone.
 //
-// API reference: https://api.cloudflare.com/#access-identity-providers-access-identity-providers-details
-func (api *API) AccessIdentityProviderDetails(accountID, identityProviderID string) (AccessIdentityProvider, error) {
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-list-access-identity-providers
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-list-access-identity-providers
+func (api *API) ListAccessIdentityProviders(ctx context.Context, rc *ResourceContainer, params ListAccessIdentityProvidersParams) ([]AccessIdentityProvider, *ResultInfo, error) {
+	baseURL := fmt.Sprintf("/%s/%s/access/identity_providers", rc.Level, rc.Identifier)
+
+	autoPaginate := true
+	if params.PerPage >= 1 || params.Page >= 1 {
+		autoPaginate = false
+	}
+
+	if params.PerPage < 1 {
+		params.PerPage = 25
+	}
+
+	if params.Page < 1 {
+		params.Page = 1
+	}
+
+	var accessProviders []AccessIdentityProvider
+	var r AccessIdentityProvidersListResponse
+
+	for {
+		uri := buildURI(baseURL, params)
+		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+		if err != nil {
+			return []AccessIdentityProvider{}, &ResultInfo{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
+		}
+
+		err = json.Unmarshal(res, &r)
+		if err != nil {
+			return []AccessIdentityProvider{}, &ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+		}
+
+		accessProviders = append(accessProviders, r.Result...)
+		params.ResultInfo = r.ResultInfo.Next()
+		if params.ResultInfo.Done() || !autoPaginate {
+			break
+		}
+	}
+
+	return accessProviders, &r.ResultInfo, nil
+}
+
+// GetAccessIdentityProvider returns a single Access Identity
+// Provider for an account or zone.
+//
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-get-an-access-identity-provider
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-get-an-access-identity-provider
+func (api *API) GetAccessIdentityProvider(ctx context.Context, rc *ResourceContainer, identityProviderID string) (AccessIdentityProvider, error) {
 	uri := fmt.Sprintf(
-		"/accounts/%s/access/identity_providers/%s",
-		accountID,
+		"/%s/%s/access/identity_providers/%s",
+		rc.Level,
+		rc.Identifier,
 		identityProviderID,
 	)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errMakeRequestError)
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
-	var accessIdentityProviderResponse AccessIdentityProviderListResponse
+	var accessIdentityProviderResponse AccessIdentityProviderResponse
 	err = json.Unmarshal(res, &accessIdentityProviderResponse)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errUnmarshalError)
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessIdentityProviderResponse.Result, nil
@@ -877,19 +805,20 @@ func (api *API) AccessIdentityProviderDetails(accountID, identityProviderID stri
 
 // CreateAccessIdentityProvider creates a new Access Identity Provider.
 //
-// API reference: https://api.cloudflare.com/#access-identity-providers-create-access-identity-provider
-func (api *API) CreateAccessIdentityProvider(accountID string, identityProviderConfiguration AccessIdentityProvider) (AccessIdentityProvider, error) {
-	uri := "/accounts/" + accountID + "/access/identity_providers"
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-add-an-access-identity-provider
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-add-an-access-identity-provider
+func (api *API) CreateAccessIdentityProvider(ctx context.Context, rc *ResourceContainer, params CreateAccessIdentityProviderParams) (AccessIdentityProvider, error) {
+	uri := fmt.Sprintf("/%s/%s/access/identity_providers", rc.Level, rc.Identifier)
 
-	res, err := api.makeRequest("POST", uri, identityProviderConfiguration)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errMakeRequestError)
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
-	var accessIdentityProviderResponse AccessIdentityProviderListResponse
+	var accessIdentityProviderResponse AccessIdentityProviderResponse
 	err = json.Unmarshal(res, &accessIdentityProviderResponse)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errUnmarshalError)
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessIdentityProviderResponse.Result, nil
@@ -898,23 +827,25 @@ func (api *API) CreateAccessIdentityProvider(accountID string, identityProviderC
 // UpdateAccessIdentityProvider updates an existing Access Identity
 // Provider.
 //
-// API reference: https://api.cloudflare.com/#access-identity-providers-create-access-identity-provider
-func (api *API) UpdateAccessIdentityProvider(accountID, identityProviderUUID string, identityProviderConfiguration AccessIdentityProvider) (AccessIdentityProvider, error) {
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-update-an-access-identity-provider
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-update-an-access-identity-provider
+func (api *API) UpdateAccessIdentityProvider(ctx context.Context, rc *ResourceContainer, params UpdateAccessIdentityProviderParams) (AccessIdentityProvider, error) {
 	uri := fmt.Sprintf(
-		"/accounts/%s/access/identity_providers/%s",
-		accountID,
-		identityProviderUUID,
+		"/%s/%s/access/identity_providers/%s",
+		rc.Level,
+		rc.Identifier,
+		params.ID,
 	)
 
-	res, err := api.makeRequest("PUT", uri, identityProviderConfiguration)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errMakeRequestError)
+		return AccessIdentityProvider{}, err
 	}
 
-	var accessIdentityProviderResponse AccessIdentityProviderListResponse
+	var accessIdentityProviderResponse AccessIdentityProviderResponse
 	err = json.Unmarshal(res, &accessIdentityProviderResponse)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errUnmarshalError)
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessIdentityProviderResponse.Result, nil
@@ -922,24 +853,80 @@ func (api *API) UpdateAccessIdentityProvider(accountID, identityProviderUUID str
 
 // DeleteAccessIdentityProvider deletes an Access Identity Provider.
 //
-// API reference: https://api.cloudflare.com/#access-identity-providers-create-access-identity-provider
-func (api *API) DeleteAccessIdentityProvider(accountID, identityProviderUUID string) (AccessIdentityProvider, error) {
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-delete-an-access-identity-provider
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-delete-an-access-identity-provider
+func (api *API) DeleteAccessIdentityProvider(ctx context.Context, rc *ResourceContainer, identityProviderUUID string) (AccessIdentityProvider, error) {
 	uri := fmt.Sprintf(
-		"/accounts/%s/access/identity_providers/%s",
-		accountID,
+		"/%s/%s/access/identity_providers/%s",
+		rc.Level,
+		rc.Identifier,
 		identityProviderUUID,
 	)
 
-	res, err := api.makeRequest("DELETE", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
-		return AccessIdentityProvider{}, errors.Wrap(err, errMakeRequestError)
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
-	var accessIdentityProviderResponse AccessIdentityProviderListResponse
+	var accessIdentityProviderResponse AccessIdentityProviderResponse
 	err = json.Unmarshal(res, &accessIdentityProviderResponse)
 	if err != nil {
+<<<<<<< HEAD
 		return AccessIdentityProvider{}, errors.Wrap(err, errUnmarshalError)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return AccessIdentityProvider{}, errors.Wrap(err, errUnmarshalError)
+=======
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return accessIdentityProviderResponse.Result, nil
+}
+
+// ListAccessIdentityProviderAuthContexts returns an identity provider's auth contexts
+// AzureAD only
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-get-an-access-identity-provider
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-get-an-access-identity-provider
+func (api *API) ListAccessIdentityProviderAuthContexts(ctx context.Context, rc *ResourceContainer, identityProviderID string) ([]AccessAuthContext, error) {
+	uri := fmt.Sprintf("/%s/%s/access/identity_providers/%s/auth_context", rc.Level, rc.Identifier, identityProviderID)
+
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return []AccessAuthContext{}, err
+	}
+
+	var accessAuthContextListResponse AccessAuthContextsListResponse
+	err = json.Unmarshal(res, &accessAuthContextListResponse)
+	if err != nil {
+		return []AccessAuthContext{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return accessAuthContextListResponse.Result, nil
+}
+
+// UpdateAccessIdentityProviderAuthContexts updates an existing Access Identity
+// Provider.
+// AzureAD only
+// Account API Reference: https://developers.cloudflare.com/api/operations/access-identity-providers-refresh-an-access-identity-provider-auth-contexts
+// Zone API Reference: https://developers.cloudflare.com/api/operations/zone-level-access-identity-providers-update-an-access-identity-provider
+func (api *API) UpdateAccessIdentityProviderAuthContexts(ctx context.Context, rc *ResourceContainer, identityProviderID string) (AccessIdentityProvider, error) {
+	uri := fmt.Sprintf(
+		"/%s/%s/access/identity_providers/%s/auth_context",
+		rc.Level,
+		rc.Identifier,
+		identityProviderID,
+	)
+
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, nil)
+	if err != nil {
+		return AccessIdentityProvider{}, err
+	}
+
+	var accessIdentityProviderResponse AccessIdentityProviderResponse
+	err = json.Unmarshal(res, &accessIdentityProviderResponse)
+	if err != nil {
+		return AccessIdentityProvider{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	return accessIdentityProviderResponse.Result, nil

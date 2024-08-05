@@ -12,7 +12,12 @@ func (objMgr *ObjectManager) CreateEADefinition(eadef EADefinition) (*EADefiniti
 func (objMgr *ObjectManager) GetEADefinition(name string) (*EADefinition, error) {
 	var res []EADefinition
 
+<<<<<<< HEAD
 	eadef := NewEADefinition(EADefinition{Name: name})
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	eadef := NewEADefinition(EADefinition{Name: &name})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	sf := map[string]string{
 		"name": name,

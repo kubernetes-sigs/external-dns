@@ -35,6 +35,7 @@ func (u *Msg) Used(rr []RR) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		hdr := r.Header()
 		hdr.Class = u.Question[0].Qclass
 		hdr.Ttl = 0
@@ -53,6 +54,13 @@ func (u *Msg) Used(rr []RR) {
 =======
 		r.Header().Class = u.Question[0].Qclass
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		r.Header().Class = u.Question[0].Qclass
+=======
+		hdr := r.Header()
+		hdr.Class = u.Question[0].Qclass
+		hdr.Ttl = 0
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		u.Answer = append(u.Answer, r)
 	}
 }

@@ -22,6 +22,7 @@ type RegionServiceHandler struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	client *Client
 }
 
@@ -169,6 +170,11 @@ func (r *RegionServiceHandler) Availability(ctx context.Context, regionID string
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Client *Client
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	Client *Client
+=======
+	client *Client
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // Region represents a Vultr region
@@ -194,7 +200,7 @@ type PlanAvailability struct {
 func (r *RegionServiceHandler) List(ctx context.Context, options *ListOptions) ([]Region, *Meta, error) {
 	uri := "/v2/regions"
 
-	req, err := r.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := r.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -207,7 +213,7 @@ func (r *RegionServiceHandler) List(ctx context.Context, options *ListOptions) (
 	req.URL.RawQuery = newValues.Encode()
 
 	regions := new(regionBase)
-	if err = r.Client.DoWithContext(ctx, req, &regions); err != nil {
+	if err = r.client.DoWithContext(ctx, req, &regions); err != nil {
 		return nil, nil, err
 	}
 
@@ -218,7 +224,7 @@ func (r *RegionServiceHandler) List(ctx context.Context, options *ListOptions) (
 func (r *RegionServiceHandler) Availability(ctx context.Context, regionID string, planType string) (*PlanAvailability, error) {
 	uri := fmt.Sprintf("/v2/regions/%s/availability", regionID)
 
-	req, err := r.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := r.client.NewRequest(ctx, http.MethodGet, uri, nil)
 
 	if err != nil {
 		return nil, err
@@ -232,8 +238,14 @@ func (r *RegionServiceHandler) Availability(ctx context.Context, regionID string
 	}
 
 	plans := new(PlanAvailability)
+<<<<<<< HEAD
 	if err = r.Client.DoWithContext(ctx, req, plans); err != nil {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	if err = r.Client.DoWithContext(ctx, req, plans); err != nil {
+=======
+	if err = r.client.DoWithContext(ctx, req, plans); err != nil {
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return nil, err
 	}
 

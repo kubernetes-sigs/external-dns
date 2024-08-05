@@ -26,6 +26,7 @@ import (
 	v1beta1 "k8s.io/api/flowcontrol/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
+<<<<<<< HEAD
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -124,6 +125,96 @@ func (c *FakePriorityLevelConfigurations) Delete(ctx context.Context, name strin
 =======
 		Invokes(testing.NewRootDeleteActionWithOptions(prioritylevelconfigurationsResource, name, opts), &v1beta1.PriorityLevelConfiguration{})
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	flowcontrolv1beta1 "k8s.io/client-go/applyconfigurations/flowcontrol/v1beta1"
+	testing "k8s.io/client-go/testing"
+)
+
+// FakePriorityLevelConfigurations implements PriorityLevelConfigurationInterface
+type FakePriorityLevelConfigurations struct {
+	Fake *FakeFlowcontrolV1beta1
+}
+
+var prioritylevelconfigurationsResource = v1beta1.SchemeGroupVersion.WithResource("prioritylevelconfigurations")
+
+var prioritylevelconfigurationsKind = v1beta1.SchemeGroupVersion.WithKind("PriorityLevelConfiguration")
+
+// Get takes name of the priorityLevelConfiguration, and returns the corresponding priorityLevelConfiguration object, and an error if there is any.
+func (c *FakePriorityLevelConfigurations) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.PriorityLevelConfiguration, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewRootGetAction(prioritylevelconfigurationsResource, name), &v1beta1.PriorityLevelConfiguration{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PriorityLevelConfiguration), err
+}
+
+// List takes label and field selectors, and returns the list of PriorityLevelConfigurations that match those selectors.
+func (c *FakePriorityLevelConfigurations) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.PriorityLevelConfigurationList, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewRootListAction(prioritylevelconfigurationsResource, prioritylevelconfigurationsKind, opts), &v1beta1.PriorityLevelConfigurationList{})
+	if obj == nil {
+		return nil, err
+	}
+
+	label, _, _ := testing.ExtractFromListOptions(opts)
+	if label == nil {
+		label = labels.Everything()
+	}
+	list := &v1beta1.PriorityLevelConfigurationList{ListMeta: obj.(*v1beta1.PriorityLevelConfigurationList).ListMeta}
+	for _, item := range obj.(*v1beta1.PriorityLevelConfigurationList).Items {
+		if label.Matches(labels.Set(item.Labels)) {
+			list.Items = append(list.Items, item)
+		}
+	}
+	return list, err
+}
+
+// Watch returns a watch.Interface that watches the requested priorityLevelConfigurations.
+func (c *FakePriorityLevelConfigurations) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+	return c.Fake.
+		InvokesWatch(testing.NewRootWatchAction(prioritylevelconfigurationsResource, opts))
+}
+
+// Create takes the representation of a priorityLevelConfiguration and creates it.  Returns the server's representation of the priorityLevelConfiguration, and an error, if there is any.
+func (c *FakePriorityLevelConfigurations) Create(ctx context.Context, priorityLevelConfiguration *v1beta1.PriorityLevelConfiguration, opts v1.CreateOptions) (result *v1beta1.PriorityLevelConfiguration, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewRootCreateAction(prioritylevelconfigurationsResource, priorityLevelConfiguration), &v1beta1.PriorityLevelConfiguration{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PriorityLevelConfiguration), err
+}
+
+// Update takes the representation of a priorityLevelConfiguration and updates it. Returns the server's representation of the priorityLevelConfiguration, and an error, if there is any.
+func (c *FakePriorityLevelConfigurations) Update(ctx context.Context, priorityLevelConfiguration *v1beta1.PriorityLevelConfiguration, opts v1.UpdateOptions) (result *v1beta1.PriorityLevelConfiguration, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewRootUpdateAction(prioritylevelconfigurationsResource, priorityLevelConfiguration), &v1beta1.PriorityLevelConfiguration{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PriorityLevelConfiguration), err
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakePriorityLevelConfigurations) UpdateStatus(ctx context.Context, priorityLevelConfiguration *v1beta1.PriorityLevelConfiguration, opts v1.UpdateOptions) (*v1beta1.PriorityLevelConfiguration, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewRootUpdateSubresourceAction(prioritylevelconfigurationsResource, "status", priorityLevelConfiguration), &v1beta1.PriorityLevelConfiguration{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PriorityLevelConfiguration), err
+}
+
+// Delete takes name of the priorityLevelConfiguration and deletes it. Returns an error if one occurs.
+func (c *FakePriorityLevelConfigurations) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+	_, err := c.Fake.
+		Invokes(testing.NewRootDeleteActionWithOptions(prioritylevelconfigurationsResource, name, opts), &v1beta1.PriorityLevelConfiguration{})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return err
 }
 

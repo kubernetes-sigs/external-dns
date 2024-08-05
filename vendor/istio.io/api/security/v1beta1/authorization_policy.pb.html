@@ -1,0 +1,842 @@
+---
+title: Authorization Policy
+description: Configuration for access control on workloads.
+location: https://istio.io/docs/reference/config/security/authorization-policy.html
+layout: protoc-gen-docs
+generator: protoc-gen-docs
+schema: istio.security.v1beta1.AuthorizationPolicy
+weight: 20
+aliases: [/docs/reference/config/authorization/authorization-policy]
+number_of_entries: 9
+---
+<p>Istio Authorization Policy enables access control on workloads in the mesh.</p>
+<p>Authorization policy supports CUSTOM, DENY and ALLOW actions for access control. When CUSTOM, DENY and ALLOW actions
+are used for a workload at the same time, the CUSTOM action is evaluated first, then the DENY action, and finally the ALLOW action.
+The evaluation is determined by the following rules:</p>
+<ol>
+<li>If there are any CUSTOM policies that match the request, evaluate and deny the request if the evaluation result is deny.</li>
+<li>If there are any DENY policies that match the request, deny the request.</li>
+<li>If there are no ALLOW policies for the workload, allow the request.</li>
+<li>If any of the ALLOW policies match the request, allow the request.</li>
+<li>Deny the request.</li>
+</ol>
+<p>Istio Authorization Policy also supports the AUDIT action to decide whether to log requests.
+AUDIT policies do not affect whether requests are allowed or denied to the workload.
+Requests will be allowed or denied based solely on CUSTOM, DENY and ALLOW actions.</p>
+<p>A request will be internally marked that it should be audited if there is an AUDIT policy on the workload that matches the request.
+A separate plugin must be configured and enabled to actually fulfill the audit decision and complete the audit behavior.
+The request will not be audited if there are no such supporting plugins enabled.
+Currently, the only supported plugin is the <a href="https://istio.io/latest/docs/reference/config/proxy_extensions/stackdriver/">Stackdriver</a> plugin.</p>
+<p>Here is an example of Istio Authorization Policy:</p>
+<p>It sets the <code>action</code> to <code>ALLOW</code> to create an allow policy. The default action is <code>ALLOW</code>
+but it is useful to be explicit in the policy.</p>
+<p>It allows requests from:</p>
+<ul>
+<li>service account <code>cluster.local/ns/default/sa/sleep</code> or</li>
+<li>namespace <code>test</code></li>
+</ul>
+<p>to access the workload with:</p>
+<ul>
+<li><code>GET</code> method at paths of prefix <code>/info</code> or,</li>
+<li><code>POST</code> method at path <code>/data</code>.</li>
+</ul>
+<p>when the request has a valid JWT token issued by <code>https://accounts.google.com</code>.</p>
+<p>Any other requests will be denied.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: [&quot;cluster.local/ns/default/sa/sleep&quot;]
+    - source:
+        namespaces: [&quot;test&quot;]
+    to:
+    - operation:
+        methods: [&quot;GET&quot;]
+        paths: [&quot;/info*&quot;]
+    - operation:
+        methods: [&quot;POST&quot;]
+        paths: [&quot;/data&quot;]
+    when:
+    - key: request.auth.claims[iss]
+      values: [&quot;https://accounts.google.com&quot;]
+</code></pre>
+<p>The following is another example that sets <code>action</code> to <code>DENY</code> to create a deny policy.
+It denies requests from the <code>dev</code> namespace to the <code>POST</code> method on all workloads
+in the <code>foo</code> namespace.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  action: DENY
+  rules:
+  - from:
+    - source:
+        namespaces: [&quot;dev&quot;]
+    to:
+    - operation:
+        methods: [&quot;POST&quot;]
+</code></pre>
+<p>The following is another example that sets <code>action</code> to <code>DENY</code> to create a deny policy.
+It denies all the requests with <code>POST</code> method on port <code>8080</code> on all workloads
+in the <code>foo</code> namespace.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: [&quot;POST&quot;]
+        ports: [&quot;8080&quot;]
+</code></pre>
+<p>When this rule is applied to TCP traffic, the <code>method</code> field (as will all HTTP based attributes) cannot be processed.
+For a <code>DENY</code> rule, missing attributes are treated as matches. This means all TCP traffic on port <code>8080</code> would be denied in the example above.
+If we were to remove the <code>ports</code> match, all TCP traffic would be denied. As a result, it is recommended to always scope <code>DENY</code> policies to a specific port,
+especially when using HTTP attributes <a href="https://istio.io/latest/docs/tasks/security/authorization/authz-tcp/">Authorization Policy for TCP Ports</a>.</p>
+<p>The following authorization policy sets the <code>action</code> to <code>AUDIT</code>. It will audit any <code>GET</code> requests to the path with the
+prefix <code>/user/profile</code>.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  namespace: ns1
+  name: anyname
+spec:
+  selector:
+    matchLabels:
+      app: myapi
+  action: AUDIT
+  rules:
+  - to:
+    - operation:
+        methods: [&quot;GET&quot;]
+        paths: [&quot;/user/profile/*&quot;]
+</code></pre>
+<p>Authorization Policy scope (target) is determined by &ldquo;metadata/namespace&rdquo; and
+an optional <code>selector</code>.</p>
+<ul>
+<li>&ldquo;metadata/namespace&rdquo; tells which namespace the policy applies. If set to root
+namespace, the policy applies to all namespaces in a mesh.</li>
+<li>workload <code>selector</code> can be used to further restrict where a policy applies.</li>
+</ul>
+<p>For example, the following authorization policy applies to all workloads in namespace <code>foo</code>. It allows nothing and effectively denies
+all requests to workloads in namespace <code>foo</code>.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+ name: allow-nothing
+ namespace: foo
+spec:
+  {}
+</code></pre>
+<p>The following authorization policy allows all requests to workloads in namespace <code>foo</code>.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+ name: allow-all
+ namespace: foo
+spec:
+ rules:
+ - {}
+</code></pre>
+<p>The following authorization policy applies to workloads containing label <code>app: httpbin</code> in namespace <code>bar</code>. It allows
+nothing and effectively denies all requests to the selected workloads.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: bar
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+</code></pre>
+<p>The following authorization policy applies to workloads containing label <code>version: v1</code> in all namespaces in the mesh.
+(Assuming the root namespace is configured to <code>istio-system</code>).</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+ name: allow-nothing
+ namespace: istio-system
+spec:
+ selector:
+   matchLabels:
+     version: v1
+</code></pre>
+<p>The following example shows you how to set up an authorization policy using an <a href="https://istio.io/latest/docs/reference/config/annotations/">experimental annotation</a>
+<code>istio.io/dry-run</code> to dry-run the policy without actually enforcing it.</p>
+<p>The dry-run annotation allows you to better understand the effect of an authorization policy before applying it to the production traffic.
+This helps to reduce the risk of breaking the production traffic caused by an incorrect authorization policy.
+For more information, see <a href="https://istio.io/latest/docs/tasks/security/authorization/authz-dry-run/">dry-run tasks</a>.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dry-run-example
+  annotations:
+    &quot;istio.io/dry-run&quot;: &quot;true&quot;
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        paths: [&quot;/headers&quot;]
+</code></pre>
+
+<h2 id="AuthorizationPolicy">AuthorizationPolicy</h2>
+<section>
+<p>AuthorizationPolicy enables access control on workloads.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="AuthorizationPolicy-selector">
+<td><code>selector</code></td>
+<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#WorkloadSelector">WorkloadSelector</a></code></td>
+<td>
+<p>Optional. The selector decides where to apply the authorization policy. The selector will match with workloads
+in the same namespace as the authorization policy. If the authorization policy is in the root namespace, the selector
+will additionally match with workloads in all namespaces.</p>
+<p>If the selector and the targetRef are not set, the selector will match all workloads.</p>
+<p>At most one of <code>selector</code> or <code>targetRefs</code> can be set for a given policy.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="AuthorizationPolicy-targetRefs">
+<td><code>targetRefs</code></td>
+<td><code><a href="https://istio.io/docs/reference/config/type/workload-selector.html#PolicyTargetReference">PolicyTargetReference[]</a></code></td>
+<td>
+<p>Optional. The targetRef specifies the gateway the policy should be
+applied to. The targeted resource specified will determine which
+workloads the policy applies to.</p>
+<p>Currently, the following resource attachment types are supported:</p>
+<ul>
+<li><code>kind: Gateway</code> with <code>group: gateway.networking.k8s.io</code> in the same namespace.</li>
+</ul>
+<p>If not set, the policy is applied as defined by the selector.
+At most one of the selector and targetRefs can be set.</p>
+<p>NOTE: If you are using the <code>targetRefs</code> field in a multi-revision environment with Istio versions prior to 1.22,
+it is highly recommended that you pin the policy to a revision running 1.22+ via the <code>istio.io/rev</code> label.
+This is to prevent proxies connected to older control planes (that don&rsquo;t know about the <code>targetRefs</code> field)
+from misinterpreting the policy as namespace-wide during the upgrade process.</p>
+<p>NOTE: Waypoint proxies are required to use this field for policies to apply; <code>selector</code> policies will be ignored.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="AuthorizationPolicy-rules">
+<td><code>rules</code></td>
+<td><code><a href="#Rule">Rule[]</a></code></td>
+<td>
+<p>Optional. A list of rules to match the request. A match occurs when at least one rule matches the request.</p>
+<p>If not set, the match will never occur. This is equivalent to setting a default of deny for the target workloads if
+the action is ALLOW.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="AuthorizationPolicy-action">
+<td><code>action</code></td>
+<td><code><a href="#AuthorizationPolicy-Action">Action</a></code></td>
+<td>
+<p>Optional. The action to take if the request is matched with the rules. Default is ALLOW if not specified.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="AuthorizationPolicy-provider" class="oneof oneof-start">
+<td><code>provider</code></td>
+<td><code><a href="#AuthorizationPolicy-ExtensionProvider">ExtensionProvider (oneof)</a></code></td>
+<td>
+<p>Specifies detailed configuration of the CUSTOM action. Must be used only with CUSTOM action.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Rule">Rule</h2>
+<section>
+<p>Rule matches requests from a list of sources that perform a list of operations subject to a
+list of conditions. A match occurs when at least one source, one operation and all conditions
+matches the request. An empty rule is always matched.</p>
+<p>Any string field in the rule supports Exact, Prefix, Suffix and Presence match:</p>
+<ul>
+<li>Exact match: <code>abc</code> will match on value <code>abc</code>.</li>
+<li>Prefix match: <code>abc*</code> will match on value <code>abc</code> and <code>abcd</code>.</li>
+<li>Suffix match: <code>*abc</code> will match on value <code>abc</code> and <code>xabc</code>.</li>
+<li>Presence match: <code>*</code> will match when value is not empty.</li>
+</ul>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-from">
+<td><code>from</code></td>
+<td><code><a href="#Rule-From">From[]</a></code></td>
+<td>
+<p>Optional. <code>from</code> specifies the source of a request.</p>
+<p>If not set, any source is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Rule-to">
+<td><code>to</code></td>
+<td><code><a href="#Rule-To">To[]</a></code></td>
+<td>
+<p>Optional. <code>to</code> specifies the operation of a request.</p>
+<p>If not set, any operation is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Rule-when">
+<td><code>when</code></td>
+<td><code><a href="#Condition">Condition[]</a></code></td>
+<td>
+<p>Optional. <code>when</code> specifies a list of additional conditions of a request.</p>
+<p>If not set, any condition is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Source">Source</h2>
+<section>
+<p>Source specifies the source identities of a request. Fields in the source are
+ANDed together.</p>
+<p>For example, the following source matches if the principal is <code>admin</code> or <code>dev</code>
+and the namespace is <code>prod</code> or <code>test</code> and the ip is not <code>203.0.113.4</code>.</p>
+<pre><code class="language-yaml">principals: [&quot;admin&quot;, &quot;dev&quot;]
+namespaces: [&quot;prod&quot;, &quot;test&quot;]
+notIpBlocks: [&quot;203.0.113.4&quot;]
+</code></pre>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Source-principals">
+<td><code>principals</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of peer identities derived from the peer certificate. The peer identity is in the format of
+<code>&quot;&lt;TRUST_DOMAIN&gt;/ns/&lt;NAMESPACE&gt;/sa/&lt;SERVICE_ACCOUNT&gt;&quot;</code>, for example, <code>&quot;cluster.local/ns/default/sa/productpage&quot;</code>.
+This field requires mTLS enabled and is the same as the <code>source.principal</code> attribute.</p>
+<p>If not set, any principal is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-not_principals">
+<td><code>notPrincipals</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of peer identities.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-request_principals">
+<td><code>requestPrincipals</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of request identities derived from the JWT. The request identity is in the format of
+<code>&quot;&lt;ISS&gt;/&lt;SUB&gt;&quot;</code>, for example, <code>&quot;example.com/sub-1&quot;</code>. This field requires request authentication enabled and is the
+same as the <code>request.auth.principal</code> attribute.</p>
+<p>If not set, any request principal is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-not_request_principals">
+<td><code>notRequestPrincipals</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of request identities.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-namespaces">
+<td><code>namespaces</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of namespaces derived from the peer certificate.
+This field requires mTLS enabled and is the same as the <code>source.namespace</code> attribute.</p>
+<p>If not set, any namespace is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-not_namespaces">
+<td><code>notNamespaces</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of namespaces.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-ip_blocks">
+<td><code>ipBlocks</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of IP blocks, populated from the source address of the IP packet. Single IP (e.g. <code>203.0.113.4</code>) and
+CIDR (e.g. <code>203.0.113.0/24</code>) are supported. This is the same as the <code>source.ip</code> attribute.</p>
+<p>If not set, any IP is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-not_ip_blocks">
+<td><code>notIpBlocks</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of IP blocks.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-remote_ip_blocks">
+<td><code>remoteIpBlocks</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of IP blocks, populated from <code>X-Forwarded-For</code> header or proxy protocol.
+To make use of this field, you must configure the <code>numTrustedProxies</code> field of the <code>gatewayTopology</code> under the <code>meshConfig</code>
+when you install Istio or using an annotation on the ingress gateway.  See the documentation here:
+<a href="https://istio.io/latest/docs/ops/configuration/traffic-management/network-topologies/">Configuring Gateway Network Topology</a>.
+Single IP (e.g. <code>203.0.113.4</code>) and CIDR (e.g. <code>203.0.113.0/24</code>) are supported.
+This is the same as the <code>remote.ip</code> attribute.</p>
+<p>If not set, any IP is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Source-not_remote_ip_blocks">
+<td><code>notRemoteIpBlocks</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of remote IP blocks.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Operation">Operation</h2>
+<section>
+<p>Operation specifies the operations of a request. Fields in the operation are
+ANDed together.</p>
+<p>For example, the following operation matches if the host has suffix <code>.example.com</code>
+and the method is <code>GET</code> or <code>HEAD</code> and the path doesn&rsquo;t have prefix <code>/admin</code>.</p>
+<pre><code class="language-yaml">hosts: [&quot;*.example.com&quot;]
+methods: [&quot;GET&quot;, &quot;HEAD&quot;]
+notPaths: [&quot;/admin*&quot;]
+</code></pre>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Operation-hosts">
+<td><code>hosts</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of hosts as specified in the HTTP request. The match is case-insensitive.
+See the <a href="https://istio.io/latest/docs/ops/best-practices/security/#writing-host-match-policies">security best practices</a> for
+recommended usage of this field.</p>
+<p>If not set, any host is allowed. Must be used only with HTTP.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_hosts">
+<td><code>notHosts</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of hosts as specified in the HTTP request. The match is case-insensitive.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-ports">
+<td><code>ports</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of ports as specified in the connection.</p>
+<p>If not set, any port is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_ports">
+<td><code>notPorts</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of ports as specified in the connection.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-methods">
+<td><code>methods</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of methods as specified in the HTTP request.
+For gRPC service, this will always be <code>POST</code>.</p>
+<p>If not set, any method is allowed. Must be used only with HTTP.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_methods">
+<td><code>notMethods</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of methods as specified in the HTTP request.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-paths">
+<td><code>paths</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of paths as specified in the HTTP request. See the <a href="https://istio.io/latest/docs/reference/config/security/normalization/">Authorization Policy Normalization</a>
+for details of the path normalization.
+For gRPC service, this will be the fully-qualified name in the form of <code>/package.service/method</code>.</p>
+<p>If a path in the list contains the <code>{*}</code> or <code>{**}</code> path template operator, it will be interpreted as an <a href="https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/path/match/uri_template/v3/uri_template_match.proto">Envoy Uri Template</a>.
+To be a valid path template, the path must not contain <code>*</code>, <code>{</code>, or <code>}</code> outside of a supported operator. No other characters are allowed in the path segment with the path template operator.</p>
+<ul>
+<li><code>{*}</code> matches a single glob that cannot extend beyond a path segment.</li>
+<li><code>{**}</code> matches zero or more globs. If a path contains <code>{**}</code>, it must be the last operator.</li>
+</ul>
+<p>Examples:</p>
+<ul>
+<li><code>/foo/{*}</code> matches <code>/foo/bar</code> but not <code>/foo/bar/baz</code></li>
+<li><code>/foo/{**}/</code> matches <code>/foo/bar/</code>, <code>/foo/bar/baz.txt</code>, and <code>/foo//</code> but not <code>/foo/bar</code></li>
+<li><code>/foo/{*}/bar/{**}</code> matches <code>/foo/buzz/bar/</code> and <code>/foo/buzz/bar/baz</code></li>
+<li><code>/*/baz/{*}`` is not a valid path template since it includes </code>*` outside of a supported operator</li>
+<li><code>/**/baz/{*}`` is not a valid path template since it includes </code>**` outside of a supported operator</li>
+<li><code>/{**}/foo/{*}</code> is not a valid path template since <code>{**}</code> is not the last operator</li>
+<li><code>/foo/{*}.txt</code> is invalid since there are characters other than <code>{*}</code> in the path segment</li>
+</ul>
+<p>If not set, any path is allowed. Must be used only with HTTP.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_paths">
+<td><code>notPaths</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of paths.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Condition">Condition</h2>
+<section>
+<p>Condition specifies additional required attributes.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Condition-key">
+<td><code>key</code></td>
+<td><code>string</code></td>
+<td>
+<p>The name of an Istio attribute.
+See the <a href="https://istio.io/docs/reference/config/security/conditions/">full list of supported attributes</a>.</p>
+
+</td>
+<td>
+Yes
+</td>
+</tr>
+<tr id="Condition-values">
+<td><code>values</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of allowed values for the attribute.
+Note: at least one of <code>values</code> or <code>notValues</code> must be set.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Condition-not_values">
+<td><code>notValues</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of values for the attribute.
+Note: at least one of <code>values</code> or <code>notValues</code> must be set.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="AuthorizationPolicy-ExtensionProvider">AuthorizationPolicy.ExtensionProvider</h2>
+<section>
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="AuthorizationPolicy-ExtensionProvider-name">
+<td><code>name</code></td>
+<td><code>string</code></td>
+<td>
+<p>Specifies the name of the extension provider. The list of available providers is defined in the MeshConfig.
+Note, currently at most 1 extension provider is allowed per workload. Different workloads can use different extension provider.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Rule-From">Rule.From</h2>
+<section>
+<p>From includes a list of sources.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-From-source">
+<td><code>source</code></td>
+<td><code><a href="#Source">Source</a></code></td>
+<td>
+<p>Source specifies the source of a request.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Rule-To">Rule.To</h2>
+<section>
+<p>To includes a list of operations.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-To-operation">
+<td><code>operation</code></td>
+<td><code><a href="#Operation">Operation</a></code></td>
+<td>
+<p>Operation specifies the operation of a request.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="AuthorizationPolicy-Action">AuthorizationPolicy.Action</h2>
+<section>
+<p>Action specifies the operation to take.</p>
+
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="AuthorizationPolicy-Action-ALLOW">
+<td><code>ALLOW</code></td>
+<td>
+<p>Allow a request only if it matches the rules. This is the default type.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-DENY">
+<td><code>DENY</code></td>
+<td>
+<p>Deny a request if it matches any of the rules.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-AUDIT">
+<td><code>AUDIT</code></td>
+<td>
+<p>Audit a request if it matches any of the rules.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-CUSTOM">
+<td><code>CUSTOM</code></td>
+<td>
+<p>The CUSTOM action allows an extension to handle the user request if the matching rules evaluate to true.
+The extension is evaluated independently and before the native ALLOW and DENY actions. When used together, A request
+is allowed if and only if all the actions return allow, in other words, the extension cannot bypass the
+authorization decision made by ALLOW and DENY action.
+Extension behavior is defined by the named providers declared in MeshConfig. The authorization policy refers to
+the extension by specifying the name of the provider.
+One example use case of the extension is to integrate with a custom external authorization system to delegate
+the authorization decision to it.</p>
+<p>The following authorization policy applies to an ingress gateway and delegates the authorization check to a named extension
+<code>my-custom-authz</code> if the request path has prefix <code>/admin/</code>.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: ext-authz
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: istio-ingressgateway
+  action: CUSTOM
+  provider:
+    name: &quot;my-custom-authz&quot;
+  rules:
+  - to:
+    - operation:
+        paths: [&quot;/admin/*&quot;]
+</code></pre>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>

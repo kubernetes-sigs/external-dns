@@ -7,6 +7,7 @@ package socket
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (h *cmsghdr) set(l, lvl, typ int) {
 	h.Len = int32(l)
 	h.Level = int32(lvl)
@@ -58,11 +59,17 @@ func controlMessageSpace(dataLen int) int {
 =======
 import "syscall"
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+import "syscall"
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (h *cmsghdr) set(l, lvl, typ int) {
 	h.Len = int32(l)
 	h.Level = int32(lvl)
 	h.Type = int32(typ)
 }
+<<<<<<< HEAD
 
 func controlHeaderLen() int {
 	return syscall.CmsgLen(0)
@@ -76,3 +83,18 @@ func controlMessageSpace(dataLen int) int {
 	return syscall.CmsgSpace(dataLen)
 }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+func controlHeaderLen() int {
+	return syscall.CmsgLen(0)
+}
+
+func controlMessageLen(dataLen int) int {
+	return syscall.CmsgLen(dataLen)
+}
+
+func controlMessageSpace(dataLen int) int {
+	return syscall.CmsgSpace(dataLen)
+}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

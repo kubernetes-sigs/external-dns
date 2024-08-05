@@ -11,10 +11,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1737,6 +1737,10 @@ func (q queryParameter) GetMulti() (string, []string) {
 }
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"time"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"google.golang.org/api/internal/third_party/uritemplates"
 )
@@ -1776,7 +1780,7 @@ const (
 
 	// DefaultUploadChunkSize is the default chunk size to use for resumable
 	// uploads if not specified by the user.
-	DefaultUploadChunkSize = 8 * 1024 * 1024
+	DefaultUploadChunkSize = 16 * 1024 * 1024
 
 	// MinUploadChunkSize is the minimum chunk size that can be used for
 	// resumable uploads.  All user-specified chunk sizes must be multiple of
@@ -1791,6 +1795,8 @@ type Error struct {
 	// Message is the server response message and is only populated when
 	// explicitly referenced by the JSON server response.
 	Message string `json:"message"`
+	// Details provide more context to an error.
+	Details []interface{} `json:"details"`
 	// Body is the raw response returned by the server.
 	// It is often but not always JSON, depending on how the request fails.
 	Body string
@@ -1798,6 +1804,9 @@ type Error struct {
 	Header http.Header
 
 	Errors []ErrorItem
+	// err is typically a wrapped apierror.APIError, see
+	// google-api-go-client/internal/gensupport/error.go.
+	err error
 }
 
 // ErrorItem is a detailed error code & message from the Google API frontend.
@@ -1817,6 +1826,16 @@ func (e *Error) Error() string {
 	if e.Message != "" {
 		fmt.Fprintf(&buf, "%s", e.Message)
 	}
+	if len(e.Details) > 0 {
+		var detailBuf bytes.Buffer
+		enc := json.NewEncoder(&detailBuf)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(e.Details); err == nil {
+			fmt.Fprint(&buf, "\nDetails:")
+			fmt.Fprintf(&buf, "\n%s", detailBuf.String())
+
+		}
+	}
 	if len(e.Errors) == 0 {
 		return strings.TrimSpace(buf.String())
 	}
@@ -1831,6 +1850,15 @@ func (e *Error) Error() string {
 	return buf.String()
 }
 
+// Wrap allows an existing Error to wrap another error. See also [Error.Unwrap].
+func (e *Error) Wrap(err error) {
+	e.err = err
+}
+
+func (e *Error) Unwrap() error {
+	return e.err
+}
+
 type errorReply struct {
 	Error *Error `json:"error"`
 }
@@ -1841,7 +1869,7 @@ func CheckResponse(res *http.Response) error {
 	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		return nil
 	}
-	slurp, err := ioutil.ReadAll(res.Body)
+	slurp, err := io.ReadAll(res.Body)
 	if err == nil {
 		jerr := new(errorReply)
 		err = json.Unmarshal(slurp, jerr)
@@ -1850,6 +1878,7 @@ func CheckResponse(res *http.Response) error {
 				jerr.Error.Code = res.StatusCode
 			}
 			jerr.Error.Body = string(slurp)
+			jerr.Error.Header = res.Header
 			return jerr.Error
 		}
 	}
@@ -1880,10 +1909,11 @@ func CheckMediaResponse(res *http.Response) error {
 	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		return nil
 	}
-	slurp, _ := ioutil.ReadAll(io.LimitReader(res.Body, 1<<20))
+	slurp, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
 	return &Error{
-		Code: res.StatusCode,
-		Body: string(slurp),
+		Code:   res.StatusCode,
+		Body:   string(slurp),
+		Header: res.Header,
 	}
 }
 
@@ -1955,12 +1985,30 @@ func ChunkSize(size int) MediaOption {
 	return chunkSizeOption(size)
 }
 
+type chunkRetryDeadlineOption time.Duration
+
+func (cd chunkRetryDeadlineOption) setOptions(o *MediaOptions) {
+	o.ChunkRetryDeadline = time.Duration(cd)
+}
+
+// ChunkRetryDeadline returns a MediaOption which sets a per-chunk retry
+// deadline. If a single chunk has been attempting to upload for longer than
+// this time and the request fails, it will no longer be retried, and the error
+// will be returned to the caller.
+// This is only applicable for files which are large enough to require
+// a multi-chunk resumable upload.
+// The default value is 32s.
+// To set a deadline on the entire upload, use context timeout or cancellation.
+func ChunkRetryDeadline(deadline time.Duration) MediaOption {
+	return chunkRetryDeadlineOption(deadline)
+}
+
 // MediaOptions stores options for customizing media upload.  It is not used by developers directly.
 type MediaOptions struct {
 	ContentType           string
 	ForceEmptyContentType bool
-
-	ChunkSize int
+	ChunkSize             int
+	ChunkRetryDeadline    time.Duration
 }
 
 // ProcessMediaOptions stores options from opts in a MediaOptions.
@@ -2072,11 +2120,11 @@ func ConvertVariant(v map[string]interface{}, dst interface{}) bool {
 // For example, if your response has a "NextPageToken" and a slice of "Items" with "Id" fields,
 // you could request just those fields like this:
 //
-//     svc.Events.List().Fields("nextPageToken", "items/id").Do()
+//	svc.Events.List().Fields("nextPageToken", "items/id").Do()
 //
 // or if you were also interested in each Item's "Updated" field, you can combine them like this:
 //
-//     svc.Events.List().Fields("nextPageToken", "items(id,updated)").Do()
+//	svc.Events.List().Fields("nextPageToken", "items(id,updated)").Do()
 //
 // Another way to find field names is through the Google API explorer:
 // https://developers.google.com/apis-explorer/#p/
@@ -2099,6 +2147,14 @@ func CombineFields(s []Field) string {
 // an API call is common across many APIs, and is thus a CallOption.
 type CallOption interface {
 	Get() (key, value string)
+}
+
+// A MultiCallOption is an option argument to an API call and can be passed
+// anywhere a CallOption is accepted. It additionally supports returning a slice
+// of values for a given key.
+type MultiCallOption interface {
+	CallOption
+	GetMulti() (key string, value []string)
 }
 
 // QuotaUser returns a CallOption that will set the quota user for a call.
@@ -2127,5 +2183,25 @@ type traceTok string
 
 func (t traceTok) Get() (string, string) { return "trace", "token:" + string(t) }
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+type queryParameter struct {
+	key    string
+	values []string
+}
+
+// QueryParameter allows setting the value(s) of an arbitrary key.
+func QueryParameter(key string, values ...string) CallOption {
+	return queryParameter{key: key, values: append([]string{}, values...)}
+}
+
+// Get will never actually be called -- GetMulti will.
+func (q queryParameter) Get() (string, string) {
+	return "", ""
+}
+
+// GetMulti returns the key and values values associated to that key.
+func (q queryParameter) GetMulti() (string, []string) {
+	return q.key, q.values
+}
 
 // TODO: Fields too

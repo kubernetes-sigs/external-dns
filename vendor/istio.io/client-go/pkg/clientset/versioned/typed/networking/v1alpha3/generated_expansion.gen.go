@@ -29,3 +29,5 @@ type SidecarExpansion interface{}
 type VirtualServiceExpansion interface{}
 
 type WorkloadEntryExpansion interface{}
+
+type WorkloadGroupExpansion interface{}

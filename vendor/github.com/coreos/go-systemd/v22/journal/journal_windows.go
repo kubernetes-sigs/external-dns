@@ -33,3 +33,15 @@ func Enabled() bool {
 func Send(message string, priority Priority, vars map[string]string) error {
 	return errors.New("could not initialize socket to journald")
 }
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+func StderrIsJournalStream() (bool, error) {
+	return false, nil
+}
+
+func StdoutIsJournalStream() (bool, error) {
+	return false, nil
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

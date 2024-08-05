@@ -34,6 +34,10 @@ func (c *FakeNetworkingV1beta1) Gateways(namespace string) v1beta1.GatewayInterf
 	return &FakeGateways{c, namespace}
 }
 
+func (c *FakeNetworkingV1beta1) ProxyConfigs(namespace string) v1beta1.ProxyConfigInterface {
+	return &FakeProxyConfigs{c, namespace}
+}
+
 func (c *FakeNetworkingV1beta1) ServiceEntries(namespace string) v1beta1.ServiceEntryInterface {
 	return &FakeServiceEntries{c, namespace}
 }
@@ -48,6 +52,10 @@ func (c *FakeNetworkingV1beta1) VirtualServices(namespace string) v1beta1.Virtua
 
 func (c *FakeNetworkingV1beta1) WorkloadEntries(namespace string) v1beta1.WorkloadEntryInterface {
 	return &FakeWorkloadEntries{c, namespace}
+}
+
+func (c *FakeNetworkingV1beta1) WorkloadGroups(namespace string) v1beta1.WorkloadGroupInterface {
+	return &FakeWorkloadGroups{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

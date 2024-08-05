@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+<<<<<<< HEAD
 	"github.com/golang/protobuf/jsonpb"
 	protov1 "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -67,6 +68,43 @@ func ToJSON(e interface{}) string {
 		}
 		return string(ret)
 	}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/protoadapt"
+)
+
+const jsonIndent = "  "
+
+// ToJSON marshals the input into a json string.
+//
+// If marshal fails, it falls back to fmt.Sprintf("%+v").
+func ToJSON(e any) string {
+	if ee, ok := e.(protoadapt.MessageV1); ok {
+		e = protoadapt.MessageV2Of(ee)
+	}
+
+	if ee, ok := e.(protoadapt.MessageV2); ok {
+		mm := protojson.MarshalOptions{
+			Indent:    jsonIndent,
+			Multiline: true,
+		}
+		ret, err := mm.Marshal(ee)
+		if err != nil {
+			// This may fail for proto.Anys, e.g. for xDS v2, LDS, the v2
+			// messages are not imported, and this will fail because the message
+			// is not found.
+			return fmt.Sprintf("%+v", ee)
+		}
+		return string(ret)
+	}
+
+	ret, err := json.MarshalIndent(e, "", jsonIndent)
+	if err != nil {
+		return fmt.Sprintf("%+v", e)
+	}
+	return string(ret)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // FormatJSON formats the input json bytes with indentation.

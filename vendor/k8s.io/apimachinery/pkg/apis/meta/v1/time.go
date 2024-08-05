@@ -26,6 +26,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // Time is a wrapper around time.Time which supports correct
@@ -794,6 +795,11 @@ var _ fuzz.Interface = &Time{}
 =======
 
 	fuzz "github.com/google/gofuzz"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+	fuzz "github.com/google/gofuzz"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // Time is a wrapper around time.Time which supports correct
@@ -955,6 +961,7 @@ func (t Time) MarshalQueryParameter() (string, error) {
 
 	return t.UTC().Format(time.RFC3339), nil
 }
+<<<<<<< HEAD
 
 // Fuzz satisfies fuzz.Interface.
 func (t *Time) Fuzz(c fuzz.Continue) {
@@ -969,3 +976,19 @@ func (t *Time) Fuzz(c fuzz.Continue) {
 
 var _ fuzz.Interface = &Time{}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+
+// Fuzz satisfies fuzz.Interface.
+func (t *Time) Fuzz(c fuzz.Continue) {
+	if t == nil {
+		return
+	}
+	// Allow for about 1000 years of randomness.  Leave off nanoseconds
+	// because JSON doesn't represent them so they can't round-trip
+	// properly.
+	t.Time = time.Unix(c.Rand.Int63n(1000*365*24*60*60), 0)
+}
+
+var _ fuzz.Interface = &Time{}
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

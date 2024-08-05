@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/prometheus/procfs/internal/fs"
 	"github.com/prometheus/procfs/internal/util"
 )
 
@@ -81,10 +80,10 @@ type ProcStat struct {
 	STime uint
 	// Amount of time that this process's waited-for children have been
 	// scheduled in user mode, measured in clock ticks.
-	CUTime uint
+	CUTime int
 	// Amount of time that this process's waited-for children have been
 	// scheduled in kernel mode, measured in clock ticks.
-	CSTime uint
+	CSTime int
 	// For processes running a real-time scheduling policy, this is the negated
 	// scheduling priority, minus one.
 	Priority int
@@ -100,6 +99,7 @@ type ProcStat struct {
 	VSize uint
 	// Resident set size in pages.
 	RSS int
+<<<<<<< HEAD
 <<<<<<< HEAD
 	// Soft limit in bytes on the rss of the process.
 	RSSLimit uint64
@@ -237,13 +237,27 @@ func (p Proc) Stat() (ProcStat, error) {
 		&s.DelayAcctBlkIOTicks,
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// Soft limit in bytes on the rss of the process.
+	RSSLimit uint64
+	// CPU number last executed on.
+	Processor uint
+	// Real-time scheduling priority, a number in the range 1 to 99 for processes
+	// scheduled under a real-time policy, or 0, for non-real-time processes.
+	RTPriority uint
+	// Scheduling policy.
+	Policy uint
+	// Aggregated block I/O delays, measured in clock ticks (centiseconds).
+	DelayAcctBlkIOTicks uint64
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-	proc fs.FS
+	proc FS
 }
 
 // NewStat returns the current status information of the process.
 //
-// Deprecated: use p.Stat() instead
+// Deprecated: Use p.Stat() instead.
 func (p Proc) NewStat() (ProcStat, error) {
 	return p.Stat()
 }
@@ -256,7 +270,8 @@ func (p Proc) Stat() (ProcStat, error) {
 	}
 
 	var (
-		ignore int
+		ignoreInt64  int64
+		ignoreUint64 uint64
 
 		s = ProcStat{PID: p.PID, proc: p.fs}
 		l = bytes.Index(data, []byte("("))
@@ -264,13 +279,15 @@ func (p Proc) Stat() (ProcStat, error) {
 	)
 
 	if l < 0 || r < 0 {
-		return ProcStat{}, fmt.Errorf(
-			"unexpected format, couldn't extract comm: %s",
-			data,
-		)
+		return ProcStat{}, fmt.Errorf("%w: unexpected format, couldn't extract comm %q", ErrFileParse, data)
 	}
 
 	s.Comm = string(data[l+1 : r])
+
+	// Check the following resources for the details about the particular stat
+	// fields and their data types:
+	// * https://man7.org/linux/man-pages/man5/proc.5.html
+	// * https://man7.org/linux/man-pages/man3/scanf.3.html
 	_, err = fmt.Fscan(
 		bytes.NewBuffer(data[r+2:]),
 		&s.State,
@@ -291,11 +308,33 @@ func (p Proc) Stat() (ProcStat, error) {
 		&s.Priority,
 		&s.Nice,
 		&s.NumThreads,
-		&ignore,
+		&ignoreInt64,
 		&s.Starttime,
 		&s.VSize,
 		&s.RSS,
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		&s.RSSLimit,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreUint64,
+		&ignoreInt64,
+		&s.Processor,
+		&s.RTPriority,
+		&s.Policy,
+		&s.DelayAcctBlkIOTicks,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	)
 	if err != nil {
 		return ProcStat{}, err
@@ -316,8 +355,7 @@ func (s ProcStat) ResidentMemory() int {
 
 // StartTime returns the unix timestamp of the process in seconds.
 func (s ProcStat) StartTime() (float64, error) {
-	fs := FS{proc: s.proc}
-	stat, err := fs.Stat()
+	stat, err := s.proc.Stat()
 	if err != nil {
 		return 0, err
 	}

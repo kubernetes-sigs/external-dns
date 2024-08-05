@@ -128,6 +128,7 @@ func (s *Service) ValidateCluster(clusterID int) error {
 
 	if response.StatusCode == 422 {
 		body := &validateClusterResponseBody{}
+<<<<<<< HEAD
 		err := response.DeserializeResponseBody(body)
 		if err != nil {
 			return err
@@ -154,6 +155,24 @@ func (r *validateClusterResponseBody) ErrorString() string {
 }
 func (r *validateClusterResponseBody) Pagination() connection.APIResponseMetadataPagination {
 	return connection.APIResponseMetadataPagination{}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+		return errors.New(body.Error())
+	}
+
+	return response.HandleResponse(&connection.APIResponseBody{}, func(resp *connection.APIResponse) error {
+		if response.StatusCode == 404 {
+			return &ClusterNotFoundError{ID: clusterID}
+		}
+
+		return nil
+	})
+}
+
+type validateClusterResponseBody struct {
+	connection.APIResponseBody
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // GetCluster retrieves a single cluster by id

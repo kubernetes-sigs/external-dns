@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright 2014 Unknwon
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -511,6 +512,11 @@ type LoadOptions struct {
 =======
 // +build go1.6
 
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build go1.6
+
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Copyright 2014 Unknwon
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -529,26 +535,22 @@ type LoadOptions struct {
 package ini
 
 import (
+	"os"
 	"regexp"
 	"runtime"
+	"strings"
 )
 
 const (
-	// DefaultSection is the name of default section. You can use this constant or the string literal.
+	// Maximum allowed depth when recursively substituing variable names.
+	depthValues = 99
+)
+
+var (
+	// DefaultSection is the name of default section. You can use this var or the string literal.
 	// In most of cases, an empty string is all you need to access the section.
 	DefaultSection = "DEFAULT"
 
-	// Maximum allowed depth when recursively substituing variable names.
-	depthValues = 99
-	version     = "1.51.1"
-)
-
-// Version returns current package version literal.
-func Version() string {
-	return version
-}
-
-var (
 	// LineBreak is the delimiter to determine or compose a new line.
 	// This variable will be changed to "\r\n" automatically on Windows at package init time.
 	LineBreak = "\n"
@@ -572,8 +574,10 @@ var (
 	DefaultFormatRight = ""
 )
 
+var inTest = len(os.Args) > 0 && strings.HasSuffix(strings.TrimSuffix(os.Args[0], ".exe"), ".test")
+
 func init() {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" && !inTest {
 		LineBreak = "\r\n"
 	}
 }
@@ -584,12 +588,18 @@ type LoadOptions struct {
 	Loose bool
 	// Insensitive indicates whether the parser forces all section and key names to lowercase.
 	Insensitive bool
+	// InsensitiveSections indicates whether the parser forces all section to lowercase.
+	InsensitiveSections bool
+	// InsensitiveKeys indicates whether the parser forces all key names to lowercase.
+	InsensitiveKeys bool
 	// IgnoreContinuation indicates whether to ignore continuation lines while parsing.
 	IgnoreContinuation bool
 	// IgnoreInlineComment indicates whether to ignore comments at the end of value and treat it as part of value.
 	IgnoreInlineComment bool
 	// SkipUnrecognizableLines indicates whether to skip unrecognizable lines that do not conform to key/value pairs.
 	SkipUnrecognizableLines bool
+	// ShortCircuit indicates whether to ignore other configuration sources after loaded the first available configuration source.
+	ShortCircuit bool
 	// AllowBooleanKeys indicates whether to allow boolean type keys or treat as value is missing.
 	// This type of keys are mostly used in my.cnf.
 	AllowBooleanKeys bool
@@ -620,13 +630,25 @@ type LoadOptions struct {
 	UnparseableSections []string
 	// KeyValueDelimiters is the sequence of delimiters that are used to separate key and value. By default, it is "=:".
 	KeyValueDelimiters string
+	// KeyValueDelimiterOnWrite is the delimiter that are used to separate key and value output. By default, it is "=".
+	KeyValueDelimiterOnWrite string
+	// ChildSectionDelimiter is the delimiter that is used to separate child sections. By default, it is ".".
+	ChildSectionDelimiter string
 	// PreserveSurroundedQuote indicates whether to preserve surrounded quote (single and double quotes).
 	PreserveSurroundedQuote bool
 	// DebugFunc is called to collect debug information (currently only useful to debug parsing Python-style multiline values).
 	DebugFunc DebugFunc
 	// ReaderBufferSize is the buffer size of the reader in bytes.
 	ReaderBufferSize int
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// AllowNonUniqueSections indicates whether to allow sections with the same name multiple times.
+	AllowNonUniqueSections bool
+	// AllowDuplicateShadowValues indicates whether values for shadowed keys should be deduplicated.
+	AllowDuplicateShadowValues bool
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // DebugFunc is the type of function called to log parse events.

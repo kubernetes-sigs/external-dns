@@ -17,5 +17,5 @@ package alidns
 
 // StatisticsInDescribeRecordStatistics is a nested struct in alidns response
 type StatisticsInDescribeRecordStatistics struct {
-	Statistic []Statistic `json:"Statistic" xml:"Statistic"`
+	Statistic []StatisticInDescribeRecordStatistics `json:"Statistic" xml:"Statistic"`
 }

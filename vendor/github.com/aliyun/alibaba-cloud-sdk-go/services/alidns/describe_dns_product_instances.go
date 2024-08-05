@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDnsProductInstances(request *DescribeDnsProductInstancesRequest) (response *DescribeDnsProductInstancesResponse, err error) {
 	response = CreateDescribeDnsProductInstancesResponse()
 	err = client.DoAction(request, response)
@@ -191,6 +192,10 @@ func CreateDescribeDnsProductInstancesRequest() (request *DescribeDnsProductInst
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeDnsProductInstances(request *DescribeDnsProductInstancesRequest) (response *DescribeDnsProductInstancesResponse, err error) {
 	response = CreateDescribeDnsProductInstancesResponse()
 	err = client.DoAction(request, response)
@@ -198,8 +203,6 @@ func (client *Client) DescribeDnsProductInstances(request *DescribeDnsProductIns
 }
 
 // DescribeDnsProductInstancesWithChan invokes the alidns.DescribeDnsProductInstances API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDnsProductInstancesWithChan(request *DescribeDnsProductInstancesRequest) (<-chan *DescribeDnsProductInstancesResponse, <-chan error) {
 	responseChan := make(chan *DescribeDnsProductInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -222,8 +225,6 @@ func (client *Client) DescribeDnsProductInstancesWithChan(request *DescribeDnsPr
 }
 
 // DescribeDnsProductInstancesWithCallback invokes the alidns.DescribeDnsProductInstances API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDnsProductInstancesWithCallback(request *DescribeDnsProductInstancesRequest, callback func(response *DescribeDnsProductInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -245,20 +246,24 @@ func (client *Client) DescribeDnsProductInstancesWithCallback(request *DescribeD
 // DescribeDnsProductInstancesRequest is the request struct for api DescribeDnsProductInstances
 type DescribeDnsProductInstancesRequest struct {
 	*requests.RpcRequest
+	OrderBy      string           `position:"Query" name:"OrderBy"`
 	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	DomainType   string           `position:"Query" name:"DomainType"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
 	PageSize     requests.Integer `position:"Query" name:"PageSize"`
 	Lang         string           `position:"Query" name:"Lang"`
 	VersionCode  string           `position:"Query" name:"VersionCode"`
+	Direction    string           `position:"Query" name:"Direction"`
 }
 
 // DescribeDnsProductInstancesResponse is the response struct for api DescribeDnsProductInstances
 type DescribeDnsProductInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId   string      `json:"RequestId" xml:"RequestId"`
 	TotalCount  int64       `json:"TotalCount" xml:"TotalCount"`
-	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
+	DomainType  string      `json:"DomainType" xml:"DomainType"`
 	PageSize    int64       `json:"PageSize" xml:"PageSize"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
 	DnsProducts DnsProducts `json:"DnsProducts" xml:"DnsProducts"`
 }
 
@@ -268,7 +273,12 @@ func CreateDescribeDnsProductInstancesRequest() (request *DescribeDnsProductInst
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDnsProductInstances", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

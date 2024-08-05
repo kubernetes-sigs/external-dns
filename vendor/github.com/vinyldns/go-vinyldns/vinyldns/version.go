@@ -13,4 +13,4 @@ limitations under the License.
 package vinyldns
 
 // Version stores the go-vinyldns semantic version
-var Version = "0.9.12"
+var Version = "0.9.16"

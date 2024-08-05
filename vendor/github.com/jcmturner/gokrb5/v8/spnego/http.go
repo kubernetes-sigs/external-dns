@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -100,7 +99,7 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 				}
 				if req.Body != nil {
 					// Refresh the body reader so the body can be sent again
-					e.reqTarget.Body = ioutil.NopCloser(&body)
+					e.reqTarget.Body = io.NopCloser(&body)
 				}
 				return c.Do(e.reqTarget)
 			}
@@ -114,8 +113,9 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 		}
 		if req.Body != nil {
 			// Refresh the body reader so the body can be sent again
-			req.Body = ioutil.NopCloser(&body)
+			req.Body = io.NopCloser(&body)
 		}
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -132,6 +132,11 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		return c.Do(req)
 	}
 	return resp, err
@@ -189,18 +194,18 @@ func setRequestSPN(r *http.Request) (types.PrincipalName, error) {
 			return types.PrincipalName{}, err
 		}
 		name, err := net.LookupCNAME(h)
-		if err == nil {
+		if name != "" && err == nil {
 			// Underlyng canonical name should be used for SPN
-			h = name
+			h = strings.ToLower(name)
 		}
 		h = strings.TrimSuffix(h, ".")
 		r.Host = fmt.Sprintf("%s:%s", h, p)
 		return types.NewPrincipalName(nametype.KRB_NT_PRINCIPAL, "HTTP/"+h), nil
 	}
 	name, err := net.LookupCNAME(h)
-	if err == nil {
+	if name != "" && err == nil {
 		// Underlyng canonical name should be used for SPN
-		h = name
+		h = strings.ToLower(name)
 	}
 	h = strings.TrimSuffix(h, ".")
 	r.Host = h

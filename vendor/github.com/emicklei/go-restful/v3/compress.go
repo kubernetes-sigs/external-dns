@@ -49,6 +49,20 @@ func (c *CompressingResponseWriter) CloseNotify() <-chan bool {
 	return c.writer.(http.CloseNotifier).CloseNotify()
 }
 
+<<<<<<< HEAD
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Flush is part of http.Flusher interface. Noop if the underlying writer doesn't support it.
+func (c *CompressingResponseWriter) Flush() {
+	flusher, ok := c.writer.(http.Flusher)
+	if !ok {
+		// writer doesn't support http.Flusher interface
+		return
+	}
+	flusher.Flush()
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Close the underlying compressor
 func (c *CompressingResponseWriter) Close() error {
 	if c.isCompressorClosed() {

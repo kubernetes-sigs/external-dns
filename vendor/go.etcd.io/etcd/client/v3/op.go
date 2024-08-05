@@ -389,12 +389,22 @@ func getPrefix(key []byte) []byte {
 // can return 'foo1', 'foo2', and so on.
 func WithPrefix() OpOption {
 	return func(op *Op) {
+<<<<<<< HEAD
 		if len(op.key) == 0 {
 			op.key, op.end = []byte{0}, []byte{0}
 			return
 		}
 		op.end = getPrefix(op.key)
 		op.isOptsWithPrefix = true
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		op.isOptsWithPrefix = true
+		if len(op.key) == 0 {
+			op.key, op.end = []byte{0}, []byte{0}
+			return
+		}
+		op.end = getPrefix(op.key)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 }
 

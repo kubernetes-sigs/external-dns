@@ -29,6 +29,7 @@ import (
 // order is maintained
 func ParseCIDRs(cidrsString []string) ([]*net.IPNet, error) {
 	cidrs := make([]*net.IPNet, 0, len(cidrsString))
+<<<<<<< HEAD
 	for _, cidrString := range cidrsString {
 		_, cidr, err := ParseCIDRSloppy(cidrString)
 		if err != nil {
@@ -159,6 +160,17 @@ func IsIPv4CIDR(cidr *net.IPNet) bool {
 func IsIPv4CIDRString(cidr string) bool {
 	ip, _, _ := ParseCIDRSloppy(cidr)
 	return IsIPv4(ip)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	for i, cidrString := range cidrsString {
+		_, cidr, err := ParseCIDRSloppy(cidrString)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CIDR[%d]: %v (%v)", i, cidr, err)
+		}
+		cidrs = append(cidrs, cidr)
+	}
+	return cidrs, nil
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ParsePort parses a string representing an IP port.  If the string is not a

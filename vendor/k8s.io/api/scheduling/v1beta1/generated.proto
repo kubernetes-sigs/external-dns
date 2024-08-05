@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.scheduling.v1beta1;
@@ -242,6 +243,11 @@ message PriorityClass {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package k8s.io.api.scheduling.v1beta1;
 
@@ -251,7 +257,7 @@ import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
-option go_package = "v1beta1";
+option go_package = "k8s.io/api/scheduling/v1beta1";
 
 // DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
 // PriorityClass defines mapping from a priority class name to the priority
@@ -262,7 +268,7 @@ message PriorityClass {
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  // The value of this priority class. This is the actual priority that pods
+  // value represents the integer value of this priority class. This is the actual priority that pods
   // receive when they have the name of this class in their pod spec.
   optional int32 value = 2;
 
@@ -279,11 +285,16 @@ message PriorityClass {
   // +optional
   optional string description = 4;
 
-  // PreemptionPolicy is the Policy for preempting pods with lower priority.
+  // preemptionPolicy is the Policy for preempting pods with lower priority.
   // One of Never, PreemptLowerPriority.
   // Defaults to PreemptLowerPriority if unset.
+<<<<<<< HEAD
   // This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+  // This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   // +optional
   optional string preemptionPolicy = 5;
 }

@@ -1,0 +1,558 @@
+// Copyright 2019 Istio Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+import "google/api/field_behavior.proto";
+import "type/v1beta1/selector.proto";
+
+// $schema: istio.security.v1.AuthorizationPolicy
+// $title: Authorization Policy
+// $description: Configuration for access control on workloads.
+// $location: https://istio.io/docs/reference/config/security/authorization-policy.html
+// $weight: 20
+// $aliases: [/docs/reference/config/authorization/authorization-policy]
+// $mode: none
+
+// Istio Authorization Policy enables access control on workloads in the mesh.
+//
+// Authorization policy supports CUSTOM, DENY and ALLOW actions for access control. When CUSTOM, DENY and ALLOW actions
+// are used for a workload at the same time, the CUSTOM action is evaluated first, then the DENY action, and finally the ALLOW action.
+// The evaluation is determined by the following rules:
+//
+// 1. If there are any CUSTOM policies that match the request, evaluate and deny the request if the evaluation result is deny.
+// 2. If there are any DENY policies that match the request, deny the request.
+// 3. If there are no ALLOW policies for the workload, allow the request.
+// 4. If any of the ALLOW policies match the request, allow the request.
+// 5. Deny the request.
+//
+// Istio Authorization Policy also supports the AUDIT action to decide whether to log requests.
+// AUDIT policies do not affect whether requests are allowed or denied to the workload.
+// Requests will be allowed or denied based solely on CUSTOM, DENY and ALLOW actions.
+//
+// A request will be internally marked that it should be audited if there is an AUDIT policy on the workload that matches the request.
+// A separate plugin must be configured and enabled to actually fulfill the audit decision and complete the audit behavior.
+// The request will not be audited if there are no such supporting plugins enabled.
+// Currently, the only supported plugin is the [Stackdriver](https://istio.io/latest/docs/reference/config/proxy_extensions/stackdriver/) plugin.
+//
+// Here is an example of Istio Authorization Policy:
+//
+// It sets the `action` to `ALLOW` to create an allow policy. The default action is `ALLOW`
+// but it is useful to be explicit in the policy.
+//
+// It allows requests from:
+//
+// - service account `cluster.local/ns/default/sa/sleep` or
+// - namespace `test`
+//
+// to access the workload with:
+//
+// - `GET` method at paths of prefix `/info` or,
+// - `POST` method at path `/data`.
+//
+// when the request has a valid JWT token issued by `https://accounts.google.com`.
+//
+// Any other requests will be denied.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   name: httpbin
+//   namespace: foo
+// spec:
+//   action: ALLOW
+//   rules:
+//   - from:
+//     - source:
+//         principals: ["cluster.local/ns/default/sa/sleep"]
+//     - source:
+//         namespaces: ["test"]
+//     to:
+//     - operation:
+//         methods: ["GET"]
+//         paths: ["/info*"]
+//     - operation:
+//         methods: ["POST"]
+//         paths: ["/data"]
+//     when:
+//     - key: request.auth.claims[iss]
+//       values: ["https://accounts.google.com"]
+// ```
+//
+// The following is another example that sets `action` to `DENY` to create a deny policy.
+// It denies requests from the `dev` namespace to the `POST` method on all workloads
+// in the `foo` namespace.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   name: httpbin
+//   namespace: foo
+// spec:
+//   action: DENY
+//   rules:
+//   - from:
+//     - source:
+//         namespaces: ["dev"]
+//     to:
+//     - operation:
+//         methods: ["POST"]
+// ```
+//
+// The following is another example that sets `action` to `DENY` to create a deny policy.
+// It denies all the requests with `POST` method on port `8080` on all workloads
+// in the `foo` namespace. Note the ports in the `ports` field refer to container ports,
+// not the Kubernetes Service ports.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   name: httpbin
+//   namespace: foo
+// spec:
+//   action: DENY
+//   rules:
+//   - to:
+//     - operation:
+//         methods: ["POST"]
+//         ports: ["8080"]
+// ```
+//
+// When this rule is applied to TCP traffic, the `method` field (as will all HTTP based attributes) cannot be processed.
+// For a `DENY` rule, missing attributes are treated as matches. This means all TCP traffic on port `8080` would be denied in the example above.
+// If we were to remove the `ports` match, all TCP traffic would be denied. As a result, it is recommended to always scope `DENY` policies to a specific port,
+// especially when using HTTP attributes [Authorization Policy for TCP Ports](https://istio.io/latest/docs/tasks/security/authorization/authz-tcp/).
+//
+// The following authorization policy sets the `action` to `AUDIT`. It will audit any GET requests to the path with the
+// prefix `/user/profile`.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   namespace: ns1
+//   name: anyname
+// spec:
+//   selector:
+//     matchLabels:
+//       app: myapi
+//   action: AUDIT
+//   rules:
+//   - to:
+//     - operation:
+//         methods: ["GET"]
+//         paths: ["/user/profile/*"]
+// ```
+//
+// Authorization Policy scope (target) is determined by "metadata/namespace" and
+// an optional `selector`.
+//
+// - "metadata/namespace" tells which namespace the policy applies. If set to root
+// namespace, the policy applies to all namespaces in a mesh.
+// - workload `selector` can be used to further restrict where a policy applies.
+//
+// For example, the following authorization policy applies to all workloads in namespace `foo`. It allows nothing and effectively denies
+// all requests to workloads in namespace `foo`.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//  name: allow-nothing
+//  namespace: foo
+// spec:
+//   {}
+// ```
+//
+// The following authorization policy allows all requests to workloads in namespace `foo`.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//  name: allow-all
+//  namespace: foo
+// spec:
+//  rules:
+//  - {}
+// ```
+//
+// The following authorization policy applies to workloads containing label `app: httpbin` in namespace `bar`. It allows
+// nothing and effectively denies all requests to the selected workloads.
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   name: allow-nothing
+//   namespace: bar
+// spec:
+//   selector:
+//     matchLabels:
+//       app: httpbin
+// ```
+//
+// The following authorization policy applies to workloads containing label `version: v1` in all namespaces in the mesh.
+// (Assuming the root namespace is configured to `istio-system`).
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//  name: allow-nothing
+//  namespace: istio-system
+// spec:
+//  selector:
+//    matchLabels:
+//      version: v1
+// ```
+//
+// The following example shows you how to set up an authorization policy using an [experimental annotation](https://istio.io/latest/docs/reference/config/annotations/)
+// `istio.io/dry-run` to dry-run the policy without actually enforcing it.
+//
+// The dry-run annotation allows you to better understand the effect of an authorization policy before applying it to the production traffic.
+// This helps to reduce the risk of breaking the production traffic caused by an incorrect authorization policy.
+// For more information, see [dry-run tasks](https://istio.io/latest/docs/tasks/security/authorization/authz-dry-run/).
+//
+// ```yaml
+// apiVersion: security.istio.io/v1
+// kind: AuthorizationPolicy
+// metadata:
+//   name: dry-run-example
+//   annotations:
+//     "istio.io/dry-run": "true"
+// spec:
+//   selector:
+//     matchLabels:
+//       app: httpbin
+//   action: DENY
+//   rules:
+//   - to:
+//     - operation:
+//         paths: ["/headers"]
+// ```
+package istio.security.v1;
+
+option go_package="istio.io/api/security/v1";
+
+// AuthorizationPolicy enables access control on workloads.
+//
+// <!-- crd generation tags
+// +cue-gen:AuthorizationPolicy:groupName:security.istio.io
+// +cue-gen:AuthorizationPolicy:version:v1
+// +cue-gen:AuthorizationPolicy:annotations:helm.sh/resource-policy=keep
+// +cue-gen:AuthorizationPolicy:labels:app=istio-pilot,chart=istio,istio=security,heritage=Tiller,release=istio
+// +cue-gen:AuthorizationPolicy:subresource:status
+// +cue-gen:AuthorizationPolicy:scope:Namespaced
+// +cue-gen:AuthorizationPolicy:resource:categories=istio-io,security-istio-io,shortNames=ap,plural=authorizationpolicies
+// +cue-gen:AuthorizationPolicy:preserveUnknownFields:false
+// +cue-gen:AuthorizationPolicy:printerColumn:name=Action,type=string,JSONPath=.spec.action,description="The operation to take."
+// +cue-gen:AuthorizationPolicy:printerColumn:name=Age,type=date,JSONPath=.metadata.creationTimestamp,description="CreationTimestamp is a timestamp
+// representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations.
+// Clients may not set this value. It is represented in RFC3339 form and is in UTC.
+// Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata"
+// -->
+//
+// <!-- go code generation tags
+// +kubetype-gen
+// +kubetype-gen:groupVersion=security.istio.io/v1
+// +genclient
+// +k8s:deepcopy-gen=true
+// -->
+// <!-- istio code generation tags
+// +istio.io/sync-from:security/v1beta1/authorization_policy.proto
+// -->
+message AuthorizationPolicy {
+  // Optional. The selector decides where to apply the authorization policy. The selector will match with workloads
+  // in the same namespace as the authorization policy. If the authorization policy is in the root namespace, the selector
+  // will additionally match with workloads in all namespaces.
+  //
+  // If the selector and the targetRef are not set, the selector will match all workloads.
+  //
+  // At most one of `selector` or `targetRefs` can be set for a given policy.
+  istio.type.v1beta1.WorkloadSelector selector = 1;
+
+  // $hide_from_docs
+  istio.type.v1beta1.PolicyTargetReference targetRef = 5;
+
+  // Optional. The targetRef specifies the gateway the policy should be
+  // applied to. The targeted resource specified will determine which
+  // workloads the policy applies to.
+  //
+  // Currently, the following resource attachment types are supported:
+  // * `kind: Gateway` with `group: gateway.networking.k8s.io` in the same namespace.
+  //
+  // If not set, the policy is applied as defined by the selector.
+  // At most one of the selector and targetRefs can be set.
+  //
+  // NOTE: If you are using the `targetRefs` field in a multi-revision environment with Istio versions prior to 1.22,
+  // it is highly recommended that you pin the policy to a revision running 1.22+ via the `istio.io/rev` label.
+  // This is to prevent proxies connected to older control planes (that don't know about the `targetRefs` field)
+  // from misinterpreting the policy as namespace-wide during the upgrade process.
+  //
+  // NOTE: Waypoint proxies are required to use this field for policies to apply; `selector` policies will be ignored.
+  repeated istio.type.v1beta1.PolicyTargetReference targetRefs = 6;
+
+  // Optional. A list of rules to match the request. A match occurs when at least one rule matches the request.
+  //
+  // If not set, the match will never occur. This is equivalent to setting a default of deny for the target workloads if
+  // the action is ALLOW.
+  repeated Rule rules = 2;
+
+  // Action specifies the operation to take.
+  enum Action {
+    // Allow a request only if it matches the rules. This is the default type.
+    ALLOW = 0;
+
+    // Deny a request if it matches any of the rules.
+    DENY = 1;
+
+    // Audit a request if it matches any of the rules.
+    AUDIT = 2;
+
+    // $hide_from_docs
+    // Audit policy decisions can be read by telemetry plugins using the function getAuditPolicy
+    // defined [here](https://github.com/istio/proxy/blob/master/extensions/common/context.h).
+
+    // The CUSTOM action allows an extension to handle the user request if the matching rules evaluate to true.
+    // The extension is evaluated independently and before the native ALLOW and DENY actions. When used together, A request
+    // is allowed if and only if all the actions return allow, in other words, the extension cannot bypass the
+    // authorization decision made by ALLOW and DENY action.
+    // Extension behavior is defined by the named providers declared in MeshConfig. The authorization policy refers to
+    // the extension by specifying the name of the provider.
+    // One example use case of the extension is to integrate with a custom external authorization system to delegate
+    // the authorization decision to it.
+    //
+    // The following authorization policy applies to an ingress gateway and delegates the authorization check to a named extension
+    // `my-custom-authz` if the request path has prefix `/admin/`.
+    //
+    // ```yaml
+    // apiVersion: security.istio.io/v1beta1
+    // kind: AuthorizationPolicy
+    // metadata:
+    //   name: ext-authz
+    //   namespace: istio-system
+    // spec:
+    //   selector:
+    //     matchLabels:
+    //       app: istio-ingressgateway
+    //   action: CUSTOM
+    //   provider:
+    //     name: "my-custom-authz"
+    //   rules:
+    //   - to:
+    //     - operation:
+    //         paths: ["/admin/*"]
+    // ```
+    CUSTOM = 3;
+  }
+
+  // Optional. The action to take if the request is matched with the rules. Default is ALLOW if not specified.
+  Action action = 3;
+
+  message ExtensionProvider {
+    // Specifies the name of the extension provider. The list of available providers is defined in the MeshConfig.
+    // Note, currently at most 1 extension provider is allowed per workload. Different workloads can use different extension provider.
+    string name = 1;
+  }
+
+  oneof action_detail {
+    // Specifies detailed configuration of the CUSTOM action. Must be used only with CUSTOM action.
+    ExtensionProvider provider = 4;
+  }
+}
+
+// Rule matches requests from a list of sources that perform a list of operations subject to a
+// list of conditions. A match occurs when at least one source, one operation and all conditions
+// matches the request. An empty rule is always matched.
+//
+// Any string field in the rule supports Exact, Prefix, Suffix and Presence match:
+//
+// - Exact match: `abc` will match on value `abc`.
+// - Prefix match: `abc*` will match on value `abc` and `abcd`.
+// - Suffix match: `*abc` will match on value `abc` and `xabc`.
+// - Presence match: `*` will match when value is not empty.
+message Rule {
+  // From includes a list of sources.
+  message From {
+    // Source specifies the source of a request.
+    Source source = 1;
+  }
+
+  // Optional. `from` specifies the source of a request.
+  //
+  // If not set, any source is allowed.
+  repeated From from = 1;
+
+  // To includes a list of operations.
+  message To {
+    // Operation specifies the operation of a request.
+    Operation operation = 1;
+  }
+
+  // Optional. `to` specifies the operation of a request.
+  //
+  // If not set, any operation is allowed.
+  repeated To to = 2;
+
+  // Optional. `when` specifies a list of additional conditions of a request.
+  //
+  // If not set, any condition is allowed.
+  repeated Condition when = 3;
+}
+
+// Source specifies the source identities of a request. Fields in the source are
+// ANDed together.
+//
+// For example, the following source matches if the principal is `admin` or `dev`
+// and the namespace is `prod` or `test` and the ip is not `203.0.113.4`.
+//
+// ```yaml
+// principals: ["admin", "dev"]
+// namespaces: ["prod", "test"]
+// notIpBlocks: ["203.0.113.4"]
+// ```
+message Source {
+  // Optional. A list of peer identities derived from the peer certificate. The peer identity is in the format of
+  // `"<TRUST_DOMAIN>/ns/<NAMESPACE>/sa/<SERVICE_ACCOUNT>"`, for example, `"cluster.local/ns/default/sa/productpage"`.
+  // This field requires mTLS enabled and is the same as the `source.principal` attribute.
+  //
+  // If not set, any principal is allowed.
+  repeated string principals = 1;
+
+  // Optional. A list of negative match of peer identities.
+  repeated string not_principals = 5;
+
+  // Optional. A list of request identities derived from the JWT. The request identity is in the format of
+  // `"<ISS>/<SUB>"`, for example, `"example.com/sub-1"`. This field requires request authentication enabled and is the
+  // same as the `request.auth.principal` attribute.
+  //
+  // If not set, any request principal is allowed.
+  repeated string request_principals = 2;
+
+  // Optional. A list of negative match of request identities.
+  repeated string not_request_principals = 6;
+
+  // Optional. A list of namespaces derived from the peer certificate.
+  // This field requires mTLS enabled and is the same as the `source.namespace` attribute.
+  //
+  // If not set, any namespace is allowed.
+  repeated string namespaces = 3;
+
+  // Optional. A list of negative match of namespaces.
+  repeated string not_namespaces = 7;
+
+  // Optional. A list of IP blocks, populated from the source address of the IP packet. Single IP (e.g. `203.0.113.4`) and
+  // CIDR (e.g. `203.0.113.0/24`) are supported. This is the same as the `source.ip` attribute.
+  //
+  // If not set, any IP is allowed.
+  repeated string ip_blocks = 4;
+
+  // Optional. A list of negative match of IP blocks.
+  repeated string not_ip_blocks = 8;
+
+  // Optional. A list of IP blocks, populated from `X-Forwarded-For` header or proxy protocol.
+  // To make use of this field, you must configure the `numTrustedProxies` field of the `gatewayTopology` under the `meshConfig`
+  // when you install Istio or using an annotation on the ingress gateway.  See the documentation here:
+  // [Configuring Gateway Network Topology](https://istio.io/latest/docs/ops/configuration/traffic-management/network-topologies/).
+  // Single IP (e.g. `203.0.113.4`) and CIDR (e.g. `203.0.113.0/24`) are supported.
+  // This is the same as the `remote.ip` attribute.
+  //
+  // If not set, any IP is allowed.
+  repeated string remote_ip_blocks = 9;
+
+  // Optional. A list of negative match of remote IP blocks.
+  repeated string not_remote_ip_blocks = 10;
+}
+
+// Operation specifies the operations of a request. Fields in the operation are
+// ANDed together.
+//
+// For example, the following operation matches if the host has suffix `.example.com`
+// and the method is `GET` or `HEAD` and the path doesn't have prefix `/admin`.
+//
+// ```yaml
+// hosts: ["*.example.com"]
+// methods: ["GET", "HEAD"]
+// notPaths: ["/admin*"]
+// ```
+message Operation {
+  // Optional. A list of hosts as specified in the HTTP request. The match is case-insensitive.
+  // See the [security best practices](https://istio.io/latest/docs/ops/best-practices/security/#writing-host-match-policies) for
+  // recommended usage of this field.
+  //
+  // If not set, any host is allowed. Must be used only with HTTP.
+  repeated string hosts = 1;
+
+  // Optional. A list of negative match of hosts as specified in the HTTP request. The match is case-insensitive.
+  repeated string not_hosts = 5;
+
+  // Optional. A list of ports as specified in the connection.
+  //
+  // If not set, any port is allowed.
+  repeated string ports = 2;
+
+  // Optional. A list of negative match of ports as specified in the connection.
+  repeated string not_ports = 6;
+
+  // Optional. A list of methods as specified in the HTTP request.
+  // For gRPC service, this will always be `POST`.
+  //
+  // If not set, any method is allowed. Must be used only with HTTP.
+  repeated string methods = 3;
+
+  // Optional. A list of negative match of methods as specified in the HTTP request.
+  repeated string not_methods = 7;
+
+  // Optional. A list of paths as specified in the HTTP request. See the [Authorization Policy Normalization](https://istio.io/latest/docs/reference/config/security/normalization/)
+  // for details of the path normalization.
+  // For gRPC service, this will be the fully-qualified name in the form of `/package.service/method`.
+  //
+  // If a path in the list contains the `{*}` or `{**}` path template operator, it will be interpreted as an [Envoy Uri Template](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/path/match/uri_template/v3/uri_template_match.proto).
+  // To be a valid path template, the path must not contain `*`, `{`, or `}` outside of a supported operator. No other characters are allowed in the path segment with the path template operator.
+  // - `{*}` matches a single glob that cannot extend beyond a path segment.
+  // - `{**}` matches zero or more globs. If a path contains `{**}`, it must be the last operator.
+  //
+  // Examples:
+  // - `/foo/{*}` matches `/foo/bar` but not `/foo/bar/baz`
+  // - `/foo/{**}/` matches `/foo/bar/`, `/foo/bar/baz.txt`, and `/foo//` but not `/foo/bar`
+  // - `/foo/{*}/bar/{**}` matches `/foo/buzz/bar/` and `/foo/buzz/bar/baz`
+  // - `/*/baz/{*}`` is not a valid path template since it includes `*` outside of a supported operator
+  // - `/**/baz/{*}`` is not a valid path template since it includes `**` outside of a supported operator
+  // - `/{**}/foo/{*}` is not a valid path template since `{**}` is not the last operator
+  // - `/foo/{*}.txt` is invalid since there are characters other than `{*}` in the path segment
+  //
+  // If not set, any path is allowed. Must be used only with HTTP.
+  repeated string paths = 4;
+
+  // Optional. A list of negative match of paths.
+  repeated string not_paths = 8;
+}
+
+// Condition specifies additional required attributes.
+message Condition {
+  // The name of an Istio attribute.
+  // See the [full list of supported attributes](https://istio.io/docs/reference/config/security/conditions/).
+  string key = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. A list of allowed values for the attribute.
+  // Note: at least one of `values` or `notValues` must be set.
+  repeated string values = 2;
+
+  // Optional. A list of negative match of values for the attribute.
+  // Note: at least one of `values` or `notValues` must be set.
+  repeated string not_values = 3;
+}

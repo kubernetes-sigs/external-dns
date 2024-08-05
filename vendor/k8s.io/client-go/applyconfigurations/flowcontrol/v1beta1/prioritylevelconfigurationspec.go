@@ -27,6 +27,7 @@ import (
 type PriorityLevelConfigurationSpecApplyConfiguration struct {
 	Type    *v1beta1.PriorityLevelEnablement                     `json:"type,omitempty"`
 	Limited *LimitedPriorityLevelConfigurationApplyConfiguration `json:"limited,omitempty"`
+<<<<<<< HEAD
 }
 
 // PriorityLevelConfigurationSpecApplyConfiguration constructs an declarative configuration of the PriorityLevelConfigurationSpec type for use with
@@ -48,5 +49,38 @@ func (b *PriorityLevelConfigurationSpecApplyConfiguration) WithType(value v1beta
 // If called multiple times, the Limited field is set to the value of the last call.
 func (b *PriorityLevelConfigurationSpecApplyConfiguration) WithLimited(value *LimitedPriorityLevelConfigurationApplyConfiguration) *PriorityLevelConfigurationSpecApplyConfiguration {
 	b.Limited = value
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Exempt  *ExemptPriorityLevelConfigurationApplyConfiguration  `json:"exempt,omitempty"`
+}
+
+// PriorityLevelConfigurationSpecApplyConfiguration constructs an declarative configuration of the PriorityLevelConfigurationSpec type for use with
+// apply.
+func PriorityLevelConfigurationSpec() *PriorityLevelConfigurationSpecApplyConfiguration {
+	return &PriorityLevelConfigurationSpecApplyConfiguration{}
+}
+
+// WithType sets the Type field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Type field is set to the value of the last call.
+func (b *PriorityLevelConfigurationSpecApplyConfiguration) WithType(value v1beta1.PriorityLevelEnablement) *PriorityLevelConfigurationSpecApplyConfiguration {
+	b.Type = &value
+	return b
+}
+
+// WithLimited sets the Limited field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Limited field is set to the value of the last call.
+func (b *PriorityLevelConfigurationSpecApplyConfiguration) WithLimited(value *LimitedPriorityLevelConfigurationApplyConfiguration) *PriorityLevelConfigurationSpecApplyConfiguration {
+	b.Limited = value
+	return b
+}
+
+// WithExempt sets the Exempt field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Exempt field is set to the value of the last call.
+func (b *PriorityLevelConfigurationSpecApplyConfiguration) WithExempt(value *ExemptPriorityLevelConfigurationApplyConfiguration) *PriorityLevelConfigurationSpecApplyConfiguration {
+	b.Exempt = value
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b
 }

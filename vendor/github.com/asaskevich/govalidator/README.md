@@ -177,6 +177,7 @@ func IsPrintableASCII(str string) bool
 func IsRFC3339(str string) bool
 func IsRFC3339WithoutZone(str string) bool
 func IsRGBcolor(str string) bool
+<<<<<<< HEAD
 func IsRequestURI(rawurl string) bool
 func IsRequestURL(rawurl string) bool
 func IsRipeMD128(str string) bool
@@ -382,6 +383,217 @@ Here is a list of available validators for struct fields (validator - used funct
 "rfc3339WithoutZone": IsRFC3339WithoutZone,
 "ISO3166Alpha2":      IsISO3166Alpha2,
 "ISO3166Alpha3":      IsISO3166Alpha3,
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func IsRegex(str string) bool
+func IsRequestURI(rawurl string) bool
+func IsRequestURL(rawurl string) bool
+func IsRipeMD128(str string) bool
+func IsRipeMD160(str string) bool
+func IsRsaPub(str string, params ...string) bool
+func IsRsaPublicKey(str string, keylen int) bool
+func IsSHA1(str string) bool
+func IsSHA256(str string) bool
+func IsSHA384(str string) bool
+func IsSHA512(str string) bool
+func IsSSN(str string) bool
+func IsSemver(str string) bool
+func IsTiger128(str string) bool
+func IsTiger160(str string) bool
+func IsTiger192(str string) bool
+func IsTime(str string, format string) bool
+func IsType(v interface{}, params ...string) bool
+func IsURL(str string) bool
+func IsUTFDigit(str string) bool
+func IsUTFLetter(str string) bool
+func IsUTFLetterNumeric(str string) bool
+func IsUTFNumeric(str string) bool
+func IsUUID(str string) bool
+func IsUUIDv3(str string) bool
+func IsUUIDv4(str string) bool
+func IsUUIDv5(str string) bool
+func IsULID(str string) bool
+func IsUnixTime(str string) bool
+func IsUpperCase(str string) bool
+func IsVariableWidth(str string) bool
+func IsWhole(value float64) bool
+func LeftTrim(str, chars string) string
+func Map(array []interface{}, iterator ResultIterator) []interface{}
+func Matches(str, pattern string) bool
+func MaxStringLength(str string, params ...string) bool
+func MinStringLength(str string, params ...string) bool
+func NormalizeEmail(str string) (string, error)
+func PadBoth(str string, padStr string, padLen int) string
+func PadLeft(str string, padStr string, padLen int) string
+func PadRight(str string, padStr string, padLen int) string
+func PrependPathToErrors(err error, path string) error
+func Range(str string, params ...string) bool
+func RemoveTags(s string) string
+func ReplacePattern(str, pattern, replace string) string
+func Reverse(s string) string
+func RightTrim(str, chars string) string
+func RuneLength(str string, params ...string) bool
+func SafeFileName(str string) string
+func SetFieldsRequiredByDefault(value bool)
+func SetNilPtrAllowedByRequired(value bool)
+func Sign(value float64) float64
+func StringLength(str string, params ...string) bool
+func StringMatches(s string, params ...string) bool
+func StripLow(str string, keepNewLines bool) string
+func ToBoolean(str string) (bool, error)
+func ToFloat(str string) (float64, error)
+func ToInt(value interface{}) (res int64, err error)
+func ToJSON(obj interface{}) (string, error)
+func ToString(obj interface{}) string
+func Trim(str, chars string) string
+func Truncate(str string, length int, ending string) string
+func TruncatingErrorf(str string, args ...interface{}) error
+func UnderscoreToCamelCase(s string) string
+func ValidateMap(inputMap map[string]interface{}, validationMap map[string]interface{}) (bool, error)
+func ValidateStruct(s interface{}) (bool, error)
+func WhiteList(str, chars string) string
+type ConditionIterator
+type CustomTypeValidator
+type Error
+func (e Error) Error() string
+type Errors
+func (es Errors) Error() string
+func (es Errors) Errors() []error
+type ISO3166Entry
+type ISO693Entry
+type InterfaceParamValidator
+type Iterator
+type ParamValidator
+type ResultIterator
+type UnsupportedTypeError
+func (e *UnsupportedTypeError) Error() string
+type Validator
+```
+
+#### Examples
+###### IsURL
+```go
+println(govalidator.IsURL(`http://user@pass:domain.com/path/page`))
+```
+###### IsType
+```go
+println(govalidator.IsType("Bob", "string"))
+println(govalidator.IsType(1, "int"))
+i := 1
+println(govalidator.IsType(&i, "*int"))
+```
+
+IsType can be used through the tag `type` which is essential for map validation:
+```go
+type User	struct {
+  Name string      `valid:"type(string)"`
+  Age  int         `valid:"type(int)"`
+  Meta interface{} `valid:"type(string)"`
+}
+result, err := govalidator.ValidateStruct(User{"Bob", 20, "meta"})
+if err != nil {
+	println("error: " + err.Error())
+}
+println(result)
+```
+###### ToString
+```go
+type User struct {
+	FirstName string
+	LastName string
+}
+
+str := govalidator.ToString(&User{"John", "Juan"})
+println(str)
+```
+###### Each, Map, Filter, Count for slices
+Each iterates over the slice/array and calls Iterator for every item
+```go
+data := []interface{}{1, 2, 3, 4, 5}
+var fn govalidator.Iterator = func(value interface{}, index int) {
+	println(value.(int))
+}
+govalidator.Each(data, fn)
+```
+```go
+data := []interface{}{1, 2, 3, 4, 5}
+var fn govalidator.ResultIterator = func(value interface{}, index int) interface{} {
+	return value.(int) * 3
+}
+_ = govalidator.Map(data, fn) // result = []interface{}{1, 6, 9, 12, 15}
+```
+```go
+data := []interface{}{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+var fn govalidator.ConditionIterator = func(value interface{}, index int) bool {
+	return value.(int)%2 == 0
+}
+_ = govalidator.Filter(data, fn) // result = []interface{}{2, 4, 6, 8, 10}
+_ = govalidator.Count(data, fn) // result = 5
+```
+###### ValidateStruct [#2](https://github.com/asaskevich/govalidator/pull/2)
+If you want to validate structs, you can use tag `valid` for any field in your structure. All validators used with this field in one tag are separated by comma. If you want to skip validation, place `-` in your tag. If you need a validator that is not on the list below, you can add it like this:
+```go
+govalidator.TagMap["duck"] = govalidator.Validator(func(str string) bool {
+	return str == "duck"
+})
+```
+For completely custom validators (interface-based), see below.
+
+Here is a list of available validators for struct fields (validator - used function):
+```go
+"email":              IsEmail,
+"url":                IsURL,
+"dialstring":         IsDialString,
+"requrl":             IsRequestURL,
+"requri":             IsRequestURI,
+"alpha":              IsAlpha,
+"utfletter":          IsUTFLetter,
+"alphanum":           IsAlphanumeric,
+"utfletternum":       IsUTFLetterNumeric,
+"numeric":            IsNumeric,
+"utfnumeric":         IsUTFNumeric,
+"utfdigit":           IsUTFDigit,
+"hexadecimal":        IsHexadecimal,
+"hexcolor":           IsHexcolor,
+"rgbcolor":           IsRGBcolor,
+"lowercase":          IsLowerCase,
+"uppercase":          IsUpperCase,
+"int":                IsInt,
+"float":              IsFloat,
+"null":               IsNull,
+"uuid":               IsUUID,
+"uuidv3":             IsUUIDv3,
+"uuidv4":             IsUUIDv4,
+"uuidv5":             IsUUIDv5,
+"creditcard":         IsCreditCard,
+"isbn10":             IsISBN10,
+"isbn13":             IsISBN13,
+"json":               IsJSON,
+"multibyte":          IsMultibyte,
+"ascii":              IsASCII,
+"printableascii":     IsPrintableASCII,
+"fullwidth":          IsFullWidth,
+"halfwidth":          IsHalfWidth,
+"variablewidth":      IsVariableWidth,
+"base64":             IsBase64,
+"datauri":            IsDataURI,
+"ip":                 IsIP,
+"port":               IsPort,
+"ipv4":               IsIPv4,
+"ipv6":               IsIPv6,
+"dns":                IsDNSName,
+"host":               IsHost,
+"mac":                IsMAC,
+"latitude":           IsLatitude,
+"longitude":          IsLongitude,
+"ssn":                IsSSN,
+"semver":             IsSemver,
+"rfc3339":            IsRFC3339,
+"rfc3339WithoutZone": IsRFC3339WithoutZone,
+"ISO3166Alpha2":      IsISO3166Alpha2,
+"ISO3166Alpha3":      IsISO3166Alpha3,
+"ulid":               IsULID,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 ```
 Validators with parameters
 

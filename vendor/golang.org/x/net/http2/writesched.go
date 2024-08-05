@@ -35,6 +35,7 @@ type WriteScheduler interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// order they are Push'd, except RST_STREAM frames. No frames should be
 	// discarded except by CloseStream.
 	Pop() (wr FrameWriteRequest, ok bool)
@@ -226,6 +227,12 @@ type writeQueue struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// order they are Push'd. No frames should be discarded except by CloseStream.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// order they are Push'd. No frames should be discarded except by CloseStream.
+=======
+	// order they are Push'd, except RST_STREAM frames. No frames should be
+	// discarded except by CloseStream.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Pop() (wr FrameWriteRequest, ok bool)
 }
 
@@ -245,6 +252,7 @@ type FrameWriteRequest struct {
 
 	// stream is the stream on which this frame will be written.
 	// nil for non-stream frames like PING and SETTINGS.
+	// nil for RST_STREAM streams, which use the StreamError.StreamID field instead.
 	stream *stream
 
 	// done, if non-nil, must be a buffered channel with space for
@@ -375,8 +383,15 @@ func (wr *FrameWriteRequest) replyToWriter(err error) {
 
 // writeQueue is used by implementations of WriteScheduler.
 type writeQueue struct {
+<<<<<<< HEAD
 	s []FrameWriteRequest
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	s []FrameWriteRequest
+=======
+	s          []FrameWriteRequest
+	prev, next *writeQueue
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (q *writeQueue) empty() bool { return len(q.s) == 0 }

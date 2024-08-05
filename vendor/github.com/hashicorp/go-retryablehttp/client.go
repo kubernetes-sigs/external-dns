@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 // Package retryablehttp provides a familiar HTTP client interface with
 // automatic retries and exponential backoff. It is a thin wrapper over the
 // standard net/http client library and exposes nearly the same public API.
@@ -69,6 +72,7 @@ var (
 	// scheme specified in the URL is invalid. This error isn't typed
 	// specifically so we resort to matching on the error string.
 	schemeErrorRe = regexp.MustCompile(`unsupported protocol scheme`)
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 	// A regular expression to match the error returned by net/http when the
@@ -715,10 +719,30 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 		err = doErr
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	// A regular expression to match the error returned by net/http when the
+	// TLS certificate is not trusted. This error isn't typed
+	// specifically so we resort to matching on the error string.
+	notTrustedErrorRe = regexp.MustCompile(`certificate is not trusted`)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // ReaderFunc is the type of function that can be given natively to NewRequest
 type ReaderFunc func() (io.Reader, error)
+
+// ResponseHandlerFunc is a type of function that takes in a Response, and does something with it.
+// The ResponseHandlerFunc is called when the HTTP client successfully receives a response and the
+// CheckRetry function indicates that a retry of the base request is not necessary.
+// If an error is returned from this function, the CheckRetry policy will be used to determine
+// whether to retry the whole request (including this handler).
+//
+// Make sure to check status codes! Even if the request was completed it may have a non-2xx status code.
+//
+// The response body is not automatically closed. It must be closed either by the ResponseHandlerFunc or
+// by the caller out-of-band. Failure to do so will result in a memory leak.
+type ResponseHandlerFunc func(*http.Response) error
 
 // LenReader is an interface implemented by many in-memory io.Reader's. Used
 // for automatically sending the right Content-Length header when possible.
@@ -732,6 +756,8 @@ type Request struct {
 	// used to rewind the request data in between retries.
 	body ReaderFunc
 
+	responseHandler ResponseHandlerFunc
+
 	// Embed an HTTP request directly. This makes a *Request act exactly
 	// like an *http.Request so that all meta methods are supported.
 	*http.Request
@@ -740,8 +766,16 @@ type Request struct {
 // WithContext returns wrapped Request with a shallow copy of underlying *http.Request
 // with its context changed to ctx. The provided ctx must be non-nil.
 func (r *Request) WithContext(ctx context.Context) *Request {
-	r.Request = r.Request.WithContext(ctx)
-	return r
+	return &Request{
+		body:            r.body,
+		responseHandler: r.responseHandler,
+		Request:         r.Request.WithContext(ctx),
+	}
+}
+
+// SetResponseHandler allows setting the response handler.
+func (r *Request) SetResponseHandler(fn ResponseHandlerFunc) {
+	r.responseHandler = fn
 }
 
 // BodyBytes allows accessing the request body. It is an analogue to
@@ -776,6 +810,20 @@ func (r *Request) SetBody(rawBody interface{}) error {
 	}
 	r.body = bodyReader
 	r.ContentLength = contentLength
+	if bodyReader != nil {
+		r.GetBody = func() (io.ReadCloser, error) {
+			body, err := bodyReader()
+			if err != nil {
+				return nil, err
+			}
+			if rc, ok := body.(io.ReadCloser); ok {
+				return rc, nil
+			}
+			return io.NopCloser(body), nil
+		}
+	} else {
+		r.GetBody = func() (io.ReadCloser, error) { return http.NoBody, nil }
+	}
 	return nil
 }
 
@@ -876,10 +924,17 @@ func getBodyReaderAndContentLength(rawBody interface{}) (ReaderFunc, int64, erro
 		if err != nil {
 			return nil, 0, err
 		}
-		bodyReader = func() (io.Reader, error) {
-			return bytes.NewReader(buf), nil
+		if len(buf) == 0 {
+			bodyReader = func() (io.Reader, error) {
+				return http.NoBody, nil
+			}
+			contentLength = 0
+		} else {
+			bodyReader = func() (io.Reader, error) {
+				return bytes.NewReader(buf), nil
+			}
+			contentLength = int64(len(buf))
 		}
-		contentLength = int64(len(buf))
 
 	// No body provided, nothing to do
 	case nil:
@@ -898,23 +953,32 @@ func FromRequest(r *http.Request) (*Request, error) {
 		return nil, err
 	}
 	// Could assert contentLength == r.ContentLength
-	return &Request{bodyReader, r}, nil
+	return &Request{body: bodyReader, Request: r}, nil
 }
 
 // NewRequest creates a new wrapped request.
 func NewRequest(method, url string, rawBody interface{}) (*Request, error) {
-	bodyReader, contentLength, err := getBodyReaderAndContentLength(rawBody)
+	return NewRequestWithContext(context.Background(), method, url, rawBody)
+}
+
+// NewRequestWithContext creates a new wrapped request with the provided context.
+//
+// The context controls the entire lifetime of a request and its response:
+// obtaining a connection, sending the request, and reading the response headers and body.
+func NewRequestWithContext(ctx context.Context, method, url string, rawBody interface{}) (*Request, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	httpReq, err := http.NewRequest(method, url, nil)
-	if err != nil {
+	req := &Request{
+		Request: httpReq,
+	}
+	if err := req.SetBody(rawBody); err != nil {
 		return nil, err
 	}
-	httpReq.ContentLength = contentLength
 
-	return &Request{bodyReader, httpReq}, nil
+	return req, nil
 }
 
 // Logger interface allows to use other loggers than
@@ -1081,6 +1145,9 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 			}
 
 			// Don't retry if the error was due to TLS cert verification failure.
+			if notTrustedErrorRe.MatchString(v.Error()) {
+				return false, v
+			}
 			if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
 				return false, v
 			}
@@ -1101,7 +1168,7 @@ func baseRetryPolicy(resp *http.Response, err error) (bool, error) {
 	// the server time to recover, as 500's are typically not permanent
 	// errors and may relate to outages on the server side. This will catch
 	// invalid response codes as well, like 0 and 999.
-	if resp.StatusCode == 0 || (resp.StatusCode >= 500 && resp.StatusCode != 501) {
+	if resp.StatusCode == 0 || (resp.StatusCode >= 500 && resp.StatusCode != http.StatusNotImplemented) {
 		return true, fmt.Errorf("unexpected HTTP status %s", resp.Status)
 	}
 
@@ -1201,12 +1268,11 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 	var resp *http.Response
 	var attempt int
 	var shouldRetry bool
-	var doErr, checkErr error
+	var doErr, respErr, checkErr error
 
 	for i := 0; ; i++ {
+		doErr, respErr = nil, nil
 		attempt++
-
-		var code int // HTTP response code
 
 		// Always rewind the request body when non-nil.
 		if req.body != nil {
@@ -1235,19 +1301,24 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 
 		// Attempt the request
 		resp, doErr = c.HTTPClient.Do(req.Request)
-		if resp != nil {
-			code = resp.StatusCode
-		}
 
 		// Check if we should continue with retries.
 		shouldRetry, checkErr = c.CheckRetry(req.Context(), resp, doErr)
+		if !shouldRetry && doErr == nil && req.responseHandler != nil {
+			respErr = req.responseHandler(resp)
+			shouldRetry, checkErr = c.CheckRetry(req.Context(), resp, respErr)
+		}
 
-		if doErr != nil {
+		err := doErr
+		if respErr != nil {
+			err = respErr
+		}
+		if err != nil {
 			switch v := logger.(type) {
 			case LeveledLogger:
-				v.Error("request failed", "error", doErr, "method", req.Method, "url", req.URL)
+				v.Error("request failed", "error", err, "method", req.Method, "url", req.URL)
 			case Logger:
-				v.Printf("[ERR] %s %s request failed: %v", req.Method, req.URL, doErr)
+				v.Printf("[ERR] %s %s request failed: %v", req.Method, req.URL, err)
 			}
 		} else {
 			// Call this here to maintain the behavior of logging all requests,
@@ -1282,11 +1353,11 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 		}
 
 		wait := c.Backoff(c.RetryWaitMin, c.RetryWaitMax, i, resp)
-		desc := fmt.Sprintf("%s %s", req.Method, req.URL)
-		if code > 0 {
-			desc = fmt.Sprintf("%s (status: %d)", desc, code)
-		}
 		if logger != nil {
+			desc := fmt.Sprintf("%s %s", req.Method, req.URL)
+			if resp != nil {
+				desc = fmt.Sprintf("%s (status: %d)", desc, resp.StatusCode)
+			}
 			switch v := logger.(type) {
 			case LeveledLogger:
 				v.Debug("retrying request", "request", desc, "timeout", wait, "remaining", remain)
@@ -1294,11 +1365,13 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 				v.Printf("[DEBUG] %s: retrying in %s (%d left)", desc, wait, remain)
 			}
 		}
+		timer := time.NewTimer(wait)
 		select {
 		case <-req.Context().Done():
+			timer.Stop()
 			c.HTTPClient.CloseIdleConnections()
 			return nil, req.Context().Err()
-		case <-time.After(wait):
+		case <-timer.C:
 		}
 
 		// Make shallow copy of http Request so that we can modify its body
@@ -1308,16 +1381,24 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 	}
 
 	// this is the closest we have to success criteria
-	if doErr == nil && checkErr == nil && !shouldRetry {
+	if doErr == nil && respErr == nil && checkErr == nil && !shouldRetry {
 		return resp, nil
 	}
 
 	defer c.HTTPClient.CloseIdleConnections()
 
-	err := doErr
+	var err error
 	if checkErr != nil {
 		err = checkErr
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	} else if respErr != nil {
+		err = respErr
+	} else {
+		err = doErr
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	if c.ErrorHandler != nil {

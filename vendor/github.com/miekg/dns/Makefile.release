@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # used to tag the git repo, we're not building any artifacts so there is nothing
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -18,6 +19,11 @@
 =======
 # used to tag the git repo, we're not building any artifects so there is nothing
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+# used to tag the git repo, we're not building any artifects so there is nothing
+=======
+# used to tag the git repo, we're not building any artifacts so there is nothing
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 # to upload to github.
 #
 # * Up the version in version.go

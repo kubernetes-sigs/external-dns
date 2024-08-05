@@ -55,6 +55,13 @@ func recordSetsListEP(c *Client, zoneID string, f ListFilter) string {
 	return concatStrs("", recordSetsEP(c, zoneID), query)
 }
 
+func recordSetsGlobalListEP(c *Client, f GlobalListFilter) string {
+	query := buildGlobalListQuery(f)
+	base := concatStrs("", c.Host, "/recordsets")
+
+	return concatStrs("", base, query)
+}
+
 func recordSetEP(c *Client, zoneID, recordSetID string) string {
 	return concatStrs("", recordSetsEP(c, zoneID), "/", recordSetID)
 }
@@ -109,6 +116,41 @@ func buildQuery(f ListFilter, nameFilterName string) string {
 
 	if f.NameFilter != "" {
 		params = append(params, fmt.Sprintf("%s=%s", nameFilterName, f.NameFilter))
+	}
+
+	if f.StartFrom != "" {
+		params = append(params, fmt.Sprintf("startFrom=%s", f.StartFrom))
+	}
+
+	if f.MaxItems != 0 {
+		params = append(params, fmt.Sprintf("maxItems=%d", f.MaxItems))
+	}
+
+	if len(params) == 0 {
+		query = ""
+	}
+
+	return query + strings.Join(params, "&")
+}
+
+func buildGlobalListQuery(f GlobalListFilter) string {
+	params := []string{}
+	query := "?"
+
+	if f.RecordNameFilter != "" {
+		params = append(params, fmt.Sprintf("%s=%s", "recordNameFilter", f.RecordNameFilter))
+	}
+
+	if f.RecordTypeFilter != "" {
+		params = append(params, fmt.Sprintf("%s=%s", "recordTypeFilter", f.RecordTypeFilter))
+	}
+
+	if f.RecordOwnerGroupFilter != "" {
+		params = append(params, fmt.Sprintf("%s=%s", "recordOwnerGroupFilter", f.RecordOwnerGroupFilter))
+	}
+
+	if f.NameSort != "" {
+		params = append(params, fmt.Sprintf("%s=%s", "nameSort", f.NameSort))
 	}
 
 	if f.StartFrom != "" {

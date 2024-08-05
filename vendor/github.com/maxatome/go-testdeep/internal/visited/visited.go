@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // visitKey is used by ctxerr.Context and its Visited map to handle
@@ -323,12 +324,17 @@ func (v Visited) Record(got, expected reflect.Value) bool {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"unsafe"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"unsafe"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
-// visitKey is used by Context and its Visited map to handle cyclic references.
+// visitKey is used by ctxerr.Context and its Visited map to handle
+// cyclic references.
 type visitedKey struct {
-	a1  unsafe.Pointer
-	a2  unsafe.Pointer
+	a1  uintptr
+	a2  uintptr
 	typ reflect.Type
 }
 
@@ -336,7 +342,7 @@ type visitedKey struct {
 // to not do the same action twice if the couple has already been seen.
 type Visited map[visitedKey]bool
 
-// NewVisited returns a new Visited instance.
+// NewVisited returns a new [Visited] instance.
 func NewVisited() Visited {
 	return Visited{}
 }
@@ -347,30 +353,53 @@ func NewVisited() Visited {
 // It is the caller responsibility to check that got and expected
 // types are the same.
 func (v Visited) Record(got, expected reflect.Value) bool {
+	var addr1, addr2 uintptr
 	switch got.Kind() {
-	case reflect.Map, reflect.Slice, reflect.Ptr, reflect.Interface:
-		if got.CanAddr() && expected.CanAddr() {
-			addr1 := unsafe.Pointer(got.UnsafeAddr())
-			addr2 := unsafe.Pointer(expected.UnsafeAddr())
-			if uintptr(addr1) > uintptr(addr2) {
-				// Canonicalize order to reduce number of entries in v.
-				// Assumes non-moving garbage collector.
-				addr1, addr2 = addr2, addr1
-			}
-
-			k := visitedKey{
-				a1:  addr1,
-				a2:  addr2,
-				typ: got.Type(),
-			}
-			if v[k] {
-				return true // references already seen
-			}
-
-			// Remember for later.
-			v[k] = true
+	// Pointer() can not be used for interfaces and for slices the
+	// returned address is the array behind the slice, use UnsafeAddr()
+	// instead
+	case reflect.Slice, reflect.Interface:
+		if got.IsNil() || expected.IsNil() ||
+			!got.CanAddr() || !expected.CanAddr() {
+			return false
 		}
+		addr1 = got.UnsafeAddr()
+		addr2 = expected.UnsafeAddr()
+
+		// For maps and pointers use Pointer() to automatically handle
+		// indirect pointers
+	case reflect.Map, reflect.Ptr:
+		if got.IsNil() || expected.IsNil() {
+			return false
+		}
+		addr1 = got.Pointer()
+		addr2 = expected.Pointer()
+
+	default:
+		return false
 	}
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	if addr1 > addr2 {
+		// Canonicalize order to reduce number of entries in v.
+		// Assumes non-moving garbage collector.
+		addr1, addr2 = addr2, addr1
+	}
+
+	k := visitedKey{
+		a1:  addr1,
+		a2:  addr2,
+		typ: got.Type(),
+	}
+	if v[k] {
+		return true // references already seen
+	}
+
+	// Remember for later.
+	v[k] = true
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return false
 }

@@ -8,6 +8,7 @@ package ctxerr
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"testing"
 
 	"github.com/maxatome/go-testdeep/internal/anchors"
@@ -317,12 +318,18 @@ func (c Context) AddFunctionCall(fn string) (new Context) {
 // ResetPath creates a new [Context] from current one but reinitializing Path.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"testing"
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"github.com/maxatome/go-testdeep/internal/anchors"
+	"github.com/maxatome/go-testdeep/internal/hooks"
 	"github.com/maxatome/go-testdeep/internal/location"
 	"github.com/maxatome/go-testdeep/internal/visited"
 )
 
-// Context is used internally to keep track of the CmpDeeply in-Depth
+// Context is used internally to keep track of the Cmp in-depth
 // traversal.
 type Context struct {
 	Path        Path
@@ -334,9 +341,11 @@ type Context struct {
 	// MaxErrors > 1 stops when MaxErrors'th error encoutered (with a
 	// last "Too many errors" error);
 	// < 0 do not stop until comparison ends.
-	MaxErrors int
-	Errors    *[]*Error
-	Anchors   *anchors.Info
+	MaxErrors  int
+	Errors     *[]*Error
+	Anchors    *anchors.Info
+	Hooks      *hooks.Info
+	OriginalTB testing.TB // only used by Code operator
 	// If true, the contents of the returned *Error will not be
 	// checked. Can be used to avoid filling Error{} with expensive
 	// computations.
@@ -347,9 +356,13 @@ type Context struct {
 	UseEqual bool
 	// See ContextConfig.BeLax for details.
 	BeLax bool
+	// See ContextConfig.IgnoreUnexported for details.
+	IgnoreUnexported bool
+	// See ContextConfig.TestDeepInGotOK for details.
+	TestDeepInGotOK bool
 }
 
-// InitErrors initializes Context *Errors slice, if MaxErrors < 0 or
+// InitErrors initializes [Context] *Errors slice, if MaxErrors < 0 or
 // MaxErrors > 1.
 func (c *Context) InitErrors() {
 	if c.MaxErrors != 0 && c.MaxErrors != 1 {
@@ -358,17 +371,18 @@ func (c *Context) InitErrors() {
 	}
 }
 
-// ResetErrors returns a new Context without any Error set.
-func (c Context) ResetErrors() (new Context) {
-	new = c
-	new.InitErrors()
+// ResetErrors returns a new [Context] without any Error set.
+func (c Context) ResetErrors() (newc Context) {
+	newc = c
+	newc.InitErrors()
 	return
 }
 
 // CollectError collects an error in the context. It returns an error
 // if the collector is full, nil otherwise.
 //
-// In boolean context, ignore the passed error and return the BooleanError.
+// In boolean context, it ignores the passed error and returns the
+// [BooleanError].
 func (c Context) CollectError(err *Error) *Error {
 	if err == nil {
 		return nil
@@ -391,6 +405,13 @@ func (c Context) CollectError(err *Error) *Error {
 	// Stop when first error encoutered
 	if c.Errors == nil {
 		return err
+	}
+
+	// Skip it if already encountered as Re in JSON(`[$1,$1]`, Re(123))
+	for _, cur := range *c.Errors {
+		if cur == err {
+			return nil
+		}
 	}
 
 	// Else, accumulate...
@@ -429,62 +450,76 @@ func (c Context) CannotCompareError() *Error {
 	}
 }
 
-// AddCustomLevel creates a new Context from current one plus pathAdd.
-func (c Context) AddCustomLevel(pathAdd string) (new Context) {
-	new = c
-	new.Path = new.Path.AddCustomLevel(pathAdd)
-	new.Depth++
+// AddCustomLevel creates a new [Context] from current one plus pathAdd.
+func (c Context) AddCustomLevel(pathAdd string) (newc Context) {
+	newc = c
+	newc.Path = newc.Path.AddCustomLevel(pathAdd)
+	newc.Depth++
 	return
 }
 
-// AddField creates a new Context from current one plus "." + field.
-func (c Context) AddField(field string) (new Context) {
-	new = c
-	new.Path = new.Path.AddField(field)
-	new.Depth++
+// AddField creates a new [Context] from current one plus "." + field.
+func (c Context) AddField(field string) (newc Context) {
+	newc = c
+	newc.Path = newc.Path.AddField(field)
+	newc.Depth++
 	return
 }
 
-// AddArrayIndex creates a new Context from current one plus an array
+// AddArrayIndex creates a new [Context] from current one plus an array
 // dereference for index-th item.
-func (c Context) AddArrayIndex(index int) (new Context) {
-	new = c
-	new.Path = new.Path.AddArrayIndex(index)
-	new.Depth++
+func (c Context) AddArrayIndex(index int) (newc Context) {
+	newc = c
+	newc.Path = newc.Path.AddArrayIndex(index)
+	newc.Depth++
 	return
 }
 
-// AddMapKey creates a new Context from current one plus a map
+// AddMapKey creates a new [Context] from current one plus a map
 // dereference for key key.
-func (c Context) AddMapKey(key interface{}) (new Context) {
-	new = c
-	new.Path = new.Path.AddMapKey(key)
-	new.Depth++
+func (c Context) AddMapKey(key any) (newc Context) {
+	newc = c
+	newc.Path = newc.Path.AddMapKey(key)
+	newc.Depth++
 	return
 }
 
-// AddPtr creates a new Context from current one plus a pointer dereference.
-func (c Context) AddPtr(num int) (new Context) {
-	new = c
-	new.Path = new.Path.AddPtr(num)
-	new.Depth++
+// AddPtr creates a new [Context] from current one plus a pointer dereference.
+func (c Context) AddPtr(num int) (newc Context) {
+	newc = c
+	newc.Path = newc.Path.AddPtr(num)
+	newc.Depth++
 	return
 }
 
-// AddFunctionCall creates a new Context from current one inside a
+// AddFunctionCall creates a new [Context] from current one inside a
 // function call.
-func (c Context) AddFunctionCall(fn string) (new Context) {
-	new = c
-	new.Path = new.Path.AddFunctionCall(fn)
-	new.Depth++
+func (c Context) AddFunctionCall(fn string) (newc Context) {
+	newc = c
+	newc.Path = newc.Path.AddFunctionCall(fn)
+	newc.Depth++
 	return
 }
 
+<<<<<<< HEAD
 // ResetPath creates a new Context from current one but reinitializing Path.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c Context) ResetPath(newRoot string) (new Context) {
 	new = c
 	new.Path = NewPath(newRoot)
 	new.Depth++
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// ResetPath creates a new Context from current one but reinitializing Path.
+func (c Context) ResetPath(newRoot string) (new Context) {
+	new = c
+	new.Path = NewPath(newRoot)
+	new.Depth++
+=======
+// ResetPath creates a new [Context] from current one but reinitializing Path.
+func (c Context) ResetPath(newRoot string) (newc Context) {
+	newc = c
+	newc.Path = NewPath(newRoot)
+	newc.Depth++
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }

@@ -24,6 +24,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.autoscaling.v2beta2;
@@ -1453,6 +1454,11 @@ message MetricStatus {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package k8s.io.api.autoscaling.v2beta2;
 
@@ -1463,17 +1469,51 @@ import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
-option go_package = "v2beta2";
+option go_package = "k8s.io/api/autoscaling/v2beta2";
+
+// ContainerResourceMetricSource indicates how to scale on a resource metric known to
+// Kubernetes, as specified in requests and limits, describing each pod in the
+// current scale target (e.g. CPU or memory).  The values will be averaged
+// together before being compared to the target.  Such metrics are built in to
+// Kubernetes, and have special scaling options on top of those available to
+// normal per-pod metrics using the "pods" source.  Only one "target" type
+// should be set.
+message ContainerResourceMetricSource {
+  // name is the name of the resource in question.
+  optional string name = 1;
+
+  // target specifies the target value for the given metric
+  optional MetricTarget target = 2;
+
+  // container is the name of the container in the pods of the scaling target
+  optional string container = 3;
+}
+
+// ContainerResourceMetricStatus indicates the current value of a resource metric known to
+// Kubernetes, as specified in requests and limits, describing a single container in each pod in the
+// current scale target (e.g. CPU or memory).  Such metrics are built in to
+// Kubernetes, and have special scaling options on top of those available to
+// normal per-pod metrics using the "pods" source.
+message ContainerResourceMetricStatus {
+  // name is the name of the resource in question.
+  optional string name = 1;
+
+  // current contains the current value for the given metric
+  optional MetricValueStatus current = 2;
+
+  // container is the name of the container in the pods of the scaling target
+  optional string container = 3;
+}
 
 // CrossVersionObjectReference contains enough information to let you identify the referred resource.
 message CrossVersionObjectReference {
-  // Kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+  // kind is the kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
   optional string kind = 1;
 
-  // Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names
+  // name is the name of the referent; More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
   optional string name = 2;
 
-  // API version of the referent
+  // apiVersion is the API version of the referent
   // +optional
   optional string apiVersion = 3;
 }
@@ -1501,14 +1541,14 @@ message ExternalMetricStatus {
 
 // HPAScalingPolicy is a single policy which must hold true for a specified past interval.
 message HPAScalingPolicy {
-  // Type is used to specify the scaling policy.
+  // type is used to specify the scaling policy.
   optional string type = 1;
 
-  // Value contains the amount of change which is permitted by the policy.
+  // value contains the amount of change which is permitted by the policy.
   // It must be greater than zero
   optional int32 value = 2;
 
-  // PeriodSeconds specifies the window of time for which the policy should hold true.
+  // periodSeconds specifies the window of time for which the policy should hold true.
   // PeriodSeconds must be greater than zero and less than or equal to 1800 (30 min).
   optional int32 periodSeconds = 3;
 }
@@ -1520,7 +1560,7 @@ message HPAScalingPolicy {
 // number of replicas is not set instantly, instead, the safest value from the stabilization
 // window is chosen.
 message HPAScalingRules {
-  // StabilizationWindowSeconds is the number of seconds for which past recommendations should be
+  // stabilizationWindowSeconds is the number of seconds for which past recommendations should be
   // considered while scaling up or scaling down.
   // StabilizationWindowSeconds must be greater than or equal to zero and less than or equal to 3600 (one hour).
   // If not set, use the default values:
@@ -1537,6 +1577,7 @@ message HPAScalingRules {
   // policies is a list of potential scaling polices which can be used during scaling.
   // At least one policy must be specified, otherwise the HPAScalingRules will be discarded as invalid
   // +optional
+  // +listType=atomic
   repeated HPAScalingPolicy policies = 2;
 }
 
@@ -1639,6 +1680,7 @@ message HorizontalPodAutoscalerSpec {
   // more information about how each type of metric must respond.
   // If not set, the default metric will be set to 80% average CPU utilization.
   // +optional
+  // +listType=atomic
   repeated MetricSpec metrics = 4;
 
   // behavior configures the scaling behavior of the target
@@ -1669,10 +1711,13 @@ message HorizontalPodAutoscalerStatus {
 
   // currentMetrics is the last read state of the metrics used by this autoscaler.
   // +optional
+  // +listType=atomic
   repeated MetricStatus currentMetrics = 5;
 
   // conditions is the set of conditions required for this autoscaler to scale its target,
   // and indicates whether or not those conditions are met.
+  // +optional
+  // +listType=atomic
   repeated HorizontalPodAutoscalerCondition conditions = 6;
 }
 
@@ -1691,8 +1736,10 @@ message MetricIdentifier {
 // MetricSpec specifies how to scale based on a single metric
 // (only `type` and one other matching field should be set at once).
 message MetricSpec {
-  // type is the type of metric source.  It should be one of "Object",
-  // "Pods" or "Resource", each mapping to a matching field in the object.
+  // type is the type of metric source.  It should be one of "ContainerResource", "External",
+  // "Object", "Pods" or "Resource", each mapping to a matching field in the object.
+  // Note: "ContainerResource" type is available on when the feature-gate
+  // HPAContainerMetrics is enabled
   optional string type = 1;
 
   // object refers to a metric describing a single kubernetes object
@@ -1714,6 +1761,15 @@ message MetricSpec {
   // +optional
   optional ResourceMetricSource resource = 4;
 
+  // container resource refers to a resource metric (such as those specified in
+  // requests and limits) known to Kubernetes describing a single container in
+  // each pod of the current scale target (e.g. CPU or memory). Such metrics are
+  // built in to Kubernetes, and have special scaling options on top of those
+  // available to normal per-pod metrics using the "pods" source.
+  // This is an alpha feature and can be enabled by the HPAContainerMetrics feature flag.
+  // +optional
+  optional ContainerResourceMetricSource containerResource = 7;
+
   // external refers to a global metric that is not associated
   // with any Kubernetes object. It allows autoscaling based on information
   // coming from components running outside of cluster
@@ -1725,8 +1781,10 @@ message MetricSpec {
 
 // MetricStatus describes the last-read state of a single metric.
 message MetricStatus {
-  // type is the type of metric source.  It will be one of "Object",
-  // "Pods" or "Resource", each corresponds to a matching field in the object.
+  // type is the type of metric source.  It will be one of "ContainerResource", "External",
+  // "Object", "Pods" or "Resource", each corresponds to a matching field in the object.
+  // Note: "ContainerResource" type is available on when the feature-gate
+  // HPAContainerMetrics is enabled
   optional string type = 1;
 
   // object refers to a metric describing a single kubernetes object
@@ -1748,6 +1806,14 @@ message MetricStatus {
   // +optional
   optional ResourceMetricStatus resource = 4;
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+  // containerResource refers to a resource metric (such as those specified in
+  // requests and limits) known to Kubernetes describing a single container in each pod in the
+  // current scale target (e.g. CPU or memory). Such metrics are built in to
+  // Kubernetes, and have special scaling options on top of those available
+  // to normal per-pod metrics using the "pods" source.
+  // +optional
+  optional ContainerResourceMetricStatus containerResource = 7;
 
   // external refers to a global metric that is not associated
   // with any Kubernetes object. It allows autoscaling based on information
@@ -1791,7 +1857,7 @@ message MetricValueStatus {
   // +optional
   optional k8s.io.apimachinery.pkg.api.resource.Quantity averageValue = 2;
 
-  // currentAverageUtilization is the current value of the average of the
+  // averageUtilization is the current value of the average of the
   // resource metric across all relevant pods, represented as a percentage of
   // the requested value of the resource for the pods.
   // +optional
@@ -1865,7 +1931,7 @@ message ResourceMetricSource {
 // Kubernetes, and have special scaling options on top of those available to
 // normal per-pod metrics using the "pods" source.
 message ResourceMetricStatus {
-  // Name is the name of the resource in question.
+  // name is the name of the resource in question.
   optional string name = 1;
 
   // current contains the current value for the given metric

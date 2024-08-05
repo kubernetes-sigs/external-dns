@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddGtmAddressPool(request *AddGtmAddressPoolRequest) (response *AddGtmAddressPoolResponse, err error) {
 	response = CreateAddGtmAddressPoolResponse()
 	err = client.DoAction(request, response)
@@ -227,6 +228,10 @@ func CreateAddGtmAddressPoolRequest() (request *AddGtmAddressPoolRequest) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/addgtmaddresspool.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/addgtmaddresspool.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) AddGtmAddressPool(request *AddGtmAddressPoolRequest) (response *AddGtmAddressPoolResponse, err error) {
 	response = CreateAddGtmAddressPoolResponse()
 	err = client.DoAction(request, response)
@@ -234,8 +239,6 @@ func (client *Client) AddGtmAddressPool(request *AddGtmAddressPoolRequest) (resp
 }
 
 // AddGtmAddressPoolWithChan invokes the alidns.AddGtmAddressPool API asynchronously
-// api document: https://help.aliyun.com/api/alidns/addgtmaddresspool.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddGtmAddressPoolWithChan(request *AddGtmAddressPoolRequest) (<-chan *AddGtmAddressPoolResponse, <-chan error) {
 	responseChan := make(chan *AddGtmAddressPoolResponse, 1)
 	errChan := make(chan error, 1)
@@ -258,8 +261,6 @@ func (client *Client) AddGtmAddressPoolWithChan(request *AddGtmAddressPoolReques
 }
 
 // AddGtmAddressPoolWithCallback invokes the alidns.AddGtmAddressPool API asynchronously
-// api document: https://help.aliyun.com/api/alidns/addgtmaddresspool.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddGtmAddressPoolWithCallback(request *AddGtmAddressPoolRequest, callback func(response *AddGtmAddressPoolResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -324,7 +325,12 @@ func CreateAddGtmAddressPoolRequest() (request *AddGtmAddressPoolRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddGtmAddressPool", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

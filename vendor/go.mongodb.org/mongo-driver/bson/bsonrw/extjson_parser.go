@@ -313,6 +313,7 @@ func (ejp *extJSONParser) readValue(t bsontype.Type) (*extJSONValue, error) {
 				// convert hex to bytes
 				bytes, err := hex.DecodeString(uuidNoHyphens)
 				if err != nil {
+<<<<<<< HEAD
 					return nil, fmt.Errorf("$uuid value does not follow RFC 4122 format regarding hex bytes: %v", err)
 				}
 
@@ -424,6 +425,120 @@ func (ejp *extJSONParser) readValue(t bsontype.Type) (*extJSONValue, error) {
 					return nil, invalidJSONErrorForType("object", t)
 				}
 				return nil, invalidJSONErrorForType("ISO-8601 Internet Date/Time Format as decribed in RFC-3339", t)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+					return nil, fmt.Errorf("$uuid value does not follow RFC 4122 format regarding hex bytes: %w", err)
+				}
+
+				ejp.advanceState()
+				if ejp.s != jpsSawEndObject {
+					return nil, invalidJSONErrorForType("$uuid and value and then }", bsontype.Binary)
+				}
+
+				base64 := &extJSONValue{
+					t: bsontype.String,
+					v: base64.StdEncoding.EncodeToString(bytes),
+				}
+				subType := &extJSONValue{
+					t: bsontype.String,
+					v: "04",
+				}
+
+				v = &extJSONValue{
+					t: bsontype.EmbeddedDocument,
+					v: &extJSONObject{
+						keys:   []string{"base64", "subType"},
+						values: []*extJSONValue{base64, subType},
+					},
+				}
+
+				break
+			}
+
+			// convert legacy $binary format
+			base64 := ejp.v
+
+			ejp.advanceState()
+			if ejp.s != jpsSawComma {
+				return nil, invalidJSONErrorForType(",", bsontype.Binary)
+			}
+
+			ejp.advanceState()
+			key, t, err := ejp.readKey()
+			if err != nil {
+				return nil, err
+			}
+			if key != "$type" {
+				return nil, invalidJSONErrorForType("$type", bsontype.Binary)
+			}
+
+			subType, err := ejp.readValue(t)
+			if err != nil {
+				return nil, err
+			}
+
+			ejp.advanceState()
+			if ejp.s != jpsSawEndObject {
+				return nil, invalidJSONErrorForType("2 key-value pairs and then }", bsontype.Binary)
+			}
+
+			v = &extJSONValue{
+				t: bsontype.EmbeddedDocument,
+				v: &extJSONObject{
+					keys:   []string{"base64", "subType"},
+					values: []*extJSONValue{base64, subType},
+				},
+			}
+			break
+		}
+
+		// read KV pairs
+		if ejp.s != jpsSawBeginObject {
+			return nil, invalidJSONErrorForType("{", t)
+		}
+
+		keys, vals, err := ejp.readObject(2, true)
+		if err != nil {
+			return nil, err
+		}
+
+		ejp.advanceState()
+		if ejp.s != jpsSawEndObject {
+			return nil, invalidJSONErrorForType("2 key-value pairs and then }", t)
+		}
+
+		v = &extJSONValue{t: bsontype.EmbeddedDocument, v: &extJSONObject{keys: keys, values: vals}}
+
+	case bsontype.DateTime:
+		switch ejp.s {
+		case jpsSawValue:
+			v = ejp.v
+		case jpsSawKey:
+			// read colon
+			ejp.advanceState()
+			if err := ensureColon(ejp.s, ejp.k); err != nil {
+				return nil, err
+			}
+
+			ejp.advanceState()
+			switch ejp.s {
+			case jpsSawBeginObject:
+				keys, vals, err := ejp.readObject(1, true)
+				if err != nil {
+					return nil, err
+				}
+				v = &extJSONValue{t: bsontype.EmbeddedDocument, v: &extJSONObject{keys: keys, values: vals}}
+			case jpsSawValue:
+				if ejp.canonical {
+					return nil, invalidJSONError("{")
+				}
+				v = ejp.v
+			default:
+				if ejp.canonical {
+					return nil, invalidJSONErrorForType("object", t)
+				}
+				return nil, invalidJSONErrorForType("ISO-8601 Internet Date/Time Format as described in RFC-3339", t)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			}
 
 			ejp.advanceState()

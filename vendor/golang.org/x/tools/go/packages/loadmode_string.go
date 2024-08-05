@@ -16,6 +16,7 @@ var allModes = []LoadMode{
 	NeedImports,
 	NeedDeps,
 <<<<<<< HEAD
+<<<<<<< HEAD
 	NeedExportFile,
 	NeedTypes,
 	NeedSyntax,
@@ -33,6 +34,11 @@ var modeStrings = []string{
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	NeedExportsFile,
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	NeedExportsFile,
+=======
+	NeedExportFile,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	NeedTypes,
 	NeedSyntax,
 	NeedTypesInfo,
@@ -45,8 +51,14 @@ var modeStrings = []string{
 	"NeedCompiledGoFiles",
 	"NeedImports",
 	"NeedDeps",
+<<<<<<< HEAD
 	"NeedExportsFile",
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"NeedExportsFile",
+=======
+	"NeedExportFile",
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"NeedTypes",
 	"NeedSyntax",
 	"NeedTypesInfo",

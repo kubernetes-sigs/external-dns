@@ -35,11 +35,17 @@
 // views be left up to applications.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // # Exporting
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Exporting
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Exporting
+=======
+// # Exporting
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Collected and aggregated data can be exported to a metric collection
 // backend by registering its exporter.

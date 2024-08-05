@@ -10,6 +10,7 @@
 // .
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // # Enumerating Regions and Endpoint Metadata
 //
 // Casting the Resolver returned by DefaultResolver to a EnumPartitions interface
@@ -66,6 +67,11 @@
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Enumerating Regions and Endpoint Metadata
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// Enumerating Regions and Endpoint Metadata
+=======
+// # Enumerating Regions and Endpoint Metadata
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // Casting the Resolver returned by DefaultResolver to a EnumPartitions interface
 // will allow you to get access to the list of underlying Partitions with the
@@ -73,22 +79,22 @@
 // resolving to a single partition, or enumerate regions, services, and endpoints
 // in the partition.
 //
-//     resolver := endpoints.DefaultResolver()
-//     partitions := resolver.(endpoints.EnumPartitions).Partitions()
+//	resolver := endpoints.DefaultResolver()
+//	partitions := resolver.(endpoints.EnumPartitions).Partitions()
 //
-//     for _, p := range partitions {
-//         fmt.Println("Regions for", p.ID())
-//         for id, _ := range p.Regions() {
-//             fmt.Println("*", id)
-//         }
+//	for _, p := range partitions {
+//	    fmt.Println("Regions for", p.ID())
+//	    for id, _ := range p.Regions() {
+//	        fmt.Println("*", id)
+//	    }
 //
-//         fmt.Println("Services for", p.ID())
-//         for id, _ := range p.Services() {
-//             fmt.Println("*", id)
-//         }
-//     }
+//	    fmt.Println("Services for", p.ID())
+//	    for id, _ := range p.Services() {
+//	        fmt.Println("*", id)
+//	    }
+//	}
 //
-// Using Custom Endpoints
+// # Using Custom Endpoints
 //
 // The endpoints package also gives you the ability to use your own logic how
 // endpoints are resolved. This is a great way to define a custom endpoint
@@ -103,15 +109,18 @@
 // of Resolver.EndpointFor, converting it to a type that satisfies the
 // Resolver interface.
 //
+//	myCustomResolver := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+//	    if service == endpoints.S3ServiceID {
+//	        return endpoints.ResolvedEndpoint{
+//	            URL:           "s3.custom.endpoint.com",
+//	            SigningRegion: "custom-signing-region",
+//	        }, nil
+//	    }
 //
-//     myCustomResolver := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-//         if service == endpoints.S3ServiceID {
-//             return endpoints.ResolvedEndpoint{
-//                 URL:           "s3.custom.endpoint.com",
-//                 SigningRegion: "custom-signing-region",
-//             }, nil
-//         }
+//	    return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+//	}
 //
+<<<<<<< HEAD
 //         return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
 //     }
 //
@@ -120,4 +129,18 @@
 //         EndpointResolver: endpoints.ResolverFunc(myCustomResolver),
 //     }))
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//         return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+//     }
+//
+//     sess := session.Must(session.NewSession(&aws.Config{
+//         Region:           aws.String("us-west-2"),
+//         EndpointResolver: endpoints.ResolverFunc(myCustomResolver),
+//     }))
+=======
+//	sess := session.Must(session.NewSession(&aws.Config{
+//	    Region:           aws.String("us-west-2"),
+//	    EndpointResolver: endpoints.ResolverFunc(myCustomResolver),
+//	}))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 package endpoints

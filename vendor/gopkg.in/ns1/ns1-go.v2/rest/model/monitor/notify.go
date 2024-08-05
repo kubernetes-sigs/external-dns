@@ -44,10 +44,10 @@ func NewFeedNotification(sourceID string) *Notification {
 }
 
 // NewWebNotification returns a notification that alerts via webhook.
-func NewWebNotification(url string) *Notification {
+func NewWebNotification(url string, headers map[string]string) *Notification {
 	return &Notification{
 		Type:   "webhook",
-		Config: Config{"url": url}}
+		Config: Config{"url": url, "headers": headers}}
 }
 
 // NewPagerDutyNotification returns a notification that alerts via pagerduty.

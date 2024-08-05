@@ -1,6 +1,8 @@
 package dns
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,7 +13,7 @@ import (
 // Answer wraps the values of a Record's "filters" attribute
 type Answer struct {
 	ID string `json:"id,omitempty"`
-	
+
 	Meta *data.Meta `json:"meta,omitempty"`
 
 	// Answer response data. eg:
@@ -22,6 +24,43 @@ type Answer struct {
 
 	// Region(grouping) that answer belongs to.
 	RegionName string `json:"region,omitempty"`
+}
+
+// Alias is used as an alias for an answer so that the custom marshaler isn't used.
+type Alias struct {
+	Rdata []interface{} `json:"answer"`
+	*AliasAnswer
+}
+
+// AliasAnswer is a duplicate of Answer.
+type AliasAnswer Answer
+
+// UnmarshalJSON parses responses to Answer and attempts to convert Rdata
+// elements to string.
+func (a *Answer) UnmarshalJSON(data []byte) error {
+	aux := &Alias{
+		AliasAnswer: (*AliasAnswer)(a),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	var rdata []string
+	for _, record := range aux.Rdata {
+		switch v := record.(type) {
+		case string:
+			rdata = append(rdata, v)
+		case float64:
+			rdata = append(rdata, strconv.Itoa(int(v)))
+		default:
+			return fmt.Errorf(
+				"Could not unmarshal Rdata value %[1]v (type %[1]T) as type string", v,
+			)
+		}
+	}
+	a.Rdata = rdata
+
+	return nil
 }
 
 func (a Answer) String() string {
@@ -100,4 +139,73 @@ func NewSRVAnswer(priority, weight, port int, target string) *Answer {
 			target,
 		},
 	}
+}
+
+// NewDSAnswer creates an Answer for DS record.
+func NewDSAnswer(key string, algorithm string, t string, digest string) *Answer {
+	return &Answer{
+		Meta: &data.Meta{},
+		Rdata: []string{
+			key,
+			algorithm,
+			t,
+			digest,
+		},
+	}
+}
+
+// NewCAAAnswer creates an Answer for a CAA record.
+func NewCAAAnswer(flag int, tag, value string) *Answer {
+	return &Answer{
+		Meta:  &data.Meta{},
+		Rdata: []string{strconv.Itoa(flag), tag, value},
+	}
+}
+
+// NewURLFWDAnswer creates an Answer for URLFWD record.
+func NewURLFWDAnswer(from, to string, redirectType, pathForwardingMode, queryForwarding int) *Answer {
+	return &Answer{
+		Meta: &data.Meta{},
+		Rdata: []string{
+			from,
+			to,
+			strconv.Itoa(redirectType),
+			strconv.Itoa(pathForwardingMode),
+			strconv.Itoa(queryForwarding),
+		},
+	}
+}
+
+// return Answer with Rdata as list of interface, with elements of the correct
+// type for API.
+func prepareURLFWDAnswer(a *Answer) (interface{}, error) {
+	if len(a.Rdata) < 5 {
+		return nil, errors.New("invalid number of arguments for Rdata")
+	}
+
+	redirectType, err := strconv.Atoi(a.Rdata[2])
+	if err != nil {
+		return nil, err
+	}
+	pathForwardingMode, err := strconv.Atoi(a.Rdata[3])
+	if err != nil {
+		return nil, err
+	}
+	queryForwarding, err := strconv.Atoi(a.Rdata[4])
+	if err != nil {
+		return nil, err
+	}
+
+	prepared := &Alias{
+		Rdata: []interface{}{
+			a.Rdata[0],
+			a.Rdata[1],
+			redirectType,
+			pathForwardingMode,
+			queryForwarding,
+		},
+		AliasAnswer: (*AliasAnswer)(a),
+	}
+
+	return prepared, nil
 }

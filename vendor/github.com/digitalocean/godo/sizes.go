@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Sizes
 type SizesService interface {
 	List(context.Context, *ListOptions) ([]Size, *Response, error)
@@ -153,6 +154,11 @@ type Size struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#sizes
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2#sizes
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Sizes
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type SizesService interface {
 	List(context.Context, *ListOptions) ([]Size, *Response, error)
 }
@@ -176,7 +182,12 @@ type Size struct {
 	Regions      []string `json:"regions,omitempty"`
 	Available    bool     `json:"available,omitempty"`
 	Transfer     float64  `json:"transfer,omitempty"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	Description  string   `json:"description,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (s Size) String() string {

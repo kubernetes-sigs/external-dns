@@ -32,6 +32,7 @@ New functionality should be accompanied by increment to the minor
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 version number. Any code merged to main is subject to release.
 
 ## Releasing
@@ -243,10 +244,15 @@ github-changelog-generator -org digitalocean -repo godo
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 version number. Any code merged to master is subject to release.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+version number. Any code merged to master is subject to release.
+=======
+version number. Any code merged to main is subject to release.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 ## Releasing
 
-Releasing a new version of godo is currently a manual process. 
+Releasing a new version of godo is currently a manual process.
 
 Submit a separate pull request for the version change from the pull
 request with your changes.
@@ -255,18 +261,49 @@ request with your changes.
    for the next (unreleased) version does not exist, create one.
    Include one bullet point for each piece of new functionality in the
    release, including the pull request ID, description, and author(s).
+   For example:
 
 ```
 ## [v1.8.0] - 2019-03-13
 
-- #210 Expose tags on storage volume create/list/get. - @jcodybaker
-- #123 Update test dependencies - @digitalocean
+- #210 - @jcodybaker - Expose tags on storage volume create/list/get.
+- #123 - @digitalocean - Update test dependencies
+```
+
+   To generate a list of changes since the previous release in the correct
+   format, you can use [github-changelog-generator](https://github.com/digitalocean/github-changelog-generator).
+   It can be installed from source by running:
+
+```
+go get -u github.com/digitalocean/github-changelog-generator
+```
+
+   Next, list the changes by running:
+
+```
+github-changelog-generator -org digitalocean -repo godo
 ```
 
 2. Update the `libraryVersion` number in `godo.go`.
 3. Make a pull request with these changes.  This PR should be separate from the PR containing the godo changes.
+<<<<<<< HEAD
 4. Once the pull request has been merged, [draft a new release](https://github.com/digitalocean/godo/releases/new).  
 5. Update the `Tag version` and `Release title` field with the new godo version.  Be sure the version has a `v` prefixed in both places. Ex `v1.8.0`.  
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+4. Once the pull request has been merged, [draft a new release](https://github.com/digitalocean/godo/releases/new).  
+5. Update the `Tag version` and `Release title` field with the new godo version.  Be sure the version has a `v` prefixed in both places. Ex `v1.8.0`.  
+=======
+4. Once the pull request has been merged, [draft a new release](https://github.com/digitalocean/godo/releases/new).
+5. Update the `Tag version` and `Release title` field with the new godo version.  Be sure the version has a `v` prefixed in both places. Ex `v1.8.0`.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 6. Copy the changelog bullet points to the description field.
 7. Publish the release.
+
+## Go Version Support
+
+This project follows the support [policy of Go](https://go.dev/doc/devel/release#policy)
+as its support policy. The two latest major releases of Go are supported by the project.
+[CI workflows](.github/workflows/ci.yml) should test against both supported versions.
+[go.mod](./go.mod) should specify the oldest of the supported versions to give
+downstream users of godo flexibility.

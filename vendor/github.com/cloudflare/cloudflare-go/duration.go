@@ -1,8 +1,9 @@
 package cloudflare
 
 import (
-	"encoding/json"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 // Duration implements json.Marshaler and json.Unmarshaler for time.Duration

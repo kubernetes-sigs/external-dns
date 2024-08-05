@@ -8,6 +8,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/json"
 	"net/url"
 	"path"
@@ -645,7 +646,20 @@ func (api *API) GetUserAuditLogs(ctx context.Context, a AuditLogFilter) (AuditLo
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+=======
+	"context"
+	"net/http"
+	"net/url"
+	"path"
+	"strconv"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 // AuditLogAction is a member of AuditLog, the action that was taken.
@@ -673,20 +687,22 @@ type AuditLogResource struct {
 	Type string `json:"type"`
 }
 
-// AuditLog is an resource that represents an update in the cloudflare dash
+// AuditLog is an resource that represents an update in the cloudflare dash.
 type AuditLog struct {
-	Action   AuditLogAction         `json:"action"`
-	Actor    AuditLogActor          `json:"actor"`
-	ID       string                 `json:"id"`
-	Metadata map[string]interface{} `json:"metadata"`
-	NewValue string                 `json:"newValue"`
-	OldValue string                 `json:"oldValue"`
-	Owner    AuditLogOwner          `json:"owner"`
-	Resource AuditLogResource       `json:"resource"`
-	When     time.Time              `json:"when"`
+	Action       AuditLogAction         `json:"action"`
+	Actor        AuditLogActor          `json:"actor"`
+	ID           string                 `json:"id"`
+	Metadata     map[string]interface{} `json:"metadata"`
+	NewValue     string                 `json:"newValue"`
+	NewValueJSON map[string]interface{} `json:"newValueJson"`
+	OldValue     string                 `json:"oldValue"`
+	OldValueJSON map[string]interface{} `json:"oldValueJson"`
+	Owner        AuditLogOwner          `json:"owner"`
+	Resource     AuditLogResource       `json:"resource"`
+	When         time.Time              `json:"when"`
 }
 
-// AuditLogResponse is the response returned from the cloudflare v4 api
+// AuditLogResponse is the response returned from the cloudflare v4 api.
 type AuditLogResponse struct {
 	Response   Response
 	Result     []AuditLog `json:"result"`
@@ -695,72 +711,77 @@ type AuditLogResponse struct {
 
 // AuditLogFilter is an object for filtering the audit log response from the api.
 type AuditLogFilter struct {
-	ID         string
-	ActorIP    string
-	ActorEmail string
-	Direction  string
-	ZoneName   string
-	Since      string
-	Before     string
-	PerPage    int
-	Page       int
+	ID           string
+	ActorIP      string
+	ActorEmail   string
+	HideUserLogs bool
+	Direction    string
+	ZoneName     string
+	Since        string
+	Before       string
+	PerPage      int
+	Page         int
 }
 
-// String turns an audit log filter in to an HTTP Query Param
-// list. It will not inclue empty members of the struct in the
-// query parameters.
-func (a AuditLogFilter) String() string {
-	params := "?"
+// ToQuery turns an audit log filter in to an HTTP Query Param
+// list, suitable for use in a url.URL.RawQuery. It will not include empty
+// members of the struct in the query parameters.
+func (a AuditLogFilter) ToQuery() url.Values {
+	v := url.Values{}
+
 	if a.ID != "" {
-		params += "&id=" + a.ID
+		v.Add("id", a.ID)
 	}
 	if a.ActorIP != "" {
-		params += "&actor.ip=" + a.ActorIP
+		v.Add("actor.ip", a.ActorIP)
 	}
 	if a.ActorEmail != "" {
-		params += "&actor.email=" + a.ActorEmail
+		v.Add("actor.email", a.ActorEmail)
+	}
+	if a.HideUserLogs {
+		v.Add("hide_user_logs", "true")
 	}
 	if a.ZoneName != "" {
-		params += "&zone.name=" + a.ZoneName
+		v.Add("zone.name", a.ZoneName)
 	}
 	if a.Direction != "" {
-		params += "&direction=" + a.Direction
+		v.Add("direction", a.Direction)
 	}
 	if a.Since != "" {
-		params += "&since=" + a.Since
+		v.Add("since", a.Since)
 	}
 	if a.Before != "" {
-		params += "&before=" + a.Before
+		v.Add("before", a.Before)
 	}
 	if a.PerPage > 0 {
-		params += "&per_page=" + fmt.Sprintf("%d", a.PerPage)
+		v.Add("per_page", strconv.Itoa(a.PerPage))
 	}
 	if a.Page > 0 {
-		params += "&page=" + fmt.Sprintf("%d", a.Page)
+		v.Add("page", strconv.Itoa(a.Page))
 	}
-	return params
+
+	return v
 }
 
 // GetOrganizationAuditLogs will return the audit logs of a specific
 // organization, based on the ID passed in. The audit logs can be
-// filtered based on any argument in the AuditLogFilter
+// filtered based on any argument in the AuditLogFilter.
 //
 // API Reference: https://api.cloudflare.com/#audit-logs-list-organization-audit-logs
-func (api *API) GetOrganizationAuditLogs(organizationID string, a AuditLogFilter) (AuditLogResponse, error) {
-	uri := "/organizations/" + organizationID + "/audit_logs" + fmt.Sprintf("%s", a)
-
-	res, err := api.makeRequest("GET", uri, nil)
+func (api *API) GetOrganizationAuditLogs(ctx context.Context, organizationID string, a AuditLogFilter) (AuditLogResponse, error) {
+	uri := url.URL{
+		Path:       path.Join("/accounts", organizationID, "audit_logs"),
+		ForceQuery: true,
+		RawQuery:   a.ToQuery().Encode(),
+	}
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri.String(), nil)
 	if err != nil {
 		return AuditLogResponse{}, err
 	}
-	buf, err := base64.RawStdEncoding.DecodeString(string(res))
-	if err != nil {
-		return AuditLogResponse{}, err
-	}
-	return unmarshalReturn(buf)
+	return unmarshalReturn(res)
 }
 
-// unmarshalReturn will unmarshal bytes and return an auditlogresponse
+// unmarshalReturn will unmarshal bytes and return an auditlogresponse.
 func unmarshalReturn(res []byte) (AuditLogResponse, error) {
 	var auditResponse AuditLogResponse
 	err := json.Unmarshal(res, &auditResponse)
@@ -771,13 +792,27 @@ func unmarshalReturn(res []byte) (AuditLogResponse, error) {
 }
 
 // GetUserAuditLogs will return your user's audit logs. The audit logs can be
-// filtered based on any argument in the AuditLogFilter
+// filtered based on any argument in the AuditLogFilter.
 //
 // API Reference: https://api.cloudflare.com/#audit-logs-list-user-audit-logs
+<<<<<<< HEAD
 func (api *API) GetUserAuditLogs(a AuditLogFilter) (AuditLogResponse, error) {
 	uri := "/user/audit_logs" + fmt.Sprintf("%s", a)
 	res, err := api.makeRequest("GET", uri, nil)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+func (api *API) GetUserAuditLogs(a AuditLogFilter) (AuditLogResponse, error) {
+	uri := "/user/audit_logs" + fmt.Sprintf("%s", a)
+	res, err := api.makeRequest("GET", uri, nil)
+=======
+func (api *API) GetUserAuditLogs(ctx context.Context, a AuditLogFilter) (AuditLogResponse, error) {
+	uri := url.URL{
+		Path:       path.Join("/user", "audit_logs"),
+		ForceQuery: true,
+		RawQuery:   a.ToQuery().Encode(),
+	}
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri.String(), nil)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return AuditLogResponse{}, err
 	}

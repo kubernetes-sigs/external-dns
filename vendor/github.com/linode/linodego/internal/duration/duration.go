@@ -20,16 +20,17 @@ func UnmarshalTimeRemaining(m json.RawMessage) *int {
 
 	var timeStr string
 	if err := json.Unmarshal(jsonBytes, &timeStr); err == nil && len(timeStr) > 0 {
-		if dur, err := durationToSeconds(timeStr); err != nil {
+		dur, err := durationToSeconds(timeStr)
+		if err != nil {
 			panic(err)
-		} else {
-			return &dur
 		}
-	} else {
-		var intPtr int
-		if err := json.Unmarshal(jsonBytes, &intPtr); err == nil {
-			return &intPtr
-		}
+
+		return &dur
+	}
+
+	var intPtr int
+	if err := json.Unmarshal(jsonBytes, &intPtr); err == nil {
+		return &intPtr
 	}
 
 	log.Println("[WARN] Unexpected unmarshalTimeRemaining value: ", jsonBytes)
@@ -37,6 +38,7 @@ func UnmarshalTimeRemaining(m json.RawMessage) *int {
 	return nil
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -76,6 +78,11 @@ func UnmarshalTimeRemaining(m json.RawMessage) *int {
 =======
 // durationToSeconds takes a hh:mm:ss string and returns the number of seconds
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
+=======
+// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func durationToSeconds(s string) (int, error) {
 	multipliers := [3]int{60 * 60, 60, 1}
 	segs := strings.Split(s, ":")

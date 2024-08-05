@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // Domain represents a Domain object
@@ -52,6 +54,7 @@ type Domain struct {
 	TTLSec int `json:"ttl_sec"`
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1151,6 +1154,14 @@ func (c *Client) GetDomainZoneFile(ctx context.Context, domainID int) (*DomainZo
 	return resp.Result().(*DomainZoneFile), nil
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// DomainZoneFile represents the Zone File of a Domain
+type DomainZoneFile struct {
+	ZoneFile []string `json:"zone_file"`
+}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // DomainCreateOptions fields are those accepted by CreateDomain
 type DomainCreateOptions struct {
 	// The domain this Domain represents. These must be unique in our system; you cannot have two Domains representing the same domain.
@@ -1178,10 +1189,10 @@ type DomainCreateOptions struct {
 	RetrySec int `json:"retry_sec,omitempty"`
 
 	// The IP addresses representing the master DNS for this Domain.
-	MasterIPs []string `json:"master_ips,omitempty"`
+	MasterIPs []string `json:"master_ips"`
 
 	// The list of IPs that may perform a zone transfer for this Domain. This is potentially dangerous, and should be set to an empty list unless you intend to use it.
-	AXfrIPs []string `json:"axfr_ips,omitempty"`
+	AXfrIPs []string `json:"axfr_ips"`
 
 	// An array of tags applied to this object. Tags are for organizational purposes only.
 	Tags []string `json:"tags"`
@@ -1223,10 +1234,10 @@ type DomainUpdateOptions struct {
 	RetrySec int `json:"retry_sec,omitempty"`
 
 	// The IP addresses representing the master DNS for this Domain.
-	MasterIPs []string `json:"master_ips,omitempty"`
+	MasterIPs []string `json:"master_ips"`
 
 	// The list of IPs that may perform a zone transfer for this Domain. This is potentially dangerous, and should be set to an empty list unless you intend to use it.
-	AXfrIPs []string `json:"axfr_ips,omitempty"`
+	AXfrIPs []string `json:"axfr_ips"`
 
 	// An array of tags applied to this object. Tags are for organizational purposes only.
 	Tags []string `json:"tags"`
@@ -1287,25 +1298,24 @@ type DomainsPagedResponse struct {
 }
 
 // endpoint gets the endpoint URL for Domain
-func (DomainsPagedResponse) endpoint(c *Client) string {
-	endpoint, err := c.Domains.Endpoint()
-	if err != nil {
-		panic(err)
-	}
-
-	return endpoint
+func (DomainsPagedResponse) endpoint(_ ...any) string {
+	return "domains"
 }
 
-// appendData appends Domains when processing paginated Domain responses
-func (resp *DomainsPagedResponse) appendData(r *DomainsPagedResponse) {
-	resp.Data = append(resp.Data, r.Data...)
+func (resp *DomainsPagedResponse) castResult(r *resty.Request, e string) (int, int, error) {
+	res, err := coupleAPIErrors(r.SetResult(DomainsPagedResponse{}).Get(e))
+	if err != nil {
+		return 0, 0, err
+	}
+	castedRes := res.Result().(*DomainsPagedResponse)
+	resp.Data = append(resp.Data, castedRes.Data...)
+	return castedRes.Pages, castedRes.Results, nil
 }
 
 // ListDomains lists Domains
 func (c *Client) ListDomains(ctx context.Context, opts *ListOptions) ([]Domain, error) {
 	response := DomainsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1314,15 +1324,10 @@ func (c *Client) ListDomains(ctx context.Context, opts *ListOptions) ([]Domain, 
 }
 
 // GetDomain gets the domain with the provided ID
-func (c *Client) GetDomain(ctx context.Context, id int) (*Domain, error) {
-	e, err := c.Domains.Endpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, id)
-	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Domain{}).Get(e))
-
+func (c *Client) GetDomain(ctx context.Context, domainID int) (*Domain, error) {
+	req := c.R(ctx).SetResult(&Domain{})
+	e := fmt.Sprintf("domains/%d", domainID)
+	r, err := coupleAPIErrors(req.Get(e))
 	if err != nil {
 		return nil, err
 	}
@@ -1331,28 +1336,15 @@ func (c *Client) GetDomain(ctx context.Context, id int) (*Domain, error) {
 }
 
 // CreateDomain creates a Domain
-func (c *Client) CreateDomain(ctx context.Context, domain DomainCreateOptions) (*Domain, error) {
-	var body string
-
-	e, err := c.Domains.Endpoint()
-
+func (c *Client) CreateDomain(ctx context.Context, opts DomainCreateOptions) (*Domain, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req := c.R(ctx).SetResult(&Domain{})
-
-	bodyData, err := json.Marshal(domain)
-	if err != nil {
-		return nil, NewError(err)
-	}
-
-	body = string(bodyData)
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Post(e))
-
+	req := c.R(ctx).SetResult(&Domain{}).SetBody(string(body))
+	e := "domains"
+	r, err := coupleAPIErrors(req.Post(e))
 	if err != nil {
 		return nil, err
 	}
@@ -1361,29 +1353,15 @@ func (c *Client) CreateDomain(ctx context.Context, domain DomainCreateOptions) (
 }
 
 // UpdateDomain updates the Domain with the specified id
-func (c *Client) UpdateDomain(ctx context.Context, id int, domain DomainUpdateOptions) (*Domain, error) {
-	var body string
-
-	e, err := c.Domains.Endpoint()
-
+func (c *Client) UpdateDomain(ctx context.Context, domainID int, opts DomainUpdateOptions) (*Domain, error) {
+	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	req := c.R(ctx).SetResult(&Domain{})
-
-	if bodyData, err := json.Marshal(domain); err == nil {
-		body = string(bodyData)
-	} else {
-		return nil, NewError(err)
-	}
-
-	r, err := coupleAPIErrors(req.
-		SetBody(body).
-		Put(e))
-
+	e := fmt.Sprintf("domains/%d", domainID)
+	req := c.R(ctx).SetResult(&Domain{}).SetBody(string(body))
+	r, err := coupleAPIErrors(req.Put(e))
 	if err != nil {
 		return nil, err
 	}
@@ -1392,16 +1370,21 @@ func (c *Client) UpdateDomain(ctx context.Context, id int, domain DomainUpdateOp
 }
 
 // DeleteDomain deletes the Domain with the specified id
-func (c *Client) DeleteDomain(ctx context.Context, id int) error {
-	e, err := c.Domains.Endpoint()
-	if err != nil {
-		return err
-	}
-
-	e = fmt.Sprintf("%s/%d", e, id)
-
-	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
-
+func (c *Client) DeleteDomain(ctx context.Context, domainID int) error {
+	e := fmt.Sprintf("domains/%d", domainID)
+	_, err := coupleAPIErrors(c.R(ctx).Delete(e))
 	return err
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// GetDomainZoneFile gets the zone file for the last rendered zone for the specified domain.
+func (c *Client) GetDomainZoneFile(ctx context.Context, domainID int) (*DomainZoneFile, error) {
+	e := fmt.Sprintf("domains/%d/zone-file", domainID)
+	req := c.R(ctx).SetResult(&DomainZoneFile{})
+	resp, err := coupleAPIErrors(req.Get(e))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result().(*DomainZoneFile), nil
 }

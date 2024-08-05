@@ -13,6 +13,7 @@ import (
 
 var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
+<<<<<<< HEAD
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	routev1.AddToScheme,
@@ -29,6 +30,25 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 //
 //   kclientset, _ := kubernetes.NewForConfig(c)
 //   _ = aggregatorclientsetscheme.AddToScheme(clientsetscheme.Scheme)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+var localSchemeBuilder = runtime.SchemeBuilder{
+	routev1.AddToScheme,
+}
+
+// AddToScheme adds all types of this clientset into the given scheme. This allows composition
+// of clientsets, like in:
+//
+//	import (
+//	  "k8s.io/client-go/kubernetes"
+//	  clientsetscheme "k8s.io/client-go/kubernetes/scheme"
+//	  aggregatorclientsetscheme "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme"
+//	)
+//
+//	kclientset, _ := kubernetes.NewForConfig(c)
+//	_ = aggregatorclientsetscheme.AddToScheme(clientsetscheme.Scheme)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.

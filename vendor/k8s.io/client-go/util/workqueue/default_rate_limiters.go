@@ -30,6 +30,7 @@ type RateLimiter interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Forget indicates that an item is finished being retried.  Doesn't matter whether it's for failing
 	// or for success, we'll stop tracking it
 	Forget(item interface{})
@@ -665,6 +666,11 @@ func (w WithMaxWaitRateLimiter) NumRequeues(item interface{}) int {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// Forget indicates that an item is finished being retried.  Doesn't matter whether its for perm failing
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// Forget indicates that an item is finished being retried.  Doesn't matter whether its for perm failing
+=======
+	// Forget indicates that an item is finished being retried.  Doesn't matter whether it's for failing
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// or for success, we'll stop tracking it
 	Forget(item interface{})
 	// NumRequeues returns back how many failures the item has had
@@ -697,54 +703,6 @@ func (r *BucketRateLimiter) NumRequeues(item interface{}) int {
 }
 
 func (r *BucketRateLimiter) Forget(item interface{}) {
-}
-
-// ItemBucketRateLimiter implements a workqueue ratelimiter API using standard rate.Limiter.
-// Each key is using a separate limiter.
-type ItemBucketRateLimiter struct {
-	r     rate.Limit
-	burst int
-
-	limitersLock sync.Mutex
-	limiters     map[interface{}]*rate.Limiter
-}
-
-var _ RateLimiter = &ItemBucketRateLimiter{}
-
-// NewItemBucketRateLimiter creates new ItemBucketRateLimiter instance.
-func NewItemBucketRateLimiter(r rate.Limit, burst int) *ItemBucketRateLimiter {
-	return &ItemBucketRateLimiter{
-		r:        r,
-		burst:    burst,
-		limiters: make(map[interface{}]*rate.Limiter),
-	}
-}
-
-// When returns a time.Duration which we need to wait before item is processed.
-func (r *ItemBucketRateLimiter) When(item interface{}) time.Duration {
-	r.limitersLock.Lock()
-	defer r.limitersLock.Unlock()
-
-	limiter, ok := r.limiters[item]
-	if !ok {
-		limiter = rate.NewLimiter(r.r, r.burst)
-		r.limiters[item] = limiter
-	}
-
-	return limiter.Reserve().Delay()
-}
-
-// NumRequeues returns always 0 (doesn't apply to ItemBucketRateLimiter).
-func (r *ItemBucketRateLimiter) NumRequeues(item interface{}) int {
-	return 0
-}
-
-// Forget removes item from the internal state.
-func (r *ItemBucketRateLimiter) Forget(item interface{}) {
-	r.limitersLock.Lock()
-	defer r.limitersLock.Unlock()
-
-	delete(r.limiters, item)
 }
 
 // ItemExponentialFailureRateLimiter does a simple baseDelay*2^<num-failures> limit
@@ -894,4 +852,31 @@ func (r *MaxOfRateLimiter) Forget(item interface{}) {
 		limiter.Forget(item)
 	}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// WithMaxWaitRateLimiter have maxDelay which avoids waiting too long
+type WithMaxWaitRateLimiter struct {
+	limiter  RateLimiter
+	maxDelay time.Duration
+}
+
+func NewWithMaxWaitRateLimiter(limiter RateLimiter, maxDelay time.Duration) RateLimiter {
+	return &WithMaxWaitRateLimiter{limiter: limiter, maxDelay: maxDelay}
+}
+
+func (w WithMaxWaitRateLimiter) When(item interface{}) time.Duration {
+	delay := w.limiter.When(item)
+	if delay > w.maxDelay {
+		return w.maxDelay
+	}
+
+	return delay
+}
+
+func (w WithMaxWaitRateLimiter) Forget(item interface{}) {
+	w.limiter.Forget(item)
+}
+
+func (w WithMaxWaitRateLimiter) NumRequeues(item interface{}) int {
+	return w.limiter.NumRequeues(item)
 }

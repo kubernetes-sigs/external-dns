@@ -34,7 +34,12 @@ func (c *Client) DeleteSSHKey(ctx context.Context, zone string, sshKey *SSHKey) 
 	_, err = oapi.NewPoller().
 		WithTimeout(c.timeout).
 		WithInterval(c.pollInterval).
+<<<<<<< HEAD
 		Poll(ctx, c.OperationPoller(zone, *resp.JSON200.Id))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+		Poll(ctx, oapi.OperationPoller(c, zone, *resp.JSON200.Id))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return err
 	}

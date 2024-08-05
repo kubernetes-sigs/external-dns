@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Account
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -75,6 +76,11 @@ type TeamInfo struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#account
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See: https://developers.digitalocean.com/documentation/v2/#account
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Account
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type AccountService interface {
 	Get(context.Context) (*Account, *Response, error)
 }
@@ -89,6 +95,7 @@ var _ AccountService = &AccountServiceOp{}
 
 // Account represents a DigitalOcean Account
 type Account struct {
+<<<<<<< HEAD
 	DropletLimit    int    `json:"droplet_limit,omitempty"`
 	FloatingIPLimit int    `json:"floating_ip_limit,omitempty"`
 	VolumeLimit     int    `json:"volume_limit,omitempty"`
@@ -98,6 +105,34 @@ type Account struct {
 	Status          string `json:"status,omitempty"`
 	StatusMessage   string `json:"status_message,omitempty"`
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	DropletLimit    int    `json:"droplet_limit,omitempty"`
+	FloatingIPLimit int    `json:"floating_ip_limit,omitempty"`
+	VolumeLimit     int    `json:"volume_limit,omitempty"`
+	Email           string `json:"email,omitempty"`
+	UUID            string `json:"uuid,omitempty"`
+	EmailVerified   bool   `json:"email_verified,omitempty"`
+	Status          string `json:"status,omitempty"`
+	StatusMessage   string `json:"status_message,omitempty"`
+=======
+	DropletLimit    int       `json:"droplet_limit,omitempty"`
+	FloatingIPLimit int       `json:"floating_ip_limit,omitempty"`
+	ReservedIPLimit int       `json:"reserved_ip_limit,omitempty"`
+	VolumeLimit     int       `json:"volume_limit,omitempty"`
+	Email           string    `json:"email,omitempty"`
+	Name            string    `json:"name,omitempty"`
+	UUID            string    `json:"uuid,omitempty"`
+	EmailVerified   bool      `json:"email_verified,omitempty"`
+	Status          string    `json:"status,omitempty"`
+	StatusMessage   string    `json:"status_message,omitempty"`
+	Team            *TeamInfo `json:"team,omitempty"`
+}
+
+// TeamInfo contains information about the currently team context.
+type TeamInfo struct {
+	Name string `json:"name,omitempty"`
+	UUID string `json:"uuid,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 type accountRoot struct {

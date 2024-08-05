@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-openapi/jsonreference"
+<<<<<<< HEAD
 )
 
 // Refable is a struct for things that accept a $ref property
@@ -164,4 +165,138 @@ func (r *Ref) fromMap(v map[string]interface{}) error {
 	}
 
 	return nil
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	"k8s.io/kube-openapi/pkg/internal"
+)
+
+// Refable is a struct for things that accept a $ref property
+type Refable struct {
+	Ref Ref
+}
+
+// MarshalJSON marshals the ref to json
+func (r Refable) MarshalJSON() ([]byte, error) {
+	return r.Ref.MarshalJSON()
+}
+
+// UnmarshalJSON unmarshalss the ref from json
+func (r *Refable) UnmarshalJSON(d []byte) error {
+	return json.Unmarshal(d, &r.Ref)
+}
+
+// Ref represents a json reference that is potentially resolved
+type Ref struct {
+	jsonreference.Ref
+}
+
+// RemoteURI gets the remote uri part of the ref
+func (r *Ref) RemoteURI() string {
+	if r.String() == "" {
+		return r.String()
+	}
+
+	u := *r.GetURL()
+	u.Fragment = ""
+	return u.String()
+}
+
+// IsValidURI returns true when the url the ref points to can be found
+func (r *Ref) IsValidURI(basepaths ...string) bool {
+	if r.String() == "" {
+		return true
+	}
+
+	v := r.RemoteURI()
+	if v == "" {
+		return true
+	}
+
+	if r.HasFullURL {
+		rr, err := http.Get(v)
+		if err != nil {
+			return false
+		}
+
+		return rr.StatusCode/100 == 2
+	}
+
+	if !(r.HasFileScheme || r.HasFullFilePath || r.HasURLPathOnly) {
+		return false
+	}
+
+	// check for local file
+	pth := v
+	if r.HasURLPathOnly {
+		base := "."
+		if len(basepaths) > 0 {
+			base = filepath.Dir(filepath.Join(basepaths...))
+		}
+		p, e := filepath.Abs(filepath.ToSlash(filepath.Join(base, pth)))
+		if e != nil {
+			return false
+		}
+		pth = p
+	}
+
+	fi, err := os.Stat(filepath.ToSlash(pth))
+	if err != nil {
+		return false
+	}
+
+	return !fi.IsDir()
+}
+
+// Inherits creates a new reference from a parent and a child
+// If the child cannot inherit from the parent, an error is returned
+func (r *Ref) Inherits(child Ref) (*Ref, error) {
+	ref, err := r.Ref.Inherits(child.Ref)
+	if err != nil {
+		return nil, err
+	}
+	return &Ref{Ref: *ref}, nil
+}
+
+// NewRef creates a new instance of a ref object
+// returns an error when the reference uri is an invalid uri
+func NewRef(refURI string) (Ref, error) {
+	ref, err := jsonreference.New(refURI)
+	if err != nil {
+		return Ref{}, err
+	}
+	return Ref{Ref: ref}, nil
+}
+
+// MustCreateRef creates a ref object but panics when refURI is invalid.
+// Use the NewRef method for a version that returns an error.
+func MustCreateRef(refURI string) Ref {
+	return Ref{Ref: jsonreference.MustCreateRef(refURI)}
+}
+
+// MarshalJSON marshals this ref into a JSON object
+func (r Ref) MarshalJSON() ([]byte, error) {
+	str := r.String()
+	if str == "" {
+		if r.IsRoot() {
+			return []byte(`{"$ref":""}`), nil
+		}
+		return []byte("{}"), nil
+	}
+	v := map[string]interface{}{"$ref": str}
+	return json.Marshal(v)
+}
+
+// UnmarshalJSON unmarshals this ref from a JSON object
+func (r *Ref) UnmarshalJSON(d []byte) error {
+	var v map[string]interface{}
+	if err := json.Unmarshal(d, &v); err != nil {
+		return err
+	}
+	return r.fromMap(v)
+}
+
+func (r *Ref) fromMap(v map[string]interface{}) error {
+	return internal.JSONRefFromMap(&r.Ref, v)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

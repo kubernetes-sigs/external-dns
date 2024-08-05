@@ -30,6 +30,7 @@ type cmsghdr struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const (
 <<<<<<< HEAD:vendor/golang.org/x/net/internal/socket/zsys_darwin_386.go
 	sizeofIovec  = 0x8
@@ -200,4 +201,10 @@ const (
 	sizeofIovec  = 0x10
 	sizeofMsghdr = 0x30
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1):vendor/golang.org/x/net/internal/socket/zsys_freebsd_riscv64.go
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+const (
+	sizeofIovec  = 0x10
+	sizeofMsghdr = 0x30
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )

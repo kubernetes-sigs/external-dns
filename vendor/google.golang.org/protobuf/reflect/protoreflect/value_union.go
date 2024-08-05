@@ -11,7 +11,7 @@ import (
 
 // Value is a union where only one Go type may be set at a time.
 // The Value is used to represent all possible values a field may take.
-// The following shows which Go type is used to represent each proto Kind:
+// The following shows which Go type is used to represent each proto [Kind]:
 //
 //	╔════════════╤═════════════════════════════════════╗
 //	║ Go type    │ Protobuf kind                       ║
@@ -31,16 +31,17 @@ import (
 //
 // Multiple protobuf Kinds may be represented by a single Go type if the type
 // can losslessly represent the information for the proto kind. For example,
-// Int64Kind, Sint64Kind, and Sfixed64Kind are all represented by int64,
+// [Int64Kind], [Sint64Kind], and [Sfixed64Kind] are all represented by int64,
 // but use different integer encoding methods.
 //
-// The List or Map types are used if the field cardinality is repeated.
-// A field is a List if FieldDescriptor.IsList reports true.
-// A field is a Map if FieldDescriptor.IsMap reports true.
+// The [List] or [Map] types are used if the field cardinality is repeated.
+// A field is a [List] if [FieldDescriptor.IsList] reports true.
+// A field is a [Map] if [FieldDescriptor.IsMap] reports true.
 //
 // Converting to/from a Value and a concrete Go value panics on type mismatch.
-// For example, ValueOf("hello").Int() panics because this attempts to
+// For example, [ValueOf]("hello").Int() panics because this attempts to
 // retrieve an int64 from a string.
+<<<<<<< HEAD
 <<<<<<< HEAD
 //
 // List, Map, and Message Values are called "composite" values.
@@ -427,6 +428,35 @@ func (v Value) MapKey() MapKey {
 //
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//
+// [List], [Map], and [Message] Values are called "composite" values.
+//
+// A composite Value may alias (reference) memory at some location,
+// such that changes to the Value updates the that location.
+// A composite value acquired with a Mutable method, such as [Message.Mutable],
+// always references the source object.
+//
+// For example:
+//
+//	// Append a 0 to a "repeated int32" field.
+//	// Since the Value returned by Mutable is guaranteed to alias
+//	// the source message, modifying the Value modifies the message.
+//	message.Mutable(fieldDesc).List().Append(protoreflect.ValueOfInt32(0))
+//
+//	// Assign [0] to a "repeated int32" field by creating a new Value,
+//	// modifying it, and assigning it.
+//	list := message.NewField(fieldDesc).List()
+//	list.Append(protoreflect.ValueOfInt32(0))
+//	message.Set(fieldDesc, list)
+//	// ERROR: Since it is not defined whether Set aliases the source,
+//	// appending to the List here may or may not modify the message.
+//	list.Append(protoreflect.ValueOfInt32(0))
+//
+// Some operations, such as [Message.Get], may return an "empty, read-only"
+// composite Value. Modifying an empty, read-only value panics.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type Value value
 
 // The protoreflect API uses a custom Value union type instead of interface{}
@@ -471,6 +501,8 @@ func ValueOf(v interface{}) Value {
 		return ValueOfEnum(v)
 	case Message, List, Map:
 		return valueOfIface(v)
+	case ProtoMessage:
+		panic(fmt.Sprintf("invalid proto.Message(%T) type, expected a protoreflect.Message type", v))
 	default:
 		panic(fmt.Sprintf("invalid type: %T", v))
 	}
@@ -664,7 +696,7 @@ func (v Value) Float() float64 {
 	}
 }
 
-// String returns v as a string. Since this method implements fmt.Stringer,
+// String returns v as a string. Since this method implements [fmt.Stringer],
 // this returns the formatted string value for any non-string type.
 func (v Value) String() string {
 	switch v.typ {
@@ -685,7 +717,7 @@ func (v Value) Bytes() []byte {
 	}
 }
 
-// Enum returns v as a EnumNumber and panics if the type is not a EnumNumber.
+// Enum returns v as a [EnumNumber] and panics if the type is not a [EnumNumber].
 func (v Value) Enum() EnumNumber {
 	switch v.typ {
 	case enumType:
@@ -695,7 +727,7 @@ func (v Value) Enum() EnumNumber {
 	}
 }
 
-// Message returns v as a Message and panics if the type is not a Message.
+// Message returns v as a [Message] and panics if the type is not a [Message].
 func (v Value) Message() Message {
 	switch vi := v.getIface().(type) {
 	case Message:
@@ -705,7 +737,7 @@ func (v Value) Message() Message {
 	}
 }
 
-// List returns v as a List and panics if the type is not a List.
+// List returns v as a [List] and panics if the type is not a [List].
 func (v Value) List() List {
 	switch vi := v.getIface().(type) {
 	case List:
@@ -715,7 +747,7 @@ func (v Value) List() List {
 	}
 }
 
-// Map returns v as a Map and panics if the type is not a Map.
+// Map returns v as a [Map] and panics if the type is not a [Map].
 func (v Value) Map() Map {
 	switch vi := v.getIface().(type) {
 	case Map:
@@ -725,7 +757,7 @@ func (v Value) Map() Map {
 	}
 }
 
-// MapKey returns v as a MapKey and panics for invalid MapKey types.
+// MapKey returns v as a [MapKey] and panics for invalid [MapKey] types.
 func (v Value) MapKey() MapKey {
 	switch v.typ {
 	case boolType, int32Type, int64Type, uint32Type, uint64Type, stringType:
@@ -736,8 +768,8 @@ func (v Value) MapKey() MapKey {
 }
 
 // MapKey is used to index maps, where the Go type of the MapKey must match
-// the specified key Kind (see MessageDescriptor.IsMapEntry).
-// The following shows what Go type is used to represent each proto Kind:
+// the specified key [Kind] (see [MessageDescriptor.IsMapEntry]).
+// The following shows what Go type is used to represent each proto [Kind]:
 //
 //	╔═════════╤═════════════════════════════════════╗
 //	║ Go type │ Protobuf kind                       ║
@@ -750,13 +782,20 @@ func (v Value) MapKey() MapKey {
 //	║ string  │ StringKind                          ║
 //	╚═════════╧═════════════════════════════════════╝
 //
+<<<<<<< HEAD
 // A MapKey is constructed and accessed through a Value:
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// A MapKey is constructed and accessed through a Value:
+=======
+// A MapKey is constructed and accessed through a [Value]:
+//
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //	k := ValueOf("hash").MapKey() // convert string to MapKey
 //	s := k.String()               // convert MapKey to string
 //
-// The MapKey is a strict subset of valid types used in Value;
-// converting a Value to a MapKey with an invalid type panics.
+// The MapKey is a strict subset of valid types used in [Value];
+// converting a [Value] to a MapKey with an invalid type panics.
 type MapKey value
 
 // IsValid reports whether k is populated with a value.
@@ -784,13 +823,13 @@ func (k MapKey) Uint() uint64 {
 	return Value(k).Uint()
 }
 
-// String returns k as a string. Since this method implements fmt.Stringer,
+// String returns k as a string. Since this method implements [fmt.Stringer],
 // this returns the formatted string value for any non-string type.
 func (k MapKey) String() string {
 	return Value(k).String()
 }
 
-// Value returns k as a Value.
+// Value returns k as a [Value].
 func (k MapKey) Value() Value {
 	return Value(k)
 }

@@ -27,6 +27,7 @@ package zap
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	"fmt"
 
@@ -534,6 +535,15 @@ func WithClock(clock zapcore.Clock) Option {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 import "go.uber.org/zap/zapcore"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+import "go.uber.org/zap/zapcore"
+=======
+import (
+	"fmt"
+
+	"go.uber.org/zap/zapcore"
+)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 // An Option configures a Logger.
 type Option interface {
@@ -595,11 +605,18 @@ func Development() Option {
 	})
 }
 
-// AddCaller configures the Logger to annotate each message with the filename
-// and line number of zap's caller.
+// AddCaller configures the Logger to annotate each message with the filename,
+// line number, and function name of zap's caller. See also WithCaller.
 func AddCaller() Option {
+	return WithCaller(true)
+}
+
+// WithCaller configures the Logger to annotate each message with the filename,
+// line number, and function name of zap's caller, or not, depending on the
+// value of enabled. This is a generalized form of AddCaller.
+func WithCaller(enabled bool) Option {
 	return optionFunc(func(log *Logger) {
-		log.addCaller = true
+		log.addCaller = enabled
 	})
 }
 
@@ -619,5 +636,52 @@ func AddStacktrace(lvl zapcore.LevelEnabler) Option {
 	return optionFunc(func(log *Logger) {
 		log.addStack = lvl
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	})
+}
+
+// IncreaseLevel increase the level of the logger. It has no effect if
+// the passed in level tries to decrease the level of the logger.
+func IncreaseLevel(lvl zapcore.LevelEnabler) Option {
+	return optionFunc(func(log *Logger) {
+		core, err := zapcore.NewIncreaseLevelCore(log.core, lvl)
+		if err != nil {
+			fmt.Fprintf(log.errorOutput, "failed to IncreaseLevel: %v\n", err)
+		} else {
+			log.core = core
+		}
+	})
+}
+
+// OnFatal sets the action to take on fatal logs.
+//
+// Deprecated: Use [WithFatalHook] instead.
+func OnFatal(action zapcore.CheckWriteAction) Option {
+	return WithFatalHook(action)
+}
+
+// WithFatalHook sets a CheckWriteHook to run on fatal logs.
+// Zap will call this hook after writing a log statement with a Fatal level.
+//
+// For example, the following builds a logger that will exit the current
+// goroutine after writing a fatal log message, but it will not exit the
+// program.
+//
+//	zap.New(core, zap.WithFatalHook(zapcore.WriteThenGoexit))
+//
+// It is important that the provided CheckWriteHook stops the control flow at
+// the current statement to meet expectations of callers of the logger.
+// We recommend calling os.Exit or runtime.Goexit inside custom hooks at
+// minimum.
+func WithFatalHook(hook zapcore.CheckWriteHook) Option {
+	return optionFunc(func(log *Logger) {
+		log.onFatal = hook
+	})
+}
+
+// WithClock specifies the clock used by the logger to determine the current
+// time for logged entries. Defaults to the system clock with time.Now.
+func WithClock(clock zapcore.Clock) Option {
+	return optionFunc(func(log *Logger) {
+		log.clock = clock
 	})
 }

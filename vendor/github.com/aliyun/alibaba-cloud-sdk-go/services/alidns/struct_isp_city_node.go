@@ -24,6 +24,7 @@ type IspCityNode struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	CountryName     string `json:"CountryName" xml:"CountryName"`
 	GroupName       string `json:"GroupName" xml:"GroupName"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -43,8 +44,17 @@ type IspCityNode struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	GroupName       string `json:"GroupName" xml:"GroupName"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	GroupName       string `json:"GroupName" xml:"GroupName"`
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	CountryName     string `json:"CountryName" xml:"CountryName"`
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	GroupName       string `json:"GroupName" xml:"GroupName"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	CityName        string `json:"CityName" xml:"CityName"`
 	Mainland        bool   `json:"Mainland" xml:"Mainland"`
 	CountryCode     string `json:"CountryCode" xml:"CountryCode"`

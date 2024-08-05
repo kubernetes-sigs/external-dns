@@ -67,6 +67,7 @@ func (objMgr *ObjectManager) UpdateNetworkContainer(
 	nc.Ea = setEas
 	nc.Comment = comment
 
+<<<<<<< HEAD
 	reference, err := objMgr.connector.UpdateObject(nc, ref)
 	if err != nil {
 		return nil, err
@@ -74,6 +75,47 @@ func (objMgr *ObjectManager) UpdateNetworkContainer(
 
 	nc.Ref = reference
 	return nc, nil
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	// Network view is not allowed to be updated,
+	// thus making its name empty (will not appear among data which we update).
+	netViewSaved := nc.NetviewName
+	nc.NetviewName = ""
+
+	reference, err := objMgr.connector.UpdateObject(nc, ref)
+	if err != nil {
+		return nil, err
+	}
+
+	nc.Ref = reference
+	nc.NetviewName = netViewSaved
+
+	return nc, nil
+}
+
+func (objMgr *ObjectManager) AllocateNetworkContainer(
+	netview string,
+	cidr string,
+	isIPv6 bool,
+	prefixLen uint,
+	comment string,
+	eas EA) (*NetworkContainer, error) {
+
+	containerInfo := NewNetworkContainerNextAvailableInfo(netview, cidr, prefixLen, isIPv6)
+	container := NewNetworkContainerNextAvailable(containerInfo, isIPv6, comment, eas)
+
+	ref, err := objMgr.connector.CreateObject(container)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if isIPv6 {
+		return BuildIPv6NetworkContainerFromRef(ref)
+	} else {
+		return BuildNetworkContainerFromRef(ref)
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 func (objMgr *ObjectManager) DeleteNetworkContainer(ref string) (string, error) {

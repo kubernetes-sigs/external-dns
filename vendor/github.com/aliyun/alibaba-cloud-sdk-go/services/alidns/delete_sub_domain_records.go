@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteSubDomainRecords(request *DeleteSubDomainRecordsRequest) (response *DeleteSubDomainRecordsResponse, err error) {
 	response = CreateDeleteSubDomainRecordsResponse()
 	err = client.DoAction(request, response)
@@ -183,6 +184,10 @@ func CreateDeleteSubDomainRecordsRequest() (request *DeleteSubDomainRecordsReque
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DeleteSubDomainRecords(request *DeleteSubDomainRecordsRequest) (response *DeleteSubDomainRecordsResponse, err error) {
 	response = CreateDeleteSubDomainRecordsResponse()
 	err = client.DoAction(request, response)
@@ -190,8 +195,6 @@ func (client *Client) DeleteSubDomainRecords(request *DeleteSubDomainRecordsRequ
 }
 
 // DeleteSubDomainRecordsWithChan invokes the alidns.DeleteSubDomainRecords API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteSubDomainRecordsWithChan(request *DeleteSubDomainRecordsRequest) (<-chan *DeleteSubDomainRecordsResponse, <-chan error) {
 	responseChan := make(chan *DeleteSubDomainRecordsResponse, 1)
 	errChan := make(chan error, 1)
@@ -214,8 +217,6 @@ func (client *Client) DeleteSubDomainRecordsWithChan(request *DeleteSubDomainRec
 }
 
 // DeleteSubDomainRecordsWithCallback invokes the alidns.DeleteSubDomainRecords API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteSubDomainRecordsWithCallback(request *DeleteSubDomainRecordsRequest, callback func(response *DeleteSubDomainRecordsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -247,9 +248,9 @@ type DeleteSubDomainRecordsRequest struct {
 // DeleteSubDomainRecordsResponse is the response struct for api DeleteSubDomainRecords
 type DeleteSubDomainRecordsResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
 	RR         string `json:"RR" xml:"RR"`
 	TotalCount string `json:"TotalCount" xml:"TotalCount"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDeleteSubDomainRecordsRequest creates a request to invoke DeleteSubDomainRecords API
@@ -258,7 +259,12 @@ func CreateDeleteSubDomainRecordsRequest() (request *DeleteSubDomainRecordsReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteSubDomainRecords", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

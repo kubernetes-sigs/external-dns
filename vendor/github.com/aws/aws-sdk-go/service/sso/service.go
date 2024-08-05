@@ -55,6 +55,7 @@ func New(p client.ConfigProvider, cfgs ...*aws.Config) *SSO {
 	}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
 }
 
@@ -111,6 +112,26 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				APIVersion:     "2019-06-10",
 				ResolvedRegion: resolvedRegion,
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName, c.ResolvedRegion)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName, resolvedRegion string) *SSO {
+	svc := &SSO{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:    ServiceName,
+				ServiceID:      ServiceID,
+				SigningName:    signingName,
+				SigningRegion:  signingRegion,
+				PartitionID:    partitionID,
+				Endpoint:       endpoint,
+				APIVersion:     "2019-06-10",
+				ResolvedRegion: resolvedRegion,
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			},
 			handlers,
 		),

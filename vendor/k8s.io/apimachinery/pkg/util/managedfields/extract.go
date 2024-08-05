@@ -77,6 +77,7 @@ func ExtractInto(object runtime.Object, objectType typed.ParseableType, fieldMan
 	}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 
@@ -97,6 +98,16 @@ func ExtractInto(object runtime.Object, objectType typed.ParseableType, fieldMan
 		m["apiVersion"] = object.GetObjectKind().GroupVersionKind().GroupVersion().String()
 	}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	// set the type meta manually if it doesn't exist to avoid missing kind errors
+	// when decoding from unstructured JSON
+	if _, ok := m["kind"]; !ok && object.GetObjectKind().GroupVersionKind().Kind != "" {
+		m["kind"] = object.GetObjectKind().GroupVersionKind().Kind
+		m["apiVersion"] = object.GetObjectKind().GroupVersionKind().GroupVersion().String()
+	}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(m, applyConfiguration); err != nil {
 		return fmt.Errorf("error extracting into obj from unstructured: %w", err)
 	}

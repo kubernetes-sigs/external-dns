@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -695,13 +696,18 @@ func (c *FakeIngresses) ApplyStatus(ctx context.Context, ingress *extensionsv1be
 		Invokes(testing.NewPatchSubresourceAction(ingressesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.Ingress{})
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	extensionsv1beta1 "k8s.io/client-go/applyconfigurations/extensions/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -711,9 +717,9 @@ type FakeIngresses struct {
 	ns   string
 }
 
-var ingressesResource = schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "ingresses"}
+var ingressesResource = v1beta1.SchemeGroupVersion.WithResource("ingresses")
 
-var ingressesKind = schema.GroupVersionKind{Group: "extensions", Version: "v1beta1", Kind: "Ingress"}
+var ingressesKind = v1beta1.SchemeGroupVersion.WithKind("Ingress")
 
 // Get takes name of the ingress, and returns the corresponding ingress object, and an error if there is any.
 func (c *FakeIngresses) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Ingress, err error) {
@@ -792,7 +798,7 @@ func (c *FakeIngresses) UpdateStatus(ctx context.Context, ingress *v1beta1.Ingre
 // Delete takes name of the ingress and deletes it. Returns an error if one occurs.
 func (c *FakeIngresses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(ingressesResource, c.ns, name), &v1beta1.Ingress{})
+		Invokes(testing.NewDeleteActionWithOptions(ingressesResource, c.ns, name, opts), &v1beta1.Ingress{})
 
 	return err
 }
@@ -810,6 +816,51 @@ func (c *FakeIngresses) Patch(ctx context.Context, name string, pt types.PatchTy
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(ingressesResource, c.ns, name, pt, data, subresources...), &v1beta1.Ingress{})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.Ingress), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied ingress.
+func (c *FakeIngresses) Apply(ctx context.Context, ingress *extensionsv1beta1.IngressApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Ingress, err error) {
+	if ingress == nil {
+		return nil, fmt.Errorf("ingress provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(ingress)
+	if err != nil {
+		return nil, err
+	}
+	name := ingress.Name
+	if name == nil {
+		return nil, fmt.Errorf("ingress.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(ingressesResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.Ingress{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.Ingress), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeIngresses) ApplyStatus(ctx context.Context, ingress *extensionsv1beta1.IngressApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Ingress, err error) {
+	if ingress == nil {
+		return nil, fmt.Errorf("ingress provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(ingress)
+	if err != nil {
+		return nil, err
+	}
+	name := ingress.Name
+	if name == nil {
+		return nil, fmt.Errorf("ingress.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(ingressesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.Ingress{})
 
 	if obj == nil {
 		return nil, err

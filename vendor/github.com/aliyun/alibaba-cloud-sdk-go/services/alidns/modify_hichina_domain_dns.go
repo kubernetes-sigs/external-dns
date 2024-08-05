@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequest) (response *ModifyHichinaDomainDNSResponse, err error) {
 	response = CreateModifyHichinaDomainDNSResponse()
 	err = client.DoAction(request, response)
@@ -179,6 +180,10 @@ func CreateModifyHichinaDomainDNSRequest() (request *ModifyHichinaDomainDNSReque
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequest) (response *ModifyHichinaDomainDNSResponse, err error) {
 	response = CreateModifyHichinaDomainDNSResponse()
 	err = client.DoAction(request, response)
@@ -186,8 +191,6 @@ func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequ
 }
 
 // ModifyHichinaDomainDNSWithChan invokes the alidns.ModifyHichinaDomainDNS API asynchronously
-// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyHichinaDomainDNSWithChan(request *ModifyHichinaDomainDNSRequest) (<-chan *ModifyHichinaDomainDNSResponse, <-chan error) {
 	responseChan := make(chan *ModifyHichinaDomainDNSResponse, 1)
 	errChan := make(chan error, 1)
@@ -210,8 +213,6 @@ func (client *Client) ModifyHichinaDomainDNSWithChan(request *ModifyHichinaDomai
 }
 
 // ModifyHichinaDomainDNSWithCallback invokes the alidns.ModifyHichinaDomainDNS API asynchronously
-// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyHichinaDomainDNSWithCallback(request *ModifyHichinaDomainDNSRequest, callback func(response *ModifyHichinaDomainDNSResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -242,8 +243,8 @@ type ModifyHichinaDomainDNSRequest struct {
 type ModifyHichinaDomainDNSResponse struct {
 	*responses.BaseResponse
 	RequestId          string             `json:"RequestId" xml:"RequestId"`
-	OriginalDnsServers OriginalDnsServers `json:"OriginalDnsServers" xml:"OriginalDnsServers"`
 	NewDnsServers      NewDnsServers      `json:"NewDnsServers" xml:"NewDnsServers"`
+	OriginalDnsServers OriginalDnsServers `json:"OriginalDnsServers" xml:"OriginalDnsServers"`
 }
 
 // CreateModifyHichinaDomainDNSRequest creates a request to invoke ModifyHichinaDomainDNS API
@@ -252,7 +253,12 @@ func CreateModifyHichinaDomainDNSRequest() (request *ModifyHichinaDomainDNSReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "ModifyHichinaDomainDNS", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

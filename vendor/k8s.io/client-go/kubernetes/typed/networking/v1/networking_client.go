@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/networking/v1"
@@ -180,6 +181,11 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*NetworkingV1Client,
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"net/http"
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	v1 "k8s.io/api/networking/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
@@ -187,6 +193,8 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*NetworkingV1Client,
 
 type NetworkingV1Interface interface {
 	RESTClient() rest.Interface
+	IngressesGetter
+	IngressClassesGetter
 	NetworkPoliciesGetter
 }
 
@@ -195,18 +203,48 @@ type NetworkingV1Client struct {
 	restClient rest.Interface
 }
 
+func (c *NetworkingV1Client) Ingresses(namespace string) IngressInterface {
+	return newIngresses(c, namespace)
+}
+
+func (c *NetworkingV1Client) IngressClasses() IngressClassInterface {
+	return newIngressClasses(c)
+}
+
 func (c *NetworkingV1Client) NetworkPolicies(namespace string) NetworkPolicyInterface {
 	return newNetworkPolicies(c, namespace)
 }
 
 // NewForConfig creates a new NetworkingV1Client for the given config.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*NetworkingV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 	client, err := rest.RESTClientFor(&config)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	client, err := rest.RESTClientFor(&config)
+=======
+	httpClient, err := rest.HTTPClientFor(&config)
+	if err != nil {
+		return nil, err
+	}
+	return NewForConfigAndClient(&config, httpClient)
+}
+
+// NewForConfigAndClient creates a new NetworkingV1Client for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*NetworkingV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientForConfigAndClient(&config, h)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,7 @@
-export GOBIN ?= $(shell pwd)/bin
+# Directory containing the Makefile.
+PROJECT_ROOT = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
+<<<<<<< HEAD
 GOLINT = $(GOBIN)/golint
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -320,38 +322,55 @@ tidy:
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+GOLINT = $(GOBIN)/golint
+=======
+export GOBIN ?= $(PROJECT_ROOT)/bin
+export PATH := $(GOBIN):$(PATH)
+
+GOVULNCHECK = $(GOBIN)/govulncheck
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
 # Directories containing independent Go modules.
-#
-# We track coverage only for the main module.
-MODULE_DIRS = . ./benchmarks
+MODULE_DIRS = . ./exp ./benchmarks ./zapgrpc/internal/test
 
-# Many Go tools take file globs or directories as arguments instead of packages.
-GO_FILES := $(shell \
-	find . '(' -path '*/.*' -o -path './vendor' ')' -prune \
-	-o -name '*.go' -print | cut -b3-)
+# Directories that we want to track coverage for.
+COVER_DIRS = . ./exp
 
 .PHONY: all
 all: lint test
 
 .PHONY: lint
-lint: $(GOLINT)
-	@rm -rf lint.log
-	@echo "Checking formatting..."
-	@gofmt -d -s $(GO_FILES) 2>&1 | tee lint.log
-	@echo "Checking vet..."
-	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go vet ./... 2>&1) &&) true | tee -a lint.log
-	@echo "Checking lint..."
-	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && $(GOLINT) ./... 2>&1) &&) true | tee -a lint.log
-	@echo "Checking for unresolved FIXMEs..."
-	@git grep -i fixme | grep -v -e Makefile | tee -a lint.log
-	@echo "Checking for license headers..."
-	@./checklicense.sh | tee -a lint.log
-	@[ ! -s lint.log ]
+lint: golangci-lint tidy-lint license-lint
 
-$(GOLINT):
-	go install golang.org/x/lint/golint
+.PHONY: golangci-lint
+golangci-lint:
+	@$(foreach mod,$(MODULE_DIRS), \
+		(cd $(mod) && \
+		echo "[lint] golangci-lint: $(mod)" && \
+		golangci-lint run --path-prefix $(mod)) &&) true
+
+.PHONY: tidy
+tidy:
+	@$(foreach dir,$(MODULE_DIRS), \
+		(cd $(dir) && go mod tidy) &&) true
+
+.PHONY: tidy-lint
+tidy-lint:
+	@$(foreach mod,$(MODULE_DIRS), \
+		(cd $(mod) && \
+		echo "[lint] tidy: $(mod)" && \
+		go mod tidy && \
+		git diff --exit-code -- go.mod go.sum) &&) true
+
+
+.PHONY: license-lint
+license-lint:
+	./checklicense.sh
+
+$(GOVULNCHECK):
+	cd tools && go install golang.org/x/vuln/cmd/govulncheck
 
 .PHONY: test
 test:
@@ -359,8 +378,10 @@ test:
 
 .PHONY: cover
 cover:
-	go test -race -coverprofile=cover.out -coverpkg=./... ./...
-	go tool cover -html=cover.out -o cover.html
+	@$(foreach dir,$(COVER_DIRS), ( \
+		cd $(dir) && \
+		go test -race -coverprofile=cover.out -coverpkg=./... ./... \
+		&& go tool cover -html=cover.out -o cover.html) &&) true
 
 .PHONY: bench
 BENCH ?= .
@@ -374,4 +395,12 @@ bench:
 updatereadme:
 	rm -f README.md
 	cat .readme.tmpl | go run internal/readme/readme.go > README.md
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+.PHONY: vulncheck
+vulncheck: $(GOVULNCHECK)
+	$(GOVULNCHECK) ./...
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

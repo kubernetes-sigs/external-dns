@@ -1,0 +1,213 @@
+---
+title: Workload Selector
+description: Definition of a workload selector.
+location: https://istio.io/docs/reference/config/type/workload-selector.html
+layout: protoc-gen-docs
+generator: protoc-gen-docs
+number_of_entries: 4
+---
+<h2 id="WorkloadSelector">WorkloadSelector</h2>
+<section>
+<p>WorkloadSelector specifies the criteria used to determine if a policy can be applied
+to a proxy. The matching criteria includes the metadata associated with a proxy,
+workload instance info such as labels attached to the pod/VM, or any other info
+that the proxy provides to Istio during the initial handshake. If multiple conditions are
+specified, all conditions need to match in order for the workload instance to be
+selected. Currently, only label based selection mechanism is supported.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="WorkloadSelector-match_labels">
+<td><code>matchLabels</code></td>
+<td><code>map&lt;string,&nbsp;string&gt;</code></td>
+<td>
+<p>One or more labels that indicate a specific set of pods/VMs
+on which a policy should be applied. The scope of label search is restricted to
+the configuration namespace in which the resource is present.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="PortSelector">PortSelector</h2>
+<section>
+<p>PortSelector is the criteria for specifying if a policy can be applied to
+a listener having a specific port.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="PortSelector-number">
+<td><code>number</code></td>
+<td><code>uint32</code></td>
+<td>
+<p>Port number</p>
+
+</td>
+<td>
+Yes
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="PolicyTargetReference">PolicyTargetReference</h2>
+<section>
+<p>PolicyTargetReference format as defined by <a href="https://gateway-api.sigs.k8s.io/geps/gep-713/#policy-targetref-api">GEP-713</a>.</p>
+<p>PolicyTargetReferences specifies the targeted resource which the policy
+can be applied to. It must only target a single resource at a time, but it
+can be used to target larger resources such as Gateways that may apply to
+multiple child resources. The PolicyTargetReference will be used instead of
+a WorkloadSelector in the RequestAuthentication, AuthorizationPolicy,
+Telemetry, and WasmPlugin CRDs to target a Kubernetes Gateway.</p>
+<p>The following is an example of an AuthorizationPolicy bound to a waypoint proxy using
+a PolicyTargetReference. The example sets <code>action</code> to <code>DENY</code> to create a deny policy.
+It denies all the requests with <code>POST</code> method on port <code>8080</code> directed through the
+<code>waypoint</code> Gateway in the <code>foo</code> namespace.</p>
+<pre><code class="language-yaml">apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  targetRef:
+    name: waypoint
+    kind: Gateway
+    group: gateway.networking.k8s.io
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: [&quot;POST&quot;]
+        ports: [&quot;8080&quot;]
+</code></pre>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="PolicyTargetReference-group">
+<td><code>group</code></td>
+<td><code>string</code></td>
+<td>
+<p>group is the group of the target resource.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="PolicyTargetReference-kind">
+<td><code>kind</code></td>
+<td><code>string</code></td>
+<td>
+<p>kind is kind of the target resource.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="PolicyTargetReference-name">
+<td><code>name</code></td>
+<td><code>string</code></td>
+<td>
+<p>name is the name of the target resource.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="PolicyTargetReference-namespace">
+<td><code>namespace</code></td>
+<td><code>string</code></td>
+<td>
+<p>namespace is the namespace of the referent. When unspecified, the local
+namespace is inferred.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="WorkloadMode">WorkloadMode</h2>
+<section>
+<p>WorkloadMode allows selection of the role of the underlying workload in
+network traffic. A workload is considered as acting as a SERVER if it is
+the destination of the traffic (that is, traffic direction, from the
+perspective of the workload is <em>inbound</em>). If the workload is the source of
+the network traffic, it is considered to be in CLIENT mode (traffic is
+<em>outbound</em> from the workload).</p>
+
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="WorkloadMode-UNDEFINED">
+<td><code>UNDEFINED</code></td>
+<td>
+<p>Default value, which will be interpreted by its own usage.</p>
+
+</td>
+</tr>
+<tr id="WorkloadMode-CLIENT">
+<td><code>CLIENT</code></td>
+<td>
+<p>Selects for scenarios when the workload is the
+source of the network traffic. In addition,
+if the workload is a gateway, selects this.</p>
+
+</td>
+</tr>
+<tr id="WorkloadMode-SERVER">
+<td><code>SERVER</code></td>
+<td>
+<p>Selects for scenarios when the workload is the
+destination of the network traffic.</p>
+
+</td>
+</tr>
+<tr id="WorkloadMode-CLIENT_AND_SERVER">
+<td><code>CLIENT_AND_SERVER</code></td>
+<td>
+<p>Selects for scenarios when the workload is either the
+source or destination of the network traffic.</p>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>

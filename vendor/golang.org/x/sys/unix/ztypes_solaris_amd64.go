@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && solaris
 // +build amd64,solaris
 
@@ -1977,6 +1978,11 @@ type Lifreq struct {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build amd64,solaris
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// +build amd64,solaris
+=======
+//go:build amd64 && solaris
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 package unix
 
@@ -2152,7 +2158,7 @@ type Linger struct {
 }
 
 type Iovec struct {
-	Base *int8
+	Base *byte
 	Len  uint64
 }
 
@@ -2209,6 +2215,7 @@ const (
 	SizeofSockaddrUnix     = 0x6e
 	SizeofSockaddrDatalink = 0xfc
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -2413,4 +2420,83 @@ const (
 	POLLWRBAND = 0x100
 	POLLWRNORM = 0x4
 )
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+type fileObj struct {
+	Atim Timespec
+	Mtim Timespec
+	Ctim Timespec
+	Pad  [3]uint64
+	Name *int8
+}
+
+type portEvent struct {
+	Events int32
+	Source uint16
+	Pad    uint16
+	Object uint64
+	User   *byte
+}
+
+const (
+	PORT_SOURCE_AIO    = 0x1
+	PORT_SOURCE_TIMER  = 0x2
+	PORT_SOURCE_USER   = 0x3
+	PORT_SOURCE_FD     = 0x4
+	PORT_SOURCE_ALERT  = 0x5
+	PORT_SOURCE_MQ     = 0x6
+	PORT_SOURCE_FILE   = 0x7
+	PORT_ALERT_SET     = 0x1
+	PORT_ALERT_UPDATE  = 0x2
+	PORT_ALERT_INVALID = 0x3
+	FILE_ACCESS        = 0x1
+	FILE_MODIFIED      = 0x2
+	FILE_ATTRIB        = 0x4
+	FILE_TRUNC         = 0x100000
+	FILE_NOFOLLOW      = 0x10000000
+	FILE_DELETE        = 0x10
+	FILE_RENAME_TO     = 0x20
+	FILE_RENAME_FROM   = 0x40
+	UNMOUNTED          = 0x20000000
+	MOUNTEDOVER        = 0x40000000
+	FILE_EXCEPTION     = 0x60000070
+)
+
+const (
+	TUNNEWPPA = 0x540001
+	TUNSETPPA = 0x540002
+
+	I_STR     = 0x5308
+	I_POP     = 0x5303
+	I_PUSH    = 0x5302
+	I_LINK    = 0x530c
+	I_UNLINK  = 0x530d
+	I_PLINK   = 0x5316
+	I_PUNLINK = 0x5317
+
+	IF_UNITSEL = -0x7ffb8cca
+)
+
+type strbuf struct {
+	Maxlen int32
+	Len    int32
+	Buf    *int8
+}
+
+type Strioctl struct {
+	Cmd    int32
+	Timout int32
+	Len    int32
+	Dp     *int8
+}
+
+type Lifreq struct {
+	Name   [32]int8
+	Lifru1 [4]byte
+	Type   uint32
+	Lifru  [336]byte
+}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

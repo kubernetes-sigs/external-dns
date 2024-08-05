@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build codegen
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -855,6 +856,10 @@ endpoint{
 >>>>>>> 4d7e5ad26 (update vendored files)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+//go:build codegen
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // +build codegen
 
 package endpoints
@@ -1011,18 +1016,71 @@ func serviceSet(ps partitions) map[string]struct{} {
 	return set
 }
 
+func endpointVariantSetter(variant endpointVariant) (string, error) {
+	if variant == 0 {
+		return "0", nil
+	}
+
+	if variant > (fipsVariant | dualStackVariant) {
+		return "", fmt.Errorf("unknown endpoint variant")
+	}
+
+	var symbols []string
+	if variant&fipsVariant != 0 {
+		symbols = append(symbols, "fipsVariant")
+	}
+	if variant&dualStackVariant != 0 {
+		symbols = append(symbols, "dualStackVariant")
+	}
+	v := strings.Join(symbols, "|")
+
+	return v, nil
+}
+
+func endpointKeySetter(e endpointKey) (string, error) {
+	var sb strings.Builder
+	sb.WriteString("endpointKey{\n")
+	sb.WriteString(fmt.Sprintf("Region: %q,\n", e.Region))
+	if e.Variant != 0 {
+		variantSetter, err := endpointVariantSetter(e.Variant)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(fmt.Sprintf("Variant: %s,\n", variantSetter))
+	}
+	sb.WriteString("}")
+	return sb.String(), nil
+}
+
+func defaultKeySetter(e defaultKey) (string, error) {
+	var sb strings.Builder
+	sb.WriteString("defaultKey{\n")
+	if e.Variant != 0 {
+		variantSetter, err := endpointVariantSetter(e.Variant)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(fmt.Sprintf("Variant: %s,\n", variantSetter))
+	}
+	sb.WriteString("}")
+	return sb.String(), nil
+}
+
 var funcMap = template.FuncMap{
-	"ToSymbol":           toSymbol,
-	"QuoteString":        quoteString,
-	"RegionConst":        regionConstName,
-	"PartitionGetter":    partitionGetter,
-	"PartitionVarName":   partitionVarName,
-	"ListPartitionNames": listPartitionNames,
-	"BoxedBoolIfSet":     boxedBoolIfSet,
-	"StringIfSet":        stringIfSet,
-	"StringSliceIfSet":   stringSliceIfSet,
-	"EndpointIsSet":      endpointIsSet,
-	"ServicesSet":        serviceSet,
+	"ToSymbol":              toSymbol,
+	"QuoteString":           quoteString,
+	"RegionConst":           regionConstName,
+	"PartitionGetter":       partitionGetter,
+	"PartitionVarName":      partitionVarName,
+	"ListPartitionNames":    listPartitionNames,
+	"BoxedBoolIfSet":        boxedBoolIfSet,
+	"StringIfSet":           stringIfSet,
+	"StringSliceIfSet":      stringSliceIfSet,
+	"EndpointIsSet":         endpointIsSet,
+	"ServicesSet":           serviceSet,
+	"EndpointVariantSetter": endpointVariantSetter,
+	"EndpointKeySetter":     endpointKeySetter,
+	"DefaultKeySetter":      defaultKeySetter,
 }
 
 const v3Tmpl = `
@@ -1128,9 +1186,9 @@ partition{
 	{{ StringIfSet "Name: %q,\n" .Name -}}
 	{{ StringIfSet "DNSSuffix: %q,\n" .DNSSuffix -}}
 	RegionRegex: {{ template "gocode RegionRegex" .RegionRegex }},
-	{{ if EndpointIsSet .Defaults -}}
-		Defaults: {{ template "gocode Endpoint" .Defaults }},
-	{{- end }}
+	{{ if (gt (len .Defaults) 0) -}}
+		Defaults: {{ template "gocode Defaults" .Defaults -}},
+	{{ end -}}
 	Regions:  {{ template "gocode Regions" .Regions }},
 	Services: {{ template "gocode Services" .Services }},
 }
@@ -1171,19 +1229,27 @@ services{
 service{
 	{{ StringIfSet "PartitionEndpoint: %q,\n" .PartitionEndpoint -}}
 	{{ BoxedBoolIfSet "IsRegionalized: %s,\n" .IsRegionalized -}}
-	{{ if EndpointIsSet .Defaults -}}
-		Defaults: {{ template "gocode Endpoint" .Defaults -}},
-	{{- end }}
+	{{ if (gt (len .Defaults) 0) -}}
+		Defaults: {{ template "gocode Defaults" .Defaults -}},
+	{{ end -}}
 	{{ if .Endpoints -}}
 		Endpoints: {{ template "gocode Endpoints" .Endpoints }},
 	{{- end }}
 }
 {{- end }}
 
-{{ define "gocode Endpoints" -}}
-endpoints{
+{{ define "gocode Defaults" -}}
+endpointDefaults{
 	{{ range $id, $endpoint := . -}}
-	"{{ $id }}": {{ template "gocode Endpoint" $endpoint }},
+	{{ DefaultKeySetter $id }}: {{ template "gocode Endpoint" $endpoint }},
+	{{ end }}
+}
+{{- end }}
+
+{{ define "gocode Endpoints" -}}
+serviceEndpoints{
+	{{ range $id, $endpoint := . -}}
+	{{ EndpointKeySetter $id }}: {{ template "gocode Endpoint" $endpoint }},
 	{{ end }}
 }
 {{- end }}
@@ -1191,6 +1257,7 @@ endpoints{
 {{ define "gocode Endpoint" -}}
 endpoint{
 	{{ StringIfSet "Hostname: %q,\n" .Hostname -}}
+	{{ StringIfSet "DNSSuffix: %q,\n" .DNSSuffix -}}
 	{{ StringIfSet "SSLCommonName: %q,\n" .SSLCommonName -}}
 	{{ StringSliceIfSet "Protocols: []string{%s},\n" .Protocols -}}
 	{{ StringSliceIfSet "SignatureVersions: []string{%s},\n" .SignatureVersions -}}
@@ -1200,10 +1267,18 @@ endpoint{
 		{{ StringIfSet "Service: %q,\n" .CredentialScope.Service -}}
 	},
 	{{- end }}
+<<<<<<< HEAD
 	{{ BoxedBoolIfSet "HasDualStack: %s,\n" .HasDualStack -}}
 	{{ StringIfSet "DualStackHostname: %q,\n" .DualStackHostname -}}
 
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	{{ BoxedBoolIfSet "HasDualStack: %s,\n" .HasDualStack -}}
+	{{ StringIfSet "DualStackHostname: %q,\n" .DualStackHostname -}}
+
+=======
+	{{ BoxedBoolIfSet "Deprecated: %s,\n" .Deprecated -}}
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 {{- end }}
 `

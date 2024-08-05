@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
 // +build !windows
 
 package procfs
@@ -25,6 +26,7 @@ import (
 type KernelRandom struct {
 	// EntropyAvaliable gives the available entropy, in bits.
 	EntropyAvaliable *uint64
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -64,6 +66,11 @@ type KernelRandom struct {
 =======
 	// PoolSize gives the size of the entropy pool, in bytes.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	// PoolSize gives the size of the entropy pool, in bytes.
+=======
+	// PoolSize gives the size of the entropy pool, in bits.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	PoolSize *uint64
 	// URandomMinReseedSeconds is the number of seconds after which the DRNG will be reseeded.
 	URandomMinReseedSeconds *uint64

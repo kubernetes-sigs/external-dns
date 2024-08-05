@@ -18,6 +18,7 @@ This library is compatible with Go 1.2+
    * Go 1.2 or above
 
 ## Installation
+<<<<<<< HEAD
    To get the latest released version [v2.1.0](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v2.1.0) of Go Client use below command.
    
    `go get github.com/infobloxopen/infoblox-go-client/v2`
@@ -125,6 +126,130 @@ This library is compatible with Go 1.2+
    * UpdateNetworkContainer
    * UpdateNetworkView
    * UpdatePTRRecord
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+   To get the latest released version [v2.6.0](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v2.6.0) of Go Client use below command.
+   
+   `go get github.com/infobloxopen/infoblox-go-client/v2`
+
+   To get the previous major version [v1.1.1](https://github.com/infobloxopen/infoblox-go-client/releases/tag/v1.1.1) use below command.
+   
+   `go get github.com/infobloxopen/infoblox-go-client`
+
+   Note: Go client version v2.0.0 and above have breaking changes and are not backward compatible.
+
+## Usage
+
+   The following is a very simple example for the client usage:
+
+       package main
+
+       import (
+         "fmt"
+         ibclient "github.com/infobloxopen/infoblox-go-client/v2"
+       )
+
+       func main() {
+         hostConfig := ibclient.HostConfig{
+            Scheme:  "https",
+         	Host:    "<NIOS grid IP>",
+            Version: "<WAPI version>",
+            Port:    "PORT",
+         }
+         authConfig := ibclient.AuthConfig{
+            Username: "username",
+            Password: "password",
+         }
+         transportConfig := ibclient.NewTransportConfig("false", 20, 10)
+         requestBuilder := &ibclient.WapiRequestBuilder{}
+         requestor := &ibclient.WapiHttpRequestor{}
+         conn, err := ibclient.NewConnector(hostConfig, authConfig, transportConfig, requestBuilder, requestor)
+         if err != nil {
+         	fmt.Println(err)
+         }
+         defer conn.Logout()
+         objMgr := ibclient.NewObjectManager(conn, "myclient", "")
+         //Fetches grid information
+         fmt.Println(objMgr.GetGridLicense())
+       } 
+
+
+## Supported NIOS operations
+
+   * AllocateIP
+   * AllocateNetwork
+   * AllocateNetworkContainer
+   * CreateARecord
+   * CreateAAAARecord
+   * CreateZoneAuth
+   * CreateCNAMERecord
+   * CreateDefaultNetviews
+   * CreateEADefinition
+   * CreateHostRecord
+   * CreateNetwork
+   * CreateNetworkContainer
+   * CreateNetworkView
+   * CreatePTRRecord
+   * CreateTXTRecord
+   * CreateZoneDelegated
+   * DeleteARecord
+   * DeleteAAAARecord
+   * DeleteZoneAuth
+   * DeleteCNAMERecord
+   * DeleteFixedAddress
+   * DeleteHostRecord
+   * DeleteNetwork
+   * DeleteNetworkView
+   * DeletePTRRecord
+   * DeleteTXTRecord
+   * DeleteZoneDelegated
+   * GetAllMembers
+   * GetARecordByRef
+   * GetARecord
+   * GetAAAARecordByRef
+   * GetAAAARecord
+   * GetCapacityReport
+   * GetCNAMERecordByRef
+   * GetCNAMERecord
+   * GetDhcpMember
+   * GetDnsMember
+   * GetEADefinition
+   * GetFixedAddress
+   * GetFixedAddressByRef
+   * GetHostRecord
+   * GetHostRecordByRef
+   * SearchHostRecordByAltId
+   * SearchObjectByAltId
+   * GetIpAddressFromHostRecord
+   * GetNetwork
+   * GetNetworkByRef
+   * GetNetworkContainer
+   * GetNetworkContainerByRef
+   * GetNetworkView
+   * GetNetworkViewByRef
+   * GetPTRRecordByRef
+   * GetPTRRecord
+   * GetTXTRecord
+   * GetTXTRecordByRef
+   * GetZoneAuthByRef
+   * GetZoneDelegated
+   * GetUpgradeStatus (2.7 or above)
+   * GetAllMembers
+   * GetGridInfo
+   * GetGridLicense
+   * ReleaseIP
+   * UpdateAAAARecord
+   * UpdateCNAMERecord
+   * UpdateDhcpStatus
+   * UpdateDnsStatus
+   * UpdateFixedAddress
+   * UpdateHostRecord
+   * UpdateNetwork
+   * UpdateNetworkContainer
+   * UpdateNetworkView
+   * UpdatePTRRecord
+   * UpdateTXTRecord
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
    * UpdateARecord
    * UpdateZoneDelegated
 

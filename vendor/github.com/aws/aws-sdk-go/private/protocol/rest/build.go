@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,6 +19,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/private/protocol"
+)
+
+const (
+	floatNaN    = "NaN"
+	floatInf    = "Infinity"
+	floatNegInf = "-Infinity"
 )
 
 // Whether the byte value can be sent without escaping in AWS URLs
@@ -98,6 +105,7 @@ func buildLocationElements(r *request.Request, v reflect.Value, buildGETQuery bo
 
 			// Support the ability to customize values to be marshaled as a
 			// blob even though they were modeled as a string. Required for S3
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -366,6 +374,11 @@ func convertType(v reflect.Value, tag reflect.StructTag) (str string, err error)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			// API operations like SSECustomerKey is modeled as stirng but
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			// API operations like SSECustomerKey is modeled as stirng but
+=======
+			// API operations like SSECustomerKey is modeled as string but
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 			// required to be base64 encoded in request.
 			if field.Tag.Get("marshal-as") == "blob" {
 				m = m.Convert(byteSliceType)
@@ -539,7 +552,33 @@ func convertType(v reflect.Value, tag reflect.StructTag) (str string, err error)
 
 	switch value := v.Interface().(type) {
 	case string:
+		if tag.Get("suppressedJSONValue") == "true" && tag.Get("location") == "header" {
+			value = base64.StdEncoding.EncodeToString([]byte(value))
+		}
 		str = value
+	case []*string:
+		if tag.Get("location") != "header" || tag.Get("enum") == "" {
+			return "", fmt.Errorf("%T is only supported with location header and enum shapes", value)
+		}
+		if len(value) == 0 {
+			return "", errValueNotSet
+		}
+
+		buff := &bytes.Buffer{}
+		for i, sv := range value {
+			if sv == nil || len(*sv) == 0 {
+				continue
+			}
+			if i != 0 {
+				buff.WriteRune(',')
+			}
+			item := *sv
+			if strings.Index(item, `,`) != -1 || strings.Index(item, `"`) != -1 {
+				item = strconv.Quote(item)
+			}
+			buff.WriteString(item)
+		}
+		str = string(buff.Bytes())
 	case []byte:
 		str = base64.StdEncoding.EncodeToString(value)
 	case bool:
@@ -547,7 +586,16 @@ func convertType(v reflect.Value, tag reflect.StructTag) (str string, err error)
 	case int64:
 		str = strconv.FormatInt(value, 10)
 	case float64:
-		str = strconv.FormatFloat(value, 'f', -1, 64)
+		switch {
+		case math.IsNaN(value):
+			str = floatNaN
+		case math.IsInf(value, 1):
+			str = floatInf
+		case math.IsInf(value, -1):
+			str = floatNegInf
+		default:
+			str = strconv.FormatFloat(value, 'f', -1, 64)
+		}
 	case time.Time:
 		format := tag.Get("timestampFormat")
 		if len(format) == 0 {
@@ -573,6 +621,11 @@ func convertType(v reflect.Value, tag reflect.StructTag) (str string, err error)
 		err := fmt.Errorf("unsupported value for param %v (%s)", v.Interface(), v.Type())
 		return "", err
 	}
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return str, nil
 }

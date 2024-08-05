@@ -197,6 +197,7 @@ func getAssociativeKeyDefault(s *schema.Schema, list *schema.List, fieldName str
 	return field.Default, nil
 }
 
+<<<<<<< HEAD
 func keyedAssociativeListItemToPathElement(a value.Allocator, s *schema.Schema, list *schema.List, index int, child value.Value) (fieldpath.PathElement, error) {
 	pe := fieldpath.PathElement{}
 	if child.IsNull() {
@@ -257,4 +258,66 @@ func listItemToPathElement(a value.Allocator, s *schema.Schema, list *schema.Lis
 
 	// Use the index as a key for atomic lists.
 	return fieldpath.PathElement{Index: &index}, nil
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+func keyedAssociativeListItemToPathElement(a value.Allocator, s *schema.Schema, list *schema.List, child value.Value) (fieldpath.PathElement, error) {
+	pe := fieldpath.PathElement{}
+	if child.IsNull() {
+		// null entries are illegal.
+		return pe, errors.New("associative list with keys may not have a null element")
+	}
+	if !child.IsMap() {
+		return pe, errors.New("associative list with keys may not have non-map elements")
+	}
+	keyMap := value.FieldList{}
+	m := child.AsMapUsing(a)
+	defer a.Free(m)
+	for _, fieldName := range list.Keys {
+		if val, ok := m.Get(fieldName); ok {
+			keyMap = append(keyMap, value.Field{Name: fieldName, Value: val})
+		} else if def, err := getAssociativeKeyDefault(s, list, fieldName); err != nil {
+			return pe, fmt.Errorf("couldn't find default value for %v: %v", fieldName, err)
+		} else if def != nil {
+			keyMap = append(keyMap, value.Field{Name: fieldName, Value: value.NewValueInterface(def)})
+		} else {
+			return pe, fmt.Errorf("associative list with keys has an element that omits key field %q (and doesn't have default value)", fieldName)
+		}
+	}
+	keyMap.Sort()
+	pe.Key = &keyMap
+	return pe, nil
+}
+
+func setItemToPathElement(child value.Value) (fieldpath.PathElement, error) {
+	pe := fieldpath.PathElement{}
+	switch {
+	case child.IsMap():
+		// TODO: atomic maps should be acceptable.
+		return pe, errors.New("associative list without keys has an element that's a map type")
+	case child.IsList():
+		// Should we support a set of lists? For the moment
+		// let's say we don't.
+		// TODO: atomic lists should be acceptable.
+		return pe, errors.New("not supported: associative list with lists as elements")
+	case child.IsNull():
+		return pe, errors.New("associative list without keys has an element that's an explicit null")
+	default:
+		// We are a set type.
+		pe.Value = &child
+		return pe, nil
+	}
+}
+
+func listItemToPathElement(a value.Allocator, s *schema.Schema, list *schema.List, child value.Value) (fieldpath.PathElement, error) {
+	if list.ElementRelationship != schema.Associative {
+		return fieldpath.PathElement{}, errors.New("invalid indexing of non-associative list")
+	}
+
+	if len(list.Keys) > 0 {
+		return keyedAssociativeListItemToPathElement(a, s, list, child)
+	}
+
+	// If there's no keys, then we must be a set of primitives.
+	return setItemToPathElement(child)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

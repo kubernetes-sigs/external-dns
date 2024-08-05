@@ -39,6 +39,7 @@ type APIConnection struct {
 	UserAgent   string
 }
 
+<<<<<<< HEAD
 // NewAPIKeyCredentialsAPIConnection creates a new client
 func NewAPIKeyCredentialsAPIConnection(apiKey string) *APIConnection {
 	return NewAPIConnection(&APIKeyCredentials{APIKey: apiKey})
@@ -175,6 +176,159 @@ func (c *APIConnection) getBody(request APIRequest) (io.Reader, error) {
 		if err != nil {
 			return nil, err
 		}
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+type RequestSerializer interface {
+	Serialize() ([]byte, error)
+}
+
+// NewAPIKeyCredentialsAPIConnection creates a new client
+func NewAPIKeyCredentialsAPIConnection(apiKey string) *APIConnection {
+	return NewAPIConnection(&APIKeyCredentials{APIKey: apiKey})
+}
+
+func NewAPIConnection(credentials Credentials) *APIConnection {
+	return &APIConnection{
+		Credentials: credentials,
+		HTTPClient: &http.Client{
+			Timeout: httpTimeoutSeconds * time.Second,
+		},
+		APIURI:    apiURI,
+		APIScheme: apiScheme,
+		UserAgent: userAgent,
+	}
+}
+
+// composeURI returns a composed URI for given resource and request modifiers
+func (c *APIConnection) composeURI(resource string, pagination APIRequestPagination, sorting APIRequestSorting, filtering []APIRequestFiltering) string {
+	data := url.Values{}
+	c.hydratePaginationQuery(&data, pagination)
+	c.hydrateSortingQuery(&data, sorting)
+	c.hydrateFilteringQuery(&data, filtering)
+
+	q := data.Encode()
+	// Add query parameter start
+	if q != "" {
+		q = "?" + q
+	}
+
+	return fmt.Sprintf("%s://%s/%s%s", c.APIScheme, c.APIURI, strings.Trim(resource, "/"), q)
+}
+
+// hydratePaginationQuery populates query parameters with pagination query parameters, if any
+func (c *APIConnection) hydratePaginationQuery(q *url.Values, pagination APIRequestPagination) {
+	if pagination.Page != 0 {
+		q.Add("page", strconv.Itoa(pagination.Page))
+	}
+	if pagination.PerPage != 0 {
+		q.Add("per_page", strconv.Itoa(pagination.PerPage))
+	}
+}
+
+// hydrateFilteringQuery populates query parameters with filtering query parameters, if any
+func (c *APIConnection) hydrateFilteringQuery(q *url.Values, filtering []APIRequestFiltering) {
+	for _, filter := range filtering {
+		q.Add(fmt.Sprintf("%s:%s", filter.Property, filter.Operator.String()), strings.Join(filter.Value, ","))
+	}
+}
+
+// hydrateSortingQuery populates query parameters with sorting query parameters, if any
+func (c *APIConnection) hydrateSortingQuery(q *url.Values, sorting APIRequestSorting) {
+	if sorting.Property != "" {
+		direction := "asc"
+		if sorting.Descending {
+			direction = "desc"
+		}
+
+		q.Add("sort", fmt.Sprintf("%s:%s", sorting.Property, direction))
+	}
+}
+
+// Get invokes a GET request, returning an APIResponse
+func (c *APIConnection) Get(resource string, parameters APIRequestParameters) (*APIResponse, error) {
+	return c.Invoke(APIRequest{
+		Method:     "GET",
+		Resource:   resource,
+		Parameters: parameters,
+	})
+}
+
+// Post invokes a POST request, returning an APIResponse
+func (c *APIConnection) Post(resource string, body interface{}) (*APIResponse, error) {
+	return c.Invoke(APIRequest{
+		Method:   "POST",
+		Resource: resource,
+		Body:     body,
+	})
+}
+
+// Put invokes a PUT request, returning an APIResponse
+func (c *APIConnection) Put(resource string, body interface{}) (*APIResponse, error) {
+	return c.Invoke(APIRequest{
+		Method:   "PUT",
+		Resource: resource,
+		Body:     body,
+	})
+}
+
+// Patch invokes a PATCH request, returning an APIResponse
+func (c *APIConnection) Patch(resource string, body interface{}) (*APIResponse, error) {
+	return c.Invoke(APIRequest{
+		Method:   "PATCH",
+		Resource: resource,
+		Body:     body,
+	})
+}
+
+// Delete invokes a DELETE request, returning an APIResponse
+func (c *APIConnection) Delete(resource string, body interface{}) (*APIResponse, error) {
+	return c.Invoke(APIRequest{
+		Method:   "DELETE",
+		Resource: resource,
+		Body:     body,
+	})
+}
+
+// Invoke invokes a request, returning an APIResponse
+func (c *APIConnection) Invoke(request APIRequest) (*APIResponse, error) {
+	req, err := c.NewRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.InvokeRequest(req)
+}
+
+// NewRequest generates a new Request from given parameters
+func (c *APIConnection) getBody(request APIRequest) (io.Reader, error) {
+	buf := new(bytes.Buffer)
+	if request.Body != nil {
+		if reader, ok := request.Body.(io.Reader); ok {
+			return reader, nil
+		}
+
+		if v, ok := request.Body.(Validatable); ok {
+			valErr := v.Validate()
+			if valErr != nil {
+				return nil, valErr
+			}
+		}
+
+		if serializer, ok := request.Body.(RequestSerializer); ok {
+			body, err := serializer.Serialize()
+			if err != nil {
+				return nil, err
+			}
+
+			buf.Write(body)
+		} else {
+			err := json.NewEncoder(buf).Encode(request.Body)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		logging.Tracef("Encoded body: %s", buf)
 	}
 

@@ -33,11 +33,17 @@ type histogram struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // addMeasurement records a value measurement observation to the histogram.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // AddMeasurement records a value measurement observation to the histogram.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// AddMeasurement records a value measurement observation to the histogram.
+=======
+// addMeasurement records a value measurement observation to the histogram.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (h *histogram) addMeasurement(value int64) {
 	// TODO: assert invariant
 	h.sum += value

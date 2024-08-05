@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -67,6 +68,10 @@ func UnmarshalError(r *request.Request) {
 		awserr.New(strings.TrimSpace(respErr.Code), strings.TrimSpace(respErr.Message), nil),
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"strings"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -126,8 +131,14 @@ func UnmarshalError(r *request.Request) {
 	}
 
 	r.Error = awserr.NewRequestFailure(
+<<<<<<< HEAD
 		awserr.New(respErr.Code, respErr.Message, nil),
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		awserr.New(respErr.Code, respErr.Message, nil),
+=======
+		awserr.New(strings.TrimSpace(respErr.Code), strings.TrimSpace(respErr.Message), nil),
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		r.HTTPResponse.StatusCode,
 		reqID,
 	)

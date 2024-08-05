@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmAccessStrategyAvailableConfig(request *DescribeGtmAccessStrategyAvailableConfigRequest) (response *DescribeGtmAccessStrategyAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmAccessStrategyAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -179,6 +180,10 @@ func CreateDescribeGtmAccessStrategyAvailableConfigRequest() (request *DescribeG
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (client *Client) DescribeGtmAccessStrategyAvailableConfig(request *DescribeGtmAccessStrategyAvailableConfigRequest) (response *DescribeGtmAccessStrategyAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmAccessStrategyAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -186,8 +191,6 @@ func (client *Client) DescribeGtmAccessStrategyAvailableConfig(request *Describe
 }
 
 // DescribeGtmAccessStrategyAvailableConfigWithChan invokes the alidns.DescribeGtmAccessStrategyAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAccessStrategyAvailableConfigWithChan(request *DescribeGtmAccessStrategyAvailableConfigRequest) (<-chan *DescribeGtmAccessStrategyAvailableConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmAccessStrategyAvailableConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -210,8 +213,6 @@ func (client *Client) DescribeGtmAccessStrategyAvailableConfigWithChan(request *
 }
 
 // DescribeGtmAccessStrategyAvailableConfigWithCallback invokes the alidns.DescribeGtmAccessStrategyAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAccessStrategyAvailableConfigWithCallback(request *DescribeGtmAccessStrategyAvailableConfigRequest, callback func(response *DescribeGtmAccessStrategyAvailableConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -241,9 +242,10 @@ type DescribeGtmAccessStrategyAvailableConfigRequest struct {
 // DescribeGtmAccessStrategyAvailableConfigResponse is the response struct for api DescribeGtmAccessStrategyAvailableConfig
 type DescribeGtmAccessStrategyAvailableConfigResponse struct {
 	*responses.BaseResponse
-	RequestId string                                              `json:"RequestId" xml:"RequestId"`
-	AddrPools AddrPoolsInDescribeGtmAccessStrategyAvailableConfig `json:"AddrPools" xml:"AddrPools"`
-	Lines     LinesInDescribeGtmAccessStrategyAvailableConfig     `json:"Lines" xml:"Lines"`
+	RequestId             string                                              `json:"RequestId" xml:"RequestId"`
+	SuggestSetDefaultLine bool                                                `json:"SuggestSetDefaultLine" xml:"SuggestSetDefaultLine"`
+	AddrPools             AddrPoolsInDescribeGtmAccessStrategyAvailableConfig `json:"AddrPools" xml:"AddrPools"`
+	Lines                 LinesInDescribeGtmAccessStrategyAvailableConfig     `json:"Lines" xml:"Lines"`
 }
 
 // CreateDescribeGtmAccessStrategyAvailableConfigRequest creates a request to invoke DescribeGtmAccessStrategyAvailableConfig API
@@ -252,7 +254,12 @@ func CreateDescribeGtmAccessStrategyAvailableConfigRequest() (request *DescribeG
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAccessStrategyAvailableConfig", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	request.Method = requests.POST
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return
 }
 

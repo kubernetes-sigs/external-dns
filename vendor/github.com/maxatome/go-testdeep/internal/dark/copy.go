@@ -15,11 +15,17 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // CopyValue does its best to copy val in a new [reflect.Value] instance.
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // CopyValue does its best to copy val in a new reflect.Value instance.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// CopyValue does its best to copy val in a new reflect.Value instance.
+=======
+// CopyValue does its best to copy val in a new [reflect.Value] instance.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func CopyValue(val reflect.Value) (reflect.Value, bool) {
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {

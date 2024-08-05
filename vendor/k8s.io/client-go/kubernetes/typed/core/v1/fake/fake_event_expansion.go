@@ -18,6 +18,7 @@ package fake
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -86,6 +87,11 @@ func (c *FakeEvents) Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/api/core/v1"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"k8s.io/api/core/v1"
+=======
+	v1 "k8s.io/api/core/v1"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -94,9 +100,11 @@ func (c *FakeEvents) Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v
 )
 
 func (c *FakeEvents) CreateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
-	action := core.NewRootCreateAction(eventsResource, event)
+	var action core.CreateActionImpl
 	if c.ns != "" {
 		action = core.NewCreateAction(eventsResource, c.ns, event)
+	} else {
+		action = core.NewCreateAction(eventsResource, event.GetNamespace(), event)
 	}
 	obj, err := c.Fake.Invokes(action, event)
 	if obj == nil {
@@ -108,9 +116,11 @@ func (c *FakeEvents) CreateWithEventNamespace(event *v1.Event) (*v1.Event, error
 
 // Update replaces an existing event. Returns the copy of the event the server returns, or an error.
 func (c *FakeEvents) UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
-	action := core.NewRootUpdateAction(eventsResource, event)
+	var action core.UpdateActionImpl
 	if c.ns != "" {
 		action = core.NewUpdateAction(eventsResource, c.ns, event)
+	} else {
+		action = core.NewUpdateAction(eventsResource, event.GetNamespace(), event)
 	}
 	obj, err := c.Fake.Invokes(action, event)
 	if obj == nil {
@@ -125,9 +135,11 @@ func (c *FakeEvents) UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error
 func (c *FakeEvents) PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.Event, error) {
 	// TODO: Should be configurable to support additional patch strategies.
 	pt := types.StrategicMergePatchType
-	action := core.NewRootPatchAction(eventsResource, event.Name, pt, data)
+	var action core.PatchActionImpl
 	if c.ns != "" {
 		action = core.NewPatchAction(eventsResource, c.ns, event.Name, pt, data)
+	} else {
+		action = core.NewPatchAction(eventsResource, event.GetNamespace(), event.Name, pt, data)
 	}
 	obj, err := c.Fake.Invokes(action, event)
 	if obj == nil {
@@ -139,10 +151,16 @@ func (c *FakeEvents) PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.
 
 // Search returns a list of events matching the specified object.
 func (c *FakeEvents) Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v1.EventList, error) {
-	action := core.NewRootListAction(eventsResource, eventsKind, metav1.ListOptions{})
+	var action core.ListActionImpl
 	if c.ns != "" {
 		action = core.NewListAction(eventsResource, eventsKind, c.ns, metav1.ListOptions{})
+<<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	} else {
+		action = core.NewListAction(eventsResource, eventsKind, v1.NamespaceDefault, metav1.ListOptions{})
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 	obj, err := c.Fake.Invokes(action, &v1.EventList{})
 	if obj == nil {

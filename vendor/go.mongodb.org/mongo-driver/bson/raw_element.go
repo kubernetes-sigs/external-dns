@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 )
 
+<<<<<<< HEAD
 // RawElement represents a BSON element in byte form. This type provides a simple way to
 // transform a slice of bytes into a BSON element and extract information from it.
 //
@@ -37,6 +38,33 @@ func (re RawElement) ValueErr() (RawValue, error) {
 func (re RawElement) Validate() error { return bsoncore.Element(re).Validate() }
 
 // String implements the fmt.Stringer interface. The output will be in extended JSON format.
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// RawElement is a raw encoded BSON document or array element.
+type RawElement []byte
+
+// Key returns the key for this element. If the element is not valid, this method returns an empty
+// string. If knowing if the element is valid is important, use KeyErr.
+func (re RawElement) Key() string { return bsoncore.Element(re).Key() }
+
+// KeyErr returns the key for this element, returning an error if the element is not valid.
+func (re RawElement) KeyErr() (string, error) { return bsoncore.Element(re).KeyErr() }
+
+// Value returns the value of this element. If the element is not valid, this method returns an
+// empty Value. If knowing if the element is valid is important, use ValueErr.
+func (re RawElement) Value() RawValue { return convertFromCoreValue(bsoncore.Element(re).Value()) }
+
+// ValueErr returns the value for this element, returning an error if the element is not valid.
+func (re RawElement) ValueErr() (RawValue, error) {
+	val, err := bsoncore.Element(re).ValueErr()
+	return convertFromCoreValue(val), err
+}
+
+// Validate ensures re is a valid BSON element.
+func (re RawElement) Validate() error { return bsoncore.Element(re).Validate() }
+
+// String returns the BSON element encoded as Extended JSON.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (re RawElement) String() string {
 	doc := bsoncore.BuildDocument(nil, re)
 	j, err := MarshalExtJSON(Raw(doc), true, false)

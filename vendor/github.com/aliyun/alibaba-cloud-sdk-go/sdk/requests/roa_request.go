@@ -126,9 +126,13 @@ func (request *RoaRequest) InitWithApiInfo(product, version, action, uriPattern,
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	request.Headers["x-acs-action"] = action
 	request.pathPattern = uriPattern
 	request.locationServiceCode = serviceCode
@@ -147,6 +151,7 @@ func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
 	if commonRequest.ApiName != "" {
 		request.Headers["x-acs-action"] = commonRequest.ApiName
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -185,8 +190,12 @@ func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
 	//request.version = commonRequest.Version
 	request.Headers["x-acs-version"] = commonRequest.Version
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	request.actionName = commonRequest.ApiName
 	request.pathPattern = commonRequest.PathPattern
 	request.locationServiceCode = commonRequest.ServiceCode
 	request.locationEndpointType = ""
+	request.span = commonRequest.span
 }

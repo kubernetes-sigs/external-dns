@@ -40,6 +40,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"github.com/googleapis/gax-go/v2/apierror"
 )
@@ -272,13 +273,18 @@ func invoke(ctx context.Context, call APICall, settings CallSettings, sp sleeper
 		if settings.Retry == nil {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	"github.com/googleapis/gax-go/v2/apierror"
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 )
 
 // APICall is a user defined call stub.
 type APICall func(context.Context, CallSettings) error
 
-// Invoke calls the given APICall,
-// performing retries as specified by opts, if any.
+// Invoke calls the given APICall, performing retries as specified by opts, if
+// any.
 func Invoke(ctx context.Context, call APICall, opts ...CallOption) error {
 	var settings CallSettings
 	for _, opt := range opts {
@@ -305,13 +311,20 @@ type sleeper func(ctx context.Context, d time.Duration) error
 // invoke implements Invoke, taking an additional sleeper argument for testing.
 func invoke(ctx context.Context, call APICall, settings CallSettings, sp sleeper) error {
 	var retryer Retryer
+
+	// Only use the value provided via WithTimeout if the context doesn't
+	// already have a deadline. This is important for backwards compatibility if
+	// the user already set a deadline on the context given to Invoke.
+	if _, ok := ctx.Deadline(); !ok && settings.timeout != 0 {
+		c, cc := context.WithTimeout(ctx, settings.timeout)
+		defer cc()
+		ctx = c
+	}
+
 	for {
 		err := call(ctx, settings)
 		if err == nil {
 			return nil
-		}
-		if settings.Retry == nil {
-			return err
 		}
 		// Never retry permanent certificate errors. (e.x. if ca-certificates
 		// are not installed). We should only make very few, targeted
@@ -321,6 +334,12 @@ func invoke(ctx context.Context, call APICall, settings CallSettings, sp sleeper
 		// simply making Unavailable a non-retried code elsewhere.
 		if strings.Contains(err.Error(), "x509: certificate signed by unknown authority") {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+			return err
+		}
+		if apierr, ok := apierror.FromError(err); ok {
+			err = apierr
+		}
+		if settings.Retry == nil {
 			return err
 		}
 		if retryer == nil {

@@ -44,6 +44,7 @@ type WebhooksResponse struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See https://developer.dnsimple.com/v2/webhooks/#listWebhooks
 func (s *WebhooksService) ListWebhooks(ctx context.Context, accountID string, _ *ListOptions) (*WebhooksResponse, error) {
 	path := versioned(webhookPath(accountID, 0))
@@ -159,6 +160,11 @@ func (s *WebhooksService) GetWebhook(ctx context.Context, accountID string, webh
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See https://developer.dnsimple.com/v2/webhooks#list
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See https://developer.dnsimple.com/v2/webhooks#list
+=======
+// See https://developer.dnsimple.com/v2/webhooks/#listWebhooks
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (s *WebhooksService) ListWebhooks(ctx context.Context, accountID string, _ *ListOptions) (*WebhooksResponse, error) {
 	path := versioned(webhookPath(accountID, 0))
 	webhooksResponse := &WebhooksResponse{}
@@ -174,7 +180,7 @@ func (s *WebhooksService) ListWebhooks(ctx context.Context, accountID string, _ 
 
 // CreateWebhook creates a new webhook.
 //
-// See https://developer.dnsimple.com/v2/webhooks#create
+// See https://developer.dnsimple.com/v2/webhooks/#createWebhook
 func (s *WebhooksService) CreateWebhook(ctx context.Context, accountID string, webhookAttributes Webhook) (*WebhookResponse, error) {
 	path := versioned(webhookPath(accountID, 0))
 	webhookResponse := &WebhookResponse{}
@@ -190,7 +196,7 @@ func (s *WebhooksService) CreateWebhook(ctx context.Context, accountID string, w
 
 // GetWebhook fetches a webhook.
 //
-// See https://developer.dnsimple.com/v2/webhooks#get
+// See https://developer.dnsimple.com/v2/webhooks/#getWebhook
 func (s *WebhooksService) GetWebhook(ctx context.Context, accountID string, webhookID int64) (*WebhookResponse, error) {
 	path := versioned(webhookPath(accountID, webhookID))
 	webhookResponse := &WebhookResponse{}
@@ -204,10 +210,16 @@ func (s *WebhooksService) GetWebhook(ctx context.Context, accountID string, webh
 	return webhookResponse, nil
 }
 
-// DeleteWebhook PERMANENTLY deletes a webhook from the account.
+// DeleteWebhook PERMANENTLY deletes the webhook.
 //
+<<<<<<< HEAD
 // See https://developer.dnsimple.com/v2/webhooks#delete
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// See https://developer.dnsimple.com/v2/webhooks#delete
+=======
+// See https://developer.dnsimple.com/v2/webhooks/#deleteWebhook
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (s *WebhooksService) DeleteWebhook(ctx context.Context, accountID string, webhookID int64) (*WebhookResponse, error) {
 	path := versioned(webhookPath(accountID, webhookID))
 	webhookResponse := &WebhookResponse{}

@@ -36,6 +36,7 @@
 package gax
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "github.com/googleapis/gax-go/v2/internal"
 
 // Version specifies the gax-go version being used.
@@ -81,6 +82,17 @@ const Version = internal.Version
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+import "github.com/googleapis/gax-go/v2/internal"
+
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // Version specifies the gax-go version being used.
+<<<<<<< HEAD
 const Version = "2.0.4"
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+const Version = "2.0.4"
+=======
+const Version = internal.Version
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)

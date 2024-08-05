@@ -14,6 +14,7 @@ import "encoding/binary"
 //   bits
 //   15:    1 (inverse of NFD_QC bit of qcInfo)
 <<<<<<< HEAD
+<<<<<<< HEAD
 //   13..7: qcInfo (see below). isYesD is always true (no decomposition).
 //    6..0: ccc (compressed CCC value).
 // For v < 0x8000, the respective rune has a decomposition and v is an index
@@ -119,6 +120,11 @@ func (p Properties) BoundaryAfter() bool {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //   13..7: qcInfo (see below). isYesD is always true (no decompostion).
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   13..7: qcInfo (see below). isYesD is always true (no decompostion).
+=======
+//   13..7: qcInfo (see below). isYesD is always true (no decomposition).
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //    6..0: ccc (compressed CCC value).
 // For v < 0x8000, the respective rune has a decomposition and v is an index
 // into a byte array of UTF-8 decomposition sequences and additional info and
@@ -215,11 +221,24 @@ func (p Properties) BoundaryAfter() bool {
 }
 
 // We pack quick check data in 4 bits:
+<<<<<<< HEAD
 //   5:    Combines forward  (0 == false, 1 == true)
 //   4..3: NFC_QC Yes(00), No (10), or Maybe (11)
 //   2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
 //   1..0: Number of trailing non-starters.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   5:    Combines forward  (0 == false, 1 == true)
+//   4..3: NFC_QC Yes(00), No (10), or Maybe (11)
+//   2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
+//   1..0: Number of trailing non-starters.
+=======
+//
+//	5:    Combines forward  (0 == false, 1 == true)
+//	4..3: NFC_QC Yes(00), No (10), or Maybe (11)
+//	2:    NFD_QC Yes (0) or No (1). No also means there is a decomposition.
+//	1..0: Number of trailing non-starters.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
 // When all 4 bits are zero, the character is inert, meaning it is never
 // influenced by normalization.

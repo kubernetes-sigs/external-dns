@@ -26,6 +26,7 @@ var _ TestDeep = &tdAny{}
 // as a "OR" logical operator.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	td.Cmp(t, "foo", td.Any("bar", "foo", "zip")) // succeeds
 //	td.Cmp(t, "foo", td.Any(
 //	  td.Len(4),
@@ -239,11 +240,37 @@ func (a *tdAny) TypeBehind() reflect.Type {
 //     td.HasPrefix("f"),
 //     td.HasSuffix("z"),
 //   )) // succeeds coz "f" prefix
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+//   td.Cmp(t, "foo", td.Any("bar", "foo", "zip")) // succeeds
+//   td.Cmp(t, "foo", td.Any(
+//     td.Len(4),
+//     td.HasPrefix("f"),
+//     td.HasSuffix("z"),
+//   )) // succeeds coz "f" prefix
+=======
+//	td.Cmp(t, "foo", td.Any("bar", "foo", "zip")) // succeeds
+//	td.Cmp(t, "foo", td.Any(
+//	  td.Len(4),
+//	  td.HasPrefix("f"),
+//	  td.HasSuffix("z"),
+//	)) // succeeds coz "f" prefix
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //
-// TypeBehind method can return a non-nil reflect.Type if all items
+// Note [Flatten] function can be used to group or reuse some values or
+// operators and so avoid boring and inefficient copies:
+//
+//	stringOps := td.Flatten([]td.TestDeep{td.HasPrefix("f"), td.HasSuffix("z")})
+//	td.Cmp(t, "foobar", td.All(
+//	  td.Len(4),
+//	  stringOps,
+//	)) // succeeds coz "f" prefix
+//
+// TypeBehind method can return a non-nil [reflect.Type] if all items
 // known non-interface types are equal, or if only interface types
 // are found (mostly issued from Isa()) and they are equal.
-func Any(expectedValues ...interface{}) TestDeep {
+//
+// See also [All] and [None].
+func Any(expectedValues ...any) TestDeep {
 	return &tdAny{
 		tdList: newList(expectedValues...),
 	}
@@ -251,7 +278,7 @@ func Any(expectedValues ...interface{}) TestDeep {
 
 func (a *tdAny) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	for _, item := range a.items {
-		if deepValueEqualOK(got, item) {
+		if deepValueEqualFinalOK(ctx, got, item) {
 			return nil
 		}
 	}
@@ -267,6 +294,12 @@ func (a *tdAny) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (a *tdAny) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 	return a.uniqTypeBehind()
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return a.uniqTypeBehind()
+=======
+	return uniqTypeBehindSlice(a.items)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }

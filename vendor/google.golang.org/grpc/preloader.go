@@ -33,6 +33,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 ||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 // Experimental
@@ -82,6 +83,14 @@ import (
 =======
 // This API is EXPERIMENTAL.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+// This API is EXPERIMENTAL.
+=======
+// # Experimental
+//
+// Notice: This type is EXPERIMENTAL and may be changed or removed in a
+// later release.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type PreparedMsg struct {
 	// Struct for preparing msg before sending them
 	encodedData []byte
@@ -90,7 +99,7 @@ type PreparedMsg struct {
 }
 
 // Encode marshalls and compresses the message using the codec and compressor for the stream.
-func (p *PreparedMsg) Encode(s Stream, msg interface{}) error {
+func (p *PreparedMsg) Encode(s Stream, msg any) error {
 	ctx := s.Context()
 	rpcInfo, ok := rpcInfoFromContext(ctx)
 	if !ok {

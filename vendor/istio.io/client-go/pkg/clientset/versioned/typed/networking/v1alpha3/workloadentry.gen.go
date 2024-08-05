@@ -18,9 +18,12 @@ package v1alpha3
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3"
 	scheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -45,6 +48,8 @@ type WorkloadEntryInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha3.WorkloadEntryList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.WorkloadEntry, err error)
+	Apply(ctx context.Context, workloadEntry *networkingv1alpha3.WorkloadEntryApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.WorkloadEntry, err error)
+	ApplyStatus(ctx context.Context, workloadEntry *networkingv1alpha3.WorkloadEntryApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.WorkloadEntry, err error)
 	WorkloadEntryExpansion
 }
 
@@ -186,6 +191,62 @@ func (c *workloadEntries) Patch(ctx context.Context, name string, pt types.Patch
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied workloadEntry.
+func (c *workloadEntries) Apply(ctx context.Context, workloadEntry *networkingv1alpha3.WorkloadEntryApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.WorkloadEntry, err error) {
+	if workloadEntry == nil {
+		return nil, fmt.Errorf("workloadEntry provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(workloadEntry)
+	if err != nil {
+		return nil, err
+	}
+	name := workloadEntry.Name
+	if name == nil {
+		return nil, fmt.Errorf("workloadEntry.Name must be provided to Apply")
+	}
+	result = &v1alpha3.WorkloadEntry{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("workloadentries").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *workloadEntries) ApplyStatus(ctx context.Context, workloadEntry *networkingv1alpha3.WorkloadEntryApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.WorkloadEntry, err error) {
+	if workloadEntry == nil {
+		return nil, fmt.Errorf("workloadEntry provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(workloadEntry)
+	if err != nil {
+		return nil, err
+	}
+
+	name := workloadEntry.Name
+	if name == nil {
+		return nil, fmt.Errorf("workloadEntry.Name must be provided to Apply")
+	}
+
+	result = &v1alpha3.WorkloadEntry{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("workloadentries").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

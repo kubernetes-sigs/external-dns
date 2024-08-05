@@ -77,6 +77,7 @@ type ServerStorageVersion struct {
 	// The encodingVersion must be included in the decodableVersions.
 	// +listType=set
 	DecodableVersions []string `json:"decodableVersions,omitempty" protobuf:"bytes,3,opt,name=decodableVersions"`
+<<<<<<< HEAD
 }
 
 type StorageVersionConditionType string
@@ -107,6 +108,43 @@ type StorageVersionCondition struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,3,opt,name=observedGeneration"`
 	// Last time the condition transitioned from one status to another.
 	// +required
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+
+	// The API server can serve these versions.
+	// DecodableVersions must include all ServedVersions.
+	// +listType=set
+	ServedVersions []string `json:"servedVersions,omitempty" protobuf:"bytes,4,opt,name=servedVersions"`
+}
+
+type StorageVersionConditionType string
+
+const (
+	// Indicates that encoding storage versions reported by all servers are equal.
+	AllEncodingVersionsEqual StorageVersionConditionType = "AllEncodingVersionsEqual"
+)
+
+type ConditionStatus string
+
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+// Describes the state of the storageVersion at a certain point.
+type StorageVersionCondition struct {
+	// Type of the condition.
+	// +required
+	Type StorageVersionConditionType `json:"type" protobuf:"bytes,1,opt,name=type"`
+	// Status of the condition, one of True, False, Unknown.
+	// +required
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status"`
+	// If set, this represents the .metadata.generation that the condition was set based upon.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,3,opt,name=observedGeneration"`
+	// Last time the condition transitioned from one status to another.
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,4,opt,name=lastTransitionTime"`
 	// The reason for the condition's last transition.
 	// +required

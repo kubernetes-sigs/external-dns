@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/procfs/internal/util"
 )
 
-// LoadAvg represents an entry in /proc/loadavg
+// LoadAvg represents an entry in /proc/loadavg.
 type LoadAvg struct {
 	Load1  float64
 	Load5  float64
@@ -44,6 +44,7 @@ func parseLoad(loadavgBytes []byte) (*LoadAvg, error) {
 	loads := make([]float64, 3)
 	parts := strings.Fields(string(loadavgBytes))
 	if len(parts) < 3 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -128,14 +129,25 @@ func parseLoad(loadavgBytes []byte) (*LoadAvg, error) {
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
+=======
+		return nil, fmt.Errorf("%w: Malformed line %q", ErrFileParse, string(loadavgBytes))
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
 	var err error
 	for i, load := range parts[0:3] {
 		loads[i], err = strconv.ParseFloat(load, 64)
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
+=======
+			return nil, fmt.Errorf("%s: Cannot parse load: %f: %w", ErrFileParse, loads[i], err)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		}
 	}
 	return &LoadAvg{

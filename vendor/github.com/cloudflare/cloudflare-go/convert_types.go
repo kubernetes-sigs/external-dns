@@ -22,6 +22,7 @@ import (
 // AnyPtr is a helper routine that allocates a new interface value
 // to store v and returns a pointer to it.
 //
+<<<<<<< HEAD
 // 	// Usage: var _ *Type = AnyPtr(Type(value) | value).(*Type)
 //
 // 	var _ *bool = AnyPtr(true).(*bool)
@@ -42,6 +43,29 @@ import (
 // 	var _ *uint16 = AnyPtr(uint16(16)).(*uint16)
 // 	var _ *uint32 = AnyPtr(uint32(32)).(*uint32)
 // 	var _ *uint64 = AnyPtr(uint64(64)).(*uint64)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+// Usage: var _ *Type = AnyPtr(Type(value) | value).(*Type)
+//
+//	var _ *bool = AnyPtr(true).(*bool)
+//	var _ *byte = AnyPtr(byte(1)).(*byte)
+//	var _ *complex64 = AnyPtr(complex64(1.1)).(*complex64)
+//	var _ *complex128 = AnyPtr(complex128(1.1)).(*complex128)
+//	var _ *float32 = AnyPtr(float32(1.1)).(*float32)
+//	var _ *float64 = AnyPtr(float64(1.1)).(*float64)
+//	var _ *int = AnyPtr(int(1)).(*int)
+//	var _ *int8 = AnyPtr(int8(8)).(*int8)
+//	var _ *int16 = AnyPtr(int16(16)).(*int16)
+//	var _ *int32 = AnyPtr(int32(32)).(*int32)
+//	var _ *int64 = AnyPtr(int64(64)).(*int64)
+//	var _ *rune = AnyPtr(rune(1)).(*rune)
+//	var _ *string = AnyPtr("ptr").(*string)
+//	var _ *uint = AnyPtr(uint(1)).(*uint)
+//	var _ *uint8 = AnyPtr(uint8(8)).(*uint8)
+//	var _ *uint16 = AnyPtr(uint16(16)).(*uint16)
+//	var _ *uint32 = AnyPtr(uint32(32)).(*uint32)
+//	var _ *uint64 = AnyPtr(uint64(64)).(*uint64)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func AnyPtr(v interface{}) interface{} {
 	r := reflect.New(reflect.TypeOf(v))
 	reflect.ValueOf(r.Interface()).Elem().Set(reflect.ValueOf(v))

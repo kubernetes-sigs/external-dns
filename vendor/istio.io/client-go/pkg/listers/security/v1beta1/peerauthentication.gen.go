@@ -24,8 +24,10 @@ import (
 )
 
 // PeerAuthenticationLister helps list PeerAuthentications.
+// All objects returned here must be treated as read-only.
 type PeerAuthenticationLister interface {
 	// List lists all PeerAuthentications in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.PeerAuthentication, err error)
 	// PeerAuthentications returns an object that can list and get PeerAuthentications.
 	PeerAuthentications(namespace string) PeerAuthenticationNamespaceLister
@@ -56,10 +58,13 @@ func (s *peerAuthenticationLister) PeerAuthentications(namespace string) PeerAut
 }
 
 // PeerAuthenticationNamespaceLister helps list and get PeerAuthentications.
+// All objects returned here must be treated as read-only.
 type PeerAuthenticationNamespaceLister interface {
 	// List lists all PeerAuthentications in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.PeerAuthentication, err error)
 	// Get retrieves the PeerAuthentication from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.PeerAuthentication, error)
 	PeerAuthenticationNamespaceListerExpansion
 }

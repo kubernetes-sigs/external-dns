@@ -18,11 +18,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/applyconfiguration/networking/v1alpha3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -34,9 +36,9 @@ type FakeSidecars struct {
 	ns   string
 }
 
-var sidecarsResource = schema.GroupVersionResource{Group: "networking.istio.io", Version: "v1alpha3", Resource: "sidecars"}
+var sidecarsResource = v1alpha3.SchemeGroupVersion.WithResource("sidecars")
 
-var sidecarsKind = schema.GroupVersionKind{Group: "networking.istio.io", Version: "v1alpha3", Kind: "Sidecar"}
+var sidecarsKind = v1alpha3.SchemeGroupVersion.WithKind("Sidecar")
 
 // Get takes name of the sidecar, and returns the corresponding sidecar object, and an error if there is any.
 func (c *FakeSidecars) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha3.Sidecar, err error) {
@@ -115,7 +117,7 @@ func (c *FakeSidecars) UpdateStatus(ctx context.Context, sidecar *v1alpha3.Sidec
 // Delete takes name of the sidecar and deletes it. Returns an error if one occurs.
 func (c *FakeSidecars) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(sidecarsResource, c.ns, name), &v1alpha3.Sidecar{})
+		Invokes(testing.NewDeleteActionWithOptions(sidecarsResource, c.ns, name, opts), &v1alpha3.Sidecar{})
 
 	return err
 }
@@ -132,6 +134,51 @@ func (c *FakeSidecars) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 func (c *FakeSidecars) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha3.Sidecar, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(sidecarsResource, c.ns, name, pt, data, subresources...), &v1alpha3.Sidecar{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha3.Sidecar), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied sidecar.
+func (c *FakeSidecars) Apply(ctx context.Context, sidecar *networkingv1alpha3.SidecarApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.Sidecar, err error) {
+	if sidecar == nil {
+		return nil, fmt.Errorf("sidecar provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(sidecar)
+	if err != nil {
+		return nil, err
+	}
+	name := sidecar.Name
+	if name == nil {
+		return nil, fmt.Errorf("sidecar.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(sidecarsResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha3.Sidecar{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha3.Sidecar), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeSidecars) ApplyStatus(ctx context.Context, sidecar *networkingv1alpha3.SidecarApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha3.Sidecar, err error) {
+	if sidecar == nil {
+		return nil, fmt.Errorf("sidecar provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(sidecar)
+	if err != nil {
+		return nil, err
+	}
+	name := sidecar.Name
+	if name == nil {
+		return nil, fmt.Errorf("sidecar.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(sidecarsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1alpha3.Sidecar{})
 
 	if obj == nil {
 		return nil, err

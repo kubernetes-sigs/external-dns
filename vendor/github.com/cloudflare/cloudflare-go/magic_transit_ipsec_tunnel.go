@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 	"context"
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -42,6 +43,50 @@ type MagicTransitIPsecTunnel struct {
 	PskMetadata        *MagicTransitIPsecTunnelPskMetadata `json:"psk_metadata,omitempty"`
 	RemoteIdentities   *RemoteIdentities                   `json:"remote_identities,omitempty"`
 	AllowNullCipher    bool                                `json:"allow_null_cipher"`
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+=======
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/goccy/go-json"
+)
+
+// Magic Transit IPsec Tunnel Error messages.
+const (
+	errMagicTransitIPsecTunnelNotModified = "When trying to modify IPsec tunnel, API returned modified: false"
+	errMagicTransitIPsecTunnelNotDeleted  = "When trying to delete IPsec tunnel, API returned deleted: false"
+)
+
+type RemoteIdentities struct {
+	HexID  string `json:"hex_id"`
+	FQDNID string `json:"fqdn_id"`
+	UserID string `json:"user_id"`
+}
+
+// MagicTransitIPsecTunnelPskMetadata contains metadata associated with PSK.
+type MagicTransitIPsecTunnelPskMetadata struct {
+	LastGeneratedOn *time.Time `json:"last_generated_on,omitempty"`
+}
+
+// MagicTransitIPsecTunnel contains information about an IPsec tunnel.
+type MagicTransitIPsecTunnel struct {
+	ID                 string                              `json:"id,omitempty"`
+	CreatedOn          *time.Time                          `json:"created_on,omitempty"`
+	ModifiedOn         *time.Time                          `json:"modified_on,omitempty"`
+	Name               string                              `json:"name"`
+	CustomerEndpoint   string                              `json:"customer_endpoint,omitempty"`
+	CloudflareEndpoint string                              `json:"cloudflare_endpoint"`
+	InterfaceAddress   string                              `json:"interface_address"`
+	Description        string                              `json:"description,omitempty"`
+	HealthCheck        *MagicTransitTunnelHealthcheck      `json:"health_check,omitempty"`
+	Psk                string                              `json:"psk,omitempty"`
+	PskMetadata        *MagicTransitIPsecTunnelPskMetadata `json:"psk_metadata,omitempty"`
+	RemoteIdentities   *RemoteIdentities                   `json:"remote_identities,omitempty"`
+	AllowNullCipher    bool                                `json:"allow_null_cipher"`
+	ReplayProtection   *bool                               `json:"replay_protection,omitempty"`
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
 
 // ListMagicTransitIPsecTunnelsResponse contains a response including IPsec tunnels.
