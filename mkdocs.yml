@@ -32,6 +32,7 @@ nav:
       - Initial Design: docs/initial-design.md
       - TTL: docs/ttl.md
       - MultiTarget: docs/proposal/multi-target.md
+      - ProviderCache: docs/rate-limits.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.md
