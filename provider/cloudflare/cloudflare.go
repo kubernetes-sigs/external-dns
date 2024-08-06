@@ -73,6 +73,7 @@ type cloudFlareDNS interface {
 	CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error
+	UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error
 }
 
 type zoneService struct {
@@ -377,12 +378,14 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					continue
 				}
 				recordParam := getUpdateDNSRecordParam(*change)
+				regionalHostnameParam := getUpdateDataLocalizationRegionalHostnameParams(*change)
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
+				err := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
@@ -431,27 +434,27 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 	return adjustedEndpoints, nil
 }
 
-func (p *CloudFlareProvider) updateRegionalHostname(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
-	var records []cloudflare.DNSRecord
-	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
-	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
-	for {
-		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
-		if err != nil {
-			var apiErr *cloudflare.Error
-			if errors.As(err, &apiErr) {
-				if apiErr.ClientRateLimited() {
-					// Handle rate limit error as a soft error
-					return nil, provider.NewSoftError(err)
-				}
-			}
-			return nil, err
-		}
-		// regionalHostnameParam := getUpdateDataLocalizationRegionalHostnameParams(*change)
+// func (p *CloudFlareProvider) updateRegionalHostname(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
+// 	var records []cloudflare.DNSRecord
+// 	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
+// 	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
+// 	for {
+// 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
+// 		if err != nil {
+// 			var apiErr *cloudflare.Error
+// 			if errors.As(err, &apiErr) {
+// 				if apiErr.ClientRateLimited() {
+// 					// Handle rate limit error as a soft error
+// 					return nil, provider.NewSoftError(err)
+// 				}
+// 			}
+// 			return nil, err
+// 		}
+// 		err := p.Client.UpdateDNSRecord()
 
-	}
-	return records, nil
-}
+// 	}
+// 	return records, nil
+// }
 
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -502,6 +505,11 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 			Type:    endpoint.RecordType,
 			Content: target,
 		},
+		RegionalHostname: cloudflare.RegionalHostname{
+			Hostname: endpoint.DNSName,
+			RegionKey: endpoint.SetIdentifier,
+			CreatedOn: ,
+		}
 	}
 }
 
