@@ -1,46 +1,87 @@
-# Rebase
+# Rebasing Procedure
 
-### This document explains the steps to rebase / merge upstream tag into this repo.
+This fork needs to be periodically synced with upstream changes. To do this we
+need to run the following steps:
 
-1. Update your git refs from both (i.e. upstream and downstream).
-    ```shell
-      git remote update
-    ```
-   
-2. Checkout the Tag to be merged from upstream (e.g. tag v.0.10.1). 
-    ```shell
-      git checkout  v0.10.1
-    ```
-   
-3. Create a tmp branch to do the merge work from.
-    ```shell
-      git checkout -b merge-tmp
-    ```
-   
-4. Checkout downstream master, we need to be at the top of it when we merge.
-    ```shell
-      git checkout openshift/master    
-    ```
-   
-5. Merge the tmp branch into our downstream master (note the output id from this cmd).
-    ```shell
-      echo 'merge kubernetes-sigs/external-dns v0.10.1' | git commit-tree merge-tmp^{tree} -p HEAD -p merge-tmp -F -    
-    ```
-6.  Create a new branch for the cherry-pick work.
-    ```shell
-      git branch merge-0.10.1 fa4fdf0d659cc02843a479c242bef5a6f4cbdde1 #this hash is the id from previous command, it will be different    
-    ```
-7.  Checkout the merge branch for cherry-picking.
-    ```shell
-      git checkout merge-0.10.1
-    ```    
-8. Execute the following command and note the most recent upstream commit.
-    ```shell
-      git log openshift/master
-    ```
-9. Identify the commit to be cherry-picked, from the most recent upstream commit, till the head of downstream commit. Write them into a local file for easier usage.
-    ```shell
-      git log --oneline --no-merges 35f2594745d6955625c47d7c46029cf1cb639154..openshift/master >> merges.txt
-    ```
-   
-10. Cherry-pick the commits from the file ( bottom -> up ) one by one, and resolve conflicts.
+1. Ensure the *upstream*, *downstream* and your own fork of the repository are  
+   configured correctly as remotes.
+   ```bash
+   git remote -v
+   # if upstream or downstream are not present then add them
+   git remote add upstream https://github.com/kubernetes-sigs/external-dns
+   git remote add downstream https://github.com/openshift/external-dns
+   ```
+
+2. Update the remotes
+   ```bash
+   git remote update
+   ```
+
+3. Ensure that the `master` branch is up-to-date with the *downstream* `master`
+   branch.
+   ```bash
+   git switch master
+   git pull downstream master
+   ```
+
+4. Checkout the commit from upstream to which you want to rebase the `master`
+   branch.
+   ```bash
+   TAG_OR_COMMIT_ID="v0.14.2"
+   git checkout ${TAG_OR_COMMIT_ID}
+   git switch -c rebase-${TAG_OR_COMMIT_ID}
+   ```
+
+5. Merge the `master` branch into the current branch with
+   the [ours](https://git-scm.com/docs/merge-strategies#_merge_strategies)
+   merge strategy.
+   ```bash
+   git merge -s ours master
+   ```
+   _Note:_ This strategy should not be confused with the `ours` option for 
+   the `ort` merge strategy.
+
+6. Determine the changes present in the `master` branch which need to be
+   cherry-picked.
+   ```bash
+   git log --oneline --no-merges ${TAG_OR_COMMIT_ID}..master
+   ```
+
+7. Cherry-pick the needed changes, try to build and test the code.
+   ```bash
+   make build test
+   ```
+    _Notes:_
+    - Downstream fork uses `vendor` directory:
+        - Drop carry patches with vendored dependencies from previous rebases.
+        - Add a carry patch with lastest dependencies vendored.
+    - Squash/fixup carry patches which touch the same files (e.g. `DOWNSTREAM_OWNERS`, `.ci-operator.yaml`).
+    - Use [message format for cherry-picked commits](#message-format-for-cherry-picked-commits).
+
+8. If any failure was found fix them and add as new carry patches. Then push the rebase branch.
+   ```bash
+   git push origin
+   ```
+
+## Message format for cherry-picked commits
+
+The commits which are cherry-picked into the rebase branch should have the 
+following format:
+
+* `UPSTREAM: <carry>: $MESSAGE`
+  A persistent carry that should probably be picked for the subsequent rebase
+  branch. In general, these commits are used to modify behavior from upstream.
+
+* `UPSTREAM: <drop>: $MESSAGE`
+  A carry that should probably not be picked for the subsequent rebase branch.
+  In general, these commits are used to maintain the codebase in ways that are
+  branch-specific, like the update of generated files or dependencies.
+
+* `UPSTREAM: 77870: $MESSAGE`
+  The number identifies a PR in the upstream repository(
+  i.e. https://github.com/kubernetes-sigs/external-dns/pull/<pr_id>)
+  A commit with this message should only be picked into the subsequent rebase
+  branch if the commits of the referenced PR are not included in the upstream
+  branch. To check if a given commit is included in the upstream branch, open
+  the referenced upstream PR and check any of its commits for the release tag
+  targeted by the new rebase branch.
