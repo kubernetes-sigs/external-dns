@@ -23,6 +23,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -101,6 +102,11 @@ func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflare.Resource
 }
 
 func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error {
+	_, err := z.service.UpdateDNSRecord(ctx, rc, rp)
+	return err
+}
+
+func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error {
 	_, err := z.service.UpdateDNSRecord(ctx, rc, rp)
 	return err
 }
@@ -385,7 +391,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
-				err := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
+				regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
+				if regionalHostnameErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to update record: %v", regionalHostnameErr)
+				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
@@ -495,7 +505,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int(endpoint.RecordTTL)
 	}
-
+	dt := time.Now()
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
@@ -508,8 +518,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 		RegionalHostname: cloudflare.RegionalHostname{
 			Hostname: endpoint.DNSName,
 			RegionKey: endpoint.SetIdentifier,
-			CreatedOn: ,
-		}
+			CreatedOn: &dt,
+		},
 	}
 }
 
