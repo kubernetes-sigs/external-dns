@@ -330,12 +330,12 @@ Apply the following manifest to create a service of type `LoadBalancer`. This wi
 ---
 apiVersion: v1
 kind: Service
-annotations:
-  service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-  external-dns.alpha.kubernetes.io/hostname: server.example.com
-  external-dns.alpha.kubernetes.io/internal-hostname: server-clusterip.example.com
 metadata:
   name: nginx-svc
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    external-dns.alpha.kubernetes.io/hostname: server.example.com
+    external-dns.alpha.kubernetes.io/internal-hostname: server-clusterip.example.com
 spec:
   ports:
     - port: 80
