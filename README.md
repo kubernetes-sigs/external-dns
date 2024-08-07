@@ -304,7 +304,7 @@ show us what you can do!
 
 The external-dns project is currently in need of maintainers for specific DNS providers. Ideally each provider
 would have at least two maintainers. It would be nice if the maintainers run the provider in production, but it
-is not strictly required. Provider listed [here](https://github.com/kubernetes-sigs/external-dns#status-of-providers)
+is not strictly required. Provider listed [here](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers)
 that do not have a maintainer listed are in need of assistance.
 
 Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.

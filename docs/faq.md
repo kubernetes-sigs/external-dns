@@ -28,7 +28,7 @@ ExternalDNS can solve this for you as well.
 
 ### Which DNS providers are supported?
 
-Please check the [provider status table](https://github.com/kubernetes-sigs/external-dns#status-of-providers) for the list of supported providers and their status.
+Please check the [provider status table](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers) for the list of supported providers and their status.
 
 As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
