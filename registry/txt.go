@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"strings"
 	"time"
@@ -63,9 +64,13 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
+	txtEncryptAESKeyDecoded, err := base64.URLEncoding.DecodeString(string(txtEncryptAESKey))
+	if err != nil {
+		return nil, errors.New("error decoding base64 AES Encryption Key")
+	}
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
-	} else if len(txtEncryptAESKey) != 32 {
+	} else if len(txtEncryptAESKeyDecoded) != 32 {
 		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
 	}
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
@@ -77,7 +82,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	}
 
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
-
 	return &TXTRegistry{
 		provider:            provider,
 		ownerID:             ownerID,
