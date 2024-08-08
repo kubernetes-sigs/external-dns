@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 
@@ -263,11 +264,18 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 }
 
 func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) {
+	wg := sync.WaitGroup{}
+	for _, endpoints := range updated {
+		for range endpoints {
+			wg.Add(1)
+		}
+	}
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
 			if !p.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				wg.Done()
 				continue
 			}
 			if p.dryRun {
@@ -278,6 +286,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 					ep.Targets,
 					zone,
 				)
+				wg.Done()
 				continue
 			}
 
@@ -288,31 +297,34 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 				ep.Targets,
 				zone,
 			)
-
-			recordSet, err := p.newRecordSet(ep)
-			if err == nil {
-				_, err = p.recordSetsClient.CreateOrUpdate(
-					ctx,
-					p.resourceGroup,
-					zone,
-					name,
-					dns.RecordType(ep.RecordType),
-					recordSet,
-					nil,
-				)
-			}
-			if err != nil {
-				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
-					ep.RecordType,
-					name,
-					ep.Targets,
-					zone,
-					err,
-				)
-			}
+			go func(ep *endpoint.Endpoint, name, zone string) {
+				recordSet, err := p.newRecordSet(ep)
+				if err == nil {
+					_, err = p.recordSetsClient.CreateOrUpdate(
+						ctx,
+						p.resourceGroup,
+						zone,
+						name,
+						dns.RecordType(ep.RecordType),
+						recordSet,
+						nil,
+					)
+				}
+				if err != nil {
+					log.Errorf(
+						"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
+						ep.RecordType,
+						name,
+						ep.Targets,
+						zone,
+						err,
+					)
+				}
+				wg.Done()
+			}(ep, name, zone)
 		}
 	}
+	wg.Wait()
 }
 
 func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {
