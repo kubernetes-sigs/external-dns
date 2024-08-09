@@ -191,6 +191,7 @@ type Config struct {
 	TransIPAccountName                 string
 	TransIPPrivateKeyFile              string
 	DigitalOceanAPIPageSize            int
+	DigitalOceanAPIRateLimit           int
 	ManagedDNSRecordTypes              []string
 	ExcludeDNSRecordTypes              []string
 	GoDaddyAPIKey                      string `secure:"yes"`
@@ -342,6 +343,7 @@ var defaultConfig = &Config{
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
+	DigitalOceanAPIRateLimit:    200,
 	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	ExcludeDNSRecordTypes:       []string{},
 	GoDaddyAPIKey:               "",
@@ -529,6 +531,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
 	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
+	app.Flag("digitalocean-api-rate-limit", "Configure the rate limit used when querying the DigitalOcean API, in operations per minute.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIRateLimit)).IntVar(&cfg.DigitalOceanAPIRateLimit)
 	app.Flag("ibmcloud-config-file", "When using the IBM Cloud provider, specify the IBM Cloud configuration file (required when --provider=ibmcloud").Default(defaultConfig.IBMCloudConfigFile).StringVar(&cfg.IBMCloudConfigFile)
 	app.Flag("ibmcloud-proxied", "When using the IBM provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.IBMCloudProxied)
 	// GoDaddy flags
