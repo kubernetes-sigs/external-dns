@@ -789,6 +789,13 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
+
+		// Remove non-AWS provider specific properties
+		for _, providerSpecific := range ep.ProviderSpecific {
+			if providerSpecific.Name != providerSpecificAlias && providerSpecific.Name[0:4] != "aws/" {
+				ep.DeleteProviderSpecificProperty(providerSpecific.Name)
+			}
+		}
 	}
 	return endpoints, nil
 }

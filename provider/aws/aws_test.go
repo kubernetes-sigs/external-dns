@@ -568,6 +568,7 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
+		endpoint.NewEndpoint("a-test-other-provider-specific.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true").WithProviderSpecific("external-dns.alpha.kubernetes.io/cloudflare-proxied", "false"),
 	}
 
 	records, err := provider.AdjustEndpoints(records)
@@ -581,6 +582,7 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
+		endpoint.NewEndpoint("a-test-other-provider-specific.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 	})
 }
 
