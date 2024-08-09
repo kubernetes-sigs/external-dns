@@ -18,7 +18,7 @@ package pdns
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // FIXME: What do we do about labels?
@@ -691,7 +692,7 @@ type PDNSAPIClientStubPatchZoneFailure struct {
 
 // Just overwrite the PatchZone method to introduce a failure
 func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
-	return nil, errors.New("Generic PDNS Error")
+	return nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
 }
 
 /******************************************************************************/
@@ -703,7 +704,7 @@ type PDNSAPIClientStubListZoneFailure struct {
 
 // Just overwrite the ListZone method to introduce a failure
 func (c *PDNSAPIClientStubListZoneFailure) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	return pgo.Zone{}, nil, errors.New("Generic PDNS Error")
+	return pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
 }
 
 /******************************************************************************/
@@ -715,7 +716,7 @@ type PDNSAPIClientStubListZonesFailure struct {
 
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{}, nil, errors.New("Generic PDNS Error")
+	return []pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
 }
 
 /******************************************************************************/
@@ -879,12 +880,14 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	}
 	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, provider.SoftError)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
 	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
@@ -1024,6 +1027,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	// Check inserting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
 	assert.NotNil(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
