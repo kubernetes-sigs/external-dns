@@ -32,6 +32,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"go.uber.org/automaxprocs/maxprocs"
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
@@ -112,6 +113,11 @@ func main() {
 	// See https://github.com/kubernetes-sigs/external-dns/issues/2348
 	defer klog.ClearLogger()
 	klog.SetLogger(logr.Discard())
+
+	// auto set GOMAXPROCS
+	if _, err := maxprocs.Set(maxprocs.Logger(log.Infof)); err != nil {
+		log.Warnf("Failed to set GOMAXPROCS automatically. error: %v", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
