@@ -160,6 +160,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 
 		endpoints = append(endpoints, endpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, endpointsForHostAliases(virtualServer.Spec.HostAliases, targets, ttl, nil, "", resource)...)
 	}
 
 	return endpoints, nil
