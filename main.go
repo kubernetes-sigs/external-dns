@@ -232,6 +232,7 @@ func main() {
 				PreferCNAME:           cfg.AWSPreferCNAME,
 				DryRun:                cfg.DryRun,
 				ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
+				PagingInterval: 			 cfg.AWSPagingInterval,
 			},
 			clients,
 		)

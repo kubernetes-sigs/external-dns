@@ -118,6 +118,9 @@ spec:
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
+          {{- if .Values.awsPagingInterval }}
+            - --aws-paging-interval={{ .Values.awsPagingInterval }}
+          {{- end }}
           ports:
             - name: http
               protocol: TCP
