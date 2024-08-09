@@ -1,4 +1,4 @@
-{{- if .Values.serviceMonitor.enabled -}}
+{{- if and ( .Capabilities.APIVersions.Has "monitoring.coreos.com/v1" ) .Values.serviceMonitor.enabled }}
 {{- $providerName := include "external-dns.providerName" . }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
