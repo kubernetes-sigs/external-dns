@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for `extraContainers` argument. ([#4432](https://github.com/kubernetes-sigs/external-dns/pull/4432)) _@omerap12_
 - Added support for setting `excludeDomains` argument.  ([#4380](https://github.com/kubernetes-sigs/external-dns/pull/4380)) _@bford-evs_
+- Fixed reconciling `A` records that have more than 1 target for `rfc2136` provider. ([4613#](https://github.com/kubernetes-sigs/external-dns/pull/4613)) _@tdyas_
 
 ### Changed
 
