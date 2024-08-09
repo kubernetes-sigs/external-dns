@@ -1,3 +1,4 @@
+{{- if ne .Values.global.mode "workload" }}
 {{- if .Values.serviceMonitor.enabled -}}
 {{- $providerName := include "external-dns.providerName" . }}
 apiVersion: monitoring.coreos.com/v1
@@ -83,4 +84,5 @@ spec:
   targetLabels:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+{{- end }}
 {{- end }}
