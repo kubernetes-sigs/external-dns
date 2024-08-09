@@ -33,6 +33,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
 
@@ -158,8 +159,7 @@ func main() {
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 	}
 
-	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
+	clientGenerator := &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -169,7 +169,9 @@ func main() {
 			}
 			return cfg.RequestTimeout
 		}(),
-	}, cfg.Sources, sourceCfg)
+	}
+	// Lookup all the selected sources by names and pass them the desired configuration.
+	sources, err := source.ByNames(ctx, clientGenerator, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -403,6 +405,22 @@ func main() {
 
 	var r registry.Registry
 	switch cfg.Registry {
+	case "crd":
+		var k8sClient kubernetes.Interface
+		k8sClient, err = clientGenerator.KubeClient()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		client, err := registry.NewCRDClientForAPIVersionKind(k8sClient, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		r, err = registry.NewCRDRegistry(p, client, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.Namespace)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "dynamodb":
 		config := awsSDK.NewConfig()
 		if cfg.AWSDynamoDBRegion != "" {
