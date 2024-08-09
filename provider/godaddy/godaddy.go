@@ -44,7 +44,7 @@ var actionNames = []string{
 	"delete",
 }
 
-const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
+const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE&limit=%d"
 
 // ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
 var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
@@ -138,8 +138,8 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, su
 }
 
 // NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
-	client, err := NewClient(useOTE, apiKey, apiSecret)
+func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE bool, dnsRecordsPerPage int, dryRun bool) (*GDProvider, error) {
+	client, err := NewClient(useOTE, apiKey, apiSecret, dnsRecordsPerPage)
 	if err != nil {
 		return nil, err
 	}
