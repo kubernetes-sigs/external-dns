@@ -143,6 +143,20 @@ func wildcardEscape(s string) string {
 	return s
 }
 
+// Route53 octal escapes https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
+func specialCharactersEscape(s string) string {
+	var result strings.Builder
+	for _, char := range s {
+		if (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9') || char == '-' || char == '.' {
+			result.WriteRune(char)
+		} else {
+			octalCode := fmt.Sprintf("\\%03o", char)
+			result.WriteString(octalCode)
+		}
+	}
+	return result.String()
+}
+
 func (r *Route53APIStub) ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error) {
 	if aws.StringValue(input.ResourceType) == "hostedzone" {
 		tags := r.zoneTags[aws.StringValue(input.ResourceId)]
@@ -354,10 +368,32 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}},
 		},
 		{
-			Name:            aws.String("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
+			Name:            aws.String(wildcardEscape("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do.")),
 			Type:            aws.String(route53.RRTypeA),
 			TTL:             aws.Int64(recordTTL),
 			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+		},
+		{
+			Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type:            aws.String(route53.RRTypeCname),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("example")}},
+		},
+		{
+			Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes-a.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+		},
+		{
+			Name: aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes-alias.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type: aws.String(route53.RRTypeA),
+			TTL:  aws.Int64(recordTTL),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("escape-codes.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(false),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
 		},
 		{
 			Name: aws.String("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
@@ -501,6 +537,9 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 		endpoint.NewEndpointWithTTL("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
 		endpoint.NewEndpointWithTTL("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("escape-%!s(<nil>)-codes.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "example").WithProviderSpecific(providerSpecificAlias, "false"),
+		endpoint.NewEndpointWithTTL("escape-%!s(<nil>)-codes-a.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("escape-%!s(<nil>)-codes-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "escape-codes.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
 		endpoint.NewEndpointWithTTL("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
 		endpoint.NewEndpointWithTTL("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
 		endpoint.NewEndpointWithTTL("list-test-alias-evaluate.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true").WithProviderSpecific(providerSpecificAlias, "true"),
@@ -689,6 +728,14 @@ func TestAWSApplyChanges(t *testing.T) {
 				TTL:             aws.Int64(recordTTL),
 				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("30 mailhost1.foo.elb.amazonaws.com")}},
 			},
+			{
+				Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("no-change"),
+				Weight:          aws.Int64(10),
+			},
 		})
 
 		createRecords := []*endpoint.Endpoint{
@@ -714,6 +761,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("before").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost2.bar.elb.amazonaws.com"),
+			endpoint.NewEndpoint("escape-%!s(<nil>)-codes.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 		}
 		updatedRecords := []*endpoint.Endpoint{
 			endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
@@ -855,6 +903,14 @@ func TestAWSApplyChanges(t *testing.T) {
 			},
 		})
 		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+			{
+				Name:            aws.String("escape-\\045\\041s\\050\\074nil\\076\\051-codes.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("no-change"),
+				Weight:          aws.Int64(10),
+			},
 			{
 				Name:            aws.String("create-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
 				Type:            aws.String(route53.RRTypeA),
@@ -2027,4 +2083,35 @@ func TestRequiresDeleteCreate(t *testing.T) {
 
 	assert.False(t, provider.requiresDeleteCreate(oldSetIdentifier, oldSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, oldSetIdentifier)
 	assert.True(t, provider.requiresDeleteCreate(oldSetIdentifier, newSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, newSetIdentifier)
+}
+
+func TestConvertOctalToAscii(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Characters escaped !\"#$%&'()*+,-/:;",
+			input:    "txt-\\041\\042\\043\\044\\045\\046\\047\\050\\051\\052\\053\\054-\\057\\072\\073-test.example.com",
+			expected: "txt-!\"#$%&'()*+,-/:;-test.example.com",
+		},
+		{
+			name:     "Characters escaped <=>?@[\\]^_`{|}~",
+			input:    "txt-\\074\\075\\076\\077\\100\\133\\134\\135\\136_\\140\\173\\174\\175\\176-test2.example.com",
+			expected: "txt-<=>?@[\\]^_`{|}~-test2.example.com",
+		},
+		{
+			name:     "No escaped characters in domain",
+			input:    "txt-awesome-test3.example.com",
+			expected: "txt-awesome-test3.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := convertOctalToAscii(tt.input)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
 }
