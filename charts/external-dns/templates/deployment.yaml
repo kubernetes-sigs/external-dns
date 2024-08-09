@@ -200,7 +200,18 @@ spec:
       {{- end }}
       {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
+        {{- range . }}
+        - {{ toYaml . | nindent 10 | trim }}
+          {{- if not (hasKey . "labelSelector") }}
+          labelSelector:
+            matchLabels:
+              {{- include "external-dns.selectorLabels" $ | nindent 12 }}
+          {{- end }}
+          {{- if not (hasKey . "matchLabelKeys") }}
+          matchLabelKeys:
+            - pod-template-hash
+          {{- end }}
+        {{- end }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
