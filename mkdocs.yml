@@ -31,6 +31,7 @@ nav:
   - Advanced Topics:
       - Initial Design: docs/initial-design.md
       - TTL: docs/ttl.md
+      - NAT64: docs/nat64.md
       - MultiTarget: docs/proposal/multi-target.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
