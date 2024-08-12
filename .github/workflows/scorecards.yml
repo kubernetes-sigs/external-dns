@@ -9,6 +9,7 @@ on:
     - cron: '25 7 * * 0'
   push:
     branches: [ "main" , "issue-4673"]
+  workflow_dispatch:
 
 # Declare default permissions as read only.
 permissions: read-all
