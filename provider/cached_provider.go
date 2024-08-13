@@ -59,7 +59,7 @@ type CachedProvider struct {
 }
 
 func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedProvider {
-	registerMetrics.Do(func() {
+	registerCacheProviderMetrics.Do(func() {
 		prometheus.MustRegister(cachedRecordsCallsTotal)
 	})
 	return &CachedProvider{
