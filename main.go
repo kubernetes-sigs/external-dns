@@ -402,10 +402,10 @@ func main() {
 	}
 
 	if cfg.ProviderCacheTime > 0 {
-		p = &provider.CachedProvider{
-			Provider:     p,
-			RefreshDelay: cfg.ProviderCacheTime,
-		}
+		p = provider.NewCachedProvider(
+			p,
+			cfg.ProviderCacheTime,
+		)
 	}
 
 	var r registry.Registry
