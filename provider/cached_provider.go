@@ -17,6 +17,7 @@ package provider
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -46,6 +47,8 @@ var (
 			Help:      "Number of calls to the provider cache ApplyChanges.",
 		},
 	)
+
+	registerCacheProviderMetrics = sync.Once{}
 )
 
 type CachedProvider struct {
@@ -53,6 +56,16 @@ type CachedProvider struct {
 	RefreshDelay time.Duration
 	lastRead     time.Time
 	cache        []*endpoint.Endpoint
+}
+
+func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedProvider {
+	registerMetrics.Do(func() {
+		prometheus.MustRegister(cachedRecordsCallsTotal)
+	})
+	return &CachedProvider{
+		Provider:     provider,
+		RefreshDelay: refreshDelay,
+	}
 }
 
 func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -94,8 +107,4 @@ func (c *CachedProvider) needRefresh() bool {
 	}
 	log.Debug("Records cache last Read: ", c.lastRead, "expiration: ", c.RefreshDelay, " provider expiration:", c.lastRead.Add(c.RefreshDelay), "expired: ", time.Now().After(c.lastRead.Add(c.RefreshDelay)))
 	return time.Now().After(c.lastRead.Add(c.RefreshDelay))
-}
-
-func init() {
-	prometheus.MustRegister(cachedRecordsCallsTotal)
 }
