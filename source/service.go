@@ -637,7 +637,13 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			nodes = nodesRunning
 		}
 	default:
-		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
+		var nodeSelector labels.Selector
+		nodeSelector, err = getNodeSelectorFromAnnotation(svc.Annotations)
+		if err != nil {
+			return nil, err
+		}
+
+		nodes, err = sc.nodeInformer.Lister().List(nodeSelector)
 		if err != nil {
 			return nil, err
 		}
