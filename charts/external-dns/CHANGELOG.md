@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Fixed `provider.webhook.resources` behavior to correctly leverage resource limits ([#4560](https://github.com/kubernetes-sigs/external-dns/pull/4560))
+
 ## [v1.14.5] - 2023-06-10
 
 ### Added
@@ -58,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Restore template support in `.Values.provider` and `.Values.provider.name` 
+- Restore template support in `.Values.provider` and `.Values.provider.name`
 
 ## [v1.14.1] - 2024-01-11
 
