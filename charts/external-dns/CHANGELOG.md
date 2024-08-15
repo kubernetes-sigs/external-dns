@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed `provider.webhook.resources` behavior to correctly leverage resource limits ([#4560](https://github.com/kubernetes-sigs/external-dns/pull/4560))
+- No longer expose the unauthenticated webhook provider port on the container ([#4681](https://github.com/kubernetes-sigs/external-dns/pull/4681)) _@kimsondrup_
 
 ## [v1.14.5] - 2023-06-10
 

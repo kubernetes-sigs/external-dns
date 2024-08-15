@@ -236,6 +236,8 @@ provider:
       tag:
       # -- Image pull policy for the `webhook` container.
       pullPolicy: IfNotPresent
+    # -- Webhook HTTP port listening on localhost.
+    port: 8888
     # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
     env: []
     # -- Extra arguments to provide for the `webhook` container.
@@ -252,7 +254,7 @@ provider:
     livenessProbe:
       httpGet:
         path: /healthz
-        port: http-webhook
+        port: 8888
       initialDelaySeconds: 10
       periodSeconds: 10
       timeoutSeconds: 5
@@ -263,7 +265,7 @@ provider:
     readinessProbe:
       httpGet:
         path: /healthz
-        port: http-webhook
+        port: 8888
       initialDelaySeconds: 5
       periodSeconds: 10
       timeoutSeconds: 5

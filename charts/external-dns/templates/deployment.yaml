@@ -115,6 +115,11 @@ spec:
             - --exclude-domains={{ . }}
             {{- end }}
             - --provider={{ $providerName }}
+            {{- with .Values.provider.webhook }}
+            {{- if and (eq $providerName "webhook") (ne (int .port) 8888) }}
+            - --webhook-provider-url=http://localhost:{{ .port }}
+            {{- end }}
+            {{- end }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
@@ -158,9 +163,6 @@ spec:
           {{- end }}
           ports:
             - name: http-webhook
-              protocol: TCP
-              containerPort: 8888
-            - name: http-wh-metrics
               protocol: TCP
               containerPort: 8080
           livenessProbe:
