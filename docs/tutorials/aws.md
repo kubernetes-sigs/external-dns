@@ -856,6 +856,10 @@ env:
       key: {{ YOUR_SECRET_KEY }}
 ```
 
+## DynamoDB Registry
+
+The DynamoDB Registry can be used to store dns records metadata. See the [DynamoDB Registry Tutorial](../registry/dynamodb.md) for more information.
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
