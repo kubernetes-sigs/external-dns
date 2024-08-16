@@ -147,7 +147,7 @@ spec:
         {{- with .Values.provider.webhook }}
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
-          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          imagePullPolicy: {{ .image.pullPolicy }}
           {{- with .env }}
           env:
             {{- toYaml . | nindent 12 }}
