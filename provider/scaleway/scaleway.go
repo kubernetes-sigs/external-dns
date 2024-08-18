@@ -39,6 +39,10 @@ const (
 	scalewayPriorityKey     string = "scw/priority"
 )
 
+var scalewayProviderSpecificPropertyFilter = endpoint.ProviderSpecificPropertyFilter{
+	Prefixes: []string{"scw/"},
+}
+
 // ScalewayProvider implements the DNS provider for Scaleway DNS
 type ScalewayProvider struct {
 	provider.BaseProvider
@@ -101,11 +105,19 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 		domainAPI:    domainAPI,
 		dryRun:       dryRun,
 		domainFilter: domainFilter,
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: scalewayProviderSpecificPropertyFilter,
+		},
 	}, nil
 }
 
 // AdjustEndpoints is used to normalize the endoints
 func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	endpoints, err := p.BaseProvider.AdjustEndpoints(endpoints)
+	if err != nil {
+		return endpoints, err
+	}
+
 	eps := make([]*endpoint.Endpoint, len(endpoints))
 	for i := range endpoints {
 		eps[i] = endpoints[i]

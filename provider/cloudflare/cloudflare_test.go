@@ -298,6 +298,14 @@ func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (
 	return cloudflare.Zone{}, errors.New("Unknown zoneID: " + zoneID)
 }
 
+func newCloudFlareProvider() *CloudFlareProvider {
+	return &CloudFlareProvider{
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: cloudflareProviderSpecificPropertyFilter,
+		},
+	}
+}
+
 func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...interface{}) {
 	t.Helper()
 
@@ -353,7 +361,7 @@ func TestCloudflareA(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, newCloudFlareProvider(), endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -390,7 +398,7 @@ func TestCloudflareCname(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, newCloudFlareProvider(), endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -428,7 +436,7 @@ func TestCloudflareCustomTTL(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, newCloudFlareProvider(), endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -454,7 +462,9 @@ func TestCloudflareProxiedDefault(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.proxiedByDefault = true
+	AssertActions(t, cloudflareProvider, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -486,7 +496,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, newCloudFlareProvider(), endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -518,7 +528,9 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.proxiedByDefault = true
+	AssertActions(t, cloudflareProvider, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -550,7 +562,9 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.proxiedByDefault = true
+	AssertActions(t, cloudflareProvider, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -601,7 +615,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 			},
 		}
 
-		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		AssertActions(t, newCloudFlareProvider(), endpoints, []MockAction{
 			{
 				Name:   "Create",
 				ZoneId: "001",
@@ -618,13 +632,12 @@ func TestCloudflareSetProxied(t *testing.T) {
 }
 
 func TestCloudflareZones(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client:       NewMockCloudFlareClient(),
-		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
-		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = NewMockCloudFlareClient()
+	cloudflareProvider.domainFilter = endpoint.NewDomainFilter([]string{"bar.com"})
+	cloudflareProvider.zoneIDFilter = provider.NewZoneIDFilter([]string{""})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := cloudflareProvider.Zones(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -636,13 +649,12 @@ func TestCloudflareZones(t *testing.T) {
 func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	client := NewMockCloudFlareClient()
 	client.listZonesError = errors.New("shouldn't need to list zones when ZoneIDFilter in use")
-	provider := &CloudFlareProvider{
-		Client:       client,
-		domainFilter: endpoint.NewDomainFilter([]string{"bar.com", "foo.com"}),
-		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
+	cloudflareProvider.domainFilter = endpoint.NewDomainFilter([]string{"bar.com", "foo.com"})
+	cloudflareProvider.zoneIDFilter = provider.NewZoneIDFilter([]string{"001"})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := cloudflareProvider.Zones(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -660,10 +672,11 @@ func TestCloudflareListZonesRateLimited(t *testing.T) {
 		ErrorCodes: []int{10000},
 		Type:       cloudflare.ErrorTypeRateLimit,
 	}
-	p := &CloudFlareProvider{Client: client}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
 
 	// Call the Zones function
-	_, err := p.Zones(context.Background())
+	_, err := cloudflareProvider.Zones(context.Background())
 
 	// Assert that a soft error was returned
 	if !errors.Is(err, provider.SoftError) {
@@ -677,19 +690,19 @@ func TestCloudflareRecords(t *testing.T) {
 	})
 
 	// Set DNSRecordsPerPage to 1 test the pagination behaviour
-	p := &CloudFlareProvider{
-		Client:            client,
-		DNSRecordsPerPage: 1,
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
+	cloudflareProvider.DNSRecordsPerPage = 1
+
 	ctx := context.Background()
 
-	records, err := p.Records(ctx)
+	records, err := cloudflareProvider.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	assert.Equal(t, 2, len(records))
 	client.dnsRecordsError = errors.New("failed to list dns records")
-	_, err = p.Records(ctx)
+	_, err = cloudflareProvider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -699,13 +712,13 @@ func TestCloudflareRecords(t *testing.T) {
 		ErrorCodes: []int{10000},
 		Type:       cloudflare.ErrorTypeRateLimit,
 	}
-	_, err = p.Records(ctx)
+	_, err = cloudflareProvider.Records(ctx)
 	// Assert that a soft error was returned
 	if !errors.Is(err, provider.SoftError) {
 		t.Error("expected a rate limit error")
 	}
 	client.listZonesContextError = errors.New("failed to list zones")
-	_, err = p.Records(ctx)
+	_, err = cloudflareProvider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -772,9 +785,8 @@ func TestCloudflareProvider(t *testing.T) {
 func TestCloudflareApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
 	client := NewMockCloudFlareClient()
-	provider := &CloudFlareProvider{
-		Client: client,
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
 	changes.Create = []*endpoint.Endpoint{{
 		DNSName: "new.bar.com",
 		Targets: endpoint.Targets{"target"},
@@ -794,7 +806,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		DNSName: "foobar.bar.com",
 		Targets: endpoint.Targets{"target-new"},
 	}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := cloudflareProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -828,7 +840,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	changes.UpdateOld = []*endpoint.Endpoint{}
 	changes.UpdateNew = []*endpoint.Endpoint{}
 
-	err = provider.ApplyChanges(context.Background(), changes)
+	err = cloudflareProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -837,21 +849,20 @@ func TestCloudflareApplyChanges(t *testing.T) {
 func TestCloudflareApplyChangesError(t *testing.T) {
 	changes := &plan.Changes{}
 	client := NewMockCloudFlareClient()
-	provider := &CloudFlareProvider{
-		Client: client,
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
 	changes.Create = []*endpoint.Endpoint{{
 		DNSName: "newerror.bar.com",
 		Targets: endpoint.Targets{"target"},
 	}}
-	err := provider.ApplyChanges(context.Background(), changes)
+	err := cloudflareProvider.ApplyChanges(context.Background(), changes)
 	if err == nil {
 		t.Errorf("should fail, %s", err)
 	}
 }
 
 func TestCloudflareGetRecordID(t *testing.T) {
-	p := &CloudFlareProvider{}
+	p := newCloudFlareProvider()
 	records := []cloudflare.DNSRecord{
 		{
 			Name:    "foo.com",
@@ -1184,13 +1195,12 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 				},
 			})
 
-			provider := &CloudFlareProvider{
-				Client:           client,
-				proxiedByDefault: test.ProviderProxiedByDefault,
-			}
+			cloudflareProvider := newCloudFlareProvider()
+			cloudflareProvider.Client = client
+			cloudflareProvider.proxiedByDefault = test.ProviderProxiedByDefault
 			ctx := context.Background()
 
-			current, err := provider.Records(ctx)
+			current, err := cloudflareProvider.Records(ctx)
 			if err != nil {
 				t.Errorf("should not fail, %s", err)
 			}
@@ -1209,7 +1219,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 				})
 			}
 
-			desired, err = provider.AdjustEndpoints(desired)
+			desired, err = cloudflareProvider.AdjustEndpoints(desired)
 			assert.NoError(t, err)
 
 			plan := plan.Plan{
@@ -1227,8 +1237,8 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
 
 			if test.ShouldBeUpdated {
-				assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should not have new updates")
-				assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should not have old updates")
+				assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should have new updates")
+				assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should have old updates")
 			} else {
 				assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
 				assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
@@ -1237,22 +1247,84 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 	}
 }
 
+// Assert that provider specific properties for other providers do not
+// trigger updates.
+func TestProviderPropertiesIgnoreOtherProviders(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": {
+			{
+				ID:      "1234567890",
+				Name:    "foobar.bar.com",
+				Type:    endpoint.RecordTypeA,
+				TTL:     120,
+				Content: "1.2.3.4",
+				Proxied: proxyDisabled,
+			},
+		},
+	})
+
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
+	ctx := context.Background()
+
+	current, err := cloudflareProvider.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	assert.Equal(t, 1, len(current))
+
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName:    "foobar.bar.com",
+			Targets:    endpoint.Targets{"1.2.3.4"},
+			RecordType: endpoint.RecordTypeA,
+			RecordTTL:  endpoint.TTL(120),
+			Labels:     endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "aws/evaluate-target-health",
+					Value: "true",
+				},
+			},
+		},
+	}
+
+	desired, err = cloudflareProvider.AdjustEndpoints(desired)
+	assert.NoError(t, err)
+
+	plan := plan.Plan{
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	plan = *plan.Calculate()
+	assert.NotNil(t, plan.Changes, "should have plan")
+	if plan.Changes == nil {
+		return
+	}
+	fmt.Printf("Changes: %+v\n", plan.Changes)
+	assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
+	assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
+	assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
+	assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
+}
+
 func TestCloudflareComplexUpdate(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
 	})
-	provider := &CloudFlareProvider{
-		Client: client,
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
 	ctx := context.Background()
 
-	records, err := provider.Records(ctx)
+	records, err := cloudflareProvider.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
-	endpoints, err := provider.AdjustEndpoints([]*endpoint.Endpoint{
+	endpoints, err := cloudflareProvider.AdjustEndpoints([]*endpoint.Endpoint{
 		{
 			DNSName:    "foobar.bar.com",
 			Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
@@ -1277,7 +1349,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 
 	planned := plan.Calculate()
 
-	err = provider.ApplyChanges(context.Background(), planned.Changes)
+	err = cloudflareProvider.ApplyChanges(context.Background(), planned.Changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1312,11 +1384,11 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			},
 		},
 		{
-			Name: "UpdateDataLocalizationRegionalHostname",
+			Name:   "UpdateDataLocalizationRegionalHostname",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
-				Name: "foobar.bar.com",
-				TTL: 0,
+				Name:      "foobar.bar.com",
+				TTL:       0,
 				Proxiable: false,
 			},
 		},
@@ -1338,11 +1410,10 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		},
 	})
 
-	provider := &CloudFlareProvider{
-		Client: client,
-	}
+	cloudflareProvider := newCloudFlareProvider()
+	cloudflareProvider.Client = client
 
-	records, err := provider.Records(context.Background())
+	records, err := cloudflareProvider.Records(context.Background())
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1363,7 +1434,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		},
 	}
 
-	provider.AdjustEndpoints(endpoints)
+	cloudflareProvider.AdjustEndpoints(endpoints)
 
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{

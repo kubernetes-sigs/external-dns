@@ -64,6 +64,11 @@ const (
 	sameZoneAlias                              = "same-zone"
 )
 
+var awsProviderSpecificPropertyFilter = endpoint.ProviderSpecificPropertyFilter{
+	Names:    []string{providerSpecificAlias},
+	Prefixes: []string{"aws/"},
+}
+
 // see: https://docs.aws.amazon.com/general/latest/gr/elb.html
 var canonicalHostedZones = map[string]string{
 	// Application Load Balancers and Classic Load Balancers
@@ -296,6 +301,9 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		dryRun:                awsConfig.DryRun,
 		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
 		failedChangesQueue:    make(map[string]Route53Changes),
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: awsProviderSpecificPropertyFilter,
+		},
 	}
 
 	return provider, nil
@@ -749,6 +757,11 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 // Example: CNAME endpoints pointing to ELBs will have a `alias` provider-specific property
 // added to match the endpoints generated from existing alias records in Route53.
 func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	endpoints, err := p.BaseProvider.AdjustEndpoints(endpoints)
+	if err != nil {
+		return endpoints, err
+	}
+
 	for _, ep := range endpoints {
 		alias := false
 
@@ -788,13 +801,6 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			}
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
-		}
-
-		// Remove non-AWS provider specific properties
-		for _, providerSpecific := range ep.ProviderSpecific {
-			if providerSpecific.Name != providerSpecificAlias && providerSpecific.Name[0:4] != "aws/" {
-				ep.DeleteProviderSpecificProperty(providerSpecific.Name)
-			}
 		}
 	}
 	return endpoints, nil

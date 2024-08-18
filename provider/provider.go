@@ -51,9 +51,14 @@ type Provider interface {
 	GetDomainFilter() endpoint.DomainFilterInterface
 }
 
-type BaseProvider struct{}
+type BaseProvider struct {
+	ProviderSpecificPropertyFilter endpoint.ProviderSpecificPropertyFilter
+}
 
 func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Filter out ProviderSpecificProperties not recognized by this Provider
+	b.ProviderSpecificPropertyFilter.Filter(endpoints)
+
 	return endpoints, nil
 }
 

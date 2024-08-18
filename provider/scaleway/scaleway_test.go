@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type mockScalewayDomain struct {
@@ -110,6 +111,14 @@ func (m *mockScalewayDomain) UpdateDNSZoneRecords(req *domain.UpdateDNSZoneRecor
 	return nil, nil
 }
 
+func newScalewayProvider() *ScalewayProvider {
+	return &ScalewayProvider{
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: scalewayProviderSpecificPropertyFilter,
+		},
+	}
+}
+
 func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	profile := `profiles:
   foo:
@@ -170,7 +179,7 @@ func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
 }
 
 func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
-	provider := &ScalewayProvider{}
+	scalewayProvider := newScalewayProvider()
 
 	before := []*endpoint.Endpoint{
 		{
@@ -203,6 +212,18 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType:       "A",
 			Targets:          []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
+		{
+			DNSName:    "four.example.com",
+			RecordTTL:  600,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "extra-property",
+					Value: "10",
+				},
+			},
 		},
 	}
 
@@ -243,9 +264,21 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			DNSName:    "four.example.com",
+			RecordTTL:  600,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
 	}
 
-	after, err := provider.AdjustEndpoints(before)
+	after, err := scalewayProvider.AdjustEndpoints(before)
 	assert.NoError(t, err)
 	for i := range after {
 		if !checkRecordEquality(after[i], expected[i]) {
@@ -256,10 +289,9 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 
 func TestScalewayProvider_Zones(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
-	provider := &ScalewayProvider{
-		domainAPI:    &mocked,
-		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
-	}
+	scalewayProvider := newScalewayProvider()
+	scalewayProvider.domainAPI = &mocked
+	scalewayProvider.domainFilter = endpoint.NewDomainFilter([]string{"example.com"})
 
 	expected := []*domain.DNSZone{
 		{
@@ -271,7 +303,7 @@ func TestScalewayProvider_Zones(t *testing.T) {
 			Subdomain: "test",
 		},
 	}
-	zones, err := provider.Zones(context.Background())
+	zones, err := scalewayProvider.Zones(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,10 +315,9 @@ func TestScalewayProvider_Zones(t *testing.T) {
 
 func TestScalewayProvider_Records(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
-	provider := &ScalewayProvider{
-		domainAPI:    &mocked,
-		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
-	}
+	scalewayProvider := newScalewayProvider()
+	scalewayProvider.domainAPI = &mocked
+	scalewayProvider.domainFilter = endpoint.NewDomainFilter([]string{"example.com"})
 
 	expected := []*endpoint.Endpoint{
 		{
@@ -339,7 +370,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 		},
 	}
 
-	records, err := provider.Records(context.TODO())
+	records, err := scalewayProvider.Records(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,10 +391,9 @@ func TestScalewayProvider_Records(t *testing.T) {
 // feel free to modify if you have a better idea
 func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
-	provider := &ScalewayProvider{
-		domainAPI:    &mocked,
-		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
-	}
+	scalewayProvider := newScalewayProvider()
+	scalewayProvider.domainAPI = &mocked
+	scalewayProvider.domainFilter = endpoint.NewDomainFilter([]string{"example.com"})
 
 	expected := []*domain.UpdateDNSZoneRecordsRequest{
 		{
@@ -557,7 +587,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 		},
 	}
 
-	requests, err := provider.generateApplyRequests(context.TODO(), changes)
+	requests, err := scalewayProvider.generateApplyRequests(context.TODO(), changes)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -176,6 +176,16 @@ func TestAdjustEndpoints(t *testing.T) {
 			Targets: endpoint.Targets{
 				"",
 			},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "webhook/property",
+					Value: "value",
+				},
+				{
+					Name:  "extra/property",
+					Value: "value",
+				},
+			},
 		},
 	}
 	adjustedEndpoints, err := provider.AdjustEndpoints(endpoints)
@@ -186,6 +196,12 @@ func TestAdjustEndpoints(t *testing.T) {
 		RecordType: "A",
 		Targets: endpoint.Targets{
 			"",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{
+				Name:  "webhook/property",
+				Value: "value",
+			},
 		},
 	}}, adjustedEndpoints)
 }

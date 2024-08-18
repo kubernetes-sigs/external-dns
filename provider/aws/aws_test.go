@@ -1972,6 +1972,9 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		dryRun:                false,
 		zonesCache:            &zonesListCache{duration: 1 * time.Minute},
 		failedChangesQueue:    make(map[string]Route53Changes),
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: awsProviderSpecificPropertyFilter,
+		},
 	}
 
 	createAWSZone(t, provider, &route53types.HostedZone{

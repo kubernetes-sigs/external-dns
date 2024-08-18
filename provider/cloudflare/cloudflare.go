@@ -43,7 +43,12 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultCloudFlareRecordTTL 1 = automatic
 	defaultCloudFlareRecordTTL = 1
+	providerSpecificProxied    = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 )
+
+var cloudflareProviderSpecificPropertyFilter = endpoint.ProviderSpecificPropertyFilter{
+	Names: []string{providerSpecificProxied},
+}
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 // see: https://github.com/cloudflare/cloudflare-go/pull/595
@@ -210,6 +215,9 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		DryRun:            dryRun,
 		DNSRecordsPerPage: dnsRecordsPerPage,
 		RegionKey:         regionKey,
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: cloudflareProviderSpecificPropertyFilter,
+		},
 	}
 	return provider, nil
 }
@@ -416,6 +424,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	endpoints, err := p.BaseProvider.AdjustEndpoints(endpoints)
+	if err != nil {
+		return endpoints, err
+	}
+
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
