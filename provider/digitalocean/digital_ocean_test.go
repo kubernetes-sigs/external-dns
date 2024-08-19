@@ -813,11 +813,13 @@ func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
 		endpoint.NewEndpoint("foo.example.com", "CNAME", "somewhere.out.there.com"),
 		endpoint.NewEndpoint("bar.example.com", "MX", "10 bar.mx1.com"),
 		endpoint.NewEndpoint("bar.example.com", "MX", "10 bar.mx2.com"),
+		endpoint.NewEndpoint("foo.example.com", "TXT", "txtone"),
+		endpoint.NewEndpoint("foo.example.com", "TXT", "txttwo"),
 	}
 
 	merged := mergeEndpointsByNameType(xs)
 
-	assert.Equal(t, 4, len(merged))
+	assert.Equal(t, 5, len(merged))
 	sort.SliceStable(merged, func(i, j int) bool {
 		if merged[i].DNSName != merged[j].DNSName {
 			return merged[i].DNSName < merged[j].DNSName
@@ -841,4 +843,9 @@ func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
 	assert.Equal(t, "CNAME", merged[3].RecordType)
 	assert.Equal(t, 1, len(merged[3].Targets))
 	assert.Equal(t, "somewhere.out.there.com", merged[3].Targets[0])
+
+	assert.Equal(t, "foo.example.com", merged[4].DNSName)
+	assert.Equal(t, "TXT", merged[4].RecordType)
+	assert.Equal(t, 2, len(merged[4].Targets))
+	assert.ElementsMatch(t, []string{"txtone", "txttwo"}, merged[4].Targets)
 }

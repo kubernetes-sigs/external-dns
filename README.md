@@ -181,6 +181,7 @@ The following tutorials are provided:
 * [NS1](docs/tutorials/ns1.md)
 * [NS Record Creation with CRD Source](docs/sources/ns-record.md)
 * [MX Record Creation with CRD Source](docs/sources/mx-record.md)
+* [TXT Record Creation with CRD Source](docs/sources/txt-record.md)
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
