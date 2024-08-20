@@ -306,6 +306,13 @@ func makeDomainEditRequest(domain, name, recordType, data string, ttl int) *godo
 		if err == nil {
 			request.Priority = int(priority)
 			request.Data = provider.EnsureTrailingDot(domain)
+		} else {
+			log.WithFields(log.Fields{
+				"domain":     domain,
+				"dnsName":    name,
+				"recordType": recordType,
+				"data":       data,
+			}).Warn("Unable to parse MX target")
 		}
 	}
 
@@ -329,7 +336,7 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 		}
 
 		if c.Options.Type == endpoint.RecordTypeMX {
-			logFields["priotity"] = c.Options.Priority
+			logFields["priority"] = c.Options.Priority
 		}
 
 		log.WithFields(logFields).Debug("Creating domain record")
@@ -353,7 +360,7 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 			"ttl":        u.Options.TTL,
 		}
 		if u.Options.Type == endpoint.RecordTypeMX {
-			logFields["priotity"] = u.Options.Priority
+			logFields["priority"] = u.Options.Priority
 		}
 		log.WithFields(logFields).Debug("Updating domain record")
 
@@ -619,7 +626,7 @@ func processDeleteActions(
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *DigitalOceanProvider) SupportedRecordType(recordType string) bool {
 	switch recordType {
-	case "MX", "TXT":
+	case "MX":
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)
