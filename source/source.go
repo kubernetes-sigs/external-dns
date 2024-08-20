@@ -60,6 +60,8 @@ const (
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+	// NodePorts may filter nodes by this, if present
+	nodePortFilterAnnotationKey = "external-dns.alpha.kubernetes.io/nodeport-filter"
 )
 
 const (
@@ -252,6 +254,15 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 		}
 	}
 	return targets
+}
+
+// getNodeSelectorFromAnnotation returns a labels.Selector if one is specified
+func getNodeSelectorFromAnnotation(annotations map[string]string) (labels.Selector, error) {
+	selectorSpec, ok := annotations[nodePortFilterAnnotationKey]
+	if !ok {
+		return labels.Everything(), nil
+	}
+	return labels.Parse(selectorSpec)
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
