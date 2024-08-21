@@ -60,7 +60,7 @@ to match the specific needs of your deployments, with the goal to reduce the num
   * `--ovh-api-rate-limit=20` When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)
 
 * Global
-  * `--registry=txt` The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)
+  * `--registry=txt` The registry implementation to use to keep track of DNS record ownership. Other registry options such as dynamodb can help mitigate rate limits by storing the registry outside of the DNS hosted zone (default: txt, options: txt, noop, dynamodb, aws-sd)
   * `--txt-cache-interval=0s` The interval between cache synchronizations in duration format (default: disabled)
   * `--interval=1m0s` The interval between two consecutive synchronizations in duration format (default: 1m)
   * `--min-event-sync-interval=5s` The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)
