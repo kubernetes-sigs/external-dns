@@ -71,7 +71,7 @@ func (api *mockAPIService) DeletePrivateZoneRecord(request *privatedns.DeletePri
 	}
 	for _, privateZoneRecord := range api.privateZoneRecords[*request.ZoneId] {
 		deleteflag := false
-		if request.RecordIdSet != nil && len(request.RecordIdSet) != 0 {
+		if len(request.RecordIdSet) != 0 {
 			for _, recordId := range request.RecordIdSet {
 				if *privateZoneRecord.RecordId == *recordId {
 					deleteflag = true
