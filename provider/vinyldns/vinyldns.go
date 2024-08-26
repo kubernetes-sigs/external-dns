@@ -92,7 +92,7 @@ func (p *vinyldnsProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			continue
 		}
 
-		log.Infof(fmt.Sprintf("Zone: [%s:%s]", zone.ID, zone.Name))
+		log.Infof("Zone: [%s:%s]", zone.ID, zone.Name)
 		records, err := p.client.RecordSets(zone.ID)
 		if err != nil {
 			return nil, err
@@ -101,7 +101,7 @@ func (p *vinyldnsProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		for _, r := range records {
 			if provider.SupportedRecordType(r.Type) {
 				recordsCount := len(r.Records)
-				log.Debugf(fmt.Sprintf("%s.%s.%d.%s", r.Name, r.Type, recordsCount, zone.Name))
+				log.Debugf("%s.%s.%d.%s", r.Name, r.Type, recordsCount, zone.Name)
 
 				// TODO: AAAA Records
 				if len(r.Records) > 0 {
