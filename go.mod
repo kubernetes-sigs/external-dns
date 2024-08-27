@@ -15,8 +15,8 @@ require (
 	github.com/Yamashou/gqlgenc v0.24.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.0
-	github.com/ans-group/sdk-go v1.20.0
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.7
+	github.com/ans-group/sdk-go v1.20.2
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -36,7 +36,7 @@ require (
 	github.com/gophercloud/gophercloud v1.14.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.39.0
+	github.com/linode/linodego v1.40.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.62
 	github.com/nesv/go-dynect v0.6.0
@@ -44,20 +44,20 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.71.1
+	github.com/oracle/oci-go-sdk/v65 v65.72.0
 	github.com/ovh/go-ovh v1.6.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.12.2
 	github.com/projectcontour/contour v1.30.0
-	github.com/prometheus/client_golang v1.20.0
+	github.com/prometheus/client_golang v1.20.2
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.29
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.984
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.984
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.984
-	github.com/transip/gotransip/v6 v6.25.0
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.991
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.991
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.991
+	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
 	github.com/vultr/govultr/v2 v2.17.2
@@ -68,7 +68,7 @@ require (
 	golang.org/x/oauth2 v0.22.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/time v0.6.0
-	google.golang.org/api v0.192.0
+	google.golang.org/api v0.194.0
 	gopkg.in/ns1/ns1-go.v2 v2.12.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.23.0
@@ -81,8 +81,8 @@ require (
 )
 
 require (
-	cloud.google.com/go/auth v0.8.1 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
+	cloud.google.com/go/auth v0.9.1 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/99designs/gqlgen v0.17.44 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
@@ -202,12 +202,12 @@ require (
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.18.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240725223205-93522f1f2a9f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240730163845-b1a4ccb954bf // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
