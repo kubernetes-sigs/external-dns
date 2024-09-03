@@ -3,7 +3,38 @@
 The TXT registry is the default registry.
 It stores DNS record metadata in TXT records, using the same provider.
 
-## Prefixes and Suffixes
+
+## TXT Format
+
+### Metadata
+
+The metadata format is used to construct the registry record. It can be selected by setting the `--txt-format` flag to `only-metadata`.
+
+Under this condition, ExternalDNS creates one TXT record holding the ownership information using the following format:
+
+```
+{record_type}._metadata.{record_name}
+```
+
+Or, in case the original record has a wildcard:
+
+```
+*.{record_type}._metadata.{record_name}
+```
+
+ExternalDNS reads the legacy formats formats as well in order to facilitate the migration, but note that it does not delete old ownership records.
+
+### Transition
+
+With `--txt-format` set to `transition`, ExternalDNS creates tree distinct registry records:
+
+1. `{record_type}._metadata.{record_name}`
+2. `{record_type}.{record_name}`
+3. `{record_name}`
+
+Formats 2 and 3 are cosidered legacy and will be removed in the future.
+
+#### Prefixes and Suffixes
 
 In order to avoid having the registry TXT records collide with
 TXT or CNAME records created from sources, you can configure a fixed prefix or suffix
