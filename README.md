@@ -36,13 +36,10 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
-* [BlueCat](https://bluecatnetworks.com)
 * [Civo](https://www.civo.com)
 * [CloudFlare](https://www.cloudflare.com/dns)
-* [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
-* [Dyn](https://dyn.com/dns/)
 * [OpenStack Designate](https://docs.openstack.org/designate/latest/)
 * [PowerDNS](https://www.powerdns.com/)
 * [CoreDNS](https://coredns.io/)
@@ -59,7 +56,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 * [GoDaddy](https://www.godaddy.com)
 * [Gandi](https://www.gandi.net)
-* [ANS Group SafeDNS](https://portal.ans.co.uk/safedns/)
 * [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
 * [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
 * [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
@@ -116,13 +112,10 @@ The following table clarifies the current status of the providers according to t
 | AWS Cloud Map | Beta | |
 | Akamai Edge DNS | Beta | |
 | AzureDNS | Stable | |
-| BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
 | Civo | Alpha | @alejandrojnm |
 | CloudFlare | Beta | |
-| RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
 | DNSimple | Alpha | |
-| Dyn | Alpha | |
 | OpenStack Designate | Alpha | |
 | PowerDNS | Alpha | |
 | CoreDNS | Alpha | |
@@ -140,7 +133,6 @@ The following table clarifies the current status of the providers according to t
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
-| SafeDNS | Alpha | @assureddt |
 | IBMCloud | Alpha | @hughhuangzh |
 | TencentCloud | Alpha | @Hyzhou |
 | Plural | Alpha | @michaeljguarino |
@@ -179,11 +171,9 @@ The following tutorials are provided:
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Civo](docs/tutorials/civo.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
-* [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
-* [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
 * [ExternalName Services](docs/tutorials/externalname.md)
 * Google Kubernetes Engine
@@ -200,7 +190,6 @@ The following tutorials are provided:
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
-* [RcodeZero](docs/tutorials/rcodezero.md)
 * [RancherDNS (RDNS)](docs/tutorials/rdns.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
@@ -211,7 +200,6 @@ The following tutorials are provided:
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
-* [SafeDNS](docs/tutorials/ANS_Group_SafeDNS.md)
 * [IBM Cloud](docs/tutorials/ibmcloud.md)
 * [Nodes as source](docs/tutorials/nodes.md)
 * [TencentCloud](docs/tutorials/tencentcloud.md)

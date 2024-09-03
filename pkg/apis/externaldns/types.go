@@ -104,28 +104,15 @@ type Config struct {
 	AzureSubscriptionID                string
 	AzureUserAssignedIdentityClientID  string
 	AzureActiveDirectoryAuthorityHost  string
-	BluecatDNSConfiguration            string
-	BluecatConfigFile                  string
-	BluecatDNSView                     string
-	BluecatGatewayHost                 string
-	BluecatRootZone                    string
-	BluecatDNSServerName               string
-	BluecatDNSDeployType               string
-	BluecatSkipTLSVerify               bool
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
 	CoreDNSPrefix                      string
-	RcodezeroTXTEncrypt                bool
 	AkamaiServiceConsumerDomain        string
 	AkamaiClientToken                  string
 	AkamaiClientSecret                 string
 	AkamaiAccessToken                  string
 	AkamaiEdgercPath                   string
 	AkamaiEdgercSection                string
-	DynCustomerName                    string
-	DynUsername                        string
-	DynPassword                        string `secure:"yes"`
-	DynMinTTLSeconds                   int
 	OCIConfigFile                      string
 	OCICompartmentOCID                 string
 	OCIAuthInstancePrincipal           bool
@@ -272,12 +259,9 @@ var defaultConfig = &Config{
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
-	BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
-	BluecatDNSDeployType:        "no-deploy",
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
 	CoreDNSPrefix:               "/skydns/",
-	RcodezeroTXTEncrypt:         false,
 	AkamaiServiceConsumerDomain: "",
 	AkamaiClientToken:           "",
 	AkamaiClientSecret:          "",
@@ -456,7 +440,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
+	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rdns", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("provider-cache-time", "The time to cache the DNS provider record list requests.").Default(defaultConfig.ProviderCacheTime.String()).DurationVar(&cfg.ProviderCacheTime)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
@@ -493,16 +477,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
 	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
 
-	// Flags related to BlueCat provider
-	app.Flag("bluecat-dns-configuration", "When using the Bluecat provider, specify the Bluecat DNS configuration string (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatDNSConfiguration)
-	app.Flag("bluecat-config-file", "When using the Bluecat provider, specify the Bluecat configuration file (optional when --provider=bluecat)").Default(defaultConfig.BluecatConfigFile).StringVar(&cfg.BluecatConfigFile)
-	app.Flag("bluecat-dns-view", "When using the Bluecat provider, specify the Bluecat DNS view string (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatDNSView)
-	app.Flag("bluecat-gateway-host", "When using the Bluecat provider, specify the Bluecat Gateway Host (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatGatewayHost)
-	app.Flag("bluecat-root-zone", "When using the Bluecat provider, specify the Bluecat root zone (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatRootZone)
-	app.Flag("bluecat-skip-tls-verify", "When using the Bluecat provider, specify to skip TLS verification (optional when --provider=bluecat) (default: false)").BoolVar(&cfg.BluecatSkipTLSVerify)
-	app.Flag("bluecat-dns-server-name", "When using the Bluecat provider, specify the Bluecat DNS Server to initiate deploys against. This is only used if --bluecat-dns-deploy-type is not 'no-deploy' (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatDNSServerName)
-	app.Flag("bluecat-dns-deploy-type", "When using the Bluecat provider, specify the type of DNS deployment to initiate after records are updated. Valid options are 'full-deploy' and 'no-deploy'. Deploy will only execute if --bluecat-dns-server-name is set (optional when --provider=bluecat)").Default(defaultConfig.BluecatDNSDeployType).StringVar(&cfg.BluecatDNSDeployType)
-
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
@@ -512,16 +486,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiAccessToken).StringVar(&cfg.AkamaiAccessToken)
 	app.Flag("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)").Default(defaultConfig.AkamaiEdgercPath).StringVar(&cfg.AkamaiEdgercPath)
 	app.Flag("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)").Default(defaultConfig.AkamaiEdgercSection).StringVar(&cfg.AkamaiEdgercSection)
-	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
-	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
-	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)
-	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
 	app.Flag("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci").Default(defaultConfig.OCIConfigFile).StringVar(&cfg.OCIConfigFile)
 	app.Flag("oci-compartment-ocid", "When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.").StringVar(&cfg.OCICompartmentOCID)
 	app.Flag("oci-zone-scope", "When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.").Default(defaultConfig.OCIZoneScope).EnumVar(&cfg.OCIZoneScope, "", "GLOBAL", "PRIVATE")
 	app.Flag("oci-auth-instance-principal", "When using the OCI provider, specify whether OCI IAM instance principal authentication should be used (instead of key-based auth via the OCI config file).").Default(strconv.FormatBool(defaultConfig.OCIAuthInstancePrincipal)).BoolVar(&cfg.OCIAuthInstancePrincipal)
 	app.Flag("oci-zones-cache-duration", "When using the OCI provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.OCIZoneCacheDuration.String()).DurationVar(&cfg.OCIZoneCacheDuration)
-	app.Flag("rcodezero-txt-encrypt", "When using the Rcodezero provider with txt registry option, set if TXT rrs are encrypted (default: false)").Default(strconv.FormatBool(defaultConfig.RcodezeroTXTEncrypt)).BoolVar(&cfg.RcodezeroTXTEncrypt)
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
 	app.Flag("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)").Default(strconv.Itoa(defaultConfig.OVHApiRateLimit)).IntVar(&cfg.OVHApiRateLimit)
