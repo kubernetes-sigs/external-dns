@@ -49,8 +49,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [RFC2136](https://tools.ietf.org/html/rfc2136)
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
-* [VinylDNS](https://www.vinyldns.io)
-* [Vultr](https://www.vultr.com)
 * [OVH](https://www.ovh.com)
 * [Scaleway](https://www.scaleway.com)
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
@@ -125,11 +123,9 @@ The following table clarifies the current status of the providers according to t
 | RFC2136 | Alpha | |
 | NS1 | Alpha | |
 | TransIP | Alpha | |
-| VinylDNS | Alpha | |
 | RancherDNS | Alpha | |
 | OVH | Alpha | |
 | Scaleway DNS | Alpha | @Sh4d1 |
-| Vultr | Alpha | |
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
@@ -193,10 +189,8 @@ The following tutorials are provided:
 * [RancherDNS (RDNS)](docs/tutorials/rdns.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
-* [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
 * [Scaleway](docs/tutorials/scaleway.md)
-* [Vultr](docs/tutorials/vultr.md)
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)

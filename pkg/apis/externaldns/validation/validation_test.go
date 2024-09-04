@@ -64,12 +64,6 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	return cfg
 }
 
-func addRequiredFieldsForDyn(cfg *externaldns.Config) {
-	cfg.LogFormat = "json"
-	cfg.Sources = []string{"ingress"}
-	cfg.Provider = "dyn"
-}
-
 func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
 	cfg := externaldns.NewConfig()
 	cfg.IgnoreHostnameAnnotation = true
