@@ -307,6 +307,19 @@ func TestAWSSDProvider_Records(t *testing.T) {
 					}},
 				},
 			},
+			"aaaa-srv": {
+				Id:          aws.String("aaaa-srv"),
+				Name:        aws.String("service4"),
+				Description: aws.String("owner-id"),
+				DnsConfig: &sdtypes.DnsConfig{
+					NamespaceId:   aws.String("private"),
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{{
+						Type: sdtypes.RecordTypeAaaa,
+						TTL:  aws.Int64(100),
+					}},
+				},
+			},
 		},
 	}
 
@@ -341,12 +354,21 @@ func TestAWSSDProvider_Records(t *testing.T) {
 				},
 			},
 		},
+		"aaaa-srv": {
+			"0000:0000:0000:0000:abcd:abcd:abcd:abcd": {
+				Id: aws.String("0000:0000:0000:0000:abcd:abcd:abcd:abcd"),
+				Attributes: map[string]string{
+					sdInstanceAttrIPV6: "0000:0000:0000:0000:abcd:abcd:abcd:abcd",
+				},
+			},
+		},
 	}
 
 	expectedEndpoints := []*endpoint.Endpoint{
 		{DNSName: "service1.private.com", Targets: endpoint.Targets{"1.2.3.4", "1.2.3.5"}, RecordType: endpoint.RecordTypeA, RecordTTL: 100, Labels: map[string]string{endpoint.AWSSDDescriptionLabel: "owner-id"}},
 		{DNSName: "service2.private.com", Targets: endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100, Labels: map[string]string{endpoint.AWSSDDescriptionLabel: "owner-id"}},
 		{DNSName: "service3.private.com", Targets: endpoint.Targets{"cname.target.com"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 80, Labels: map[string]string{endpoint.AWSSDDescriptionLabel: "owner-id"}},
+		{DNSName: "service4.private.com", Targets: endpoint.Targets{"0000:0000:0000:0000:abcd:abcd:abcd:abcd"}, RecordType: endpoint.RecordTypeAAAA, RecordTTL: 100, Labels: map[string]string{endpoint.AWSSDDescriptionLabel: "owner-id"}},
 	}
 
 	api := &AWSSDClientStub{
@@ -551,6 +573,28 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 			RoutingPolicy: sdtypes.RoutingPolicyMultivalue,
 			DnsRecords: []sdtypes.DnsRecord{{
 				Type: sdtypes.RecordTypeA,
+				TTL:  aws.Int64(60),
+			}},
+		},
+		NamespaceId: aws.String("private"),
+	}
+
+	// AAAA type
+	provider.CreateService(context.Background(), aws.String("private"), aws.String("AAAA-srv"), &endpoint.Endpoint{
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: "AAAA-srv",
+		},
+		RecordType: endpoint.RecordTypeAAAA,
+		RecordTTL:  60,
+		Targets:    endpoint.Targets{"::1234:5678:"},
+	})
+	expectedServices["AAAA-srv"] = &sdtypes.Service{
+		Name:        aws.String("AAAA-srv"),
+		Description: aws.String("AAAA-srv"),
+		DnsConfig: &sdtypes.DnsConfig{
+			RoutingPolicy: sdtypes.RoutingPolicyMultivalue,
+			DnsRecords: []sdtypes.DnsRecord{{
+				Type: sdtypes.RecordTypeAaaa,
 				TTL:  aws.Int64(60),
 			}},
 		},
@@ -768,6 +812,19 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 					}},
 				},
 			},
+			"aaaa-srv": {
+				Id:          aws.String("aaaa-srv"),
+				Name:        aws.String("service4"),
+				Description: aws.String("owner-id"),
+				DnsConfig: &sdtypes.DnsConfig{
+					NamespaceId:   aws.String("private"),
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{{
+						Type: sdtypes.RecordTypeAaaa,
+						TTL:  aws.Int64(100),
+					}},
+				},
+			},
 		},
 	}
 
@@ -781,7 +838,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 
 	expectedInstances := make(map[string]*sdtypes.Instance)
 
-	// IP-based instance
+	// IPv4-based instance
 	provider.RegisterInstance(context.Background(), services["private"]["a-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeA,
 		DNSName:    "service1.private.com.",
@@ -846,6 +903,20 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		Id: aws.String("cname.target.com"),
 		Attributes: map[string]string{
 			sdInstanceAttrCname: "cname.target.com",
+		},
+	}
+
+	// IPv6-based instance
+	provider.RegisterInstance(context.Background(), services["private"]["aaaa-srv"], &endpoint.Endpoint{
+		RecordType: endpoint.RecordTypeAAAA,
+		DNSName:    "service4.private.com.",
+		RecordTTL:  300,
+		Targets:    endpoint.Targets{"0000:0000:0000:0000:abcd:abcd:abcd:abcd"},
+	})
+	expectedInstances["0000:0000:0000:0000:abcd:abcd:abcd:abcd"] = &sdtypes.Instance{
+		Id: aws.String("0000:0000:0000:0000:abcd:abcd:abcd:abcd"),
+		Attributes: map[string]string{
+			sdInstanceAttrIPV6: "0000:0000:0000:0000:abcd:abcd:abcd:abcd",
 		},
 	}
 
