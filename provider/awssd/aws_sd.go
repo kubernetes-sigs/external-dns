@@ -41,6 +41,7 @@ const (
 	sdNamespaceTypePrivate = "private"
 
 	sdInstanceAttrIPV4  = "AWS_INSTANCE_IPV4"
+	sdInstanceAttrIPV6  = "AWS_INSTANCE_IPV6"
 	sdInstanceAttrCname = "AWS_INSTANCE_CNAME"
 	sdInstanceAttrAlias = "AWS_ALIAS_DNS_NAME"
 )
@@ -174,10 +175,15 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 			newEndpoint.RecordType = endpoint.RecordTypeCNAME
 			newEndpoint.Targets = append(newEndpoint.Targets, aws.StringValue(inst.Attributes[sdInstanceAttrAlias]))
 
-			// IP-based target
+			// IPv4-based target
 		} else if inst.Attributes[sdInstanceAttrIPV4] != nil {
 			newEndpoint.RecordType = endpoint.RecordTypeA
 			newEndpoint.Targets = append(newEndpoint.Targets, aws.StringValue(inst.Attributes[sdInstanceAttrIPV4]))
+
+			// IPv6-based target
+		} else if inst.Attributes[sdInstanceAttrIPV6] != nil {
+			newEndpoint.RecordType = endpoint.RecordTypeAAAA
+			newEndpoint.Targets = append(newEndpoint.Targets, aws.StringValue(inst.Attributes[sdInstanceAttrIPV6]))
 		} else {
 			log.Warnf("Invalid instance \"%v\" found in service \"%v\"", inst, srv.Name)
 		}
@@ -474,15 +480,18 @@ func (p *AWSSDProvider) RegisterInstance(service *sd.Service, ep *endpoint.Endpo
 
 		attr := make(map[string]*string)
 
-		if ep.RecordType == endpoint.RecordTypeCNAME {
+		switch ep.RecordType {
+		case endpoint.RecordTypeCNAME:
 			if p.isAWSLoadBalancer(target) {
 				attr[sdInstanceAttrAlias] = aws.String(target)
 			} else {
 				attr[sdInstanceAttrCname] = aws.String(target)
 			}
-		} else if ep.RecordType == endpoint.RecordTypeA {
+		case endpoint.RecordTypeA:
 			attr[sdInstanceAttrIPV4] = aws.String(target)
-		} else {
+		case endpoint.RecordTypeAAAA:
+			attr[sdInstanceAttrIPV6] = aws.String(target)
+		default:
 			return fmt.Errorf("invalid endpoint type (%v)", ep)
 		}
 
