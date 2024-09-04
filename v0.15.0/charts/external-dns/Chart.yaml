@@ -1,0 +1,34 @@
+apiVersion: v2
+name: external-dns
+description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
+type: application
+version: 1.14.5
+appVersion: 0.14.2
+keywords:
+  - kubernetes
+  - externaldns
+  - external-dns
+  - dns
+  - service
+  - ingress
+home: https://github.com/kubernetes-sigs/external-dns/
+icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+sources:
+  - https://github.com/kubernetes-sigs/external-dns/
+maintainers:
+  - name: stevehipwell
+    email: steve.hipwell@gmail.com
+annotations:
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Added support for `extraContainers` argument."
+    - kind: added
+      description: "Added support for setting `excludeDomains` argument."
+    - kind: changed
+      description: "Updated _ExternalDNS_ OCI image version to [v0.14.2](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.2)."
+    - kind: changed
+      description: "Updated `DNSEndpoint` CRD."
+    - kind: changed
+      description: "Changed the implementation for `revisionHistoryLimit` to be more generic."
+    - kind: fixed
+      description: "Fixed the `ServiceMonitor` job name to correctly use the instance label."
