@@ -39,6 +39,7 @@ func TestPodSource(t *testing.T) {
 		expectError     bool
 		nodes           []*corev1.Node
 		pods            []*corev1.Pod
+		disableNodePort bool
 	}{
 		{
 			"create IPv4 records based on pod's external and internal IPs",
@@ -109,6 +110,76 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
+		}, {
+			"create IPv4 records based on pod's IPs with nodePort support disabled",
+			"",
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node1",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node2",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+						},
+					},
+				},
+			},
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod2",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.2",
+					},
+				},
+			},
+			true,
 		},
 		{
 			"create IPv4 records based on pod's external and internal IPs using DNS Controller annotations",
@@ -179,6 +250,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"create IPv6 records based on pod's external and internal IPs",
@@ -247,6 +319,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"create IPv6 records based on pod's external and internal IPs using DNS Controller annotations",
@@ -315,6 +388,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"create records based on pod's target annotation",
@@ -387,6 +461,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"create multiple records",
@@ -457,6 +532,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"pods with hostNetwore=false should be ignored",
@@ -527,6 +603,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"only watch a given namespace",
@@ -597,6 +674,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 		{
 			"split record for internal hostname annotation",
@@ -637,6 +715,7 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			false,
 		},
 	} {
 		tc := tc
@@ -662,7 +741,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, false)
+			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, tc.disableNodePort)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
