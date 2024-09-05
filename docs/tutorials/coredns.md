@@ -1,5 +1,9 @@
 # CoreDNS with minikube
 
+:warning: This tutorial is out of date.
+
+:information_source: PRs to update it are welcome !
+
 This tutorial describes how to setup ExternalDNS for usage within a [minikube](https://github.com/kubernetes/minikube) cluster that makes use of [CoreDNS](https://github.com/coredns/coredns) and [nginx ingress controller](https://github.com/kubernetes/ingress-nginx).
 
 You need to:
