@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on OVH
+# OVHcloud
 
 This tutorial describes how to setup ExternalDNS for use within a
 Kubernetes cluster using OVH DNS.

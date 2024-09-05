@@ -1,4 +1,4 @@
-# Setting up ExternalDNS using AWS Cloud Map API
+# AWS Cloud Map API
 
 This tutorial describes how to set up ExternalDNS for usage within a Kubernetes cluster with [AWS Cloud Map API](https://docs.aws.amazon.com/cloud-map/).
 

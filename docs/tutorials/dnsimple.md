@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on DNSimple
+# DNSimple
 
 
 This tutorial describes how to setup ExternalDNS for usage with DNSimple.

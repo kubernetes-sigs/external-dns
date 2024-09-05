@@ -1,4 +1,5 @@
-# Configuring ExternalDNS to use the Istio Gateway and/or Istio Virtual Service Source
+# Istio Gateway / Virtual Service Source
+
 This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
 It is meant to supplement the other provider-specific setup tutorials.
 
@@ -43,6 +44,7 @@ spec:
 ```
 
 ### Manifest (for clusters with RBAC enabled)
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -58,7 +60,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -134,7 +136,7 @@ kubectl patch clusterrole external-dns --type='json' \
 
 ### Verify that Istio Gateway/VirtualService Source works
 
-Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/) 
+Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/)
 to deploy a sample service that will be exposed outside of the service mesh.
 The following are relevant snippets from that tutorial.
 
@@ -150,7 +152,9 @@ $ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/i
 ```
 
 #### Using a Gateway as a source
+
 ##### Create an Istio Gateway:
+
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -172,6 +176,7 @@ EOF
 ```
 
 ##### Configure routes for traffic entering via the Gateway:
+
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -200,6 +205,7 @@ EOF
 #### Using a VirtualService as a source
 
 ##### Create an Istio Gateway:
+
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -221,6 +227,7 @@ EOF
 ```
 
 ##### Configure routes for traffic entering via the Gateway:
+
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3

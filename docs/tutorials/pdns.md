@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for PowerDNS
+# PowerDNS
 
 ## Prerequisites
 

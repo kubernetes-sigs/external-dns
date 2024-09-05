@@ -1,4 +1,4 @@
-# Setting up External DNS with Contour
+# Contour HTTPProxy
 
 This tutorial describes how to configure External DNS to use the Contour `HTTPProxy` source.
 Using the `HTTPProxy` resource with External DNS requires Contour version 1.5 or greater.

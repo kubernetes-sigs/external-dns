@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Oracle Cloud Infrastructure (OCI)
+# Oracle Cloud Infrastructure
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using OCI DNS.
 
