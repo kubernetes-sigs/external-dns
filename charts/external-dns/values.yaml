@@ -235,6 +235,9 @@ labelFilter:
 # -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []
 
+# -- Disable nodePort support (for environments where access to Node resources is forbidden)
+ignoreNodePorts: false
+
 provider:
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
   name: aws

@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed automatic addition of pod selector labels to `affinity` and `topologySpreadConstraints` if not defined. ([#4666](https://github.com/kubernetes-sigs/external-dns/pull/4666)) _@pvickery-ParamountCommerce_
 - Fixed missing Ingress permissions when using Istio sources. ([#4845](https://github.com/kubernetes-sigs/external-dns/pull/4845)) _@joekhoobyar_
+- Added ability to disable nodePort support ([#4727](https://github.com/kubernetes-sigs/external-dns/pull/4727)) _@piperj_
 
 ## [v1.15.0] - 2024-09-11
 
