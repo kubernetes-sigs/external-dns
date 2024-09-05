@@ -19,6 +19,8 @@ package source
 import (
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -123,6 +125,11 @@ func legacyEndpointsFromDNSControllerService(svc *v1.Service, sc *serviceSource)
 // It will use node role label to check if the node has the "node" role. This means control plane nodes and other
 // roles will not be used as targets.
 func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *serviceSource) ([]*endpoint.Endpoint, error) {
+	if sc.nodeInformer == nil {
+		log.Warnf("Unable to extract nodePort targets from service %s/%s as nodePort support is disabled", svc.Namespace, svc.Name)
+		return nil, nil
+	}
+
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotations.

@@ -64,7 +64,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname bool) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname bool, disableNodeInformer bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -76,8 +76,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	serviceInformer := informerFactory.Core().V1().Services()
 	endpointsInformer := informerFactory.Core().V1().Endpoints()
 	podInformer := informerFactory.Core().V1().Pods()
-	nodeInformer := informerFactory.Core().V1().Nodes()
-
+	var nodeInformer coreinformers.NodeInformer
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -97,12 +96,16 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 			},
 		},
 	)
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+
+	if !disableNodeInformer {
+		nodeInformer = informerFactory.Core().V1().Nodes()
+		nodeInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+				},
 			},
-		},
-	)
+		)
+	}
 
 	informerFactory.Start(ctx.Done())
 
@@ -308,6 +311,10 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				targets := getTargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
+						if sc.nodeInformer == nil {
+							log.Warnf("Unable to extract nodePort targets from service %s/%s as nodePort support is disabled", svc.Namespace, svc.Name)
+							continue
+						}
 						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
 						if err != nil {
 							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
@@ -490,6 +497,11 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 				targets = extractServiceIps(svc)
 			}
 		case v1.ServiceTypeNodePort:
+			// NodePort support is disabled
+			if sc.nodeInformer == nil {
+				log.Warnf("Unable to extract nodePort targets from service %s/%s as nodePort support is disabled", svc.Namespace, svc.Name)
+				return endpoints
+			}
 			// add the nodeTargets and extract an SRV endpoint
 			var err error
 			targets, err = sc.extractNodePortTargets(svc)

@@ -76,6 +76,7 @@ type Config struct {
 	ResolveLoadBalancerHostname    bool
 	TraefikDisableLegacy           bool
 	TraefikDisableNew              bool
+	IgnoreNodePorts                bool
 }
 
 // ClientGenerator provides clients
@@ -218,7 +219,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.ResolveLoadBalancerHostname)
+		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.ResolveLoadBalancerHostname, cfg.IgnoreNodePorts)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
@@ -230,7 +231,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility)
+		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility, cfg.IgnoreNodePorts)
 	case "gateway-httproute":
 		return NewGatewayHTTPRouteSource(p, cfg)
 	case "gateway-grpcroute":

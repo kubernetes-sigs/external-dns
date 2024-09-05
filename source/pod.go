@@ -39,10 +39,10 @@ type podSource struct {
 }
 
 // NewPodSource creates a new podSource with the given config.
-func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string) (Source, error) {
+func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string, disableNodeInformer bool) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
-	nodeInformer := informerFactory.Core().V1().Nodes()
+	var nodeInformer coreinformers.NodeInformer
 
 	podInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -50,12 +50,15 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 			},
 		},
 	)
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+	if !disableNodeInformer {
+		nodeInformer = informerFactory.Core().V1().Nodes()
+		nodeInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+				},
 			},
-		},
-	)
+		)
+	}
 
 	informerFactory.Start(ctx.Done())
 
@@ -108,6 +111,10 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			domainList := splitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
 				if len(targets) == 0 {
+					if ps.nodeInformer == nil {
+						log.Warnln("nodeInformer disabled")
+						continue
+					}
 					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 					for _, address := range node.Status.Addresses {
 						recordType := suitableType(address.Address)
@@ -135,6 +142,10 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
 				domainList := splitHostnameAnnotation(domainAnnotation)
 				for _, domain := range domainList {
+					if ps.nodeInformer == nil {
+						log.Warnln("nodeInformer disabled")
+						continue
+					}
 					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 					for _, address := range node.Status.Addresses {
 						recordType := suitableType(address.Address)

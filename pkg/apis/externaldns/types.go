@@ -206,6 +206,7 @@ type Config struct {
 	TraefikDisableLegacy               bool
 	TraefikDisableNew                  bool
 	NAT64Networks                      []string
+	IgnoreNodePorts                    bool
 }
 
 var defaultConfig = &Config{
@@ -359,6 +360,7 @@ var defaultConfig = &Config{
 	TraefikDisableLegacy:        false,
 	TraefikDisableNew:           false,
 	NAT64Networks:               []string{},
+	IgnoreNodePorts:             false,
 }
 
 // NewConfig returns new Config object
@@ -462,6 +464,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)
+	app.Flag("ignore-nodeports", "Disables the nodeport functionality. Needed when source is set to service or pod in clusters where external-dns does not have permissions to watch node resources, with the caveat that you will not be able to sync node IPs (optional)").Default(strconv.FormatBool(defaultConfig.IgnoreNodePorts)).BoolVar(&cfg.IgnoreNodePorts)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}

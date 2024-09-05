@@ -150,6 +150,7 @@ func main() {
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
 		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
 		TraefikDisableNew:              cfg.TraefikDisableNew,
+		IgnoreNodePorts:                cfg.IgnoreNodePorts,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
