@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use Gateway API Route Sources
+# Gateway API Route Sources
 
 This describes how to configure ExternalDNS to use Gateway API Route sources.
 It is meant to supplement the other provider-specific setup tutorials.

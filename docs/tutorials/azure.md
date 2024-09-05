@@ -1,5 +1,4 @@
-
-# Setting up ExternalDNS for Services on Azure
+# Azure DNS
 
 This tutorial describes how to setup ExternalDNS for [Azure DNS](https://azure.microsoft.com/services/dns/) with [Azure Kubernetes Service](https://docs.microsoft.com/azure/aks/).
 

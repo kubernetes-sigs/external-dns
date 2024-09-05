@@ -1,4 +1,4 @@
-# Using ExternalDNS with aws-load-balancer-controller
+# AWS Load Balancer Controller
 
 This tutorial describes how to use ExternalDNS with the [aws-load-balancer-controller][1].
 

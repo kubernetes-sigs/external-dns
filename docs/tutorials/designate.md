@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on OpenStack Designate
+# Designate DNS from OpenStack
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using OpenStack Designate DNS.
 

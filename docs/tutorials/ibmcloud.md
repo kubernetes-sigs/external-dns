@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on IBMCloud
+# IBMCloud
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using IBMCloud DNS.
 
