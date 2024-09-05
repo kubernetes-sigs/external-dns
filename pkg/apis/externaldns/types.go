@@ -201,6 +201,7 @@ type Config struct {
 	WebhookServer                      bool
 	TraefikDisableLegacy               bool
 	TraefikDisableNew                  bool
+	NAT64Networks                      []string
 }
 
 var defaultConfig = &Config{
@@ -349,6 +350,7 @@ var defaultConfig = &Config{
 	WebhookServer:               false,
 	TraefikDisableLegacy:        false,
 	TraefikDisableNew:           false,
+	NAT64Networks:               []string{},
 }
 
 // NewConfig returns new Config object
@@ -438,6 +440,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
+	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rdns", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
