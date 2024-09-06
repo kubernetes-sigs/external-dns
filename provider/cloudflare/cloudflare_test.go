@@ -207,6 +207,20 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
+func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
+    // Add logic here to mock the UpdateDataLocalizationRegionalHostname method
+    // For example, you could add a MockAction to the Actions slice
+    m.Actions = append(m.Actions, MockAction{
+        Name:       "UpdateDataLocalizationRegionalHostname",
+        ZoneId:     rc.Identifier,
+        RecordId:   "", // You can leave this empty or use a default value
+        RecordData: cloudflare.DNSRecord{
+            Name: rp.Hostname,
+        },
+    })
+    return nil
+}
+
 func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
