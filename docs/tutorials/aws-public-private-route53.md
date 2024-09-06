@@ -241,7 +241,7 @@ spec:
         - --txt-owner-id=external-dns
         - --ingress-class=external-ingress
         - --aws-zone-type=public
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         name: external-dns-public
 ```
 
@@ -279,7 +279,7 @@ spec:
         - --txt-owner-id=dev.k8s.nexus
         - --ingress-class=internal-ingress
         - --aws-zone-type=private
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         name: external-dns-private
 ```
 
