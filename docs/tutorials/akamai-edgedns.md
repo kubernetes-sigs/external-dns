@@ -1,4 +1,4 @@
-# Setting up External-DNS for Services on Akamai Edge DNS
+# Akamai Edge DNS
 
 ## Prerequisites
 

@@ -1,10 +1,10 @@
-# Setting up ExternalDNS using the same domain for public and private Route53 zones
+# AWS Route53 with same domain for public and private zones
 
 This tutorial describes how to setup ExternalDNS using the same domain for public and private Route53 zones and [nginx-ingress-controller](https://github.com/kubernetes/ingress-nginx). It also outlines how to use [cert-manager](https://github.com/jetstack/cert-manager) to automatically issue SSL certificates from [Let's Encrypt](https://letsencrypt.org/) for both public and private records.
 
 ## Deploy public nginx-ingress-controller
 
-Consult [External DNS nginx ingress docs](nginx-ingress.md) for installation guidelines.
+You may be interested with [GKE with nginx ingress](gke-nginx.md) for installation guidelines.
 
 Specify `ingress-class` in nginx-ingress-controller container args:
 
@@ -106,8 +106,6 @@ spec:
 ```
 
 ## Deploy private nginx-ingress-controller
-
-Consult [External DNS nginx ingress docs](nginx-ingress.md) for installation guidelines.
 
 Make sure to specify `ingress-class` in nginx-ingress-controller container args:
 

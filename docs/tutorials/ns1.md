@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on NS1
+# NS1
 
 This tutorial describes how to setup ExternalDNS for use within a
 Kubernetes cluster using NS1 DNS.

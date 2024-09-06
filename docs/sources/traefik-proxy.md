@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use the Traefik Proxy Source
+# Traefik Proxy Source
 
 This tutorial describes how to configure ExternalDNS to use the Traefik Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
@@ -96,7 +96,9 @@ spec:
 ```
 
 ## Deploying a Traefik IngressRoute
+
 Create a IngressRoute file called 'traefik-ingress.yaml' with the following contents:
+
 ```yaml
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute

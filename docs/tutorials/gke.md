@@ -1,4 +1,4 @@
-# Setting up ExternalDNS on Google Kubernetes Engine
+# GKE with default controller
 
 This tutorial describes how to setup ExternalDNS for usage within a [GKE](https://cloud.google.com/kubernetes-engine) ([Google Kuberentes Engine](https://cloud.google.com/kubernetes-engine)) cluster. Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial
 

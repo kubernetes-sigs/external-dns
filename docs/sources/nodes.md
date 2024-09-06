@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use Cluster Nodes as Source
+# Cluster Nodes as Source
 
 This tutorial describes how to configure ExternalDNS to use the cluster nodes as source.
 Using nodes (`--source=node`) as source is possible to synchronize a DNS zone with the nodes of a cluster.

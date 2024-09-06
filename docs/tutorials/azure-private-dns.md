@@ -1,4 +1,4 @@
-# Set up ExternalDNS for Azure Private DNS
+# Azure Private DNS
 
 This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.
 

@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Pi-hole
+# Pi-hole
 
 This tutorial describes how to setup ExternalDNS to sync records with Pi-hole's Custom DNS.
 Pi-hole has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A, AAAA or CNAME records.

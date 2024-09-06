@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on Plural
+# Plural
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Plural DNS.
 

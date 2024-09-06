@@ -1,8 +1,10 @@
-# Configuring ExternalDNS to use the Gloo Proxy Source
-This tutorial describes how to configure ExternalDNS to use the Gloo Proxy source.
+# Kong TCPIngress Source
+
+This tutorial describes how to configure ExternalDNS to use the Kong TCPIngress source.
 It is meant to supplement the other provider-specific setup tutorials.
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -24,15 +26,14 @@ spec:
         # update this to the desired external-dns version
         image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
-        - --source=gloo-proxy
-        - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
+        - --source=kong-tcpingress
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
 
 ### Manifest (for clusters with RBAC enabled)
-Could be change if you have mulitple sources
+Could be changed if you have mulitple sources
 
 ```yaml
 apiVersion: v1
@@ -51,12 +52,9 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list","watch"]
-- apiGroups: ["gloo.solo.io"]
-  resources: ["proxies"]
+- apiGroups: ["configuration.konghq.com"]
+  resources: ["tcpingresses"]
   verbs: ["get","watch","list"]
-- apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices"]
-  verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -92,10 +90,8 @@ spec:
         # update this to the desired external-dns version
         image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
-        - --source=gloo-proxy
-        - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
+        - --source=kong-tcpingress
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
-

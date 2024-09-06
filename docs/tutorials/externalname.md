@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for ExternalName Services
+# ExternalName Services
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with an ExternalName service.
 

@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Headless Services 
+# Headless Services
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with a Headless service.
 

@@ -1,4 +1,5 @@
-# Configuring ExternalDNS to use the OpenShift Route Source
+# OpenShift Route Source
+
 This tutorial describes how to configure ExternalDNS to use the OpenShift Route source.
 It is meant to supplement the other provider-specific setup tutorials.
 

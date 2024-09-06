@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Exoscale
+# Exoscale
 
 ## Prerequisites
 
