@@ -492,6 +492,13 @@ func TestAWSRecords(t *testing.T) {
 			TTL:             aws.Int64(recordTTL),
 			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("10 mailhost1.example.com")}, {Value: aws.String("20 mailhost2.example.com")}},
 		},
+		{
+			// This domain has 63 characters but one of them is `~` which encodes to a longer string than allowed
+			Name:            aws.String("long-domain-with-irregular-characters\\176longer-than-63-characters.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeCname),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("long-domain.example.com")}},
+		},
 	})
 
 	records, err := provider.Records(context.Background())
