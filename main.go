@@ -47,14 +47,12 @@ import (
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
 	"sigs.k8s.io/external-dns/provider/azure"
-	"sigs.k8s.io/external-dns/provider/bluecat"
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
 	"sigs.k8s.io/external-dns/provider/designate"
 	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
-	"sigs.k8s.io/external-dns/provider/dyn"
 	"sigs.k8s.io/external-dns/provider/exoscale"
 	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
@@ -68,16 +66,12 @@ import (
 	"sigs.k8s.io/external-dns/provider/pdns"
 	"sigs.k8s.io/external-dns/provider/pihole"
 	"sigs.k8s.io/external-dns/provider/plural"
-	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
-	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
 	"sigs.k8s.io/external-dns/provider/tencentcloud"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
-	"sigs.k8s.io/external-dns/provider/vinyldns"
-	"sigs.k8s.io/external-dns/provider/vultr"
 	"sigs.k8s.io/external-dns/provider/webhook"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
@@ -179,6 +173,7 @@ func main() {
 
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
+	endpointsSource = source.NewNAT64Source(endpointsSource, cfg.NAT64Networks)
 	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
 
 	// RegexDomainFilter overrides DomainFilter
@@ -246,20 +241,12 @@ func main() {
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.DryRun)
 	case "azure-private-dns":
 		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.DryRun)
-	case "bluecat":
-		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, cfg.TXTPrefix, cfg.TXTSuffix, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
-	case "vinyldns":
-		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "vultr":
-		p, err = vultr.NewVultrProvider(ctx, domainFilter, cfg.DryRun)
 	case "ultradns":
 		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
 	case "civo":
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage, cfg.CloudflareRegionKey)
-	case "rcodezero":
-		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "digitalocean":
@@ -270,19 +257,6 @@ func main() {
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "dyn":
-		p, err = dyn.NewDynProvider(
-			dyn.DynConfig{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				DryRun:        cfg.DryRun,
-				CustomerName:  cfg.DynCustomerName,
-				Username:      cfg.DynUsername,
-				Password:      cfg.DynPassword,
-				MinTTLSeconds: cfg.DynMinTTLSeconds,
-				AppVersion:    externaldns.Version,
-			},
-		)
 	case "coredns", "skydns":
 		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
 	case "rdns":
@@ -381,8 +355,6 @@ func main() {
 		)
 	case "ibmcloud":
 		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
-	case "safedns":
-		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
 	case "plural":
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
@@ -401,6 +373,13 @@ func main() {
 		os.Exit(0)
 	}
 
+	if cfg.ProviderCacheTime > 0 {
+		p = provider.NewCachedProvider(
+			p,
+			cfg.ProviderCacheTime,
+		)
+	}
+
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
@@ -414,7 +393,7 @@ func main() {
 	case "txt":
 		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
 	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
+		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}

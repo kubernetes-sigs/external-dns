@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -241,6 +242,50 @@ func TestIsDNS1123Domain(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
 				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
+			}
+		})
+	}
+}
+
+func TestDualStackLabel(t *testing.T) {
+	tests := []struct {
+		desc      string
+		in        map[string](string)
+		setsLabel bool
+	}{
+		{
+			desc:      "empty-annotation",
+			setsLabel: false,
+		},
+		{
+			desc:      "correct-annotation-key-and-value",
+			in:        map[string]string{gatewayAPIDualstackAnnotationKey: gatewayAPIDualstackAnnotationValue},
+			setsLabel: true,
+		},
+		{
+			desc:      "correct-annotation-key-incorrect-value",
+			in:        map[string]string{gatewayAPIDualstackAnnotationKey: "foo"},
+			setsLabel: false,
+		},
+		{
+			desc:      "incorrect-annotation-key-correct-value",
+			in:        map[string]string{"FOO": gatewayAPIDualstackAnnotationValue},
+			setsLabel: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			endpoints := make([]*endpoint.Endpoint, 0)
+			endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
+
+			rt := &gatewayHTTPRoute{}
+			rt.Metadata().Annotations = tt.in
+
+			setDualstackLabel(rt, endpoints)
+			got := endpoints[0].Labels[endpoint.DualstackLabelKey] == "true"
+
+			if got != tt.setsLabel {
+				t.Errorf("setDualstackLabel(%q); got: %v; want: %v", tt.in, got, tt.setsLabel)
 			}
 		})
 	}

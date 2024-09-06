@@ -52,7 +52,6 @@ For set up for a specific provider using the Helm chart, see the following links
 - [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
 - [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
 - [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
-- [vultr](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/vultr.md#using-helm)
 
 ## Namespaced Scoped Installation
 
@@ -134,6 +133,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | provider.webhook.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
 | provider.webhook.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container. |
 | provider.webhook.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container. |
+| provider.webhook.service.metricsPort | int | `8080` | Webhook metrics port for the service. |
 | provider.webhook.serviceMonitor | object | See _values.yaml_ | Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container. |
 | rbac.additionalPermissions | list | `[]` | Additional rules to add to the `ClusterRole`. |
 | rbac.create | bool | `true` | If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API. |

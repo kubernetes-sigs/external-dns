@@ -57,7 +57,7 @@ type errorMockProvider struct {
 	mockProvider
 }
 
-func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilter {
+func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
 
@@ -278,15 +278,17 @@ func valueFromMetric(metric prometheus.Gauge) uint64 {
 }
 
 func TestShouldRunOnce(t *testing.T) {
-	ctrl := &Controller{Interval: 10 * time.Minute, MinEventSyncInterval: 5 * time.Second}
+	ctrl := &Controller{Interval: 10 * time.Minute, MinEventSyncInterval: 15 * time.Second}
 
 	now := time.Now()
 
 	// First run of Run loop should execute RunOnce
 	assert.True(t, ctrl.ShouldRunOnce(now))
+	assert.Equal(t, now.Add(10*time.Minute), ctrl.nextRunAt)
 
 	// Second run should not
 	assert.False(t, ctrl.ShouldRunOnce(now))
+	ctrl.lastRunAt = now
 
 	now = now.Add(10 * time.Second)
 	// Changes happen in ingresses or services
@@ -316,12 +318,17 @@ func TestShouldRunOnce(t *testing.T) {
 	assert.False(t, ctrl.ShouldRunOnce(now))
 
 	// Multiple ingresses or services changes, closer than MinInterval from each other
+	ctrl.lastRunAt = now
 	firstChangeTime := now
 	secondChangeTime := firstChangeTime.Add(time.Second)
 	// First change
 	ctrl.ScheduleRunOnce(firstChangeTime)
 	// Second change
 	ctrl.ScheduleRunOnce(secondChangeTime)
+
+	// Executions should be spaced by at least MinEventSyncInterval
+	assert.False(t, ctrl.ShouldRunOnce(now.Add(5*time.Second)))
+
 	// Should not postpone the reconciliation further than firstChangeTime + MinInterval
 	now = now.Add(ctrl.MinEventSyncInterval)
 	assert.True(t, ctrl.ShouldRunOnce(now))

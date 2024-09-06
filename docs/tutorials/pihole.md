@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Pi-hole
+# Pi-hole
 
 This tutorial describes how to setup ExternalDNS to sync records with Pi-hole's Custom DNS.
 Pi-hole has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A, AAAA or CNAME records.
@@ -81,7 +81,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         # If authentication is disabled and/or you didn't create
         # a secret, you can remove this block.
         envFrom:
