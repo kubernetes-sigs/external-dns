@@ -17,8 +17,7 @@ limitations under the License.
 package provider
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/route53"
+	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 )
 
 const (
@@ -52,7 +51,7 @@ func (f ZoneTypeFilter) Match(rawZoneType interface{}) bool {
 		case zoneTypePrivate:
 			return zoneType == zoneTypePrivate
 		}
-	case *route53.HostedZone:
+	case route53types.HostedZone:
 		// If the zone has no config we assume it's a public zone since the config's field
 		// `PrivateZone` is false by default in go.
 		if zoneType.Config == nil {
@@ -61,9 +60,9 @@ func (f ZoneTypeFilter) Match(rawZoneType interface{}) bool {
 
 		switch f.zoneType {
 		case zoneTypePublic:
-			return !aws.BoolValue(zoneType.Config.PrivateZone)
+			return !zoneType.Config.PrivateZone
 		case zoneTypePrivate:
-			return aws.BoolValue(zoneType.Config.PrivateZone)
+			return zoneType.Config.PrivateZone
 		}
 	}
 
