@@ -86,7 +86,7 @@ type Config struct {
 	AWSZoneTagFilter                   []string
 	AWSAssumeRole                      string
 	AWSProfiles                        []string
-	AWSAssumeRoleExternalID            string
+	AWSAssumeRoleExternalID            string `secure:"yes"`
 	AWSBatchChangeSize                 int
 	AWSBatchChangeSizeBytes            int
 	AWSBatchChangeSizeValues           int
