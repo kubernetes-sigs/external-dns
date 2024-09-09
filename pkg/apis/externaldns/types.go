@@ -106,7 +106,7 @@ type Config struct {
 	AzureActiveDirectoryAuthorityHost  string
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
-	CloudflareRegionKey				   string
+	CloudflareRegionKey                string
 	CoreDNSPrefix                      string
 	AkamaiServiceConsumerDomain        string
 	AkamaiClientToken                  string
@@ -263,7 +263,7 @@ var defaultConfig = &Config{
 	AzureSubscriptionID:         "",
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
-	CloudflareRegionKey:		 "earth",
+	CloudflareRegionKey:         "earth",
 	CoreDNSPrefix:               "/skydns/",
 	AkamaiServiceConsumerDomain: "",
 	AkamaiClientToken:           "",
