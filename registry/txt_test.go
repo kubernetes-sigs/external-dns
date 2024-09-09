@@ -1726,6 +1726,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwnerAndOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
+			newEndpointWithOwnerAndOwnedRecord("cname._metadata.foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 		},
 	})
 
@@ -1740,6 +1741,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
 			newEndpointWithOwnerAndOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
+			newEndpointWithOwnerAndOwnedRecord("cname._metadata.foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 		},
 	}
 
