@@ -59,7 +59,7 @@ func testTXTRegistryNew(t *testing.T) {
 	r, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatTransition)
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	_, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 	require.NoError(t, err)
 
 	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatTransition)
@@ -229,7 +229,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, false, nil, TXTFormatOnlyMetadata)
+	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -359,7 +359,7 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
@@ -495,7 +495,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	r, _ = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -522,12 +522,22 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatTransition)
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
+	records, _ = r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatTransition)
+	records, _ = r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -554,12 +564,22 @@ func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatTransition)
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
+	records, _ = r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatTransition)
+	records, _ = r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -989,7 +1009,7 @@ func testTXTRegistryApplyChangesNoPrefixMetadataOnly(t *testing.T) {
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{},
 	})
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatOnlyMetadata)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1707,7 +1727,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"))
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"), TXTFormatTransition)
 	records, _ := r.Records(ctx)
 	changes := &plan.Changes{
 		Delete: records,
@@ -1753,7 +1773,7 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, []string{}, false, nil, TXTFormatTransition)
 	records, _ := r.Records(ctx)
 
 	// new cluster has same ingress host as other cluster and uses CNAME ingress address
