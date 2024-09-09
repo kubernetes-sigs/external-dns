@@ -1628,14 +1628,17 @@ func TestNewTXTScheme(t *testing.T) {
 	expected := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
+			newEndpointWithOwnerAndOwnedRecord("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwnerAndOwnedRecord("cname-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwnerAndOwnedRecord("cname._metadata.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
+			newEndpointWithOwnerAndOwnedRecord("example", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
 			newEndpointWithOwnerAndOwnedRecord("cname-example", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
 			newEndpointWithOwnerAndOwnedRecord("cname._metadata.example", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+			newEndpointWithOwnerAndOwnedRecord("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 			newEndpointWithOwnerAndOwnedRecord("cname-foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 			newEndpointWithOwnerAndOwnedRecord("cname._metadata.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 		},
@@ -1665,6 +1668,14 @@ func TestNewTXTScheme(t *testing.T) {
 func TestGenerateTXT(t *testing.T) {
 	record := newEndpointWithOwner("foo.test-zone.example.org", "new-foo.loadbalancer.com", endpoint.RecordTypeCNAME, "owner")
 	expectedTXT := []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
 		{
 			DNSName:    "cname-foo.test-zone.example.org",
 			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
