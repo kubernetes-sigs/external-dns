@@ -239,7 +239,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	// old TXT record format
-	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && im.txtFormat == TXTFormatTransition && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeCNAME {
+	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && im.txtFormat == TXTFormatTransition && r.RecordType != endpoint.RecordTypeAAAA {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
 			txt.WithSetIdentifier(r.SetIdentifier)
@@ -249,12 +249,13 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 
-	// "new" (version 2) TXT record format (containing record type)
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
 		recordType = endpoint.RecordTypeCNAME
 	}
+
+	// "new" (version 2) TXT record format (containing record type)
 	if im.txtFormat == TXTFormatTransition && (recordType == endpoint.RecordTypeAAAA || recordType == endpoint.RecordTypeCNAME) {
 		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txtNew != nil {
@@ -266,7 +267,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	}
 
 	// Metadata TXT record format
-	txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 	if txtMetadata != nil {
 		txtMetadata.WithSetIdentifier(r.SetIdentifier)
 		txtMetadata.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
