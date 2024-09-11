@@ -3,6 +3,43 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Updated _ExternalDNS_ OCI image version to [v0.15.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0)."
+        - kind: fixed
+          description: "Fixed `provider.webhook.resources` behavior to correctly leverage resource limits."
+        - kind: fixed
+          description: "Fixed `provider.webhook.imagePullPolicy` behavior to correctly leverage pull policy."
+        - kind: fixed
+          description: "Fixed to add correct webhook metric port to `Service` and `ServiceMonitor`."
+        - kind: fixed
+          description: "Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes."
+    apiVersion: v2
+    appVersion: 0.15.0
+    created: "2024-09-11T16:31:33.117260544Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: ad32b4331335e26fe866921c4f49b6121c3bed281cdf49bd53169ad9f74d90b3
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.15.0/external-dns-1.15.0.tgz
+    version: 1.15.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Added support for `extraContainers` argument."
         - kind: added
@@ -811,4 +848,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2024-06-10T15:14:44.348210711Z"
+generated: "2024-09-11T16:31:33.117467714Z"
