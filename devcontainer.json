@@ -4,10 +4,14 @@
     "features": {
         "ghcr.io/devcontainers/features/go:1": {}
     },
-    "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash"
-    },
-    "extensions": [
-        "golang.go"
-    ]
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            "extensions": [
+                "golang.go"
+            ]
+        }
+    }
 }
