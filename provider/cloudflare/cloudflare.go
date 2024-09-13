@@ -136,21 +136,6 @@ type CloudFlareProvider struct {
 	RegionKey		  string
 }
 
-// func (p *CloudflareProvider) CreateDomainRecord(zoneID, recordType, name string, content string, ttl int) error {
-//     rec := cloudflare.DNSRecord{
-//         Type:    recordType,
-//         Name:    name,
-//         Content: content,
-//         TTL:     ttl,
-//         Proxied: p.proxied,
-//         // add the region key if provided
-//         Meta: map[string]interface{}{
-//             "region": p.config.CloudflareRegion, // Add this line
-//         },
-//     }
-
-//     // existing code
-// }
 
 // cloudFlareChange differentiates between ChangActions
 type cloudFlareChange struct {

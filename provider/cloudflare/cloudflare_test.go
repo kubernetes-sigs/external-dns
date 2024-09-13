@@ -208,8 +208,6 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 }
 
 func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
-    // Add logic here to mock the UpdateDataLocalizationRegionalHostname method
-    // For example, you could add a MockAction to the Actions slice
     m.Actions = append(m.Actions, MockAction{
         Name:       "UpdateDataLocalizationRegionalHostname",
         ZoneId:     rc.Identifier,
