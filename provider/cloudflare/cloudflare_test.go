@@ -211,7 +211,7 @@ func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx contex
     m.Actions = append(m.Actions, MockAction{
         Name:       "UpdateDataLocalizationRegionalHostname",
         ZoneId:     rc.Identifier,
-        RecordId:   "", // You can leave this empty or use a default value
+        RecordId:   "",
         RecordData: cloudflare.DNSRecord{
             Name: rp.Hostname,
         },
