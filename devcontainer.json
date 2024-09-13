@@ -1,0 +1,13 @@
+{
+    "name": "Go Development Environment",
+    "image": "mcr.microsoft.com/vscode/devcontainers/go:1",
+    "features": {
+        "ghcr.io/devcontainers/features/go:1": {}
+    },
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+        "golang.go"
+    ]
+}
