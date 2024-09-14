@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on AWS
+# AWS
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.15.0** version of ExternalDNS for this tutorial
 
@@ -442,7 +442,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          image: registry.k8s.io/external-dns/external-dns:v0.15.0
           args:
             - --source=service
             - --source=ingress
@@ -525,7 +525,7 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer). In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container. If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./gke-nginx.md#with-a-separate-tcp-load-balancer). In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container. If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
 ### target-hosted-zone
 
@@ -856,6 +856,10 @@ env:
       key: {{ YOUR_SECRET_KEY }}
 ```
 
+## DynamoDB Registry
+
+The DynamoDB Registry can be used to store dns records metadata. See the [DynamoDB Registry Tutorial](../registry/dynamodb.md) for more information.
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
@@ -912,8 +916,11 @@ Route53 has a [5 API requests per second per account hard quota](https://docs.aw
 Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to reduce the request rate include:
 * Reduce the polling loop's synchronization interval at the possible cost of slower change propagation (but see `--events` below to reduce the impact).
   * `--interval=5m` (default `1m`)
-* Trigger the polling loop on changes to K8s objects, rather than only at `interval`, to have responsive updates with long poll intervals
+* Enable a Cache to store the zone records list. It comes with a cost: slower propagation when the zone gets modified from other sources such as the AWS console, terraform, cloudformation or anything similar.
+  * `--provider-cache-time=15m` (default `0m`)
+* Trigger the polling loop on changes to K8s objects, rather than only at `interval` and ensure a minimum of time between events, to have responsive updates with long poll intervals
   * `--events`
+  * `--min-event-sync-interval=5m` (default `5s`)
 * Limit the [sources watched](https://github.com/kubernetes-sigs/external-dns/blob/master/pkg/apis/externaldns/types.go#L364) when the `--events` flag is specified to specific types, namespaces, labels, or annotations
   * `--source=ingress --source=service` - specify multiple times for multiple sources
   * `--namespace=my-app`
@@ -944,7 +951,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         command:
         - /bin/sh
         - -c

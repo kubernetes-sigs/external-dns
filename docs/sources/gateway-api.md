@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use Gateway API Route Sources
+# Gateway API Route Sources
 
 This describes how to configure ExternalDNS to use Gateway API Route sources.
 It is meant to supplement the other provider-specific setup tutorials.
@@ -87,7 +87,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         # Add desired Gateway API Route sources.
         - --source=gateway-httproute

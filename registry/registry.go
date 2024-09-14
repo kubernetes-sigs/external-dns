@@ -31,6 +31,6 @@ type Registry interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
-	GetDomainFilter() endpoint.DomainFilter
+	GetDomainFilter() endpoint.DomainFilterInterface
 	OwnerID() string
 }

@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use Cluster Nodes as Source
+# Cluster Nodes as Source
 
 This tutorial describes how to configure ExternalDNS to use the cluster nodes as source.
 Using nodes (`--source=node`) as source is possible to synchronize a DNS zone with the nodes of a cluster.
@@ -29,7 +29,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -100,7 +100,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws

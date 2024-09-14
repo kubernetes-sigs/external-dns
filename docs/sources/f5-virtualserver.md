@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use the F5 Networks VirtualServer Source
+# F5 Networks VirtualServer Source
 This tutorial describes how to configure ExternalDNS to use the F5 Networks VirtualServer Source. It is meant to supplement the other provider-specific setup tutorials.
 
 The F5 Networks VirtualServer CRD is part of [this](https://github.com/F5Networks/k8s-bigip-ctlr) project. See more in-depth info regarding the VirtualServer CRD [here](https://github.com/F5Networks/k8s-bigip-ctlr/blob/master/docs/config_examples/customResource/CustomResource.md#virtualserver).

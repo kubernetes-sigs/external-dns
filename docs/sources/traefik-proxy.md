@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use the Traefik Proxy Source
+# Traefik Proxy Source
 
 This tutorial describes how to configure ExternalDNS to use the Traefik Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
@@ -24,7 +24,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=traefik-proxy
         - --provider=aws
@@ -87,7 +87,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=traefik-proxy
         - --provider=aws
@@ -96,7 +96,9 @@ spec:
 ```
 
 ## Deploying a Traefik IngressRoute
+
 Create a IngressRoute file called 'traefik-ingress.yaml' with the following contents:
+
 ```yaml
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute

@@ -1,8 +1,10 @@
-# Configuring ExternalDNS to use the Kong TCPIngress Source
+# Kong TCPIngress Source
+
 This tutorial describes how to configure ExternalDNS to use the Kong TCPIngress source.
 It is meant to supplement the other provider-specific setup tutorials.
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -22,7 +24,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=kong-tcpingress
         - --provider=aws
@@ -86,7 +88,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=kong-tcpingress
         - --provider=aws

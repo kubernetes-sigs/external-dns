@@ -1,4 +1,4 @@
-# kOps dns-controller compatibility mode
+# kOps dns-controller
 
 kOps includes a dns-controller that is primarily used to bootstrap the cluster, but can also be used for provisioning DNS entries for Services and Ingress.
 

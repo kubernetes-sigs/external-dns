@@ -1,6 +1,9 @@
-# Setting up ExternalDNS for RancherDNS(RDNS) with kubernetes
+# RancherDNS
+
 This tutorial describes how to setup ExternalDNS for usage within a kubernetes cluster that makes use of [RDNS](https://github.com/rancher/rdns-server) and [nginx ingress controller](https://github.com/kubernetes/ingress-nginx).  
+
 You need to:
+
 * install RDNS with [etcd](https://github.com/etcd-io/etcd) enabled
 * install external-dns with rdns as a provider
 
@@ -54,7 +57,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=ingress
         - --provider=rdns
@@ -123,7 +126,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=ingress
         - --provider=rdns
