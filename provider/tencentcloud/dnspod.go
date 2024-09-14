@@ -89,7 +89,7 @@ func (p *TencentCloudProvider) getDomainList() ([]*dnspod.DomainListItem, error)
 		if err != nil {
 			return nil, err
 		}
-		if response.Response.DomainList != nil && len(response.Response.DomainList) > 0 {
+		if len(response.Response.DomainList) > 0 {
 			if !p.domainFilter.IsConfigured() {
 				domainList = append(domainList, response.Response.DomainList...)
 			} else {
@@ -119,7 +119,7 @@ func (p *TencentCloudProvider) getDomainRecordList(domain string) ([]*dnspod.Rec
 		if err != nil {
 			return nil, err
 		}
-		if response.Response.RecordList != nil && len(response.Response.RecordList) > 0 {
+		if len(response.Response.RecordList) > 0 {
 			for _, record := range response.Response.RecordList {
 				if *record.Name == "@" && *record.Type == "NS" { // Special Record, Skip it.
 					continue

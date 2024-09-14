@@ -1,4 +1,4 @@
-# Set up ExternalDNS for Azure Private DNS
+# Azure Private DNS
 
 This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.
 
@@ -130,7 +130,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -201,7 +201,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -272,7 +272,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -330,12 +330,12 @@ Apply the following manifest to create a service of type `LoadBalancer`. This wi
 ---
 apiVersion: v1
 kind: Service
-annotations:
-  service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-  external-dns.alpha.kubernetes.io/hostname: server.example.com
-  external-dns.alpha.kubernetes.io/internal-hostname: server-clusterip.example.com
 metadata:
   name: nginx-svc
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    external-dns.alpha.kubernetes.io/hostname: server.example.com
+    external-dns.alpha.kubernetes.io/internal-hostname: server-clusterip.example.com
 spec:
   ports:
     - port: 80

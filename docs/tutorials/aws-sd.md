@@ -1,4 +1,4 @@
-# Setting up ExternalDNS using AWS Cloud Map API
+# AWS Cloud Map API
 
 This tutorial describes how to set up ExternalDNS for usage within a Kubernetes cluster with [AWS Cloud Map API](https://docs.aws.amazon.com/cloud-map/).
 
@@ -81,7 +81,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -148,7 +148,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -221,7 +221,7 @@ metadata:
   name: nginx
   annotations:
     external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
-    external-dns.alpha.kubernetes.io/ttl: 60
+    external-dns.alpha.kubernetes.io/ttl: "60"
 spec:
     ...
 ```

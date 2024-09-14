@@ -59,7 +59,10 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 
 ## external-dns.alpha.kubernetes.io/hostname
 
-Specifies the domain for the resource's DNS records.
+Specifies the domain for the resource's DNS records. 
+
+Multiple hostnames can be specified through a comma-separated list, e.g.
+`svc.mydomain1.com,svc.mydomain2.com`.
 
 ## external-dns.alpha.kubernetes.io/ingress-hostname-source
 

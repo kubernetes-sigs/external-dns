@@ -1,39 +1,56 @@
-# Setting up ExternalDNS for CoreDNS with minikube
+# CoreDNS with minikube
+
+:warning: This tutorial is out of date.
+
+:information_source: PRs to update it are welcome !
+
 This tutorial describes how to setup ExternalDNS for usage within a [minikube](https://github.com/kubernetes/minikube) cluster that makes use of [CoreDNS](https://github.com/coredns/coredns) and [nginx ingress controller](https://github.com/kubernetes/ingress-nginx).
+
 You need to:
+
 * install CoreDNS with [etcd](https://github.com/etcd-io/etcd) enabled
 * install external-dns with coredns as a provider
 * enable ingress controller for the minikube cluster
 
-
 ## Creating a cluster
-```
+
+```shell
 minikube start
 ```
 
 ## Installing CoreDNS with etcd enabled
+
 Helm chart is used to install etcd and CoreDNS.
+
 ### Initializing helm chart
-```
+
+```shell
 helm init
 ```
+
 ### Installing etcd
+
 [etcd operator](https://github.com/coreos/etcd-operator) is used to manage etcd clusters.
 ```
 helm install stable/etcd-operator --name my-etcd-op
 ```
+
 etcd cluster is installed with example yaml from etcd operator website.
-```
+
+```shell
 kubectl apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/example/example-etcd-cluster.yaml
 ```
 
 ### Installing CoreDNS
+
 In order to make CoreDNS work with etcd backend, values.yaml of the chart should be changed with corresponding configurations.
+
 ```
 wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.yaml
 ```
 
 You need to edit/patch the file with below diff
+
 ```diff
 diff --git a/values.yaml b/values.yaml
 index 964e72b..e2fa934 100644
@@ -68,23 +85,29 @@ index 964e72b..e2fa934 100644
  # Complete example with all the options:
  # - zones:                 # the `zones` block can be left out entirely, defaults to "."
 ```
+
 **Note**:
+
 * IP address of etcd's endpoint should be get from etcd client service. It should be "example-etcd-cluster-client" in this example. This IP address is used through this document for etcd endpoint configuration.
-```
+
+```shell
 $ kubectl get svc example-etcd-cluster-client
 NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
 example-etcd-cluster-client   ClusterIP   10.105.68.165   <none>        2379/TCP   16m
 ```
+
 * Parameters should configure your own domain. "example.org" is used in this example.
 
-
 After configuration done in values.yaml, you can install coredns chart.
-```
+
+```shell
 helm install --name my-coredns --values values.yaml stable/coredns
 ```
 
 ## Installing ExternalDNS
+
 ### Install external ExternalDNS
+
 ETCD_URLS is configured to etcd client service address.
 Optionally, you can configure ETCD_USERNAME and ETCD_PASSWORD for authenticating to etcd. It is also possible to connect to the etcd cluster via HTTPS using the following environment variables: ETCD_CA_FILE, ETCD_CERT_FILE, ETCD_KEY_FILE, ETCD_TLS_SERVER_NAME, ETCD_TLS_INSECURE.
 
@@ -109,7 +132,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=ingress
         - --provider=coredns
@@ -176,7 +199,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=ingress
         - --provider=coredns
@@ -187,13 +210,16 @@ spec:
 ```
 
 ## Enable the ingress controller
+
 You can use the ingress controller in minikube cluster. It needs to enable ingress addon in the cluster.
-```
+
+```shell
 minikube addons enable ingress
 ```
 
 ## Testing ingress example
-```
+
+```shell
 $ cat ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -213,9 +239,9 @@ $ kubectl apply -f ingress.yaml
 ingress.extensions "nginx" created
 ```
 
-
 Wait a moment until DNS has the ingress IP. The DNS service IP is from CoreDNS service. It is "my-coredns-coredns" in this example.
-```
+
+```shell
 $ kubectl get svc my-coredns-coredns
 NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
 my-coredns-coredns   ClusterIP   10.100.4.143   <none>        53/UDP    12m

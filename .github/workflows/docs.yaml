@@ -19,15 +19,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+      - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
         with:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
-
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version-file: 'go.mod'
 
       - run: |
           pip install -r docs/scripts/requirements.txt

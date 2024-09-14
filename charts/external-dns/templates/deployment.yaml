@@ -147,7 +147,7 @@ spec:
         {{- with .Values.provider.webhook }}
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
-          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          imagePullPolicy: {{ .image.pullPolicy }}
           {{- with .env }}
           env:
             {{- toYaml . | nindent 12 }}
@@ -159,9 +159,6 @@ spec:
           ports:
             - name: http-webhook
               protocol: TCP
-              containerPort: 8888
-            - name: http-wh-metrics
-              protocol: TCP
               containerPort: 8080
           livenessProbe:
             {{- toYaml .livenessProbe | nindent 12 }}
@@ -172,6 +169,10 @@ spec:
             {{- with .extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- end }}
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .securityContext }}
           securityContext:

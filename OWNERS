@@ -6,19 +6,18 @@
 # https://github.com/kubernetes/k8s.io/blob/master/registry.k8s.io/images/k8s-staging-external-dns/OWNERS
 
 approvers:
-  - johngmyers
   - mloiseleur
   - raffo
   - szuecs
 
 reviewers:
-  - johngmyers
   - mloiseleur
   - raffo
   - szuecs
 
 emeritus_approvers:
   - hjacobs
+  - johngmyers
   - linki
   - njuettner
   - seanmalloy

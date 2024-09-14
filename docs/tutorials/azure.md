@@ -1,5 +1,4 @@
-
-# Setting up ExternalDNS for Services on Azure
+# Azure DNS
 
 This tutorial describes how to setup ExternalDNS for [Azure DNS](https://azure.microsoft.com/services/dns/) with [Azure Kubernetes Service](https://docs.microsoft.com/azure/aks/).
 
@@ -518,7 +517,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -586,7 +585,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          image: registry.k8s.io/external-dns/external-dns:v0.15.0
           args:
             - --source=service
             - --source=ingress
@@ -657,7 +656,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          image: registry.k8s.io/external-dns/external-dns:v0.15.0
           args:
             - --source=service
             - --source=ingress

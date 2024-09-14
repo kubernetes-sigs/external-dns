@@ -34,9 +34,10 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	cache "k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
-	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
+	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -44,6 +45,10 @@ import (
 const (
 	gatewayGroup = "gateway.networking.k8s.io"
 	gatewayKind  = "Gateway"
+	// gatewayAPIDualstackAnnotationKey is the annotation used for determining if a Gateway Route is dualstack
+	gatewayAPIDualstackAnnotationKey = "external-dns.alpha.kubernetes.io/dualstack"
+	// gatewayAPIDualstackAnnotationValue is the value of the Gateway Route dualstack annotation that indicates it is dualstack
+	gatewayAPIDualstackAnnotationValue = "true"
 )
 
 type gatewayRoute interface {
@@ -83,7 +88,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 type gatewayRouteSource struct {
 	gwNamespace string
 	gwLabels    labels.Selector
-	gwInformer  informers_v1.GatewayInformer
+	gwInformer  informers_v1beta1.GatewayInformer
 
 	rtKind        string
 	rtNamespace   string
@@ -124,8 +129,8 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	}
 
 	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := informerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                   // Register with factory before starting.
+	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
+	gwInformer.Informer()                                        // Register with factory before starting.
 
 	rtInformerFactory := informerFactory
 	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
@@ -235,6 +240,7 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		for host, targets := range hostTargets {
 			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
+		setDualstackLabel(rt, endpoints)
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, endpoints)
 	}
 	return endpoints, nil
@@ -251,11 +257,11 @@ type gatewayRouteResolver struct {
 }
 
 type gatewayListeners struct {
-	gateway   *v1.Gateway
+	gateway   *v1beta1.Gateway
 	listeners map[v1.SectionName][]v1.Listener
 }
 
-func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
+func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
 	// Create Gateway Listener lookup table.
 	gws := make(map[types.NamespacedName]gatewayListeners, len(gateways))
 	for _, gw := range gateways {
@@ -395,7 +401,7 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	return hostnames, nil
 }
 
-func (c *gatewayRouteResolver) routeIsAllowed(gw *v1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {
+func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {
 	meta := rt.Metadata()
 	allow := lis.AllowedRoutes
 
@@ -608,4 +614,14 @@ func selectorsEqual(a, b labels.Selector) bool {
 		}
 	}
 	return true
+}
+
+func setDualstackLabel(rt gatewayRoute, endpoints []*endpoint.Endpoint) {
+	val, ok := rt.Metadata().Annotations[gatewayAPIDualstackAnnotationKey]
+	if ok && val == gatewayAPIDualstackAnnotationValue {
+		log.Debugf("Adding dualstack label to GatewayRoute %s/%s.", rt.Metadata().Namespace, rt.Metadata().Name)
+		for _, ep := range endpoints {
+			ep.Labels[endpoint.DualstackLabelKey] = "true"
+		}
+	}
 }
