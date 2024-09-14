@@ -58,3 +58,7 @@ Follow the installation instructions in the nektos/act [README.md](https://githu
 Afterwards just run `act` within the root folder of the project.
 
 For further usage of `act` refer to its documentation.
+
+# Editting in GitHub CodeSpaces
+
+[GitHub CodeSpaces](https://github.com/features/codespaces) gets you up and coding faster with fully configured, secure cloud development environments native to GitHub. The CodeSpace is configured with Golang 1.22, act, [Helm](helm.sh), [minikube](https://minikube.sigs.k8s.io), [kubectl](https://kubernetes.io/docs/reference/kubectl), and golangci-lint already installed.

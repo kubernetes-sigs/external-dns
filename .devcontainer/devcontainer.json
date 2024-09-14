@@ -26,7 +26,8 @@
 		"go version",
 		"make build",
 		// login to remote k8s cluster
-		"./build/external-dns --source=service --provider=inmemory --once"
+		"./build/external-dns --source=service --provider=inmemory --once",
+		"go install github.com/nektos/act@v0.2.24"
 	],
 	// Configure tool-specific properties.
 	"customizations": {
