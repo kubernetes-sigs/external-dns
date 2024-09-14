@@ -107,8 +107,8 @@ func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflare.Resourc
 }
 
 func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
-    _, err := z.service.UpdateDataLocalizationRegionalHostname(ctx, rc, rp)
-    return err
+	_, err := z.service.UpdateDataLocalizationRegionalHostname(ctx, rc, rp)
+	return err
 }
 
 func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
@@ -133,14 +133,13 @@ type CloudFlareProvider struct {
 	proxiedByDefault  bool
 	DryRun            bool
 	DNSRecordsPerPage int
-	RegionKey		  string
+	RegionKey         string
 }
-
 
 // cloudFlareChange differentiates between ChangActions
 type cloudFlareChange struct {
 	Action           string
-	ResourceRecord	 cloudflare.DNSRecord
+	ResourceRecord   cloudflare.DNSRecord
 	RegionalHostname cloudflare.RegionalHostname
 }
 
@@ -210,7 +209,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		proxiedByDefault:  proxiedByDefault,
 		DryRun:            dryRun,
 		DNSRecordsPerPage: dnsRecordsPerPage,
-		RegionKey: 		   regionKey,
+		RegionKey:         regionKey,
 	}
 	return provider, nil
 }
@@ -482,7 +481,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 			},
 		},
 		RegionalHostname: cloudflare.RegionalHostname{
-			Hostname: endpoint.DNSName,
+			Hostname:  endpoint.DNSName,
 			RegionKey: endpoint.SetIdentifier,
 			CreatedOn: &dt,
 		},
