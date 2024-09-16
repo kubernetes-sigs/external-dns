@@ -96,6 +96,7 @@ type Config struct {
 	AWSPreferCNAME                     bool
 	AWSZoneCacheDuration               time.Duration
 	AWSSDServiceCleanup                bool
+	AWSSDCreateTag                     map[string]string
 	AWSZoneMatchParent                 bool
 	AWSDynamoDBRegion                  string
 	AWSDynamoDBTable                   string
@@ -255,6 +256,7 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
 	AWSSDServiceCleanup:         false,
+	AWSSDCreateTag:              map[string]string{},
 	AWSDynamoDBRegion:           "",
 	AWSDynamoDBTable:            "external-dns",
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
@@ -355,7 +357,9 @@ var defaultConfig = &Config{
 
 // NewConfig returns new Config object
 func NewConfig() *Config {
-	return &Config{}
+	return &Config{
+		AWSSDCreateTag: map[string]string{},
+	}
 }
 
 func (cfg *Config) String() string {
@@ -473,6 +477,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
 	app.Flag("aws-zone-match-parent", "Expand limit possible target by sub-domains (default: disabled)").BoolVar(&cfg.AWSZoneMatchParent)
 	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
+	app.Flag("aws-sd-create-tag", "When using the AWS CloudMap provider, add tag to created services. The flag can be used multiple times").StringMapVar(&cfg.AWSSDCreateTag)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure)").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("azure-subscription-id", "When using the Azure provider, override the Azure subscription to use (optional)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
