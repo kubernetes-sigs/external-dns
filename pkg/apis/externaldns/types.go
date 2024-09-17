@@ -122,6 +122,7 @@ type Config struct {
 	OVHEndpoint                        string
 	OVHApiRateLimit                    int
 	PDNSServer                         string
+	PDNSServerID                       string
 	PDNSAPIKey                         string `secure:"yes"`
 	PDNSSkipTLSVerify                  bool
 	TLSCA                              string
@@ -276,6 +277,7 @@ var defaultConfig = &Config{
 	OVHEndpoint:                 "ovh-eu",
 	OVHApiRateLimit:             20,
 	PDNSServer:                  "http://localhost:8081",
+	PDNSServerID:                "localhost",
 	PDNSAPIKey:                  "",
 	PDNSSkipTLSVerify:           false,
 	TLSCA:                       "",
@@ -498,6 +500,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
 	app.Flag("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)").Default(strconv.Itoa(defaultConfig.OVHApiRateLimit)).IntVar(&cfg.OVHApiRateLimit)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
+	app.Flag("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)").Default(defaultConfig.PDNSServerID).StringVar(&cfg.PDNSServerID)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 	app.Flag("pdns-skip-tls-verify", "When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false)").Default(strconv.FormatBool(defaultConfig.PDNSSkipTLSVerify)).BoolVar(&cfg.PDNSSkipTLSVerify)
 	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)

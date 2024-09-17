@@ -286,6 +286,7 @@ func main() {
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
 				Server:       cfg.PDNSServer,
+				ServerID:     cfg.PDNSServerID,
 				APIKey:       cfg.PDNSAPIKey,
 				TLSConfig: pdns.TLSConfig{
 					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
