@@ -212,16 +212,16 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneInfo(request *pvtz.Describe
 	response = pvtz.CreateDescribeZoneInfoResponse()
 	response.ZoneId = m.zone.ZoneId
 	response.ZoneName = m.zone.ZoneName
-	response.BindVpcs = pvtz.BindVpcsInDescribeZoneInfo{Vpc: m.zone.Vpcs.Vpc}
+	response.BindVpcs = pvtz.BindVpcsInDescribeZoneInfo{Vpc: make([]pvtz.VpcInDescribeZoneInfo, len(m.zone.Vpcs.Vpc))}
+	for idx, vpc := range m.zone.Vpcs.Vpc {
+		response.BindVpcs.Vpc[idx] = pvtz.VpcInDescribeZoneInfo{VpcName: vpc.VpcName, VpcId: vpc.VpcId, VpcType: vpc.VpcType, RegionName: vpc.RegionName, RegionId: vpc.RegionId}
+	}
 	return response, nil
 }
 
 func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 	cfg := alibabaCloudConfig{
-		RegionID:        "cn-beijing",
-		AccessKeyID:     "xxxxxx",
-		AccessKeySecret: "xxxxxx",
-		VPCID:           "vpc-xxxxxx",
+		VPCID: "vpc-xxxxxx",
 	}
 	//
 	//dnsClient, _ := alidns.NewClientWithAccessKey(
