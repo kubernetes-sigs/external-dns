@@ -152,6 +152,10 @@ spec:
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .args }}
           args:
             {{- toYaml . | nindent 12 }}
@@ -159,7 +163,7 @@ spec:
           ports:
             - name: http-webhook
               protocol: TCP
-              containerPort: 8080
+              containerPort: {{ .port }}
           livenessProbe:
             {{- toYaml .livenessProbe | nindent 12 }}
           readinessProbe:

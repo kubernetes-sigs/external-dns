@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Added support for webhook container custom `command` and container `port`. ([#4755](https://github.com/kubernetes-sigs/external-dns/pull/4755))
+
 ## [v1.15.0] - 2023-09-10
 
 ### Changed
