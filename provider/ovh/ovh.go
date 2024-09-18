@@ -250,7 +250,7 @@ type ovhSoa struct {
 
 func (p *OVHProvider) records(ctx *context.Context, zone *string, records chan<- []ovhRecord) error {
 	var recordsIds []uint64
-	ovhRecords := make([]ovhRecord, len(recordsIds))
+	ovhRecords := make([]ovhRecord, 0, len(recordsIds))
 	eg, _ := errgroup.WithContext(*ctx)
 
 	if p.UseCache {
