@@ -15,7 +15,7 @@ require (
 	github.com/Yamashou/gqlgenc v0.25.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.16
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.17
 	github.com/aws/aws-sdk-go-v2 v1.30.5
 	github.com/aws/aws-sdk-go-v2/config v1.27.35
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.33
@@ -39,7 +39,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
-	github.com/gophercloud/gophercloud v1.14.0
+	github.com/gophercloud/gophercloud v1.14.1
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.40.0
 	github.com/maxatome/go-testdeep v1.14.0
@@ -57,9 +57,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1004
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1004
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1004
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1006
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1006
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1006
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/api/v3 v3.5.16
@@ -69,11 +69,11 @@ require (
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/time v0.6.0
-	google.golang.org/api v0.197.0
+	google.golang.org/api v0.198.0
 	gopkg.in/ns1/ns1-go.v2 v2.12.0
 	gopkg.in/yaml.v2 v2.4.0
-	istio.io/api v1.23.1
-	istio.io/client-go v1.23.1
+	istio.io/api v1.23.2
+	istio.io/client-go v1.23.2
 	k8s.io/api v0.31.1
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
@@ -82,7 +82,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/auth v0.9.3 // indirect
+	cloud.google.com/go/auth v0.9.4 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/99designs/gqlgen v0.17.49 // indirect
@@ -206,7 +206,7 @@ require (
 	golang.org/x/tools v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
-	google.golang.org/grpc v1.66.1 // indirect
+	google.golang.org/grpc v1.66.2 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
