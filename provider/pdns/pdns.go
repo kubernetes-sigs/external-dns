@@ -43,9 +43,7 @@ type pdnsChangeType string
 const (
 	apiBase = "/api/v1"
 
-	// Unless we use something like pdnsproxy (discontinued upstream), this value will _always_ be localhost
-	defaultServerID = "localhost"
-	defaultTTL      = 300
+	defaultTTL = 300
 
 	// PdnsDelete and PdnsReplace are effectively an enum for "pgo.RrSet.changetype"
 	// TODO: Can we somehow get this from the pgo swagger client library itself?
@@ -66,6 +64,7 @@ type PDNSConfig struct {
 	DomainFilter endpoint.DomainFilter
 	DryRun       bool
 	Server       string
+	ServerID     string
 	APIKey       string
 	TLSConfig    TLSConfig
 }
@@ -137,6 +136,7 @@ type PDNSAPIProvider interface {
 // PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
 type PDNSAPIClient struct {
 	dryRun       bool
+	serverID     string
 	authCtx      context.Context
 	client       *pgo.APIClient
 	domainFilter endpoint.DomainFilter
@@ -146,7 +146,7 @@ type PDNSAPIClient struct {
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones
 func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err error) {
 	for i := 0; i < retryLimit; i++ {
-		zones, resp, err = c.client.ZonesApi.ListZones(c.authCtx, defaultServerID)
+		zones, resp, err = c.client.ZonesApi.ListZones(c.authCtx, c.serverID)
 		if err != nil {
 			log.Debugf("Unable to fetch zones %v", err)
 			log.Debugf("Retrying ListZones() ... %d", i)
@@ -180,7 +180,7 @@ func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zo
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones-zone_id
 func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Response, err error) {
 	for i := 0; i < retryLimit; i++ {
-		zone, resp, err = c.client.ZonesApi.ListZone(c.authCtx, defaultServerID, zoneID)
+		zone, resp, err = c.client.ZonesApi.ListZone(c.authCtx, c.serverID, zoneID)
 		if err != nil {
 			log.Debugf("Unable to fetch zone %v", err)
 			log.Debugf("Retrying ListZone() ... %d", i)
@@ -198,7 +198,7 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Respo
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#patch--servers-server_id-zones-zone_id
 func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *http.Response, err error) {
 	for i := 0; i < retryLimit; i++ {
-		resp, err = c.client.ZonesApi.PatchZone(c.authCtx, defaultServerID, zoneID, zoneStruct)
+		resp, err = c.client.ZonesApi.PatchZone(c.authCtx, c.serverID, zoneID, zoneStruct)
 		if err != nil {
 			log.Debugf("Unable to patch zone %v", err)
 			log.Debugf("Retrying PatchZone() ... %d", i)
@@ -245,6 +245,7 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
 			dryRun:       config.DryRun,
+			serverID:     config.ServerID,
 			authCtx:      context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,

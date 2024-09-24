@@ -47,6 +47,7 @@ spec:
         - --source=service # or ingress or both
         - --provider=pdns
         - --pdns-server={{ pdns-api-url }}
+        - --pdns-server-id={{ pdns-server-id }}
         - --pdns-api-key={{ pdns-http-api-key }}
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the zones matching provided domain; omit to process all available zones in PowerDNS
