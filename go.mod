@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.18.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.5.0
 	github.com/IBM/go-sdk-core/v5 v5.17.5
@@ -15,7 +15,7 @@ require (
 	github.com/Yamashou/gqlgenc v0.25.2
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.18
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.20
 	github.com/aws/aws-sdk-go-v2 v1.31.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.38
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.36
@@ -26,8 +26,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.31.2
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/civo/civogo v0.3.79
-	github.com/cloudflare/cloudflare-go v0.105.0
+	github.com/civo/civogo v0.3.80
+	github.com/cloudflare/cloudflare-go v0.106.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
@@ -57,9 +57,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1011
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1011
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1011
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1012
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1012
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1012
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/api/v3 v3.5.16
