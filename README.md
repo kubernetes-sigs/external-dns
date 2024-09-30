@@ -74,22 +74,23 @@ See PR #3063 for all the discussions about it.
 
 Known providers using webhooks:
 
-| Provider |  Repo |
-| -------- | ----------- |
-| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard |
-| Anexia | https://github.com/ProbstenHias/external-dns-anexia-webhook |
-| Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook |
-| Efficient IP | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
-| Gcore | https://github.com/G-Core/external-dns-gcore-webhook |
-| GleSYS | https://github.com/glesys/external-dns-glesys |
-| Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook |
-| IONOS | https://github.com/ionos-cloud/external-dns-ionos-webhook |
-| Infoblox | https://github.com/AbsaOSS/external-dns-infoblox-webhook |
-| Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
-| Netic | https://github.com/neticdk/external-dns-tidydns-webhook |
-| RouterOS | https://github.com/benfiola/external-dns-routeros-provider |
-| STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
-| Unifi | https://github.com/kashalls/external-dns-unifi-webhook |
+| Provider              | Repo                                                                 |
+|-----------------------|----------------------------------------------------------------------|
+| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
+| Anexia                | https://github.com/ProbstenHias/external-dns-anexia-webhook          |
+| Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
+| Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
+| Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
+| GleSYS                | https://github.com/glesys/external-dns-glesys                        |
+| Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
+| IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
+| Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
+| Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
+| RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
+| STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
+| Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
 
 ## Status of in-tree providers
 
