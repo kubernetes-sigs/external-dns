@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Fixed automatic addition of pod selector labels to `affinity` and `topologySpreadConstraints` if not defined.
+
 ## [v1.15.0] - 2023-09-10
 
 ### Changed
