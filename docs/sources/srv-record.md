@@ -1,7 +1,7 @@
 # SRV record with CRD source
 
 You can create and manage SRV records with the help of [CRD source](../contributing/crd-source.md)
-and `DNSEndpoint` CRD. The implementation of this feature depends on provider API support, this feature is currently known to be supported supported by `akamai`, `civo`, `cloudflare`, `ibmcloud`, `linode`, `rfc2136` and `pdns` providers.
+and `DNSEndpoint` CRD. The implementation of this feature depends on provider API support, this feature is currently known to be supported (at least) by `akamai`, `civo`, `cloudflare`, `ibmcloud`, `linode`, `rfc2136` and `pdns` providers.
 
 In order to start managing MX records you need to set the `--managed-record-types SRV` flag.
 
