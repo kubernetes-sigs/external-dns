@@ -51,7 +51,7 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 		},
 	)
 	if disableNodeInformer {
-		log.Warnln("host information (host IP/hostname) for pods is disabled as the node informer is disabled")
+		log.Infoln("host information (host IP/hostname) for pods is disabled as the node informer is disabled")
 	} else {
 		nodeInformer = informerFactory.Core().V1().Nodes()
 		nodeInformer.Informer().AddEventHandler(
