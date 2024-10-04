@@ -50,7 +50,9 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 			},
 		},
 	)
-	if !disableNodeInformer {
+	if disableNodeInformer {
+		log.Warnln("host information (host IP/hostname) for pods is disabled as the node informer is disabled")
+	} else {
 		nodeInformer = informerFactory.Core().V1().Nodes()
 		nodeInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
@@ -112,7 +114,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			for _, domain := range domainList {
 				if len(targets) == 0 {
 					if ps.nodeInformer == nil {
-						log.Warnln("nodeInformer disabled")
+						log.Debugf("Unable to determine node's ip address for pod %s/%s as node informer is disabled", pod.Namespace, pod.Name)
 						continue
 					}
 					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
@@ -140,18 +142,18 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 
 			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
-				domainList := splitHostnameAnnotation(domainAnnotation)
-				for _, domain := range domainList {
-					if ps.nodeInformer == nil {
-						log.Warnln("nodeInformer disabled")
-						continue
-					}
-					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
-					for _, address := range node.Status.Addresses {
-						recordType := suitableType(address.Address)
-						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
-							addToEndpointMap(endpointMap, domain, recordType, address.Address)
+				if ps.nodeInformer == nil {
+					log.Debugf("Unable to determine node's hostname for pod %s/%s as node informer is disabled", pod.Namespace, pod.Name)
+				} else {
+					domainList := splitHostnameAnnotation(domainAnnotation)
+					for _, domain := range domainList {
+						node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
+						for _, address := range node.Status.Addresses {
+							recordType := suitableType(address.Address)
+							// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+							if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+								addToEndpointMap(endpointMap, domain, recordType, address.Address)
+							}
 						}
 					}
 				}

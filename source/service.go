@@ -97,7 +97,9 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		},
 	)
 
-	if !disableNodeInformer {
+	if disableNodeInformer {
+		log.Warnln("host information (host IP/hostname) for services is disabled as the node informer is disabled")
+	} else {
 		nodeInformer = informerFactory.Core().V1().Nodes()
 		nodeInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
@@ -312,7 +314,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
 						if sc.nodeInformer == nil {
-							log.Warnf("Unable to extract nodePort targets from service %s/%s as nodePort support is disabled", svc.Namespace, svc.Name)
+							log.Debugf("Unable to extract nodePort targets from service %s/%s as nodePort support is disabled", svc.Namespace, svc.Name)
 							continue
 						}
 						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
@@ -499,7 +501,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		case v1.ServiceTypeNodePort:
 			// NodePort support is disabled
 			if sc.nodeInformer == nil {
-				log.Warnf("Unable to extract nodePort targets from service %s/%s as nodePort support is disabled", svc.Namespace, svc.Name)
+				log.Debugf("Unable to extract nodePort targets from service %s/%s as node informer is disabled", svc.Namespace, svc.Name)
 				return endpoints
 			}
 			// add the nodeTargets and extract an SRV endpoint
