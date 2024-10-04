@@ -58,8 +58,6 @@ For set up for a specific provider using the Helm chart, see the following links
 external-dns supports running on a namespaced only scope, too.
 If `namespaced=true` is defined, the helm chart will setup `Roles` and `RoleBindings` instead `ClusterRoles` and `ClusterRoleBindings`.
 
-Note that you might also need to set `ignoreNodePorts=true` if you do not have access to the `Node` resource in the cluster and you are using the `Pod` or `Service` source.
-
 ### Limited Supported
 
 Not all sources are supported in namespaced scope, since some sources depends on cluster-wide resources.
@@ -69,24 +67,24 @@ namespaces as `external-dns`.
 
 The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
 
-If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`).
+If `namespaced` is set to `true`, please ensure that `sources` only contains supported sources (Default: `service,ingress`).
 
 ### Support Matrix
 
-| Source                 | Supported  | Infos                  |
-|------------------------|------------|------------------------|
-| `ingress`              | ✅         |                        |
-| `istio-gateway`        | ✅         |                        |
-| `istio-virtualservice` | ✅         |                        |
-| `crd`                  | ✅         |                        |
-| `kong-tcpingress`      | ✅         |                        |
-| `openshift-route`      | ✅         |                        |
-| `skipper-routegroup`   | ✅         |                        |
-| `gloo-proxy`           | ✅         |                        |
-| `contour-httpproxy`    | ✅         |                        |
-| `pod`                  | ✅         |                        |
-| `service`              | ⚠️️         | NodePort not supported |
-| `node`                 | ❌         |                        |
+| Source                 | Supported  | Info                           |
+|------------------------|------------|--------------------------------|
+| `ingress`              | ✅         |                                |
+| `istio-gateway`        | ✅         |                                |
+| `istio-virtualservice` | ✅         |                                |
+| `crd`                  | ✅         |                                |
+| `kong-tcpingress`      | ✅         |                                |
+| `openshift-route`      | ✅         |                                |
+| `skipper-routegroup`   | ✅         |                                |
+| `gloo-proxy`           | ✅         |                                |
+| `contour-httpproxy`    | ✅         |                                |
+| `pod`                  | ⚠️         | hostNetwork pods not supported |
+| `service`              | ⚠️️         | NodePort not supported         |
+| `node`                 | ❌         |                                |
 
 ## Values
 

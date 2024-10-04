@@ -109,7 +109,7 @@ spec:
             {{- if .Values.namespaced }}
             - --namespace={{ .Release.Namespace }}
             {{- end }}
-            {{- if .Values.ignoreNodePorts }}
+            {{- if or (.Values.ignoreNodePorts .Values.namespaced)}}
             - --ignore-nodeports=true
             {{- end }}
             {{- range .Values.domainFilters }}
