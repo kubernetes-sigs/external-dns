@@ -12,7 +12,7 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 ## IAM Permissions
 
-To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. For simple deployments, you need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
+To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
 ```
 {
