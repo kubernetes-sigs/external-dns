@@ -126,7 +126,6 @@ The following table clarifies the current status of the providers according to t
 | RFC2136 | Alpha | |
 | NS1 | Alpha | |
 | TransIP | Alpha | |
-| RancherDNS | Alpha | |
 | OVH | Alpha | |
 | Scaleway DNS | Alpha | @Sh4d1 |
 | UltraDNS | Alpha | |
@@ -188,7 +187,6 @@ The following tutorials are provided:
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
-* [RancherDNS (RDNS)](docs/tutorials/rdns.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
 * [OVH](docs/tutorials/ovh.md)
