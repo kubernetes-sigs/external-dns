@@ -194,7 +194,7 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter)
 	if err := p.managedZonesClient.List(p.project).Pages(ctx, f); err != nil {
-		return nil, err
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list zones: %w", err))
 	}
 
 	if len(zones) == 0 {
@@ -228,7 +228,7 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, z := range zones {
 		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
-			return nil, err
+			return nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone %s: %w", z.Name, err))
 		}
 	}
 
@@ -302,7 +302,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 			}
 
 			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
-				return err
+				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
 			}
 
 			time.Sleep(p.batchChangeInterval)

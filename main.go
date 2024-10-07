@@ -65,7 +65,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/pdns"
 	"sigs.k8s.io/external-dns/provider/pihole"
 	"sigs.k8s.io/external-dns/provider/plural"
-	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/scaleway"
 	"sigs.k8s.io/external-dns/provider/tencentcloud"
@@ -258,13 +257,6 @@ func main() {
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "coredns", "skydns":
 		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
-	case "rdns":
-		p, err = rdns.NewRDNSProvider(
-			rdns.RDNSConfig{
-				DomainFilter: domainFilter,
-				DryRun:       cfg.DryRun,
-			},
-		)
 	case "exoscale":
 		p, err = exoscale.NewExoscaleProvider(
 			cfg.ExoscaleAPIEnvironment,
@@ -286,6 +278,7 @@ func main() {
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
 				Server:       cfg.PDNSServer,
+				ServerID:     cfg.PDNSServerID,
 				APIKey:       cfg.PDNSAPIKey,
 				TLSConfig: pdns.TLSConfig{
 					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,

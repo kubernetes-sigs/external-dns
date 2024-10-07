@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -398,6 +399,28 @@ func wildcardUnescape(s string) string {
 	return strings.Replace(s, "\\052", "*", 1)
 }
 
+// See https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
+// convertOctalToAscii decodes inputs that contain octal escape sequences into their original ASCII characters.
+// The function returns converted string where any octal escape sequences have been replaced with their corresponding ASCII characters.
+func convertOctalToAscii(input string) string {
+	if !containsOctalSequence(input) {
+		return input
+	}
+	result, err := strconv.Unquote("\"" + input + "\"")
+	if err != nil {
+		return input
+	}
+	return result
+}
+
+// validateDomainName checks if the domain name contains valid octal escape sequences.
+func containsOctalSequence(domain string) bool {
+	// Pattern to match valid octal escape sequences
+	octalEscapePattern := `\\[0-3][0-7]{2}`
+	octalEscapeRegex := regexp.MustCompile(octalEscapePattern)
+	return octalEscapeRegex.MatchString(domain)
+}
+
 // Records returns the list of records in a given hosted zone.
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
@@ -432,6 +455,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					continue
 				}
 
+				name := convertOctalToAscii(wildcardUnescape(*r.Name))
+
 				var ttl endpoint.TTL
 				if r.TTL != nil {
 					ttl = endpoint.TTL(*r.TTL)
@@ -443,7 +468,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						targets[idx] = *rr.Value
 					}
 
-					ep := endpoint.NewEndpointWithTTL(wildcardUnescape(*r.Name), string(r.Type), ttl, targets...)
+					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
 					if r.Type == endpoint.RecordTypeCNAME {
 						ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
 					}
@@ -456,7 +481,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						ttl = recordTTL
 					}
 					ep := endpoint.
-						NewEndpointWithTTL(wildcardUnescape(*r.Name), endpoint.RecordTypeA, ttl, *r.AliasTarget.DNSName).
+						NewEndpointWithTTL(name, endpoint.RecordTypeA, ttl, *r.AliasTarget.DNSName).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 						WithProviderSpecific(providerSpecificAlias, "true")
 					newEndpoints = append(newEndpoints, ep)
