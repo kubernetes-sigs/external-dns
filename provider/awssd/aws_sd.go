@@ -92,13 +92,7 @@ func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, 
 		namespaceTypeFilter: newSdNamespaceFilter(namespaceType),
 		cleanEmptyService:   cleanEmptyService,
 		ownerID:             ownerID,
-		tags: func() []sdtypes.Tag {
-			awsTags := make([]sdtypes.Tag, 0, len(tags))
-			for k, v := range tags {
-				awsTags = append(awsTags, sdtypes.Tag{Key: aws.String(k), Value: aws.String(v)})
-			}
-			return awsTags
-		}(),
+		tags:                awsTags(tags),
 	}
 
 	return p, nil
@@ -120,6 +114,15 @@ func newSdNamespaceFilter(namespaceTypeConfig string) sdtypes.NamespaceFilter {
 	default:
 		return sdtypes.NamespaceFilter{}
 	}
+}
+
+// awsTags converts user supplied tags to AWS format
+func awsTags(tags map[string]string) []sdtypes.Tag {
+	awsTags := make([]sdtypes.Tag, 0, len(tags))
+	for k, v := range tags {
+		awsTags = append(awsTags, sdtypes.Tag{Key: aws.String(k), Value: aws.String(v)})
+	}
+	return awsTags
 }
 
 // Records returns list of all endpoints.
