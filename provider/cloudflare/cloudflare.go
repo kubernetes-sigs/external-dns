@@ -482,7 +482,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 		},
 		RegionalHostname: cloudflare.RegionalHostname{
 			Hostname:  endpoint.DNSName,
-			RegionKey: endpoint.SetIdentifier,
+			RegionKey: p.RegionKey,
 			CreatedOn: &dt,
 		},
 	}
