@@ -29,8 +29,8 @@ ExternalDNS reads the legacy formats formats as well in order to facilitate the 
 With `--txt-format` set to `transition`, ExternalDNS creates tree distinct registry records:
 
 1. `{record_type}._metadata.{record_name}`
-2. `{record_type}.{record_name}`
-3. `{record_name}`
+2. `{record_type}.{record_name}` (previously refered as the `new` format).
+3. `{record_name}` (previously refered as the `old` format).
 
 Formats 2 and 3 are cosidered legacy and will be removed in the future.
 

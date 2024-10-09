@@ -223,7 +223,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	// old TXT record format
+	// Plain format (previously referenced as "old", see https://github.com/kubernetes-sigs/external-dns/blob/master/docs/registry/txt.md#transition)
 	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && im.txtFormat == TXTFormatTransition && r.RecordType != endpoint.RecordTypeAAAA {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -240,7 +240,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		recordType = endpoint.RecordTypeCNAME
 	}
 
-	// "new" (version 2) TXT record format (containing record type)
+	// Format containing {record_type} (previously referenced as "new", see https://github.com/kubernetes-sigs/external-dns/blob/master/docs/registry/txt.md#transition)
 	if im.txtFormat == TXTFormatTransition && (recordType == endpoint.RecordTypeAAAA || recordType == endpoint.RecordTypeCNAME) {
 		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txtNew != nil {
@@ -251,7 +251,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 
-	// Metadata TXT record format
+	// Metadata format (see https://github.com/kubernetes-sigs/external-dns/blob/cf0c3a6a64ffd1fed167e020fd157322d4e08bab/docs/registry/txt.md#metadata)
 	txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 	if txtMetadata != nil {
 		txtMetadata.WithSetIdentifier(r.SetIdentifier)
