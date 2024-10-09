@@ -35,25 +35,10 @@ const (
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
-type TXTFormat string
-
 const (
-	TXTFormatTransition   TXTFormat = "transition"
-	TXTFormatOnlyMetadata TXTFormat = "only-metadata"
+	TXTFormatTransition   = "transition"
+	TXTFormatOnlyMetadata = "only-metadata"
 )
-
-func ParseTXTFormat(name string) TXTFormat {
-	switch name {
-	case TXTFormatTransition.String():
-		return TXTFormatTransition
-	default:
-		return TXTFormatOnlyMetadata
-	}
-}
-
-func (t TXTFormat) String() string {
-	return string(t)
-}
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
@@ -78,11 +63,11 @@ type TXTRegistry struct {
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 
-	txtFormat TXTFormat
+	txtFormat string
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormat TXTFormat) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormat string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}

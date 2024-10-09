@@ -301,7 +301,7 @@ var defaultConfig = &Config{
 	MinEventSyncInterval:        5 * time.Second,
 	TXTEncryptEnabled:           false,
 	TXTEncryptAESKey:            "",
-	TXTFormat:                   registry.TXTFormatTransition.String(),
+	TXTFormat:                   registry.TXTFormatTransition,
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
