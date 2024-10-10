@@ -225,6 +225,12 @@ domainFilters: []
 ## -- Intentionally exclude domains from being managed.
 excludeDomains: []
 
+## - Record types to be managed
+managedRecordTypes:
+  - A
+  - AAAA
+  - CNAME
+
 provider:
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
   name: aws
