@@ -102,7 +102,8 @@ func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {
 		stsSvc := sts.NewFromConfig(cfg)
 		var assumeRoleOpts []func(*stscredsv2.AssumeRoleOptions)
 		if awsConfig.AssumeRoleExternalID != "" {
-			logrus.Infof("Assuming role: %s with external id %s", awsConfig.AssumeRole, awsConfig.AssumeRoleExternalID)
+			logrus.Infof("Assuming role %s with external id", awsConfig.AssumeRole)
+			logrus.Debugf("External id: %s", awsConfig.AssumeRoleExternalID)
 			assumeRoleOpts = []func(*stscredsv2.AssumeRoleOptions){
 				func(opts *stscredsv2.AssumeRoleOptions) {
 					opts.ExternalID = &awsConfig.AssumeRoleExternalID
