@@ -19,6 +19,7 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -32,6 +33,11 @@ import (
 const (
 	recordTemplate              = "%{record_type}"
 	providerSpecificForceUpdate = "txt/force-update"
+)
+
+const (
+	TXTFormatTransition   = "transition"
+	TXTFormatOnlyMetadata = "only-metadata"
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -56,10 +62,12 @@ type TXTRegistry struct {
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
+
+	txtFormat string
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormat string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -88,6 +96,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		txtFormat:           txtFormat,
 	}, nil
 }
 
@@ -214,8 +223,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
-		// old TXT record format
+	// Plain format (previously referenced as "old", see https://github.com/kubernetes-sigs/external-dns/blob/master/docs/registry/txt.md#transition)
+	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && im.txtFormat == TXTFormatTransition && r.RecordType != endpoint.RecordTypeAAAA {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
 			txt.WithSetIdentifier(r.SetIdentifier)
@@ -224,18 +233,31 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 			endpoints = append(endpoints, txt)
 		}
 	}
-	// new TXT record format (containing record type)
+
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
 		recordType = endpoint.RecordTypeCNAME
 	}
-	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
-		txtNew.WithSetIdentifier(r.SetIdentifier)
-		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
+
+	// Format containing {record_type} (previously referenced as "new", see https://github.com/kubernetes-sigs/external-dns/blob/master/docs/registry/txt.md#transition)
+	if im.txtFormat == TXTFormatTransition && (recordType == endpoint.RecordTypeAAAA || recordType == endpoint.RecordTypeCNAME) {
+		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+		if txtNew != nil {
+			txtNew.WithSetIdentifier(r.SetIdentifier)
+			txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+			txtNew.ProviderSpecific = r.ProviderSpecific
+			endpoints = append(endpoints, txtNew)
+		}
+	}
+
+	// Metadata format (see https://github.com/kubernetes-sigs/external-dns/blob/cf0c3a6a64ffd1fed167e020fd157322d4e08bab/docs/registry/txt.md#metadata)
+	txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	if txtMetadata != nil {
+		txtMetadata.WithSetIdentifier(r.SetIdentifier)
+		txtMetadata.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+		txtMetadata.ProviderSpecific = r.ProviderSpecific
+		endpoints = append(endpoints, txtMetadata)
 	}
 
 	return endpoints
@@ -316,6 +338,7 @@ type nameMapper interface {
 	toTXTName(string) string
 	toNewTXTName(string, string) string
 	recordTypeInAffix() bool
+	toMetadataTXTName(string, string) string
 }
 
 type affixNameMapper struct {
@@ -333,7 +356,16 @@ func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMap
 // extractRecordTypeDefaultPosition extracts record type from the default position
 // when not using '%{record_type}' in the prefix/suffix
 func extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
-	nameS := strings.Split(name, "-")
+	nameS := strings.Split(name, "._metadata.")
+	for _, t := range getSupportedTypes() {
+		if strings.HasPrefix(nameS[0], "*.") && strings.TrimPrefix(nameS[0], "*.") == strings.ToLower(t) {
+			return "*." + strings.TrimPrefix(name, nameS[0]+"._metadata."), t
+		}
+		if nameS[0] == strings.ToLower(t) {
+			return strings.TrimPrefix(name, nameS[0]+"._metadata."), t
+		}
+	}
+	nameS = strings.Split(name, "-")
 	for _, t := range getSupportedTypes() {
 		if nameS[0] == strings.ToLower(t) {
 			return strings.TrimPrefix(name, nameS[0]+"-"), t
@@ -466,6 +498,16 @@ func (pr affixNameMapper) toNewTXTName(endpointDNSName, recordType string) strin
 	}
 
 	return prefix + DNSName[0] + suffix + "." + DNSName[1]
+}
+
+func (pr affixNameMapper) toMetadataTXTName(endpointDNSName, recordType string) string {
+	DNSName := strings.SplitN(endpointDNSName, ".", 2)
+	recordType = strings.ToLower(recordType)
+
+	if strings.HasPrefix(endpointDNSName, "*.") {
+		return fmt.Sprintf("%s.%s._metadata.%s", DNSName[0], recordType, DNSName[1])
+	}
+	return fmt.Sprintf("%s._metadata.%s", recordType, endpointDNSName)
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
