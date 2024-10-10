@@ -2,6 +2,9 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# -- Number of replicas to run. external-dns does not support more than one replica. This can be used to deploy to a failover cluster with zero replicas.
+replicaCount: 1
+
 image:
   # -- Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns
