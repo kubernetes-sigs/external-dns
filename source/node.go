@@ -102,6 +102,11 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			continue
 		}
 
+		if node.Spec.Unschedulable {
+			log.Debugf("Skipping node %s because it is unschedulable", node.Name)
+			continue
+		}
+
 		log.Debugf("creating endpoint for node %s", node.Name)
 
 		ttl := getTTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))

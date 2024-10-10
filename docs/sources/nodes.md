@@ -7,6 +7,9 @@ The node source adds an `A` record per each node `externalIP` (if not found, any
 It also adds an `AAAA` record per each node IPv6 `internalIP`.
 The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
 
+Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded.
+This avoid exposing Unhealthy, NotReady or SchedulingDisabled (cordon) nodes.
+
 ## Manifest (for cluster without RBAC enabled)
 
 ```

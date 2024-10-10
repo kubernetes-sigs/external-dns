@@ -101,6 +101,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		nodeAddresses    []v1.NodeAddress
 		labels           map[string]string
 		annotations      map[string]string
+		unschedulable    bool // default to false
 		expected         []*endpoint.Endpoint
 		expectError      bool
 	}{
@@ -321,6 +322,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
 			},
 		},
+		{
+			title:         "unschedulable node return nothing",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable: true,
+			expected:      []*endpoint.Endpoint{},
+		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
@@ -341,6 +349,9 @@ func testNodeSourceEndpoints(t *testing.T) {
 					Name:        tc.nodeName,
 					Labels:      tc.labels,
 					Annotations: tc.annotations,
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: tc.unschedulable,
 				},
 				Status: v1.NodeStatus{
 					Addresses: tc.nodeAddresses,
