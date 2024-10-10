@@ -282,6 +282,14 @@ provider:
       scrapeTimeout:
       metricRelabelings: []
       relabelings: []
+  pihole:
+    # -- The address of the Pi-hole web server
+    address:
+    # -- The password to the Pi-hole web server (if enabled)
+    env:
+      password:
+        secret: < replace me >
+        key: EXTERNAL_DNS_PIHOLE_PASSWORD
 
 # -- Extra arguments to provide to _ExternalDNS_.
 extraArgs: []
