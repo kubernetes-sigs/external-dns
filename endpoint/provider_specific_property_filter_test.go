@@ -169,7 +169,7 @@ func TestPropertyFilter(t *testing.T) {
 
 			propertyFilter.Filter(tt.endpoints)
 
-			assert.Equal(t, tt.endpoints, tt.expectedEndpoints)
+			assert.Equal(t, tt.expectedEndpoints, tt.endpoints)
 		})
 	}
 }
