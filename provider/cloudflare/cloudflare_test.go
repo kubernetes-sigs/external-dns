@@ -1401,29 +1401,6 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	}
 }
 
-// Will come back to this before merge
-// func TestCloudFlareProvider_UpdateDataLocalizationRegionalHostname(t *testing.T) {
-// 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
-// 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-// 	provider, err := NewCloudFlareProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.ZoneIDFilter{}, true, false, 50, "us")
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	ctx := context.Background()
-// 	zoneID := "example.com"
-// 	resourceContainer := cloudflare.ZoneIdentifier(zoneID)
-// 	regionalHostnameParam := cloudflare.UpdateDataLocalizationRegionalHostnameParams{
-// 		Hostname:  "example",
-// 		RegionKey: "us",
-// 	}
-
-// 	err = provider.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
-// 	if err != nil {
-// 		t.Errorf("expected no error, but got '%v'", err)
-// 	}
-// }
-
 func TestCloudFlareProvider_getUpdateDataLocalizationRegionalHostnameParams(t *testing.T) {
 	change := &cloudFlareChange{
 		RegionalHostname: cloudflare.RegionalHostname{

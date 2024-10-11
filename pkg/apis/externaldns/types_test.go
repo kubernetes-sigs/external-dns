@@ -74,7 +74,7 @@ var (
 		AzureSubscriptionID:         "",
 		CloudflareProxied:           false,
 		CloudflareDNSRecordsPerPage: 100,
-		CloudflareRegionKey:		 "earth",
+		CloudflareRegionKey:		 "",
 		CoreDNSPrefix:               "/skydns/",
 		AkamaiServiceConsumerDomain: "",
 		AkamaiClientToken:           "",
