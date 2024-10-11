@@ -18,6 +18,8 @@ package endpoint
 
 import (
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type ProviderSpecificPropertyFilter struct {
@@ -48,6 +50,10 @@ func (pf ProviderSpecificPropertyFilter) Filter(endpoints []*Endpoint) {
 	for _, ep := range endpoints {
 		for _, providerSpecific := range ep.ProviderSpecific {
 			if !pf.Match(providerSpecific.Name) {
+				log.WithFields(log.Fields{
+					"dnsName": ep.DNSName,
+					"targets": ep.Targets,
+				}).Debugf("Provider specific property ignored by provider: %s", providerSpecific.Name)
 				ep.DeleteProviderSpecificProperty(providerSpecific.Name)
 			}
 		}
