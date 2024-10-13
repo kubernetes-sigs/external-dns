@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -271,11 +272,18 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 
 func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azurePrivateDNSChangeMap) {
 	log.Debugf("Records to be updated: %d", len(updated))
+	wg := sync.WaitGroup{}
+	for _, endpoints := range updated {
+		for range endpoints {
+			wg.Add(1)
+		}
+	}
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
 			if !p.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				wg.Done()
 				continue
 			}
 			if p.dryRun {
@@ -286,6 +294,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 					ep.Targets,
 					zone,
 				)
+				wg.Done()
 				continue
 			}
 
@@ -297,30 +306,34 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 				zone,
 			)
 
-			recordSet, err := p.newRecordSet(ep)
-			if err == nil {
-				_, err = p.recordSetsClient.CreateOrUpdate(
-					ctx,
-					p.resourceGroup,
-					zone,
-					privatedns.RecordType(ep.RecordType),
-					name,
-					recordSet,
-					nil,
-				)
-			}
-			if err != nil {
-				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for Azure Private DNS zone '%s': %v",
-					ep.RecordType,
-					name,
-					ep.Targets,
-					zone,
-					err,
-				)
-			}
+			go func(ep *endpoint.Endpoint, name, zone string) {
+				recordSet, err := p.newRecordSet(ep)
+				if err == nil {
+					_, err = p.recordSetsClient.CreateOrUpdate(
+						ctx,
+						p.resourceGroup,
+						zone,
+						privatedns.RecordType(ep.RecordType),
+						name,
+						recordSet,
+						nil,
+					)
+				}
+				if err != nil {
+					log.Errorf(
+						"Failed to update %s record named '%s' to '%s' for Azure Private DNS zone '%s': %v",
+						ep.RecordType,
+						name,
+						ep.Targets,
+						zone,
+						err,
+					)
+				}
+				wg.Done()
+			}(ep, name, zone)
 		}
 	}
+	wg.Wait()
 }
 
 func (p *AzurePrivateDNSProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {

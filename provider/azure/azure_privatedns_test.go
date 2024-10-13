@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -66,6 +67,7 @@ type mockPrivateRecordSetsClient struct {
 	pagingHandler    azcoreruntime.PagingHandler[privatedns.RecordSetsClientListResponse]
 	deletedEndpoints []*endpoint.Endpoint
 	updatedEndpoints []*endpoint.Endpoint
+	mu               sync.Mutex
 }
 
 func newMockPrivateRecordSectsClient(recordSets []*privatedns.RecordSet) mockPrivateRecordSetsClient {
@@ -82,6 +84,7 @@ func newMockPrivateRecordSectsClient(recordSets []*privatedns.RecordSet) mockPri
 		},
 	}
 	return mockPrivateRecordSetsClient{
+		mu:            sync.Mutex{},
 		pagingHandler: pagingHandler,
 	}
 }
@@ -107,6 +110,8 @@ func (client *mockPrivateRecordSetsClient) CreateOrUpdate(ctx context.Context, r
 	if parameters.Properties.TTL != nil {
 		ttl = endpoint.TTL(*parameters.Properties.TTL)
 	}
+	client.mu.Lock()
+	defer client.mu.Unlock()
 	client.updatedEndpoints = append(
 		client.updatedEndpoints,
 		endpoint.NewEndpointWithTTL(
@@ -330,7 +335,8 @@ func TestAzurePrivateDNSApplyChanges(t *testing.T) {
 		endpoint.NewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, ""),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
 	})
-
+	recordsClient.mu.Lock()
+	defer recordsClient.mu.Unlock()
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4"),
@@ -479,7 +485,6 @@ func TestAzurePrivateDNSApplyChangesZoneName(t *testing.T) {
 		endpoint.NewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, ""),
 		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
 	})
-
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
