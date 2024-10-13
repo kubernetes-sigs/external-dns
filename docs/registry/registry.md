@@ -1,6 +1,6 @@
 # Registries
 
-A registry persists metadata pertaining to DNS records.
+A registry persists metadata for all DNS records created by external-dns.
 
 The most important metadata is the owning external-dns deployment.
 This is specified using the `--txt-owner-id` flag, specifying a value unique to the
