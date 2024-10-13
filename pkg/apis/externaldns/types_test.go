@@ -134,6 +134,7 @@ var (
 		Sources:                     []string{"service", "ingress", "connector"},
 		Namespace:                   "namespace",
 		IgnoreHostnameAnnotation:    true,
+		IgnoreNonHostNetworkPods:    false,
 		IgnoreIngressTLSSpec:        true,
 		IgnoreIngressRulesSpec:      true,
 		FQDNTemplate:                "{{.Name}}.service.example.com",
@@ -193,6 +194,7 @@ var (
 		TLSCA:                       "/path/to/ca.crt",
 		TLSClientCert:               "/path/to/cert.pem",
 		TLSClientCertKey:            "/path/to/key.pem",
+		PodSourceDomain:             "example.org",
 		Policy:                      "upsert-only",
 		Registry:                    "noop",
 		TXTOwnerID:                  "owner-1",
@@ -261,6 +263,7 @@ func TestParseFlags(t *testing.T) {
 				"--source=connector",
 				"--namespace=namespace",
 				"--fqdn-template={{.Name}}.service.example.com",
+				"--no-ignore-non-host-network-pods",
 				"--ignore-hostname-annotation",
 				"--ignore-ingress-tls-spec",
 				"--ignore-ingress-rules-spec",
@@ -296,6 +299,7 @@ func TestParseFlags(t *testing.T) {
 				"--tls-ca=/path/to/ca.crt",
 				"--tls-client-cert=/path/to/cert.pem",
 				"--tls-client-cert-key=/path/to/key.pem",
+				"--pod-source-domain=example.org",
 				"--domain-filter=example.org",
 				"--domain-filter=company.com",
 				"--exclude-domains=xapi.example.org",
@@ -378,6 +382,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_SOURCE":                          "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                       "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":                   "{{.Name}}.service.example.com",
+				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":    "0",
 				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":      "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":         "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_RULES_SPEC":       "1",
@@ -405,6 +410,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_INMEMORY_ZONE":                   "example.org\ncompany.com",
 				"EXTERNAL_DNS_OVH_ENDPOINT":                    "ovh-ca",
 				"EXTERNAL_DNS_OVH_API_RATE_LIMIT":              "42",
+				"EXTERNAL_DNS_POD_SOURCE_DOMAIN":               "example.org",
 				"EXTERNAL_DNS_DOMAIN_FILTER":                   "example.org\ncompany.com",
 				"EXTERNAL_DNS_EXCLUDE_DOMAINS":                 "xapi.example.org\nxapi.company.com",
 				"EXTERNAL_DNS_REGEX_DOMAIN_FILTER":             "(example\\.org|company\\.com)$",
@@ -504,8 +510,8 @@ func restoreEnv(t *testing.T, originalEnv map[string]string) {
 
 func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
-		PDNSAPIKey:           "pdns-api-key",
-		RFC2136TSIGSecret:    "tsig-secret",
+		PDNSAPIKey:        "pdns-api-key",
+		RFC2136TSIGSecret: "tsig-secret",
 	}
 
 	s := cfg.String()
