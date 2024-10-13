@@ -93,3 +93,80 @@ The image to use for optional webhook sidecar
 {{- printf "%s:%s" .repository .tag }}
 {{- end }}
 {{- end }}
+
+{{/*
+The pod affinity rules
+*/}}
+
+{{- define "external-dns.labelSelector" -}}
+labelSelector:
+  matchLabels:
+{{ include "external-dns.selectorLabels" . | indent 4 }}
+{{- end }}
+
+{{- define "external-dns.affinity" -}}
+affinity:
+
+{{- if (hasKey .Values.affinity "podAffinity") }}
+  podAffinity:
+
+{{- if (hasKey .Values.affinity.podAffinity "preferredDuringSchedulingIgnoredDuringExecution") }}
+    preferredDuringSchedulingIgnoredDuringExecution:
+{{- range .Values.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution }}
+{{- $custom := .podAffinityTerm -}}
+{{- if (empty $custom.labelSelector) -}}
+{{- $default := (include "external-dns.labelSelector" $ ) | fromYaml -}}
+{{ (merge $default $custom) | toYaml | nindent 6 }}
+{{- else }}
+{{ $custom | toYaml | indent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if (hasKey .Values.affinity.podAffinity "requiredDuringSchedulingIgnoredDuringExecution") }}
+    requiredDuringSchedulingIgnoredDuringExecution:
+{{- range .Values.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution }}
+{{- $custom := . -}}
+{{- if (empty $custom.labelSelector) -}}
+{{- $default := (include "external-dns.labelSelector" $ ) | fromYaml -}}
+{{ (merge $default $custom) | toYaml | nindent 6 }}
+{{- else }}
+{{ $custom | toYaml | indent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- if (hasKey .Values.affinity "podAntiAffinity") }}
+  podAntiAffinity:
+
+{{- if (hasKey .Values.affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution") }}
+    preferredDuringSchedulingIgnoredDuringExecution:
+{{- range .Values.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution }}
+{{- $custom := .podAntiAffinityTerm -}}
+{{- if (empty $custom.labelSelector) -}}
+{{- $default := (include "external-dns.labelSelector" $ ) | fromYaml -}}
+{{ (merge $default $custom) | toYaml | nindent 6 }}
+{{- else }}
+{{ $custom | toYaml | indent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if (hasKey .Values.affinity.podAntiAffinity "requiredDuringSchedulingIgnoredDuringExecution") }}
+    requiredDuringSchedulingIgnoredDuringExecution:
+{{- range .Values.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution }}
+{{- $custom := . -}}
+{{- if (empty $custom.labelSelector) -}}
+{{- $default := (include "external-dns.labelSelector" $ ) | fromYaml -}}
+{{ (merge $default $custom) | toYaml | nindent 6 }}
+{{- else }}
+{{ $custom | toYaml | indent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- end }}
