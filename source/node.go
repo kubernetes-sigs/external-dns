@@ -174,18 +174,9 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 		v1.NodeExternalIP: {},
 		v1.NodeInternalIP: {},
 	}
-	var ipv6Addresses []string
 
 	for _, addr := range node.Status.Addresses {
 		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
-		// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
-			ipv6Addresses = append(ipv6Addresses, addr.Address)
-		}
-	}
-
-	if len(addresses[v1.NodeExternalIP]) > 0 {
-		return append(addresses[v1.NodeExternalIP], ipv6Addresses...), nil
 	}
 
 	if len(addresses[v1.NodeInternalIP]) > 0 {
