@@ -104,6 +104,7 @@ type Config struct {
 	AzureSubscriptionID                string
 	AzureUserAssignedIdentityClientID  string
 	AzureActiveDirectoryAuthorityHost  string
+	AzureZonesCacheDuration            time.Duration
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
 	CoreDNSPrefix                      string
@@ -261,6 +262,7 @@ var defaultConfig = &Config{
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
+	AzureZonesCacheDuration:     0 * time.Second,
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
 	CoreDNSPrefix:               "/skydns/",
@@ -479,6 +481,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("azure-subscription-id", "When using the Azure provider, override the Azure subscription to use (optional)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
+	app.Flag("azure-zones-cache-duration", "When using the Azure provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AzureZonesCacheDuration.String()).DurationVar(&cfg.AzureZonesCacheDuration)
 	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
 	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
 

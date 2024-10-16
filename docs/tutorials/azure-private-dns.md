@@ -98,6 +98,10 @@ $ az role assignment create --role "Reader" --assignee <appId GUID> --scope <res
 $ az role assignment create --role "Private DNS Zone Contributor" --assignee <appId GUID> --scope <dns zone resource id>
 ```
 
+## Throttling
+
+If the ExternalDNS managed zones list doesn't change frequently, set `--azure-zones-cache-duration` (zones list cache time-to-live) to a larger value. Note that zones list cache can be disabled with `--azure-zones-cache-duration=0s`.
+
 ## Deploy ExternalDNS
 Configure `kubectl` to be able to communicate and authenticate with your cluster.
 This is per default done through the file `~/.kube/config`.
