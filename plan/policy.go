@@ -16,6 +16,10 @@ limitations under the License.
 
 package plan
 
+import (
+	log "github.com/sirupsen/logrus"
+)
+
 // Policy allows to apply different rules to a set of changes.
 type Policy interface {
 	Apply(changes *Changes) *Changes
@@ -41,6 +45,9 @@ type UpsertOnlyPolicy struct{}
 
 // Apply applies the upsert-only policy which strips out any deletions.
 func (p *UpsertOnlyPolicy) Apply(changes *Changes) *Changes {
+	for _, ep := range changes.Delete {
+        	log.Debugf(`Skipping deletion of endpoint %v due to "upsert-only" policy`, ep)
+	}
 	return &Changes{
 		Create:    changes.Create,
 		UpdateOld: changes.UpdateOld,
@@ -53,6 +60,15 @@ type CreateOnlyPolicy struct{}
 
 // Apply applies the create-only policy which strips out updates and deletions.
 func (p *CreateOnlyPolicy) Apply(changes *Changes) *Changes {
+	for _, ep := range changes.Delete {
+		log.Debugf(`Skipping deletion of endpoint %v due to "create-only" policy`, ep)
+	}
+	for _, ep := range changes.UpdateOld {
+		log.Debugf(`Skipping update-old of endpoint %v due to "create-only" policy`, ep)
+	}
+	for _, ep := range changes.UpdateNew {
+		log.Debugf(`Skipping update-new of endpoint %v due to "create-only" policy`, ep)
+	}
 	return &Changes{
 		Create: changes.Create,
 	}
