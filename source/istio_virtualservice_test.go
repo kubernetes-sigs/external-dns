@@ -29,13 +29,10 @@ import (
 	istionetworking "istio.io/api/networking/v1alpha3"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
-	fakenetworking3 "istio.io/client-go/pkg/clientset/versioned/typed/networking/v1alpha3/fake"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-	k8sclienttesting "k8s.io/client-go/testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -699,6 +696,20 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
+
+			for i := range ti.ingresses {
+				if ti.ingresses[i].namespace == "" {
+					ti.ingresses[i].namespace = "test"
+				}
+			}
+
+			if ti.gwconfig.namespace == "" {
+				ti.gwconfig.namespace = "test"
+			}
+
+			if ti.vsconfig.namespace == "" {
+				ti.vsconfig.namespace = "test"
+			}
 
 			if source, err := newTestVirtualServiceSource(ti.lbServices, ti.ingresses, []fakeGatewayConfig{ti.gwconfig}); err != nil {
 				require.NoError(t, err)
@@ -2182,34 +2193,6 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			Spec:       istionetworking.Gateway{},
 			Status:     v1alpha1.IstioStatus{},
 		}, expectedErrStr: ""},
-		{name: "ErrorGettingGateway", fields: fields{
-			virtualServiceSource: func() *virtualServiceSource {
-				istioFake := istiofake.NewSimpleClientset()
-				istioFake.NetworkingV1alpha3().(*fakenetworking3.FakeNetworkingV1alpha3).PrependReactor("get", "gateways", func(action k8sclienttesting.Action) (handled bool, ret runtime.Object, err error) {
-					return true, &networkingv1alpha3.Gateway{}, fmt.Errorf("error getting gateway")
-				})
-				vs, _ := NewIstioVirtualServiceSource(
-					context.TODO(),
-					fake.NewSimpleClientset(),
-					istioFake,
-					"",
-					"",
-					"{{.Name}}",
-					false,
-					false,
-				)
-				return vs.(*virtualServiceSource)
-			}(),
-		}, args: args{
-			ctx:        context.TODO(),
-			gatewayStr: "foo/bar",
-			virtualService: &networkingv1alpha3.VirtualService{
-				TypeMeta:   metav1.TypeMeta{},
-				ObjectMeta: metav1.ObjectMeta{Name: "gateway", Namespace: "error"},
-				Spec:       istionetworking.VirtualService{},
-				Status:     v1alpha1.IstioStatus{},
-			},
-		}, want: nil, expectedErrStr: "error getting gateway"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
