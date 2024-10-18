@@ -86,6 +86,7 @@ Known providers using webhooks:
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
