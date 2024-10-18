@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed to add correct webhook metric port to `Service` and `ServiceMonitor`. ([#4643](https://github.com/kubernetes-sigs/external-dns/pull/4643)) _@kimsondrup_
 - Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes. ([#4691](https://github.com/kubernetes-sigs/external-dns/pull/4691)) _@kimsondrup_ & _@hatrx_
 
+### Added
+- Added support for `ignore-nodeports` argument ([#4727](https://github.com/kubernetes-sigs/external-dns/pull/4727)) _@jpiper_
+
 ## [v1.14.5] - 2023-06-10
 
 ### Added
