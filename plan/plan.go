@@ -242,7 +242,7 @@ func (p *Plan) Calculate() *Plan {
 					changes.Create = append(changes.Create, creates...)
 				} else {
 					for _, current := range row.current {
-						log.Debugf(`Skipping endpoint %v because owner id does not match for one or more items to create, found: "%s", required: "%s"`, current, current.Labels[OwnerLabelKey], p.OwnerID)
+						log.Debugf(`Skipping endpoint %v because owner id does not match for one or more items to create, found: "%s", required: "%s"`, current, current.Labels[endpoint.OwnerLabelKey], p.OwnerID)
 					}
 				}
 			}
