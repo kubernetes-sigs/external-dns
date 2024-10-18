@@ -140,25 +140,71 @@ type RecordParamsTypes interface {
 }
 
 // getUpdateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getUpdateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
-	return cloudflare.UpdateDNSRecordParams{
+func getUpdateDNSRecordParam(cfc cloudFlareChange) (cloudflare.UpdateDNSRecordParams, error) {
+	recordParam := cloudflare.UpdateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
-		Content: cfc.ResourceRecord.Content,
 	}
+
+	if cfc.ResourceRecord.Type == "SRV" {
+		recordParam.Data = cfc.ResourceRecord.Data
+	} else {
+		recordParam.Content = cfc.ResourceRecord.Content
+	}
+
+	return recordParam, nil
 }
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordParams {
-	return cloudflare.CreateDNSRecordParams{
+func getCreateDNSRecordParam(cfc cloudFlareChange) (cloudflare.CreateDNSRecordParams, error) {
+	recordParam := cloudflare.CreateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
-		Content: cfc.ResourceRecord.Content,
 	}
+
+	if cfc.ResourceRecord.Type == "SRV" {
+		recordParam.Data = cfc.ResourceRecord.Data
+	} else {
+		recordParam.Content = cfc.ResourceRecord.Content
+	}
+
+	return recordParam, nil
+}
+
+// parseSRVContent parses the SRV record content string into the structured data required by the Cloudflare API
+func parseSRVContent(content string) (map[string]interface{}, error) {
+	parts := strings.Fields(content)
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("invalid SRV record content: %s", content)
+	}
+
+	priority, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid priority in SRV record content: %s", parts[0])
+	}
+
+	weight, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid weight in SRV record content: %s", parts[1])
+	}
+
+	port, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return nil, fmt.Errorf("invalid port in SRV record content: %s", parts[2])
+	}
+
+	target := parts[3]
+
+	return map[string]interface{}{
+		"priority": priority,
+		"weight":   weight,
+		"port":     port,
+		"target":   target,
+	}, nil
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
@@ -350,9 +396,14 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				recordParam := getUpdateDNSRecordParam(*change)
+				recordParam, err := getUpdateDNSRecordParam(*change)
+				if err != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to get update DNS record param: %v", err)
+					continue
+				}
 				recordParam.ID = recordID
-				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
+				err = p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
@@ -369,8 +420,13 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
 				}
 			} else if change.Action == cloudFlareCreate {
-				recordParam := getCreateDNSRecordParam(*change)
-				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
+				recordParam, err := getCreateDNSRecordParam(*change)
+				if err != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to get create DNS record param: %v", err)
+					continue
+				}
+				_, err = p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
@@ -439,21 +495,32 @@ func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record 
 func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoint.Endpoint, target string) *cloudFlareChange {
 	ttl := defaultCloudFlareRecordTTL
 	proxied := shouldBeProxied(endpoint, p.proxiedByDefault)
-
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int(endpoint.RecordTTL)
 	}
 
-	return &cloudFlareChange{
+	change := &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
 			Name:    endpoint.DNSName,
 			TTL:     ttl,
 			Proxied: &proxied,
 			Type:    endpoint.RecordType,
-			Content: target,
 		},
 	}
+
+	if endpoint.RecordType == "SRV" {
+		srvData, err := parseSRVContent(target)
+		if err != nil {
+			log.Errorf("Error parsing SRV content: %v", err)
+			return nil
+		}
+		change.ResourceRecord.Data = srvData
+	} else {
+		change.ResourceRecord.Content = target
+	}
+
+	return change
 }
 
 // listDNSRecords performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
@@ -527,7 +594,19 @@ func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
 	for _, records := range groups {
 		targets := make([]string, len(records))
 		for i, record := range records {
-			targets[i] = record.Content
+			if record.Type == "SRV" {
+				if dataMap, ok := record.Data.(map[string]interface{}); ok {
+					priority, _ := dataMap["priority"].(float64)
+					weight, _ := dataMap["weight"].(float64)
+					port, _ := dataMap["port"].(float64)
+					target, _ := dataMap["target"].(string)
+					targets[i] = fmt.Sprintf("%d %d %d %s", int(priority), int(weight), int(port), target)
+				} else {
+					log.Errorf("SRV record data is not in the expected format for record %s", record.Name)
+				}
+			} else {
+				targets[i] = record.Content
+			}
 		}
 		endpoints = append(endpoints,
 			endpoint.NewEndpointWithTTL(

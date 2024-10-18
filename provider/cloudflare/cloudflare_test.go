@@ -109,21 +109,31 @@ func NewMockCloudFlareClientWithRecords(records map[string][]cloudflare.DNSRecor
 func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 	switch params := rp.(type) {
 	case cloudflare.CreateDNSRecordParams:
-		return cloudflare.DNSRecord{
+		record := cloudflare.DNSRecord{
 			Name:    params.Name,
 			TTL:     params.TTL,
 			Proxied: params.Proxied,
 			Type:    params.Type,
-			Content: params.Content,
 		}
+		if params.Type == "SRV" {
+			record.Data = params.Data
+		} else {
+			record.Content = params.Content
+		}
+		return record
 	case cloudflare.UpdateDNSRecordParams:
-		return cloudflare.DNSRecord{
+		record := cloudflare.DNSRecord{
 			Name:    params.Name,
 			TTL:     params.TTL,
 			Proxied: params.Proxied,
 			Type:    params.Type,
-			Content: params.Content,
 		}
+		if params.Type == "SRV" {
+			record.Data = params.Data
+		} else {
+			record.Content = params.Content
+		}
+		return record
 	default:
 		return cloudflare.DNSRecord{}
 	}
@@ -317,9 +327,9 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 
 	changes := plan.Calculate().Changes
 
-	// Records other than A, CNAME and NS are not supported by planner, just create them
+	// Records other than A, CNAME, SRV and NS are not supported by planner, just create them
 	for _, endpoint := range endpoints {
-		if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" && endpoint.RecordType != "NS" {
+		if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" && endpoint.RecordType != "NS" && endpoint.RecordType != "SRV" {
 			changes.Create = append(changes.Create, endpoint)
 		}
 	}
@@ -430,6 +440,60 @@ func TestCloudflareCustomTTL(t *testing.T) {
 		},
 	},
 		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	)
+}
+
+func TestCloudflareSRVRecord(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "SRV",
+			DNSName:    "_sip._tcp.srv.bar.com",
+			Targets:    endpoint.Targets{"10 20 5060 sip.bar.com", "10 50 5060 sip2.bar.com"},
+			RecordTTL:  120,
+		},
+	}
+
+	expectedActions := []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type: "SRV",
+				Name: "_sip._tcp.srv.bar.com",
+				Data: map[string]interface{}{
+					"priority": 10,
+					"weight":   20,
+					"port":     5060,
+					"target":   "sip.bar.com",
+				},
+				TTL:     120,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type: "SRV",
+				Name: "_sip._tcp.srv.bar.com",
+				Data: map[string]interface{}{
+					"priority": 10,
+					"weight":   50,
+					"port":     5060,
+					"target":   "sip2.bar.com",
+				},
+				TTL:     120,
+				Proxied: proxyDisabled,
+			},
+		},
+	}
+
+	AssertActions(
+		t,
+		&CloudFlareProvider{},
+		endpoints,
+		expectedActions,
+		[]string{endpoint.RecordTypeSRV},
 	)
 }
 
@@ -579,7 +643,12 @@ func TestCloudflareSetProxied(t *testing.T) {
 			{
 				RecordType: testCase.recordType,
 				DNSName:    testCase.domain,
-				Targets:    endpoint.Targets{"127.0.0.1"},
+				Targets: func() endpoint.Targets {
+					if testCase.recordType == "SRV" {
+						return endpoint.Targets{"0 0 8080 127.0.0.1"} // Example SRV format: priority weight port target
+					}
+					return endpoint.Targets{"127.0.0.1"}
+				}(),
 				ProviderSpecific: endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
 						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
@@ -589,19 +658,31 @@ func TestCloudflareSetProxied(t *testing.T) {
 			},
 		}
 
+		expectedRecord := cloudflare.DNSRecord{
+			Type:    testCase.recordType,
+			Name:    testCase.domain,
+			TTL:     1,
+			Proxied: testCase.proxiable,
+		}
+
+		if testCase.recordType == "SRV" {
+			expectedRecord.Data = map[string]interface{}{
+				"priority": 0,
+				"weight":   0,
+				"port":     8080,
+				"target":   "127.0.0.1",
+			}
+		} else {
+			expectedRecord.Content = "127.0.0.1"
+		}
+
 		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 			{
-				Name:   "Create",
-				ZoneId: "001",
-				RecordData: cloudflare.DNSRecord{
-					Type:    testCase.recordType,
-					Name:    testCase.domain,
-					Content: "127.0.0.1",
-					TTL:     1,
-					Proxied: testCase.proxiable,
-				},
+				Name:       "Create",
+				ZoneId:     "001",
+				RecordData: expectedRecord,
 			},
-		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
+		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeSRV}, testCase.recordType+" record on "+testCase.domain)
 	}
 }
 
