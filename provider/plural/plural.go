@@ -83,10 +83,6 @@ func (p *PluralProvider) Records(_ context.Context) (endpoints []*endpoint.Endpo
 	return
 }
 
-func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return endpoints, nil
-}
-
 func (p *PluralProvider) ApplyChanges(_ context.Context, diffs *plan.Changes) error {
 	var changes []*RecordChange
 	for _, endpoint := range diffs.Create {
