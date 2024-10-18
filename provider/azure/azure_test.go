@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -65,6 +66,7 @@ type mockRecordSetsClient struct {
 	pagingHandler    azcoreruntime.PagingHandler[dns.RecordSetsClientListAllByDNSZoneResponse]
 	deletedEndpoints []*endpoint.Endpoint
 	updatedEndpoints []*endpoint.Endpoint
+	mu               sync.Mutex
 }
 
 func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {
@@ -81,6 +83,7 @@ func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {
 		},
 	}
 	return mockRecordSetsClient{
+		mu:            sync.Mutex{},
 		pagingHandler: pagingHandler,
 	}
 }
@@ -106,6 +109,8 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 	if parameters.Properties.TTL != nil {
 		ttl = endpoint.TTL(*parameters.Properties.TTL)
 	}
+	client.mu.Lock()
+	defer client.mu.Unlock()
 	client.updatedEndpoints = append(
 		client.updatedEndpoints,
 		endpoint.NewEndpointWithTTL(
@@ -336,7 +341,8 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, ""),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
 	})
-
+	recordsClient.mu.Lock()
+	defer recordsClient.mu.Unlock()
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4"),
@@ -365,6 +371,8 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{})
 
+	recordsClient.mu.Lock()
+	defer recordsClient.mu.Unlock()
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{})
 }
 
@@ -488,6 +496,8 @@ func TestAzureApplyChangesZoneName(t *testing.T) {
 		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
 	})
 
+	recordsClient.mu.Lock()
+	defer recordsClient.mu.Unlock()
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
