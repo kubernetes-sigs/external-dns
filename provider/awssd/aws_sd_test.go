@@ -900,3 +900,39 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 
 	assert.Len(t, instances["srv1"], 0)
 }
+
+func TestAWSSDProvider_awsTags(t *testing.T) {
+	tests := []struct {
+		Expectation []sdtypes.Tag
+		Input       map[string]string
+	}{
+		{
+			Expectation: []sdtypes.Tag{
+				{
+					Key:   aws.String("key1"),
+					Value: aws.String("value1"),
+				},
+				{
+					Key:   aws.String("key2"),
+					Value: aws.String("value2"),
+				},
+			},
+			Input: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		},
+		{
+			Expectation: []sdtypes.Tag{},
+			Input:       map[string]string{},
+		},
+		{
+			Expectation: []sdtypes.Tag{},
+			Input:       nil,
+		},
+	}
+
+	for _, test := range tests {
+		assert.EqualValues(t, test.Expectation, awsTags(test.Input))
+	}
+}
