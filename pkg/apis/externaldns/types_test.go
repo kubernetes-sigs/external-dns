@@ -68,6 +68,7 @@ var (
 		AWSProfiles:                 []string{""},
 		AWSZoneCacheDuration:        0 * time.Second,
 		AWSSDServiceCleanup:         false,
+		AWSSDCreateTag:              map[string]string{},
 		AWSDynamoDBTable:            "external-dns",
 		AzureConfigFile:             "/etc/kubernetes/azure.json",
 		AzureResourceGroup:          "",
@@ -167,6 +168,7 @@ var (
 		AWSProfiles:                 []string{"profile1", "profile2"},
 		AWSZoneCacheDuration:        10 * time.Second,
 		AWSSDServiceCleanup:         true,
+		AWSSDCreateTag:              map[string]string{"key1": "value1", "key2": "value2"},
 		AWSDynamoDBTable:            "custom-table",
 		AzureConfigFile:             "azure.json",
 		AzureResourceGroup:          "arg",
@@ -325,6 +327,8 @@ func TestParseFlags(t *testing.T) {
 				"--aws-profile=profile2",
 				"--aws-zones-cache-duration=10s",
 				"--aws-sd-service-cleanup",
+				"--aws-sd-create-tag=key1=value1",
+				"--aws-sd-create-tag=key2=value2",
 				"--no-aws-evaluate-target-health",
 				"--policy=upsert-only",
 				"--registry=noop",
@@ -436,6 +440,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AWS_PROFILE":                     "profile1\nprofile2",
 				"EXTERNAL_DNS_AWS_ZONES_CACHE_DURATION":        "10s",
 				"EXTERNAL_DNS_AWS_SD_SERVICE_CLEANUP":          "true",
+				"EXTERNAL_DNS_AWS_SD_CREATE_TAG":               "key1=value1\nkey2=value2",
 				"EXTERNAL_DNS_DYNAMODB_TABLE":                  "custom-table",
 				"EXTERNAL_DNS_POLICY":                          "upsert-only",
 				"EXTERNAL_DNS_REGISTRY":                        "noop",
@@ -504,8 +509,8 @@ func restoreEnv(t *testing.T, originalEnv map[string]string) {
 
 func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
-		PDNSAPIKey:           "pdns-api-key",
-		RFC2136TSIGSecret:    "tsig-secret",
+		PDNSAPIKey:        "pdns-api-key",
+		RFC2136TSIGSecret: "tsig-secret",
 	}
 
 	s := cfg.String()

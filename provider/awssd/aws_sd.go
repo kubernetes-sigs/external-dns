@@ -79,10 +79,12 @@ type AWSSDProvider struct {
 	cleanEmptyService bool
 	// filter services for removal
 	ownerID string
+	// tags to be added to the service
+	tags []sdtypes.Tag
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, client AWSSDClient) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, tags map[string]string, client AWSSDClient) (*AWSSDProvider, error) {
 	p := &AWSSDProvider{
 		client:              client,
 		dryRun:              dryRun,
@@ -90,6 +92,7 @@ func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, 
 		namespaceTypeFilter: newSdNamespaceFilter(namespaceType),
 		cleanEmptyService:   cleanEmptyService,
 		ownerID:             ownerID,
+		tags:                awsTags(tags),
 	}
 
 	return p, nil
@@ -111,6 +114,15 @@ func newSdNamespaceFilter(namespaceTypeConfig string) sdtypes.NamespaceFilter {
 	default:
 		return sdtypes.NamespaceFilter{}
 	}
+}
+
+// awsTags converts user supplied tags to AWS format
+func awsTags(tags map[string]string) []sdtypes.Tag {
+	awsTags := make([]sdtypes.Tag, 0, len(tags))
+	for k, v := range tags {
+		awsTags = append(awsTags, sdtypes.Tag{Key: aws.String(k), Value: aws.String(v)})
+	}
+	return awsTags
 }
 
 // Records returns list of all endpoints.
@@ -400,6 +412,7 @@ func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, 
 				}},
 			},
 			NamespaceId: namespaceID,
+			Tags:        p.tags,
 		})
 		if err != nil {
 			return nil, err

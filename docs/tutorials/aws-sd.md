@@ -12,7 +12,7 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 ## IAM Permissions
 
-To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. Additionally you need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
+To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
 ```
 {
@@ -37,6 +37,82 @@ To use the AWS Cloud Map API, a user must have permissions to create the DNS nam
       "Resource": [
         "*"
       ]
+    }
+  ]
+}
+```
+
+### IAM Permissions with ABAC
+You can use Attribute-based access control(ABAC) for advanced deployments.  
+
+You can define AWS tags that are applied to services created by the controller. By doing so, you can have precise control over your IAM policy to limit the scope of the permissions to services managed by the controller, rather than having to grant full permissions on your entire AWS account.  
+To pass tags to service creation, use either CLI flags or environment variables:  
+
+*cli:* `--aws-sd-create-tag=key1=value1 --aws-sd-create-tag=key2=value2`
+
+*environment:* `EXTERNAL_DNS_AWS_SD_CREATE_TAG=key1=value1\nkey2=value2`
+
+Using tags, your `servicediscovery` policy can become:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:ListNamespaces",
+        "servicediscovery:ListServices"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:CreateService",
+        "servicediscovery:TagResource"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/YOUR_TAG_KEY": "YOUR_TAG_VALUE"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:DiscoverInstances"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "servicediscovery:NamespaceName": "YOUR_NAMESPACE_NAME"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:RegisterInstance",
+        "servicediscovery:DeregisterInstance",
+        "servicediscovery:DeleteService",
+        "servicediscovery:UpdateService"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/YOUR_TAG_KEY": "YOUR_TAG_VALUE"
+        }
+      }
     }
   ]
 }
