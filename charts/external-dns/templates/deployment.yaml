@@ -195,13 +195,17 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "external-dns.affinity" $ | nindent 6 }}
       {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
+        {{- range . }}
+        - {{ toYaml . | nindent 10 | trim }}
+          {{- if not (hasKey . "labelSelector") }}
+          labelSelector:
+            matchLabels:
+              {{- include "external-dns.selectorLabels" $ | nindent 12 }}
+          {{- end }}
+        {{- end }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
