@@ -84,6 +84,18 @@ spec:
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if eq $providerName "pihole" }}
+          {{- with .Values.provider.pihole }}
+          {{- with .env }}
+          env:
+            - name: EXTERNAL_DNS_PIHOLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .password.secret }}
+                  key: {{ .password.key }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
           args:
             - --log-level={{ .Values.logLevel }}
             - --log-format={{ .Values.logFormat }}
@@ -115,6 +127,11 @@ spec:
             - --exclude-domains={{ . }}
             {{- end }}
             - --provider={{ $providerName }}
+            {{- if eq $providerName "pihole" }}
+            {{- with .Values.provider.pihole }}
+            - --pihole-server={{ .address }}
+            {{- end }}
+            {{- end }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
