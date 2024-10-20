@@ -139,6 +139,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | rbac.create | bool | `true` | If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API. |
 | readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | registry | string | `"txt"` | Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`. |
+| replicaCount | int | `1` | Number of replicas to run. external-dns does not support more than one replica. This can be used to deploy to a failover cluster with zero replicas. |
 | resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container. |
 | revisionHistoryLimit | int | `nil` | Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``. |
 | secretConfiguration.data | object | `{}` | `Secret` data. |
