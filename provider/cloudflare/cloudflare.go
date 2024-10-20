@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -271,10 +271,16 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	cloudflareChanges := []*cloudFlareChange{}
+	cloudflarePreChanges := []*cloudFlareChange{}
+	cloudflarePostChanges := []*cloudFlareChange{}
 
 	for _, endpoint := range changes.Create {
 		for _, target := range endpoint.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target))
+			if strings.ToUpper(endpoint.RecordType) == "TXT" {
+				cloudflarePreChanges = append(cloudflarePreChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target))
+			} else {
+				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target))
+			}
 		}
 	}
 
@@ -298,11 +304,22 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	for _, endpoint := range changes.Delete {
 		for _, target := range endpoint.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target))
+			if strings.ToUpper(endpoint.RecordType) == "TXT" {
+				cloudflarePostChanges = append(cloudflarePostChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target))
+			} else {
+				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target))
+			}
 		}
 	}
 
-	return p.submitChanges(ctx, cloudflareChanges)
+	if err := p.submitChanges(ctx, cloudflarePreChanges); err != nil {
+		return err
+	}
+	if err := p.submitChanges(ctx, cloudflareChanges); err != nil {
+		return err
+	}
+
+	return p.submitChanges(ctx, cloudflarePostChanges)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
