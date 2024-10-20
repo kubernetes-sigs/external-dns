@@ -70,6 +70,10 @@ const (
 	zoneStateActive         = "ACTIVE"
 )
 
+var ibmProviderSpecificPropertyFilter = endpoint.ProviderSpecificPropertyFilter{
+	Prefixes: []string{"ibmcloud-"},
+}
+
 // Source shadow the interface source.Source. used primarily for unit testing.
 type Source interface {
 	Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -331,6 +335,9 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		privateZone:      isPrivate,
 		proxiedByDefault: proxiedByDefault,
 		DryRun:           dryRun,
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: ibmProviderSpecificPropertyFilter,
+		},
 	}
 	return provider, nil
 }
@@ -387,9 +394,14 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *IBMCloudProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	endpoints, err := p.BaseProvider.AdjustEndpoints(endpoints)
+	if err != nil {
+		return endpoints, err
+	}
+
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
-		log.Debugf("adjusting endpont: %v", *e)
+		log.Debugf("adjusting endpoint: %v", *e)
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
 		if proxied {
 			e.RecordTTL = 0

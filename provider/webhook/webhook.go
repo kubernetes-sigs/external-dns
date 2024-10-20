@@ -40,6 +40,9 @@ const (
 )
 
 var (
+	webhookProviderSpecificPropertyFilter = endpoint.ProviderSpecificPropertyFilter{
+		Prefixes: []string{"webhook/"},
+	}
 	recordsErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
@@ -242,6 +245,9 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // based on a provider specific requirement.
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Filter out ProviderSpecificProperties not recognized by this Provider
+	webhookProviderSpecificPropertyFilter.Filter(e)
+
 	adjustEndpointsRequestsGauge.Inc()
 	endpoints := []*endpoint.Endpoint{}
 	u, err := url.JoinPath(p.remoteServerURL.String(), "adjustendpoints")
