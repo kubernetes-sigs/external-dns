@@ -26,6 +26,7 @@ import (
 	"github.com/digitalocean/godo"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	"golang.org/x/time/rate"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -46,7 +47,9 @@ type DigitalOceanProvider struct {
 	domainFilter endpoint.DomainFilter
 	// page size when querying paginated APIs
 	apiPageSize int
-	DryRun      bool
+	// rate limiter when querying the API
+	apiRateLimiter *rate.Limiter
+	DryRun         bool
 }
 
 type digitalOceanChangeCreate struct {
@@ -77,7 +80,7 @@ func (c *digitalOceanChanges) Empty() bool {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool, apiPageSize int) (*DigitalOceanProvider, error) {
+func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool, apiPageSize int, apiRateLimit int) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
@@ -91,10 +94,11 @@ func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFi
 	}
 
 	p := &DigitalOceanProvider{
-		Client:       client.Domains,
-		domainFilter: domainFilter,
-		apiPageSize:  apiPageSize,
-		DryRun:       dryRun,
+		Client:         client.Domains,
+		domainFilter:   domainFilter,
+		apiPageSize:    apiPageSize,
+		apiRateLimiter: rate.NewLimiter(rate.Limit(apiRateLimit)/60.0, 1),
+		DryRun:         dryRun,
 	}
 	return p, nil
 }
@@ -202,6 +206,11 @@ func (p *DigitalOceanProvider) fetchRecords(ctx context.Context, zoneName string
 	allRecords := []godo.DomainRecord{}
 	listOptions := &godo.ListOptions{PerPage: p.apiPageSize}
 	for {
+		err := p.apiRateLimiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		records, resp, err := p.Client.Records(ctx, zoneName, listOptions)
 		if err != nil {
 			return nil, err
@@ -227,6 +236,11 @@ func (p *DigitalOceanProvider) fetchZones(ctx context.Context) ([]godo.Domain, e
 	allZones := []godo.Domain{}
 	listOptions := &godo.ListOptions{PerPage: p.apiPageSize}
 	for {
+		err := p.apiRateLimiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		zones, resp, err := p.Client.List(ctx, listOptions)
 		if err != nil {
 			return nil, err
@@ -345,7 +359,12 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 			continue
 		}
 
-		_, _, err := p.Client.CreateRecord(ctx, c.Domain, c.Options)
+		err := p.apiRateLimiter.Wait(ctx)
+		if err != nil {
+			return err
+		}
+
+		_, _, err = p.Client.CreateRecord(ctx, c.Domain, c.Options)
 		if err != nil {
 			return err
 		}
@@ -368,7 +387,12 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 			continue
 		}
 
-		_, _, err := p.Client.EditRecord(ctx, u.Domain, u.DomainRecord.ID, u.Options)
+		err := p.apiRateLimiter.Wait(ctx)
+		if err != nil {
+			return err
+		}
+
+		_, _, err = p.Client.EditRecord(ctx, u.Domain, u.DomainRecord.ID, u.Options)
 		if err != nil {
 			return err
 		}
@@ -384,7 +408,12 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 			continue
 		}
 
-		_, err := p.Client.DeleteRecord(ctx, d.Domain, d.RecordID)
+		err := p.apiRateLimiter.Wait(ctx)
+		if err != nil {
+			return err
+		}
+
+		_, err = p.Client.DeleteRecord(ctx, d.Domain, d.RecordID)
 		if err != nil {
 			return err
 		}
