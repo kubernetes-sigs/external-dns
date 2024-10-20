@@ -46,3 +46,6 @@ the values from that.
 
 2. Otherwise, iterates over the Ingress's `status.loadBalancer.ingress`, 
 adding each non-empty `ip` and `hostname`. 
+
+In the case that `--resolve-ingress-target-hostname` set, it will resolve hostnames in the status to create 
+A/AAAA records instead of CNAME.
