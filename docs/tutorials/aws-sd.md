@@ -304,6 +304,32 @@ spec:
 
 This will set the TTL for the DNS record to 60 seconds.
 
+## IPv6 Support
+
+If your Kubernetes cluster is configured with IPv6 support, such as an [EKS cluster with IPv6 support](https://docs.aws.amazon.com/eks/latest/userguide/deploy-ipv6-cluster.html), ExternalDNS can
+also create AAAA DNS records.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.alpha.kubernetes.io/ttl: "60"
+spec:
+  ipFamilies:
+    - "IPv6"
+  type: NodePort
+  ports:
+    - port: 80
+      name: http
+      targetPort: 80
+  selector:
+    app: nginx
+```
+
+:information_source: The AWS-SD provider does not currently support dualstack load balancers and will only create A records for these at this time. See the AWS provider and the [AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md) for dualstack load balancer support.
 
 ## Clean up
 
