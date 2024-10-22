@@ -4,20 +4,20 @@ go 1.23
 
 require (
 	cloud.google.com/go/compute/metadata v0.5.2
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.18.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.5.0
-	github.com/IBM/go-sdk-core/v5 v5.17.5
+	github.com/IBM/go-sdk-core/v5 v5.18.1
 	github.com/IBM/networking-go-sdk v0.49.0
-	github.com/Yamashou/gqlgenc v0.25.2
+	github.com/Yamashou/gqlgenc v0.25.3
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.24
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.33
 	github.com/aws/aws-sdk-go-v2 v1.32.2
-	github.com/aws/aws-sdk-go-v2/config v1.27.43
+	github.com/aws/aws-sdk-go-v2/config v1.28.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.41
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.12
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.36.2
@@ -31,7 +31,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.126.0
+	github.com/digitalocean/godo v1.127.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -47,19 +47,19 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.75.2
+	github.com/oracle/oci-go-sdk/v65 v65.76.0
 	github.com/ovh/go-ovh v1.6.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.12.2
 	github.com/projectcontour/contour v1.30.0
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1016
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1016
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1016
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1028
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1028
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1028
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.16
@@ -68,8 +68,8 @@ require (
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/time v0.7.0
-	google.golang.org/api v0.199.0
-	gopkg.in/ns1/ns1-go.v2 v2.12.1
+	google.golang.org/api v0.201.0
+	gopkg.in/ns1/ns1-go.v2 v2.12.2
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.23.2
 	istio.io/client-go v1.23.2
@@ -81,7 +81,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/auth v0.9.5 // indirect
+	cloud.google.com/go/auth v0.9.8 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/99designs/gqlgen v0.17.54 // indirect
@@ -204,10 +204,10 @@ require (
 	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
-	google.golang.org/grpc v1.67.0 // indirect
-	google.golang.org/protobuf v1.34.2 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240930140551-af27646dc61f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9 // indirect
+	google.golang.org/grpc v1.67.1 // indirect
+	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
