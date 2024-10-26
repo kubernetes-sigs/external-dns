@@ -1004,6 +1004,6 @@ func TestAWSSDProvider_awsTags(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.EqualValues(t, test.Expectation, awsTags(test.Input))
+		require.ElementsMatch(t, test.Expectation, awsTags(test.Input))
 	}
 }
