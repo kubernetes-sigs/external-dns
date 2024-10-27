@@ -238,6 +238,8 @@ provider:
       pullPolicy: IfNotPresent
     # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
     env: []
+    # -- Override command for the `webhook` container.
+    command: []
     # -- Extra arguments to provide for the `webhook` container.
     args: []
     # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.
@@ -269,6 +271,8 @@ provider:
       timeoutSeconds: 5
       failureThreshold: 6
       successThreshold: 1
+    # -- Internal port for the `webhook` container.
+    port: 8080
     service:
       # -- Webhook exposed HTTP port for the service.
       port: 8080
