@@ -67,24 +67,24 @@ namespaces as `external-dns`.
 
 The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
 
-If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`).
+If `namespaced` is set to `true`, please ensure that `sources` only contains supported sources (Default: `service,ingress`).
 
 ### Support Matrix
 
-| Source                 | Supported  | Infos                  |
-|------------------------|------------|------------------------|
-| `ingress`              | ✅         |                        |
-| `istio-gateway`        | ✅         |                        |
-| `istio-virtualservice` | ✅         |                        |
-| `crd`                  | ✅         |                        |
-| `kong-tcpingress`      | ✅         |                        |
-| `openshift-route`      | ✅         |                        |
-| `skipper-routegroup`   | ✅         |                        |
-| `gloo-proxy`           | ✅         |                        |
-| `contour-httpproxy`    | ✅         |                        |
-| `service`              | ⚠️️         | NodePort not supported |
-| `node`                 | ❌         |                        |
-| `pod`                  | ❌         |                        |
+| Source                 | Supported  | Info                           |
+|------------------------|------------|--------------------------------|
+| `ingress`              | ✅         |                                |
+| `istio-gateway`        | ✅         |                                |
+| `istio-virtualservice` | ✅         |                                |
+| `crd`                  | ✅         |                                |
+| `kong-tcpingress`      | ✅         |                                |
+| `openshift-route`      | ✅         |                                |
+| `skipper-routegroup`   | ✅         |                                |
+| `gloo-proxy`           | ✅         |                                |
+| `contour-httpproxy`    | ✅         |                                |
+| `pod`                  | ⚠️         | hostNetwork pods not supported |
+| `service`              | ⚠️️         | NodePort not supported         |
+| `node`                 | ❌         |                                |
 
 ## Values
 
@@ -105,6 +105,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
+| ignoreNodePorts | bool | `false` |  |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |
 | image.tag | string | `nil` | Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set. |
