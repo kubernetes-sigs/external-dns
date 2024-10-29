@@ -192,10 +192,11 @@ func (p *OVHProvider) change(change ovhChange) error {
 		log.Debugf("OVH: Add an entry to %s", change.String())
 		return p.client.Post(fmt.Sprintf("/domain/zone/%s/record", change.Zone), change.ovhRecordFields, nil)
 	case ovhDelete:
+		log.Debugf("OVH: Delete an entry to %s", change.String())
 		if change.ID == 0 {
+			log.Debugf("OVH: No ID found when deleting entry: %s", change.String())
 			return ErrRecordToMutateNotFound
 		}
-		log.Debugf("OVH: Delete an entry to %s", change.String())
 		return p.client.Delete(fmt.Sprintf("/domain/zone/%s/record/%d", change.Zone, change.ID), nil)
 	}
 	return nil

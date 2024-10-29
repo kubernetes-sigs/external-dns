@@ -56,10 +56,14 @@ type TXTRegistry struct {
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
+
+	//Handle Owner ID migration
+	isMigrationEnabled bool
+	oldOwnerID         string
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, isMigrationEnabled bool, oldOwnerID string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -88,6 +92,8 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		isMigrationEnabled:  isMigrationEnabled,
+		oldOwnerID:          oldOwnerID,
 	}, nil
 }
 
@@ -249,6 +255,10 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
+	}
+	if im.isMigrationEnabled {
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.UpdateOld)...)
+		filteredChanges.Delete = append(filteredChanges.Delete, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.Delete)...)
 	}
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {

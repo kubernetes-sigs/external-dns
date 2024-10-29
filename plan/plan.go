@@ -49,6 +49,10 @@ type Plan struct {
 	ExcludeRecords []string
 	// OwnerID of records to manage
 	OwnerID string
+	// modify owner flag
+	TXTOwnerMigrate bool
+	// old txt-owner whitch needed to modify
+	TXTOwnerOld string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -179,6 +183,7 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	changes := &Changes{}
+	var hasMig bool
 
 	for key, row := range t.rows {
 		// dns name not taken
@@ -221,6 +226,23 @@ func (p *Plan) Calculate() *Plan {
 				if records.current != nil && len(records.candidates) > 0 {
 					update := t.resolver.ResolveUpdate(records.current, records.candidates)
 
+					// Change the specified old txt-owner to the new txt-owner (if TXTOwnerMigrate==true and set the from-txt-owner)
+					if p.TXTOwnerMigrate && records.current.Labels[endpoint.OwnerLabelKey] == p.TXTOwnerOld {
+						hasMig = true
+						oldRecord := records.current
+						changes.UpdateOld = append(changes.UpdateOld, oldRecord)
+						recordToMigrate := update
+						recordToMigrate.Labels[endpoint.OwnerLabelKey] = p.OwnerID
+						log.WithFields(log.Fields{
+							"previousOwner": oldRecord.Labels[endpoint.OwnerLabelKey],
+							"newOwner":      p.OwnerID,
+							"dnsName":       records.current.DNSName,
+							"recordType":    records.current.RecordType,
+						}).Info("Found record to migrate")
+						changes.UpdateNew = append(changes.UpdateNew, update)
+						continue
+					}
+
 					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) {
 						inheritOwner(records.current, update)
 						changes.UpdateNew = append(changes.UpdateNew, update)
@@ -253,7 +275,11 @@ func (p *Plan) Calculate() *Plan {
 	if p.OwnerID != "" {
 		changes.Delete = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.Delete)
 		changes.Delete = endpoint.RemoveDuplicates(changes.Delete)
-		changes.UpdateOld = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateOld)
+		// When running a migration we don't want to filter out endpoint duplicates on ownerId value so that old records
+		// are deleted correctly
+		if !hasMig {
+			changes.UpdateOld = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateOld)
+		}
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
