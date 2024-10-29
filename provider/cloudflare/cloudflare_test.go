@@ -1401,7 +1401,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	}
 }
 
-func TestCloudFlareProvider_getUpdateDataLocalizationRegionalHostnameParams(t *testing.T) {
+func TestCloudFlareProvider_updateDataLocalizationRegionalHostnameParams(t *testing.T) {
 	change := &cloudFlareChange{
 		RegionalHostname: cloudflare.RegionalHostname{
 			Hostname:  "example.com",
@@ -1409,7 +1409,7 @@ func TestCloudFlareProvider_getUpdateDataLocalizationRegionalHostnameParams(t *t
 		},
 	}
 
-	params := getUpdateDataLocalizationRegionalHostnameParams(*change)
+	params := updateDataLocalizationRegionalHostnameParams(*change)
 	if params.Hostname != "example.com" {
 		t.Errorf("expected hostname to be 'example.com', but got '%s'", params.Hostname)
 	}

@@ -159,8 +159,8 @@ func getUpdateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordPar
 	}
 }
 
-// getUpdateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
-func getUpdateDataLocalizationRegionalHostnameParams(cfc cloudFlareChange) cloudflare.UpdateDataLocalizationRegionalHostnameParams {
+// updateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
+func updateDataLocalizationRegionalHostnameParams(cfc cloudFlareChange) cloudflare.UpdateDataLocalizationRegionalHostnameParams {
 	return cloudflare.UpdateDataLocalizationRegionalHostnameParams{
 		Hostname:  cfc.RegionalHostname.Hostname,
 		RegionKey: cfc.RegionalHostname.RegionKey,
@@ -369,7 +369,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					continue
 				}
 				recordParam := getUpdateDNSRecordParam(*change)
-				regionalHostnameParam := getUpdateDataLocalizationRegionalHostnameParams(*change)
+				regionalHostnameParam := updateDataLocalizationRegionalHostnameParams(*change)
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
