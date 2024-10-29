@@ -23,9 +23,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -34,11 +35,11 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-// DynamoDBAPI is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
+// DynamoDBAPI is the subset of the AWS DynamoDB API that we actually use.  Add methods as required. Signatures must match exactly.
 type DynamoDBAPI interface {
-	DescribeTableWithContext(ctx aws.Context, input *dynamodb.DescribeTableInput, opts ...request.Option) (*dynamodb.DescribeTableOutput, error)
-	ScanPagesWithContext(ctx aws.Context, input *dynamodb.ScanInput, fn func(*dynamodb.ScanOutput, bool) bool, opts ...request.Option) error
-	BatchExecuteStatementWithContext(aws.Context, *dynamodb.BatchExecuteStatementInput, ...request.Option) (*dynamodb.BatchExecuteStatementOutput, error)
+	DescribeTable(context.Context, *dynamodb.DescribeTableInput, ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error)
+	Scan(context.Context, *dynamodb.ScanInput, ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error)
+	BatchExecuteStatement(context.Context, *dynamodb.BatchExecuteStatementInput, ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error)
 }
 
 // DynamoDBRegistry implements registry interface with ownership implemented via an AWS DynamoDB table.
@@ -105,7 +106,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 	}, nil
 }
 
-func (im *DynamoDBRegistry) GetDomainFilter() endpoint.DomainFilter {
+func (im *DynamoDBRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
 	return im.provider.GetDomainFilter()
 }
 
@@ -225,7 +226,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	statements := make([]*dynamodb.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
+	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
@@ -286,12 +287,15 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		}
 	}
 
-	err := im.executeStatements(ctx, statements, func(request *dynamodb.BatchStatementRequest, response *dynamodb.BatchStatementResponse) error {
+	err := im.executeStatements(ctx, statements, func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
 		var context string
 		if strings.HasPrefix(*request.Statement, "INSERT") {
-			if aws.StringValue(response.Error.Code) == "DuplicateItem" {
+			if response.Error.Code == dynamodbtypes.BatchStatementErrorCodeEnumDuplicateItem {
 				// We lost a race with a different owner or another owner has an orphaned ownership record.
-				key := fromDynamoKey(request.Parameters[0])
+				key, err := fromDynamoKey(request.Parameters[0])
+				if err != nil {
+					return err
+				}
 				for i, endpoint := range filteredChanges.Create {
 					if endpoint.Key() == key {
 						log.Infof("Skipping endpoint %v because owner does not match", endpoint)
@@ -303,11 +307,19 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 					}
 				}
 			}
-			context = fmt.Sprintf("inserting dynamodb record %q", aws.StringValue(request.Parameters[0].S))
+			var record string
+			if err := attributevalue.Unmarshal(request.Parameters[0], &record); err != nil {
+				return fmt.Errorf("inserting dynamodb record: %w", err)
+			}
+			context = fmt.Sprintf("inserting dynamodb record %q", record)
 		} else {
-			context = fmt.Sprintf("updating dynamodb record %q", aws.StringValue(request.Parameters[1].S))
+			var record string
+			if err := attributevalue.Unmarshal(request.Parameters[1], &record); err != nil {
+				return fmt.Errorf("inserting dynamodb record: %w", err)
+			}
+			context = fmt.Sprintf("updating dynamodb record %q", record)
 		}
-		return fmt.Errorf("%s: %s: %s", context, aws.StringValue(response.Error.Code), aws.StringValue(response.Error.Message))
+		return fmt.Errorf("%s: %s: %s", context, response.Error.Code, *response.Error.Message)
 	})
 	if err != nil {
 		im.recordsCache = nil
@@ -326,7 +338,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	statements = make([]*dynamodb.BatchStatementRequest, 0, len(filteredChanges.Delete)+len(im.orphanedLabels))
+	statements = make([]dynamodbtypes.BatchStatementRequest, 0, len(filteredChanges.Delete)+len(im.orphanedLabels))
 	for _, r := range filteredChanges.Delete {
 		statements = im.appendDelete(statements, r.Key())
 	}
@@ -335,9 +347,13 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		delete(im.labels, r)
 	}
 	im.orphanedLabels = nil
-	return im.executeStatements(ctx, statements, func(request *dynamodb.BatchStatementRequest, response *dynamodb.BatchStatementResponse) error {
+	return im.executeStatements(ctx, statements, func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
 		im.labels = nil
-		return fmt.Errorf("deleting dynamodb record %q: %s: %s", aws.StringValue(request.Parameters[0].S), aws.StringValue(response.Error.Code), aws.StringValue(response.Error.Message))
+		record, err := fromDynamoKey(request.Parameters[0])
+		if err != nil {
+			return fmt.Errorf("deleting dynamodb record: %w", err)
+		}
+		return fmt.Errorf("deleting dynamodb record %q: %s: %s", record, response.Error.Code, *response.Error.Message)
 	})
 }
 
@@ -347,7 +363,7 @@ func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*
 }
 
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
-	table, err := im.dynamodbAPI.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
+	table, err := im.dynamodbAPI.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 		TableName: aws.String(im.table),
 	})
 	if err != nil {
@@ -356,8 +372,8 @@ func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
 
 	foundKey := false
 	for _, def := range table.Table.AttributeDefinitions {
-		if aws.StringValue(def.AttributeName) == "k" {
-			if aws.StringValue(def.AttributeType) != "S" {
+		if *def.AttributeName == "k" {
+			if def.AttributeType != dynamodbtypes.ScalarAttributeTypeS {
 				return fmt.Errorf("table %q attribute \"k\" must have type \"S\"", im.table)
 			}
 			foundKey = true
@@ -367,7 +383,7 @@ func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
 		return fmt.Errorf("table %q must have attribute \"k\" of type \"S\"", im.table)
 	}
 
-	if aws.StringValue(table.Table.KeySchema[0].AttributeName) != "k" {
+	if *table.Table.KeySchema[0].AttributeName != "k" {
 		return fmt.Errorf("table %q must have hash key \"k\"", im.table)
 	}
 	if len(table.Table.KeySchema) > 1 {
@@ -375,76 +391,92 @@ func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
 	}
 
 	labels := map[endpoint.EndpointKey]endpoint.Labels{}
-	err = im.dynamodbAPI.ScanPagesWithContext(ctx, &dynamodb.ScanInput{
+	scanPaginator := dynamodb.NewScanPaginator(im.dynamodbAPI, &dynamodb.ScanInput{
 		TableName:        aws.String(im.table),
 		FilterExpression: aws.String("o = :ownerval"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":ownerval": {S: aws.String(im.ownerID)},
+		ExpressionAttributeValues: map[string]dynamodbtypes.AttributeValue{
+			":ownerval": &dynamodbtypes.AttributeValueMemberS{Value: im.ownerID},
 		},
 		ProjectionExpression: aws.String("k,l"),
 		ConsistentRead:       aws.Bool(true),
-	}, func(output *dynamodb.ScanOutput, last bool) bool {
-		for _, item := range output.Items {
-			labels[fromDynamoKey(item["k"])] = fromDynamoLabels(item["l"], im.ownerID)
-		}
-		return true
 	})
-	if err != nil {
-		return fmt.Errorf("querying dynamodb: %w", err)
+	for scanPaginator.HasMorePages() {
+		output, err := scanPaginator.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("scanning table %q: %w", im.table, err)
+		}
+		for _, item := range output.Items {
+			k, err := fromDynamoKey(item["k"])
+			if err != nil {
+				return fmt.Errorf("querying dynamodb for key: %w", err)
+			}
+			l, err := fromDynamoLabels(item["l"], im.ownerID)
+			if err != nil {
+				return fmt.Errorf("querying dynamodb for labels: %w", err)
+			}
+
+			labels[k] = l
+		}
 	}
 
 	im.labels = labels
 	return nil
 }
 
-func fromDynamoKey(key *dynamodb.AttributeValue) endpoint.EndpointKey {
-	split := strings.SplitN(aws.StringValue(key.S), "#", 3)
+func fromDynamoKey(key dynamodbtypes.AttributeValue) (endpoint.EndpointKey, error) {
+	var ep string
+	if err := attributevalue.Unmarshal(key, &ep); err != nil {
+		return endpoint.EndpointKey{}, fmt.Errorf("unmarshalling endpoint key: %w", err)
+	}
+	split := strings.SplitN(ep, "#", 3)
 	return endpoint.EndpointKey{
 		DNSName:       split[0],
 		RecordType:    split[1],
 		SetIdentifier: split[2],
+	}, nil
+}
+
+func toDynamoKey(key endpoint.EndpointKey) dynamodbtypes.AttributeValue {
+	return &dynamodbtypes.AttributeValueMemberS{
+		Value: fmt.Sprintf("%s#%s#%s", key.DNSName, key.RecordType, key.SetIdentifier),
 	}
 }
 
-func toDynamoKey(key endpoint.EndpointKey) *dynamodb.AttributeValue {
-	return &dynamodb.AttributeValue{
-		S: aws.String(fmt.Sprintf("%s#%s#%s", key.DNSName, key.RecordType, key.SetIdentifier)),
-	}
-}
-
-func fromDynamoLabels(label *dynamodb.AttributeValue, owner string) endpoint.Labels {
+func fromDynamoLabels(label dynamodbtypes.AttributeValue, owner string) (endpoint.Labels, error) {
 	labels := endpoint.NewLabels()
-	for k, v := range label.M {
-		labels[k] = aws.StringValue(v.S)
+	if err := attributevalue.Unmarshal(label, &labels); err != nil {
+		return endpoint.Labels{}, fmt.Errorf("unmarshalling labels: %w", err)
 	}
 	labels[endpoint.OwnerLabelKey] = owner
-	return labels
+	return labels, nil
 }
 
-func toDynamoLabels(labels endpoint.Labels) *dynamodb.AttributeValue {
-	labelMap := make(map[string]*dynamodb.AttributeValue, len(labels))
+func toDynamoLabels(labels endpoint.Labels) dynamodbtypes.AttributeValue {
+	labelMap := make(map[string]dynamodbtypes.AttributeValue, len(labels))
 	for k, v := range labels {
 		if k == endpoint.OwnerLabelKey {
 			continue
 		}
-		labelMap[k] = &dynamodb.AttributeValue{S: aws.String(v)}
+		labelMap[k] = &dynamodbtypes.AttributeValueMemberS{Value: v}
 	}
-	return &dynamodb.AttributeValue{M: labelMap}
+	return &dynamodbtypes.AttributeValueMemberM{Value: labelMap}
 }
 
-func (im *DynamoDBRegistry) appendInsert(statements []*dynamodb.BatchStatementRequest, key endpoint.EndpointKey, new endpoint.Labels) []*dynamodb.BatchStatementRequest {
-	return append(statements, &dynamodb.BatchStatementRequest{
-		Statement: aws.String(fmt.Sprintf("INSERT INTO %q VALUE {'k':?, 'o':?, 'l':?}", im.table)),
-		Parameters: []*dynamodb.AttributeValue{
+func (im *DynamoDBRegistry) appendInsert(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey, new endpoint.Labels) []dynamodbtypes.BatchStatementRequest {
+	return append(statements, dynamodbtypes.BatchStatementRequest{
+		Statement:      aws.String(fmt.Sprintf("INSERT INTO %q VALUE {'k':?, 'o':?, 'l':?}", im.table)),
+		ConsistentRead: aws.Bool(true),
+		Parameters: []dynamodbtypes.AttributeValue{
 			toDynamoKey(key),
-			{S: aws.String(im.ownerID)},
+			&dynamodbtypes.AttributeValueMemberS{
+				Value: im.ownerID,
+			},
 			toDynamoLabels(new),
 		},
-		ConsistentRead: aws.Bool(true),
 	})
 }
 
-func (im *DynamoDBRegistry) appendUpdate(statements []*dynamodb.BatchStatementRequest, key endpoint.EndpointKey, old endpoint.Labels, new endpoint.Labels) []*dynamodb.BatchStatementRequest {
+func (im *DynamoDBRegistry) appendUpdate(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey, old endpoint.Labels, new endpoint.Labels) []dynamodbtypes.BatchStatementRequest {
 	if len(old) == len(new) {
 		equal := true
 		for k, v := range old {
@@ -458,28 +490,28 @@ func (im *DynamoDBRegistry) appendUpdate(statements []*dynamodb.BatchStatementRe
 		}
 	}
 
-	return append(statements, &dynamodb.BatchStatementRequest{
+	return append(statements, dynamodbtypes.BatchStatementRequest{
 		Statement: aws.String(fmt.Sprintf("UPDATE %q SET \"l\"=? WHERE \"k\"=?", im.table)),
-		Parameters: []*dynamodb.AttributeValue{
+		Parameters: []dynamodbtypes.AttributeValue{
 			toDynamoLabels(new),
 			toDynamoKey(key),
 		},
 	})
 }
 
-func (im *DynamoDBRegistry) appendDelete(statements []*dynamodb.BatchStatementRequest, key endpoint.EndpointKey) []*dynamodb.BatchStatementRequest {
-	return append(statements, &dynamodb.BatchStatementRequest{
+func (im *DynamoDBRegistry) appendDelete(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey) []dynamodbtypes.BatchStatementRequest {
+	return append(statements, dynamodbtypes.BatchStatementRequest{
 		Statement: aws.String(fmt.Sprintf("DELETE FROM %q WHERE \"k\"=? AND \"o\"=?", im.table)),
-		Parameters: []*dynamodb.AttributeValue{
+		Parameters: []dynamodbtypes.AttributeValue{
 			toDynamoKey(key),
-			{S: aws.String(im.ownerID)},
+			&dynamodbtypes.AttributeValueMemberS{Value: im.ownerID},
 		},
 	})
 }
 
-func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []*dynamodb.BatchStatementRequest, handleErr func(request *dynamodb.BatchStatementRequest, response *dynamodb.BatchStatementResponse) error) error {
+func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []dynamodbtypes.BatchStatementRequest, handleErr func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error) error {
 	for len(statements) > 0 {
-		var chunk []*dynamodb.BatchStatementRequest
+		var chunk []dynamodbtypes.BatchStatementRequest
 		if len(statements) > int(dynamodbMaxBatchSize) {
 			chunk = statements[:dynamodbMaxBatchSize]
 			statements = statements[dynamodbMaxBatchSize:]
@@ -488,7 +520,7 @@ func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []
 			statements = nil
 		}
 
-		output, err := im.dynamodbAPI.BatchExecuteStatementWithContext(ctx, &dynamodb.BatchExecuteStatementInput{
+		output, err := im.dynamodbAPI.BatchExecuteStatement(ctx, &dynamodb.BatchExecuteStatementInput{
 			Statements: chunk,
 		})
 		if err != nil {
@@ -501,9 +533,13 @@ func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []
 				op, _, _ := strings.Cut(*request.Statement, " ")
 				var key string
 				if op == "UPDATE" {
-					key = *request.Parameters[1].S
+					if err := attributevalue.Unmarshal(request.Parameters[1], &key); err != nil {
+						return err
+					}
 				} else {
-					key = *request.Parameters[0].S
+					if err := attributevalue.Unmarshal(request.Parameters[0], &key); err != nil {
+						return err
+					}
 				}
 				log.Infof("%s dynamodb record %q", op, key)
 			} else {

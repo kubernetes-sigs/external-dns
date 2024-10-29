@@ -1,5 +1,4 @@
-
-# Setting up ExternalDNS for Services on Azure
+# Azure DNS
 
 This tutorial describes how to setup ExternalDNS for [Azure DNS](https://azure.microsoft.com/services/dns/) with [Azure Kubernetes Service](https://docs.microsoft.com/azure/aks/).
 
@@ -481,6 +480,10 @@ NOTE: it's also possible to specify (or override) ClientID through `userAssigned
 
 NOTE: make sure the pod is restarted whenever you make a configuration change.
 
+## Throttling
+
+When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
+
 ## Ingress used with ExternalDNS
 
 This deployment assumes that you will be using nginx-ingress. When using nginx-ingress do not deploy it as a Daemon Set. This causes nginx-ingress to write the Cluster IP of the backend pods in the ingress status.loadbalancer.ip property which then has external-dns write the Cluster IP(s) in DNS vs. the nginx-ingress service external IP.
@@ -518,7 +521,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -586,7 +589,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          image: registry.k8s.io/external-dns/external-dns:v0.15.0
           args:
             - --source=service
             - --source=ingress
@@ -657,7 +660,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          image: registry.k8s.io/external-dns/external-dns:v0.15.0
           args:
             - --source=service
             - --source=ingress

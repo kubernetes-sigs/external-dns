@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for PowerDNS
+# PowerDNS
 
 ## Prerequisites
 
@@ -42,11 +42,12 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service # or ingress or both
         - --provider=pdns
         - --pdns-server={{ pdns-api-url }}
+        - --pdns-server-id={{ pdns-server-id }}
         - --pdns-api-key={{ pdns-http-api-key }}
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the zones matching provided domain; omit to process all available zones in PowerDNS
@@ -171,4 +172,103 @@ $ curl -H "X-API-Key: ${PDNS_API_KEY}" ${PDNS_API_URL}/api/v1/servers/localhost/
 Once the API shows the record correctly, you can double check your record using:
 ```bash
 $ dig @${PDNS_FQDN} echo.example.com.
+```
+
+## Using CRD source to manage DNS records in PowerDNS
+
+[CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source.md) provides a generic mechanism and declarative way to manage DNS records in PowerDNS using external-dns.
+
+```bash
+external-dns --source=crd --provider=pdns \
+  --pdns-server={{ pdns-api-url }} \
+  --pdns-api-key={{ pdns-api-key }} \
+  --domain-filter=example.com \
+  --managed-record-types=A \
+  --managed-record-types=CNAME \
+  --managed-record-types=TXT \
+  --managed-record-types=MX \
+  --managed-record-types=SRV
+```
+
+Not all the record types are enabled by default so we can enable the required record types using `--managed-record-types`.
+
+* Example for record type `A`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplearecord
+spec:
+  endpoints:
+  - dnsName: example.com
+    recordTTL: 60
+    recordType: A
+    targets:
+    - 10.0.0.1
+```
+
+* Example for record type `CNAME`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplecnamerecord
+spec:
+  endpoints:
+  - dnsName: test-a.example.com
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - example.com
+```
+
+* Example for record type `TXT`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: exampletxtrecord
+spec:
+  endpoints:
+  - dnsName: example.com
+    recordTTL: 3600
+    recordType: TXT
+    targets:
+      - '"v=spf1 include:spf.protection.example.com include:example.org -all"'
+      - '"apple-domain-verification=XXXXXXXXXXXXX"'
+```
+
+* Example for record type `MX`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplemxrecord
+spec:
+  endpoints:
+  - dnsName: example.com
+    recordTTL: 3600
+    recordType: MX
+    targets:
+      - "10 mailhost1.example.com"
+```
+
+* Example for record type `SRV`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplesrvrecord
+spec:
+  endpoints:
+  - dnsName: _service._tls.example.com
+    recordTTL: 180
+    recordType: SRV
+    targets:
+      - "100 1 443 service.example.com"
 ```

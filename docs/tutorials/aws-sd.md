@@ -1,4 +1,4 @@
-# Setting up ExternalDNS using AWS Cloud Map API
+# AWS Cloud Map API
 
 This tutorial describes how to set up ExternalDNS for usage within a Kubernetes cluster with [AWS Cloud Map API](https://docs.aws.amazon.com/cloud-map/).
 
@@ -12,7 +12,7 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 ## IAM Permissions
 
-To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. Additionally you need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
+To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
 ```
 {
@@ -37,6 +37,82 @@ To use the AWS Cloud Map API, a user must have permissions to create the DNS nam
       "Resource": [
         "*"
       ]
+    }
+  ]
+}
+```
+
+### IAM Permissions with ABAC
+You can use Attribute-based access control(ABAC) for advanced deployments.  
+
+You can define AWS tags that are applied to services created by the controller. By doing so, you can have precise control over your IAM policy to limit the scope of the permissions to services managed by the controller, rather than having to grant full permissions on your entire AWS account.  
+To pass tags to service creation, use either CLI flags or environment variables:  
+
+*cli:* `--aws-sd-create-tag=key1=value1 --aws-sd-create-tag=key2=value2`
+
+*environment:* `EXTERNAL_DNS_AWS_SD_CREATE_TAG=key1=value1\nkey2=value2`
+
+Using tags, your `servicediscovery` policy can become:
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:ListNamespaces",
+        "servicediscovery:ListServices"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:CreateService",
+        "servicediscovery:TagResource"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/YOUR_TAG_KEY": "YOUR_TAG_VALUE"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:DiscoverInstances"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "servicediscovery:NamespaceName": "YOUR_NAMESPACE_NAME"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:RegisterInstance",
+        "servicediscovery:DeregisterInstance",
+        "servicediscovery:DeleteService",
+        "servicediscovery:UpdateService"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/YOUR_TAG_KEY": "YOUR_TAG_VALUE"
+        }
+      }
     }
   ]
 }
@@ -81,7 +157,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -148,7 +224,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -221,13 +297,39 @@ metadata:
   name: nginx
   annotations:
     external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
-    external-dns.alpha.kubernetes.io/ttl: 60
+    external-dns.alpha.kubernetes.io/ttl: "60"
 spec:
     ...
 ```
 
 This will set the TTL for the DNS record to 60 seconds.
 
+## IPv6 Support
+
+If your Kubernetes cluster is configured with IPv6 support, such as an [EKS cluster with IPv6 support](https://docs.aws.amazon.com/eks/latest/userguide/deploy-ipv6-cluster.html), ExternalDNS can
+also create AAAA DNS records.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.alpha.kubernetes.io/ttl: "60"
+spec:
+  ipFamilies:
+    - "IPv6"
+  type: NodePort
+  ports:
+    - port: 80
+      name: http
+      targetPort: 80
+  selector:
+    app: nginx
+```
+
+:information_source: The AWS-SD provider does not currently support dualstack load balancers and will only create A records for these at this time. See the AWS provider and the [AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md) for dualstack load balancer support.
 
 ## Clean up
 

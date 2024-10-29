@@ -14,10 +14,10 @@ jobs:
   json-yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: json-yaml-validate
-        uses: GrantBirki/json-yaml-validate@v3.0.0
+        uses: GrantBirki/json-yaml-validate@v3.2.1
         with:
           comment: "true" # enable comment mode
           yaml_exclude_regex: "(charts/external-dns/templates.*|mkdocs.yml)"

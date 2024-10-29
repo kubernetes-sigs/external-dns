@@ -1,6 +1,7 @@
-# Setting up ExternalDNS for Tencent Cloud
+# Tencent Cloud
 
 ## External Dns Version
+
 * Make sure to use **>=0.13.1** version of ExternalDNS for this tutorial
 
 ## Set up PrivateDns or DNSPod
@@ -8,17 +9,18 @@
 Tencent Cloud DNSPod Service is the domain name resolution and management service for public access.
 Tencent Cloud PrivateDNS Service is the domain name resolution and management service for VPC internal access.
 
-* If you want to use internal dns service in Tencent Cloud. 
-1. Set up the args `--tencent-cloud-zone-type=private`   
+* If you want to use internal dns service in Tencent Cloud.
+1. Set up the args `--tencent-cloud-zone-type=private`
 2. Create a DNS domain in PrivateDNS console. DNS domain which will contain the managed DNS records.
 
 * If you want to use public dns service in Tencent Cloud.
-1. Set up the args `--tencent-cloud-zone-type=public`   
+1. Set up the args `--tencent-cloud-zone-type=public`
 2. Create a Domain in DnsPod console. DNS domain which will contain the managed DNS records.
 
 ## Set up CAM for API Key
 
 In Tencent CAM Console. you may get the secretId and secretKey pair. make sure the key pair has those Policy.
+
 ```json
 {
     "version": "2.0",
@@ -72,7 +74,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -99,7 +101,7 @@ data:
   tencent-cloud.json: |
     {
       "regionId": "ap-shanghai",
-      "secretId": "******",  
+      "secretId": "******",
       "secretKey": "******",
       "vpcId": "vpc-******",
       "internetEndpoint": false  # Default: false. Access the Tencent API through the intranet. If you need to deploy on the public network, you need to change to true
@@ -129,7 +131,7 @@ spec:
         - --policy=sync # set `upsert-only` would prevent ExternalDNS from deleting any records
         - --tencent-cloud-zone-type=private # only look at private hosted zones. set `public` to use the public dns service.
         - --tencent-cloud-config-file=/etc/kubernetes/tencent-cloud.json
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         imagePullPolicy: Always
         name: external-dns
         resources: {}

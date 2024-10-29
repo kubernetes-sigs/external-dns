@@ -1,3 +1,4 @@
+{{- $providerName := include "external-dns.providerName" . }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -25,3 +26,11 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
+    {{- if eq $providerName "webhook" }}
+    {{- with .Values.provider.webhook.service }}
+    - name: http-webhook
+      port: {{ .port }}
+      targetPort: http-webhook
+      protocol: TCP
+    {{- end }}
+    {{- end }}

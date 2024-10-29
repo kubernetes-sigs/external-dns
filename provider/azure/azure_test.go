@@ -238,6 +238,7 @@ func newAzureProvider(domainFilter endpoint.DomainFilter, zoneNameFilter endpoin
 		userAssignedIdentityClientID: userAssignedIdentityClientID,
 		activeDirectoryAuthorityHost: activeDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
+		zonesCache:                   &zonesCache[dns.Zone]{duration: 0},
 		recordSetsClient:             recordsClient,
 	}
 }

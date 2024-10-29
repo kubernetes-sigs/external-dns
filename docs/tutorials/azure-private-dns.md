@@ -1,4 +1,4 @@
-# Set up ExternalDNS for Azure Private DNS
+# Azure Private DNS
 
 This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.
 
@@ -98,6 +98,10 @@ $ az role assignment create --role "Reader" --assignee <appId GUID> --scope <res
 $ az role assignment create --role "Private DNS Zone Contributor" --assignee <appId GUID> --scope <dns zone resource id>
 ```
 
+## Throttling
+
+When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
+
 ## Deploy ExternalDNS
 Configure `kubectl` to be able to communicate and authenticate with your cluster.
 This is per default done through the file `~/.kube/config`.
@@ -130,7 +134,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -201,7 +205,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress
@@ -272,7 +276,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
+        image: registry.k8s.io/external-dns/external-dns:v0.15.0
         args:
         - --source=service
         - --source=ingress

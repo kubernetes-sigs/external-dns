@@ -1,4 +1,4 @@
-# Using ExternalDNS with kube-ingress-aws-controller
+# kube-ingress-aws-controller
 
 This tutorial describes how to use ExternalDNS with the [kube-ingress-aws-controller][1].
 

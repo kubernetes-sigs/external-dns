@@ -18,7 +18,7 @@ package pdns
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // FIXME: What do we do about labels?
@@ -117,6 +118,27 @@ var (
 		},
 	}
 
+	// RRSet with MX record
+	RRSetMXRecord = pgo.RrSet{
+		Name:  "example.com.",
+		Type_: "MX",
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "10 mailhost1.example.com", Disabled: false, SetPtr: false},
+			{Content: "10 mailhost2.example.com", Disabled: false, SetPtr: false},
+		},
+	}
+
+	// RRSet with SRV record
+	RRSetSRVRecord = pgo.RrSet{
+		Name:  "_service._tls.example.com.",
+		Type_: "SRV",
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "100 1 443 service.example.com", Disabled: false, SetPtr: false},
+		},
+	}
+
 	endpointsDisabledRecord = []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
 	}
@@ -144,6 +166,8 @@ var (
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
 		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
+		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -233,7 +257,7 @@ var (
 		Type_:  "Zone",
 		Url:    "/api/v1/servers/localhost/zones/example.com.",
 		Kind:   "Native",
-		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord},
+		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord},
 	}
 
 	ZoneEmptyToSimplePatch = pgo.Zone{
@@ -691,7 +715,7 @@ type PDNSAPIClientStubPatchZoneFailure struct {
 
 // Just overwrite the PatchZone method to introduce a failure
 func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
-	return nil, errors.New("Generic PDNS Error")
+	return nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
 }
 
 /******************************************************************************/
@@ -703,7 +727,7 @@ type PDNSAPIClientStubListZoneFailure struct {
 
 // Just overwrite the ListZone method to introduce a failure
 func (c *PDNSAPIClientStubListZoneFailure) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	return pgo.Zone{}, nil, errors.New("Generic PDNS Error")
+	return pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
 }
 
 /******************************************************************************/
@@ -715,7 +739,7 @@ type PDNSAPIClientStubListZonesFailure struct {
 
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{}, nil, errors.New("Generic PDNS Error")
+	return []pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
 }
 
 /******************************************************************************/
@@ -879,12 +903,14 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	}
 	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, provider.SoftError)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
 	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
@@ -937,6 +963,20 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
 			if rs.Type_ == "CNAME" {
+				for _, r := range rs.Records {
+					assert.Equal(suite.T(), uint8(0x2e), r.Content[len(r.Content)-1])
+				}
+			}
+		}
+	}
+
+	// Check endpoints of type MX and SRV always have their values end with a trailing dot.
+	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
+	assert.Nil(suite.T(), err)
+
+	for _, z := range zlist {
+		for _, rs := range z.Rrsets {
+			if rs.Type_ == "MX" || rs.Type_ == "SRV" {
 				for _, r := range rs.Records {
 					assert.Equal(suite.T(), uint8(0x2e), r.Content[len(r.Content)-1])
 				}
@@ -1024,6 +1064,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	// Check inserting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
 	assert.NotNil(suite.T(), err)
+	assert.ErrorIs(suite.T(), err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {

@@ -296,7 +296,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 }
 
 // GetDomainFilter make calls to get the serialized version of the domain filter
-func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilter {
+func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.DomainFilter
 }
 
