@@ -105,6 +105,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
+| global.imagePullSecrets | list | `[]` | Global image pull secrets. |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |
 | image.tag | string | `nil` | Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set. |
