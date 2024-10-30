@@ -245,16 +245,16 @@ func (p *Plan) Calculate() *Plan {
 		}
 	}
 
-	for _, pol := range p.Policies {
-		changes = pol.Apply(changes)
-	}
-
 	// filter out updates this external dns does not have ownership claim over
 	if p.OwnerID != "" {
 		changes.Delete = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.Delete)
 		changes.Delete = endpoint.RemoveDuplicates(changes.Delete)
 		changes.UpdateOld = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateOld)
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
+	}
+
+	for _, pol := range p.Policies {
+		changes = pol.Apply(changes)
 	}
 
 	plan := &Plan{
