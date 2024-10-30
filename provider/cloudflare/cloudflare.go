@@ -139,8 +139,8 @@ type RecordParamsTypes interface {
 	cloudflare.UpdateDNSRecordParams | cloudflare.CreateDNSRecordParams
 }
 
-// getUpdateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getUpdateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
+// updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
+func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
 	return cloudflare.UpdateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
@@ -350,7 +350,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				recordParam := getUpdateDNSRecordParam(*change)
+				recordParam := updateDNSRecordParam(*change)
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
