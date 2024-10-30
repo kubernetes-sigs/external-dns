@@ -45,8 +45,10 @@ type UpsertOnlyPolicy struct{}
 
 // Apply applies the upsert-only policy which strips out any deletions.
 func (p *UpsertOnlyPolicy) Apply(changes *Changes) *Changes {
-	for _, ep := range changes.Delete {
+	if log.GetLevel() == log.DebugLevel {
+		for _, ep := range changes.Delete {
         	log.Debugf(`Skipping deletion of endpoint %v due to "upsert-only" policy`, ep)
+		}
 	}
 	return &Changes{
 		Create:    changes.Create,
@@ -60,14 +62,16 @@ type CreateOnlyPolicy struct{}
 
 // Apply applies the create-only policy which strips out updates and deletions.
 func (p *CreateOnlyPolicy) Apply(changes *Changes) *Changes {
-	for _, ep := range changes.Delete {
-		log.Debugf(`Skipping deletion of endpoint %v due to "create-only" policy`, ep)
-	}
-	for _, ep := range changes.UpdateOld {
-		log.Debugf(`Skipping update-old of endpoint %v due to "create-only" policy`, ep)
-	}
-	for _, ep := range changes.UpdateNew {
-		log.Debugf(`Skipping update-new of endpoint %v due to "create-only" policy`, ep)
+	if log.GetLevel() == log.DebugLevel {
+		for _, ep := range changes.Delete {
+			log.Debugf(`Skipping deletion of endpoint %v due to "create-only" policy`, ep)
+		}
+		for _, ep := range changes.UpdateOld {
+			log.Debugf(`Skipping update-old of endpoint %v due to "create-only" policy`, ep)
+		}
+		for _, ep := range changes.UpdateNew {
+			log.Debugf(`Skipping update-new of endpoint %v due to "create-only" policy`, ep)
+		}
 	}
 	return &Changes{
 		Create: changes.Create,
