@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -192,7 +193,7 @@ func (p *OVHProvider) change(change ovhChange) error {
 		log.Debugf("OVH: Add an entry to %s", change.String())
 		return p.client.Post(fmt.Sprintf("/domain/zone/%s/record", change.Zone), change.ovhRecordFields, nil)
 	case ovhDelete:
-		log.Debugf("OVH: Delete an entry to %s", change.String())
+		log.Debugf("OVH: Deleting entry %s", change.String())
 		if change.ID == 0 {
 			log.Debugf("OVH: No ID found when deleting entry: %s", change.String())
 			return ErrRecordToMutateNotFound
@@ -392,7 +393,15 @@ func newOvhChange(action int, endpoints []*endpoint.Endpoint, zones []string, re
 				change.TTL = int64(e.RecordTTL)
 			}
 			for _, record := range records {
-				if record.Zone == change.Zone && record.SubDomain == change.SubDomain && record.FieldType == change.FieldType && record.Target == change.Target {
+				// For some reason, the OVH API record targets are sometimes not serialized and formatted as
+				// expected by ExternalDNS, so we make sure that the record target is evaluated properly to avoid
+				// an error on changes that require an ID
+				formattedRecordTarget := record.Target
+				if matched, _ := regexp.MatchString(`^\\\".*\\\"$`, record.Target); !matched && record.FieldType == endpoint.RecordTypeTXT {
+					formattedRecordTarget = fmt.Sprintf("\"%s\"", record.Target)
+				}
+
+				if record.Zone == change.Zone && record.SubDomain == change.SubDomain && record.FieldType == change.FieldType && formattedRecordTarget == change.Target {
 					change.ID = record.ID
 				}
 			}
