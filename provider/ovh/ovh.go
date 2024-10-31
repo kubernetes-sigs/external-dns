@@ -315,12 +315,19 @@ func (p *OVHProvider) record(zone *string, id uint64, records chan<- ovhRecord) 
 	record := ovhRecord{}
 
 	log.Debugf("OVH: Getting record %d for %s", id, *zone)
+	recordTargetPattern := regexp.MustCompile(`^\".*\"$`)
 
 	p.apiRateLimiter.Take()
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record/%d", *zone, id), &record); err != nil {
 		return err
 	}
 	if provider.SupportedRecordType(record.FieldType) {
+		// For some reason, the OVH API record targets are sometimes not serialized and formatted as
+		// expected by ExternalDNS, so we make sure that the record target is evaluated properly to avoid
+		// an error on changes that require an ID
+		if !recordTargetPattern.MatchString(record.Target) && record.FieldType == endpoint.RecordTypeTXT {
+			record.Target = fmt.Sprintf("\"%s\"", record.Target)
+		}
 		log.Debugf("OVH: Record %d for %s is %+v", id, *zone, record)
 		records <- record
 	}
@@ -392,20 +399,14 @@ func newOvhChange(action int, endpoints []*endpoint.Endpoint, zones []string, re
 			if e.RecordTTL.IsConfigured() {
 				change.TTL = int64(e.RecordTTL)
 			}
-			recordTargetPattern, compileError := regexp.Compile(`^\\\".*\\\"$`)
-			if compileError != nil {
-				log.Errorf("Could not compile record target pattern : %s", compileError)
-				return nil
-			}
 			for _, record := range records {
-				// For some reason, the OVH API record targets are sometimes not serialized and formatted as
-				// expected by ExternalDNS, so we make sure that the record target is evaluated properly to avoid
-				// an error on changes that require an ID
-				formattedRecordTarget := record.Target
-				if !recordTargetPattern.MatchString(record.Target) && record.FieldType == endpoint.RecordTypeTXT {
-					formattedRecordTarget = fmt.Sprintf("\"%s\"", record.Target)
+				if strings.Contains(record.SubDomain, "longhorn") {
+					log.Info("--------------")
+					log.Info(record.Target)
+					log.Info(change.Target)
+					log.Info("--------------")
 				}
-				if record.Zone == change.Zone && record.SubDomain == change.SubDomain && record.FieldType == change.FieldType && formattedRecordTarget == change.Target {
+				if record.Zone == change.Zone && record.SubDomain == change.SubDomain && record.FieldType == change.FieldType && record.Target == change.Target {
 					change.ID = record.ID
 				}
 			}
