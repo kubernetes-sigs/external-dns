@@ -400,12 +400,6 @@ func newOvhChange(action int, endpoints []*endpoint.Endpoint, zones []string, re
 				change.TTL = int64(e.RecordTTL)
 			}
 			for _, record := range records {
-				if strings.Contains(record.SubDomain, "longhorn") {
-					log.Info("--------------")
-					log.Info(record.Target)
-					log.Info(change.Target)
-					log.Info("--------------")
-				}
 				if record.Zone == change.Zone && record.SubDomain == change.SubDomain && record.FieldType == change.FieldType && record.Target == change.Target {
 					change.ID = record.ID
 				}
