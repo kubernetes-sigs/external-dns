@@ -2,6 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  # -- Global image pull secrets.
+  imagePullSecrets: []
+
 image:
   # -- Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns
@@ -270,8 +274,8 @@ provider:
       failureThreshold: 6
       successThreshold: 1
     service:
-      # -- Webhook metrics port for the service.
-      metricsPort: 8080
+      # -- Webhook exposed HTTP port for the service.
+      port: 8080
     # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
     # @default -- See _values.yaml_
     serviceMonitor:

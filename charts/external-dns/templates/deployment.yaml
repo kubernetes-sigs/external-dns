@@ -40,7 +40,7 @@ spec:
     {{- if not (quote .Values.automountServiceAccountToken | empty) }}
       automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
     {{- end }}
-      {{- with .Values.imagePullSecrets }}
+      {{- with (default .Values.global.imagePullSecrets .Values.imagePullSecrets) }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -158,9 +158,6 @@ spec:
           {{- end }}
           ports:
             - name: http-webhook
-              protocol: TCP
-              containerPort: 8888
-            - name: http-wh-metrics
               protocol: TCP
               containerPort: 8080
           livenessProbe:

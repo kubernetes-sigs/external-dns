@@ -28,9 +28,9 @@ spec:
       protocol: TCP
     {{- if eq $providerName "webhook" }}
     {{- with .Values.provider.webhook.service }}
-    - name: http-wh-metrics
-      port: {{ .metricsPort }}
-      targetPort: http-wh-metrics
+    - name: http-webhook
+      port: {{ .port }}
+      targetPort: http-webhook
       protocol: TCP
     {{- end }}
     {{- end }}

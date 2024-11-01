@@ -68,6 +68,7 @@ var (
 		AWSProfiles:                 []string{""},
 		AWSZoneCacheDuration:        0 * time.Second,
 		AWSSDServiceCleanup:         false,
+		AWSSDCreateTag:              map[string]string{},
 		AWSDynamoDBTable:            "external-dns",
 		AzureConfigFile:             "/etc/kubernetes/azure.json",
 		AzureResourceGroup:          "",
@@ -89,6 +90,7 @@ var (
 		OVHEndpoint:                 "ovh-eu",
 		OVHApiRateLimit:             20,
 		PDNSServer:                  "http://localhost:8081",
+		PDNSServerID:                "localhost",
 		PDNSAPIKey:                  "",
 		Policy:                      "sync",
 		Registry:                    "txt",
@@ -167,6 +169,7 @@ var (
 		AWSProfiles:                 []string{"profile1", "profile2"},
 		AWSZoneCacheDuration:        10 * time.Second,
 		AWSSDServiceCleanup:         true,
+		AWSSDCreateTag:              map[string]string{"key1": "value1", "key2": "value2"},
 		AWSDynamoDBTable:            "custom-table",
 		AzureConfigFile:             "azure.json",
 		AzureResourceGroup:          "arg",
@@ -188,6 +191,7 @@ var (
 		OVHEndpoint:                 "ovh-ca",
 		OVHApiRateLimit:             42,
 		PDNSServer:                  "http://ns.example.com:8081",
+		PDNSServerID:                "localhost",
 		PDNSAPIKey:                  "some-secret-key",
 		PDNSSkipTLSVerify:           true,
 		TLSCA:                       "/path/to/ca.crt",
@@ -288,6 +292,7 @@ func TestParseFlags(t *testing.T) {
 				"--ovh-endpoint=ovh-ca",
 				"--ovh-api-rate-limit=42",
 				"--pdns-server=http://ns.example.com:8081",
+				"--pdns-server-id=localhost",
 				"--pdns-api-key=some-secret-key",
 				"--pdns-skip-tls-verify",
 				"--oci-config-file=oci.yaml",
@@ -325,6 +330,8 @@ func TestParseFlags(t *testing.T) {
 				"--aws-profile=profile2",
 				"--aws-zones-cache-duration=10s",
 				"--aws-sd-service-cleanup",
+				"--aws-sd-create-tag=key1=value1",
+				"--aws-sd-create-tag=key2=value2",
 				"--no-aws-evaluate-target-health",
 				"--policy=upsert-only",
 				"--registry=noop",
@@ -413,6 +420,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TARGET_NET_FILTER":               "10.0.0.0/9\n10.1.0.0/9",
 				"EXTERNAL_DNS_EXCLUDE_TARGET_NET":              "1.0.0.0/9\n1.1.0.0/9",
 				"EXTERNAL_DNS_PDNS_SERVER":                     "http://ns.example.com:8081",
+				"EXTERNAL_DNS_PDNS_ID":                         "localhost",
 				"EXTERNAL_DNS_PDNS_API_KEY":                    "some-secret-key",
 				"EXTERNAL_DNS_PDNS_SKIP_TLS_VERIFY":            "1",
 				"EXTERNAL_DNS_RDNS_ROOT_DOMAIN":                "lb.rancher.cloud",
@@ -436,6 +444,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AWS_PROFILE":                     "profile1\nprofile2",
 				"EXTERNAL_DNS_AWS_ZONES_CACHE_DURATION":        "10s",
 				"EXTERNAL_DNS_AWS_SD_SERVICE_CLEANUP":          "true",
+				"EXTERNAL_DNS_AWS_SD_CREATE_TAG":               "key1=value1\nkey2=value2",
 				"EXTERNAL_DNS_DYNAMODB_TABLE":                  "custom-table",
 				"EXTERNAL_DNS_POLICY":                          "upsert-only",
 				"EXTERNAL_DNS_REGISTRY":                        "noop",
@@ -504,8 +513,8 @@ func restoreEnv(t *testing.T, originalEnv map[string]string) {
 
 func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
-		PDNSAPIKey:           "pdns-api-key",
-		RFC2136TSIGSecret:    "tsig-secret",
+		PDNSAPIKey:        "pdns-api-key",
+		RFC2136TSIGSecret: "tsig-secret",
 	}
 
 	s := cfg.String()

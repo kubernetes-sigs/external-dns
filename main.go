@@ -25,10 +25,9 @@ import (
 	"syscall"
 	"time"
 
-	awsSDK "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/route53"
-	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
+	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -66,7 +65,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/pdns"
 	"sigs.k8s.io/external-dns/provider/pihole"
 	"sigs.k8s.io/external-dns/provider/plural"
-	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/scaleway"
 	"sigs.k8s.io/external-dns/provider/tencentcloud"
@@ -206,10 +204,10 @@ func main() {
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
-		sessions := aws.CreateSessions(cfg)
-		clients := make(map[string]aws.Route53API, len(sessions))
-		for profile, session := range sessions {
-			clients[profile] = route53.New(session)
+		configs := aws.CreateV2Configs(cfg)
+		clients := make(map[string]aws.Route53API, len(configs))
+		for profile, config := range configs {
+			clients[profile] = route53.NewFromConfig(config)
 		}
 
 		p, err = aws.NewAWSProvider(
@@ -236,11 +234,11 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(aws.CreateDefaultSession(cfg)))
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, cfg.AWSSDCreateTag, sd.NewFromConfig(aws.CreateDefaultV2Config(cfg)))
 	case "azure-dns", "azure":
-		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.DryRun)
+		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.DryRun)
 	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.DryRun)
+		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.DryRun)
 	case "ultradns":
 		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
 	case "civo":
@@ -259,13 +257,6 @@ func main() {
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "coredns", "skydns":
 		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
-	case "rdns":
-		p, err = rdns.NewRDNSProvider(
-			rdns.RDNSConfig{
-				DomainFilter: domainFilter,
-				DryRun:       cfg.DryRun,
-			},
-		)
 	case "exoscale":
 		p, err = exoscale.NewExoscaleProvider(
 			cfg.ExoscaleAPIEnvironment,
@@ -287,6 +278,7 @@ func main() {
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
 				Server:       cfg.PDNSServer,
+				ServerID:     cfg.PDNSServerID,
 				APIKey:       cfg.PDNSAPIKey,
 				TLSConfig: pdns.TLSConfig{
 					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
@@ -383,11 +375,15 @@ func main() {
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
-		config := awsSDK.NewConfig()
+		var dynamodbOpts []func(*dynamodb.Options)
 		if cfg.AWSDynamoDBRegion != "" {
-			config = config.WithRegion(cfg.AWSDynamoDBRegion)
+			dynamodbOpts = []func(*dynamodb.Options){
+				func(opts *dynamodb.Options) {
+					opts.Region = cfg.AWSDynamoDBRegion
+				},
+			}
 		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(aws.CreateDefaultSession(cfg), config), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":

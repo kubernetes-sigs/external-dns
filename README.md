@@ -74,20 +74,25 @@ See PR #3063 for all the discussions about it.
 
 Known providers using webhooks:
 
-| Provider |  Repo |
-| -------- | ----------- |
-| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard |
-| Anexia | https://github.com/ProbstenHias/external-dns-anexia-webhook |
-| Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook |
-| Gcore | https://github.com/G-Core/external-dns-gcore-webhook |
-| GleSYS | https://github.com/glesys/external-dns-glesys |
-| Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook |
-| IONOS | https://github.com/ionos-cloud/external-dns-ionos-webhook |
-| Infoblox | https://github.com/AbsaOSS/external-dns-infoblox-webhook |
-| Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
-| RouterOS | https://github.com/benfiola/external-dns-routeros-provider |
-| STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
-| Unifi | https://github.com/kashalls/external-dns-unifi-webhook |
+| Provider              | Repo                                                                 |
+|-----------------------|----------------------------------------------------------------------|
+| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
+| Anexia                | https://github.com/ProbstenHias/external-dns-anexia-webhook          |
+| Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
+| Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
+| Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
+| GleSYS                | https://github.com/glesys/external-dns-glesys                        |
+| Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
+| Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook |
+| IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
+| Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
+| Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
+| Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
+| RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
+| STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
+| Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
 
 ## Status of in-tree providers
 
@@ -123,7 +128,6 @@ The following table clarifies the current status of the providers according to t
 | RFC2136 | Alpha | |
 | NS1 | Alpha | |
 | TransIP | Alpha | |
-| RancherDNS | Alpha | |
 | OVH | Alpha | |
 | Scaleway DNS | Alpha | @Sh4d1 |
 | UltraDNS | Alpha | |
@@ -181,10 +185,10 @@ The following tutorials are provided:
 * [NS1](docs/tutorials/ns1.md)
 * [NS Record Creation with CRD Source](docs/sources/ns-record.md)
 * [MX Record Creation with CRD Source](docs/sources/mx-record.md)
+* [TXT Record Creation with CRD Source](docs/sources/txt-record.md)
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
-* [RancherDNS (RDNS)](docs/tutorials/rdns.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
 * [OVH](docs/tutorials/ovh.md)

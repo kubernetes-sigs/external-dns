@@ -54,7 +54,6 @@ type mockCloudFlareClient struct {
 var ExampleDomain = []cloudflare.DNSRecord{
 	{
 		ID:      "1234567890",
-		ZoneID:  "001",
 		Name:    "foobar.bar.com",
 		Type:    endpoint.RecordTypeA,
 		TTL:     120,
@@ -63,7 +62,6 @@ var ExampleDomain = []cloudflare.DNSRecord{
 	},
 	{
 		ID:      "2345678901",
-		ZoneID:  "001",
 		Name:    "foobar.bar.com",
 		Type:    endpoint.RecordTypeA,
 		TTL:     120,
@@ -72,7 +70,6 @@ var ExampleDomain = []cloudflare.DNSRecord{
 	},
 	{
 		ID:      "1231231233",
-		ZoneID:  "002",
 		Name:    "bar.foo.com",
 		Type:    endpoint.RecordTypeA,
 		TTL:     1,
@@ -340,7 +337,6 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	}
 
 	err = provider.ApplyChanges(context.Background(), changes)
-
 	if err != nil {
 		t.Fatalf("cannot apply changes, %s", err)
 	}
@@ -1179,7 +1175,6 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 				"001": {
 					{
 						ID:      "1234567890",
-						ZoneID:  "001",
 						Name:    "foobar.bar.com",
 						Type:    endpoint.RecordTypeA,
 						TTL:     120,
@@ -1283,7 +1278,6 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	planned := plan.Calculate()
 
 	err = provider.ApplyChanges(context.Background(), planned.Changes)
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1335,7 +1329,6 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		"001": {
 			{
 				ID:      "1234567890",
-				ZoneID:  "001",
 				Name:    "foobar.bar.com",
 				Type:    endpoint.RecordTypeA,
 				TTL:     1,

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/digitalocean/godo"
@@ -158,13 +159,15 @@ func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
 		records, err := p.fetchRecords(ctx, zone.Name)
+
 		if err != nil {
 			return nil, err
 		}
 
 		for _, r := range records {
-			if provider.SupportedRecordType(r.Type) {
+			if p.SupportedRecordType(r.Type) {
 				name := r.Name + "." + zone.Name
+				data := r.Data
 
 				// root name is identified by @ and should be
 				// translated to zone name for the endpoint entry.
@@ -172,7 +175,11 @@ func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 					name = zone.Name
 				}
 
-				ep := endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.TTL), r.Data)
+				if r.Type == endpoint.RecordTypeMX {
+					data = fmt.Sprintf("%d %s", r.Priority, r.Data)
+				}
+
+				ep := endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.TTL), data)
 
 				endpoints = append(endpoints, ep)
 			}
@@ -283,16 +290,33 @@ func makeDomainEditRequest(domain, name, recordType, data string, ttl int) *godo
 
 	// For some reason the DO API requires the '.' at the end of "data" in case of CNAME request.
 	// Example: {"type":"CNAME","name":"hello","data":"www.example.com."}
-	if recordType == endpoint.RecordTypeCNAME && !strings.HasSuffix(data, ".") {
+	if (recordType == endpoint.RecordTypeCNAME || recordType == endpoint.RecordTypeMX) && !strings.HasSuffix(data, ".") {
 		data += "."
 	}
 
-	return &godo.DomainRecordEditRequest{
+	request := &godo.DomainRecordEditRequest{
 		Name: adjustedName,
 		Type: recordType,
 		Data: data,
 		TTL:  ttl,
 	}
+
+	if recordType == endpoint.RecordTypeMX {
+		priority, domain, err := parseMxTarget(data)
+		if err == nil {
+			request.Priority = int(priority)
+			request.Data = provider.EnsureTrailingDot(domain)
+		} else {
+			log.WithFields(log.Fields{
+				"domain":     domain,
+				"dnsName":    name,
+				"recordType": recordType,
+				"data":       data,
+			}).Warn("Unable to parse MX target")
+		}
+	}
+
+	return request
 }
 
 // submitChanges applies an instance of `digitalOceanChanges` to the DigitalOcean API.
@@ -303,13 +327,19 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 	}
 
 	for _, c := range changes.Creates {
-		log.WithFields(log.Fields{
+		logFields := log.Fields{
 			"domain":     c.Domain,
 			"dnsName":    c.Options.Name,
 			"recordType": c.Options.Type,
 			"data":       c.Options.Data,
 			"ttl":        c.Options.TTL,
-		}).Debug("Creating domain record")
+		}
+
+		if c.Options.Type == endpoint.RecordTypeMX {
+			logFields["priority"] = c.Options.Priority
+		}
+
+		log.WithFields(logFields).Debug("Creating domain record")
 
 		if p.DryRun {
 			continue
@@ -322,13 +352,17 @@ func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes *digit
 	}
 
 	for _, u := range changes.Updates {
-		log.WithFields(log.Fields{
+		logFields := log.Fields{
 			"domain":     u.Domain,
 			"dnsName":    u.Options.Name,
 			"recordType": u.Options.Type,
 			"data":       u.Options.Data,
 			"ttl":        u.Options.TTL,
-		}).Debug("Updating domain record")
+		}
+		if u.Options.Type == endpoint.RecordTypeMX {
+			logFields["priority"] = u.Options.Priority
+		}
+		log.WithFields(logFields).Debug("Updating domain record")
 
 		if p.DryRun {
 			continue
@@ -589,6 +623,16 @@ func processDeleteActions(
 	return nil
 }
 
+// SupportedRecordType returns true if the record type is supported by the provider
+func (p *DigitalOceanProvider) SupportedRecordType(recordType string) bool {
+	switch recordType {
+	case "MX":
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
+}
+
 // ApplyChanges applies the given set of generic changes to the provider.
 func (p *DigitalOceanProvider) ApplyChanges(ctx context.Context, planChanges *plan.Changes) error {
 	// TODO: This should only retrieve zones affected by the given `planChanges`.
@@ -616,4 +660,19 @@ func (p *DigitalOceanProvider) ApplyChanges(ctx context.Context, planChanges *pl
 	}
 
 	return p.submitChanges(ctx, &changes)
+}
+
+func parseMxTarget(mxTarget string) (priority int64, exchange string, err error) {
+	targetParts := strings.SplitN(mxTarget, " ", 2)
+	if len(targetParts) != 2 {
+		return priority, exchange, fmt.Errorf("mx target needs to be of form '10 example.com'")
+	}
+
+	priorityRaw, exchange := targetParts[0], targetParts[1]
+	priority, err = strconv.ParseInt(priorityRaw, 10, 32)
+	if err != nil {
+		return priority, exchange, fmt.Errorf("invalid priority specified")
+	}
+
+	return priority, exchange, nil
 }

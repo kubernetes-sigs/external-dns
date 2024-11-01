@@ -51,7 +51,7 @@ spec:
       {{- end }}
     {{- if eq $providerName "webhook" }}
     {{- with .Values.provider.webhook.serviceMonitor }}
-    - port: http-wh-metrics
+    - port: http-webhook
       path: /metrics
       {{- with .interval }}
       interval: {{ . }}

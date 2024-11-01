@@ -86,7 +86,7 @@ type Config struct {
 	AWSZoneTagFilter                   []string
 	AWSAssumeRole                      string
 	AWSProfiles                        []string
-	AWSAssumeRoleExternalID            string
+	AWSAssumeRoleExternalID            string `secure:"yes"`
 	AWSBatchChangeSize                 int
 	AWSBatchChangeSizeBytes            int
 	AWSBatchChangeSizeValues           int
@@ -96,6 +96,7 @@ type Config struct {
 	AWSPreferCNAME                     bool
 	AWSZoneCacheDuration               time.Duration
 	AWSSDServiceCleanup                bool
+	AWSSDCreateTag                     map[string]string
 	AWSZoneMatchParent                 bool
 	AWSDynamoDBRegion                  string
 	AWSDynamoDBTable                   string
@@ -104,6 +105,7 @@ type Config struct {
 	AzureSubscriptionID                string
 	AzureUserAssignedIdentityClientID  string
 	AzureActiveDirectoryAuthorityHost  string
+	AzureZonesCacheDuration            time.Duration
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
 	CloudflareRegionKey                string
@@ -123,6 +125,7 @@ type Config struct {
 	OVHEndpoint                        string
 	OVHApiRateLimit                    int
 	PDNSServer                         string
+	PDNSServerID                       string
 	PDNSAPIKey                         string `secure:"yes"`
 	PDNSSkipTLSVerify                  bool
 	TLSCA                              string
@@ -256,11 +259,13 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
 	AWSSDServiceCleanup:         false,
+	AWSSDCreateTag:              map[string]string{},
 	AWSDynamoDBRegion:           "",
 	AWSDynamoDBTable:            "external-dns",
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
+	AzureZonesCacheDuration:     0 * time.Second,
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
 	CloudflareRegionKey:         "earth",
@@ -278,6 +283,7 @@ var defaultConfig = &Config{
 	OVHEndpoint:                 "ovh-eu",
 	OVHApiRateLimit:             20,
 	PDNSServer:                  "http://localhost:8081",
+	PDNSServerID:                "localhost",
 	PDNSAPIKey:                  "",
 	PDNSSkipTLSVerify:           false,
 	TLSCA:                       "",
@@ -357,7 +363,9 @@ var defaultConfig = &Config{
 
 // NewConfig returns new Config object
 func NewConfig() *Config {
-	return &Config{}
+	return &Config{
+		AWSSDCreateTag: map[string]string{},
+	}
 }
 
 func (cfg *Config) String() string {
@@ -445,7 +453,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rdns", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
+	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("provider-cache-time", "The time to cache the DNS provider record list requests.").Default(defaultConfig.ProviderCacheTime.String()).DurationVar(&cfg.ProviderCacheTime)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
@@ -475,10 +483,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
 	app.Flag("aws-zone-match-parent", "Expand limit possible target by sub-domains (default: disabled)").BoolVar(&cfg.AWSZoneMatchParent)
 	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
+	app.Flag("aws-sd-create-tag", "When using the AWS CloudMap provider, add tag to created services. The flag can be used multiple times").StringMapVar(&cfg.AWSSDCreateTag)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure)").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("azure-subscription-id", "When using the Azure provider, override the Azure subscription to use (optional)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
+	app.Flag("azure-zones-cache-duration", "When using the Azure provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AzureZonesCacheDuration.String()).DurationVar(&cfg.AzureZonesCacheDuration)
 	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
 	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
 
@@ -501,6 +511,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
 	app.Flag("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)").Default(strconv.Itoa(defaultConfig.OVHApiRateLimit)).IntVar(&cfg.OVHApiRateLimit)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
+	app.Flag("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)").Default(defaultConfig.PDNSServerID).StringVar(&cfg.PDNSServerID)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 	app.Flag("pdns-skip-tls-verify", "When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false)").Default(strconv.FormatBool(defaultConfig.PDNSSkipTLSVerify)).BoolVar(&cfg.PDNSSkipTLSVerify)
 	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)

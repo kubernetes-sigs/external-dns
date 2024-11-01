@@ -18,11 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Ability to configure `imagePullSecrets` via helm `global` value ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
+
+## [v1.15.0] - 2023-09-10
+
+### Changed
+
+- Updated _ExternalDNS_ OCI image version to [v0.15.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0). ([#xxxx](https://github.com/kubernetes-sigs/external-dns/pull/xxxx)) _@stevehipwell_
+
 ### Fixed
 
-- Fixed `provider.webhook.resources` behavior to correctly leverage resource limits ([#4560](https://github.com/kubernetes-sigs/external-dns/pull/4560))
-- Fixed `provider.webhook.imagePullPolicy` behavior to correctly leverage pull policy ([#4643](https://github.com/kubernetes-sigs/external-dns/pull/4643)) _@kimsondrup_
-- Add correct webhook metric port to `Service` and `ServiceMonitor` ([#4643](https://github.com/kubernetes-sigs/external-dns/pull/4643)) _@kimsondrup_
+- Fixed `provider.webhook.resources` behavior to correctly leverage resource limits. ([#4560](https://github.com/kubernetes-sigs/external-dns/pull/4560)) _@crutonjohn_
+- Fixed `provider.webhook.imagePullPolicy` behavior to correctly leverage pull policy. ([#4643](https://github.com/kubernetes-sigs/external-dns/pull/4643)) _@kimsondrup_
+- Fixed to add correct webhook metric port to `Service` and `ServiceMonitor`. ([#4643](https://github.com/kubernetes-sigs/external-dns/pull/4643)) _@kimsondrup_
+- Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes. ([#4691](https://github.com/kubernetes-sigs/external-dns/pull/4691)) _@kimsondrup_ & _@hatrx_
 
 ## [v1.14.5] - 2023-06-10
 
@@ -193,6 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.15.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.0
 [v1.14.5]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.5
 [v1.14.4]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.4
 [v1.14.3]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.3

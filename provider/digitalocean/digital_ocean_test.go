@@ -100,6 +100,9 @@ func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt
 					{ID: 1, Name: "foo.ext-dns-test", Type: "CNAME"},
 					{ID: 2, Name: "bar.ext-dns-test", Type: "CNAME"},
 					{ID: 3, Name: "@", Type: endpoint.RecordTypeCNAME},
+					{ID: 4, Name: "@", Type: endpoint.RecordTypeMX, Priority: 10, Data: "mx1.foo.com."},
+					{ID: 5, Name: "@", Type: endpoint.RecordTypeMX, Priority: 10, Data: "mx2.foo.com."},
+					{ID: 6, Name: "@", Type: endpoint.RecordTypeTXT, Data: "SOME-TXT-TEXT"},
 				}, &godo.Response{
 					Links: &godo.Links{
 						Pages: &godo.Pages{
@@ -344,6 +347,28 @@ func TestDigitalOceanMakeDomainEditRequest(t *testing.T) {
 		Data: "bar.example.com.",
 		TTL:  customTTL,
 	}, r4)
+
+	// Ensure that MX records have `.` appended.
+	r5 := makeDomainEditRequest("example.com", "foo.example.com", endpoint.RecordTypeMX,
+		"10 mx.example.com", digitalOceanRecordTTL)
+	assert.Equal(t, &godo.DomainRecordEditRequest{
+		Type:     endpoint.RecordTypeMX,
+		Name:     "foo",
+		Data:     "mx.example.com.",
+		Priority: 10,
+		TTL:      digitalOceanRecordTTL,
+	}, r5)
+
+	// Ensure that MX records do not have an extra `.` appended if they already have a `.`
+	r6 := makeDomainEditRequest("example.com", "foo.example.com", endpoint.RecordTypeMX,
+		"10 mx.example.com.", digitalOceanRecordTTL)
+	assert.Equal(t, &godo.DomainRecordEditRequest{
+		Type:     endpoint.RecordTypeMX,
+		Name:     "foo",
+		Data:     "mx.example.com.",
+		Priority: 10,
+		TTL:      digitalOceanRecordTTL,
+	}, r6)
 }
 
 func TestDigitalOceanApplyChanges(t *testing.T) {
@@ -375,6 +400,8 @@ func TestDigitalOceanProcessCreateActions(t *testing.T) {
 		"example.com": {
 			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeMX, "10 mx.example.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "SOME-TXT-TEXT"),
 		},
 	}
 
@@ -382,7 +409,7 @@ func TestDigitalOceanProcessCreateActions(t *testing.T) {
 	err := processCreateActions(recordsByDomain, createsByDomain, &changes)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(changes.Creates))
+	assert.Equal(t, 4, len(changes.Creates))
 	assert.Equal(t, 0, len(changes.Updates))
 	assert.Equal(t, 0, len(changes.Deletes))
 
@@ -402,6 +429,25 @@ func TestDigitalOceanProcessCreateActions(t *testing.T) {
 				Name: "@",
 				Type: endpoint.RecordTypeCNAME,
 				Data: "foo.example.com.",
+				TTL:  digitalOceanRecordTTL,
+			},
+		},
+		{
+			Domain: "example.com",
+			Options: &godo.DomainRecordEditRequest{
+				Name:     "@",
+				Type:     endpoint.RecordTypeMX,
+				Priority: 10,
+				Data:     "mx.example.com.",
+				TTL:      digitalOceanRecordTTL,
+			},
+		},
+		{
+			Domain: "example.com",
+			Options: &godo.DomainRecordEditRequest{
+				Name: "@",
+				Type: endpoint.RecordTypeTXT,
+				Data: "SOME-TXT-TEXT",
 				TTL:  digitalOceanRecordTTL,
 			},
 		},
@@ -436,6 +482,29 @@ func TestDigitalOceanProcessUpdateActions(t *testing.T) {
 				Data: "foo.example.com.",
 				TTL:  digitalOceanRecordTTL,
 			},
+			{
+				ID:       4,
+				Name:     "@",
+				Type:     endpoint.RecordTypeMX,
+				Data:     "mx1.example.com.",
+				Priority: 10,
+				TTL:      digitalOceanRecordTTL,
+			},
+			{
+				ID:       5,
+				Name:     "@",
+				Type:     endpoint.RecordTypeMX,
+				Data:     "mx2.example.com.",
+				Priority: 10,
+				TTL:      digitalOceanRecordTTL,
+			},
+			{
+				ID:   6,
+				Name: "@",
+				Type: endpoint.RecordTypeTXT,
+				Data: "SOME_TXTX_TEXT",
+				TTL:  digitalOceanRecordTTL,
+			},
 		},
 	}
 
@@ -443,6 +512,8 @@ func TestDigitalOceanProcessUpdateActions(t *testing.T) {
 		"example.com": {
 			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "10.11.12.13"),
 			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "bar.example.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeMX, "10 mx3.example.com"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "ANOTHER-TXT"),
 		},
 	}
 
@@ -450,9 +521,9 @@ func TestDigitalOceanProcessUpdateActions(t *testing.T) {
 	err := processUpdateActions(recordsByDomain, updatesByDomain, &changes)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(changes.Creates))
+	assert.Equal(t, 4, len(changes.Creates))
 	assert.Equal(t, 0, len(changes.Updates))
-	assert.Equal(t, 3, len(changes.Deletes))
+	assert.Equal(t, 6, len(changes.Deletes))
 
 	expectedCreates := []*digitalOceanChangeCreate{
 		{
@@ -470,6 +541,25 @@ func TestDigitalOceanProcessUpdateActions(t *testing.T) {
 				Name: "@",
 				Type: endpoint.RecordTypeCNAME,
 				Data: "bar.example.com.",
+				TTL:  digitalOceanRecordTTL,
+			},
+		},
+		{
+			Domain: "example.com",
+			Options: &godo.DomainRecordEditRequest{
+				Name:     "@",
+				Type:     endpoint.RecordTypeMX,
+				Data:     "mx3.example.com.",
+				Priority: 10,
+				TTL:      digitalOceanRecordTTL,
+			},
+		},
+		{
+			Domain: "example.com",
+			Options: &godo.DomainRecordEditRequest{
+				Name: "@",
+				Type: endpoint.RecordTypeTXT,
+				Data: "ANOTHER-TXT",
 				TTL:  digitalOceanRecordTTL,
 			},
 		},
@@ -491,6 +581,18 @@ func TestDigitalOceanProcessUpdateActions(t *testing.T) {
 		{
 			Domain:   "example.com",
 			RecordID: 3,
+		},
+		{
+			Domain:   "example.com",
+			RecordID: 4,
+		},
+		{
+			Domain:   "example.com",
+			RecordID: 5,
+		},
+		{
+			Domain:   "example.com",
+			RecordID: 6,
 		},
 	}
 
@@ -597,6 +699,26 @@ func TestDigitalOceanGetMatchingDomainRecords(t *testing.T) {
 			Type: endpoint.RecordTypeA,
 			Data: "9.10.11.12",
 		},
+		{
+			ID:       5,
+			Name:     "@",
+			Type:     endpoint.RecordTypeMX,
+			Priority: 10,
+			Data:     "mx1.foo.com.",
+		},
+		{
+			ID:       6,
+			Name:     "@",
+			Type:     endpoint.RecordTypeMX,
+			Priority: 10,
+			Data:     "mx2.foo.com.",
+		},
+		{
+			ID:   7,
+			Name: "@",
+			Type: endpoint.RecordTypeTXT,
+			Data: "MYTXT",
+		},
 	}
 
 	ep1 := endpoint.NewEndpoint("foo.com", endpoint.RecordTypeCNAME)
@@ -627,6 +749,17 @@ func TestDigitalOceanGetMatchingDomainRecords(t *testing.T) {
 	r2 := getMatchingDomainRecords(records, "example.com", ep4)
 	assert.Equal(t, 1, len(r2))
 	assert.Equal(t, "9.10.11.12", r2[0].Data)
+
+	ep5 := endpoint.NewEndpoint("example.com", endpoint.RecordTypeMX)
+	r3 := getMatchingDomainRecords(records, "example.com", ep5)
+	assert.Equal(t, 2, len(r3))
+	assert.Equal(t, "mx1.foo.com.", r3[0].Data)
+	assert.Equal(t, "mx2.foo.com.", r3[1].Data)
+
+	ep6 := endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT)
+	r4 := getMatchingDomainRecords(records, "example.com", ep6)
+	assert.Equal(t, 1, len(r4))
+	assert.Equal(t, "MYTXT", r4[0].Data)
 }
 
 func validateDigitalOceanZones(t *testing.T, zones []godo.Domain, expected []godo.Domain) {
@@ -663,7 +796,7 @@ func TestDigitalOceanAllRecords(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	require.Equal(t, 5, len(records))
+	require.Equal(t, 7, len(records))
 
 	provider.Client = &mockDigitalOceanRecordsFail{}
 	_, err = provider.Records(ctx)
@@ -678,11 +811,15 @@ func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
 		endpoint.NewEndpoint("bar.example.com", "A", "1.2.3.4"),
 		endpoint.NewEndpoint("foo.example.com", "A", "5.6.7.8"),
 		endpoint.NewEndpoint("foo.example.com", "CNAME", "somewhere.out.there.com"),
+		endpoint.NewEndpoint("bar.example.com", "MX", "10 bar.mx1.com"),
+		endpoint.NewEndpoint("bar.example.com", "MX", "10 bar.mx2.com"),
+		endpoint.NewEndpoint("foo.example.com", "TXT", "txtone"),
+		endpoint.NewEndpoint("foo.example.com", "TXT", "txttwo"),
 	}
 
 	merged := mergeEndpointsByNameType(xs)
 
-	assert.Equal(t, 3, len(merged))
+	assert.Equal(t, 5, len(merged))
 	sort.SliceStable(merged, func(i, j int) bool {
 		if merged[i].DNSName != merged[j].DNSName {
 			return merged[i].DNSName < merged[j].DNSName
@@ -693,14 +830,22 @@ func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
 	assert.Equal(t, "A", merged[0].RecordType)
 	assert.Equal(t, 1, len(merged[0].Targets))
 	assert.Equal(t, "1.2.3.4", merged[0].Targets[0])
-
-	assert.Equal(t, "foo.example.com", merged[1].DNSName)
-	assert.Equal(t, "A", merged[1].RecordType)
+	assert.Equal(t, "MX", merged[1].RecordType)
 	assert.Equal(t, 2, len(merged[1].Targets))
-	assert.ElementsMatch(t, []string{"1.2.3.4", "5.6.7.8"}, merged[1].Targets)
+	assert.ElementsMatch(t, []string{"10 bar.mx1.com", "10 bar.mx2.com"}, merged[1].Targets)
 
 	assert.Equal(t, "foo.example.com", merged[2].DNSName)
-	assert.Equal(t, "CNAME", merged[2].RecordType)
-	assert.Equal(t, 1, len(merged[2].Targets))
-	assert.Equal(t, "somewhere.out.there.com", merged[2].Targets[0])
+	assert.Equal(t, "A", merged[2].RecordType)
+	assert.Equal(t, 2, len(merged[2].Targets))
+	assert.ElementsMatch(t, []string{"1.2.3.4", "5.6.7.8"}, merged[2].Targets)
+
+	assert.Equal(t, "foo.example.com", merged[3].DNSName)
+	assert.Equal(t, "CNAME", merged[3].RecordType)
+	assert.Equal(t, 1, len(merged[3].Targets))
+	assert.Equal(t, "somewhere.out.there.com", merged[3].Targets[0])
+
+	assert.Equal(t, "foo.example.com", merged[4].DNSName)
+	assert.Equal(t, "TXT", merged[4].RecordType)
+	assert.Equal(t, 2, len(merged[4].Targets))
+	assert.ElementsMatch(t, []string{"txtone", "txttwo"}, merged[4].Targets)
 }
