@@ -108,6 +108,7 @@ type Config struct {
 	AzureZonesCacheDuration            time.Duration
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
+	CloudflareRegionKey                string
 	CoreDNSPrefix                      string
 	AkamaiServiceConsumerDomain        string
 	AkamaiClientToken                  string
@@ -267,6 +268,7 @@ var defaultConfig = &Config{
 	AzureZonesCacheDuration:     0 * time.Second,
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
+	CloudflareRegionKey:         "earth",
 	CoreDNSPrefix:               "/skydns/",
 	AkamaiServiceConsumerDomain: "",
 	AkamaiClientToken:           "",
@@ -492,6 +494,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
+	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)
