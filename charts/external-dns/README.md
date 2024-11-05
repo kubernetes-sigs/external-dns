@@ -112,9 +112,11 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | imagePullSecrets | list | `[]` | Image pull secrets. |
 | initContainers | list | `[]` | [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition. |
 | interval | string | `"1m"` | Interval for DNS updates. |
+| labelFilter | string | `nil` |  |
 | livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | logFormat | string | `"text"` | Log format. |
 | logLevel | string | `"info"` | Log level. |
+| managedRecordTypes | list | `[]` |  |
 | nameOverride | string | `nil` | Override the name of the chart. |
 | namespaced | bool | `false` | if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too). |
 | nodeSelector | object | `{}` | Node labels to match for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
