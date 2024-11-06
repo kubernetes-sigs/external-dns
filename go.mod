@@ -15,7 +15,7 @@ require (
 	github.com/Yamashou/gqlgenc v0.25.4
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.45
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.48
 	github.com/aws/aws-sdk-go-v2 v1.32.3
 	github.com/aws/aws-sdk-go-v2/config v1.28.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.42
@@ -26,8 +26,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.3
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/civo/civogo v0.3.84
-	github.com/cloudflare/cloudflare-go v0.108.0
+	github.com/civo/civogo v0.3.86
+	github.com/cloudflare/cloudflare-go v0.109.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
@@ -47,19 +47,19 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.77.1
+	github.com/oracle/oci-go-sdk/v65 v65.78.0
 	github.com/ovh/go-ovh v1.6.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.12.2
-	github.com/projectcontour/contour v1.30.0
+	github.com/projectcontour/contour v1.30.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1033
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1033
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1033
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1036
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1036
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1036
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.16
@@ -216,7 +216,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20240430033511-f0e62f92d13f // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	moul.io/http2curl v1.0.0 // indirect
-	sigs.k8s.io/controller-runtime v0.18.4 // indirect
+	sigs.k8s.io/controller-runtime v0.18.5 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
