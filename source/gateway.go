@@ -219,21 +219,60 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 			continue
 		}
 
-		// Get Route hostnames and their targets.
-		hostTargets, err := resolver.resolve(rt)
-		if err != nil {
-			return nil, err
-		}
-		if len(hostTargets) == 0 {
+		// Get Gateway Listeners associated with Route.
+		gwListeners := resolver.resolve(rt)
+		if len(gwListeners) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
 
-		// Create endpoints from hostnames and targets.
-		var routeEndpoints []*endpoint.Endpoint
+		// Create endpoints for Route and associated Gateway Listeners
+		rtHosts := rt.Hostnames()
+		if len(rtHosts) == 0 {
+			// This means that the route doesn't specify a hostname and should use any provided by
+			// attached Gateway Listeners.
+			rtHosts = []v1.Hostname{""}
+		}
+
+		hostTargets := make(map[string]endpoint.Targets)
+		for gateway, listeners := range gwListeners {
+			var hosts []string
+			for _, listener := range listeners {
+				// Find all overlapping hostnames between the Route and Listener.
+				gwHost := getVal(listener.Hostname, "")
+				for _, rtHost := range rtHosts {
+					host, ok := gwMatchingHost(string(gwHost), string(rtHost))
+					if !ok || host == "" {
+						continue
+					}
+					hosts = append(hosts, host)
+				}
+			}
+			if !src.ignoreHostnameAnnotation {
+				hosts = append(hosts, getHostnamesFromAnnotations(annots)...)
+			}
+			if src.fqdnTemplate != nil && (len(hosts) == 0 || src.combineFQDNAnnotation) {
+				templated, err := execTemplate(src.fqdnTemplate, rt.Object())
+				if err != nil {
+					return nil, err
+				}
+				hosts = append(hosts, templated...)
+			}
+			for _, host := range hosts {
+				override := getTargetsFromTargetAnnotation(gateway.Annotations)
+				hostTargets[host] = append(hostTargets[host], override...)
+				if len(override) == 0 {
+					for _, addr := range gateway.Status.Addresses {
+						hostTargets[host] = append(hostTargets[host], addr.Value)
+					}
+				}
+			}
+		}
+
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
 		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
 		ttl := getTTLFromAnnotations(annots, resource)
+		var routeEndpoints []*endpoint.Endpoint
 		for host, targets := range hostTargets {
 			routeEndpoints = append(routeEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -285,25 +324,21 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gatewa
 	}
 }
 
-func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
-	rtHosts, err := c.hosts(rt)
-	if err != nil {
-		return nil, err
-	}
-	hostTargets := make(map[string]endpoint.Targets)
+func (c *gatewayRouteResolver) resolve(rt gatewayRoute) map[*v1beta1.Gateway][]*v1.Listener {
+	gwListeners := map[*v1beta1.Gateway][]*v1.Listener{}
 
 	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
-		group := strVal((*string)(ref.Group), gatewayGroup)
-		kind := strVal((*string)(ref.Kind), gatewayKind)
+		group := getVal(ref.Group, gatewayGroup)
+		kind := getVal(ref.Kind, gatewayKind)
 		if group != gatewayGroup || kind != gatewayKind {
 			log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
 		// Lookup the Gateway and its Listeners.
-		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+		namespace := getVal((*string)(ref.Namespace), meta.Namespace)
 		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
 		if !ok {
 			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
@@ -316,7 +351,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		}
 		// Match the Route to all possible Listeners.
 		match := false
-		section := sectionVal(ref.SectionName, "")
+		section := getVal(ref.SectionName, "")
 		listeners := gw.listeners[section]
 		for i := range listeners {
 			lis := &listeners[i]
@@ -325,7 +360,6 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				continue
 			}
 			// Confirm that the Listener and Route ports match, if specified.
-			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
 			if ref.Port != nil && *ref.Port != lis.Port {
 				continue
 			}
@@ -333,70 +367,28 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			if !c.routeIsAllowed(gw.gateway, lis, rt) {
 				continue
 			}
-			// Find all overlapping hostnames between the Route and Listener.
-			// For {TCP,UDP}Routes, all annotation-generated hostnames should match since the Listener doesn't specify a hostname.
-			// For {HTTP,TLS}Routes, hostnames (including any annotation-generated) will be required to match any Listeners specified hostname.
-			gwHost := ""
-			if lis.Hostname != nil {
-				gwHost = string(*lis.Hostname)
-			}
-			for _, rtHost := range rtHosts {
-				if gwHost == "" && rtHost == "" {
-					// For {HTTP,TLS}Routes, this means the Route and the Listener both allow _any_ hostnames.
-					// For {TCP,UDP}Routes, this should always happen since neither specifies hostnames.
-					continue
-				}
-				host, ok := gwMatchingHost(gwHost, rtHost)
-				if !ok {
-					continue
-				}
-				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
-				hostTargets[host] = append(hostTargets[host], override...)
-				if len(override) == 0 {
-					for _, addr := range gw.gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
+			// Confirm that the Listener and Route hostnames overlap, if specified.
+			overlap := true
+			if len(rt.Hostnames()) != 0 {
+				gwHost := getVal(lis.Hostname, "")
+				for _, rtHost := range rt.Hostnames() {
+					_, overlap = gwMatchingHost(string(gwHost), string(rtHost))
+					if overlap {
+						break
 					}
 				}
-				match = true
 			}
+			if !overlap {
+				continue
+			}
+			gwListeners[gw.gateway] = append(gwListeners[gw.gateway], lis)
+			match = true
 		}
 		if !match {
-			log.Debugf("Gateway %s/%s section %q does not match %s %s/%s hostnames %q", namespace, ref.Name, section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
+			log.Debugf("Gateway %s/%s section %q does not match %s %s/%s hostnames %q", namespace, ref.Name, section, c.src.rtKind, meta.Namespace, meta.Name, rt.Hostnames())
 		}
 	}
-	// If a Gateway has multiple matching Listeners for the same host, then we'll
-	// add its IPs to the target list multiple times and should dedupe them.
-	for host, targets := range hostTargets {
-		hostTargets[host] = uniqueTargets(targets)
-	}
-	return hostTargets, nil
-}
-
-func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
-	var hostnames []string
-	for _, name := range rt.Hostnames() {
-		hostnames = append(hostnames, string(name))
-	}
-	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
-	// but other sources don't check if fqdn-template is set. Which should it be?
-	if !c.src.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(rt.Metadata().Annotations)...)
-	}
-	// TODO: The combine-fqdn-annotation flag is similarly vague.
-	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
-		hosts, err := execTemplate(c.src.fqdnTemplate, rt.Object())
-		if err != nil {
-			return nil, err
-		}
-		hostnames = append(hostnames, hosts...)
-	}
-	// This means that the route doesn't specify a hostname and should use any provided by
-	// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
-	// break {TCP,UDP}Routes.
-	if len(rt.Hostnames()) == 0 {
-		hostnames = append(hostnames, "")
-	}
-	return hostnames, nil
+	return gwListeners
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {
@@ -443,7 +435,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 	}
 	gvk := rt.Object().GetObjectKind().GroupVersionKind()
 	for _, gk := range allow.Kinds {
-		group := strVal((*string)(gk.Group), gatewayGroup)
+		group := string(getVal(gk.Group, gatewayGroup))
 		if gvk.Group == group && gvk.Kind == string(gk.Kind) {
 			return true
 		}
@@ -458,24 +450,6 @@ func gwRouteIsAccepted(conds []metav1.Condition) bool {
 		}
 	}
 	return false
-}
-
-func uniqueTargets(targets endpoint.Targets) endpoint.Targets {
-	if len(targets) < 2 {
-		return targets
-	}
-	sort.Strings([]string(targets))
-	prev := targets[0]
-	n := 1
-	for _, v := range targets[1:] {
-		if v == prev {
-			continue
-		}
-		prev = v
-		targets[n] = v
-		n++
-	}
-	return targets[:n]
 }
 
 // gwProtocolMatches returns whether a and b are the same protocol,
@@ -581,15 +555,8 @@ func isAlphaNum(b byte) bool {
 	}
 }
 
-func strVal(ptr *string, def string) string {
-	if ptr == nil || *ptr == "" {
-		return def
-	}
-	return *ptr
-}
-
-func sectionVal(ptr *v1.SectionName, def v1.SectionName) v1.SectionName {
-	if ptr == nil || *ptr == "" {
+func getVal[T any](ptr *T, def T) T {
+	if ptr == nil {
 		return def
 	}
 	return *ptr
