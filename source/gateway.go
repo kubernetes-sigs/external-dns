@@ -18,8 +18,8 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -206,30 +206,25 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 	if err != nil {
 		return nil, err
 	}
-	kind := strings.ToLower(src.rtKind)
 	resolver := newGatewayRouteResolver(src, gateways, namespaces)
 	for _, rt := range routes {
 		// Filter by annotations.
 		meta := rt.Metadata()
-		annots := meta.Annotations
-		if !src.rtAnnotations.Matches(labels.Set(annots)) {
+		if !src.rtAnnotations.Matches(labels.Set(meta.Annotations)) {
 			continue
 		}
-
 		// Check controller annotation to see if we are responsible.
-		if v, ok := annots[controllerAnnotationKey]; ok && v != controllerAnnotationValue {
+		if v, ok := meta.Annotations[controllerAnnotationKey]; ok && v != controllerAnnotationValue {
 			log.Debugf("Skipping %s %s/%s because controller value does not match, found: %s, required: %s",
 				src.rtKind, meta.Namespace, meta.Name, v, controllerAnnotationValue)
 			continue
 		}
-
 		// Get Gateway Listeners associated with Route.
 		gwListeners := resolver.resolve(rt)
 		if len(gwListeners) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
-
 		// Create endpoints for Route and associated Gateway Listeners
 		rtHosts := rt.Hostnames()
 		if len(rtHosts) == 0 {
@@ -237,10 +232,16 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 			// attached Gateway Listeners.
 			rtHosts = []v1.Hostname{""}
 		}
-
-		hostTargets := make(map[string]endpoint.Targets)
+		resource := strings.Join([]string{strings.ToLower(src.rtKind), meta.Namespace, meta.Name}, "/")
+		hostGateways := map[string][]*v1beta1.Gateway{}
+		ttl := getTTLFromAnnotations(meta.Annotations, resource)
+		dualstack := false
+		if v, ok := meta.Annotations[gatewayAPIDualstackAnnotationKey]; ok && v == gatewayAPIDualstackAnnotationValue {
+			dualstack = true
+		}
+		providerSpecific, setIdentifier := getProviderSpecificAnnotations(meta.Annotations)
 		for gateway, listeners := range gwListeners {
-			var hosts []string
+			hosts := map[string]struct{}{}
 			for _, listener := range listeners {
 				// Find all overlapping hostnames between the Route and Listener.
 				gwHost := getVal(listener.Hostname, "")
@@ -249,37 +250,82 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 					if !ok || host == "" {
 						continue
 					}
-					hosts = append(hosts, host)
+					hosts[host] = struct{}{}
 				}
 			}
 			if !src.ignoreHostnameAnnotation {
-				hosts = append(hosts, getHostnamesFromAnnotations(annots)...)
+				for _, host := range getHostnamesFromAnnotations(gateway.Annotations) {
+					hosts[host] = struct{}{}
+				}
+				for _, host := range getHostnamesFromAnnotations(meta.Annotations) {
+					hosts[host] = struct{}{}
+				}
 			}
 			if src.fqdnTemplate != nil && (len(hosts) == 0 || src.combineFQDNAnnotation) {
 				templated, err := execTemplate(src.fqdnTemplate, rt.Object())
 				if err != nil {
 					return nil, err
 				}
-				hosts = append(hosts, templated...)
+				for _, host := range templated {
+					hosts[host] = struct{}{}
+				}
 			}
-			for _, host := range hosts {
+			if len(hosts) == 0 {
+				continue
+			}
+			for host := range hosts {
+				hostGateways[host] = append(hostGateways[host], gateway)
+			}
+			// Merge Gateway annotations
+			gwTTL := getTTLFromAnnotations(gateway.Annotations, strings.Join([]string{strings.ToLower(gateway.Kind), gateway.Namespace, gateway.Name}, "/"))
+			if gwTTL.IsConfigured() {
+				if !ttl.IsConfigured() || ttl > gwTTL {
+					ttl = gwTTL
+				}
+			}
+			if v, ok := gateway.Annotations[gatewayAPIDualstackAnnotationKey]; ok && v == gatewayAPIDualstackAnnotationValue {
+				dualstack = true
+			}
+			gwProviderSpecific, gwSetIdentifier := getProviderSpecificAnnotations(gateway.Annotations)
+			for _, gwProperty := range gwProviderSpecific {
+				present := false
+				for _, property := range providerSpecific {
+					if property.Name == gwProperty.Name {
+						present = true
+						break
+					}
+				}
+				if !present {
+					providerSpecific = append(providerSpecific, gwProperty)
+				}
+			}
+			if setIdentifier == "" {
+				setIdentifier = gwSetIdentifier
+			}
+		}
+		for host, gateways := range hostGateways {
+			var targets endpoint.Targets
+			for _, gateway := range gateways {
 				override := getTargetsFromTargetAnnotation(gateway.Annotations)
-				hostTargets[host] = append(hostTargets[host], override...)
+				targets = append(targets, override...)
 				if len(override) == 0 {
 					for _, addr := range gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
+						targets = append(targets, addr.Value)
 					}
 				}
 			}
+			origin := resource
+			if len(gateways) == 1 && !src.ignoreHostnameAnnotation && slices.Contains(getHostnamesFromAnnotations(gateways[0].Annotations), host) {
+				// Annotated hostnames from a single Gateway are attributed to the Gateway rather than the Route
+				origin = strings.Join([]string{strings.ToLower(gateways[0].Kind), gateways[0].Namespace, gateways[0].Name}, "/")
+			}
+			for _, ep := range endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, origin) {
+				if dualstack {
+					ep.Labels[endpoint.DualstackLabelKey] = "true"
+				}
+				endpoints = append(endpoints, ep)
+			}
 		}
-
-		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
-		ttl := getTTLFromAnnotations(annots, resource)
-		for host, targets := range hostTargets {
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
-		}
-		setDualstackLabel(rt, endpoints)
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, endpoints)
 	}
 	return endpoints, nil
@@ -581,14 +627,4 @@ func selectorsEqual(a, b labels.Selector) bool {
 		}
 	}
 	return true
-}
-
-func setDualstackLabel(rt gatewayRoute, endpoints []*endpoint.Endpoint) {
-	val, ok := rt.Metadata().Annotations[gatewayAPIDualstackAnnotationKey]
-	if ok && val == gatewayAPIDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to GatewayRoute %s/%s.", rt.Metadata().Namespace, rt.Metadata().Name)
-		for _, ep := range endpoints {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
-	}
 }
