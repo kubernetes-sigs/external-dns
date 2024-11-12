@@ -679,7 +679,16 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			config:     Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
-				ObjectMeta: objectMeta("default", "test"),
+				TypeMeta: metav1.TypeMeta{
+					Kind: "Gateway",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						hostnameAnnotationKey: "annotation.gateway.internal",
+					},
+				},
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
 				},
@@ -714,6 +723,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("annotation.gateway.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "gateway/default/test"),
+				newTestEndpoint("annotation.gateway.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "gateway/default/test"),
 				newTestEndpoint("annotation.without-hostname.internal", "A", "1.2.3.4").
 					WithLabel(endpoint.ResourceLabelKey, "httproute/default/without-hostname"),
 				newTestEndpoint("annotation.with-hostname.internal", "A", "1.2.3.4").
@@ -864,6 +877,64 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:      "TTLGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "test",
+					Namespace:   "default",
+					Annotations: map[string]string{ttlAnnotationKey: "15s"},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "no-ttl",
+						Namespace: "default",
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("no-ttl.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "longer-ttl",
+						Namespace:   "default",
+						Annotations: map[string]string{ttlAnnotationKey: "20s"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("longer-ttl.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "shorter-ttl",
+						Namespace:   "default",
+						Annotations: map[string]string{ttlAnnotationKey: "5s"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("shorter-ttl.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("no-ttl.internal", "A", 15, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/no-ttl"),
+				newTestEndpointWithTTL("longer-ttl.internal", "A", 15, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/longer-ttl"),
+				newTestEndpointWithTTL("shorter-ttl.internal", "A", 5, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/shorter-ttl"),
+			},
+		},
+		{
 			title:      "ProviderAnnotations",
 			config:     Config{},
 			namespaces: namespaces("default"),
@@ -893,6 +964,61 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "httproute/default/provider-annotations").
 					WithProviderSpecific("alias", "true").
 					WithSetIdentifier("test-set-identifier"),
+			},
+		},
+		{
+			title:      "ProviderAnnotationsGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						SetIdentifierKey: "gateway",
+						"external-dns.alpha.kubernetes.io/webhook-property": "gateway",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "with-provider-annotations",
+						Namespace: "default",
+						Annotations: map[string]string{
+							SetIdentifierKey: "route",
+							"external-dns.alpha.kubernetes.io/webhook-property": "route",
+						},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("with-provider-annotations.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "without-provider-annotations",
+						Namespace: "default",
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("without-provider-annotations.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("with-provider-annotations.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/with-provider-annotations").
+					WithProviderSpecific("webhook/property", "route").
+					WithSetIdentifier("route"),
+				newTestEndpoint("without-provider-annotations.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/without-provider-annotations").
+					WithProviderSpecific("webhook/property", "gateway").
+					WithSetIdentifier("gateway"),
 			},
 		},
 		{
