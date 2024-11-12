@@ -17,36 +17,35 @@ limitations under the License.
 package source
 
 import (
+	"cmp"
+	"maps"
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func sortEndpoints(endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		sort.Strings([]string(ep.Targets))
-	}
-	sort.Slice(endpoints, func(i, k int) bool {
-		// Sort by DNSName, RecordType, and Targets
-		ei, ek := endpoints[i], endpoints[k]
-		if ei.DNSName != ek.DNSName {
-			return ei.DNSName < ek.DNSName
+	slices.SortStableFunc(endpoints, func(a, b *endpoint.Endpoint) int {
+		if c := cmp.Compare(a.DNSName, b.DNSName); c != 0 {
+			return c
 		}
-		if ei.RecordType != ek.RecordType {
-			return ei.RecordType < ek.RecordType
+		if c := cmp.Compare(a.RecordType, b.RecordType); c != 0 {
+			return c
 		}
-		// Targets are sorted ahead of time.
-		for j, ti := range ei.Targets {
-			if j >= len(ek.Targets) {
-				return true
-			}
-			if tk := ek.Targets[j]; ti != tk {
-				return ti < tk
+		if c := slices.Compare(slices.Sorted(slices.Values(a.Targets)), slices.Sorted(slices.Values(b.Targets))); c != 0 {
+			return c
+		}
+		if c := slices.Compare(slices.Sorted(maps.Keys(a.Labels)), slices.Sorted(maps.Keys(b.Labels))); c != 0 {
+			return c
+		}
+		for key, value := range a.Labels {
+			if c := cmp.Compare(value, b.Labels[key]); c != 0 {
+				return c
 			}
 		}
-		return false
+		return 0
 	})
 }
 

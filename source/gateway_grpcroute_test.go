@@ -91,8 +91,11 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err, "failed to get Endpoints")
 	validateEndpoints(t, endpoints, []*endpoint.Endpoint{
-		newTestEndpoint("api-annotation.foobar.internal", "A", ips...),
-		newTestEndpoint("api-hostnames.foobar.internal", "A", ips...),
-		newTestEndpoint("api-template.foobar.internal", "A", ips...),
+		newTestEndpoint("api-annotation.foobar.internal", "A", ips...).
+			WithLabel(endpoint.ResourceLabelKey, "grpcroute/default/api"),
+		newTestEndpoint("api-hostnames.foobar.internal", "A", ips...).
+			WithLabel(endpoint.ResourceLabelKey, "grpcroute/default/api"),
+		newTestEndpoint("api-template.foobar.internal", "A", ips...).
+			WithLabel(endpoint.ResourceLabelKey, "grpcroute/default/api"),
 	})
 }
