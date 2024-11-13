@@ -15,7 +15,7 @@ require (
 	github.com/Yamashou/gqlgenc v0.25.4
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.49
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.50
 	github.com/aws/aws-sdk-go-v2 v1.32.4
 	github.com/aws/aws-sdk-go-v2/config v1.28.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.44
@@ -26,7 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.4
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/civo/civogo v0.3.87
+	github.com/civo/civogo v0.3.88
 	github.com/cloudflare/cloudflare-go v0.109.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
@@ -47,7 +47,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.78.0
+	github.com/oracle/oci-go-sdk/v65 v65.78.1
 	github.com/ovh/go-ovh v1.6.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -57,12 +57,12 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1038
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1038
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1038
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1040
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1040
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1040
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
-	go.etcd.io/etcd/client/v3 v3.5.16
+	go.etcd.io/etcd/client/v3 v3.5.17
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.31.0
 	golang.org/x/oauth2 v0.24.0
@@ -187,8 +187,8 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.16 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.16 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.16 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.17 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
