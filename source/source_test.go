@@ -26,6 +26,105 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+func TestGetProviderSpecificAnnotations(t *testing.T) {
+	for _, test := range []struct {
+		title       string
+		annotations map[string]string
+		properties  endpoint.ProviderSpecific
+		identifier  *string
+	}{
+		{
+			title: "None",
+			annotations: map[string]string{},
+			properties: endpoint.ProviderSpecific{},
+		},
+		{
+			title: "Native",
+			annotations: map[string]string{
+				aliasAnnotationKey: "true",
+				SetIdentifierKey: "identifier",
+			},
+			identifier: &[]string{"identifier"}[0],
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "alias",
+					Value: "true",
+				},
+			},
+		},
+		{
+			title: "ProviderAWS",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/aws-property": "value",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "aws/property",
+					Value: "value",
+				},
+			},
+		},
+		{
+			title: "ProviderCloudflare",
+			annotations: map[string]string{
+				CloudflareProxiedKey: "true",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: CloudflareProxiedKey,
+					Value: "true",
+				},
+			},
+		},
+		{
+			title: "ProviderIBMCloud",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/ibmcloud-property": "value",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "ibmcloud-property",
+					Value: "value",
+				},
+			},
+		},
+		{
+			title: "ProviderSCW",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/scw-property": "value",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "scw/property",
+					Value: "value",
+				},
+			},
+		},
+		{
+			title: "ProviderWebhook",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/webhook-property": "value",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "webhook/property",
+					Value: "value",
+				},
+			},
+		},
+	} {
+		t.Run(test.title, func(t *testing.T) {
+			properties, identifier := getProviderSpecificAnnotations(test.annotations)
+			assert.Equal(t, test.properties, properties)
+			if test.identifier != nil {
+				assert.Equal(t, *test.identifier, identifier)
+			} else {
+				assert.Equal(t, "", identifier)
+			}
+		})
+	}
+}
+
 func TestGetTTLFromAnnotations(t *testing.T) {
 	for _, tc := range []struct {
 		title       string
