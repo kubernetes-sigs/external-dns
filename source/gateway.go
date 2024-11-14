@@ -46,7 +46,7 @@ const (
 	gatewayGroup = "gateway.networking.k8s.io"
 	gatewayKind  = "Gateway"
 	// gatewayAPIDualstackAnnotationKey is the annotation used for determining if a Gateway Route is dualstack
-	gatewayAPIDualstackAnnotationKey = "external-dns.alpha.kubernetes.io/dualstack"
+	gatewayAPIDualstackAnnotationKey = annotationKeyPrefix + "dualstack"
 	// gatewayAPIDualstackAnnotationValue is the value of the Gateway Route dualstack annotation that indicates it is dualstack
 	gatewayAPIDualstackAnnotationValue = "true"
 )
