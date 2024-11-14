@@ -157,7 +157,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     true,
+			expectError: true,
 		},
 		{
 			title:                "invalid crd kind",
@@ -175,7 +175,38 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     true,
+			expectError: true,
+		},
+		{
+			title:                "endpoint with annotations",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "namespace",
+			registeredNamespace:  "namespace",
+			annotations: map[string]string{
+				hostnameAnnotationKey:            "example.com",
+				targetAnnotationKey:              "1.2.3.4",
+				ttlAnnotationKey:                 "180",
+				annotationKeyPrefix + "property": "value",
+			},
+			spec: &endpoint.DNSEndpointSpec{},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name:  "property",
+							Value: "value",
+						},
+					},
+				},
+			},
+			expectError: false,
 		},
 		{
 			title:                "endpoint with provider property",
@@ -185,6 +216,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "namespace",
 			registeredNamespace:  "namespace",
+			annotations: map[string]string{
+				annotationKeyPrefix + "override": "ignored",
+				annotationKeyPrefix + "property": "value",
+			},
 			spec: &endpoint.DNSEndpointSpec{
 				Endpoints: []*endpoint.Endpoint{
 					{
@@ -194,19 +229,19 @@ func testCRDSourceEndpoints(t *testing.T) {
 						RecordTTL:  180,
 						ProviderSpecific: endpoint.ProviderSpecific{
 							endpoint.ProviderSpecificProperty{
-								Name: "property",
+								Name:  "override",
 								Value: "value",
 							},
 							endpoint.ProviderSpecificProperty{
-								Name: "aws/property",
+								Name:  "aws/property",
 								Value: "value",
 							},
 							endpoint.ProviderSpecificProperty{
-								Name: "scw/property",
+								Name:  "scw/property",
 								Value: "value",
 							},
 							endpoint.ProviderSpecificProperty{
-								Name: "webhook/property",
+								Name:  "webhook/property",
 								Value: "value",
 							},
 						},
@@ -221,25 +256,29 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 					ProviderSpecific: endpoint.ProviderSpecific{
 						endpoint.ProviderSpecificProperty{
-							Name: "property",
+							Name:  "override",
 							Value: "value",
 						},
 						endpoint.ProviderSpecificProperty{
-							Name: "aws/property",
+							Name:  "aws-property",
 							Value: "value",
 						},
 						endpoint.ProviderSpecificProperty{
-							Name: "scw/property",
+							Name:  "scw-property",
 							Value: "value",
 						},
 						endpoint.ProviderSpecificProperty{
-							Name: "webhook/property",
+							Name:  "webhook/property",
+							Value: "value",
+						},
+						endpoint.ProviderSpecificProperty{
+							Name:  "property",
 							Value: "value",
 						},
 					},
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "endpoints within a specific namespace",
@@ -267,7 +306,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "no endpoints within a specific namespace",
@@ -287,7 +326,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "invalid crd with no targets",
@@ -307,7 +346,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with single endpoint",
@@ -335,7 +374,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with multiple endpoints",
@@ -375,7 +414,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with annotation and non matching annotation filter",
@@ -397,7 +436,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with annotation and matching annotation filter",
@@ -427,7 +466,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		// TODO: Label based Selectors are implemented by the REST client
 		//       Therefore this test case predominantly exercises the fake REST client,
@@ -452,7 +491,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		//			},
 		//		},
 		//	},
-		//	expectError:     false,
+		//	expectError: false,
 		//},
 		{
 			title:                "valid crd gvk with label and matching label filter",
@@ -482,7 +521,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "Create NS record",
@@ -512,7 +551,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "Create SRV record",
@@ -542,7 +581,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "Create NAPTR record",
@@ -572,7 +611,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "illegal target CNAME",
@@ -594,7 +633,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "illegal target NAPTR",
@@ -616,7 +655,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectError:     false,
+			expectError: false,
 		},
 	} {
 		ti := ti

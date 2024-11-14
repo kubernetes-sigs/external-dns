@@ -18,7 +18,6 @@ package source
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,75 +26,33 @@ import (
 )
 
 func TestGetProviderSpecificAnnotations(t *testing.T) {
-	for _, test := range []struct {
+	tests := []struct {
 		title       string
 		annotations map[string]string
 		properties  endpoint.ProviderSpecific
 		identifier  *string
 	}{
 		{
-			title: "None",
+			title:       "None",
 			annotations: map[string]string{},
-			properties: endpoint.ProviderSpecific{},
+			properties:  endpoint.ProviderSpecific{},
 		},
 		{
-			title: "Native",
+			title: "SetIdentifier",
 			annotations: map[string]string{
-				aliasAnnotationKey: "true",
 				SetIdentifierKey: "identifier",
 			},
 			identifier: &[]string{"identifier"}[0],
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: "alias",
-					Value: "true",
-				},
-			},
+			properties: endpoint.ProviderSpecific{},
 		},
 		{
-			title: "ProviderAWS",
+			title: "ProviderProperty",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-property": "value",
+				annotationKeyPrefix + "property": "value",
 			},
 			properties: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name: "aws/property",
-					Value: "value",
-				},
-			},
-		},
-		{
-			title: "ProviderCloudflare",
-			annotations: map[string]string{
-				CloudflareProxiedKey: "true",
-			},
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: CloudflareProxiedKey,
-					Value: "true",
-				},
-			},
-		},
-		{
-			title: "ProviderIBMCloud",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ibmcloud-property": "value",
-			},
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: "ibmcloud-property",
-					Value: "value",
-				},
-			},
-		},
-		{
-			title: "ProviderSCW",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/scw-property": "value",
-			},
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: "scw/property",
+					Name:  "property",
 					Value: "value",
 				},
 			},
@@ -107,12 +64,40 @@ func TestGetProviderSpecificAnnotations(t *testing.T) {
 			},
 			properties: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name: "webhook/property",
+					Name:  "webhook/property",
 					Value: "value",
 				},
 			},
 		},
+	}
+	for _, name := range []string{
+		"access",
+		"alias",
+		"endpoints-type",
+		"controller",
+		"dualstack",
+		"hostname",
+		"ingress",
+		"ingress-hostname-source",
+		"internal-hostname",
+		"set-identifier",
+		"target",
+		"ttl",
 	} {
+		tests = append(tests, struct {
+			title       string
+			annotations map[string]string
+			properties  endpoint.ProviderSpecific
+			identifier  *string
+		}{
+			title: "Core" + name,
+			annotations: map[string]string{
+				annotationKeyPrefix + name: "",
+			},
+			properties: endpoint.ProviderSpecific{},
+		})
+	}
+	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
 			properties, identifier := getProviderSpecificAnnotations(test.annotations)
 			assert.Equal(t, test.properties, properties)
@@ -195,226 +180,5 @@ func TestSuitableType(t *testing.T) {
 		if recordType != tc.expected {
 			t.Errorf("expected %s, got %s", tc.expected, recordType)
 		}
-	}
-}
-
-func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
-	for _, tc := range []struct {
-		title         string
-		annotations   map[string]string
-		expectedKey   string
-		expectedValue bool
-	}{
-		{
-			title:         "Cloudflare proxied annotation is set correctly to true",
-			annotations:   map[string]string{CloudflareProxiedKey: "true"},
-			expectedKey:   CloudflareProxiedKey,
-			expectedValue: true,
-		},
-		{
-			title:         "Cloudflare proxied annotation is set correctly to false",
-			annotations:   map[string]string{CloudflareProxiedKey: "false"},
-			expectedKey:   CloudflareProxiedKey,
-			expectedValue: false,
-		},
-		{
-			title: "Cloudflare proxied annotation among another annotations is set correctly to true",
-			annotations: map[string]string{
-				"random annotation 1": "random value 1",
-				CloudflareProxiedKey:  "false",
-				"random annotation 2": "random value 2",
-			},
-			expectedKey:   CloudflareProxiedKey,
-			expectedValue: false,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == tc.expectedKey {
-					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
-					return
-				}
-			}
-			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
-		})
-	}
-
-	for _, tc := range []struct {
-		title         string
-		annotations   map[string]string
-		expectedKey   string
-		expectedValue string
-	}{
-		{
-			title:         "Cloudflare custom hostname annotation is set correctly",
-			annotations:   map[string]string{CloudflareCustomHostnameKey: "a.foo.fancybar.com"},
-			expectedKey:   CloudflareCustomHostnameKey,
-			expectedValue: "a.foo.fancybar.com",
-		},
-		{
-			title: "Cloudflare custom hostname annotation among another annotations is set correctly",
-			annotations: map[string]string{
-				"random annotation 1":       "random value 1",
-				CloudflareCustomHostnameKey: "a.foo.fancybar.com",
-				"random annotation 2":       "random value 2"},
-			expectedKey:   CloudflareCustomHostnameKey,
-			expectedValue: "a.foo.fancybar.com",
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == tc.expectedKey {
-					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
-					return
-				}
-			}
-			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %s", tc.expectedKey, tc.expectedValue)
-		})
-	}
-}
-
-func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
-	for _, tc := range []struct {
-		title         string
-		annotations   map[string]string
-		expectedKey   string
-		expectedValue bool
-	}{
-		{
-			title:         "alias annotation is set correctly to true",
-			annotations:   map[string]string{aliasAnnotationKey: "true"},
-			expectedKey:   aliasAnnotationKey,
-			expectedValue: true,
-		},
-		{
-			title: "alias annotation among another annotations is set correctly to true",
-			annotations: map[string]string{
-				"random annotation 1": "random value 1",
-				aliasAnnotationKey:    "true",
-				"random annotation 2": "random value 2",
-			},
-			expectedKey:   aliasAnnotationKey,
-			expectedValue: true,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == "alias" {
-					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
-					return
-				}
-			}
-			t.Errorf("provider specific annotation alias is not set correctly to %v", tc.expectedValue)
-		})
-	}
-
-	for _, tc := range []struct {
-		title       string
-		annotations map[string]string
-	}{
-		{
-			title:       "alias annotation is set to false",
-			annotations: map[string]string{aliasAnnotationKey: "false"},
-		},
-		{
-			title: "alias annotation is not set",
-			annotations: map[string]string{
-				"random annotation 1": "random value 1",
-				"random annotation 2": "random value 2",
-			},
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == "alias" {
-					t.Error("provider specific annotation alias is not expected to be set")
-				}
-			}
-
-		})
-	}
-}
-
-func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
-	for _, tc := range []struct {
-		title              string
-		annotations        map[string]string
-		expectedResult     map[string]string
-		expectedIdentifier string
-	}{
-		{
-			title: "aws- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-annotation-1": "value 1",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/aws-annotation-2": "value 2",
-			},
-			expectedResult: map[string]string{
-				"aws/annotation-1": "value 1",
-				"aws/annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-		{
-			title: "scw- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/scw-annotation-1": "value 1",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/scw-annotation-2": "value 2",
-			},
-			expectedResult: map[string]string{
-				"scw/annotation-1": "value 1",
-				"scw/annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-		{
-			title: "ibmcloud- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ibmcloud-annotation-1": "value 1",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/ibmcloud-annotation-2": "value 2",
-			},
-			expectedResult: map[string]string{
-				"ibmcloud-annotation-1": "value 1",
-				"ibmcloud-annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-		{
-			title: "webhook- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/webhook-annotation-1": "value 1",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/webhook-annotation-2": "value 2",
-			},
-			expectedResult: map[string]string{
-				"webhook/annotation-1": "value 1",
-				"webhook/annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			providerSpecificAnnotations, identifier := getProviderSpecificAnnotations(tc.annotations)
-			assert.Equal(t, tc.expectedIdentifier, identifier)
-			for expectedAnnotationKey, expectedAnnotationValue := range tc.expectedResult {
-				expectedResultFound := false
-				for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-					if providerSpecificAnnotation.Name == expectedAnnotationKey {
-						assert.Equal(t, expectedAnnotationValue, providerSpecificAnnotation.Value)
-						expectedResultFound = true
-						break
-					}
-				}
-				if !expectedResultFound {
-					t.Errorf("provider specific annotation %s has not been set", expectedAnnotationKey)
-				}
-			}
-		})
 	}
 }

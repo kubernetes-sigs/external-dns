@@ -36,7 +36,7 @@ import (
 const (
 	scalewyRecordTTL        uint32 = 300
 	scalewayDefaultPriority uint32 = 0
-	scalewayPriorityKey     string = "scw/priority"
+	scalewayPriorityKey     string = "scw-priority"
 )
 
 // ScalewayProvider implements the DNS provider for Scaleway DNS

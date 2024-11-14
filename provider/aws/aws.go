@@ -49,19 +49,19 @@ const (
 	route53PageSize int32 = 300
 	// providerSpecificAlias specifies whether a CNAME endpoint maps to an AWS ALIAS record.
 	providerSpecificAlias            = "alias"
-	providerSpecificTargetHostedZone = "aws/target-hosted-zone"
+	providerSpecificTargetHostedZone = "aws-target-hosted-zone"
 	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
 	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
 	// has a `providerSpecificAlias` value of `true`.
-	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
-	providerSpecificWeight                     = "aws/weight"
-	providerSpecificRegion                     = "aws/region"
-	providerSpecificFailover                   = "aws/failover"
-	providerSpecificGeolocationContinentCode   = "aws/geolocation-continent-code"
-	providerSpecificGeolocationCountryCode     = "aws/geolocation-country-code"
-	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
-	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
-	providerSpecificHealthCheckID              = "aws/health-check-id"
+	providerSpecificEvaluateTargetHealth       = "aws-evaluate-target-health"
+	providerSpecificWeight                     = "aws-weight"
+	providerSpecificRegion                     = "aws-region"
+	providerSpecificFailover                   = "aws-failover"
+	providerSpecificGeolocationContinentCode   = "aws-geolocation-continent-code"
+	providerSpecificGeolocationCountryCode     = "aws-geolocation-country-code"
+	providerSpecificGeolocationSubdivisionCode = "aws-geolocation-subdivision-code"
+	providerSpecificMultiValueAnswer           = "aws-multi-value-answer"
+	providerSpecificHealthCheckID              = "aws-health-check-id"
 	sameZoneAlias                              = "same-zone"
 	// Currently supported up to 10 health checks or hosted zones.
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax

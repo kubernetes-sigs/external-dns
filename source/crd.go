@@ -180,8 +180,14 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	for _, dnsEndpoint := range result.Items {
+		resource := fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name)
+		providerSpecific, setIdentifier := getProviderSpecificAnnotations(dnsEndpoint.Annotations)
+		ttl := getTTLFromAnnotations(dnsEndpoint.Annotations, resource)
+		targets := getTargetsFromTargetAnnotation(dnsEndpoint.Annotations)
+		for _, host := range getHostnamesFromAnnotations(dnsEndpoint.Annotations) {
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
 		// Make sure that all endpoints have targets for A or CNAME type
-		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
@@ -207,12 +213,36 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if ep.Labels == nil {
 				ep.Labels = endpoint.NewLabels()
 			}
+			ep.Labels[endpoint.ResourceLabelKey] = resource
+			if ttl.IsConfigured() {
+				ep.RecordTTL = ttl
+			}
 
-			crdEndpoints = append(crdEndpoints, ep)
+			// Fixup legacy naming of some provider specific properties
+			for index := range ep.ProviderSpecific {
+				property := &ep.ProviderSpecific[index]
+				if strings.HasPrefix(property.Name, "aws/") || strings.HasPrefix(property.Name, "scw/") {
+					property.Name = strings.Replace(property.Name, "/", "-", 1)
+				}
+			}
+			for _, property := range providerSpecific {
+				present := false
+				for _, search := range ep.ProviderSpecific {
+					if property.Name == search.Name {
+						present = true
+						break
+					}
+				}
+				if !present {
+					ep.ProviderSpecific = append(ep.ProviderSpecific, property)
+				}
+			}
+			if setIdentifier != "" {
+				ep.SetIdentifier = setIdentifier
+			}
+
+			endpoints = append(endpoints, ep)
 		}
-
-		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
-		endpoints = append(endpoints, crdEndpoints...)
 
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
 			continue
@@ -227,12 +257,6 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	return endpoints, nil
-}
-
-func (cs *crdSource) setResourceLabel(crd *endpoint.DNSEndpoint, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("crd/%s/%s", crd.ObjectMeta.Namespace, crd.ObjectMeta.Name)
-	}
 }
 
 func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {

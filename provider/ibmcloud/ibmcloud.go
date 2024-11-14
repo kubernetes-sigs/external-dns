@@ -965,7 +965,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		if v.Name == proxyFilter {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", proxyFilter, err)
+				log.Errorf("Failed parsing value of %s: %v", proxyFilter, err)
 			} else {
 				proxied = b
 			}

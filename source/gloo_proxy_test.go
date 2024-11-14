@@ -508,7 +508,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:        endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "aws/geolocation-country-code",
+					Name:  "aws-geolocation-country-code",
 					Value: "LU",
 				},
 			},
@@ -530,7 +530,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:        endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "aws/geolocation-country-code",
+					Name:  "aws-geolocation-country-code",
 					Value: "JP",
 				},
 			},
@@ -560,7 +560,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:        endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "aws/geolocation-country-code",
+					Name:  "aws-geolocation-country-code",
 					Value: "ES",
 				},
 			},
@@ -581,7 +581,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:        endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "aws/geolocation-country-code",
+					Name:  "aws-geolocation-country-code",
 					Value: "IT",
 				},
 			},
