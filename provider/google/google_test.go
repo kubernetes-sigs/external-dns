@@ -465,7 +465,7 @@ func TestNewFilteredRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 1, "8.8.4.4"),
 		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 120, "8.8.4.4"),
 		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, 4000, "bar.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("update-test-ns.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeNS, 120, "foo.elb.amazonaws.com"),
+		endpoint.NewEndpointWithTTL("update-test-ns.zone-1.ext-dns-test-2.gcp.zalan.do.", endpoint.RecordTypeNS, 120, "foo.elb.amazonaws.com"),
 		// test fallback to Ttl:300 when Ttl==0 :
 		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 0, "8.8.8.8"),
 		endpoint.NewEndpointWithTTL("update-test-mx.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeMX, 6000, "10 mail.elb.amazonaws.com"),
