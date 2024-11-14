@@ -61,6 +61,12 @@ paths:
             application/external.dns.webhook+json;version=1:
               schema:
                 $ref: '#/components/schemas/endpoints'
+              example:
+                - dnsName: "test.example.com"
+                  recordTTL: 10
+                  recordType: 'A'
+                  targets:
+                    - "1.2.3.4"
         '500':
           description: |
             Failed to provide the list of DNS records.
@@ -83,6 +89,11 @@ paths:
           application/external.dns.webhook+json;version=1:
             schema:
               $ref: '#/components/schemas/changes'
+            example:
+              create:
+                - dnsName: "test.example.com"
+                  recordTTL: 10
+                  recordType: 'A'
       responses:
         '204':
           description: |
@@ -106,6 +117,12 @@ paths:
           application/external.dns.webhook+json;version=1:
             schema:
               $ref: '#/components/schemas/endpoints'
+            example:
+              - dnsName: "test.example.com"
+                recordTTL: 10
+                recordType: 'A'
+                targets:
+                  - "1.2.3.4"
       responses:
         '200':
           description: |
@@ -114,6 +131,12 @@ paths:
             application/external.dns.webhook+json;version=1:
               schema:
                 $ref: '#/components/schemas/endpoints'
+              example:
+                - dnsName: "test.example.com"
+                  recordTTL: 0
+                  recordType: 'A'
+                  targets:
+                    - "1.2.3.4"
         '500':
           description: |
             Adjustments were not accepted.
@@ -122,16 +145,20 @@ components:
   schemas:
     filters:
       description: |
-        TODO: explain the filters object.
+        external-dns will only create DNS records for host names (specified in ingress objects and services with the external-dns annotation) related to zones that match filters. They can set in external-dns deployment manifest.
       type: object
       properties:
         filters:
           type: array
           items:
             type: string
+            example: "foo.example.com"
+          example:
+            - ".example.com"
       example:
         filters:
-          - foo.example.com
+          - ".example.com"
+          - ".example.org"
 
     endpoints:
       description: |
@@ -139,6 +166,10 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/endpoint'
+      example:
+        - dnsName: foo.example.com
+          recordType: A
+          recordTTL: 60
 
     endpoint:
       description: |
@@ -147,23 +178,33 @@ components:
       properties:
         dnsName:
           type: string
+          example: "foo.example.org"
         targets:
           $ref: '#/components/schemas/targets'
         recordType:
           type: string
+          example: "CNAME"
         setIdentifier:
           type: string
+          example: "v1"
         recordTTL:
           type: integer
           format: int64
+          example: 60
         labels:
           type: object
           additionalProperties:
             type: string
+            example: "foo"
+          example:
+            foo: bar
         providerSpecific:
           type: array
           items:
             $ref: '#/components/schemas/providerSpecificProperty'
+          example:
+            - name: foo
+              value: bar
       example:
         dnsName: foo.example.com
         recordType: A
@@ -176,20 +217,22 @@ components:
       type: array
       items:
         type: string
+        example: "::1"
       example:
-        - 1.2.3.4
-        - 1.2.3.5
+        - "1.2.3.4"
+        - "test.example.org"
 
     providerSpecificProperty:
       description: |
-        TODO: explain the provider object.  What might this be used for?
-        Examples?
+        Allows provider to pass property specific to their implementation.
       type: object
       properties:
         name:
           type: string
+          example: foo
         value:
           type: string
+          example: bar
       example:
         name: foo
         value: bar
@@ -212,3 +255,11 @@ components:
           $ref: '#/components/schemas/endpoints'
         delete:
           $ref: '#/components/schemas/endpoints'
+      example:
+        create:
+          - dnsName: foo.example.com
+            recordType: A
+            recordTTL: 60
+        delete:
+          - dnsName: foo.example.org
+            recordType: CNAME

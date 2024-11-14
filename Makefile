@@ -60,9 +60,12 @@ licensecheck:
                exit 1; \
        fi
 
+oas-lint:
+	go run github.com/daveshanley/vacuum@latest lint -d api/webhook.yaml
+
 # Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint
+lint: licensecheck go-lint oas-lint
 
 # generates CRD using controller-gen
 .PHONY: crd

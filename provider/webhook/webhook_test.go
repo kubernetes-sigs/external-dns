@@ -162,7 +162,6 @@ func TestAdjustEndpoints(t *testing.T) {
 		}
 		j, _ := json.Marshal(endpoints)
 		w.Write(j)
-
 	}))
 	defer svr.Close()
 
