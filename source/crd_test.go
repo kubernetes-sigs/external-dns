@@ -178,6 +178,37 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     true,
 		},
 		{
+			title:                "endpoint with annotations",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "namespace",
+			registeredNamespace:  "namespace",
+			annotations:          map[string]string{
+				hostnameAnnotationKey: "example.com",
+				targetAnnotationKey: "1.2.3.4",
+				ttlAnnotationKey: "180",
+				annotationKeyPrefix + "property": "value",
+			},
+			spec: &endpoint.DNSEndpointSpec{},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name: "property",
+							Value: "value",
+						},
+					},
+				},
+			},
+			expectError:     false,
+		},
+		{
 			title:                "endpoint with provider property",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
 			apiVersion:           "test.k8s.io/v1alpha1",
@@ -185,6 +216,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "namespace",
 			registeredNamespace:  "namespace",
+			annotations:          map[string]string{
+				annotationKeyPrefix + "override": "ignored",
+				annotationKeyPrefix + "property": "value",
+			},
 			spec: &endpoint.DNSEndpointSpec{
 				Endpoints: []*endpoint.Endpoint{
 					{
@@ -194,7 +229,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 						RecordTTL:  180,
 						ProviderSpecific: endpoint.ProviderSpecific{
 							endpoint.ProviderSpecificProperty{
-								Name: "property",
+								Name: "override",
 								Value: "value",
 							},
 							endpoint.ProviderSpecificProperty{
@@ -221,19 +256,23 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 					ProviderSpecific: endpoint.ProviderSpecific{
 						endpoint.ProviderSpecificProperty{
-							Name: "property",
+							Name: "override",
 							Value: "value",
 						},
 						endpoint.ProviderSpecificProperty{
-							Name: "aws/property",
+							Name: "aws-property",
 							Value: "value",
 						},
 						endpoint.ProviderSpecificProperty{
-							Name: "scw/property",
+							Name: "scw-property",
 							Value: "value",
 						},
 						endpoint.ProviderSpecificProperty{
 							Name: "webhook/property",
+							Value: "value",
+						},
+						endpoint.ProviderSpecificProperty{
+							Name: "property",
 							Value: "value",
 						},
 					},

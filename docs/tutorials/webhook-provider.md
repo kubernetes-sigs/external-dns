@@ -47,12 +47,6 @@ The default recommended port for the provider endpoints is `8888`, and should li
 
 The default recommended port for the exposed endpoints is `8080`, and it should be bound to all interfaces (`0.0.0.0`)
 
-## Custom Annotations
-
-The Webhook provider supports custom annotations for DNS records. This feature allows users to define additional configuration options for DNS records managed by the Webhook provider. Custom annotations are defined using the annotation format `external-dns.alpha.kubernetes.io/webhook-<custom-annotation>`.
-
-Custom annotations can be used to influence DNS record creation and updates. Providers implementing the Webhook API should document the custom annotations they support and how they affect DNS record management.
-
 ## Provider registry
 
 To simplify the discovery of providers, we will accept pull requests that will add links to providers in this documentation.

@@ -26,7 +26,7 @@ import (
 )
 
 func TestGetProviderSpecificAnnotations(t *testing.T) {
-	for _, test := range []struct {
+	tests := []struct {
 		title       string
 		annotations map[string]string
 		properties  endpoint.ProviderSpecific
@@ -38,63 +38,21 @@ func TestGetProviderSpecificAnnotations(t *testing.T) {
 			properties: endpoint.ProviderSpecific{},
 		},
 		{
-			title: "Native",
+			title: "SetIdentifier",
 			annotations: map[string]string{
-				aliasAnnotationKey: "true",
 				SetIdentifierKey: "identifier",
 			},
 			identifier: &[]string{"identifier"}[0],
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: "alias",
-					Value: "true",
-				},
-			},
+			properties: endpoint.ProviderSpecific{},
 		},
 		{
-			title: "ProviderAWS",
+			title: "ProviderProperty",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-property": "value",
+				annotationKeyPrefix + "property": "value",
 			},
 			properties: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name: "aws/property",
-					Value: "value",
-				},
-			},
-		},
-		{
-			title: "ProviderCloudflare",
-			annotations: map[string]string{
-				CloudflareProxiedKey: "true",
-			},
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: CloudflareProxiedKey,
-					Value: "true",
-				},
-			},
-		},
-		{
-			title: "ProviderIBMCloud",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ibmcloud-property": "value",
-			},
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: "ibmcloud-property",
-					Value: "value",
-				},
-			},
-		},
-		{
-			title: "ProviderSCW",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/scw-property": "value",
-			},
-			properties: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name: "scw/property",
+					Name: "property",
 					Value: "value",
 				},
 			},
@@ -111,7 +69,35 @@ func TestGetProviderSpecificAnnotations(t *testing.T) {
 				},
 			},
 		},
+	}
+	for _, name := range []string{
+		"access",
+		"alias",
+		"endpoints-type",
+		"controller",
+		"dualstack",
+		"hostname",
+		"ingress",
+		"ingress-hostname-source",
+		"internal-hostname",
+		"set-identifier",
+		"target",
+		"ttl",
 	} {
+		tests = append(tests, struct {
+			title       string
+			annotations map[string]string
+			properties  endpoint.ProviderSpecific
+			identifier  *string
+		}{
+			title: "Core" + name,
+			annotations: map[string]string{
+				annotationKeyPrefix + name: "",
+			},
+			properties: endpoint.ProviderSpecific{},
+		})
+	}
+	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
 			properties, identifier := getProviderSpecificAnnotations(test.annotations)
 			assert.Equal(t, test.properties, properties)
