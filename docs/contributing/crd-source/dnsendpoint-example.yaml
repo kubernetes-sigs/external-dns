@@ -11,5 +11,5 @@ spec:
     - 192.168.99.216
     # Provider specific configurations are set like an annotation would on other sources
     providerSpecific:
-      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+      - name: cloudflare-proxied
         value: "true"

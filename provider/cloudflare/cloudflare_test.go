@@ -479,7 +479,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  providerSpecificProxied,
 					Value: "true",
 				},
 			},
@@ -511,7 +511,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  providerSpecificProxied,
 					Value: "false",
 				},
 			},
@@ -543,7 +543,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  providerSpecificProxied,
 					Value: "asfasdfa",
 				},
 			},
@@ -594,7 +594,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 				Targets:    endpoint.Targets{"127.0.0.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Name:  providerSpecificProxied,
 						Value: "true",
 					},
 				},
@@ -932,7 +932,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -966,7 +966,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -1014,7 +1014,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -1027,7 +1027,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -1068,7 +1068,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -1081,7 +1081,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -1122,7 +1122,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Name:  providerSpecificProxied,
 							Value: "false",
 						},
 					},
@@ -1261,7 +1261,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  providerSpecificProxied,
 					Value: "true",
 				},
 			},
@@ -1356,7 +1356,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Name:  providerSpecificProxied,
 					Value: "true",
 				},
 			},
