@@ -114,6 +114,9 @@ spec:
             {{- range .Values.excludeDomains }}
             - --exclude-domains={{ . }}
             {{- end }}
+            {{- range .Values.managedRecordTypes }}
+            - --managed-record-types={{ . }}
+            {{- end }}
             - --provider={{ $providerName }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
