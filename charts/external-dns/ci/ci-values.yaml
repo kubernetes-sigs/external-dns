@@ -1,2 +1,4 @@
+labelFilter:
+managedRecordTypes: []
 provider:
   name: inmemory
