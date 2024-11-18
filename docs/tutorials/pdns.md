@@ -178,6 +178,8 @@ $ dig @${PDNS_FQDN} echo.example.com.
 
 [CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source.md) provides a generic mechanism and declarative way to manage DNS records in PowerDNS using external-dns.
 
+Not all the record types are enabled by default so we can enable the required record types using `--managed-record-types`.
+
 ```bash
 external-dns --source=crd --provider=pdns \
   --pdns-server={{ pdns-api-url }} \
@@ -189,8 +191,6 @@ external-dns --source=crd --provider=pdns \
   --managed-record-types=MX \
   --managed-record-types=SRV
 ```
-
-Not all the record types are enabled by default so we can enable the required record types using `--managed-record-types`.
 
 * Example for record type `A`
 

@@ -233,11 +233,11 @@ kubectl create secret generic external-dns \
 Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RBAC or non-RBAC.  Make sure to uncomment the section that mounts volumes, so that the credentials can be mounted.
 
 > [!TIP]
-> By default ExternalDNS takes the profile named `default` from the credentials file. If you want to use a different 
-> profile, you can set the environment variable `EXTERNAL_DNS_AWS_PROFILE` to the desired profile name or use the 
+> By default ExternalDNS takes the profile named `default` from the credentials file. If you want to use a different
+> profile, you can set the environment variable `EXTERNAL_DNS_AWS_PROFILE` to the desired profile name or use the
 > `--aws-profile` command line argument. It is even possible to use more than one profile at ones, separated by space in
-> the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case 
-> ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile 
+> the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case
+> ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
 
 ### IAM Roles for Service Accounts
@@ -987,3 +987,67 @@ There are 3 options to control batch size for AWS provider:
 
 Default values for flags `aws-batch-change-size-bytes` and `aws-batch-change-size-values` are taken from [AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests) for Route53 API. **You should not change those values until you really have to.** <br>
 Because those limits are in place, `aws-batch-change-size` can be set to any value: Even if your batch size is `4000` records, your change will be split to separate batches due to bytes/values size limits and apply request will be finished without issues.
+
+
+## Using CRD source to manage DNS records in AWS
+
+[CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source.md) provides a generic mechanism and declarative way to manage DNS records in AWS using external-dns.
+
+**Not all the record types are enabled by default so we must enable the required record types using `--managed-record-types`.**
+
+```bash
+external-dns --source=crd --provider=aws \
+  --domain-filter=example.com \
+  --managed-record-types=A \
+  --managed-record-types=CNAME \
+  --managed-record-types=NS
+```
+
+* Example for record type `A`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplearecord
+spec:
+  endpoints:
+  - dnsName: example.com
+    recordTTL: 60
+    recordType: A
+    targets:
+    - 10.0.0.1
+```
+
+* Example for record type `CNAME`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplecnamerecord
+spec:
+  endpoints:
+  - dnsName: test-a.example.com
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - example.com
+```
+
+* Example for record type `NS`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: ns-record
+spec:
+  endpoints:
+  - dnsName: zone.example.com
+    recordTTL: 300
+    recordType: NS
+    targets:
+    - ns1.example.com
+    - ns2.example.com
+```

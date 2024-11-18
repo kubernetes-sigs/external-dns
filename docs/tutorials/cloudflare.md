@@ -58,7 +58,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 Create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
 
 ```yaml
-provider: 
+provider:
   name: cloudflare
 env:
   - name: CF_API_KEY
@@ -76,7 +76,7 @@ env:
 Use this in your values.yaml, if you are using API Token:
 
 ```yaml
-provider: 
+provider:
   name: cloudflare
 env:
   - name: CF_API_TOKEN
@@ -307,3 +307,66 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotati
 Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic. A list of available options can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
 
 If not set the value will default to `global`.
+
+## Using CRD source to manage DNS records in Cloudflare
+
+[CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source.md) provides a generic mechanism and declarative way to manage DNS records in Cloudflare using external-dns.
+
+**Not all the record types are enabled by default so we must enable the required record types using `--managed-record-types`.**
+
+```bash
+external-dns --source=crd --provider=cloudflare \
+  --domain-filter=example.com \
+  --managed-record-types=A \
+  --managed-record-types=CNAME \
+  --managed-record-types=NS
+```
+
+* Example for record type `A`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplearecord
+spec:
+  endpoints:
+  - dnsName: example.com
+    recordTTL: 60
+    recordType: A
+    targets:
+    - 10.0.0.1
+```
+
+* Example for record type `CNAME`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplecnamerecord
+spec:
+  endpoints:
+  - dnsName: test-a.example.com
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - example.com
+```
+
+* Example for record type `NS`
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: ns-record
+spec:
+  endpoints:
+  - dnsName: zone.example.com
+    recordTTL: 300
+    recordType: NS
+    targets:
+    - ns1.example.com
+    - ns2.example.com
+```
