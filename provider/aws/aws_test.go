@@ -81,6 +81,10 @@ func NewRoute53APIStub(t *testing.T) *Route53APIStub {
 }
 
 func (r *Route53APIStub) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+	if r.m.isMocked("ListResourceRecordSets", input) {
+		return r.m.ListResourceRecordSets(ctx, input, optFns...)
+	}
+
 	output := &route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
 	require.NotNil(r.t, input.MaxItems)
 	assert.EqualValues(r.t, route53PageSize, *input.MaxItems)
@@ -252,6 +256,14 @@ func (r *Route53APIStub) CreateHostedZone(ctx context.Context, input *route53.Cr
 
 type dynamicMock struct {
 	mock.Mock
+}
+
+func (m *dynamicMock) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
+	args := m.Called(input)
+	if args.Get(0) != nil {
+		return args.Get(0).(*route53.ListResourceRecordSetsOutput), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func (m *dynamicMock) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
@@ -555,6 +567,22 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
 	})
+}
+
+func TestAWSRecordsSoftError(t *testing.T) {
+	pvd, subClient := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []route53types.ResourceRecordSet{
+		{
+			Name:            aws.String("list-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+		},
+	})
+
+	subClient.MockMethod("ListResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
+	_, err := pvd.Records(context.Background())
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
 }
 
 func TestAWSAdjustEndpoints(t *testing.T) {

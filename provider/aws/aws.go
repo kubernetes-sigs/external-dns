@@ -447,7 +447,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 		for paginator.HasMorePages() {
 			resp, err := paginator.NextPage(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err)
+				return nil, provider.NewSoftError(fmt.Errorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err))
 			}
 
 			for _, r := range resp.ResourceRecordSets {
