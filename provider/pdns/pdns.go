@@ -27,7 +27,6 @@ import (
 	"net"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -434,49 +433,11 @@ func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpo
 	return endpoints, nil
 }
 
-// Check endpoint if is it properly formatted according to RFC standards
-func checkEndpoint(endpoint endpoint.Endpoint) bool {
-	switch recordType := endpoint.RecordType; recordType {
-	case "MX":
-		for _, target := range endpoint.Targets {
-			// MX records must have a preference value to indicate priority, e.g. "10 example.com"
-			// as per https://www.rfc-editor.org/rfc/rfc974.txt
-			targetParts := strings.Fields(strings.TrimSpace(target))
-			if len(targetParts) != 2 {
-				return false
-			}
-
-			preferenceRaw := targetParts[0]
-			_, err := strconv.ParseInt(preferenceRaw, 10, 32)
-			if err != nil {
-				return false
-			}
-		}
-	case "SRV":
-		for _, target := range endpoint.Targets {
-			// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
-			// as per https://www.rfc-editor.org/rfc/rfc2782.txt
-			targetParts := strings.Fields(strings.TrimSpace(target))
-			if len(targetParts) != 4 {
-				return false
-			}
-
-			for _, part := range targetParts[:3] {
-				_, err := strconv.ParseInt(part, 10, 32)
-				if err != nil {
-					return false
-				}
-			}
-		}
-	}
-	return true
-}
-
 // AdjustEndpoints performs checks on the provided endpoints and will skip any potentially failing changes.
 func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var validEndpoints []*endpoint.Endpoint
 	for i := 0; i < len(endpoints); i++ {
-		if !checkEndpoint(*endpoints[i]) {
+		if !endpoint.CheckEndpoint(*endpoints[i]) {
 			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
 			continue
 		}
