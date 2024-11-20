@@ -223,11 +223,17 @@ txtPrefix:
 # Mutually exclusive with `txtPrefix`.
 txtSuffix:
 
-## - Limit possible target zones by domain suffixes.
+# -- Limit possible target zones by domain suffixes.
 domainFilters: []
 
-## -- Intentionally exclude domains from being managed.
+# -- Intentionally exclude domains from being managed.
 excludeDomains: []
+
+# -- (string) Filter resources queried for endpoints by label selector
+labelFilter:
+
+# -- Record types to manage (default: A, AAAA, CNAME)
+managedRecordTypes: []
 
 provider:
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).

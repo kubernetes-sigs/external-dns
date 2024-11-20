@@ -97,9 +97,9 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | deploymentStrategy | object | `{"type":"Recreate"}` | [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy). |
 | dnsConfig | object | `nil` | [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used. |
 | dnsPolicy | string | `nil` | [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy) for the pod, if not set the default will be used. |
-| domainFilters | list | `[]` |  |
+| domainFilters | list | `[]` | Limit possible target zones by domain suffixes. |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
-| excludeDomains | list | `[]` |  |
+| excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | list | `[]` | Extra arguments to provide to _ExternalDNS_. |
 | extraContainers | object | `{}` | Extra containers to add to the `Deployment`. |
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
@@ -112,9 +112,11 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | imagePullSecrets | list | `[]` | Image pull secrets. |
 | initContainers | list | `[]` | [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition. |
 | interval | string | `"1m"` | Interval for DNS updates. |
+| labelFilter | string | `nil` | Filter resources queried for endpoints by label selector |
 | livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | logFormat | string | `"text"` | Log format. |
 | logLevel | string | `"info"` | Log level. |
+| managedRecordTypes | list | `[]` | Record types to manage (default: A, AAAA, CNAME) |
 | nameOverride | string | `nil` | Override the name of the chart. |
 | namespaced | bool | `false` | if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too). |
 | nodeSelector | object | `{}` | Node labels to match for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
