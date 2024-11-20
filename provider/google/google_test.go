@@ -465,21 +465,25 @@ func TestNewFilteredRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 1, "8.8.4.4"),
 		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 120, "8.8.4.4"),
 		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, 4000, "bar.elb.amazonaws.com"),
+		endpoint.NewEndpointWithTTL("update-test-ns.zone-1.ext-dns-test-2.gcp.zalan.do.", endpoint.RecordTypeNS, 120, "foo.elb.amazonaws.com"),
 		// test fallback to Ttl:300 when Ttl==0 :
 		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 0, "8.8.8.8"),
 		endpoint.NewEndpointWithTTL("update-test-mx.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeMX, 6000, "10 mail.elb.amazonaws.com"),
 		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
 		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
+		endpoint.NewEndpoint("delete-test-ns.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeNS, "foo.elb.amazonaws.com"),
 	})
 
 	validateChangeRecords(t, records, []*dns.ResourceRecordSet{
 		{Name: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 1},
 		{Name: "delete-test.zone-2.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 120},
 		{Name: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"bar.elb.amazonaws.com."}, Type: "CNAME", Ttl: 4000},
+		{Name: "update-test-ns.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"foo.elb.amazonaws.com."}, Type: "NS", Ttl: 120},
 		{Name: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.8.8"}, Type: "A", Ttl: 300},
 		{Name: "update-test-mx.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"10 mail.elb.amazonaws.com."}, Type: "MX", Ttl: 6000},
 		{Name: "delete-test.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.8.8"}, Type: "A", Ttl: 300},
 		{Name: "delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"qux.elb.amazonaws.com."}, Type: "CNAME", Ttl: 300},
+		{Name: "delete-test-ns.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"foo.elb.amazonaws.com."}, Type: "NS", Ttl: 300},
 	})
 }
 
