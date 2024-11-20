@@ -223,16 +223,16 @@ txtPrefix:
 # Mutually exclusive with `txtPrefix`.
 txtSuffix:
 
-## - Limit possible target zones by domain suffixes.
+# -- Limit possible target zones by domain suffixes.
 domainFilters: []
 
-## -- Intentionally exclude domains from being managed.
+# -- Intentionally exclude domains from being managed.
 excludeDomains: []
 
-## -- (string) Filter resources queried for endpoints by label selector
+# -- (string) Filter resources queried for endpoints by label selector
 labelFilter:
 
-## -- Record types to manage (default: A, AAAA, CNAME)
+# -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []
 
 provider:
