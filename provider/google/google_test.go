@@ -321,6 +321,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("create-test.zone-1.local", endpoint.RecordTypeA, "8.8.8.8"),
 			endpoint.NewEndpointWithTTL("create-test-ttl.zone-2.local", endpoint.RecordTypeA, endpoint.TTL(15), "8.8.4.4"),
 			endpoint.NewEndpoint("create-test-cname.zone-1.local", endpoint.RecordTypeCNAME, "create-test-cname"),
+			endpoint.NewEndpoint("create-test-ns.zone-1.local", endpoint.RecordTypeNS, "create-test-ns"),
 			endpoint.NewEndpoint("filter-create-test.zone-3.local", endpoint.RecordTypeA, "4.2.2.2"),
 			endpoint.NewEndpoint("nomatch-create-test.zone-0.local", endpoint.RecordTypeA, "4.2.2.1"),
 		},
@@ -373,6 +374,12 @@ func TestGoogleApplyChanges(t *testing.T) {
 				Type: "CNAME",
 				Ttl: googleRecordTTL,
 				Rrdatas: []string{"updated-test-cname."},
+			},
+			&dns.ResourceRecordSet{
+				Name: "create-test-ns.zone-1.local.",
+				Type: "NS",
+				Ttl: googleRecordTTL,
+				Rrdatas: []string{"create-test-ns."},
 			},
 		},
 		&dns.ManagedZone{
@@ -477,10 +484,11 @@ func TestGoogleApplyChangesEmpty(t *testing.T) {
 	assert.NoError(t, p.ApplyChanges(context.Background(), &plan.Changes{}))
 }
 
-func TestNewFilteredRecords(t *testing.T) {
+func TestNewChange(t *testing.T) {
 	p := newGoogleProvider().WithMockClients(newMockClients(t))
 
-	records := p.newFilteredRecords([]*endpoint.Endpoint{
+	records := []*dns.ResourceRecordSet{}
+	for _, ep := range []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("update-test.zone-2.local", endpoint.RecordTypeA, 1, "8.8.4.4"),
 		endpoint.NewEndpointWithTTL("delete-test.zone-2.local", endpoint.RecordTypeA, 120, "8.8.4.4"),
 		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.local", endpoint.RecordTypeCNAME, 4000, "update-test-cname"),
@@ -489,7 +497,13 @@ func TestNewFilteredRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("update-test-mx.zone-1.local", endpoint.RecordTypeMX, 6000, "10 mail"),
 		endpoint.NewEndpoint("delete-test.zone-1.local", endpoint.RecordTypeA, "8.8.8.8"),
 		endpoint.NewEndpoint("delete-test-cname.zone-1.local", endpoint.RecordTypeCNAME, "delete-test-cname"),
-	})
+	} {
+		records = append(records, p.newChange(&plan.RRSetChange{
+			Name: plan.RRName(provider.EnsureTrailingDot(ep.DNSName)),
+			Type: plan.RRType(ep.RecordType),
+			Create: []*endpoint.Endpoint{ep},
+		}).Additions...)
+	}
 
 	validateChangeRecords(t, records, []*dns.ResourceRecordSet{
 		{Name: "update-test.zone-2.local.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 1},
@@ -746,7 +760,7 @@ func isValidRecordSet(recordSet *dns.ResourceRecordSet) bool {
 	}
 
 	switch recordSet.Type {
-	case endpoint.RecordTypeCNAME:
+	case endpoint.RecordTypeCNAME, endpoint.RecordTypeMX, endpoint.RecordTypeNS, endpoint.RecordTypeSRV:
 		for _, rrd := range recordSet.Rrdatas {
 			if !hasTrailingDot(rrd) {
 				return false

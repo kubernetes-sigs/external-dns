@@ -19,7 +19,7 @@ package google
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -156,12 +156,12 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 	zoneTypeFilter := provider.NewZoneTypeFilter(zoneVisibility)
 
 	provider := &GoogleProvider{
-		dryRun: dryRun,
-		batchChangeSize: batchChangeSize,
+		dryRun:              dryRun,
+		batchChangeSize:     batchChangeSize,
 		batchChangeInterval: batchChangeInterval,
-		domainFilter: domainFilter,
-		zoneTypeFilter: zoneTypeFilter,
-		zoneIDFilter: zoneIDFilter,
+		domainFilter:        domainFilter,
+		zoneTypeFilter:      zoneTypeFilter,
+		zoneIDFilter:        zoneIDFilter,
 		managedZonesClient: managedZonesService{
 			project: project,
 			service: dnsClient.ManagedZones,
@@ -244,18 +244,59 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 	return endpoints, nil
 }
 
-// ApplyChanges applies a given set of changes in a given zone.
+// ApplyChanges applies a given set of changes.
 func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	change := &dns.Change{}
+	zones, err := p.Zones(ctx)
+	if err != nil {
+		return err
+	}
+	zoneMap := provider.ZoneIDName{}
+	for _, z := range zones {
+		zoneMap.Add(z.Name, z.DnsName)
+	}
+	zoneBatches := map[string][]*dns.Change{}
+	for rrSetChange := range changes.All() {
+		if zone, _ := zoneMap.FindZone(string(rrSetChange.Name)); zone != "" {
+			change := p.newChange(rrSetChange)
+			changeSize := len(change.Additions) + len(change.Deletions)
+			if changeSize == 0 {
+				continue
+			}
+			if _, ok := zoneBatches[zone]; !ok {
+				zoneBatches[zone] = []*dns.Change{{}}
+			}
+			batch := zoneBatches[zone][len(zoneBatches[zone])-1]
+			if p.batchChangeSize > 0 && len(batch.Additions)+len(batch.Deletions)+changeSize > p.batchChangeSize {
+				batch = &dns.Change{}
+				zoneBatches[zone] = append(zoneBatches[zone], batch)
+			}
+			batch.Additions = append(batch.Additions, change.Additions...)
+			batch.Deletions = append(batch.Deletions, change.Deletions...)
+		}
+	}
 
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
+	for zone, batches := range zoneBatches {
+		for index, batch := range batches {
+			log.Infof("Change zone: %v batch #%d", zone, index)
+			for _, record := range batch.Deletions {
+				log.Infof("Del records: %s %s %s %d", record.Name, record.Type, record.Rrdatas, record.Ttl)
+			}
+			for _, record := range batch.Additions {
+				log.Infof("Add records: %s %s %s %d", record.Name, record.Type, record.Rrdatas, record.Ttl)
+			}
+			if p.dryRun {
+				continue
+			}
+			if index > 0 {
+				time.Sleep(p.batchChangeInterval)
+			}
+			if _, err := p.changesClient.Create(zone, batch).Do(); err != nil {
+				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
+			}
+		}
+	}
 
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew)...)
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
-
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
-
-	return p.submitChange(ctx, change)
+	return nil
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider
@@ -268,208 +309,44 @@ func (p *GoogleProvider) SupportedRecordType(recordType string) bool {
 	}
 }
 
-// newFilteredRecords returns a collection of RecordSets based on the given endpoints and domainFilter.
-func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
-	records := []*dns.ResourceRecordSet{}
-
-	for _, endpoint := range endpoints {
-		if p.domainFilter.Match(endpoint.DNSName) {
-			records = append(records, newRecord(endpoint))
-		}
-	}
-
-	return records
-}
-
-// submitChange takes a zone and a Change and sends it to Google.
-func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) error {
-	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
-		log.Info("All records are already up to date")
-		return nil
-	}
-
-	zones, err := p.Zones(ctx)
-	if err != nil {
-		return err
-	}
-
-	// separate into per-zone change sets to be passed to the API.
-	changes := separateChange(zones, change)
-
-	for zone, change := range changes {
-		for batch, c := range batchChange(change, p.batchChangeSize) {
-			log.Infof("Change zone: %v batch #%d", zone, batch)
-			for _, del := range c.Deletions {
-				log.Infof("Del records: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl)
+// newChange returns a DNS change based upon the given resource record set change.
+func (p *GoogleProvider) newChange(rrSetChange *plan.RRSetChange) *dns.Change {
+	change := dns.Change{}
+	for index, endpoints := range [][]*endpoint.Endpoint{rrSetChange.Delete, rrSetChange.Create} {
+		for _, ep := range endpoints {
+			record := dns.ResourceRecordSet{
+				Name: provider.EnsureTrailingDot(ep.DNSName),
+				Ttl:  googleRecordTTL,
+				Type: ep.RecordType,
 			}
-			for _, add := range c.Additions {
-				log.Infof("Add records: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl)
+			if ep.RecordTTL.IsConfigured() {
+				record.Ttl = int64(ep.RecordTTL)
 			}
-
-			if p.dryRun {
-				continue
+			// TODO(linki): works around appending a trailing dot to TXT records. I think
+			// we should go back to storing DNS names with a trailing dot internally. This
+			// way we can use it has is here and trim it off if it exists when necessary.
+			switch record.Type {
+			case endpoint.RecordTypeCNAME:
+				record.Rrdatas = []string{provider.EnsureTrailingDot(ep.Targets[0])}
+			case endpoint.RecordTypeMX:
+				fallthrough
+			case endpoint.RecordTypeNS:
+				fallthrough
+			case endpoint.RecordTypeSRV:
+				record.Rrdatas = make([]string, len(ep.Targets))
+				for i, target := range ep.Targets {
+					record.Rrdatas[i] = provider.EnsureTrailingDot(target)
+				}
+			default:
+				record.Rrdatas = slices.Clone(ep.Targets)
 			}
-
-			if _, err := p.changesClient.Create(zone, c).Do(); err != nil {
-				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
+			switch index {
+			case 0:
+				change.Deletions = append(change.Deletions, &record)
+			case 1:
+				change.Additions = append(change.Additions, &record)
 			}
-
-			time.Sleep(p.batchChangeInterval)
 		}
 	}
-
-	return nil
-}
-
-// batchChange separates a zone in multiple transaction.
-func batchChange(change *dns.Change, batchSize int) []*dns.Change {
-	changes := []*dns.Change{}
-
-	if batchSize == 0 {
-		return append(changes, change)
-	}
-
-	type dnsChange struct {
-		additions []*dns.ResourceRecordSet
-		deletions []*dns.ResourceRecordSet
-	}
-
-	changesByName := map[string]*dnsChange{}
-
-	for _, a := range change.Additions {
-		change, ok := changesByName[a.Name]
-		if !ok {
-			change = &dnsChange{}
-			changesByName[a.Name] = change
-		}
-
-		change.additions = append(change.additions, a)
-	}
-
-	for _, a := range change.Deletions {
-		change, ok := changesByName[a.Name]
-		if !ok {
-			change = &dnsChange{}
-			changesByName[a.Name] = change
-		}
-
-		change.deletions = append(change.deletions, a)
-	}
-
-	names := make([]string, 0)
-	for v := range changesByName {
-		names = append(names, v)
-	}
-	sort.Strings(names)
-
-	currentChange := &dns.Change{}
-	var totalChanges int
-	for _, name := range names {
-		c := changesByName[name]
-
-		totalChangesByName := len(c.additions) + len(c.deletions)
-
-		if totalChangesByName > batchSize {
-			log.Warnf("Total changes for %s exceeds max batch size of %d, total changes: %d", name,
-				batchSize, totalChangesByName)
-			continue
-		}
-
-		if totalChanges+totalChangesByName > batchSize {
-			totalChanges = 0
-			changes = append(changes, currentChange)
-			currentChange = &dns.Change{}
-		}
-
-		currentChange.Additions = append(currentChange.Additions, c.additions...)
-		currentChange.Deletions = append(currentChange.Deletions, c.deletions...)
-
-		totalChanges += totalChangesByName
-	}
-
-	if totalChanges > 0 {
-		changes = append(changes, currentChange)
-	}
-
-	return changes
-}
-
-// separateChange separates a multi-zone change into a single change per zone.
-func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[string]*dns.Change {
-	changes := make(map[string]*dns.Change)
-	zoneNameIDMapper := provider.ZoneIDName{}
-	for _, z := range zones {
-		zoneNameIDMapper[z.Name] = z.DnsName
-		changes[z.Name] = &dns.Change{
-			Additions: []*dns.ResourceRecordSet{},
-			Deletions: []*dns.ResourceRecordSet{},
-		}
-	}
-	for _, a := range change.Additions {
-		if zoneName, _ := zoneNameIDMapper.FindZone(provider.EnsureTrailingDot(a.Name)); zoneName != "" {
-			changes[zoneName].Additions = append(changes[zoneName].Additions, a)
-		} else {
-			log.Warnf("No matching zone for record addition: %s %s %s %d", a.Name, a.Type, a.Rrdatas, a.Ttl)
-		}
-	}
-
-	for _, d := range change.Deletions {
-		if zoneName, _ := zoneNameIDMapper.FindZone(provider.EnsureTrailingDot(d.Name)); zoneName != "" {
-			changes[zoneName].Deletions = append(changes[zoneName].Deletions, d)
-		} else {
-			log.Warnf("No matching zone for record deletion: %s %s %s %d", d.Name, d.Type, d.Rrdatas, d.Ttl)
-		}
-	}
-
-	// separating a change could lead to empty sub changes, remove them here.
-	for zone, change := range changes {
-		if len(change.Additions) == 0 && len(change.Deletions) == 0 {
-			delete(changes, zone)
-		}
-	}
-
-	return changes
-}
-
-// newRecord returns a RecordSet based on the given endpoint.
-func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
-	// TODO(linki): works around appending a trailing dot to TXT records. I think
-	// we should go back to storing DNS names with a trailing dot internally. This
-	// way we can use it has is here and trim it off if it exists when necessary.
-	targets := make([]string, len(ep.Targets))
-	copy(targets, []string(ep.Targets))
-	if ep.RecordType == endpoint.RecordTypeCNAME {
-		targets[0] = provider.EnsureTrailingDot(targets[0])
-	}
-
-	if ep.RecordType == endpoint.RecordTypeMX {
-		for i, mxRecord := range ep.Targets {
-			targets[i] = provider.EnsureTrailingDot(mxRecord)
-		}
-	}
-
-	if ep.RecordType == endpoint.RecordTypeSRV {
-		for i, srvRecord := range ep.Targets {
-			targets[i] = provider.EnsureTrailingDot(srvRecord)
-		}
-	}
-
-	if ep.RecordType == endpoint.RecordTypeNS {
-		for i, nsRecord := range ep.Targets {
-			targets[i] = provider.EnsureTrailingDot(nsRecord)
-		}
-	}
-
-	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
-	var ttl int64 = googleRecordTTL
-	if ep.RecordTTL.IsConfigured() {
-		ttl = int64(ep.RecordTTL)
-	}
-
-	return &dns.ResourceRecordSet{
-		Name:    provider.EnsureTrailingDot(ep.DNSName),
-		Rrdatas: targets,
-		Ttl:     ttl,
-		Type:    ep.RecordType,
-	}
+	return &change
 }
