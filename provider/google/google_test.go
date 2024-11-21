@@ -184,6 +184,40 @@ func TestGoogleRecords(t *testing.T) {
 					Ttl: 3,
 					Rrdatas: []string{"cname."},
 				},
+				&dns.ResourceRecordSet{
+					Name: "geo.zone-1.local.",
+					Type: "A",
+					Ttl: 10,
+					RoutingPolicy: &dns.RRSetRoutingPolicy{
+						Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+							Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+									Location: "location",
+									Rrdatas: []string{"1.0.0.0"},
+								},
+							},
+						},
+					},
+				},
+				&dns.ResourceRecordSet{
+					Name: "wrr.zone-1.local.",
+					Type: "A",
+					Ttl: 10,
+					RoutingPolicy: &dns.RRSetRoutingPolicy{
+						Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+							Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+									Weight: 50.0,
+									Rrdatas: []string{"1.0.0.0"},
+								},
+								&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+									Weight: 50.0,
+									Rrdatas: []string{"1.0.0.1"},
+								},
+							},
+						},
+					},
+				},
 			},
 			&dns.ManagedZone{
 				Name:    "zone-2",
@@ -207,6 +241,21 @@ func TestGoogleRecords(t *testing.T) {
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("a.zone-1.local", endpoint.RecordTypeA, endpoint.TTL(1), "1.0.0.0"),
 		endpoint.NewEndpointWithTTL("cname.zone-1.local", endpoint.RecordTypeCNAME, endpoint.TTL(3), "cname"),
+		endpoint.NewEndpointWithTTL("geo.zone-1.local", endpoint.RecordTypeA, endpoint.TTL(10), "1.0.0.0").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+		).WithProviderSpecific(
+			providerSpecificLocation, "location",
+		).WithSetIdentifier("location"),
+		endpoint.NewEndpointWithTTL("wrr.zone-1.local", endpoint.RecordTypeA, endpoint.TTL(10), "1.0.0.0").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+		).WithProviderSpecific(
+			providerSpecificWeight, "50",
+		).WithSetIdentifier("0"),
+		endpoint.NewEndpointWithTTL("wrr.zone-1.local", endpoint.RecordTypeA, endpoint.TTL(10), "1.0.0.1").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+		).WithProviderSpecific(
+			providerSpecificWeight, "50",
+		).WithSetIdentifier("1"),
 		endpoint.NewEndpointWithTTL("a.zone-2.local", endpoint.RecordTypeA, endpoint.TTL(2), "2.0.0.0"),
 	})
 }
@@ -265,6 +314,44 @@ func TestGoogleRecordsFilter(t *testing.T) {
 	})
 }
 
+func TestGoogleAdjustEndpoints(t *testing.T) {
+	p := newGoogleProvider()
+	p.location = "default"
+	endpoints, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.record.", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("geo.record.", endpoint.RecordTypeA, "1.2.3.4").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+		),
+		endpoint.NewEndpoint("geo-location.record.", endpoint.RecordTypeA, "1.2.3.4").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+		).WithProviderSpecific(
+			providerSpecificLocation, "location",
+		),
+		endpoint.NewEndpoint("wrr.record.", endpoint.RecordTypeA, "1.2.3.4").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+		).WithSetIdentifier("identifier"),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, endpoints, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("a.record.", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("geo.record.", endpoint.RecordTypeA, "1.2.3.4").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+		).WithProviderSpecific(
+			providerSpecificLocation, p.location,
+		).WithSetIdentifier(p.location),
+		endpoint.NewEndpoint("geo-location.record.", endpoint.RecordTypeA, "1.2.3.4").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+		).WithProviderSpecific(
+			providerSpecificLocation, "location",
+		).WithSetIdentifier("location"),
+		endpoint.NewEndpoint("wrr.record.", endpoint.RecordTypeA, "1.2.3.4").WithProviderSpecific(
+			providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+		).WithProviderSpecific(
+			providerSpecificWeight, "1e+02",
+		).WithSetIdentifier("identifier"),
+	})
+}
+
 func TestGoogleApplyChanges(t *testing.T) {
 	records := map[*dns.ManagedZone][]*dns.ResourceRecordSet{
 		&dns.ManagedZone{
@@ -295,6 +382,142 @@ func TestGoogleApplyChanges(t *testing.T) {
 				Ttl: googleRecordTTL,
 				Rrdatas: []string{"delete-test-cname."},
 			},
+			&dns.ResourceRecordSet{
+				Name: "geo-update.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "current",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "update",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-update-create.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "current",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-update-delete.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "current",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "delete",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-delete.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "delete",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-update.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-update-create.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-update-delete.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-delete.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 100.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
 		},
 		&dns.ManagedZone{
 			Name:    "zone-2",
@@ -324,12 +547,42 @@ func TestGoogleApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("create-test-ns.zone-1.local", endpoint.RecordTypeNS, "create-test-ns"),
 			endpoint.NewEndpoint("filter-create-test.zone-3.local", endpoint.RecordTypeA, "4.2.2.2"),
 			endpoint.NewEndpoint("nomatch-create-test.zone-0.local", endpoint.RecordTypeA, "4.2.2.1"),
+			endpoint.NewEndpoint("geo-create.zone-1.local.", endpoint.RecordTypeA, "2.2.2.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "create",
+			),
+			endpoint.NewEndpoint("geo-update-create.zone-1.local.", endpoint.RecordTypeA, "2.2.2.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "create",
+			),
+			endpoint.NewEndpoint("wrr-create.zone-1.local.", endpoint.RecordTypeA, "2.2.2.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+			).WithProviderSpecific(
+				providerSpecificWeight, "100",
+			).WithSetIdentifier("1"),
+			endpoint.NewEndpoint("wrr-update-create.zone-1.local.", endpoint.RecordTypeA, "2.2.2.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+			).WithProviderSpecific(
+				providerSpecificWeight, "50",
+			).WithSetIdentifier("1"),
 		},
 		UpdateOld: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("update-test.zone-1.local", endpoint.RecordTypeA, "8.8.8.8"),
 			endpoint.NewEndpoint("update-test-ttl.zone-2.local", endpoint.RecordTypeA, "8.8.4.4"),
 			endpoint.NewEndpoint("update-test-cname.zone-1.local", endpoint.RecordTypeCNAME, "update-test-cname"),
 			endpoint.NewEndpoint("filter-update-test.zone-3.local", endpoint.RecordTypeA, "4.2.2.2"),
+			endpoint.NewEndpoint("geo-update.zone-1.local.", endpoint.RecordTypeA, "1.1.1.1").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "update",
+			),
+			endpoint.NewEndpoint("wrr-update.zone-1.local.", endpoint.RecordTypeA, "1.1.1.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+			).WithProviderSpecific(
+				providerSpecificWeight, "50",
+			).WithSetIdentifier("1"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("update-test.zone-1.local", endpoint.RecordTypeA, "1.2.3.4"),
@@ -337,6 +590,16 @@ func TestGoogleApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("update-test-cname.zone-1.local", endpoint.RecordTypeCNAME, "updated-test-cname"),
 			endpoint.NewEndpoint("filter-update-test.zone-3.local", endpoint.RecordTypeA, "5.6.7.8"),
 			endpoint.NewEndpoint("nomatch-update-test.zone-0.local", endpoint.RecordTypeA, "8.7.6.5"),
+			endpoint.NewEndpoint("geo-update.zone-1.local.", endpoint.RecordTypeA, "2.2.2.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "update",
+			),
+			endpoint.NewEndpoint("wrr-update.zone-1.local.", endpoint.RecordTypeA, "2.2.2.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+			).WithProviderSpecific(
+				providerSpecificWeight, "50",
+			).WithSetIdentifier("1"),
 		},
 		Delete: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("delete-test.zone-1.local", endpoint.RecordTypeA, "8.8.8.8"),
@@ -344,6 +607,31 @@ func TestGoogleApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("delete-test-cname.zone-1.local", endpoint.RecordTypeCNAME, "delete-test-cname"),
 			endpoint.NewEndpoint("filter-delete-test.zone-3.local", endpoint.RecordTypeA, "4.2.2.2"),
 			endpoint.NewEndpoint("nomatch-delete-test.zone-0.local", endpoint.RecordTypeA, "4.2.2.1"),
+			endpoint.NewEndpoint("geo-update.zone-1.local.", endpoint.RecordTypeA, "1.1.1.1").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "delete",
+			),
+			endpoint.NewEndpoint("geo-update-delete.zone-1.local.", endpoint.RecordTypeA, "1.1.1.1").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "delete",
+			),
+			endpoint.NewEndpoint("geo-delete.zone-1.local.", endpoint.RecordTypeA, "1.1.1.1").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo,
+			).WithProviderSpecific(
+				providerSpecificLocation, "delete",
+			),
+			endpoint.NewEndpoint("wrr-update-delete.zone-1.local.", endpoint.RecordTypeA, "1.1.1.2").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+			).WithProviderSpecific(
+				providerSpecificWeight, "50.0",
+			).WithSetIdentifier("1"),
+			endpoint.NewEndpoint("wrr-delete.zone-1.local.", endpoint.RecordTypeA, "1.1.1.1").WithProviderSpecific(
+				providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr,
+			).WithProviderSpecific(
+				providerSpecificWeight, "100.0",
+			).WithSetIdentifier("0"),
 		},
 	}))
 	mockClients.EqualRecords(&map[*dns.ManagedZone][]*dns.ResourceRecordSet{
@@ -380,6 +668,146 @@ func TestGoogleApplyChanges(t *testing.T) {
 				Type: "NS",
 				Ttl: googleRecordTTL,
 				Rrdatas: []string{"create-test-ns."},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-create.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "create",
+								Rrdatas: []string{"2.2.2.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-update.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "current",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "update",
+								Rrdatas: []string{"2.2.2.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-update-create.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "current",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "create",
+								Rrdatas: []string{"2.2.2.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "geo-update-delete.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Geo: &dns.RRSetRoutingPolicyGeoPolicy{
+						Items: []*dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+							&dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+								Location: "current",
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-create.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 0,
+								Rrdatas: []string{"0.0.0.0"},
+							},
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 100.0,
+								Rrdatas: []string{"2.2.2.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-update.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"2.2.2.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-update-create.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"2.2.2.2"},
+							},
+						},
+					},
+				},
+			},
+			&dns.ResourceRecordSet{
+				Name: "wrr-update-delete.zone-1.local.",
+				Type: "A",
+				Ttl: googleRecordTTL,
+				RoutingPolicy: &dns.RRSetRoutingPolicy{
+					Wrr: &dns.RRSetRoutingPolicyWrrPolicy{
+						Items: []*dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+							&dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+								Weight: 50.0,
+								Rrdatas: []string{"1.1.1.1"},
+							},
+						},
+					},
+				},
 			},
 		},
 		&dns.ManagedZone{
@@ -484,38 +912,6 @@ func TestGoogleApplyChangesEmpty(t *testing.T) {
 	assert.NoError(t, p.ApplyChanges(context.Background(), &plan.Changes{}))
 }
 
-func TestNewChange(t *testing.T) {
-	p := newGoogleProvider().WithMockClients(newMockClients(t))
-
-	records := []*dns.ResourceRecordSet{}
-	for _, ep := range []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("update-test.zone-2.local", endpoint.RecordTypeA, 1, "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("delete-test.zone-2.local", endpoint.RecordTypeA, 120, "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.local", endpoint.RecordTypeCNAME, 4000, "update-test-cname"),
-		// test fallback to Ttl:300 when Ttl==0 :
-		endpoint.NewEndpointWithTTL("update-test.zone-1.local", endpoint.RecordTypeA, 0, "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("update-test-mx.zone-1.local", endpoint.RecordTypeMX, 6000, "10 mail"),
-		endpoint.NewEndpoint("delete-test.zone-1.local", endpoint.RecordTypeA, "8.8.8.8"),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.local", endpoint.RecordTypeCNAME, "delete-test-cname"),
-	} {
-		records = append(records, p.newChange(&plan.RRSetChange{
-			Name: plan.RRName(provider.EnsureTrailingDot(ep.DNSName)),
-			Type: plan.RRType(ep.RecordType),
-			Create: []*endpoint.Endpoint{ep},
-		}).Additions...)
-	}
-
-	validateChangeRecords(t, records, []*dns.ResourceRecordSet{
-		{Name: "update-test.zone-2.local.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 1},
-		{Name: "delete-test.zone-2.local.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 120},
-		{Name: "update-test-cname.zone-1.local.", Rrdatas: []string{"update-test-cname."}, Type: "CNAME", Ttl: 4000},
-		{Name: "update-test.zone-1.local.", Rrdatas: []string{"8.8.8.8"}, Type: "A", Ttl: 300},
-		{Name: "update-test-mx.zone-1.local.", Rrdatas: []string{"10 mail."}, Type: "MX", Ttl: 6000},
-		{Name: "delete-test.zone-1.local.", Rrdatas: []string{"8.8.8.8"}, Type: "A", Ttl: 300},
-		{Name: "delete-test-cname.zone-1.local.", Rrdatas: []string{"delete-test-cname."}, Type: "CNAME", Ttl: 300},
-	})
-}
-
 func TestGoogleBatchChangeSet(t *testing.T) {
 	mockClients := newMockClients(t)
 	mockClients.changesClient.maxChangeSize = 1
@@ -576,21 +972,6 @@ func sortChangesByName(cs *dns.Change) {
 	sort.SliceStable(cs.Deletions, func(i, j int) bool {
 		return cs.Deletions[i].Name < cs.Deletions[j].Name
 	})
-}
-
-func validateChangeRecords(t *testing.T, records []*dns.ResourceRecordSet, expected []*dns.ResourceRecordSet) {
-	require.Len(t, records, len(expected))
-
-	for i := range records {
-		validateChangeRecord(t, records[i], expected[i])
-	}
-}
-
-func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected *dns.ResourceRecordSet) {
-	assert.Equal(t, expected.Name, record.Name)
-	assert.Equal(t, expected.Rrdatas, record.Rrdatas)
-	assert.Equal(t, expected.Ttl, record.Ttl)
-	assert.Equal(t, expected.Type, record.Type)
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
@@ -657,10 +1038,7 @@ func (m *mockChangesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, e
 				Message: fmt.Sprintf("record not found: %v", deletion),
 			}
 		}
-		(*m.client.records)[managedZone] = append(
-			(*m.client.records)[managedZone][:index],
-			(*m.client.records)[managedZone][index+1:]...
-		)
+		(*m.client.records)[managedZone] = slices.Delete((*m.client.records)[managedZone], index, index + 1)
 	}
 	for _, addition := range m.change.Additions {
 		for _, record := range (*m.client.records)[managedZone] {
@@ -685,6 +1063,32 @@ type mockResourceRecordSetsClient struct {
 	recordsErr error
 }
 
+type mockResourceRecordSetsGetCall struct {
+	client *mockResourceRecordSetsClient
+	managedZone string
+	name string
+	type_ string
+}
+
+func (m *mockResourceRecordSetsGetCall) Do(opts ...googleapi.CallOption) (*dns.ResourceRecordSet, error) {
+	if m.client.recordsErr != nil {
+		return nil, m.client.recordsErr
+	}
+	var managedZone *dns.ManagedZone
+	for zone := range maps.Keys(*m.client.records) {
+		if zone.Name == m.managedZone {
+			managedZone = zone
+			break
+		}
+	}
+	for _, record := range (*m.client.records)[managedZone] {
+		if record.Name == m.name && record.Type == m.type_ {
+			return record, nil
+		}
+	}
+	return nil, &googleapi.Error{Code: http.StatusNotFound}
+}
+
 type mockResourceRecordSetsListCall struct {
 	client *mockResourceRecordSetsClient
 	managedZone string
@@ -705,6 +1109,10 @@ func (m *mockResourceRecordSetsListCall) Pages(ctx context.Context, f func(*dns.
 		return &googleapi.Error{Code: http.StatusNotFound}
 	}
 	return f(&dns.ResourceRecordSetsListResponse{Rrsets: (*m.client.records)[managedZone]})
+}
+
+func (m *mockResourceRecordSetsClient) Get(managedZone string, name string, type_ string) resourceRecordSetsGetCallInterface {
+	return &mockResourceRecordSetsGetCall{client: m, managedZone: managedZone, name: name, type_: type_}
 }
 
 func (m *mockResourceRecordSetsClient) List(managedZone string) resourceRecordSetsListCallInterface {
