@@ -49,8 +49,8 @@ type managedZonesListCallInterface interface {
 }
 
 type managedZonesServiceInterface interface {
-	Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface
-	List(project string) managedZonesListCallInterface
+	Create(managedZone *dns.ManagedZone) managedZonesCreateCallInterface
+	List() managedZonesListCallInterface
 }
 
 type resourceRecordSetsListCallInterface interface {
@@ -58,7 +58,7 @@ type resourceRecordSetsListCallInterface interface {
 }
 
 type resourceRecordSetsClientInterface interface {
-	List(project string, managedZone string) resourceRecordSetsListCallInterface
+	List(managedZone string) resourceRecordSetsListCallInterface
 }
 
 type changesCreateCallInterface interface {
@@ -66,42 +66,43 @@ type changesCreateCallInterface interface {
 }
 
 type changesServiceInterface interface {
-	Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface
+	Create(managedZone string, change *dns.Change) changesCreateCallInterface
 }
 
 type resourceRecordSetsService struct {
+	project string
 	service *dns.ResourceRecordSetsService
 }
 
-func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
-	return r.service.List(project, managedZone)
+func (r resourceRecordSetsService) List(managedZone string) resourceRecordSetsListCallInterface {
+	return r.service.List(r.project, managedZone)
 }
 
 type managedZonesService struct {
+	project string
 	service *dns.ManagedZonesService
 }
 
-func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
-	return m.service.Create(project, managedzone)
+func (m managedZonesService) Create(managedZone *dns.ManagedZone) managedZonesCreateCallInterface {
+	return m.service.Create(m.project, managedZone)
 }
 
-func (m managedZonesService) List(project string) managedZonesListCallInterface {
-	return m.service.List(project)
+func (m managedZonesService) List() managedZonesListCallInterface {
+	return m.service.List(m.project)
 }
 
 type changesService struct {
+	project string
 	service *dns.ChangesService
 }
 
-func (c changesService) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return c.service.Create(project, managedZone, change)
+func (c changesService) Create(managedZone string, change *dns.Change) changesCreateCallInterface {
+	return c.service.Create(c.project, managedZone, change)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
 type GoogleProvider struct {
 	provider.BaseProvider
-	// The Google project to work in
-	project string
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
 	// Max batch size to submit to Google Cloud DNS per transaction.
@@ -155,17 +156,25 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 	zoneTypeFilter := provider.NewZoneTypeFilter(zoneVisibility)
 
 	provider := &GoogleProvider{
-		project:                  project,
-		dryRun:                   dryRun,
-		batchChangeSize:          batchChangeSize,
-		batchChangeInterval:      batchChangeInterval,
-		domainFilter:             domainFilter,
-		zoneTypeFilter:           zoneTypeFilter,
-		zoneIDFilter:             zoneIDFilter,
-		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
-		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
-		changesClient:            changesService{dnsClient.Changes},
-		ctx:                      ctx,
+		dryRun: dryRun,
+		batchChangeSize: batchChangeSize,
+		batchChangeInterval: batchChangeInterval,
+		domainFilter: domainFilter,
+		zoneTypeFilter: zoneTypeFilter,
+		zoneIDFilter: zoneIDFilter,
+		managedZonesClient: managedZonesService{
+			project: project,
+			service: dnsClient.ManagedZones,
+		},
+		resourceRecordSetsClient: resourceRecordSetsService{
+			project: project,
+			service: dnsClient.ResourceRecordSets,
+		},
+		changesClient: changesService{
+			project: project,
+			service: dnsClient.Changes,
+		},
+		ctx: ctx,
 	}
 
 	return provider, nil
@@ -193,12 +202,12 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 	}
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter)
-	if err := p.managedZonesClient.List(p.project).Pages(ctx, f); err != nil {
+	if err := p.managedZonesClient.List().Pages(ctx, f); err != nil {
 		return nil, provider.NewSoftError(fmt.Errorf("failed to list zones: %w", err))
 	}
 
 	if len(zones) == 0 {
-		log.Warnf("No zones in the project, %s, match domain filters: %v", p.project, p.domainFilter)
+		log.Warnf("No zones match domain filters: %v", p.domainFilter)
 	}
 
 	for _, zone := range zones {
@@ -227,7 +236,7 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 	}
 
 	for _, z := range zones {
-		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
+		if err := p.resourceRecordSetsClient.List(z.Name).Pages(ctx, f); err != nil {
 			return nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone %s: %w", z.Name, err))
 		}
 	}
@@ -301,7 +310,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 				continue
 			}
 
-			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
+			if _, err := p.changesClient.Create(zone, c).Do(); err != nil {
 				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
 			}
 
