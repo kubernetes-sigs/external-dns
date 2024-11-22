@@ -392,18 +392,15 @@ func (pr affixNameMapper) isSuffix() bool {
 }
 
 func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string, recordType string) {
-	log.Debug("Getting endpoint from TXT record.")
 	lowerDNSName := strings.ToLower(txtDNSName)
 
 	// drop prefix
 	if pr.isPrefix() {
-		log.Debug("TXT record has a prefix.")
 		return pr.dropAffixExtractType(lowerDNSName)
 	}
 
 	// drop suffix
 	if pr.isSuffix() {
-		log.Debug("TXT record has a suffix.")
 		dc := strings.Count(pr.suffix, ".")
 		DNSName := strings.SplitN(lowerDNSName, ".", 2+dc)
 		domainWithSuffix := strings.Join(DNSName[:1+dc], ".")
