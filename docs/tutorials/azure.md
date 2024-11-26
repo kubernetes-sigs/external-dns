@@ -54,9 +54,10 @@ The following fields are used:
 * `tenantId` (**required**) - run `az account show --query "tenantId"` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
 * `subscriptionId` (**required**) - run `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
 * `resourceGroup` (**required**) is the Resource Group created in a previous step that contains the Azure DNS Zone.
-* `aadClientID` and `aadClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
+* `aadClientID` is associated with the Service Principal. This is used with Service Principal or Workload Identity methods documented in the next section.
+* `aadClientSecret` is associated with the Service Principal. This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
-* `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
+* `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.
 * `activeDirectoryAuthorityHost` - this contains the uri to overwrite the default provided AAD Endpoint. This is useful for providing additional support where the endpoint is not available in the default cloud config from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables).
 * `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
 
@@ -456,6 +457,7 @@ cat <<-EOF > /local/path/to/azure.json
 }
 EOF
 ```
+NOTE: it's also possible to specify (or override) ClientID specified in the next section through `aadClientId` field in this `azure.json` file.
 
 Use the `azure.json` file to create a Kubernetes secret:
 
@@ -476,7 +478,7 @@ $ kubectl patch deployment external-dns --namespace "default" --patch \
  '{"spec": {"template": {"metadata": {"labels": {\"azure.workload.identity/use\": \"true\"}}}}}'
 ```
 
-NOTE: it's also possible to specify (or override) ClientID through `userAssignedIdentityID` field in `azure.json`.
+NOTE: it's also possible to specify (or override) ClientID through `aadClientId` field in `azure.json`.
 
 NOTE: make sure the pod is restarted whenever you make a configuration change.
 
