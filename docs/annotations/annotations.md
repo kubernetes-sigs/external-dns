@@ -10,7 +10,7 @@ The following table documents which sources support which annotations:
 | Connector    |            |          |                   |         |         |                     |
 | Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 | CloudFoundry |            |          |                   |         |         |                     |
-| CRD          |            |          |                   |         |         |                     |
+| CRD          |            | Yes      |                   | Yes     | Yes     | Yes                 |
 | F5           |            |          |                   | Yes     | Yes     |                     |
 | Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |
 | Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |
