@@ -988,7 +988,6 @@ There are 3 options to control batch size for AWS provider:
 Default values for flags `aws-batch-change-size-bytes` and `aws-batch-change-size-values` are taken from [AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests) for Route53 API. **You should not change those values until you really have to.** <br>
 Because those limits are in place, `aws-batch-change-size` can be set to any value: Even if your batch size is `4000` records, your change will be split to separate batches due to bytes/values size limits and apply request will be finished without issues.
 
-
 ## Using CRD source to manage DNS records in AWS
 
 [CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source.md) provides a generic mechanism and declarative way to manage DNS records in AWS using external-dns.
