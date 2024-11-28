@@ -226,8 +226,7 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 
 	form := p.newDNSActionForm(action, ep)
 	if strings.Contains(ep.DNSName, "*") {
-		log.Errorf("UNSUPPORTED: Pihole DNS names cannot return wildcard")
-		return provider.SoftError
+		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole DNS names cannot return wildcard"))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
