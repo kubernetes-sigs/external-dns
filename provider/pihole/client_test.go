@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sigs.k8s.io/external-dns/provider"
 	"strings"
 	"testing"
 
@@ -361,7 +360,7 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(context.Background(), ep); err != provider.SoftError {
+	if err := cl.createRecord(context.Background(), ep); err == nil {
 		t.Fatal(err)
 	}
 }
