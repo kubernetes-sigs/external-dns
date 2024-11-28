@@ -1303,6 +1303,13 @@ func TestToEndpointNameNewTXT(t *testing.T) {
 		{
 			name:       "suffix",
 			mapper:     newaffixNameMapper("", "foo", ""),
+			domain:     "example",
+			recordType: "AAAA",
+			txtDomain:  "aaaa-examplefoo",
+		},
+		{
+			name:       "suffix",
+			mapper:     newaffixNameMapper("", "foo", ""),
 			domain:     "example.com",
 			recordType: "AAAA",
 			txtDomain:  "aaaa-examplefoo.com",
