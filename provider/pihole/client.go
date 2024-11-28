@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"sigs.k8s.io/external-dns/provider"
 	"strings"
 
 	"github.com/linki/instrumented_http"
@@ -34,6 +33,7 @@ import (
 	"golang.org/x/net/html"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // piholeAPI declares the "API" actions performed against the Pihole server.
