@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"sigs.k8s.io/external-dns/provider"
 	"strings"
 
 	"github.com/linki/instrumented_http"
@@ -224,6 +225,10 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 
 	form := p.newDNSActionForm(action, ep)
+	if strings.Contains(ep.DNSName, "*") {
+		log.Errorf("UNSUPPORTED: Pihole DNS names cannot return wildcard")
+		return provider.SoftError
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err
