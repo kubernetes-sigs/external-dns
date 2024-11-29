@@ -33,6 +33,7 @@ import (
 	"golang.org/x/net/html"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // piholeAPI declares the "API" actions performed against the Pihole server.
@@ -224,6 +225,9 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 
 	form := p.newDNSActionForm(action, ep)
+	if strings.Contains(ep.DNSName, "*") {
+		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole DNS names cannot return wildcard"))
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err

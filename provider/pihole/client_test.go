@@ -353,6 +353,16 @@ func TestCreateRecord(t *testing.T) {
 	if err := cl.createRecord(context.Background(), ep); err != nil {
 		t.Fatal(err)
 	}
+
+	// Test create a wildcard record and ensure it fails
+	ep = &endpoint.Endpoint{
+		DNSName:    "*.example.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err == nil {
+		t.Fatal(err)
+	}
 }
 
 func TestDeleteRecord(t *testing.T) {
