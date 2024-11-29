@@ -60,8 +60,9 @@ licensecheck:
                exit 1; \
        fi
 
+# Requires to install spectral. See https://github.com/stoplightio/spectral
 oas-lint:
-	go run github.com/daveshanley/vacuum@latest lint -d api/webhook.yaml
+	spectral lint api/*.yaml
 
 # Run all the linters
 .PHONY: lint

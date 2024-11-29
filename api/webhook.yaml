@@ -1,7 +1,7 @@
 ---
 openapi: "3.0.0"
 info:
-  version: 0.14.0
+  version: v0.15.0
   title: External DNS Webhook Server
   description: >-
     Implements the external DNS webhook endpoints.
@@ -44,7 +44,7 @@ paths:
                   - example.com
         '500':
           description: |
-            Failed to provide the list of domains we serve.
+            Negociation failed.
 
   /records:
     get:
