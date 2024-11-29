@@ -19,7 +19,7 @@ tags:
     description: Endpoints to update DNS records.
 servers:
   - url: http://localhost:8888
-    description: Server url for a k8s deployment.
+    description: Server url for a Kubernetes deployment.
 paths:
   /:
     get:
