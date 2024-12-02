@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to configure `imagePullSecrets` via helm `global` value ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
 - Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
 
+### Fixed
+
+- Fixed automatic addition of pod selector labels to `affinity` and `topologySpreadConstraints` if not defined. _@pvickery-ParamountCommerce_
+
 ## [v1.15.0] - 2023-09-10
 
 ### Changed
