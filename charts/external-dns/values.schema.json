@@ -89,6 +89,52 @@
           "type": "integer"
         }
       }
+    },
+    "serviceMonitor": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "interval": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "tlsConfig": {
+          "type": "object",
+          "properties": {
+            "insecureSkipVerify": {
+              "type": "boolean"
+            },
+            "caFile": {
+              "type": "string"
+            },
+            "certFile": {
+              "type": "string"
+            },
+            "keyFile": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   }
 }
