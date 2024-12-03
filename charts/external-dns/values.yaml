@@ -296,6 +296,15 @@ provider:
 # -- Extra arguments to provide to _ExternalDNS_.
 extraArgs: []
 
+# extraObjects -- Extra kubernetes manifests to deploy
+extraObjects: []
+#  - apiVersion: v1
+#    kind: ConfigMap
+#    metadata:
+#      name: my-configmap
+#    data:
+#      key: "value"
+
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
   enabled: false

@@ -102,6 +102,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | list | `[]` | Extra arguments to provide to _ExternalDNS_. |
 | extraContainers | object | `{}` | Extra containers to add to the `Deployment`. |
+| extraObjects | list | `[]` | Extra K8s manifests to deploy |
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
