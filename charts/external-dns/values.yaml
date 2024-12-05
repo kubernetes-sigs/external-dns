@@ -305,3 +305,7 @@ secretConfiguration:
   subPath:
   # -- `Secret` data.
   data: {}
+
+crd:
+  # --- Install and use the integrated DNSEndpoint CRD
+  create: true
