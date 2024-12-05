@@ -324,14 +324,18 @@ func TestOvhNewChange(t *testing.T) {
 
 	// Delete change
 	endpoints = []*endpoint.Endpoint{
-		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42"}},
+		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42", "203.0.113.42", "203.0.113.42"}},
 	}
 	records := []ovhRecord{
 		{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", SubDomain: "ovh", Target: "203.0.113.42"}},
+		{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", SubDomain: "ovh", Target: "203.0.113.42"}},
+		{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", SubDomain: "ovh", Target: "203.0.113.42"}},
 	}
 	changes = newOvhChange(ovhDelete, endpoints, []string{"example.net"}, records)
 	assert.ElementsMatch(changes, []ovhChange{
 		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: ovhDefaultTTL, Target: "203.0.113.42"}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: ovhDefaultTTL, Target: "203.0.113.42"}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: ovhDefaultTTL, Target: "203.0.113.42"}}},
 	})
 }
 
@@ -368,6 +372,7 @@ func TestOvhApplyChanges(t *testing.T) {
 	client.On("Get", "/domain/zone").Return([]string{"example.net"}, nil).Once()
 	client.On("Get", "/domain/zone/example.net/record").Return([]uint64{}, nil).Once()
 	client.On("Post", "/domain/zone/example.net/record", ovhRecordFields{SubDomain: "", FieldType: "A", TTL: 10, Target: "203.0.113.42"}).Return(nil, ovh.ErrAPIDown).Once()
+	client.On("Post", "/domain/zone/example.net/refresh", nil).Return(nil, nil).Once()
 	assert.Error(provider.ApplyChanges(context.TODO(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
