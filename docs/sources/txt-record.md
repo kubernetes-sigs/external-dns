@@ -3,10 +3,10 @@
 You can create and manage TXT records with the help of [CRD source](../contributing/crd-source.md)
 and `DNSEndpoint` CRD. Currently, this feature is only supported by `digitalocean` providers.
 
-In order to start managing TXT records you need to set the `--managed-record-types TXT` flag.
+In order to start managing TXT records you need to set the `--managed-record-types=TXT` flag.
 
 ```console
-external-dns --source crd --provider {digitalocean} --managed-record-types A --managed-record-types CNAME --managed-record-types TXT
+external-dns --source crd --provider {digitalocean} --managed-record-types=A --managed-record-types=CNAME --managed-record-types=TXT
 ```
 
 Targets within the CRD need to be specified according to the RFC 1035 (section 3.3.14). Below is an example of
