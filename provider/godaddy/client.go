@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -230,6 +231,18 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	resp, err := c.Client.Do(req)
 	// In case of several clients behind NAT we still can hit rate limit
 	for i := 1; i < 3 && err == nil && resp.StatusCode == 429; i++ {
+		// Parse error response
+		var apiError GDErrorResponse
+		if err = c.UnmarshalResponse(resp, &apiError); err != nil {
+			return nil, fmt.Errorf("parsing 429 response: %w", err)
+		}
+
+		if apiError.Code == "QUOTA_EXCEEDED" {
+			// Only log an error instead of returning one as it seems that the API has per-endpoint quotas
+			log.Errorf("monthly quota exceeded for endpoint: %s", req.URL.Path)
+			break
+		}
+
 		retryAfter, _ := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
 
 		jitter := rand.Int63n(retryAfter)
