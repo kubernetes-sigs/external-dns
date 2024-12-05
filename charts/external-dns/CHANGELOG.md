@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added option to configure `extraObjects` via helm values ([#4916](https://github.com/kubernetes-sigs/external-dns/pull/4916)) _@thenickfish_
 - Ability to configure `imagePullSecrets` via helm `global` value ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
 - Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
 
