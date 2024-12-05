@@ -392,6 +392,19 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				MxRecords: mxRecords,
 			},
 		}, nil
+	case dns.RecordTypeNS:
+		nsRecords := make([]*dns.NsRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			nsRecords[i] = &dns.NsRecord{
+				Nsdname: to.Ptr(target),
+			}
+		}
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL:       to.Ptr(ttl),
+				NsRecords: nsRecords,
+			},
+		}, nil
 	case dns.RecordTypeTXT:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
@@ -456,6 +469,16 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 		targets := make([]string, len(mxRecords))
 		for i, mxRecord := range mxRecords {
 			targets[i] = fmt.Sprintf("%d %s", *mxRecord.Preference, *mxRecord.Exchange)
+		}
+		return targets
+	}
+
+	// Check for NS records
+	nsRecords := properties.NsRecords
+	if len(nsRecords) > 0 && (nsRecords)[0].Nsdname != nil {
+		targets := make([]string, len(nsRecords))
+		for i, nsRecord := range nsRecords {
+			targets[i] = *nsRecord.Nsdname
 		}
 		return targets
 	}
