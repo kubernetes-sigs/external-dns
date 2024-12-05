@@ -868,6 +868,24 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:        "ttl annotated with scope and is valid should set Record.TTL",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeLoadBalancer,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "intranet-app.98754522c4058dc864cc4f7949ce82fc4d59ac40.c80-staging.cloud.corpintra.net.",
+				ttlAnnotationKey:      "intranet-app.98754522c4058dc864cc4f7949ce82fc4d59ac40.c80-staging.cloud.corpintra.net=4711",
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "intranet-app.98754522c4058dc864cc4f7949ce82fc4d59ac40.c80-staging.cloud.corpintra.net", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(4711)},
+			},
+		},
+
+		{
 			title:        "Negative ttl is not valid",
 			svcNamespace: "testing",
 			svcName:      "foo",
@@ -3768,5 +3786,105 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints(context.Background())
 		require.NoError(b, err)
+	}
+}
+
+func Test_hostnameSpecificAnnotationValue(t *testing.T) {
+	type args struct {
+		hostname   string
+		annotation string
+	}
+	type result struct {
+		value string
+		match bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want result
+	}{
+		{
+			name: "non-scoped annotation",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "foo",
+			},
+			want: result{
+				value: "foo",
+				match: true,
+			},
+		},
+		{
+			name: "annotation with matching single-scope",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "host.example.net=foo;",
+			},
+			want: result{
+				value: "foo",
+				match: true,
+			},
+		},
+		{
+			name: "annotation with non-matching single-scope",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "otherhost.example.net=foo",
+			},
+			want: result{
+				value: "",
+				match: false,
+			},
+		},
+		{
+			name: "annotation with non-matching multi-scope",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "otherhost.example.net=foo; evenanotherhost.example.net=bar",
+			},
+			want: result{
+				value: "",
+				match: false,
+			},
+		},
+		{
+			name: "annotation with matching multi-scope",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "otherhost.example.net =foo ; host.example.net= bar ",
+			},
+			want: result{
+				value: "bar",
+				match: true,
+			},
+		},
+		{
+			name: "annotation with broken scope I",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "host.example.net=",
+			},
+			want: result{
+				value: "",
+				match: false,
+			},
+		},
+		{
+			name: "annotation with broken scope II",
+			args: args{
+				hostname:   "host.example.net",
+				annotation: "host.example.net= ",
+			},
+			want: result{
+				value: "",
+				match: false,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v, m := hostnameSpecificAnnotationValue(tt.args.hostname, tt.args.annotation)
+			assert.Equalf(t, tt.want, result{value: v, match: m}, "hostnameSpecificAnnotationValue(%v, %v)", tt.args.hostname, tt.args.annotation)
+		})
 	}
 }
