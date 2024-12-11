@@ -152,56 +152,56 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 
 // Get is a wrapper for the GET method
 func (c *Client) Get(url string, resType interface{}) error {
-	return c.CallAPI("GET", url, nil, resType, true)
+	return c.CallAPI("GET", url, nil, resType)
 }
 
 // Patch is a wrapper for the PATCH method
 func (c *Client) Patch(url string, reqBody, resType interface{}) error {
-	return c.CallAPI("PATCH", url, reqBody, resType, true)
+	return c.CallAPI("PATCH", url, reqBody, resType)
 }
 
 // Post is a wrapper for the POST method
 func (c *Client) Post(url string, reqBody, resType interface{}) error {
-	return c.CallAPI("POST", url, reqBody, resType, true)
+	return c.CallAPI("POST", url, reqBody, resType)
 }
 
 // Put is a wrapper for the PUT method
 func (c *Client) Put(url string, reqBody, resType interface{}) error {
-	return c.CallAPI("PUT", url, reqBody, resType, true)
+	return c.CallAPI("PUT", url, reqBody, resType)
 }
 
 // Delete is a wrapper for the DELETE method
 func (c *Client) Delete(url string, resType interface{}) error {
-	return c.CallAPI("DELETE", url, nil, resType, true)
+	return c.CallAPI("DELETE", url, nil, resType)
 }
 
 // GetWithContext is a wrapper for the GET method
 func (c *Client) GetWithContext(ctx context.Context, url string, resType interface{}) error {
-	return c.CallAPIWithContext(ctx, "GET", url, nil, resType, true)
+	return c.CallAPIWithContext(ctx, "GET", url, nil, resType)
 }
 
 // PatchWithContext is a wrapper for the PATCH method
 func (c *Client) PatchWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
-	return c.CallAPIWithContext(ctx, "PATCH", url, reqBody, resType, true)
+	return c.CallAPIWithContext(ctx, "PATCH", url, reqBody, resType)
 }
 
 // PostWithContext is a wrapper for the POST method
 func (c *Client) PostWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
-	return c.CallAPIWithContext(ctx, "POST", url, reqBody, resType, true)
+	return c.CallAPIWithContext(ctx, "POST", url, reqBody, resType)
 }
 
 // PutWithContext is a wrapper for the PUT method
 func (c *Client) PutWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
-	return c.CallAPIWithContext(ctx, "PUT", url, reqBody, resType, true)
+	return c.CallAPIWithContext(ctx, "PUT", url, reqBody, resType)
 }
 
 // DeleteWithContext is a wrapper for the DELETE method
 func (c *Client) DeleteWithContext(ctx context.Context, url string, resType interface{}) error {
-	return c.CallAPIWithContext(ctx, "DELETE", url, nil, resType, true)
+	return c.CallAPIWithContext(ctx, "DELETE", url, nil, resType)
 }
 
 // NewRequest returns a new HTTP request
-func (c *Client) NewRequest(method, path string, reqBody interface{}, needAuth bool) (*http.Request, error) {
+func (c *Client) NewRequest(method, path string, reqBody interface{}) (*http.Request, error) {
 	var body []byte
 	var err error
 
@@ -240,8 +240,11 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 	c.Ratelimiter.Wait(req.Context())
 	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	// In case of several clients behind NAT we still can hit rate limit
-	for i := 1; i < 3 && err == nil && resp.StatusCode == 429; i++ {
+	for i := 1; i < 3 && resp != nil && resp.StatusCode == 429; i++ {
 		retryAfter, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
 		if err != nil {
 			log.Error("Rate-limited response did not contain a valid Retry-After header, quota likely exceeded")
@@ -256,9 +259,6 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 		c.Ratelimiter.Wait(req.Context())
 		resp, err = c.Client.Do(req)
-	}
-	if err != nil {
-		return nil, err
 	}
 	if c.Logger != nil {
 		c.Logger.LogResponse(resp)
@@ -284,8 +284,8 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 //
 // If everything went fine, unmarshall response into resType and return nil
 // otherwise, return the error
-func (c *Client) CallAPI(method, path string, reqBody, resType interface{}, needAuth bool) error {
-	return c.CallAPIWithContext(context.Background(), method, path, reqBody, resType, needAuth)
+func (c *Client) CallAPI(method, path string, reqBody, resType interface{}) error {
+	return c.CallAPIWithContext(context.Background(), method, path, reqBody, resType)
 }
 
 // CallAPIWithContext is the lowest level call helper. If needAuth is true,
@@ -308,8 +308,8 @@ func (c *Client) CallAPI(method, path string, reqBody, resType interface{}, need
 //
 // If everything went fine, unmarshall response into resType and return nil
 // otherwise, return the error
-func (c *Client) CallAPIWithContext(ctx context.Context, method, path string, reqBody, resType interface{}, needAuth bool) error {
-	req, err := c.NewRequest(method, path, reqBody, needAuth)
+func (c *Client) CallAPIWithContext(ctx context.Context, method, path string, reqBody, resType interface{}) error {
+	req, err := c.NewRequest(method, path, reqBody)
 	if err != nil {
 		return err
 	}

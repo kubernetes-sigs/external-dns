@@ -36,7 +36,7 @@ func TestClient_DoWhenQuotaExceeded(t *testing.T) {
 		Timeout:     DefaultTimeout,
 	}
 
-	req, err := client.NewRequest("GET", "/v1/domains/example.net/records", nil, false)
+	req, err := client.NewRequest("GET", "/v1/domains/example.net/records", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
