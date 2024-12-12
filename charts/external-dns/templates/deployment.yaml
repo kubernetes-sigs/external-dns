@@ -1,3 +1,4 @@
+{{- $defaultSelector := (include "external-dns.labelSelector" $ ) | fromYaml -}}
 {{- $providerName := tpl (include "external-dns.providerName" .) $ }}
 apiVersion: apps/v1
 kind: Deployment
@@ -203,11 +204,67 @@ spec:
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+      {{- with .podAffinity }}
+        podAffinity:
+          {{- with .preferredDuringSchedulingIgnoredDuringExecution }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          {{- range . }}
+            - podAffinityTerm:
+              {{- if dig "podAffinityTerm" "labelSelector" nil . }}
+                {{- toYaml .podAffinityTerm | nindent 16 }}
+              {{- else }}
+                {{- (merge $defaultSelector .podAffinityTerm) | toYaml | nindent 16 }}
+              {{- end }}
+              weight: {{ .weight  }}
+          {{- end }}
+          {{- end }}
+          {{- with .requiredDuringSchedulingIgnoredDuringExecution }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          {{- range . }}
+            {{- if dig "labelSelector" nil . }}
+              - {{ toYaml . | indent 16 | trim }}
+            {{- else }}
+              - {{ (merge $defaultSelector .) | toYaml | indent 16 | trim }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+      {{- end }}
+      {{- with .podAntiAffinity }}
+        podAntiAffinity:
+          {{- with .preferredDuringSchedulingIgnoredDuringExecution }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          {{- range . }}
+            - podAffinityTerm:
+              {{- if dig "podAffinityTerm" "labelSelector" nil . }}
+                {{- toYaml .podAffinityTerm | nindent 16 }}
+              {{- else }}
+                {{- (merge $defaultSelector .podAffinityTerm) | toYaml | nindent 16 }}
+              {{- end }}
+              weight: {{ .weight  }}
+          {{- end }}
+          {{- end }}
+          {{- with .requiredDuringSchedulingIgnoredDuringExecution }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          {{- range . }}
+            {{- if dig "labelSelector" nil . }}
+              - {{ toYaml . | indent 16 | trim }}
+            {{- else }}
+              - {{ (merge $defaultSelector .) | toYaml | indent 16 | trim }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+      {{- end }}
       {{- end }}
       {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
+        {{- range . }}
+        - {{ toYaml . | nindent 10 | trim }}
+          {{- if not (hasKey . "labelSelector") }}
+          labelSelector:
+            matchLabels:
+              {{- include "external-dns.selectorLabels" $ | nindent 12 }}
+          {{- end }}
+        {{- end }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:

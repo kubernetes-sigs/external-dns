@@ -93,3 +93,12 @@ The image to use for optional webhook sidecar
 {{- printf "%s:%s" .repository .tag }}
 {{- end }}
 {{- end }}
+
+{{/*
+The pod affinity default label Selector
+*/}}
+{{- define "external-dns.labelSelector" -}}
+labelSelector:
+  matchLabels:
+    {{ include "external-dns.selectorLabels" . | nindent 4 }}
+{{- end }}
