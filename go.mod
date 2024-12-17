@@ -3,16 +3,16 @@ module sigs.k8s.io/external-dns
 go 1.23.3
 
 require (
-	cloud.google.com/go/compute/metadata v0.5.2
+	cloud.google.com/go/compute/metadata v0.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.18.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.5.0
-	github.com/IBM/go-sdk-core/v5 v5.18.2
+	github.com/IBM/go-sdk-core/v5 v5.18.3
 	github.com/IBM/networking-go-sdk v0.49.0
-	github.com/Yamashou/gqlgenc v0.27.3
+	github.com/Yamashou/gqlgenc v0.27.4
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.68
@@ -22,7 +22,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.21
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.38.0
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.46.3
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.33.7
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.34.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -57,9 +57,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1060
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1060
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1060
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1062
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1062
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1062
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.17
@@ -68,8 +68,8 @@ require (
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/time v0.8.0
-	google.golang.org/api v0.211.0
-	gopkg.in/ns1/ns1-go.v2 v2.12.2
+	google.golang.org/api v0.212.0
+	gopkg.in/ns1/ns1-go.v2 v2.13.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.24.1
 	istio.io/client-go v1.24.1
@@ -81,7 +81,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/auth v0.12.1 // indirect
+	cloud.google.com/go/auth v0.13.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/99designs/gqlgen v0.17.54 // indirect
