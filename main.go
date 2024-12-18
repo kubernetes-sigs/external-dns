@@ -100,7 +100,7 @@ func main() {
 	}
 	log.SetLevel(ll)
 
-	if ll >= log.DebugLevel {
+	if ll < log.DebugLevel {
 		// Klog V2 is used by k8s.io/apimachinery/pkg/labels and can throw (a lot) of irrelevant logs
 		// See https://github.com/kubernetes-sigs/external-dns/issues/2348
 		defer klog.ClearLogger()
