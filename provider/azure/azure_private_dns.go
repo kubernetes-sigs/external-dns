@@ -187,11 +187,32 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 	var zones []privatedns.PrivateZone
 
 	pager := p.zonesClient.NewListByResourceGroupPager(p.resourceGroup, &privatedns.PrivateZonesClientListByResourceGroupOptions{Top: nil})
+
+	// Initialize retry variables
+    	maxRetries := 10           // Maximum number of retries
+    	backoffBase := 2 * time.Second // Base backoff time (1 second)
+    	retryCount := 0           // Number of retries attempted
+
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, err
-		}
+	            if respErr, ok := err.(*azcoreruntime.ResponseError); ok && respErr.StatusCode == 429 {
+	                // Rate limit exceeded: Implement exponential backoff
+	                if retryCount >= maxRetries {
+	                    log.Errorf("Max retries reached. Exiting with error.")
+	                    return nil, fmt.Errorf("rate limit exceeded after %d retries", maxRetries)
+	                }
+	
+	                // Calculate backoff duration (exponential: base * 2^retryCount)
+	                backoffDuration := backoffBase * time.Duration(1<<retryCount) // 1<<retryCount is 2^retryCount
+	                log.Warnf("Rate limit exceeded, waiting for %v... (Retry %d/%d)", backoffDuration, retryCount+1, maxRetries)
+	                time.Sleep(backoffDuration)
+	
+	                retryCount++ // Increment retry count
+	                continue // Try again
+	            }
+	            return nil, err // Return error if it's not a rate limit error
+	        }
 		for _, zone := range nextResult.Value {
 			log.Debugf("Validating Zone: %v", *zone.Name)
 
