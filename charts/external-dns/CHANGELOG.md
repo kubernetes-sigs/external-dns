@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Ability to configure `imagePullSecrets` via helm `global` value ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
 - Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
+- Added support to setup the `containerPort` property of the container `webhook` ([4934](https://github.com/kubernetes-sigs/external-dns/issues/4934)) _@fjvela_
 
 ### Fixed
 
