@@ -1,0 +1,7 @@
+{
+  "tenantId": "tenant",
+  "subscriptionId": "subscription",
+  "resourceGroup": "rg",
+  "aadClientId": "clientId",
+  "aadClientSecret": "clientSecret"
+}

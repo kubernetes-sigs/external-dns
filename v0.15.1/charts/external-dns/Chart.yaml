@@ -1,0 +1,32 @@
+apiVersion: v2
+name: external-dns
+description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
+type: application
+version: 1.15.0
+appVersion: 0.15.0
+keywords:
+  - kubernetes
+  - externaldns
+  - external-dns
+  - dns
+  - service
+  - ingress
+home: https://github.com/kubernetes-sigs/external-dns/
+icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+sources:
+  - https://github.com/kubernetes-sigs/external-dns/
+maintainers:
+  - name: stevehipwell
+    email: steve.hipwell@gmail.com
+annotations:
+  artifacthub.io/changes: |
+    - kind: changed
+      description: "Updated _ExternalDNS_ OCI image version to [v0.15.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0)."
+    - kind: fixed
+      description: "Fixed `provider.webhook.resources` behavior to correctly leverage resource limits."
+    - kind: fixed
+      description: "Fixed `provider.webhook.imagePullPolicy` behavior to correctly leverage pull policy."
+    - kind: fixed
+      description: "Fixed to add correct webhook metric port to `Service` and `ServiceMonitor`."
+    - kind: fixed
+      description: "Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes."

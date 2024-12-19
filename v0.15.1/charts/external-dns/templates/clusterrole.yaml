@@ -1,0 +1,127 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ .Values.namespaced | ternary "Role" "ClusterRole" }}
+metadata:
+  name: {{ template "external-dns.fullname" . }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+rules:
+{{- if and (not .Values.namespaced) (or (has "node" .Values.sources) (has "pod" .Values.sources) (has "service" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "gloo-proxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources)) }}
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list","watch"]
+{{- end }}
+{{- if or (has "pod" .Values.sources) (has "service" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "gloo-proxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if or (has "service" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "gloo-proxy" .Values.sources) (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
+  - apiGroups: [""]
+    resources: ["services","endpoints"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if or (has "ingress" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
+  - apiGroups: ["extensions","networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if or (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) }}
+  - apiGroups: ["networking.istio.io"]
+    resources: ["gateways"]
+    verbs: ["get","watch","list"]
+{{- end }}
+
+{{- if has "istio-virtualservice" .Values.sources }}
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "ambassador-host" .Values.sources }}
+  - apiGroups: ["getambassador.io"]
+    resources: ["hosts","ingresses"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "contour-httpproxy" .Values.sources }}
+  - apiGroups: ["projectcontour.io"]
+    resources: ["httpproxies"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "crd" .Values.sources }}
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsendpoints"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsendpoints/status"]
+    verbs: ["*"]
+{{- end }}
+{{- if or (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways"]
+    verbs: ["get","watch","list"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get","watch","list"]    
+{{- end }}
+{{- if has "gateway-httproute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-grpcroute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["grpcroutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-tlsroute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["tlsroutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-tcproute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["tcproutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-udproute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["udproutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gloo-proxy" .Values.sources }}
+  - apiGroups: ["gloo.solo.io","gateway.solo.io"]
+    resources: ["proxies","virtualservices"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "kong-tcpingress" .Values.sources }}
+  - apiGroups: ["configuration.konghq.com"]
+    resources: ["tcpingresses"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "traefik-proxy" .Values.sources }}
+  - apiGroups: ["traefik.containo.us", "traefik.io"]
+    resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "openshift-route" .Values.sources }}
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "skipper-routegroup" .Values.sources }}
+  - apiGroups: ["zalando.org"]
+    resources: ["routegroups"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["zalando.org"]
+    resources: ["routegroups/status"]
+    verbs: ["patch","update"]
+{{- end }}
+{{- if has "f5-virtualserver" .Values.sources }}
+  - apiGroups: ["cis.f5.com"]
+    resources: ["virtualservers"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- with .Values.rbac.additionalPermissions }}
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

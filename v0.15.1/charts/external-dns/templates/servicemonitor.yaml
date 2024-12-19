@@ -1,0 +1,86 @@
+{{- if .Values.serviceMonitor.enabled -}}
+{{- $providerName := include "external-dns.providerName" . }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  namespace: {{ default .Release.Namespace .Values.serviceMonitor.namespace }}
+  {{- with .Values.serviceMonitor.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+  {{- with .Values.serviceMonitor.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  jobLabel: app.kubernetes.io/instance
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      {{- include "external-dns.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      {{- with .Values.serviceMonitor.interval }}
+      interval: {{ . }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.scheme }}
+      scheme: {{ . }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.bearerTokenFile }}
+      bearerTokenFile: {{ . }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.tlsConfig }}
+      tlsConfig:
+        {{- toYaml .| nindent 8 }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.metricRelabelings }}
+      metricRelabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.relabelings }}
+      relabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- if eq $providerName "webhook" }}
+    {{- with .Values.provider.webhook.serviceMonitor }}
+    - port: http-webhook
+      path: /metrics
+      {{- with .interval }}
+      interval: {{ . }}
+      {{- end }}
+      {{- with .scheme }}
+      scheme: {{ . }}
+      {{- end }}
+      {{- with .bearerTokenFile }}
+      bearerTokenFile: {{ . }}
+      {{- end }}
+      {{- with .tlsConfig }}
+      tlsConfig:
+        {{- toYaml .| nindent 8 }}
+      {{- end }}
+      {{- with .scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      {{- with .metricRelabelings }}
+      metricRelabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .relabelings }}
+      relabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+  {{- with .Values.serviceMonitor.targetLabels }}
+  targetLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
