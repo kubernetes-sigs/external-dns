@@ -3,6 +3,24 @@
 The TXT registry is the default registry.
 It stores DNS record metadata in TXT records, using the same provider.
 
+## Record Format Options
+The TXT registry supports two formats for storing DNS record metadata:
+- Legacy format: Creates a TXT record without record type information
+- New format: Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
+
+By default, the TXT registry creates records in both formats for backwards compatibility. You can configure it to use only the new format by using the `--txt-new-format-only` flag. This reduces the number of TXT records created, which can be helpful when working with provider-specific record limits.
+
+Note: AAAA records always use only the new format regardless of this setting.
+
+Example:
+```sh
+# Default behavior - creates both formats
+external-dns
+
+# Only create new format records
+external-dns --txt-new-format-only
+```
+
 ## Prefixes and Suffixes
 
 In order to avoid having the registry TXT records collide with
