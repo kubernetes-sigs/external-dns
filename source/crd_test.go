@@ -74,9 +74,16 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 			Labels:      labels,
 			Generation:  1,
 		},
-		Spec: endpoint.DNSEndpointSpec{
-			Endpoints: endpoints,
-		},
+		Spec: endpoint.DNSEndpointSpec{},
+	}
+	for _, ep := range endpoints {
+		// Exclude internal fields of Endpoints
+		dnsEndpoint.Spec.Endpoints = append(dnsEndpoint.Spec.Endpoints, &endpoint.Endpoint{
+			DNSName: ep.DNSName,
+			RecordType: ep.RecordType,
+			RecordTTL: ep.RecordTTL,
+			Targets: ep.Targets,
+		})
 	}
 
 	codecFactory := serializer.WithoutConversionCodecFactory{
@@ -176,6 +183,65 @@ func testCRDSourceEndpoints(t *testing.T) {
 			},
 			expectEndpoints: false,
 			expectError:     true,
+		},
+		{
+			title:                "endpoint with annotations",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "namespace",
+			registeredNamespace:  "namespace",
+			annotations:          map[string]string{
+				hostnameAnnotationKey: "example.com",
+				targetAnnotationKey: "1.2.3.4",
+				ttlAnnotationKey: "180",
+				annotationKeyPrefix + "property": "value",
+			},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name: "property",
+							Value: "value",
+						},
+					},
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
+			title:                "endpoint with provider property",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "namespace",
+			registeredNamespace:  "namespace",
+			annotations:          map[string]string{
+				annotationKeyPrefix + "property": "value",
+			},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name: "property",
+							Value: "value",
+						},
+					},
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
 		},
 		{
 			title:                "endpoints within a specific namespace",
@@ -472,7 +538,12 @@ func testCRDSourceEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			restClient := fakeRESTClient(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
+			var endpoints []*endpoint.Endpoint
+			if _, ok := ti.annotations[hostnameAnnotationKey]; !ok {
+				// Only include endpoints in DNSEndpoint.Spec.Endpoints when the DNS specification is not being provided via annotations.
+				endpoints = ti.endpoints
+			}
+			restClient := fakeRESTClient(endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
 
