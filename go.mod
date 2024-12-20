@@ -37,6 +37,7 @@ require (
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.7.0
 	github.com/go-logr/logr v1.4.2
+	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gophercloud/gophercloud v1.14.1

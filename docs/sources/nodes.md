@@ -6,6 +6,7 @@ Using nodes (`--source=node`) as source is possible to synchronize a DNS zone wi
 The node source adds an `A` record per each node `externalIP` (if not found, any IPv4 `internalIP` is used instead).
 It also adds an `AAAA` record per each node IPv6 `internalIP`.
 The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
+The FQDN template provides more than 100+ functions, documented [here](https://go-task.github.io/slim-sprig/). For instance, it includes a function to replace all `.` with `-` in the node name, which can be useful with cloud providers that include dots in the node name. There are two additional functions available on top of the standard sprig functions: `isIPv4` and `isIPv6`. The functions can be used to test a string for being an IPv4 or IPv6 address.
 
 Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded.
 This avoid exposing Unhealthy, NotReady or SchedulingDisabled (cordon) nodes.
@@ -40,7 +41,7 @@ spec:
         - --domain-filter=external-dns-test.my-org.com
         - --aws-zone-type=public
         - --registry=txt
-        - --fqdn-template={{.Name}}.external-dns-test.my-org.com
+        - --fqdn-template={{.Name | replace "." "-"}}.external-dns-test.my-org.com
         - --txt-owner-id=my-identifier
         - --policy=sync
         - --log-level=debug
@@ -111,7 +112,7 @@ spec:
         - --domain-filter=external-dns-test.my-org.com
         - --aws-zone-type=public
         - --registry=txt
-        - --fqdn-template={{.Name}}.external-dns-test.my-org.com
+        - --fqdn-template={{.Name | replace "." "-"}}.external-dns-test.my-org.com
         - --txt-owner-id=my-identifier
         - --policy=sync
         - --log-level=debug
