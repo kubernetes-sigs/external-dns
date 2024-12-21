@@ -172,7 +172,6 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (
 	allChanges = append(allChanges, changesUpdateOld...)
 	allChanges = append(allChanges, changesDelete...)
 
-
 	log.Infof("OVH: %d changes will be done", len(allChanges))
 
 	eg, _ := errgroup.WithContext(ctx)
