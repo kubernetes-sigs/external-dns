@@ -190,6 +190,11 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
 		if err != nil {
+			if respErr, ok := err.(*azcoreruntime.ResponseError); ok && respErr.StatusCode == 429 {
+				log.Warnf("Rate limit exceeded, waiting for 10 seconds...")
+				time.Sleep(10 * time.Second)
+				continue
+			}
 			return nil, err
 		}
 		for _, zone := range nextResult.Value {
