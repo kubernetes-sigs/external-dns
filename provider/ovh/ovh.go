@@ -172,18 +172,6 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (
 	allChanges = append(allChanges, changesUpdateOld...)
 	allChanges = append(allChanges, changesDelete...)
 
-	// Changes debug
-	if log.IsLevelEnabled(log.DebugLevel) {
-		debugF := func(changeType string, changes []ovhChange) {
-			for _, c := range changes {
-				log.Debugf("OVH: change type %s - %s", changeType, c.String())
-			}
-		}
-		debugF("OVH: (ovhCreate) Create", changesCreate)
-		debugF("OVH: (ovhCreate) UpdateNew", changesUpdateNew)
-		debugF("OVH: (ovhDelete) UpdateOld", changesUpdateOld)
-		debugF("OVH: (ovhDelete) Delete", changesDelete)
-	}
 
 	log.Infof("OVH: %d changes will be done", len(allChanges))
 
