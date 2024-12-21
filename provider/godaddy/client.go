@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -230,7 +231,11 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	resp, err := c.Client.Do(req)
 	// In case of several clients behind NAT we still can hit rate limit
 	for i := 1; i < 3 && err == nil && resp.StatusCode == 429; i++ {
-		retryAfter, _ := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
+		retryAfter, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
+		if err != nil {
+			log.Error("Rate-limited response did not contain a valid Retry-After header, quota likely exceeded")
+			break
+		}
 
 		jitter := rand.Int63n(retryAfter)
 		retryAfterSec := retryAfter + jitter/2
