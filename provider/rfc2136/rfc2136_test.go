@@ -20,9 +20,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -37,16 +39,53 @@ import (
 )
 
 type rfc2136Stub struct {
-	output     []*dns.Envelope
-	updateMsgs []*dns.Msg
-	createMsgs []*dns.Msg
+	output                []*dns.Envelope
+	updateMsgs            []*dns.Msg
+	createMsgs            []*dns.Msg
+	nameservers           []string
+	counter               int
+	randGen               *rand.Rand
+	lastNameserver        string
+	loadBalancingStrategy string
 }
 
 func newStub() *rfc2136Stub {
 	return &rfc2136Stub{
-		output:     make([]*dns.Envelope, 0),
-		updateMsgs: make([]*dns.Msg, 0),
-		createMsgs: make([]*dns.Msg, 0),
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           []string{""},
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: "round-robin",
+	}
+}
+
+func newStubLB(strategy string, nameservers []string) *rfc2136Stub {
+	return &rfc2136Stub{
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           nameservers,
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: strategy,
+	}
+}
+
+func (r *rfc2136Stub) getNextNameserver() string {
+	if len(r.nameservers) == 1 {
+		return r.nameservers[0]
+	}
+
+	switch r.loadBalancingStrategy {
+	case "random":
+		return r.nameservers[r.randGen.Intn(len(r.nameservers))]
+	case "round-robin":
+		nameserver := r.nameservers[r.counter]
+		r.counter = (r.counter + 1) % len(r.nameservers)
+
+		return nameserver
+	default:
+		return r.nameservers[0]
 	}
 }
 
@@ -61,6 +100,8 @@ func getSortedChanges(msgs []*dns.Msg) []string {
 }
 
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
+	r.lastNameserver = r.getNextNameserver()
+	log.Info("Sending message to nameserver: ", r.lastNameserver)
 	zone := extractZoneFromMessage(msg.String())
 	// Make sure the zone starts with . to make sure HasSuffix does not match forbar.com for zone bar.com
 	if !strings.HasPrefix(zone, ".") {
@@ -127,11 +168,26 @@ func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return NewRfc2136Provider("", 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, stub)
+	return NewRfc2136Provider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+}
+
+func createRfc2136StubProviderWithHosts(stub *rfc2136Stub) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136TLSStubProvider(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
-	return NewRfc2136Provider("rfc2136-host", 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, stub)
+	return NewRfc2136Provider([]string{"rfc2136-host"}, 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+}
+
+func createRfc2136TLSStubProviderWithHosts(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
+	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2"}, 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithReverse(stub *rfc2136Stub) (provider.Provider, error) {
@@ -144,7 +200,7 @@ func createRfc2136StubProviderWithReverse(stub *rfc2136Stub) (provider.Provider,
 	}
 
 	zones := []string{"foo.com", "3.2.1.in-addr.arpa"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, true, false, "", "", "", 50, tlsConfig, stub)
+	return NewRfc2136Provider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, true, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, error) {
@@ -156,7 +212,7 @@ func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, e
 		ClientCertKeyFilePath: "",
 	}
 	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, stub)
+	return NewRfc2136Provider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Provider, error) {
@@ -168,7 +224,18 @@ func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Prov
 		ClientCertKeyFilePath: "",
 	}
 	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, stub)
+	return NewRfc2136Provider([]string{""}, 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+}
+
+func createRfc2136StubProviderWithStrategy(stub *rfc2136Stub, strategy string) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, strategy, stub)
 }
 
 func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
@@ -260,7 +327,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 
 	rawProvider := provider.(*rfc2136Provider)
 
-	client, err := makeClient(*rawProvider)
+	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
@@ -268,6 +335,51 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
 	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+}
+
+func TestRfc2136TLSConfigWithMultiHosts(t *testing.T) {
+	stub := newStub()
+
+	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	assert.NoError(t, err)
+	defer os.Remove(caFile.Name())
+	_, err = caFile.Write([]byte(
+		`-----BEGIN CERTIFICATE-----
+MIH+MIGxAhR2n1aQk0ONrQ8QQfa6GCzFWLmTXTAFBgMrZXAwITELMAkGA1UEBhMC
+REUxEjAQBgNVBAMMCWxvY2FsaG9zdDAgFw0yMzEwMjQwNzI5NDNaGA8yMTIzMDkz
+MDA3Mjk0M1owITELMAkGA1UEBhMCREUxEjAQBgNVBAMMCWxvY2FsaG9zdDAqMAUG
+AytlcAMhAA1FzGJXuQdOpKv02SEl7SIA8SP8RVRI0QTi1bUFiFBLMAUGAytlcANB
+ADiCKRUGDMyafSSYhl0KXoiXrFOxvhrGM5l15L4q82JM5Qb8wv0gNrnbGTZlInuv
+ouB5ZN+05DzKCQhBekMnygQ=
+-----END CERTIFICATE-----
+`))
+
+	tlsConfig := TLSConfig{
+		UseTLS:                true,
+		SkipTLSVerify:         false,
+		CAFilePath:            caFile.Name(),
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	provider, err := createRfc2136TLSStubProviderWithHosts(stub, tlsConfig)
+	assert.NoError(t, err)
+
+	rawProvider := provider.(*rfc2136Provider)
+
+	for _, ns := range rawProvider.nameservers {
+		client, err := makeClient(rawProvider, ns)
+		assert.NoError(t, err)
+
+		// strip port from ns
+		ns = strings.Split(ns, ":")[0]
+
+		assert.Equal(t, "tcp-tls", client.Net)
+		assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
+		assert.Equal(t, ns, client.TLSConfig.ServerName)
+		assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
+		assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+	}
 }
 
 func TestRfc2136TLSConfigNoVerify(t *testing.T) {
@@ -300,7 +412,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 
 	rawProvider := provider.(*rfc2136Provider)
 
-	client, err := makeClient(*rawProvider)
+	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
@@ -369,7 +481,7 @@ hl6aAPCe16pwvljB7yImxLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTM=
 
 	rawProvider := provider.(*rfc2136Provider)
 
-	client, err := makeClient(*rawProvider)
+	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	log.Infof("client, err is: %v", client)
 	log.Infof("client, err is: %s", err)
 	assert.NoError(t, err)
@@ -772,4 +884,45 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 		}
 	}
 	return false
+}
+
+// TestRoundRobinLoadBalancing tests the round-robin load balancing strategy.
+func TestRoundRobinLoadBalancing(t *testing.T) {
+	stub := newStubLB("round-robin", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
+	_, err := createRfc2136StubProviderWithHosts(stub)
+	assert.NoError(t, err)
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "v1.foo.com.", 0, "A", "1.2.3.4"))
+	m.Insert([]dns.RR{rr})
+
+	for i := 0; i < 10; i++ {
+		err := stub.SendMessage(m)
+		assert.NoError(t, err)
+		expectedNameserver := "rfc2136-host" + strconv.Itoa((i%3)+1)
+		assert.Equal(t, expectedNameserver, stub.lastNameserver)
+	}
+}
+
+// TestRandomLoadBalancing tests the random load balancing strategy.
+func TestRandomLoadBalancing(t *testing.T) {
+	stub := newStubLB("random", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
+	_, err := createRfc2136StubProvider(stub)
+	assert.NoError(t, err)
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "v1.foo.com.", 0, "A", "1.2.3.4"))
+	m.Insert([]dns.RR{rr})
+
+	nameserverCounts := map[string]int{}
+
+	for i := 0; i < 25; i++ {
+		err := stub.SendMessage(m)
+		assert.NoError(t, err)
+		nameserverCounts[stub.lastNameserver]++
+	}
+
+	assert.Greater(t, len(nameserverCounts), 1, "Expected multiple nameservers to be used in random strategy")
 }
