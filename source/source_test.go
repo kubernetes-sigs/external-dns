@@ -85,6 +85,7 @@ func TestSuitableType(t *testing.T) {
 	}{
 		{"8.8.8.8", "", "A"},
 		{"2001:db8::1", "", "AAAA"},
+		{"::ffff:c0a8:101", "", "AAAA"},
 		{"foo.example.org", "", "CNAME"},
 		{"bar.eu-central-1.elb.amazonaws.com", "", "CNAME"},
 	} {
