@@ -58,7 +58,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 Create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
 
 ```yaml
-provider: 
+provider:
   name: cloudflare
 env:
   - name: CF_API_KEY
@@ -76,7 +76,7 @@ env:
 Use this in your values.yaml, if you are using API Token:
 
 ```yaml
-provider: 
+provider:
   name: cloudflare
 env:
   - name: CF_API_TOKEN
@@ -307,3 +307,7 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotati
 Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic. A list of available options can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
 
 If not set the value will default to `global`.
+
+## Using CRD source to manage DNS records in Cloudflare
+
+Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.

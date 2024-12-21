@@ -3,10 +3,10 @@
 You can create and manage MX records with the help of [CRD source](../contributing/crd-source.md)
 and `DNSEndpoint` CRD. Currently, this feature is only supported by `aws`, `azure`, `google` and `digitalocean` providers.
 
-In order to start managing MX records you need to set the `--managed-record-types MX` flag.
+In order to start managing MX records you need to set the `--managed-record-types=MX` flag.
 
 ```console
-external-dns --source crd --provider {aws|azure|google|digitalocean} --managed-record-types A --managed-record-types CNAME --managed-record-types MX
+external-dns --source crd --provider {aws|azure|google|digitalocean} --managed-record-types=A --managed-record-types=CNAME --managed-record-types=MX
 ```
 
 Targets within the CRD need to be specified according to the RFC 1034 (section 3.6.1). Below is an example of

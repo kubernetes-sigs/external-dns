@@ -3,6 +3,12 @@
 You can create NS records with the help of [CRD source](../contributing/crd-source.md)
 and `DNSEndpoint` CRD.
 
+In order to start managing NS records you need to set the `--managed-record-types=NS` flag.
+
+```console
+external-dns --source crd --managed-record-types=A --managed-record-types=CNAME --managed-record-types=NS
+```
+
 Consider the following example
 
 ```yaml

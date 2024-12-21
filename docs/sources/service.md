@@ -35,7 +35,7 @@ the value of the Pod's `spec.hostname` field and a `.`.
 
 ## Targets
 
-If the Service has an `external-dns.alpha.kubernetes.io/target` annotation, uses 
+If the Service has an `external-dns.alpha.kubernetes.io/target` annotation, uses
 the values from that. Otherwise, the targets of the DNS entries created from a service are sourced depending
 on the Service's `spec.type`:
 
@@ -61,7 +61,7 @@ also iterates over the Endpoints's `subsets.notReadyAddresses`.
 
 1. If an address does not target a `Pod` that matches the Service's `spec.selector`, it is ignored.
 
-2. If the target pod has an `external-dns.alpha.kubernetes.io/target` annotation, uses 
+2. If the target pod has an `external-dns.alpha.kubernetes.io/target` annotation, uses
 the values from that.
 
 3. Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP`
@@ -87,13 +87,13 @@ and has a `status.phase` of `Running`. Otherwise iterates over all Nodes, of any
 
 Iterates over each relevant Node's `status.addresses`:
 
-1. If there is an `external-dns.alpha.kubernetes.io/access: public` annotation on the Service, uses both addresses with 
+1. If there is an `external-dns.alpha.kubernetes.io/access: public` annotation on the Service, uses both addresses with
 a `type` of `ExternalIP` and IPv6 addresses with a `type` of `InternalIP`.
 
-2. Otherwise, if there is an `external-dns.alpha.kubernetes.io/access: private` annotation on the Service, uses addresses with  
+2. Otherwise, if there is an `external-dns.alpha.kubernetes.io/access: private` annotation on the Service, uses addresses with
 a `type` of `InternalIP`.
 
-3. Otherwise, if there is at least one address with a `type` of `ExternalIP`, uses both addresses with 
+3. Otherwise, if there is at least one address with a `type` of `ExternalIP`, uses both addresses with
 a `type` of `ExternalIP` and IPv6 addresses with a `type` of `InternalIP`.
 
 4. Otherwise, uses addresses with a `type` of `InternalIP`.
@@ -101,8 +101,12 @@ a `type` of `ExternalIP` and IPv6 addresses with a `type` of `InternalIP`.
 Also iterates over the Service's `spec.ports`, creating a SRV record for each port which has a `nodePort`.
 The SRV record has a service of the Service's `name`, a protocol taken from the port's `protocol` field,
 a priority of `0` and a weight of `50`.
-In order for SRV records to be created, the `--managed-record-types`must have been specified, including `SRV`
+In order for SRV records to be created, the `--managed-record-types` must have been specified, including `SRV`
 as one of the values.
+
+```console
+external-dns ... --managed-record-types=A --managed-record-types=CNAME --managed-record-types=SRV
+```
 
 ### ExternalName
 
