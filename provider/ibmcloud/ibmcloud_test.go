@@ -178,6 +178,9 @@ func newTestIBMCloudProvider(private bool) *IBMCloudProvider {
 		DryRun:       false,
 		instanceID:   "test123",
 		privateZone:  private,
+		BaseProvider: provider.BaseProvider{
+			ProviderSpecificPropertyFilter: ibmProviderSpecificPropertyFilter,
+		},
 	}
 }
 
@@ -355,6 +358,10 @@ func TestAdjustEndpoints(t *testing.T) {
 					Name:  "ibmcloud-proxied",
 					Value: "1",
 				},
+				{
+					Name:  "extra-property",
+					Value: "true",
+				},
 			},
 		},
 	}
@@ -364,8 +371,12 @@ func TestAdjustEndpoints(t *testing.T) {
 
 	assert.Equal(t, endpoint.TTL(0), ep[0].RecordTTL)
 	assert.Equal(t, "test.example.com", ep[0].DNSName)
-	proxied, _ := ep[0].GetProviderSpecificProperty("ibmcloud-proxied")
+	proxied, found := ep[0].GetProviderSpecificProperty("ibmcloud-proxied")
+	assert.True(t, found)
 	assert.Equal(t, "true", proxied)
+	extra, found := ep[0].GetProviderSpecificProperty("extra-property")
+	assert.False(t, found)
+	assert.Equal(t, "", extra)
 }
 
 func TestPrivateZone_withFilterID(t *testing.T) {
