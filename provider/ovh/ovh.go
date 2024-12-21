@@ -147,7 +147,7 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (
 
 	// Always refresh zones even in case of errors.
 	defer func() {
-		log.Infof("OVH: %d zones will be refreshed", len(zonesChangeUniques))
+		log.Debugf("OVH: %d zones will be refreshed", len(zonesChangeUniques))
 
 		eg, _ := errgroup.WithContext(ctx)
 		for zone := range zonesChangeUniques {
