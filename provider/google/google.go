@@ -18,8 +18,11 @@ package google
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"sort"
+	"net/http"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -38,6 +41,13 @@ import (
 
 const (
 	googleRecordTTL = 300
+
+	providerSpecificRoutingPolicy = "google-routing-policy"
+	providerSpecificRoutingPolicyNone = ""
+	providerSpecificRoutingPolicyGeo = "geo"
+	providerSpecificRoutingPolicyWrr = "wrr"
+	providerSpecificLocation = "google-location"
+	providerSpecificWeight = "google-weight"
 )
 
 type managedZonesCreateCallInterface interface {
@@ -49,8 +59,12 @@ type managedZonesListCallInterface interface {
 }
 
 type managedZonesServiceInterface interface {
-	Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface
-	List(project string) managedZonesListCallInterface
+	Create(managedZone *dns.ManagedZone) managedZonesCreateCallInterface
+	List() managedZonesListCallInterface
+}
+
+type resourceRecordSetsGetCallInterface interface {
+	Do(opts ...googleapi.CallOption) (*dns.ResourceRecordSet, error)
 }
 
 type resourceRecordSetsListCallInterface interface {
@@ -58,7 +72,8 @@ type resourceRecordSetsListCallInterface interface {
 }
 
 type resourceRecordSetsClientInterface interface {
-	List(project string, managedZone string) resourceRecordSetsListCallInterface
+	Get(managedZone string, name string, type_ string) resourceRecordSetsGetCallInterface
+	List(managedZone string) resourceRecordSetsListCallInterface
 }
 
 type changesCreateCallInterface interface {
@@ -66,42 +81,49 @@ type changesCreateCallInterface interface {
 }
 
 type changesServiceInterface interface {
-	Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface
+	Create(managedZone string, change *dns.Change) changesCreateCallInterface
 }
 
 type resourceRecordSetsService struct {
+	project string
 	service *dns.ResourceRecordSetsService
 }
 
-func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
-	return r.service.List(project, managedZone)
+func (r resourceRecordSetsService) Get(managedZone string, name string, type_ string) resourceRecordSetsGetCallInterface {
+	return r.service.Get(r.project, managedZone, name, type_)
+}
+
+func (r resourceRecordSetsService) List(managedZone string) resourceRecordSetsListCallInterface {
+	return r.service.List(r.project, managedZone)
 }
 
 type managedZonesService struct {
+	project string
 	service *dns.ManagedZonesService
 }
 
-func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
-	return m.service.Create(project, managedzone)
+func (m managedZonesService) Create(managedZone *dns.ManagedZone) managedZonesCreateCallInterface {
+	return m.service.Create(m.project, managedZone)
 }
 
-func (m managedZonesService) List(project string) managedZonesListCallInterface {
-	return m.service.List(project)
+func (m managedZonesService) List() managedZonesListCallInterface {
+	return m.service.List(m.project)
 }
 
 type changesService struct {
+	project string
 	service *dns.ChangesService
 }
 
-func (c changesService) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return c.service.Create(project, managedZone, change)
+func (c changesService) Create(managedZone string, change *dns.Change) changesCreateCallInterface {
+	return c.service.Create(c.project, managedZone, change)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
 type GoogleProvider struct {
 	provider.BaseProvider
-	// The Google project to work in
-	project string
+	// The default location to use
+	location string
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
 	// Max batch size to submit to Google Cloud DNS per transaction.
@@ -125,7 +147,7 @@ type GoogleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
+func NewGoogleProvider(ctx context.Context, project string, location string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -152,20 +174,37 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 		project = mProject
 	}
 
+	if location == "" {
+		if zone, err := metadata.ZoneWithContext(ctx); err != nil {
+			parts := strings.Split(zone, "-")
+			location = strings.Join(parts[:len(parts)-1], "-")
+			log.Infof("Google location auto-detected: %s", location)
+		}
+	}
+
 	zoneTypeFilter := provider.NewZoneTypeFilter(zoneVisibility)
 
 	provider := &GoogleProvider{
-		project:                  project,
-		dryRun:                   dryRun,
-		batchChangeSize:          batchChangeSize,
-		batchChangeInterval:      batchChangeInterval,
-		domainFilter:             domainFilter,
-		zoneTypeFilter:           zoneTypeFilter,
-		zoneIDFilter:             zoneIDFilter,
-		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
-		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
-		changesClient:            changesService{dnsClient.Changes},
-		ctx:                      ctx,
+		dryRun: dryRun,
+		batchChangeSize: batchChangeSize,
+		batchChangeInterval: batchChangeInterval,
+		domainFilter: domainFilter,
+		zoneTypeFilter: zoneTypeFilter,
+		zoneIDFilter: zoneIDFilter,
+		location: location,
+		managedZonesClient: managedZonesService{
+			project: project,
+			service: dnsClient.ManagedZones,
+		},
+		resourceRecordSetsClient: resourceRecordSetsService{
+			project: project,
+			service: dnsClient.ResourceRecordSets,
+		},
+		changesClient: changesService{
+			project: project,
+			service: dnsClient.Changes,
+		},
+		ctx: ctx,
 	}
 
 	return provider, nil
@@ -193,12 +232,12 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 	}
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter)
-	if err := p.managedZonesClient.List(p.project).Pages(ctx, f); err != nil {
+	if err := p.managedZonesClient.List().Pages(ctx, f); err != nil {
 		return nil, provider.NewSoftError(fmt.Errorf("failed to list zones: %w", err))
 	}
 
 	if len(zones) == 0 {
-		log.Warnf("No zones in the project, %s, match domain filters: %v", p.project, p.domainFilter)
+		log.Warnf("No zones match domain filters: %v", p.domainFilter)
 	}
 
 	for _, zone := range zones {
@@ -220,6 +259,25 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 			if !p.SupportedRecordType(r.Type) {
 				continue
 			}
+			if r.RoutingPolicy != nil {
+				if r.RoutingPolicy.Geo != nil {
+					for _, item := range r.RoutingPolicy.Geo.Items {
+						ep := endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), item.Rrdatas...)
+						ep.WithProviderSpecific(providerSpecificRoutingPolicy, providerSpecificRoutingPolicyGeo)
+						ep.WithProviderSpecific(providerSpecificLocation, item.Location)
+						endpoints = append(endpoints, ep.WithSetIdentifier(item.Location))
+					}
+				}
+				if r.RoutingPolicy.Wrr != nil {
+					for index, item := range r.RoutingPolicy.Wrr.Items {
+						ep := endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), item.Rrdatas...)
+						ep.WithProviderSpecific(providerSpecificRoutingPolicy, providerSpecificRoutingPolicyWrr)
+						ep.WithProviderSpecific(providerSpecificWeight, strconv.FormatFloat(item.Weight, 'g', 2, 64))
+						endpoints = append(endpoints, ep.WithSetIdentifier(strconv.FormatInt(int64(index), 10)))
+					}
+				}
+				continue
+			}
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), r.Rrdatas...))
 		}
 
@@ -227,7 +285,7 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 	}
 
 	for _, z := range zones {
-		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
+		if err := p.resourceRecordSetsClient.List(z.Name).Pages(ctx, f); err != nil {
 			return nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone %s: %w", z.Name, err))
 		}
 	}
@@ -235,18 +293,87 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 	return endpoints, nil
 }
 
-// ApplyChanges applies a given set of changes in a given zone.
+// AdjustEndpoints augments Endpoints generated by various sources to be equivalent to those returned by Records
+func (p *GoogleProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if routingPolicy, ok := ep.GetProviderSpecificProperty(providerSpecificRoutingPolicy); ok {
+			switch routingPolicy {
+			case providerSpecificRoutingPolicyGeo:
+				location, ok := ep.GetProviderSpecificProperty(providerSpecificLocation)
+				if !ok && p.location != "" {
+					ep.WithProviderSpecific(providerSpecificLocation, p.location)
+					location = p.location
+				}
+				ep.WithSetIdentifier(location)
+			case providerSpecificRoutingPolicyWrr:
+				weight, ok := ep.GetProviderSpecificProperty(providerSpecificWeight)
+				if !ok {
+					weight = "100"
+				}
+				if weight, err := strconv.ParseFloat(weight, 64); err == nil {
+					ep.WithProviderSpecific(providerSpecificWeight, strconv.FormatFloat(weight, 'g', 2, 64))
+				}
+				if index, err := strconv.ParseInt(ep.SetIdentifier, 10, 64); err != nil || index < 0 {
+					resource, _ := ep.Labels[endpoint.ResourceLabelKey]
+					log.Warnf("Endpoint generated from '%s' has 'wrr' routing policy with non-integer set identifier '%s'", resource, ep.SetIdentifier)
+				}
+			}
+		}
+	}
+	return endpoints, nil
+}
+
+// ApplyChanges applies a given set of changes.
 func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	change := &dns.Change{}
-
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
-
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew)...)
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
-
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
-
-	return p.submitChange(ctx, change)
+	zones, err := p.Zones(ctx)
+	if err != nil {
+		return err
+	}
+	zoneMap := provider.ZoneIDName{}
+	for _, z := range zones {
+		zoneMap.Add(z.Name, z.DnsName)
+	}
+	zoneBatches := map[string][]*dns.Change{}
+	for rrSetChange := range changes.All() {
+		if zone, _ := zoneMap.FindZone(string(rrSetChange.Name)); zone != "" {
+			change := p.newChange(rrSetChange, zone)
+			changeSize := len(change.Additions) + len(change.Deletions)
+			if changeSize == 0 {
+				continue
+			}
+			if _, ok := zoneBatches[zone]; !ok {
+				zoneBatches[zone] = []*dns.Change{&dns.Change{}}
+			}
+			batch := zoneBatches[zone][len(zoneBatches[zone]) - 1]
+			if p.batchChangeSize > 0 && len(batch.Additions) + len(batch.Deletions) + changeSize > p.batchChangeSize {
+				batch = &dns.Change{}
+				zoneBatches[zone] = append(zoneBatches[zone], batch)
+			}
+			batch.Additions = append(batch.Additions, change.Additions...)
+			batch.Deletions = append(batch.Deletions, change.Deletions...)
+		}
+	}
+	for zone, batches := range zoneBatches {
+		for index, batch := range batches {
+			log.Infof("Change zone: %v batch #%d", zone, index)
+			for _, record := range batch.Deletions {
+				log.Infof("Del records: %s %s %s %d", record.Name, record.Type, record.Rrdatas, record.Ttl)
+			}
+			for _, record := range batch.Additions {
+				log.Infof("Add records: %s %s %s %d", record.Name, record.Type, record.Rrdatas, record.Ttl)
+			}
+			if p.dryRun {
+				continue
+			}
+			if index > 0 {
+				time.Sleep(p.batchChangeInterval)
+			}
+			if _, err := p.changesClient.Create(zone, batch).Do(); err != nil {
+				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
+			}
+		}
+	}
+	return nil
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider
@@ -259,208 +386,218 @@ func (p *GoogleProvider) SupportedRecordType(recordType string) bool {
 	}
 }
 
-// newFilteredRecords returns a collection of RecordSets based on the given endpoints and domainFilter.
-func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
-	records := []*dns.ResourceRecordSet{}
-
-	for _, endpoint := range endpoints {
-		if p.domainFilter.Match(endpoint.DNSName) {
-			records = append(records, newRecord(endpoint))
-		}
-	}
-
-	return records
-}
-
-// submitChange takes a zone and a Change and sends it to Google.
-func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) error {
-	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
-		log.Info("All records are already up to date")
-		return nil
-	}
-
-	zones, err := p.Zones(ctx)
+// newChange returns a DNS change based upon the given resource record set change.
+func (p *GoogleProvider) newChange(rrSetChange *plan.RRSetChange, zone string) *dns.Change {
+	change := dns.Change{}
+	current, err := p.resourceRecordSetsClient.Get(zone, string(rrSetChange.Name), string(rrSetChange.Type)).Do()
 	if err != nil {
-		return err
+		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusNotFound || len(rrSetChange.Delete) > 0 {
+			log.Errorf("Error obtaining resource record set %s %s: %v", rrSetChange.Name, rrSetChange.Type, err)
+			return &dns.Change{}
+		}
+		current = &dns.ResourceRecordSet{}
+	} else {
+		change.Deletions = []*dns.ResourceRecordSet{current}
 	}
-
-	// separate into per-zone change sets to be passed to the API.
-	changes := separateChange(zones, change)
-
-	for zone, change := range changes {
-		for batch, c := range batchChange(change, p.batchChangeSize) {
-			log.Infof("Change zone: %v batch #%d", zone, batch)
-			for _, del := range c.Deletions {
-				log.Infof("Del records: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl)
+	desired := &dns.ResourceRecordSet{}
+	data, err := current.MarshalJSON();
+	if err == nil {
+		err = json.Unmarshal(data, desired)
+	}
+	if err != nil {
+		log.Errorf("Error processing resource record set %s %s: %v", rrSetChange.Name, rrSetChange.Type, err)
+		return &dns.Change{}
+	}
+	for _, ep := range rrSetChange.Delete {
+		routingPolicy, _ := ep.GetProviderSpecificProperty(providerSpecificRoutingPolicy)
+		switch routingPolicy {
+		case providerSpecificRoutingPolicyNone:
+			if len(desired.Rrdatas) == len(ep.Targets) { 
+				match := true
+				for _, data := range rrSetDatas(ep) {
+					if !slices.Contains(desired.Rrdatas, data) {
+						match = false
+						break
+					}
+				}
+				if match {
+					desired = &dns.ResourceRecordSet{}
+				}
 			}
-			for _, add := range c.Additions {
-				log.Infof("Add records: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl)
-			}
-
-			if p.dryRun {
+		case providerSpecificRoutingPolicyGeo:
+			if desired.RoutingPolicy == nil || desired.RoutingPolicy.Geo == nil {
 				continue
 			}
-
-			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
-				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
+			if location, ok := ep.GetProviderSpecificProperty(providerSpecificLocation); ok {
+				filter := func(item *dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem) bool {
+					if item.Location == location && len(item.Rrdatas) == len(ep.Targets) {
+						for _, data := range rrSetDatas(ep) {
+							if !slices.Contains(item.Rrdatas, data) {
+								return false
+							}
+						}
+						return true
+					}
+					return false
+				}
+				index := slices.IndexFunc(desired.RoutingPolicy.Geo.Items, filter)
+				for index != -1 {
+					desired.RoutingPolicy.Geo.Items = slices.Delete(
+						desired.RoutingPolicy.Geo.Items, index, index + 1,
+					)
+					index = slices.IndexFunc(desired.RoutingPolicy.Geo.Items, filter)
+				}
+				if len(desired.RoutingPolicy.Geo.Items) == 0 {
+					desired = &dns.ResourceRecordSet{}
+				}
 			}
-
-			time.Sleep(p.batchChangeInterval)
+		case providerSpecificRoutingPolicyWrr:
+			if desired.RoutingPolicy == nil || desired.RoutingPolicy.Wrr == nil {
+				continue
+			}
+			index, err := strconv.ParseInt(ep.SetIdentifier, 10, 64)
+			length := int64(len(desired.RoutingPolicy.Wrr.Items))
+			weight, ok := ep.GetProviderSpecificProperty(providerSpecificWeight)
+			if ok && err == nil && index >= 0 && index < length {
+				weight, err := strconv.ParseFloat(weight, 64)
+				if err != nil {
+					continue
+				}
+				item := desired.RoutingPolicy.Wrr.Items[index]
+				if item.Weight != weight || len(item.Rrdatas) != len(ep.Targets) {
+					continue
+				}
+				match := true
+				for _, data := range rrSetDatas(ep) {
+					if !slices.Contains(item.Rrdatas, data) {
+						match = false
+						break
+					}
+				}
+				if match {
+					if index + 1 < length {
+						desired.RoutingPolicy.Wrr.Items[index] = rrSetRoutingPolicyWrrItemPlaceholder(desired.Type)
+					} else {
+						desired.RoutingPolicy.Wrr.Items = desired.RoutingPolicy.Wrr.Items[:index]
+					}
+				}
+				filter := func(item *dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem) bool {
+					return item.Weight != 0
+				}
+				index := slices.IndexFunc(desired.RoutingPolicy.Wrr.Items, filter)
+				if index == -1 {
+					desired = &dns.ResourceRecordSet{}
+				}
+			}
 		}
 	}
-
-	return nil
+	for _, ep := range rrSetChange.Create {
+		desired.Name = string(rrSetChange.Name)
+		desired.Type = string(rrSetChange.Type)
+		if ep.RecordTTL.IsConfigured() {
+			desired.Ttl = int64(ep.RecordTTL)
+		}
+		desired.Rrdatas = rrSetDatas(ep)
+		routingPolicy, _ := ep.GetProviderSpecificProperty(providerSpecificRoutingPolicy)
+		switch routingPolicy {
+		case providerSpecificRoutingPolicyGeo:
+			if location, ok := ep.GetProviderSpecificProperty(providerSpecificLocation); ok {
+				if desired.RoutingPolicy == nil {
+					desired.RoutingPolicy = &dns.RRSetRoutingPolicy{}
+				}
+				if desired.RoutingPolicy.Geo == nil {
+					desired.RoutingPolicy.Geo = &dns.RRSetRoutingPolicyGeoPolicy{}
+				}
+				index := -1
+				for i, item := range desired.RoutingPolicy.Geo.Items {
+					if item.Location == location {
+						index = i
+						break
+					}
+				}
+				if index == -1 {
+					index = len(desired.RoutingPolicy.Geo.Items)
+					desired.RoutingPolicy.Geo.Items = append(desired.RoutingPolicy.Geo.Items, nil)
+				}
+				desired.RoutingPolicy.Geo.Items[index] = &dns.RRSetRoutingPolicyGeoPolicyGeoPolicyItem{
+					Location: location,
+					Rrdatas: desired.Rrdatas,
+				}
+				desired.Rrdatas = nil
+			}
+		case providerSpecificRoutingPolicyWrr:
+			index, err := strconv.ParseInt(ep.SetIdentifier, 10, 64)
+			weight, ok := ep.GetProviderSpecificProperty(providerSpecificWeight)
+			if ok && err == nil && index >= 0 {
+				weight, err := strconv.ParseFloat(weight, 64)
+				if err != nil {
+					continue
+				}
+				if desired.RoutingPolicy == nil {
+					desired.RoutingPolicy = &dns.RRSetRoutingPolicy{}
+				}
+				if desired.RoutingPolicy.Wrr == nil {
+					desired.RoutingPolicy.Wrr = &dns.RRSetRoutingPolicyWrrPolicy{}
+				}
+				length := int64(len(desired.RoutingPolicy.Wrr.Items))
+				if index >= length {
+					desired.RoutingPolicy.Wrr.Items = slices.Grow(desired.RoutingPolicy.Wrr.Items, int(index + 1 - length))[:index + 1]
+					for i := length; i < index; i++ {
+						desired.RoutingPolicy.Wrr.Items[i] = rrSetRoutingPolicyWrrItemPlaceholder(desired.Type)
+					}
+				}
+				desired.RoutingPolicy.Wrr.Items[index] = &dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+					Weight: weight,
+					Rrdatas: desired.Rrdatas,
+				}
+				desired.Rrdatas = nil
+			}
+		}
+	}
+	if desired.Name != "" {
+		if desired.Ttl == 0 {
+			desired.Ttl = googleRecordTTL
+		}
+		change.Additions = []*dns.ResourceRecordSet{desired}
+	}
+	return &change
 }
 
-// batchChange separates a zone in multiple transaction.
-func batchChange(change *dns.Change, batchSize int) []*dns.Change {
-	changes := []*dns.Change{}
-
-	if batchSize == 0 {
-		return append(changes, change)
-	}
-
-	type dnsChange struct {
-		additions []*dns.ResourceRecordSet
-		deletions []*dns.ResourceRecordSet
-	}
-
-	changesByName := map[string]*dnsChange{}
-
-	for _, a := range change.Additions {
-		change, ok := changesByName[a.Name]
-		if !ok {
-			change = &dnsChange{}
-			changesByName[a.Name] = change
-		}
-
-		change.additions = append(change.additions, a)
-	}
-
-	for _, a := range change.Deletions {
-		change, ok := changesByName[a.Name]
-		if !ok {
-			change = &dnsChange{}
-			changesByName[a.Name] = change
-		}
-
-		change.deletions = append(change.deletions, a)
-	}
-
-	names := make([]string, 0)
-	for v := range changesByName {
-		names = append(names, v)
-	}
-	sort.Strings(names)
-
-	currentChange := &dns.Change{}
-	var totalChanges int
-	for _, name := range names {
-		c := changesByName[name]
-
-		totalChangesByName := len(c.additions) + len(c.deletions)
-
-		if totalChangesByName > batchSize {
-			log.Warnf("Total changes for %s exceeds max batch size of %d, total changes: %d", name,
-				batchSize, totalChangesByName)
-			continue
-		}
-
-		if totalChanges+totalChangesByName > batchSize {
-			totalChanges = 0
-			changes = append(changes, currentChange)
-			currentChange = &dns.Change{}
-		}
-
-		currentChange.Additions = append(currentChange.Additions, c.additions...)
-		currentChange.Deletions = append(currentChange.Deletions, c.deletions...)
-
-		totalChanges += totalChangesByName
-	}
-
-	if totalChanges > 0 {
-		changes = append(changes, currentChange)
-	}
-
-	return changes
-}
-
-// separateChange separates a multi-zone change into a single change per zone.
-func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[string]*dns.Change {
-	changes := make(map[string]*dns.Change)
-	zoneNameIDMapper := provider.ZoneIDName{}
-	for _, z := range zones {
-		zoneNameIDMapper[z.Name] = z.DnsName
-		changes[z.Name] = &dns.Change{
-			Additions: []*dns.ResourceRecordSet{},
-			Deletions: []*dns.ResourceRecordSet{},
-		}
-	}
-	for _, a := range change.Additions {
-		if zoneName, _ := zoneNameIDMapper.FindZone(provider.EnsureTrailingDot(a.Name)); zoneName != "" {
-			changes[zoneName].Additions = append(changes[zoneName].Additions, a)
-		} else {
-			log.Warnf("No matching zone for record addition: %s %s %s %d", a.Name, a.Type, a.Rrdatas, a.Ttl)
-		}
-	}
-
-	for _, d := range change.Deletions {
-		if zoneName, _ := zoneNameIDMapper.FindZone(provider.EnsureTrailingDot(d.Name)); zoneName != "" {
-			changes[zoneName].Deletions = append(changes[zoneName].Deletions, d)
-		} else {
-			log.Warnf("No matching zone for record deletion: %s %s %s %d", d.Name, d.Type, d.Rrdatas, d.Ttl)
-		}
-	}
-
-	// separating a change could lead to empty sub changes, remove them here.
-	for zone, change := range changes {
-		if len(change.Additions) == 0 && len(change.Deletions) == 0 {
-			delete(changes, zone)
-		}
-	}
-
-	return changes
-}
-
-// newRecord returns a RecordSet based on the given endpoint.
-func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
+// Return Resource Record Set data for given endpoint
+func rrSetDatas(ep *endpoint.Endpoint) []string {
 	// TODO(linki): works around appending a trailing dot to TXT records. I think
 	// we should go back to storing DNS names with a trailing dot internally. This
 	// way we can use it has is here and trim it off if it exists when necessary.
-	targets := make([]string, len(ep.Targets))
-	copy(targets, []string(ep.Targets))
-	if ep.RecordType == endpoint.RecordTypeCNAME {
-		targets[0] = provider.EnsureTrailingDot(targets[0])
-	}
-
-	if ep.RecordType == endpoint.RecordTypeMX {
-		for i, mxRecord := range ep.Targets {
-			targets[i] = provider.EnsureTrailingDot(mxRecord)
+	switch ep.RecordType {
+	case endpoint.RecordTypeCNAME:
+		return []string{provider.EnsureTrailingDot(ep.Targets[0])}
+	case endpoint.RecordTypeMX:
+		fallthrough
+	case endpoint.RecordTypeNS:
+		fallthrough
+	case endpoint.RecordTypeSRV:
+		rrdatas := make([]string, len(ep.Targets))
+		for i, target := range ep.Targets {
+			rrdatas[i] = provider.EnsureTrailingDot(target)
 		}
+		return rrdatas
+	default:
+		return slices.Clone(ep.Targets)
 	}
+}
 
-	if ep.RecordType == endpoint.RecordTypeSRV {
-		for i, srvRecord := range ep.Targets {
-			targets[i] = provider.EnsureTrailingDot(srvRecord)
-		}
+// Return a Weighted Round Robin routing policy item placeholder for given resource record type
+func rrSetRoutingPolicyWrrItemPlaceholder(type_ string) *dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem {
+	var rrdatas []string
+	switch type_ {
+	case "A":
+		rrdatas = []string{"0.0.0.0"}
+	case "AAAA":
+		rrdatas = []string{"::"}
+	default:
+		rrdatas = []string{"."}
 	}
-
-	if ep.RecordType == endpoint.RecordTypeNS {
-		for i, nsRecord := range ep.Targets {
-			targets[i] = provider.EnsureTrailingDot(nsRecord)
-		}
-	}
-
-	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
-	var ttl int64 = googleRecordTTL
-	if ep.RecordTTL.IsConfigured() {
-		ttl = int64(ep.RecordTTL)
-	}
-
-	return &dns.ResourceRecordSet{
-		Name:    provider.EnsureTrailingDot(ep.DNSName),
-		Rrdatas: targets,
-		Ttl:     ttl,
-		Type:    ep.RecordType,
+	return &dns.RRSetRoutingPolicyWrrPolicyWrrPolicyItem{
+		Rrdatas: rrdatas,
 	}
 }
