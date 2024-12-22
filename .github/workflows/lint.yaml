@@ -29,8 +29,14 @@ jobs:
       with:
         go-version-file: go.mod
 
-    - name: Lint
+    - name: Lint go code
       uses: golangci/golangci-lint-action@v6
       with:
         args: --timeout=30m
         version: v1.60
+
+      # Run Spectral
+    - name: Lint OpenAPI spec
+      uses: stoplightio/spectral-action@2ad0b9302e32a77c1caccf474a9b2191a8060d83 # v0.8.11
+      with:
+        file_glob: 'api/*.yaml'

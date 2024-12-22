@@ -406,6 +406,9 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string
 		domainWithSuffix := strings.Join(DNSName[:1+dc], ".")
 
 		r, rType := pr.dropAffixExtractType(domainWithSuffix)
+		if !strings.Contains(lowerDNSName, ".") {
+			return r, rType
+		}
 		return r + "." + DNSName[1+dc], rType
 	}
 	return "", ""
