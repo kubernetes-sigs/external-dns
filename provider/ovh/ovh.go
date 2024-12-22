@@ -167,10 +167,10 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (
 	changesUpdateOld := newOvhChange(ovhDelete, changes.UpdateOld, zones, records)
 	changesDelete := newOvhChange(ovhDelete, changes.Delete, zones, records)
 
-	allChanges = append(allChanges, changesCreate...)
-	allChanges = append(allChanges, changesUpdateNew...)
-	allChanges = append(allChanges, changesUpdateOld...)
-	allChanges = append(allChanges, changesDelete...)
+	allChanges = append(allChanges, newOvhChange(ovhCreate, changes.Create, zones, records))
+	allChanges = append(allChanges, newOvhChange(ovhCreate, changes.UpdateNew, zones, records))
+	allChanges = append(allChanges, newOvhChange(ovhCreate, changes.UpdateOld, zones, records))
+	allChanges = append(allChanges, newOvhChange(ovhCreate, changes.Delete, zones, records))
 
 	log.Infof("OVH: %d changes will be done", len(allChanges))
 
