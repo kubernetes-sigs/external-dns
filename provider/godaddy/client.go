@@ -259,6 +259,9 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 		c.Ratelimiter.Wait(req.Context())
 		resp, err = c.Client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("doing request after waiting for retry after: %w", err)
+		}
 	}
 	if c.Logger != nil {
 		c.Logger.LogResponse(resp)
