@@ -221,7 +221,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.15.0
+  registry.k8s.io/external-dns/external-dns:v0.15.1
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
