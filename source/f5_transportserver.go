@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -126,11 +125,6 @@ func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.E
 	endpoints, err := ts.endpointsFromTransportServers(transportServers)
 	if err != nil {
 		return nil, err
-	}
-
-	// Sort endpoints
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil

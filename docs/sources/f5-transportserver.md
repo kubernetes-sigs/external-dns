@@ -32,3 +32,75 @@ Note that, in case you're not installing via Helm, you'll need the following in 
   - list
   - watch
 ```
+
+### Example TransportServer CR w/ host in spec
+
+```
+apiVersion: cis.f5.com/v1
+kind: TransportServer
+metadata:
+  labels:
+    f5cr: 'true'
+  name: test-ts
+  namespace: test-ns
+spec:
+  bigipRouteDomain: 0
+  host: test.example.com
+  ipamLabel: vips
+  mode: standard
+  pool:
+    service: test-service
+    servicePort: 4222
+  virtualServerPort: 4222
+```
+
+### Example TransportServer CR w/ target annotation set
+
+If the `external-dns.alpha.kubernetes.io/target` annotation is set, the record created will reflect that and everything else will be ignored.
+
+```
+apiVersion: cis.f5.com/v1
+kind: TransportServer
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/target: 10.172.1.12
+  labels:
+    f5cr: 'true'
+  name: test-ts
+  namespace: test-ns
+spec:
+  bigipRouteDomain: 0
+  host: test.example.com
+  ipamLabel: vips
+  mode: standard
+  pool:
+    service: test-service
+    servicePort: 4222
+  virtualServerPort: 4222
+```
+
+### Example TransportServer CR w/ VirtualServerAddress set
+
+If `virtualServerAddress` is set, the record created will reflect that. `external-dns.alpha.kubernetes.io/target` will take precedence though.
+
+```
+apiVersion: cis.f5.com/v1
+kind: TransportServer
+metadata:
+  labels:
+    f5cr: 'true'
+  name: test-ts
+  namespace: test-ns
+spec:
+  bigipRouteDomain: 0
+  host: test.example.com
+  ipamLabel: vips
+  mode: standard
+  pool:
+    service: test-service
+    servicePort: 4222
+  virtualServerPort: 4222
+  virtualServerAddress: 10.172.1.123
+```
+
+If there is no target annotation or `virtualServerAddress` field set, then it'll use the `VSAddress` field from the created TransportServer status to create the record.
