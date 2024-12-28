@@ -26,7 +26,7 @@ wildcard domains will have invalid domain syntax and be rejected by most provide
 
 ## Encryption
 
-Registry TXT records may contain information, such as the internal ingress name or namespace, considered sensitive, , which attackers could exploit to gather information about your infrastructure. 
+Registry TXT records may contain information, such as the internal ingress name or namespace, considered sensitive, , which attackers could exploit to gather information about your infrastructure.
 By encrypting TXT records, you can protect this information from unauthorized access.
 
 Encryption is enabled by using the `--txt-encrypt-enabled` flag. The 32-byte AES-256-GCM encryption
@@ -78,14 +78,25 @@ import (
 )
 
 func main() {
-	key := []byte("testtesttesttesttesttesttesttest")
-	encrypted, _ := endpoint.EncryptText(
-		"heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
-		key,
-		nil,
-	)
-	decrypted, _, _ := endpoint.DecryptText(encrypted, key)
-	fmt.Println(decrypted)
+	keys := []string{
+		"ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=", // safe base64 url encoded 44 bytes and 32 when decoded
+		"01234567890123456789012345678901",             // plain txt 32 bytes
+		"passphrasewhichneedstobe32bytes!",             // plain txt 32 bytes
+	}
+
+	for _, k := range keys {
+		key := []byte(k)
+		encrypted, _ := endpoint.EncryptText(
+			"heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
+			key,
+			nil,
+		)
+		decrypted, _, err := endpoint.DecryptText(encrypted, key)
+		if err != nil {
+			fmt.Println("Error decrypting:", err, "for key:", k)
+		}
+		fmt.Println(decrypted)
+	}
 }
 ```
 
