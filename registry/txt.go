@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	b64 "encoding/base64"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -63,11 +65,16 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
+
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
-		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+		var err error
+		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
+			return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+		}
 	}
+
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
 		return nil, errors.New("the AES Encryption key must be set when TXT record encryption is enabled")
 	}
