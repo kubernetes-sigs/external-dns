@@ -61,7 +61,7 @@ func TestDynamoDBRegistryNew(t *testing.T) {
 	require.EqualError(t, err, "table cannot be empty")
 
 	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^x"), time.Hour)
-	require.EqualError(t, err, "the AES Encryption key must have a length of 32 bytes")
+	require.EqualError(t, err, "the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
 
 	_, err = NewDynamoDBRegistry(p, "test-owner", api, "test-table", "testPrefix", "testSuffix", "", []string{}, []string{}, []byte(""), time.Hour)
 	require.EqualError(t, err, "txt-prefix and txt-suffix are mutually exclusive")

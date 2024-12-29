@@ -71,7 +71,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	} else if len(txtEncryptAESKey) != 32 {
 		var err error
 		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
-			return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+			return nil, errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
 		}
 	}
 
