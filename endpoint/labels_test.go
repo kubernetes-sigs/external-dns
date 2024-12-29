@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
 	"testing"
 
@@ -102,9 +103,37 @@ func (suite *LabelsSuite) TestEncryptionFailed() {
 	log.StandardLogger().SetOutput(b)
 
 	_ = foo.Serialize(false, true, []byte("wrong-key"))
-	
+
 	suite.True(fatalCrash, "should fail if encryption key is wrong")
 	suite.Contains(b.String(), "Failed to encrypt the text")
+}
+
+func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {
+	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
+	suite.NoError(err, "should succeed for valid label text")
+
+	// remove encryption nonce just for simplicity, so that we could regenerate nonce
+	delete(foo, txtEncryptionNonce)
+
+	originalRandReader := rand.Reader
+	defer func() {
+		log.StandardLogger().ExitFunc = nil
+		rand.Reader = originalRandReader
+	}()
+
+	// Replace rand.Reader with a faulty reader
+	rand.Reader = &faultyReader{}
+
+	b := new(bytes.Buffer)
+
+	var fatalCrash bool
+	log.StandardLogger().ExitFunc = func(int) { fatalCrash = true }
+	log.StandardLogger().SetOutput(b)
+
+	_ = foo.Serialize(false, true, suite.aesKey)
+
+	suite.True(fatalCrash)
+	suite.Contains(b.String(), "Failed to generate cryptographic nonce")
 }
 
 func (suite *LabelsSuite) TestDeserialize() {
