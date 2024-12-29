@@ -137,7 +137,7 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 	}
 
 	var encryptionNonce []byte
-	if extractedNonce, nonceExists := l[TxtEncryptionNonce]; nonceExists {
+	if extractedNonce, nonceExists := l[txtEncryptionNonce]; nonceExists {
 		encryptionNonce = []byte(extractedNonce)
 	} else {
 		var err error
@@ -145,7 +145,7 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 		if err != nil {
 			log.Fatalf("Failed to generate cryptographic nonce %#v.", err)
 		}
-		l[TxtEncryptionNonce] = string(encryptionNonce)
+		l[txtEncryptionNonce] = string(encryptionNonce)
 	}
 
 	text := l.SerializePlain(false)
