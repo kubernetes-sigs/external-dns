@@ -44,8 +44,8 @@ const (
 	// DualstackLabelKey is the name of the label that identifies dualstack endpoints
 	DualstackLabelKey = "dualstack"
 
-	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
-	txtEncryptionNonce = "txt-encryption-nonce"
+	// TxtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
+	TxtEncryptionNonce = "txt-encryption-nonce"
 )
 
 // Labels store metadata related to the endpoint
@@ -93,12 +93,12 @@ func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 func NewLabelsFromString(labelText string, aesKey []byte) (Labels, error) {
 	if len(aesKey) != 0 {
 		decryptedText, encryptionNonce, err := DecryptText(strings.Trim(labelText, "\""), aesKey)
-		//in case if we have decryption error, just try process original text
-		//decryption errors should be ignored here, because we can already have plain-text labels in registry
+		// in case if we have decryption error, just try process original text
+		// decryption errors should be ignored here, because we can already have plain-text labels in registry
 		if err == nil {
 			labels, err := NewLabelsFromStringPlain(decryptedText)
 			if err == nil {
-				labels[txtEncryptionNonce] = encryptionNonce
+				labels[TxtEncryptionNonce] = encryptionNonce
 			}
 
 			return labels, err
@@ -119,7 +119,7 @@ func (l Labels) SerializePlain(withQuotes bool) string {
 	sort.Strings(keys) // sort for consistency
 
 	for _, key := range keys {
-		if key == txtEncryptionNonce {
+		if key == TxtEncryptionNonce {
 			continue
 		}
 		tokens = append(tokens, fmt.Sprintf("%s/%s=%s", heritage, key, l[key]))
@@ -137,7 +137,7 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 	}
 
 	var encryptionNonce []byte
-	if extractedNonce, nonceExists := l[txtEncryptionNonce]; nonceExists {
+	if extractedNonce, nonceExists := l[TxtEncryptionNonce]; nonceExists {
 		encryptionNonce = []byte(extractedNonce)
 	} else {
 		var err error
@@ -145,15 +145,16 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 		if err != nil {
 			log.Fatalf("Failed to generate cryptographic nonce %#v.", err)
 		}
-		l[txtEncryptionNonce] = string(encryptionNonce)
+		l[TxtEncryptionNonce] = string(encryptionNonce)
 	}
 
 	text := l.SerializePlain(false)
 	log.Debugf("Encrypt the serialized text %#v before returning it.", text)
 	var err error
 	text, err = EncryptText(text, aesKey, encryptionNonce)
-
 	if err != nil {
+		// if encryption failed, the external-dns will crash
+		fmt.Println("GINBO")
 		log.Fatalf("Failed to encrypt the text %#v using the encryption key %#v. Got error %#v.", text, aesKey, err)
 	}
 
