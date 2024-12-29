@@ -86,6 +86,13 @@ func main() {
 
 	for _, k := range keys {
 		key := []byte(k)
+		if len(key) != 32 {
+			// if key is not a plain txt let's decode
+			var err error
+			if key, err = b64.StdEncoding.DecodeString(string(key)); err != nil || len(key) != 32 {
+				fmt.Errorf("the AES Encryption key must have a length of 32 byte")
+			}
+		}
 		encrypted, _ := endpoint.EncryptText(
 			"heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
 			key,
