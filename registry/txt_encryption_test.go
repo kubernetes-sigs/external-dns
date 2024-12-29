@@ -136,7 +136,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 	}
 }
 
-func TestGenerateRecordsWithEncryption(t *testing.T) {
+func TestApplyRecordsWithEncryption(t *testing.T) {
 	ctx := context.Background()
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone("org")
@@ -167,6 +167,7 @@ func TestGenerateRecordsWithEncryption(t *testing.T) {
 	}
 
 	records, _ := p.Records(ctx)
+	assert.Len(t, records, 14)
 	for _, r := range records {
 		if r.RecordType == endpoint.RecordTypeTXT && (strings.HasPrefix(r.DNSName, "cname-") || strings.HasPrefix(r.DNSName, "txt-new-")) {
 			assert.NotContains(t, r.Labels, "txt-encryption-nonce")
@@ -186,4 +187,112 @@ func TestGenerateRecordsWithEncryption(t *testing.T) {
 			assert.Contains(t, allPlainTextTargetsToAssert, r.Targets[0])
 		}
 	}
+}
+
+func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	_ = p.CreateZone("org")
+
+	withEncryptionKeys := []string{
+		"passphrasewhichneedstobe32bytes!",
+		"ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=",
+		"01234567890123456789012345678901",
+	}
+
+	for _, key := range withEncryptionKeys {
+		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key))
+		_ = r.ApplyChanges(ctx, &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
+				newEndpointWithOwnerAndOwnedRecord("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+				newEndpointWithOwner("example.org", "new-loadbalancer-3.org", endpoint.RecordTypeCNAME, "owner"),
+				newEndpointWithOwnerAndOwnedRecord("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
+				newEndpointWithOwner("tar.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner-2"),
+				newEndpointWithOwner("thing3.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
+				newEndpointWithOwner("thing4.org", "2001:DB8::2", endpoint.RecordTypeAAAA, "owner"),
+			},
+		})
+	}
+
+	records, _ := p.Records(ctx)
+	assert.Len(t, records, 14)
+}
+
+func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	_ = p.CreateZone("org")
+
+	withEncryptionKeys := []string{
+		"passphrasewhichneedstobe32bytes!",
+		"ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=",
+		"01234567890123456789012345678901",
+	}
+
+	for i, key := range withEncryptionKeys {
+		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key))
+		keyId := fmt.Sprintf("key-id-%d", i)
+		changes := []*endpoint.Endpoint{
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner", "", keyId),
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org", keyId),
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("example.org", "new-loadbalancer-3.org", endpoint.RecordTypeCNAME, "owner", "", keyId),
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("main.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example", keyId),
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("tar.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner-2", "", keyId),
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("thing3.org", "1.2.3.4", endpoint.RecordTypeA, "owner", "", keyId),
+			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("thing4.org", "2001:DB8::2", endpoint.RecordTypeAAAA, "owner", "", keyId),
+		}
+
+		if i == 0 {
+			_ = r.ApplyChanges(ctx, &plan.Changes{
+				Create: changes,
+			})
+		} else {
+			_ = r.ApplyChanges(context.Background(), &plan.Changes{
+				UpdateNew: changes,
+			})
+		}
+
+	}
+
+	records, _ := p.Records(ctx)
+	assert.Len(t, records, 14)
+
+	encryptionNonce := map[string]bool{}
+
+	for _, r := range records {
+		if slices.Contains([]string{"A", "AAAA"}, r.RecordType) || (r.RecordType == "CNAME" && strings.HasPrefix(r.DNSName, "new-")) {
+			assert.Contains(t, r.Labels, "key-id")
+			assert.Equal(t, "key-id-2", r.Labels["key-id"])
+			// add encryption nonce to track the number of unique nonce
+			encryptionNonce[r.Labels["txt-encryption-nonce"]] = true
+		} else if r.RecordType == endpoint.RecordTypeTXT {
+			if hasPrefixFromSlice(r.DNSName, []string{"cname-", "txt-new-", "a-", "aaaa-", "txt-"}) {
+				assert.NotContains(t, r.Labels, "key-id")
+			} else {
+				assert.Contains(t, r.Labels, "key-id", r.DNSName)
+				assert.Equal(t, "key-id-0", r.Labels["key-id"], r.DNSName)
+				// add encryption nonce to track the number of unique nonce
+				encryptionNonce[r.Labels["txt-encryption-nonce"]] = true
+			}
+		}
+	}
+	assert.LessOrEqual(t, len(encryptionNonce), 5)
+}
+
+func hasPrefixFromSlice(str string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(str, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel(dnsName, target, recordType, ownerID string, resource string, keyId string) *endpoint.Endpoint {
+	e := endpoint.NewEndpoint(dnsName, recordType, target)
+	e.Labels[endpoint.OwnerLabelKey] = ownerID
+	e.Labels[endpoint.ResourceLabelKey] = resource
+	e.Labels["key-id"] = keyId
+	return e
 }
