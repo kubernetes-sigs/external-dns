@@ -44,8 +44,8 @@ const (
 	// DualstackLabelKey is the name of the label that identifies dualstack endpoints
 	DualstackLabelKey = "dualstack"
 
-	// TxtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
-	TxtEncryptionNonce = "txt-encryption-nonce"
+	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
+	txtEncryptionNonce = "txt-encryption-nonce"
 )
 
 // Labels store metadata related to the endpoint
@@ -98,7 +98,7 @@ func NewLabelsFromString(labelText string, aesKey []byte) (Labels, error) {
 		if err == nil {
 			labels, err := NewLabelsFromStringPlain(decryptedText)
 			if err == nil {
-				labels[TxtEncryptionNonce] = encryptionNonce
+				labels[txtEncryptionNonce] = encryptionNonce
 			}
 
 			return labels, err
@@ -119,7 +119,7 @@ func (l Labels) SerializePlain(withQuotes bool) string {
 	sort.Strings(keys) // sort for consistency
 
 	for _, key := range keys {
-		if key == TxtEncryptionNonce {
+		if key == txtEncryptionNonce {
 			continue
 		}
 		tokens = append(tokens, fmt.Sprintf("%s/%s=%s", heritage, key, l[key]))
@@ -154,7 +154,6 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 	text, err = EncryptText(text, aesKey, encryptionNonce)
 	if err != nil {
 		// if encryption failed, the external-dns will crash
-		fmt.Println("GINBO")
 		log.Fatalf("Failed to encrypt the text %#v using the encryption key %#v. Got error %#v.", text, aesKey, err)
 	}
 
