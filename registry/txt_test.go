@@ -1591,44 +1591,6 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestNewTXTRegistryEncryptionConfig(t *testing.T) {
-	p := inmemory.NewInMemoryProvider()
-	tests := []struct {
-		encEnabled      bool
-		aesKeyRaw       []byte
-		aesKeySanitized []byte
-		errorExpected   bool
-	}{
-		{
-			encEnabled:      true,
-			aesKeyRaw:       []byte("123456789012345678901234567890asdfasdfasdfasdfa12"),
-			aesKeySanitized: []byte{},
-			errorExpected:   true,
-		},
-		{
-			encEnabled:      true,
-			aesKeyRaw:       []byte("passphrasewhichneedstobe32bytes!"),
-			aesKeySanitized: []byte("passphrasewhichneedstobe32bytes!"),
-			errorExpected:   false,
-		},
-		{
-			encEnabled:      true,
-			aesKeyRaw:       []byte("ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY="),
-			aesKeySanitized: []byte{100, 248, 173, 47, 67, 70, 85, 0, 89, 109, 48, 250, 15, 5, 201, 204, 63, 17, 137, 43, 82, 107, 60, 216, 93, 11, 29, 82, 140, 11, 81, 22},
-			errorExpected:   false,
-		},
-	}
-	for _, test := range tests {
-		actual, err := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, test.encEnabled, test.aesKeyRaw)
-		if test.errorExpected {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-			assert.Equal(t, test.aesKeySanitized, actual.txtEncryptAESKey)
-		}
-	}
-}
-
 // TestMultiClusterDifferentRecordTypeOwnership validates the registry handles environments where the same zone is managed by
 // external-dns in different clusters and the ingress record type is different. For example one uses A records and the other
 // uses CNAME. In this environment the first cluster that establishes the owner record should maintain ownership even

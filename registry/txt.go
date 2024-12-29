@@ -138,7 +138,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		// We simply assume that TXT records for the registry will always have only one target.
 		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
-		if err == endpoint.ErrInvalidHeritage {
+		if errors.Is(err, endpoint.ErrInvalidHeritage) {
 			// if no heritage is found or it is invalid
 			// case when value of txt record cannot be identified
 			// record will not be removed as it will have empty owner
@@ -244,7 +244,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txtNew)
 	}
-
 	return endpoints
 }
 
