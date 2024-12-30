@@ -25,7 +25,7 @@ const markdownTemplate = `
 # Flags
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW FLAG ADDED PLEASE RUN go .... -->
+<!-- ON NEW FLAG ADDED PLEASE RUN 'go run internal/gen/main.go' -->
 
 | Flag | Description  |
 | :------ | :----------- |
