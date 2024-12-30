@@ -29,8 +29,8 @@ wildcard domains will have invalid domain syntax and be rejected by most provide
 Registry TXT records may contain information, such as the internal ingress name or namespace, considered sensitive, , which attackers could exploit to gather information about your infrastructure.
 By encrypting TXT records, you can protect this information from unauthorized access.
 
-Encryption is enabled by setting the `--txt-encrypt-enabled` flag to `true`. The 32-byte AES-256-GCM encryption
-key must be specified in URL-safe base64 form (recommended) or be a plain text, using the `--txt-encrypt-aes-key` flag.
+Encryption is enabled by setting the `--txt-encrypt-enabled`. The 32-byte AES-256-GCM encryption
+key must be specified in URL-safe base64 form (recommended) or be a plain text, using the `--txt-encrypt-aes-key=<key>` flag.
 
 Note that the key used for encryption should be a secure key and properly managed to ensure the security of your TXT records.
 
