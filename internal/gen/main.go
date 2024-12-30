@@ -54,12 +54,12 @@ const markdownTemplate = `# Flags
 func main() {
 	testPath, _ := os.Getwd()
 	path := fmt.Sprintf("%s/docs/flags.md", testPath)
-	fmt.Println(fmt.Sprintf("generate file '%s' with supported flags", path))
+	fmt.Printf("generate file '%s' with supported flags\n", path)
 
 	flags := computeFlags()
 	content, err := flags.generateMarkdownTable()
 	if err != nil {
-		_ = fmt.Errorf("failed to generate markdown file '%s': %v", path, err.Error())
+		_ = fmt.Errorf("failed to generate markdown file '%s': %v\n", path, err.Error())
 	}
 	_ = writeToFile(path, content)
 }
