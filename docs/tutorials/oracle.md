@@ -170,7 +170,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.15.0
+        image: registry.k8s.io/external-dns/external-dns:v0.15.1
         args:
         - --source=service
         - --source=ingress
