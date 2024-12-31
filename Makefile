@@ -160,3 +160,8 @@ release.prod: test
 .PHONY: ko
 ko:
 	scripts/install-ko.sh
+
+# generate-documentation: Generate documentation (docs/flags.md)
+.PHONE: generate-docs
+generate-documentation:
+	go run internal/gen/main.go

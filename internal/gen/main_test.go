@@ -71,7 +71,7 @@ func TestFlagsMdUpToDate(t *testing.T) {
 	actual, err := flags.generateMarkdownTable()
 	assert.NoError(t, err)
 
-	assert.True(t, len(expected) == len(actual), "expected file '%s' to be up to date. execute 'go run internal/gen/main.g", filePath)
+	assert.True(t, len(expected) == len(actual), "expected file '%s' to be up to date. execute 'make generate-documentation", filePath)
 }
 
 func TestFlagsMdExtraFlagAdded(t *testing.T) {

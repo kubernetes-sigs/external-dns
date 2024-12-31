@@ -40,7 +40,7 @@ func (f *Flags) AddFlag(name, description string) {
 const markdownTemplate = `# Flags
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW FLAG ADDED PLEASE RUN 'go run internal/gen/main.go' -->
+<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-documentation' -->
 
 | Flag | Description  |
 | :------ | :----------- |
