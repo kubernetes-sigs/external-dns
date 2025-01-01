@@ -15,7 +15,7 @@ require (
 	github.com/Yamashou/gqlgenc v0.30.2
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.75
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.77
 	github.com/aws/aws-sdk-go-v2 v1.32.7
 	github.com/aws/aws-sdk-go-v2/config v1.28.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.48
@@ -57,9 +57,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1069
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1069
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1069
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1073
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1073
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1073
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.17
