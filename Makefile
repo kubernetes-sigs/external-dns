@@ -161,7 +161,7 @@ release.prod: test
 ko:
 	scripts/install-ko.sh
 
-# generate-documentation: Generate documentation (docs/flags.md)
+# generate-flags-documentation: Generate documentation (docs/flags.md)
 .PHONE: generate-flags-documentation
 generate-flags-documentation:
 	go run internal/gen/docs/flags/main.go
