@@ -162,6 +162,6 @@ ko:
 	scripts/install-ko.sh
 
 # generate-documentation: Generate documentation (docs/flags.md)
-.PHONE: generate-documentation
-generate-documentation:
+.PHONE: generate-flags-documentation
+generate-flags-documentation:
 	go run internal/gen/main.go
