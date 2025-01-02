@@ -164,4 +164,4 @@ ko:
 # generate-documentation: Generate documentation (docs/flags.md)
 .PHONE: generate-flags-documentation
 generate-flags-documentation:
-	go run internal/gen/main.go
+	go run internal/gen/docs/flags/main.go
