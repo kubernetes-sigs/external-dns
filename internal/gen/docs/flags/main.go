@@ -33,14 +33,14 @@ type Flag struct {
 type Flags []Flag
 
 // AddFlag adds a new flag to the Flags struct
-func (f *Flags) AddFlag(name, description string) {
+func (f *Flags) addFlag(name, description string) {
 	*f = append(*f, Flag{Name: name, Description: description})
 }
 
 const markdownTemplate = `# Flags
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-documentation' -->
+<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
 
 | Flag | Description  |
 | :------ | :----------- |
@@ -85,7 +85,7 @@ func computeFlags() Flags {
 		if !flag.IsBoolFlag() {
 			flagString += fmt.Sprintf("=%s", flag.FormatPlaceHolder())
 		}
-		flags.AddFlag(fmt.Sprintf("`%s`", flagString), flag.HelpWithEnvar())
+		flags.addFlag(fmt.Sprintf("`%s`", flagString), flag.HelpWithEnvar())
 	}
 	return flags
 }

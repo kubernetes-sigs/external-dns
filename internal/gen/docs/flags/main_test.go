@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const pathToDocs = "%s/../../../../docs"
+
 func TestComputeFlags(t *testing.T) {
 	flags := computeFlags()
 
@@ -54,35 +56,35 @@ func TestGenerateMarkdownTableRenderer(t *testing.T) {
 
 func TestFlagsMdExists(t *testing.T) {
 	testPath, _ := os.Getwd()
-	fsys := os.DirFS(fmt.Sprintf("%s/../../docs", testPath))
-	filePath := "flags.md"
-	_, err := fs.Stat(fsys, filePath)
-	assert.NoError(t, err, "expected file %s to exist", filePath)
+	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
+	fileName := "flags.md"
+	st, err := fs.Stat(fsys, fileName)
+	assert.NoError(t, err, "expected file %s to exist", fileName)
+	assert.Equal(t, fileName, st.Name())
 }
 
 func TestFlagsMdUpToDate(t *testing.T) {
 	testPath, _ := os.Getwd()
-	fsys := os.DirFS(fmt.Sprintf("%s/../../docs", testPath))
-	filePath := "flags.md"
-	expected, err := fs.ReadFile(fsys, filePath)
-	assert.NoError(t, err, "expected file %s to exist", filePath)
+	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
+	fileName := "flags.md"
+	expected, err := fs.ReadFile(fsys, fileName)
+	assert.NoError(t, err, "expected file %s to exist", fileName)
 
 	flags := computeFlags()
 	actual, err := flags.generateMarkdownTable()
 	assert.NoError(t, err)
-
-	assert.True(t, len(expected) == len(actual), "expected file '%s' to be up to date. execute 'make generate-documentation", filePath)
+	assert.True(t, len(expected) == len(actual), "expected file '%s' to be up to date. execute 'make generate-flags-documentation", fileName)
 }
 
 func TestFlagsMdExtraFlagAdded(t *testing.T) {
 	testPath, _ := os.Getwd()
-	fsys := os.DirFS(fmt.Sprintf("%s/../../docs", testPath))
+	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	filePath := "flags.md"
 	expected, err := fs.ReadFile(fsys, filePath)
 	assert.NoError(t, err, "expected file %s to exist", filePath)
 
 	flags := computeFlags()
-	flags.AddFlag("new-flag", "description2")
+	flags.addFlag("new-flag", "description2")
 	actual, err := flags.generateMarkdownTable()
 
 	assert.NoError(t, err)

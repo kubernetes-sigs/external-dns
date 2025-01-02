@@ -1,7 +1,7 @@
 # Flags
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-documentation' -->
+<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
 
 | Flag | Description  |
 | :------ | :----------- |
