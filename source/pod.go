@@ -31,15 +31,17 @@ import (
 )
 
 type podSource struct {
-	client        kubernetes.Interface
-	namespace     string
-	podInformer   coreinformers.PodInformer
-	nodeInformer  coreinformers.NodeInformer
-	compatibility string
+	client                   kubernetes.Interface
+	namespace                string
+	podInformer              coreinformers.PodInformer
+	nodeInformer             coreinformers.NodeInformer
+	compatibility            string
+	ignoreNonHostNetworkPods bool
+	podSourceDomain          string
 }
 
 // NewPodSource creates a new podSource with the given config.
-func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string) (Source, error) {
+func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string, ignoreNonHostNetworkPods bool, podSourceDomain string) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
@@ -65,11 +67,13 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 	}
 
 	return &podSource{
-		client:        kubeClient,
-		podInformer:   podInformer,
-		nodeInformer:  nodeInformer,
-		namespace:     namespace,
-		compatibility: compatibility,
+		client:                   kubeClient,
+		podInformer:              podInformer,
+		nodeInformer:             nodeInformer,
+		namespace:                namespace,
+		compatibility:            compatibility,
+		ignoreNonHostNetworkPods: ignoreNonHostNetworkPods,
+		podSourceDomain:          podSourceDomain,
 	}, nil
 }
 
@@ -84,7 +88,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpointMap := make(map[endpoint.EndpointKey][]string)
 	for _, pod := range pods {
-		if !pod.Spec.HostNetwork {
+		if ps.ignoreNonHostNetworkPods && !pod.Spec.HostNetwork {
 			log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
 			continue
 		}
@@ -143,6 +147,16 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 							addToEndpointMap(endpointMap, domain, recordType, address.Address)
 						}
 					}
+				}
+			}
+		}
+
+		if ps.podSourceDomain != "" {
+			if len(targets) == 0 {
+				addToEndpointMap(endpointMap, pod.ObjectMeta.Name+"."+ps.podSourceDomain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+			} else {
+				for _, target := range targets {
+					addToEndpointMap(endpointMap, pod.ObjectMeta.Name+"."+ps.podSourceDomain, suitableType(target), target)
 				}
 			}
 		}

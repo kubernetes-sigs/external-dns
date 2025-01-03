@@ -57,11 +57,13 @@ type Config struct {
 	FQDNTemplate                       string
 	CombineFQDNAndAnnotation           bool
 	IgnoreHostnameAnnotation           bool
+	IgnoreNonHostNetworkPods           bool
 	IgnoreIngressTLSSpec               bool
 	IgnoreIngressRulesSpec             bool
 	GatewayNamespace                   string
 	GatewayLabelFilter                 string
 	Compatibility                      string
+	PodSourceDomain                    string
 	PublishInternal                    bool
 	PublishHostIP                      bool
 	AlwaysPublishNotReadyAddresses     bool
@@ -286,6 +288,7 @@ var defaultConfig = &Config{
 	PDNSServerID:                "localhost",
 	PDNSAPIKey:                  "",
 	PDNSSkipTLSVerify:           false,
+	PodSourceDomain:             "",
 	TLSCA:                       "",
 	TLSClientCert:               "",
 	TLSClientCertKey:            "",
@@ -442,11 +445,13 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
+	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: true)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
 	app.Flag("gateway-namespace", "Limit Gateways of Route endpoints to a specific namespace (default: all namespaces)").StringVar(&cfg.GatewayNamespace)
 	app.Flag("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)").StringVar(&cfg.GatewayLabelFilter)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	app.Flag("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressRulesSpec)
+	app.Flag("pod-source-domain", "Domain to use for pods records (optional)").Default(defaultConfig.PodSourceDomain).StringVar(&cfg.PodSourceDomain)
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
 	app.Flag("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)").BoolVar(&cfg.AlwaysPublishNotReadyAddresses)
