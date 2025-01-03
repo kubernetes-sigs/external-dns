@@ -12,6 +12,7 @@ nav:
       - Changelog: charts/external-dns/CHANGELOG.md
   - About:
       - FAQ: docs/faq.md
+      - Flags: docs/flags.md
       - Out of Incubator: docs/20190708-external-dns-incubator.md
       - Code of Conduct: code-of-conduct.md
       - License: LICENSE.md
