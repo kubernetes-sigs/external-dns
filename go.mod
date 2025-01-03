@@ -26,7 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.3
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/civo/civogo v0.3.89
+	github.com/civo/civogo v0.3.90
 	github.com/cloudflare/cloudflare-go v0.113.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
@@ -57,9 +57,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1073
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1073
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1073
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1074
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1074
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1074
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.17
