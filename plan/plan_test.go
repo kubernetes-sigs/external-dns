@@ -51,6 +51,8 @@ type PlanTestSuite struct {
 	domainFilterFiltered2            *endpoint.Endpoint
 	domainFilterFiltered3            *endpoint.Endpoint
 	domainFilterExcluded             *endpoint.Endpoint
+	migrateTXTOwnerOld               *endpoint.Endpoint
+	migrateTXTOwnerNew               *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -242,6 +244,24 @@ func (suite *PlanTestSuite) SetupTest() {
 		DNSName:    "foo.ex.domain.tld",
 		Targets:    endpoint.Targets{"1.1.1.1"},
 		RecordType: "A",
+	}
+	suite.migrateTXTOwnerOld = &endpoint.Endpoint{
+		DNSName:    "migrated.domain.tld",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
+			endpoint.OwnerLabelKey:    "owner-old",
+		},
+	}
+	suite.migrateTXTOwnerNew = &endpoint.Endpoint{
+		DNSName:    "migrated.domain.tld",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
+			endpoint.OwnerLabelKey:    "owner",
+		},
 	}
 }
 
@@ -733,6 +753,31 @@ func (suite *PlanTestSuite) TestIgnoreTargetCase() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestMigrateTXTRecord() {
+	current := []*endpoint.Endpoint{suite.migrateTXTOwnerOld}
+	desired := []*endpoint.Endpoint{suite.migrateTXTOwnerNew}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.migrateTXTOwnerOld}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.migrateTXTOwnerNew}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies:        []Policy{&SyncPolicy{}},
+		Current:         current,
+		Desired:         desired,
+		TXTOwnerMigrate: true,
+		TXTOwnerOld:     "owner-old",
+		OwnerID:         "owner",
+		ManagedRecords:  []string{endpoint.RecordTypeA},
 	}
 
 	changes := p.Calculate().Changes
