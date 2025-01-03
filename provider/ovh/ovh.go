@@ -316,6 +316,15 @@ func (p *OVHProvider) record(zone *string, id uint64, records chan<- ovhRecord) 
 
 	p.apiRateLimiter.Take()
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record/%d", *zone, id), &record); err != nil {
+		var apiError *ovh.APIError
+		if errors.As(err, &apiError) {
+			// Maybe the ID disappeared in the mean time
+			// In that situation, we don't want to fail
+			// and we can silently ignore that record
+			if apiError.Code == 404 {
+				return nil
+			}
+		}
 		return err
 	}
 	if provider.SupportedRecordType(record.FieldType) {
