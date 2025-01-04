@@ -24,6 +24,14 @@ external-dns --provider=aws --source=ingress --managed-record-types=A,TXT --txt-
 ```
 The `--txt-new-format-only` flag should be used in addition to your existing external-dns configuration flags. It does not implicitly configure TXT record handling - you still need to specify `--managed-record-types=TXT` if you want external-dns to manage TXT records.
 
+### Migration to New Format Only
+When transitioning from dual-format to new-format-only records:
+- Ensure all your `external-dns` instances support the new format
+- Enable the `--txt-new-format-only` flag on your external-dns instances
+Manually clean up any existing legacy format TXT records from your DNS provider
+
+Note: `external-dns` will not automatically remove legacy format records when switching to new-format-only mode. You'll need to clean up the old records manually if desired.
+
 ## Prefixes and Suffixes
 
 In order to avoid having the registry TXT records collide with
