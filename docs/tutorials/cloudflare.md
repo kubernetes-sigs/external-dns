@@ -58,7 +58,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 Create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
 
 ```yaml
-provider: 
+provider:
   name: cloudflare
 env:
   - name: CF_API_KEY
@@ -76,7 +76,7 @@ env:
 Use this in your values.yaml, if you are using API Token:
 
 ```yaml
-provider: 
+provider:
   name: cloudflare
 env:
   - name: CF_API_TOKEN
@@ -121,7 +121,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.15.0
+          image: registry.k8s.io/external-dns/external-dns:v0.15.1
           args:
             - --source=service # ingress is also possible
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -130,17 +130,17 @@ spec:
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
-      env:
-        - name: CF_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-api-key
-              key: apiKey
-        - name: CF_API_EMAIL
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-api-key
-              key: email
+         env:
+            - name: CF_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-api-key
+                  key: apiKey
+            - name: CF_API_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-api-key
+                  key: email
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -197,7 +197,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.15.0
+          image: registry.k8s.io/external-dns/external-dns:v0.15.1
           args:
             - --source=service # ingress is also possible
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -307,3 +307,7 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotati
 Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic. A list of available options can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
 
 If not set the value will default to `global`.
+
+## Using CRD source to manage DNS records in Cloudflare
+
+Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.

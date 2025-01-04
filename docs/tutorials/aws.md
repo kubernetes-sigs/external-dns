@@ -233,11 +233,11 @@ kubectl create secret generic external-dns \
 Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RBAC or non-RBAC.  Make sure to uncomment the section that mounts volumes, so that the credentials can be mounted.
 
 > [!TIP]
-> By default ExternalDNS takes the profile named `default` from the credentials file. If you want to use a different 
-> profile, you can set the environment variable `EXTERNAL_DNS_AWS_PROFILE` to the desired profile name or use the 
+> By default ExternalDNS takes the profile named `default` from the credentials file. If you want to use a different
+> profile, you can set the environment variable `EXTERNAL_DNS_AWS_PROFILE` to the desired profile name or use the
 > `--aws-profile` command line argument. It is even possible to use more than one profile at ones, separated by space in
-> the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case 
-> ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile 
+> the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case
+> ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
 
 ### IAM Roles for Service Accounts
@@ -442,7 +442,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.15.0
+          image: registry.k8s.io/external-dns/external-dns:v0.15.1
           args:
             - --source=service
             - --source=ingress
@@ -951,7 +951,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.15.0
+        image: registry.k8s.io/external-dns/external-dns:v0.15.1
         command:
         - /bin/sh
         - -c
@@ -987,3 +987,7 @@ There are 3 options to control batch size for AWS provider:
 
 Default values for flags `aws-batch-change-size-bytes` and `aws-batch-change-size-values` are taken from [AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests) for Route53 API. **You should not change those values until you really have to.** <br>
 Because those limits are in place, `aws-batch-change-size` can be set to any value: Even if your batch size is `4000` records, your change will be split to separate batches due to bytes/values size limits and apply request will be finished without issues.
+
+## Using CRD source to manage DNS records in AWS
+
+Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
