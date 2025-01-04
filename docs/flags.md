@@ -150,7 +150,7 @@
 | `--txt-prefix=""` | When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix! |
 | `--txt-suffix=""` | When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix! |
 | `--txt-wildcard-replacement=""` | When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional) |
-| `--txt-new-format-only` | When using the TXT registry, only create new format records with record type information (default: disabled) |
+| `--txt-new-format-only` | When using the TXT registry, only use new format records which include record type information (e.g., prefix: 'a-'). Reduces number of TXT records (default: disabled) |
 | `--[no-]txt-encrypt-enabled` | When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled) |
 | `--txt-encrypt-aes-key=""` | When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true) |
 | `--dynamodb-region=""` | When using the DynamoDB registry, the AWS region of the DynamoDB table (optional) |
