@@ -57,17 +57,17 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1074
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1074
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1074
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1075
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1075
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1075
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.17
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.33.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.25.0
 	golang.org/x/sync v0.10.0
-	golang.org/x/time v0.8.0
+	golang.org/x/time v0.9.0
 	google.golang.org/api v0.214.0
 	gopkg.in/ns1/ns1-go.v2 v2.13.0
 	gopkg.in/yaml.v2 v2.4.0
