@@ -37,4 +37,6 @@ topologySpreadConstraints:
 
 serviceAccount:
   annotations:
+    notTemplated/version: "true"
+    justValueTemplated/version: "{{ .Chart.Version }}"
     "{{ .Chart.Name }}/chart": "{{ .Chart.Version }}"
