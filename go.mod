@@ -41,7 +41,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gophercloud/gophercloud v1.14.1
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.44.0
+	github.com/linode/linodego v1.44.1
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.62
 	github.com/onsi/ginkgo v1.16.5
@@ -57,17 +57,17 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1074
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1074
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1074
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1076
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1076
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1076
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.17
 	go.uber.org/ratelimit v0.3.1
-	golang.org/x/net v0.33.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/net v0.34.0
+	golang.org/x/oauth2 v0.25.0
 	golang.org/x/sync v0.10.0
-	golang.org/x/time v0.8.0
+	golang.org/x/time v0.9.0
 	google.golang.org/api v0.214.0
 	gopkg.in/ns1/ns1-go.v2 v2.13.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -195,10 +195,10 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697 // indirect
