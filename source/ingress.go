@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 	"text/template"
@@ -54,21 +55,22 @@ const (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client                   kubernetes.Interface
-	namespace                string
-	annotationFilter         string
-	ingressClassNames        []string
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
-	ignoreHostnameAnnotation bool
-	ingressInformer          netinformers.IngressInformer
-	ignoreIngressTLSSpec     bool
-	ignoreIngressRulesSpec   bool
-	labelSelector            labels.Selector
+	client                       kubernetes.Interface
+	namespace                    string
+	annotationFilter             string
+	ingressClassNames            []string
+	fqdnTemplate                 *template.Template
+	combineFQDNAnnotation        bool
+	ignoreHostnameAnnotation     bool
+	ingressInformer              netinformers.IngressInformer
+	ignoreIngressTLSSpec         bool
+	ignoreIngressRulesSpec       bool
+	labelSelector                labels.Selector
+	resolveIngressTargetHostname bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector, ingressClassNames []string) (Source, error) {
+func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector, ingressClassNames []string, resolveIngressTargetHostname bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -110,17 +112,18 @@ func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	}
 
 	sc := &ingressSource{
-		client:                   kubeClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
-		ingressClassNames:        ingressClassNames,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-		ingressInformer:          ingressInformer,
-		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
-		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
-		labelSelector:            labelSelector,
+		client:                       kubeClient,
+		namespace:                    namespace,
+		annotationFilter:             annotationFilter,
+		ingressClassNames:            ingressClassNames,
+		fqdnTemplate:                 tmpl,
+		combineFQDNAnnotation:        combineFqdnAnnotation,
+		ignoreHostnameAnnotation:     ignoreHostnameAnnotation,
+		ingressInformer:              ingressInformer,
+		ignoreIngressTLSSpec:         ignoreIngressTLSSpec,
+		ignoreIngressRulesSpec:       ignoreIngressRulesSpec,
+		labelSelector:                labelSelector,
+		resolveIngressTargetHostname: resolveIngressTargetHostname,
 	}
 	return sc, nil
 }
@@ -153,7 +156,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec, sc.resolveIngressTargetHostname)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -194,7 +197,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
+		targets = targetsFromIngressStatus(ing.Status, sc.resolveIngressTargetHostname)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
@@ -285,7 +288,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, resolveIngressTargetHostname bool) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := getTTLFromAnnotations(ing.Annotations, resource)
@@ -293,7 +296,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 
 	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
+		targets = targetsFromIngressStatus(ing.Status, resolveIngressTargetHostname)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
@@ -347,7 +350,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	return endpoints
 }
 
-func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
+func targetsFromIngressStatus(status networkv1.IngressStatus, resolveIngressTargetHostname bool) endpoint.Targets {
 	var targets endpoint.Targets
 
 	for _, lb := range status.LoadBalancer.Ingress {
@@ -355,7 +358,18 @@ func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 			targets = append(targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			if resolveIngressTargetHostname {
+				ips, err := net.LookupIP(lb.Hostname)
+				if err != nil {
+					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
+					continue
+				}
+				for _, ip := range ips {
+					targets = append(targets, ip.String())
+				}
+			} else {
+				targets = append(targets, lb.Hostname)
+			}
 		}
 	}
 
