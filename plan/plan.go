@@ -18,6 +18,8 @@ package plan
 
 import (
 	"fmt"
+	"iter"
+	"maps"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -49,6 +51,39 @@ type Plan struct {
 	ExcludeRecords []string
 	// OwnerID of records to manage
 	OwnerID string
+}
+
+// RRName is a canonical name associated with a resource record (i.e. lower-case with trailing period)
+type RRName string
+
+// RRType is a type associated with a resource record (e.g., "A", "AAAA", "TXT", etc.)
+type RRType string
+
+// RRKey is a key for entries in maps of resource records
+type RRKey struct {
+	Name RRName
+	Type RRType
+}
+
+func newRRKey(ep *endpoint.Endpoint) RRKey {
+	return RRKey{
+		Name: RRName(normalizeDNSName(ep.DNSName)),
+		Type: RRType(ep.RecordType),
+	}
+}
+
+// RRSetChange represents changes to be applied to a single resource record set
+//
+// | Action | Create | Delete |
+// |--------+--------+--------|
+// | Create |   *    |  nil   |
+// | Delete |  nil   |   *    |
+// | Update |   *    |   *    |
+type RRSetChange struct {
+	Name   RRName
+	Type   RRType
+	Create []*endpoint.Endpoint
+	Delete []*endpoint.Endpoint
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -152,6 +187,63 @@ func (t *planTable) newPlanKey(e *endpoint.Endpoint) planKey {
 	}
 
 	return key
+}
+
+// Return an iterator of changes to resource records sets
+func (c *Changes) All() iter.Seq[*RRSetChange] {
+	return func(yield func(change *RRSetChange) bool) {
+		rrSetCreates := map[RRKey]*RRSetChange{}
+		rrSetDeletes := map[RRKey]*RRSetChange{}
+		rrSetUpdates := map[RRKey]*RRSetChange{}
+		for _, action := range []struct {
+			endpoints    *[]*endpoint.Endpoint
+			rrSetChanges *map[RRKey]*RRSetChange
+		}{
+			{endpoints: &c.UpdateNew, rrSetChanges: &rrSetUpdates},
+			{endpoints: &c.UpdateOld, rrSetChanges: &rrSetUpdates},
+			{endpoints: &c.Create, rrSetChanges: &rrSetCreates},
+			{endpoints: &c.Delete, rrSetChanges: &rrSetDeletes},
+		} {
+			for _, ep := range *action.endpoints {
+				rrKey := newRRKey(ep)
+				change, ok := rrSetUpdates[rrKey]
+				if !ok && action.rrSetChanges != &rrSetUpdates {
+					if action.rrSetChanges != &rrSetCreates {
+						change, ok = rrSetCreates[rrKey]
+						if ok {
+							delete(rrSetCreates, rrKey)
+							rrSetUpdates[rrKey] = change
+						}
+					}
+					if !ok {
+						change, ok = (*action.rrSetChanges)[rrKey]
+					}
+				}
+				if !ok {
+					change = &RRSetChange{
+						Name: rrKey.Name,
+						Type: rrKey.Type,
+					}
+					(*action.rrSetChanges)[rrKey] = change
+				}
+				switch action.endpoints {
+				case &c.Create, &c.UpdateNew:
+					change.Create = append(change.Create, ep)
+				case &c.Delete, &c.UpdateOld:
+					change.Delete = append(change.Delete, ep)
+				}
+			}
+		}
+		for _, rrSetChanges := range []*map[RRKey]*RRSetChange{
+			&rrSetDeletes, &rrSetUpdates, &rrSetCreates,
+		} {
+			for rrSetChange := range maps.Values(*rrSetChanges) {
+				if !yield(rrSetChange) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (c *Changes) HasChanges() bool {
