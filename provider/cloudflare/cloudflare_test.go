@@ -671,6 +671,26 @@ func TestCloudflareListZonesRateLimited(t *testing.T) {
 	}
 }
 
+func TestCloudflareListZoneInternalErrors(t *testing.T) {
+	// Create a mock client that returns a internal server error
+	client := NewMockCloudFlareClient()
+	client.listZonesContextError = &cloudflare.Error{
+		StatusCode: 500,
+		ErrorCodes: []int{20000},
+		Type:       cloudflare.ErrorTypeService,
+	}
+	p := &CloudFlareProvider{Client: client}
+
+	// Call the Zones function
+	_, err := p.Zones(context.Background())
+
+	// Assert that a soft error was returned
+	t.Log(err)
+	if !errors.Is(err, provider.SoftError) {
+		t.Errorf("expected a internal error")
+	}
+}
+
 func TestCloudflareRecords(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
@@ -704,6 +724,18 @@ func TestCloudflareRecords(t *testing.T) {
 	if !errors.Is(err, provider.SoftError) {
 		t.Error("expected a rate limit error")
 	}
+
+	client.listZonesContextError = &cloudflare.Error{
+		StatusCode: 500,
+		ErrorCodes: []int{10000},
+		Type:       cloudflare.ErrorTypeService,
+	}
+	_, err = p.Records(ctx)
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a internal server error")
+	}
+
 	client.listZonesContextError = errors.New("failed to list zones")
 	_, err = p.Records(ctx)
 	if err == nil {
@@ -1312,11 +1344,11 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			},
 		},
 		{
-			Name: "UpdateDataLocalizationRegionalHostname",
+			Name:   "UpdateDataLocalizationRegionalHostname",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
-				Name: "foobar.bar.com",
-				TTL: 0,
+				Name:      "foobar.bar.com",
+				TTL:       0,
 				Proxiable: false,
 			},
 		},
