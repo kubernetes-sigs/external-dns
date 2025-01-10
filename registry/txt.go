@@ -68,7 +68,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte,
 	newFormatOnly bool) (*TXTRegistry, error) {
-
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
