@@ -45,7 +45,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	for _, ep := range endpoints {
-		identifier := ep.DNSName + " / " + ep.SetIdentifier + " / " + ep.Targets.String()
+		identifier := ep.RecordType + " / " + ep.DNSName + " / " + ep.SetIdentifier + " / " + ep.Targets.String()
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
