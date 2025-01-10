@@ -149,7 +149,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 
 	for _, virtualServer := range virtualServers {
 		if !isVirtualServerReady(virtualServer) {
-			log.Infof("F5 VirtualServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+			log.Warnf("F5 VirtualServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
 				virtualServer.Namespace, virtualServer.Name)
 			continue
 		}
