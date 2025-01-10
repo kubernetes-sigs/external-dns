@@ -93,6 +93,9 @@ func main() {
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
+	if cfg.TXTOwnerMigrate {
+		log.Infof("modify the previous txt-owner (%s) to the current txt-owner (%s)", cfg.TXTOwnerOld, cfg.TXTOwnerID)
+	}
 
 	ll, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
@@ -389,7 +392,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerMigrate, cfg.TXTOwnerOld)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
@@ -414,6 +417,8 @@ func main() {
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerMigrate:      cfg.TXTOwnerMigrate,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
 	}
 
 	if cfg.Once {

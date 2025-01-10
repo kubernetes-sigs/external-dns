@@ -199,6 +199,10 @@ type Controller struct {
 	ExcludeRecordTypes []string
 	// MinEventSyncInterval is used as window for batching events
 	MinEventSyncInterval time.Duration
+	// migrate txt-owner flag
+	TXTOwnerMigrate bool
+	// old txt-owner whitch needed to modify
+	TXTOwnerOld string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -242,13 +246,15 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	registryFilter := c.Registry.GetDomainFilter()
 
 	plan := &plan.Plan{
-		Policies:       []plan.Policy{c.Policy},
-		Current:        records,
-		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter},
-		ManagedRecords: c.ManagedRecordTypes,
-		ExcludeRecords: c.ExcludeRecordTypes,
-		OwnerID:        c.Registry.OwnerID(),
+		Policies:        []plan.Policy{c.Policy},
+		Current:         records,
+		Desired:         endpoints,
+		DomainFilter:    endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter},
+		ManagedRecords:  c.ManagedRecordTypes,
+		ExcludeRecords:  c.ExcludeRecordTypes,
+		OwnerID:         c.Registry.OwnerID(),
+		TXTOwnerMigrate: c.TXTOwnerMigrate,
+		TXTOwnerOld:     c.TXTOwnerOld,
 	}
 
 	plan = plan.Calculate()
