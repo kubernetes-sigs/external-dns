@@ -26,11 +26,11 @@ wildcard domains will have invalid domain syntax and be rejected by most provide
 
 ## Encryption
 
-Registry TXT records may contain information, such as the internal ingress name or namespace, considered sensitive, , which attackers could exploit to gather information about your infrastructure. 
+Registry TXT records may contain information, such as the internal ingress name or namespace, considered sensitive, , which attackers could exploit to gather information about your infrastructure.
 By encrypting TXT records, you can protect this information from unauthorized access.
 
-Encryption is enabled by using the `--txt-encrypt-enabled` flag. The 32-byte AES-256-GCM encryption
-key must be specified in URL-safe base64 form, using the `--txt-encrypt-aes-key` flag.
+Encryption is enabled by setting the `--txt-encrypt-enabled`. The 32-byte AES-256-GCM encryption
+key must be specified in URL-safe base64 form (recommended) or be a plain text, using the `--txt-encrypt-aes-key=<key>` flag.
 
 Note that the key used for encryption should be a secure key and properly managed to ensure the security of your TXT records.
 
@@ -78,14 +78,32 @@ import (
 )
 
 func main() {
-	key := []byte("testtesttesttesttesttesttesttest")
-	encrypted, _ := endpoint.EncryptText(
-		"heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
-		key,
-		nil,
-	)
-	decrypted, _, _ := endpoint.DecryptText(encrypted, key)
-	fmt.Println(decrypted)
+	keys := []string{
+		"ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=", // safe base64 url encoded 44 bytes and 32 when decoded
+		"01234567890123456789012345678901",             // plain txt 32 bytes
+		"passphrasewhichneedstobe32bytes!",             // plain txt 32 bytes
+	}
+
+	for _, k := range keys {
+		key := []byte(k)
+		if len(key) != 32 {
+			// if key is not a plain txt let's decode
+			var err error
+			if key, err = b64.StdEncoding.DecodeString(string(key)); err != nil || len(key) != 32 {
+				fmt.Errorf("the AES Encryption key must have a length of 32 byte")
+			}
+		}
+		encrypted, _ := endpoint.EncryptText(
+			"heritage=external-dns,external-dns/owner=example,external-dns/resource=ingress/default/example",
+			key,
+			nil,
+		)
+		decrypted, _, err := endpoint.DecryptText(encrypted, key)
+		if err != nil {
+			fmt.Println("Error decrypting:", err, "for key:", k)
+		}
+		fmt.Println(decrypted)
+	}
 }
 ```
 

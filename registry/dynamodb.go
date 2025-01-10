@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
@@ -84,7 +85,10 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
-		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+		var err error
+		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
+			return nil, errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
+		}
 	}
 	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
