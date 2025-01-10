@@ -21,7 +21,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -84,13 +83,9 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpointMap := make(map[endpoint.EndpointKey][]string)
 	for _, pod := range pods {
-		if !pod.Spec.HostNetwork {
-			log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
-			continue
-		}
-
 		targets := getTargetsFromTargetAnnotation(pod.Annotations)
 
+		// accept internal hostname annotations that point to the pod's IP
 		if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
 			domainList := splitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
@@ -104,6 +99,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
+		// accept internal hostname annotations that point to the pod's IP (or IPv6 NodeInternalIP)
 		if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
 			domainList := splitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
@@ -161,6 +157,13 @@ func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, domain stri
 	}
 	if _, ok := endpointMap[key]; !ok {
 		endpointMap[key] = []string{}
+	}
+
+	// check that only unique addresses are added
+	for _, existingAddress := range endpointMap[key] {
+		if existingAddress == address {
+			return
+		}
 	}
 	endpointMap[key] = append(endpointMap[key], address)
 }
