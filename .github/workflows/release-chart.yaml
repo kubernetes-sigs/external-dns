@@ -11,7 +11,8 @@ permissions: {}
 jobs:
   release:
     permissions:
-      contents: write #  to push chart release and create a release (helm/chart-releaser-action)
+      contents: write # to push chart release and create a release (helm/chart-releaser-action)
+      packages: write # needed for ghcr access
 
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
@@ -63,3 +64,22 @@ jobs:
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
           CR_RELEASE_NOTES_FILE: RELEASE.md
           CR_MAKE_RELEASE_LATEST: false
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push charts to GHCR
+        run: |
+          lowercase=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          shopt -s nullglob
+          for pkg in .cr-release-packages/*; do
+            if [ -z "${pkg:-}" ]; then
+              break
+            fi
+            echo "Pushing package - ${pkg} to ghcr.io repository - ${lowercase}"
+            helm push "${pkg}" "oci://ghcr.io/${lowercase}/charts"
+          done
