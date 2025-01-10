@@ -106,6 +106,9 @@ spec:
             {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
+            {{- if .Values.txtNewFormatOnly}}
+            - --txt-new-format-only
+            {{- end }}
             {{- if .Values.namespaced }}
             - --namespace={{ .Release.Namespace }}
             {{- end }}

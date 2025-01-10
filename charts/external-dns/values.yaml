@@ -222,6 +222,11 @@ txtPrefix:
 # -- (string) Specify a suffix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtPrefix`.
 txtSuffix:
+# -- (boolean) When true, creates TXT records only in the new format that includes record type information (e.g. "a-" prefix for A records).
+# This reduces the number of DNS records created, helping with provider-specific record limits.
+# Note: All ExternalDNS instances must support the new format before enabling this option.
+# Default: false (maintains backwards compatibility by creating both old and new format records)
+txtNewFormatOnly: false
 
 # -- Limit possible target zones by domain suffixes.
 domainFilters: []
