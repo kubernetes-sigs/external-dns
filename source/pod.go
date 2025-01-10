@@ -112,7 +112,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					for _, address := range node.Status.Addresses {
 						recordType := suitableType(address.Address)
 						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+						if address.Type == corev1.NodeExternalIP {
 							addToEndpointMap(endpointMap, domain, recordType, address.Address)
 						}
 					}
@@ -139,7 +139,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					for _, address := range node.Status.Addresses {
 						recordType := suitableType(address.Address)
 						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+						if address.Type == corev1.NodeExternalIP {
 							addToEndpointMap(endpointMap, domain, recordType, address.Address)
 						}
 					}
