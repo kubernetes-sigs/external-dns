@@ -221,8 +221,10 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 }
 
 func isVirtualServerReady(vs *f5.VirtualServer) bool {
-	normalizedStatus := strings.ToLower(vs.Status.Status)
-	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
+	if strings.ToLower(vs.Status.Status) != "ok" {
+		return false
+	}
 
-	return normalizedStatus == "ok" && (normalizedAddress != "none" && normalizedAddress != "")
+	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
+	return normalizedAddress != "none" && normalizedAddress != ""
 }
