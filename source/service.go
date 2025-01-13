@@ -227,12 +227,14 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
 				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
 				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
-			} else if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
+			} else {
+				mergedEndpoints = append(mergedEndpoints, endpoints[i])
+			}
+
+			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
 				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
 				mergedEndpoints[lastMergedEndpoint].RecordType == endpoint.RecordTypeCNAME {
 				log.Debugf("CNAME %s with multiple targets found", endpoints[i].DNSName)
-			} else {
-				mergedEndpoints = append(mergedEndpoints, endpoints[i])
 			}
 		}
 		endpoints = mergedEndpoints
