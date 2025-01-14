@@ -78,7 +78,7 @@ Known providers using webhooks:
 |-----------------------|----------------------------------------------------------------------|
 | Abion                 | https://github.com/abiondevelopment/external-dns-webhook-abion       |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
-| Anexia                | https://github.com/ProbstenHias/external-dns-anexia-webhook          |
+| Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
