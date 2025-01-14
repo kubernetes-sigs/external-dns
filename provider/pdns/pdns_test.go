@@ -161,6 +161,24 @@ var (
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
 	}
 
+	endpointsMXRecord = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com"),
+	}
+
+	endpointsMXRecordInvalidFormatTooManyArgs = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com abc"),
+	}
+
+	endpointsMultipleMXRecordsWithSingleInvalid = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "abc example.com"),
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "20 backup.example.com"),
+	}
+
+	endpointsMultipleInvalidMXRecords = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "example.com"),
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "backup.example.com"),
+	}
+
 	endpointsMixedRecords = []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
@@ -1114,6 +1132,51 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 	filteredZones, residualZones = RegexDomainFilterClient.PartitionZones(zoneList)
 	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
 	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
+}
+
+// Validate whether invalid endpoints are removed by AdjustEndpoints
+func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
+	// Function definition: AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
+
+	// Create a new provider to run tests against
+	p := &PDNSProvider{}
+
+	tests := []struct {
+		description string
+		endpoints   []*endpoint.Endpoint
+		expected    []*endpoint.Endpoint
+	}{
+		{
+			description: "Valid MX endpoint is not removed",
+			endpoints:   endpointsMXRecord,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com"),
+			},
+		},
+		{
+			description: "Invalid MX endpoint with too many arguments is removed",
+			endpoints:   endpointsMXRecordInvalidFormatTooManyArgs,
+			expected:    []*endpoint.Endpoint([]*endpoint.Endpoint(nil)),
+		},
+		{
+			description: "Invalid MX endpoint is removed among valid endpoints",
+			endpoints:   endpointsMultipleMXRecordsWithSingleInvalid,
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "20 backup.example.com"),
+			},
+		},
+		{
+			description: "Multiple invalid MX endpoints are removed",
+			endpoints:   endpointsMultipleInvalidMXRecords,
+			expected:    []*endpoint.Endpoint([]*endpoint.Endpoint(nil)),
+		},
+	}
+
+	for _, tt := range tests {
+		actual, err := p.AdjustEndpoints(tt.endpoints)
+		assert.Nil(suite.T(), err)
+		assert.Equal(suite.T(), tt.expected, actual)
+	}
 }
 
 func TestNewPDNSProviderTestSuite(t *testing.T) {
