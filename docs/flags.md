@@ -24,11 +24,13 @@
 | `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
 | `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting |
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
+| `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
 | `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
 | `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
+| `--pod-source-domain=""` | Domain to use for pods records (optional) |
 | `--[no-]publish-internal-services` | Allow external-dns to publish DNS records for ClusterIP services (optional) |
 | `--[no-]publish-host-ip` | Allow external-dns to publish host-ip for headless services (optional) |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
