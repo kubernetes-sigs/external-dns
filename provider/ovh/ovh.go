@@ -151,6 +151,8 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (
 
 		eg, _ := errgroup.WithContext(ctx)
 		for zone := range zonesChangeUniques {
+			// This is necessary because the loop variable zone is reused in each iteration of the loop,
+			// and without this line, the goroutines launched by eg.Go would all reference the same zone variable.
 			zone := zone
 			eg.Go(func() error { return p.refresh(zone) })
 		}
