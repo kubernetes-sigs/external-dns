@@ -230,10 +230,16 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	resp, err := c.Client.Do(req)
 	// In case of several clients behind NAT we still can hit rate limit
 	for i := 1; i < 3 && err == nil && resp.StatusCode == 429; i++ {
-		retryAfter, _ := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
+		var retryAfterSec int64 = 30
 
-		jitter := rand.Int63n(retryAfter)
-		retryAfterSec := retryAfter + jitter/2
+		receivedValue := resp.Header.Get("Retry-After")
+		if receivedValue != "" {
+			retryAfter, _ := strconv.ParseInt(receivedValue, 10, 0)
+			if retryAfter > 0 {
+				jitter := rand.Int63n(retryAfter)
+				retryAfterSec = retryAfter + jitter/2
+			}
+		}
 
 		sleepTime := time.Duration(retryAfterSec) * time.Second
 		time.Sleep(sleepTime)
