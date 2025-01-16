@@ -31,7 +31,7 @@ serviceAccount:
   create: true
   # -- Labels to add to the service account.
   labels: {}
-  # -- Annotations to add to the service account.
+  # -- Annotations to add to the service account. Templates are allowed in both the key and the value. Example: `example.com/annotation/{{ .Values.nameOverride }}: {{ .Values.nameOverride }}`
   annotations: {}
   # -- (string) If this is set and `serviceAccount.create` is `true` this will be used for the created `ServiceAccount` name, if set and `serviceAccount.create` is `false` then this will define an existing `ServiceAccount` to use.
   name:

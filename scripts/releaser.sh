@@ -17,7 +17,7 @@ function generate_changelog {
     while read -r sha title; do
       pr_num="$(grep -o '#[[:digit:]]\+' <<<"$title")"
       pr_desc="$(git show -s --format=%b "$sha" | sed -n '1,/^$/p' | tr $'\n' ' ')"
-      pr_author="$(gh pr view "$pr_num" | grep author | awk '{ print $2 }' | tr $'\n' ' ')"
+      pr_author="$(gh pr view "$pr_num" | grep "author:" | awk '{ print $2 }' | tr $'\n' ' ')"
       printf "* %s (%s) @%s\n\n" "$pr_desc" "$pr_num" "$pr_author"
     done
 
@@ -25,13 +25,13 @@ function generate_changelog {
     while read -r sha title; do
       pr_num="$(grep -o '#[[:digit:]]\+' <<<"$title")"
       pr_desc="$(git show -s --format=%s "$sha")"
-      pr_author="$(gh pr view "$pr_num" | grep author | awk '{ print $2 }' | tr $'\n' ' ')"
+      pr_author="$(gh pr view "$pr_num" | grep "author:" | awk '{ print $2 }' | tr $'\n' ' ')"
       printf "* %s (%s) @%s\n\n" "$pr_desc" "$pr_num" "$pr_author"
     done
 }
 
 function create_release {
-  generate_changelog | gh release create "$1" -t "$1" -F -
+  generate_changelog | sort | gh release create "$1" -t "$1" -F -
 }
 
 if [ $# -ne 1 ]; then
