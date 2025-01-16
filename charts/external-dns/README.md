@@ -176,7 +176,6 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | tolerations | list | `[]` | Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
 | topologySpreadConstraints | list | `[]` | Topology spread constraints for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided one will be created from the pod selector labels. |
 | triggerLoopOnEvent | bool | `false` | If `true`, triggers run loop on create/update/delete events in addition of regular interval. |
-| txtNewFormatOnly | boolean | `false` | When true, creates TXT records only in the new format that includes record type information (e.g. "a-" prefix for A records). This reduces the number of DNS records created, helping with provider-specific record limits. Note: All ExternalDNS instances must support the new format before enabling this option. Default: false (maintains backwards compatibility by creating both old and new format records) |
 | txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
