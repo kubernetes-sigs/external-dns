@@ -22,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Ability to configure `imagePullSecrets` via helm `global` value ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
 - Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
-- Added `txtNewFormatOnly` value to configure creation of TXT records in new format only ([#4946](https://github.com/kubernetes-sigs/external-dns/pull/4946)) _@malpou_
 
 ### Fixed
 
