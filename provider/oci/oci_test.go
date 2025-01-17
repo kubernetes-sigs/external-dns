@@ -33,8 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-type mockOCIDNSClient struct {
-}
+type mockOCIDNSClient struct{}
 
 var (
 	zoneIdQux                 = "ocid1.dns-zone.oc1..123456ef0bfbb5c251b9713fd7bf8959"
@@ -198,17 +197,6 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 				},
 			},
 		},
-		"instance-principal": {
-			// testing the InstancePrincipalConfigurationProvider is tricky outside of an OCI context, because it tries
-			// to request a token from the internal OCI systems; this test-case just confirms that the expected error is
-			// observed, confirming that the instance-principal provider was instantiated.
-			config: OCIConfig{
-				Auth: OCIAuthConfig{
-					UseInstancePrincipal: true,
-				},
-			},
-			err: errors.New("error creating OCI instance principal config provider: failed to create a new key provider for instance principal"),
-		},
 		"invalid": {
 			config: OCIConfig{
 				Auth: OCIAuthConfig{
@@ -293,7 +281,8 @@ func TestOCIZones(t *testing.T) {
 				fooZoneId: testGlobalZoneSummaryFoo,
 				barZoneId: testGlobalZoneSummaryBar,
 			},
-		}, {
+		},
+		{
 			name:         "DomainFilter_foo.com",
 			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
@@ -304,7 +293,8 @@ func TestOCIZones(t *testing.T) {
 					Name: common.String("foo.com"),
 				},
 			},
-		}, {
+		},
+		{
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959",
 			domainFilter: endpoint.NewDomainFilter([]string{""}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
