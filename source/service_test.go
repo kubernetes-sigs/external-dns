@@ -411,8 +411,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			serviceTypesFilter:          []string{},
 			resolveLoadBalancerHostname: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{exampleDotComIP4[0].String()}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{exampleDotComIP6[0].String()}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargetsFromAddr(exampleDotComIP4)},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.NewTargetsFromAddr(exampleDotComIP6)},
 			},
 		},
 		{

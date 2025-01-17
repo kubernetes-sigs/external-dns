@@ -321,7 +321,7 @@ var domainFilterTests = []domainFilterTest{
 
 var regexDomainFilterTests = []regexDomainFilterTest{
 	{
-		regexp.MustCompile("\\.org$"),
+		regexp.MustCompile(`\.org$`),
 		regexp.MustCompile(""),
 		[]string{"foo.org", "bar.org", "foo.bar.org"},
 		true,
@@ -330,7 +330,7 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("\\.bar\\.org$"),
+		regexp.MustCompile(`\.bar\.org$`),
 		regexp.MustCompile(""),
 		[]string{"foo.org", "bar.org", "example.com"},
 		false,
@@ -339,7 +339,7 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
 		regexp.MustCompile(""),
 		[]string{"foo.org", "bar.org", "example.foo.org", "example.bar.org", "a.example.foo.org", "a.example.bar.org"},
 		true,
@@ -348,18 +348,18 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
-		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
+		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
 		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
 		true,
 		map[string]string{
-			"regexInclude": "(?:foo|bar)\\.org$",
-			"regexExclude": "^example\\.(?:foo|bar)\\.org$",
+			"regexInclude": `(?:foo|bar)\.org$`,
+			"regexExclude": `^example\.(?:foo|bar)\.org$`,
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
-		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
+		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
 		[]string{"example.foo.org", "example.bar.org"},
 		false,
 		map[string]string{
@@ -368,8 +368,8 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
-		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
+		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
 		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
 		true,
 		map[string]string{
