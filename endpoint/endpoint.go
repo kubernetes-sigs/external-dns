@@ -66,14 +66,6 @@ func NewTargets(target ...string) Targets {
 	return t
 }
 
-func NewTargetsFromAddr(targets []netip.Addr) Targets {
-	t := make(Targets, 0, len(targets))
-	for _, target := range targets {
-		t = append(t, target.String())
-	}
-	return t
-}
-
 func (t Targets) String() string {
 	return strings.Join(t, ";")
 }
