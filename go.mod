@@ -1,6 +1,6 @@
 module sigs.k8s.io/external-dns
 
-go 1.23.3
+go 1.23.5
 
 require (
 	cloud.google.com/go/compute/metadata v0.6.0
