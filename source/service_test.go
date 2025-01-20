@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 type ServiceSuite struct {
@@ -411,8 +412,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			serviceTypesFilter:          []string{},
 			resolveLoadBalancerHostname: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{exampleDotComIP4[0].String()}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{exampleDotComIP6[0].String()}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP4)},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP6)},
 			},
 		},
 		{

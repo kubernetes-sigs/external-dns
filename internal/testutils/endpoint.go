@@ -17,6 +17,7 @@ limitations under the License.
 package testutils
 
 import (
+	"net/netip"
 	"reflect"
 	"sort"
 
@@ -121,4 +122,13 @@ func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
 	sort.Sort(byNames(sa))
 	sort.Sort(byNames(sb))
 	return reflect.DeepEqual(sa, sb)
+}
+
+// NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)
+func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
+	t := make(endpoint.Targets, len(targets))
+	for i, target := range targets {
+		t[i] = target.String()
+	}
+	return t
 }
