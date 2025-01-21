@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -141,6 +142,12 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 	var endpoints []*endpoint.Endpoint
 
 	for _, transportServer := range transportServers {
+		if !isTransportServerReady(transportServer) {
+			log.Warnf("F5 TransportServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+				transportServer.Namespace, transportServer.Name)
+			continue
+		}
+
 		resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
 
 		ttl := getTTLFromAnnotations(transportServer.Annotations, resource)
@@ -204,4 +211,13 @@ func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.Tr
 	}
 
 	return filteredList, nil
+}
+
+func isTransportServerReady(vs *f5.TransportServer) bool {
+	if strings.ToLower(vs.Status.Status) != "ok" {
+		return false
+	}
+
+	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
+	return normalizedAddress != "none" && normalizedAddress != ""
 }

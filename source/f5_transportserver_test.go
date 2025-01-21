@@ -65,6 +65,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				},
 				Status: f5.TransportServerStatus{
 					VSAddress: "192.168.1.200",
+					Status:    "OK",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -97,6 +98,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				},
 				Status: f5.TransportServerStatus{
 					VSAddress: "192.168.1.200",
+					Status:    "OK",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -128,6 +130,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				},
 				Status: f5.TransportServerStatus{
 					VSAddress: "192.168.1.100",
+					Status:    "OK",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -182,6 +185,10 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
+				Status: f5.TransportServerStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -214,6 +221,10 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
+				Status: f5.TransportServerStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
 			},
 			expected: nil,
 		},
@@ -235,6 +246,10 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
+				Status: f5.TransportServerStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -247,6 +262,57 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "F5 TransportServer with error status",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-ts",
+					Namespace: defaultF5TransportServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/ttl": "600",
+					},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.TransportServerStatus{
+					VSAddress: "",
+					Status:    "ERROR",
+					Error:     "Some error status message",
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "F5 TransportServer with missing IP address and OK status",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-ts",
+					Namespace: defaultF5TransportServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/ttl": "600",
+					},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:      "www.example.com",
+					IPAMLabel: "test",
+				},
+				Status: f5.TransportServerStatus{
+					VSAddress: "None",
+					Status:    "OK",
+				},
+			},
+			expected: nil,
 		},
 	}
 
