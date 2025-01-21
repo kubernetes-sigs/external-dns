@@ -45,7 +45,7 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		if pPrefix.Bits() != 96 {
-			return nil, fmt.Errorf("NAT64 prefixes need to be /96 prefixes.")
+			return nil, fmt.Errorf("NAT64 prefixes need to be /96 prefixes")
 		}
 		parsedNAT64Prefixes = append(parsedNAT64Prefixes, pPrefix)
 	}
@@ -88,7 +88,7 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 			v4Addr, isOk := netip.AddrFromSlice(v4AddrBytes)
 			if !isOk {
-				return nil, fmt.Errorf("Could not parse %v to IPv4 address", v4AddrBytes)
+				return nil, fmt.Errorf("could not parse %v to IPv4 address", v4AddrBytes)
 			}
 
 			v4Targets = append(v4Targets, v4Addr.String())

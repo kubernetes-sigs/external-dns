@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 type ServiceSuite struct {
@@ -411,8 +412,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			serviceTypesFilter:          []string{},
 			resolveLoadBalancerHostname: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{exampleDotComIP4[0].String()}},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{exampleDotComIP6[0].String()}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP4)},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP6)},
 			},
 		},
 		{
@@ -1260,13 +1261,37 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			map[string]string{},
 			"",
 			map[string]map[string]string{
-				"a.elb.com": {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "a"},
-				"b.elb.com": {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "b"},
+				"1.2.3.5":  {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "a"},
+				"10.1.1.3": {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "b"},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"a.elb.com"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/fooa.elb.com"}, SetIdentifier: "a"},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"b.elb.com"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foob.elb.com"}, SetIdentifier: "b"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.5"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foo1.2.3.5"}, SetIdentifier: "a"},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.1.1.3"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foo10.1.1.3"}, SetIdentifier: "b"},
+			},
+			false,
+		},
+		{
+			"test that services with CNAME types do not get merged together",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			false,
+			map[string]string{},
+			"",
+			map[string]map[string]string{
+				"a.elb.com": {hostnameAnnotationKey: "foo.example.org"},
+				"b.elb.com": {hostnameAnnotationKey: "foo.example.org"},
+			},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"a.elb.com"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/fooa.elb.com"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"b.elb.com"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foob.elb.com"}},
 			},
 			false,
 		},

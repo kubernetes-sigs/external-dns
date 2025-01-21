@@ -400,6 +400,17 @@ func allLogLevelsAsStrings() []string {
 
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags(args []string) error {
+	app := App(cfg)
+
+	_, err := app.Parse(args)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func App(cfg *Config) *kingpin.Application {
 	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.\n\nNote that all flags may be replaced with env vars - `--flag` -> `EXTERNAL_DNS_FLAG=1` or `--flag value` -> `EXTERNAL_DNS_FLAG=value`")
 	app.Version(Version)
 	app.DefaultEnvars()
@@ -603,10 +614,5 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	app.Flag("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).").BoolVar(&cfg.WebhookServer)
 
-	_, err := app.Parse(args)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return app
 }

@@ -80,11 +80,12 @@ Known providers using webhooks:
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
 | Anexia                | https://github.com/ProbstenHias/external-dns-anexia-webhook          |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
+| Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
 | GleSYS                | https://github.com/glesys/external-dns-glesys                        |
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
-| Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook |
+| Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |

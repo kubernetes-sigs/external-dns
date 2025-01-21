@@ -65,6 +65,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 				Status: f5.VirtualServerStatus{
 					VSAddress: "192.168.1.200",
+					Status:    "OK",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -97,6 +98,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 				Status: f5.VirtualServerStatus{
 					VSAddress: "192.168.1.200",
+					Status:    "OK",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -128,6 +130,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 				Status: f5.VirtualServerStatus{
 					VSAddress: "192.168.1.100",
+					Status:    "OK",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -182,6 +185,10 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
+				Status: f5.VirtualServerStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -214,6 +221,10 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
+				Status: f5.VirtualServerStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
 			},
 			expected: nil,
 		},
@@ -235,6 +246,10 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
+				Status: f5.VirtualServerStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -247,6 +262,57 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "F5 VirtualServer with error status",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/ttl": "600",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.VirtualServerStatus{
+					VSAddress: "",
+					Status:    "ERROR",
+					Error:     "Some error status message",
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "F5 VirtualServer with missing IP address and OK status",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/ttl": "600",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:      "www.example.com",
+					IPAMLabel: "test",
+				},
+				Status: f5.VirtualServerStatus{
+					VSAddress: "None",
+					Status:    "OK",
+				},
+			},
+			expected: nil,
 		},
 	}
 

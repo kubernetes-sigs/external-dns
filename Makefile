@@ -41,7 +41,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
 golangci-lint:
-	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.60.3
+	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.63.4
 
 # Run the golangci-lint tool
 .PHONY: go-lint
@@ -160,3 +160,8 @@ release.prod: test
 .PHONY: ko
 ko:
 	scripts/install-ko.sh
+
+# generate-flags-documentation: Generate documentation (docs/flags.md)
+.PHONE: generate-flags-documentation
+generate-flags-documentation:
+	go run internal/gen/docs/flags/main.go
