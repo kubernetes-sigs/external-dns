@@ -131,6 +131,11 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 				Resource: "virtualservers",
 			}: "VirtualServersList",
 			{
+				Group:    "cis.f5.com",
+				Version:  "v1",
+				Resource: "transportservers",
+			}: "TransportServersList",
+			{
 				Group:    "traefik.containo.us",
 				Version:  "v1alpha1",
 				Resource: "ingressroutes",
@@ -162,9 +167,9 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 			}: "IngressRouteUDPList",
 		}), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, &Config{})
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy", "fake"}, &Config{})
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 8, "should generate all eight sources")
+	suite.Len(sources, 9, "should generate all nine sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
