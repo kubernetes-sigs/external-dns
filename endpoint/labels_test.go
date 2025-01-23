@@ -17,9 +17,12 @@ limitations under the License.
 package endpoint
 
 import (
+	"bytes"
+	"crypto/rand"
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -77,6 +80,60 @@ func (suite *LabelsSuite) TestEncryptionNonceReUsage() {
 	suite.NoError(err, "should succeed for valid label text")
 	serialized := foo.Serialize(false, true, suite.aesKey)
 	suite.Equal(serialized, suite.fooAsTextEncrypted, "serialized result should be equal")
+}
+
+func (suite *LabelsSuite) TestEncryptionKeyChanged() {
+	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
+	suite.NoError(err, "should succeed for valid label text")
+
+	serialised := foo.Serialize(false, true, []byte("passphrasewhichneedstobe32bytes!"))
+	suite.NotEqual(serialised, suite.fooAsTextEncrypted, "serialized result should be equal")
+}
+
+func (suite *LabelsSuite) TestEncryptionFailed() {
+	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
+	suite.NoError(err, "should succeed for valid label text")
+
+	defer func() { log.StandardLogger().ExitFunc = nil }()
+
+	b := new(bytes.Buffer)
+
+	var fatalCrash bool
+	log.StandardLogger().ExitFunc = func(int) { fatalCrash = true }
+	log.StandardLogger().SetOutput(b)
+
+	_ = foo.Serialize(false, true, []byte("wrong-key"))
+
+	suite.True(fatalCrash, "should fail if encryption key is wrong")
+	suite.Contains(b.String(), "Failed to encrypt the text")
+}
+
+func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {
+	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
+	suite.NoError(err, "should succeed for valid label text")
+
+	// remove encryption nonce just for simplicity, so that we could regenerate nonce
+	delete(foo, txtEncryptionNonce)
+
+	originalRandReader := rand.Reader
+	defer func() {
+		log.StandardLogger().ExitFunc = nil
+		rand.Reader = originalRandReader
+	}()
+
+	// Replace rand.Reader with a faulty reader
+	rand.Reader = &faultyReader{}
+
+	b := new(bytes.Buffer)
+
+	var fatalCrash bool
+	log.StandardLogger().ExitFunc = func(int) { fatalCrash = true }
+	log.StandardLogger().SetOutput(b)
+
+	_ = foo.Serialize(false, true, suite.aesKey)
+
+	suite.True(fatalCrash)
+	suite.Contains(b.String(), "Failed to generate cryptographic nonce")
 }
 
 func (suite *LabelsSuite) TestDeserialize() {
