@@ -122,7 +122,7 @@
 | `--exoscale-apizone="ch-gva-2"` | When using Exoscale provider, specify the API Zone (optional) |
 | `--exoscale-apikey=""` | Provide your API Key for the Exoscale provider |
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
-| `--rfc2136-host=""` | When using the RFC2136 provider, specify the host of the DNS server |
+| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
 | `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entries of the DNS server to use |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |
@@ -139,6 +139,7 @@
 | `--rfc2136-batch-change-size=50` | When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch. |
 | `--[no-]rfc2136-use-tls` | When using the RFC2136 provider, communicate with name server over tls |
 | `--[no-]rfc2136-skip-tls-verify` | When using TLS with the RFC2136 provider, disable verification of any TLS certificates |
+| `--rfc2136-load-balancing-strategy=disabled` | When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled) |
 | `--transip-account=""` | When using the TransIP provider, specify the account name (required when --provider=transip) |
 | `--transip-keyfile=""` | When using the TransIP provider, specify the path to the private key file (required when --provider=transip) |
 | `--pihole-server=""` | When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole) |
