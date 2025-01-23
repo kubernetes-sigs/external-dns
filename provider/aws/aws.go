@@ -945,7 +945,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile st
 
 	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
 		ResourceType: route53types.TagResourceTypeHostedzone,
-		ResourceId:   aws.String(zoneID),
+		ResourceId:   aws.String(cleanZoneID(zoneID)),
 	})
 	if err != nil {
 		return nil, provider.NewSoftError(fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err))
