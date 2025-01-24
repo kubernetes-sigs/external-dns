@@ -1161,8 +1161,10 @@ func isAWSAlias(ep *endpoint.Endpoint) string {
 
 // canonicalHostedZone returns the matching canonical zone for a given hostname.
 func canonicalHostedZone(hostname string) string {
-	for suffix, zone := range canonicalHostedZones {
-		if strings.HasSuffix(hostname, suffix) {
+	parts := strings.Split(hostname, ".")
+	for i := 0; i < len(parts); i++ {
+		suffix := strings.Join(parts[i:], ".")
+		if zone, exists := canonicalHostedZones[suffix]; exists {
 			return zone
 		}
 	}

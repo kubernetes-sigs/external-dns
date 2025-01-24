@@ -1882,6 +1882,14 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 	assert.Equal(t, "", zone, "no canonical zone should be returned for a non-aws hostname")
 }
 
+func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for suffix, _ := range canonicalHostedZones {
+			_ = canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
+		}
+	}
+}
+
 func TestAWSSuitableZones(t *testing.T) {
 	zones := map[string]*profiledZone{
 		// Public domain
