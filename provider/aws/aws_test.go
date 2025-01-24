@@ -17,6 +17,7 @@ limitations under the License.
 package aws
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math"
@@ -29,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -1880,6 +1882,14 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 
 	zone := canonicalHostedZone("foo.example.org")
 	assert.Equal(t, "", zone, "no canonical zone should be returned for a non-aws hostname")
+}
+
+func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	host := "foo.elb.eastwest-1.amazonaws.com"
+	_ = canonicalHostedZone(host)
+	assert.Containsf(t, buf.String(), "Could not find canonical hosted zone for domain", host)
 }
 
 func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
