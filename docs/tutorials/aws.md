@@ -378,7 +378,7 @@ This should yield something similar this:
 
 ```
 ns-695.awsdns-22.net.
-ns-1313.awsdns-36.org.
+ns-1313.awsdns-36.com.
 ns-350.awsdns-43.com.
 ns-1805.awsdns-33.co.uk.
 ```
@@ -667,7 +667,7 @@ For more information about ALIAS record, see [Choosing between alias and non-ali
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
 ```bash
-dig +short @ns-5514.awsdns-53.org. nginx.example.com.
+dig +short @ns-5514.awsdns-53.com. nginx.example.com.
 ```
 
 This should return 1+ IP addresses that correspond to the ELB FQDN, i.e. `ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.`.
@@ -762,7 +762,7 @@ aws route53 list-resource-record-sets --output json --hosted-zone-id $ZONE_ID \
   --query "ResourceRecordSets[?Name == 'server.example.com.']"
 
 # query using a route53 name server
-dig +short @ns-5514.awsdns-53.org. server.example.com.
+dig +short @ns-5514.awsdns-53.com. server.example.com.
 # query using the default name server
 dig +short server.example.com.
 
@@ -928,7 +928,7 @@ Running several fast polling ExternalDNS instances in a given account can easily
   * `--ingress-class=nginx-external`
 * Limit services watched by type (not applicable to ingress or other types)
   * `--service-type-filter=LoadBalancer` default `all`
-* Limit the hosted zones considered
+  * Limit the hosted zones considered
   * `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
   * `--domain-filter=example.com` by domain suffix - specify multiple times if needed
   * `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
@@ -991,3 +991,86 @@ Because those limits are in place, `aws-batch-change-size` can be set to any val
 ## Using CRD source to manage DNS records in AWS
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
+
+## Strategies for Scoping Zones
+
+In order to achieve the required results, you may need to combine multiple options
+
+* Following flags supported to limit zones
+  * `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
+  * `--domain-filter=example.com` by domain suffix - specify multiple times if needed
+  * `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
+  * `--exclude-domains=ignore.this.example.com` to exclude a domain or subdomain
+  * `--regex-domain-exclusion=ignore*` subtracts it's matches from `regex-domain-filter`'s matches
+  * `--aws-zone-type=public` only sync zones of this type `[public|private]`
+  * `--aws-zone-tags=owner=k8s` only sync zones with this tag
+
+Minimum required configuration
+
+```sh
+args:
+    --provider=aws
+    --registry=txt
+    --source=service
+```
+
+### Filter by Zone Type
+
+```sh
+args:
+    --aws-zone-type=private|public # choose between public or private
+    ...
+```
+
+### Filter by Domain
+
+```sh
+args:
+    --domain-filter=example.com
+    --domain-filter=.paradox.example.com
+```
+
+Example `--domain-filter=example.com` will allow for zone `example.com` and any zones that end in `.example.com`, including `an.example.com`, i.e., the subdomains of example.com.
+
+When there are multiple domains, filter `--domain-filter=example.com` will match domains `example.com`, `ex.par.example.com`, `par.example.com`, `x.par.eu-west-1.example.com`.
+
+And if the filter is prepended with `.` e.g., `--domain-filter=.example.com` it will allow *only* zones that end in `.example.com`, i.e., the subdomains of example.com but not the `example.com` zone itself. Example result: `ex.par.eu-west-1.example.com`, `ex.par.example.com`, `par.example.com`.
+
+> Note: if you prepend the filter with ".", it will not attempt to match parent zones.
+
+### Filter by Zone ID
+
+The filters could be specified multiple times, the flow logic is OR
+
+```sh
+args:
+    --zone-id-filter=ABCDEF12345678
+    --zone-id-filter=XYZDEF12345888
+```
+
+### Filter by Tag
+
+The filters could be specified multiple times, the flow logic is AND
+
+Specify on keys
+
+```sh
+args:
+    --aws-zone-tags=owner
+    --aws-zone-tags=vertical
+```
+
+Or specify keys with values
+
+```sh
+args:
+    --aws-zone-tags=owner=k8s
+    --aws-zone-tags=vertical=k8s
+```
+
+Can't specify multiple or separate values with commas: `key1=val1,key2=val2` at the moment.
+
+```sh
+args:
+    --aws-zone-tags=team=k8s,vertical=platform
+```
