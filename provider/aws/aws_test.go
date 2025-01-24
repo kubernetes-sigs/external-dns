@@ -1875,7 +1875,7 @@ func TestAWSisAWSAlias(t *testing.T) {
 func TestAWSCanonicalHostedZone(t *testing.T) {
 	for suffix, id := range canonicalHostedZones {
 		zone := canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
-		assert.Equal(t, id, zone)
+		assert.Equal(t, id, zone, "zone suffix: %s", suffix)
 	}
 
 	zone := canonicalHostedZone("foo.example.org")
@@ -1886,6 +1886,14 @@ func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for suffix, _ := range canonicalHostedZones {
 			_ = canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
+		}
+	}
+}
+
+func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, _ = range canonicalHostedZones {
+			_ = canonicalHostedZone("extremely.long.zone-2.ext.dns.test.zone.non.canonical.example.com")
 		}
 	}
 }
