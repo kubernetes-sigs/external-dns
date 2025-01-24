@@ -1985,7 +1985,6 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 
 	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
-
 	err = provider.submitChanges(ctx, changes, zones)
 	require.NoError(t, err)
 
