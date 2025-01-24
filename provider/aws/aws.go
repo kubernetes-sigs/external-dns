@@ -1164,6 +1164,7 @@ func canonicalHostedZone(hostname string) string {
 	// strings.HasSuffix is optimized for this specific task and avoids the overhead associated with compiling and executing a regular expression.
 	if strings.HasSuffix(hostname, "aws.com") || strings.HasSuffix(hostname, "aws.com.cn") || strings.HasSuffix(hostname, "tor.com") || strings.HasSuffix(hostname, "ont.com") || strings.HasSuffix(hostname, "ont.net") {
 		parts := strings.Split(hostname, ".")
+		// iterate from the second-last part (zone) towards the beginning
 		for i := len(parts) - 2; i >= 0; i-- {
 			suffix := strings.Join(parts[i:], ".")
 			if zone, exists := canonicalHostedZones[suffix]; exists {
