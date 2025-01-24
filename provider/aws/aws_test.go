@@ -334,11 +334,9 @@ func TestAWSZones(t *testing.T) {
 		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
-			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil, true)
-
+			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
 			zones, err := provider.Zones(context.Background())
 			require.NoError(t, err)
-
 			validateAWSZones(t, zones, ti.expectedZones)
 		})
 	}
@@ -346,7 +344,6 @@ func TestAWSZones(t *testing.T) {
 
 func TestAWSZonesWithTagFilterError(t *testing.T) {
 	client := NewRoute53APIStub(t)
-
 	provider := &AWSProvider{
 		clients:       map[string]Route53API{defaultAWSProfile: client},
 		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
@@ -2007,10 +2004,10 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types
 }
 
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
-	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records, true)
+	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }
 
-func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet, validateErrors bool) (*AWSProvider, *Route53APIStub) {
+func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
