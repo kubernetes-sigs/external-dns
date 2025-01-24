@@ -928,7 +928,7 @@ Running several fast polling ExternalDNS instances in a given account can easily
   * `--ingress-class=nginx-external`
 * Limit services watched by type (not applicable to ingress or other types)
   * `--service-type-filter=LoadBalancer` default `all`
-  * Limit the hosted zones considered
+* Limit the hosted zones considered
   * `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
   * `--domain-filter=example.com` by domain suffix - specify multiple times if needed
   * `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
