@@ -161,7 +161,8 @@ func specialCharactersEscape(s string) string {
 
 func (r *Route53APIStub) ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
-		tags := r.zoneTags[*input.ResourceId]
+		zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, *input.ResourceId)
+		tags := r.zoneTags[zoneId]
 		return &route53.ListTagsForResourceOutput{
 			ResourceTagSet: &route53types.ResourceTagSet{
 				ResourceId:   input.ResourceId,

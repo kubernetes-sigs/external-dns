@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 
@@ -30,6 +31,11 @@ import (
 // of fatal. It is meant for error propagation from providers to tell
 // that this is a transient error.
 var SoftError error = errors.New("soft error")
+
+// NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
+func NewSoftErrorf(format string, a ...any) error {
+	return NewSoftError(fmt.Errorf(format, a...))
+}
 
 // NewSoftError creates a SoftError from the given error
 func NewSoftError(err error) error {

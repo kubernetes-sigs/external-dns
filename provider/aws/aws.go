@@ -199,7 +199,7 @@ var canonicalHostedZones = map[string]string{
 }
 
 // Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
-// mostly taken from: https://github.com/kubernetes/kubernetes/blob/853167624edb6bc0cfdcdfb88e746e178f5db36c/federation/pkg/dnsprovider/providers/aws/route53/stubs/route53api.go
+// https://github.com/aws/aws-sdk-go-v2/tree/main/service/route53
 type Route53API interface {
 	ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error)
 	ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error)
@@ -208,7 +208,7 @@ type Route53API interface {
 	ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error)
 }
 
-// wrapper to handle ownership relation throughout the provider implementation
+// Route53Change wrapper to handle ownership relation throughout the provider implementation
 type Route53Change struct {
 	route53types.Change
 	OwnedRecord string
@@ -948,7 +948,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile st
 		ResourceId:   aws.String(cleanZoneID(zoneID)),
 	})
 	if err != nil {
-		return nil, provider.NewSoftError(fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err))
+		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %w", zoneID, err)
 	}
 	tagMap := map[string]string{}
 	for _, tag := range response.ResourceTagSet.Tags {
