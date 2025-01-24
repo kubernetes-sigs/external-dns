@@ -379,7 +379,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 			}
 		}
 		if tagErr != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
+			return nil, provider.NewSoftErrorf("failed to list zones tags: %w", tagErr)
 		}
 	}
 
@@ -427,7 +427,7 @@ func containsOctalSequence(domain string) bool {
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
-		return nil, provider.NewSoftError(fmt.Errorf("records retrieval failed: %w", err))
+		return nil, provider.NewSoftErrorf("records retrieval failed: %w", err)
 	}
 
 	return p.records(ctx, zones)
@@ -447,7 +447,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 		for paginator.HasMorePages() {
 			resp, err := paginator.NextPage(ctx)
 			if err != nil {
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err))
+				return nil, provider.NewSoftErrorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err)
 			}
 
 			for _, r := range resp.ResourceRecordSets {
@@ -608,7 +608,7 @@ func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones(ctx)
 	if err != nil {
-		return provider.NewSoftError(fmt.Errorf("failed to list zones, not applying changes: %w", err))
+		return provider.NewSoftErrorf("failed to list zones, not applying changes: %w", err)
 	}
 
 	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
@@ -718,7 +718,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	if len(failedZones) > 0 {
-		return provider.NewSoftError(fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones))
+		return provider.NewSoftErrorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
