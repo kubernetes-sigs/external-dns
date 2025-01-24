@@ -943,6 +943,8 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile string) (map[string]string, error) {
 	client := p.clients[profile]
 
+	// TODO: this will make single API request for each zone, which consumes API requests
+	// more effective way is to batch requets https://github.com/aws/aws-sdk-go-v2/blob/ed8a3caa0df9ce36a5b60aebeee201187098d205/service/route53/api_op_ListTagsForResources.go#L37
 	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
 		ResourceType: route53types.TagResourceTypeHostedzone,
 		ResourceId:   aws.String(cleanZoneID(zoneID)),

@@ -162,6 +162,9 @@ func specialCharactersEscape(s string) string {
 func (r *Route53APIStub) ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
 		zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, *input.ResourceId)
+		if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
+			return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
+		}
 		tags := r.zoneTags[zoneId]
 		return &route53.ListTagsForResourceOutput{
 			ResourceTagSet: &route53types.ResourceTagSet{
@@ -181,7 +184,7 @@ func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *ro
 
 	_, ok := r.zones[*input.HostedZoneId]
 	if !ok {
-		return nil, fmt.Errorf("Hosted zone doesn't exist: %s", *input.HostedZoneId)
+		return nil, fmt.Errorf("hosted zone doesn't exist: %s", *input.HostedZoneId)
 	}
 
 	if len(input.ChangeBatch.Changes) == 0 {
@@ -217,12 +220,12 @@ func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *ro
 		switch change.Action {
 		case route53types.ChangeActionCreate:
 			if _, found := recordSets[key]; found {
-				return nil, fmt.Errorf("Attempt to create duplicate rrset %s", key) // TODO: Return AWS errors with codes etc
+				return nil, fmt.Errorf("attempt to create duplicate rrset %s", key) // TODO: Return AWS errors with codes etc
 			}
 			recordSets[key] = append(recordSets[key], *change.ResourceRecordSet)
 		case route53types.ChangeActionDelete:
 			if _, found := recordSets[key]; !found {
-				return nil, fmt.Errorf("Attempt to delete non-existent rrset %s", key) // TODO: Check other fields too
+				return nil, fmt.Errorf("attempt to delete non-existent rrset %s", key) // TODO: Check other fields too
 			}
 			delete(recordSets, key)
 		case route53types.ChangeActionUpsert:
@@ -331,7 +334,7 @@ func TestAWSZones(t *testing.T) {
 		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
-			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
+			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil, true)
 
 			zones, err := provider.Zones(context.Background())
 			require.NoError(t, err)
@@ -339,6 +342,30 @@ func TestAWSZones(t *testing.T) {
 			validateAWSZones(t, zones, ti.expectedZones)
 		})
 	}
+}
+
+func TestAWSZonesWithTagFilterError(t *testing.T) {
+	client := NewRoute53APIStub(t)
+
+	provider := &AWSProvider{
+		clients:       map[string]Route53API{defaultAWSProfile: client},
+		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
+		dryRun:        false,
+		zonesCache:    &zonesListCache{duration: 1 * time.Minute},
+	}
+	createAWSZone(t, provider, &route53types.HostedZone{
+		Id:     aws.String("/hostedzone/zone-1.ext-dns-test-ok.example.com."),
+		Name:   aws.String("zone-1.ext-dns-test-ok.example.com."),
+		Config: &route53types.HostedZoneConfig{PrivateZone: false},
+	})
+	createAWSZone(t, provider, &route53types.HostedZone{
+		Id:     aws.String("/hostedzone/zone-2.ext-dns-test-error-on-list-tags.example.com."),
+		Name:   aws.String("zone-2.ext-dns-test-error-on-list-tags.example.com."),
+		Config: &route53types.HostedZoneConfig{PrivateZone: false},
+	})
+	_, err := provider.Zones(context.Background())
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to list tags for zone /hostedzone/zone-2.ext-dns-test-error-on-list-tags")
 }
 
 func TestAWSRecordsFilter(t *testing.T) {
@@ -1961,6 +1988,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 
 	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
+
 	err = provider.submitChanges(ctx, changes, zones)
 	require.NoError(t, err)
 
@@ -1979,10 +2007,10 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types
 }
 
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
-	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
+	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records, true)
 }
 
-func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
+func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet, validateErrors bool) (*AWSProvider, *Route53APIStub) {
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
