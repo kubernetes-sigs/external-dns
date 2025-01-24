@@ -378,7 +378,7 @@ This should yield something similar this:
 
 ```
 ns-695.awsdns-22.net.
-ns-1313.awsdns-36.com.
+ns-1313.awsdns-36.org.
 ns-350.awsdns-43.com.
 ns-1805.awsdns-33.co.uk.
 ```
@@ -667,7 +667,7 @@ For more information about ALIAS record, see [Choosing between alias and non-ali
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
 ```bash
-dig +short @ns-5514.awsdns-53.com. nginx.example.com.
+dig +short @ns-5514.awsdns-53.org. nginx.example.com.
 ```
 
 This should return 1+ IP addresses that correspond to the ELB FQDN, i.e. `ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.`.
@@ -762,7 +762,7 @@ aws route53 list-resource-record-sets --output json --hosted-zone-id $ZONE_ID \
   --query "ResourceRecordSets[?Name == 'server.example.com.']"
 
 # query using a route53 name server
-dig +short @ns-5514.awsdns-53.com. server.example.com.
+dig +short @ns-5514.awsdns-53.org. server.example.com.
 # query using the default name server
 dig +short server.example.com.
 
