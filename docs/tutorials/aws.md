@@ -1024,10 +1024,13 @@ args:
 
 ### Filter by Domain
 
+> Specify multiple times if needed
+
 ```sh
 args:
     --domain-filter=example.com
     --domain-filter=.paradox.example.com
+    ...
 ```
 
 Example `--domain-filter=example.com` will allow for zone `example.com` and any zones that end in `.example.com`, including `an.example.com`, i.e., the subdomains of example.com.
@@ -1040,19 +1043,20 @@ And if the filter is prepended with `.` e.g., `--domain-filter=.example.com` it 
 
 ### Filter by Zone ID
 
-The filters could be specified multiple times, the flow logic is OR
+> Specify multiple times if needed, the flow logic is OR
 
 ```sh
 args:
     --zone-id-filter=ABCDEF12345678
     --zone-id-filter=XYZDEF12345888
+    ...
 ```
 
 ### Filter by Tag
 
-The filters could be specified multiple times, the flow logic is AND
+> Specify multiple times if needed, the flow logic is AND
 
-Specify on keys
+Keys only
 
 ```sh
 args:
