@@ -994,18 +994,21 @@ Please refer to the [CRD source documentation](../sources/crd.md#example) for mo
 
 ## Strategies for Scoping Zones
 
+[//]: <> (consider moving this into it's own .)
+
 > Without specifying these flags, management applies to all zones.
 
 In order to achieve the required results, you may need to combine multiple options
 
-* Following flags supported to limit zones
-  * `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
-  * `--domain-filter=example.com` by domain suffix - specify multiple times if needed
-  * `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
-  * `--exclude-domains=ignore.this.example.com` to exclude a domain or subdomain
-  * `--regex-domain-exclusion=ignore*` subtracts it's matches from `regex-domain-filter`'s matches
-  * `--aws-zone-type=public` only sync zones of this type `[public|private]`
-  * `--aws-zone-tags=owner=k8s` only sync zones with this tag
+| Argument                    | Description                                                                 | Flow Control |
+|:----------------------------|:----------------------------------------------------------------------------|:------------:|
+| `--zone-id-filter`          | Specify multiple times if needed                                            |      OR      |
+| `--domain-filter`           | By domain suffix - specify multiple times if needed                         |      OR      |
+| `--regex-domain-filter`     | By domain suffix but as a regex - overrides domain-filter                   |     AND      |
+| `--exclude-domains`         | To exclude a domain or subdomain                                            |      OR      |
+| `--regex-domain-exclusion`  | Subtracts its matches from `regex-domain-filter`'s matches                  |     AND      |
+| `--aws-zone-type`           | Only sync zones of this type `[public\|private]`                            |      OR      |
+| `--aws-zone-tags`           | Only sync zones with this tag                                               |     AND      |
 
 Minimum required configuration
 
