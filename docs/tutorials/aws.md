@@ -994,6 +994,8 @@ Please refer to the [CRD source documentation](../sources/crd.md#example) for mo
 
 ## Strategies for Scoping Zones
 
+> Without specifying these flags, management applies to all zones.
+
 In order to achieve the required results, you may need to combine multiple options
 
 * Following flags supported to limit zones
@@ -1016,6 +1018,8 @@ args:
 
 ### Filter by Zone Type
 
+> If this flag is not specified, management applies to both public and private zones.
+
 ```sh
 args:
     --aws-zone-type=private|public # choose between public or private
@@ -1024,7 +1028,7 @@ args:
 
 ### Filter by Domain
 
-> Specify multiple times if needed
+> Specify multiple times if needed.
 
 ```sh
 args:
