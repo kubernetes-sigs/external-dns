@@ -83,7 +83,9 @@ func (m *Manager) ConfigureElection(run func(ctx context.Context)) (*le.LeaderEl
 				log.Info("leader election lost")
 			},
 			OnNewLeader: func(identity string) {
-				log.Infof("the leader identity is '%s'\n", identity)
+				if identity == m.Identity {
+					log.Infof("the leader identity is '%s'\n", identity)
+				}
 			},
 		},
 	})
