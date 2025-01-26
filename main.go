@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
+	leader "sigs.k8s.io/external-dns/internal/leaderelection"
 
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -90,10 +91,6 @@ func main() {
 		log.Fatalf("config validation failed: %v", err)
 	}
 
-	if cfg.DryRun {
-		log.Info("running in dry-run mode. No changes to DNS records will be made.")
-	}
-
 	ll, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		log.Fatalf("failed to parse log level: %v", err)
@@ -108,6 +105,28 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
+	if cfg.EnableLeaderElection {
+		mgr, err := leader.NewLeaderElectionManager()
+		if err != nil {
+			log.Fatal(err)
+		}
+		el, err := mgr.ConfigureElection(func(ctx context.Context) {
+			execute(cfg, ctx, cancel)
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		el.Run(ctx)
+	} else {
+		execute(cfg, ctx, cancel)
+	}
+}
+
+func execute(cfg *externaldns.Config, ctx context.Context, cancel context.CancelFunc) {
+	if cfg.DryRun {
+		log.Info("running in dry-run mode. No changes to DNS records will be made.")
+	}
 
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
@@ -433,6 +452,7 @@ func main() {
 	}
 
 	ctrl.ScheduleRunOnce(time.Now())
+
 	ctrl.Run(ctx)
 }
 
