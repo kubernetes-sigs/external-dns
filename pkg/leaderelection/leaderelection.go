@@ -18,20 +18,15 @@ package leaderelection
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	restclient "k8s.io/client-go/rest"
+	rs "k8s.io/client-go/rest"
 	le "k8s.io/client-go/tools/leaderelection"
-	rlock "k8s.io/client-go/tools/leaderelection/resourcelock"
+	rl "k8s.io/client-go/tools/leaderelection/resourcelock"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-const inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
 var (
 	DefaultLockName      = "external-dns-leader-election"
@@ -42,8 +37,8 @@ var (
 )
 
 type Manager struct {
-	*restclient.Config
-	rlock.Interface
+	*rs.Config
+	rl.Interface
 	Namespace string
 	LockName  string
 	Identity  string
@@ -52,32 +47,21 @@ type Manager struct {
 func NewLeaderElectionManager() (*Manager, error) {
 	m := &Manager{}
 
-	m.Namespace = getInClusterNamespace()
+	m.Namespace = getNamespace()
 	m.LockName = DefaultLockName
 	m.Identity = getLeaderId()
-
-	cfg, err := ctrl.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	m.Config = cfg
-	// Create a new lock. This will be used to create a Lease resource in the cluster.
-
-	lock, err := rlock.NewFromKubeconfig(
-		// Default resource lock to "leases".
-		rlock.LeasesResourceLock,
+	m.Config = ctrl.GetConfigOrDie()
+	// explicitly set the resource lock to leases to avoid the deprecated endpoints resource lock
+	lock, _ := rl.NewFromKubeconfig(
+		rl.LeasesResourceLock,
 		m.Namespace,
 		m.LockName,
-		rlock.ResourceLockConfig{
+		rl.ResourceLockConfig{
 			Identity: m.Identity,
 		},
-		cfg,
+		m.Config,
 		DefaultRenewDeadline,
 	)
-	if err != nil {
-		return nil, err
-	}
-
 	m.Interface = lock
 	return m, nil
 }
@@ -107,35 +91,4 @@ func (m *Manager) ConfigureElection(run func(ctx context.Context)) (*le.LeaderEl
 		return nil, err
 	}
 	return el, nil
-}
-
-// getInClusterNamespace retrieves the namespace in which the pod is running by reading the namespace file.
-// If the namespace file does not exist or cannot be read, it falls back to the default namespace.
-func getInClusterNamespace() string {
-	// Check whether the namespace file exists.
-	// If not, we are not running in cluster so can't guess the namespace.
-	if _, err := os.Stat(inClusterNamespacePath); err != nil {
-		log.Debugf("not running in-cluster, fallback to %s namespace\n", DefaultNamespace)
-		return DefaultNamespace
-	}
-
-	// Load the namespace file and return its content
-	namespace, err := os.ReadFile(inClusterNamespacePath)
-	if err != nil {
-		log.Debugf("not running in-cluster, fallback to %s namespace\n", DefaultNamespace)
-		return DefaultLockName
-	}
-	return string(namespace)
-}
-
-// getLeaderId generates a unique leader ID by combining the hostname and a UUID.
-// If the hostname cannot be retrieved, it falls back to using "external-dns" with a UUID.
-func getLeaderId() string {
-	// Leader id, needs to be unique
-	id, err := os.Hostname()
-	if err != nil {
-		return fmt.Sprintf("external-dns_%s", uuid.NewUUID())
-	}
-	id = fmt.Sprintf("%s_%s", id, uuid.NewUUID())
-	return id
 }
