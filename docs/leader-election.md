@@ -22,6 +22,13 @@ Minimum supported cluster version is `v1.26`.
 |:----------------------------------------|:------------------------------------------------------|
 | `--enable-leader-election-experimental` | This flag is required to enable leader election logic |
 
+```yml
+args:
+   --registry=txt \
+   --source=fake \
+   --enable-leader-election-experimental
+```
+
 ### **How Leader Election Works in Kubernetes**
 1. **Lease API**:
    - Kubernetes provides a built-in `Lease` object in the `coordination.k8s.io/v1` API group, specifically designed for leader election.

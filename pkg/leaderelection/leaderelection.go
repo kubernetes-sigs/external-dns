@@ -23,6 +23,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	restclient "k8s.io/client-go/rest"
 	le "k8s.io/client-go/tools/leaderelection"
@@ -34,7 +35,7 @@ const inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/na
 
 var (
 	DefaultLockName      = "external-dns-leader-election"
-	DefaultNamespace     = "default"
+	DefaultNamespace     = metav1.NamespaceDefault
 	DefaultLeaseDuration = 20 * time.Second // specifies how long the lease is valid
 	DefaultRenewDeadline = 15 * time.Second // specifies the amount of time that the current node has to renew the lease before it expires
 	DefaultRetryPeriod   = 5 * time.Second  // specifies the amount of time that the current holder of a lease has last updated the lease
@@ -61,6 +62,7 @@ func NewLeaderElectionManager() (*Manager, error) {
 	}
 	m.Config = cfg
 	// Create a new lock. This will be used to create a Lease resource in the cluster.
+
 	lock, err := rlock.NewFromKubeconfig(
 		// Default resource lock to "leases".
 		rlock.LeasesResourceLock,
@@ -75,6 +77,7 @@ func NewLeaderElectionManager() (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	m.Interface = lock
 	return m, nil
 }
@@ -92,6 +95,7 @@ func (m *Manager) ConfigureElection(run func(ctx context.Context)) (*le.LeaderEl
 		Callbacks: le.LeaderCallbacks{
 			OnStartedLeading: run,
 			OnStoppedLeading: func() {
+				// this is where you would put your code to cleanup, release resources and stop being the leader
 				log.Info("leader election lost")
 			},
 			OnNewLeader: func(identity string) {

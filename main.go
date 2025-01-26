@@ -113,6 +113,10 @@ func main() {
 		}
 		el, err := mgr.ConfigureElection(func(ctx context.Context) {
 			execute(cfg, ctx, cancel)
+			// The `select {}` statement in Go is used to block the execution of the current goroutine indefinitely.
+			// In the context of the `run` function, it is used to keep the leader process running as long as it is the leader.
+			// This ensures that the leader does not exit and continues to perform its duties until it loses leadership.
+			select {}
 		})
 		if err != nil {
 			log.Fatal(err)
