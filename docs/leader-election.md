@@ -12,8 +12,6 @@ The leader election mechanism implemented in Go code relies on Kubernetes coordi
 
 - [Kubernetes Concepts: Leases](https://kubernetes.io/docs/concepts/architecture/leases/)
 
-> Expired leases that no longer exist are garbage collected by kube-apiservers after 1 hour.
-
 #### Enable Leader Election
 
 Minimum supported cluster version is `v1.26`.

@@ -70,7 +70,7 @@ func NewLeaderElectionManager() (*Manager, error) {
 			Identity: m.Identity,
 		},
 		cfg,
-		DefaultLeaderElectionRenewDeadline,
+		DefaultRenewDeadline,
 	)
 	if err != nil {
 		return nil, err
