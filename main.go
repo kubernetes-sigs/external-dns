@@ -34,12 +34,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
-	leader "sigs.k8s.io/external-dns/pkg/leaderelection"
 
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	leader "sigs.k8s.io/external-dns/pkg/leaderelection"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/akamai"

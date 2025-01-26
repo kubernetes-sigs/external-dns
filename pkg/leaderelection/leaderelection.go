@@ -81,11 +81,11 @@ func NewLeaderElectionManager() (*Manager, error) {
 
 func (m *Manager) ConfigureElection(run func(ctx context.Context)) (*le.LeaderElector, error) {
 	el, err := le.NewLeaderElector(le.LeaderElectionConfig{
-		Lock:            m,
+		Lock:            m.Interface,
 		LeaseDuration:   DefaultLeaseDuration,
 		RenewDeadline:   DefaultRenewDeadline,
 		RetryPeriod:     DefaultRetryPeriod,
-		ReleaseOnCancel: true, // release the lock when the context is cancelled
+		ReleaseOnCancel: true, // release the lock when the context is canceled
 		Name:            m.LockName,
 		// election checker
 		WatchDog: le.NewLeaderHealthzAdaptor(time.Second * 10),
