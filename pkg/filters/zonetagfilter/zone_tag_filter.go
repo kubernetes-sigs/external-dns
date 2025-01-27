@@ -20,6 +20,8 @@ import (
 	"strings"
 )
 
+// For AWS every zone could have up to 50 tags, and it could be up-to 500 zones in a region
+
 // ZoneTagFilter holds a list of zone tags to filter by
 type ZoneTagFilter struct {
 	zoneTags    []string
@@ -35,11 +37,16 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 	z.zoneTags = tags
 	z.zoneTagsMap = make(map[string]string, len(tags))
 	for _, tag := range z.zoneTags {
-		filterParts := strings.SplitN(tag, "=", 2)
-		if len(filterParts) == 2 {
-			z.zoneTagsMap[filterParts[0]] = filterParts[1]
+		parts := strings.SplitN(tag, "=", 2)
+		key := strings.TrimSpace(parts[0])
+		if key == "" {
+			continue
+		}
+		if len(parts) == 2 {
+			value := strings.TrimSpace(parts[1])
+			z.zoneTagsMap[key] = value
 		} else {
-			z.zoneTagsMap[filterParts[0]] = ""
+			z.zoneTagsMap[key] = ""
 		}
 	}
 	return z
@@ -60,19 +67,6 @@ func (f ZoneTagFilter) Match(tagsMap map[string]string) bool {
 			}
 		}
 	}
-	// for _, tagFilter := range f.zoneTags {
-	// 	filterParts := strings.SplitN(tagFilter, "=", 2)
-	// 	switch len(filterParts) {
-	// 	case 1:
-	// 		if _, hasTag := tagsMap[filterParts[0]]; !hasTag {
-	// 			return false
-	// 		}
-	// 	case 2:
-	// 		if value, hasTag := tagsMap[filterParts[0]]; !hasTag || value != filterParts[1] {
-	// 			return false
-	// 		}
-	// 	}
-	// }
 	return true
 }
 
