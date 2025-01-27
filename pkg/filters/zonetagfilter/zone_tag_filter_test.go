@@ -62,7 +62,9 @@ func TestZoneTagFilterMatch(t *testing.T) {
 			assert.Equal(t, tc.matches, zoneTagFilter.Match(tc.zoneTags))
 		})
 	}
+}
 
+func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	tests := []struct {
 		filters int
 		zones   int

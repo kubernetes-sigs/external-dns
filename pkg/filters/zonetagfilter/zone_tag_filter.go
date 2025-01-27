@@ -22,7 +22,8 @@ import (
 
 // ZoneTagFilter holds a list of zone tags to filter by
 type ZoneTagFilter struct {
-	zoneTags []string
+	zoneTags    []string
+	zoneTagsMap map[string]string
 }
 
 // NewZoneTagFilter returns a new ZoneTagFilter given a list of zone tags
@@ -30,25 +31,48 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 	if len(tags) == 1 && len(tags[0]) == 0 {
 		tags = []string{}
 	}
-	return ZoneTagFilter{zoneTags: tags}
+	z := ZoneTagFilter{}
+	z.zoneTags = tags
+	z.zoneTagsMap = make(map[string]string, len(tags))
+	for _, tag := range z.zoneTags {
+		filterParts := strings.SplitN(tag, "=", 2)
+		if len(filterParts) == 2 {
+			z.zoneTagsMap[filterParts[0]] = filterParts[1]
+		} else {
+			z.zoneTagsMap[filterParts[0]] = ""
+		}
+	}
+	return z
 }
 
-// TODO: pre-process tags on Filter creation
+// Match TODO: pre-process tags on Filter creation
 // Match checks whether a zone's set of tags matches the provided tag values
 func (f ZoneTagFilter) Match(tagsMap map[string]string) bool {
-	for _, tagFilter := range f.zoneTags {
-		filterParts := strings.SplitN(tagFilter, "=", 2)
-		switch len(filterParts) {
-		case 1:
-			if _, hasTag := tagsMap[filterParts[0]]; !hasTag {
+	for key, v := range f.zoneTagsMap {
+		switch len(v) {
+		case 0:
+			if _, hasTag := tagsMap[key]; !hasTag {
 				return false
 			}
-		case 2:
-			if value, hasTag := tagsMap[filterParts[0]]; !hasTag || value != filterParts[1] {
+		default:
+			if value, hasTag := tagsMap[key]; !hasTag || value != v {
 				return false
 			}
 		}
 	}
+	// for _, tagFilter := range f.zoneTags {
+	// 	filterParts := strings.SplitN(tagFilter, "=", 2)
+	// 	switch len(filterParts) {
+	// 	case 1:
+	// 		if _, hasTag := tagsMap[filterParts[0]]; !hasTag {
+	// 			return false
+	// 		}
+	// 	case 2:
+	// 		if value, hasTag := tagsMap[filterParts[0]]; !hasTag || value != filterParts[1] {
+	// 			return false
+	// 		}
+	// 	}
+	// }
 	return true
 }
 
