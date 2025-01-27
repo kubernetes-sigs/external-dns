@@ -113,3 +113,13 @@ The TXT registry can optionally cache DNS records read from the provider. This c
 rate limits imposed by the provider.
 
 Caching is enabled by specifying a cache duration with the `--txt-cache-interval` flag.
+
+## Owner migration
+
+It is possible to migrate the owner of your records when using the TXT registry.
+
+Simply use the following flags when setting up your instance : `--migrate-txt-owner`, which is the boolean enabling
+the migration feature, `--from-txt-owner=<the owner you want to migrate from>` and set  `--txt-owner-id` to
+the new value you want it to be.
+
+Take not that if you didn't set `--txt-owner-id` previously, the value automatically set by ExternalDNS is 'default'.
