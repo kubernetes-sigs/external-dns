@@ -994,11 +994,9 @@ Please refer to the [CRD source documentation](../sources/crd.md#example) for mo
 
 ## Strategies for Scoping Zones
 
-[//]: <> (consider moving this into it's own .)
-
 > Without specifying these flags, management applies to all zones.
 
-In order to achieve the required results, you may need to combine multiple options
+In order to manage specific zones,  you may need to combine multiple options
 
 | Argument                    | Description                                                                 | Flow Control |
 |:----------------------------|:----------------------------------------------------------------------------|:------------:|
