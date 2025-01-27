@@ -53,7 +53,6 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
 
       - name: Run chart-releaser

@@ -2,8 +2,8 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.15.0
-appVersion: 0.15.0
+version: 1.15.1
+appVersion: 0.15.1
 keywords:
   - kubernetes
   - externaldns
@@ -20,13 +20,15 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
+    - kind: added
+      description: "Added ability to configure `imagePullSecrets` via helm `global` value."
+    - kind: added
+      description: "Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values."
     - kind: changed
-      description: "Updated _ExternalDNS_ OCI image version to [v0.15.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0)."
+      description: "Allow templating `serviceaccount.annotations` keys and values, by rendering them using the `tpl` built-in function."
+    - kind: changed
+      description: "Updated _ExternalDNS_ OCI image version to [v0.15.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.1)."
     - kind: fixed
-      description: "Fixed `provider.webhook.resources` behavior to correctly leverage resource limits."
+      description: "Fixed automatic addition of pod selector labels to `affinity` and `topologySpreadConstraints` if not defined."
     - kind: fixed
-      description: "Fixed `provider.webhook.imagePullPolicy` behavior to correctly leverage pull policy."
-    - kind: fixed
-      description: "Fixed to add correct webhook metric port to `Service` and `ServiceMonitor`."
-    - kind: fixed
-      description: "Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes."
+      description: "Fixed missing Ingress permissions when using Istio sources."
