@@ -271,6 +271,10 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 
 The **tutorials** section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
 
+## Directory Structure
+
+> TODO
+
 # Note
 
 If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.

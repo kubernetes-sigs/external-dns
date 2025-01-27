@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package zonetagfilter
 
 import (
 	"strings"
@@ -33,6 +33,7 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 	return ZoneTagFilter{zoneTags: tags}
 }
 
+// TODO: pre-process tags on Filter creation
 // Match checks whether a zone's set of tags matches the provided tag values
 func (f ZoneTagFilter) Match(tagsMap map[string]string) bool {
 	for _, tagFilter := range f.zoneTags {
