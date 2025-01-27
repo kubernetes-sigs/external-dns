@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
-	"sigs.k8s.io/external-dns/pkg/filters/zonetagfilter"
+	"sigs.k8s.io/external-dns/pkg/filters"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/akamai"
@@ -187,8 +187,7 @@ func main() {
 	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	// TODO: make all filters available from pkg/filters
-	zoneTagFilter := zonetagfilter.NewZoneTagFilter(cfg.AWSZoneTagFilter)
+	zoneTagFilter := filters.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	var p provider.Provider
 	switch cfg.Provider {

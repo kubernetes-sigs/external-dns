@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/filters"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -319,7 +320,7 @@ func TestAWSZones(t *testing.T) {
 		msg            string
 		zoneIDFilter   provider.ZoneIDFilter
 		zoneTypeFilter provider.ZoneTypeFilter
-		zoneTagFilter  provider.ZoneTagFilter
+		zoneTagFilter  filters.ZoneTagFilter
 		expectedZones  map[string]*route53types.HostedZone
 	}{
 		{"no filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), allZones},

@@ -16,20 +16,17 @@ limitations under the License.
 
 package zonetagfilter
 
-import "fmt"
+import (
+	"fmt"
+)
 
-type filterAndZoneTags struct {
+type filterZoneTags struct {
 	filterTags []string
 	zoneTags   map[string]string
 }
 
-func generateTagFilterAndZoneTagsForMatch(filter, zone int) filterAndZoneTags {
-	if zone > 50 {
-		panic("zone number is too high")
-	}
-	if filter > zone {
-		panic("filter number is too high")
-	}
+func generateTagFilterAndZoneTagsForMatch(filter, zone int) filterZoneTags {
+	validate(filter, zone)
 
 	filterTags := make([]string, 0, filter)
 	for i := filter - 1; i >= 0; i-- {
@@ -39,5 +36,29 @@ func generateTagFilterAndZoneTagsForMatch(filter, zone int) filterAndZoneTags {
 	for i := 0; i < zone; i++ {
 		zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i)
 	}
-	return filterAndZoneTags{filterTags, zoneTags}
+	return filterZoneTags{filterTags, zoneTags}
+}
+
+// TODO: explain what is doing this function
+func generateTagFilterAndZoneTagsForNotMatch(filter, zone int) filterZoneTags {
+	validate(filter, zone)
+
+	filterTags := make([]string, 0, filter)
+	for i := filter - 1; i >= 0; i-- {
+		filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i+50, i))
+	}
+	zoneTags := make(map[string]string, zone)
+	for i := 0; i < zone; i++ {
+		zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i+2)
+	}
+	return filterZoneTags{filterTags, zoneTags}
+}
+
+func validate(filter int, zone int) {
+	if zone > 50 {
+		panic("zone number is too high")
+	}
+	if filter > zone {
+		panic("filter number is too high")
+	}
 }

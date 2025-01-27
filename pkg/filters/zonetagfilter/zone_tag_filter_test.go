@@ -53,6 +53,9 @@ var basicZoneTags = []struct {
 	{
 		"multiple filter matches", []string{"tag1=value1", "tag2=value2"}, map[string]string{"tag2": "value2", "tag1": "value1", "tag3": "value3"}, true,
 	},
+	{
+		"empty tag filter matches all", []string{""}, map[string]string{"tag0": "value0"}, true,
+	},
 }
 
 func TestZoneTagFilterMatch(t *testing.T) {
@@ -68,7 +71,7 @@ func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	tests := []struct {
 		filters int
 		zones   int
-		values  filterAndZoneTags
+		values  filterZoneTags
 	}{
 		{10, 30, generateTagFilterAndZoneTagsForMatch(10, 30)},
 		{5, 40, generateTagFilterAndZoneTagsForMatch(5, 40)},
@@ -77,7 +80,25 @@ func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("filters:%d zones:%d", tc.filters, tc.zones), func(t *testing.T) {
 			zoneTagFilter := NewZoneTagFilter(tc.values.filterTags)
-			assert.Equal(t, true, zoneTagFilter.Match(tc.values.zoneTags))
+			assert.True(t, zoneTagFilter.Match(tc.values.zoneTags))
+		})
+	}
+}
+
+func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
+	tests := []struct {
+		filters int
+		zones   int
+		values  filterZoneTags
+	}{
+		{10, 30, generateTagFilterAndZoneTagsForNotMatch(10, 30)},
+		{5, 40, generateTagFilterAndZoneTagsForNotMatch(5, 40)},
+		{30, 50, generateTagFilterAndZoneTagsForNotMatch(30, 50)},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("filters:%d zones:%d", tc.filters, tc.zones), func(t *testing.T) {
+			zoneTagFilter := NewZoneTagFilter(tc.values.filterTags)
+			assert.False(t, zoneTagFilter.Match(tc.values.zoneTags))
 		})
 	}
 }
@@ -91,13 +112,18 @@ func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 	}
 }
 
-func BenchmarkZoneTagFilterMatchComplex(b *testing.B) {
+func BenchmarkZoneTagFilterComplex(b *testing.B) {
 	tests := []struct {
-		values filterAndZoneTags
+		values filterZoneTags
 	}{
+		// match
 		{generateTagFilterAndZoneTagsForMatch(10, 30)},
 		{generateTagFilterAndZoneTagsForMatch(5, 40)},
 		{generateTagFilterAndZoneTagsForMatch(30, 50)},
+		// 	no match
+		{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
+		{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
+		{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
 	}
 	for _, tc := range tests {
 		zoneTagFilter := NewZoneTagFilter(tc.values.filterTags)

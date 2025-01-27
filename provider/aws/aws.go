@@ -32,6 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/filters"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -208,7 +209,7 @@ type Route53API interface {
 	ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error)
 }
 
-// wrapper to handle ownership relation throughout the provider implementation
+// Route53Change wrapper to handle ownership relation throughout the provider implementation
 type Route53Change struct {
 	route53types.Change
 	OwnedRecord string
@@ -254,7 +255,7 @@ type AWSProvider struct {
 	// filter hosted zones by type (e.g. private or public)
 	zoneTypeFilter provider.ZoneTypeFilter
 	// filter hosted zones by tags
-	zoneTagFilter provider.ZoneTagFilter
+	zoneTagFilter filters.ZoneTagFilter
 	// extend filter for subdomains in the zone (e.g. first.us-east-1.example.com)
 	zoneMatchParent bool
 	preferCNAME     bool
@@ -268,7 +269,7 @@ type AWSConfig struct {
 	DomainFilter          endpoint.DomainFilter
 	ZoneIDFilter          provider.ZoneIDFilter
 	ZoneTypeFilter        provider.ZoneTypeFilter
-	ZoneTagFilter         provider.ZoneTagFilter
+	ZoneTagFilter         filters.ZoneTagFilter
 	ZoneMatchParent       bool
 	BatchChangeSize       int
 	BatchChangeSizeBytes  int
