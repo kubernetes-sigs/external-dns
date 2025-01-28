@@ -199,7 +199,7 @@ var canonicalHostedZones = map[string]string{
 }
 
 // Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
-// mostly taken from: https://github.com/kubernetes/kubernetes/blob/853167624edb6bc0cfdcdfb88e746e178f5db36c/federation/pkg/dnsprovider/providers/aws/route53/stubs/route53api.go
+// https://github.com/aws/aws-sdk-go-v2/tree/main/service/route53
 type Route53API interface {
 	ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error)
 	ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error)
@@ -208,7 +208,7 @@ type Route53API interface {
 	ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error)
 }
 
-// wrapper to handle ownership relation throughout the provider implementation
+// Route53Change wrapper to handle ownership relation throughout the provider implementation
 type Route53Change struct {
 	route53types.Change
 	OwnedRecord string
@@ -379,7 +379,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 			}
 		}
 		if tagErr != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
+			return nil, provider.NewSoftErrorf("failed to list zones tags: %w", tagErr)
 		}
 	}
 
@@ -427,7 +427,7 @@ func containsOctalSequence(domain string) bool {
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
-		return nil, provider.NewSoftError(fmt.Errorf("records retrieval failed: %w", err))
+		return nil, provider.NewSoftErrorf("records retrieval failed: %w", err)
 	}
 
 	return p.records(ctx, zones)
@@ -447,7 +447,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 		for paginator.HasMorePages() {
 			resp, err := paginator.NextPage(ctx)
 			if err != nil {
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err))
+				return nil, provider.NewSoftErrorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err)
 			}
 
 			for _, r := range resp.ResourceRecordSets {
@@ -608,7 +608,7 @@ func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones(ctx)
 	if err != nil {
-		return provider.NewSoftError(fmt.Errorf("failed to list zones, not applying changes: %w", err))
+		return provider.NewSoftErrorf("failed to list zones, not applying changes: %w", err)
 	}
 
 	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
@@ -718,7 +718,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	if len(failedZones) > 0 {
-		return provider.NewSoftError(fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones))
+		return provider.NewSoftErrorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
@@ -943,12 +943,14 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile string) (map[string]string, error) {
 	client := p.clients[profile]
 
+	// TODO: this will make single API request for each zone, which consumes API requests
+	// more effective way is to batch requests https://github.com/aws/aws-sdk-go-v2/blob/ed8a3caa0df9ce36a5b60aebeee201187098d205/service/route53/api_op_ListTagsForResources.go#L37
 	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
 		ResourceType: route53types.TagResourceTypeHostedzone,
-		ResourceId:   aws.String(zoneID),
+		ResourceId:   aws.String(cleanZoneID(zoneID)),
 	})
 	if err != nil {
-		return nil, provider.NewSoftError(fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err))
+		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %w", zoneID, err)
 	}
 	tagMap := map[string]string{}
 	for _, tag := range response.ResourceTagSet.Tags {
