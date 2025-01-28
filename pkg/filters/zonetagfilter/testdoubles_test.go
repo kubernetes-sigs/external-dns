@@ -19,8 +19,8 @@ package zonetagfilter
 import "fmt"
 
 type filterZoneTags struct {
-	filterTags []string
-	zoneTags   map[string]string
+	ZoneTagFilter
+	zoneTags map[string]string
 }
 
 // generateTagFilterAndZoneTagsForMatch generates filter tags and zone tags that do match.
@@ -55,7 +55,7 @@ func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
 		}
 	}
 
-	return filterZoneTags{filterTags, zoneTags}
+	return filterZoneTags{NewZoneTagFilter(filterTags), zoneTags}
 }
 
 func validate(filter int, zone int) {

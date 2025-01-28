@@ -71,7 +71,7 @@ func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	tests := []struct {
 		filters int
 		zones   int
-		values  filterZoneTags
+		source  filterZoneTags
 	}{
 		{10, 30, generateTagFilterAndZoneTagsForMatch(10, 30)},
 		{5, 40, generateTagFilterAndZoneTagsForMatch(5, 40)},
@@ -79,8 +79,7 @@ func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("filters:%d zones:%d", tc.filters, tc.zones), func(t *testing.T) {
-			zoneTagFilter := NewZoneTagFilter(tc.values.filterTags)
-			assert.True(t, zoneTagFilter.Match(tc.values.zoneTags))
+			assert.True(t, tc.source.ZoneTagFilter.Match(tc.source.zoneTags))
 		})
 	}
 }
@@ -89,7 +88,7 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 	tests := []struct {
 		filters int
 		zones   int
-		values  filterZoneTags
+		source  filterZoneTags
 	}{
 		{10, 30, generateTagFilterAndZoneTagsForNotMatch(10, 30)},
 		{5, 40, generateTagFilterAndZoneTagsForNotMatch(5, 40)},
@@ -97,8 +96,7 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("filters:%d zones:%d", tc.filters, tc.zones), func(t *testing.T) {
-			zoneTagFilter := NewZoneTagFilter(tc.values.filterTags)
-			assert.False(t, zoneTagFilter.Match(tc.values.zoneTags))
+			assert.False(t, tc.source.ZoneTagFilter.Match(tc.source.zoneTags))
 		})
 	}
 }
@@ -114,7 +112,7 @@ func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 
 func BenchmarkZoneTagFilterComplex(b *testing.B) {
 	tests := []struct {
-		values filterZoneTags
+		source filterZoneTags
 	}{
 		// match
 		{generateTagFilterAndZoneTagsForMatch(10, 30)},
@@ -126,9 +124,8 @@ func BenchmarkZoneTagFilterComplex(b *testing.B) {
 		{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
 	}
 	for _, tc := range tests {
-		zoneTagFilter := NewZoneTagFilter(tc.values.filterTags)
 		for i := 0; i < b.N; i++ {
-			zoneTagFilter.Match(tc.values.zoneTags)
+			tc.source.ZoneTagFilter.Match(tc.source.zoneTags)
 		}
 	}
 }
