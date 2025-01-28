@@ -3,6 +3,35 @@
 The TXT registry is the default registry.
 It stores DNS record metadata in TXT records, using the same provider.
 
+## Record Format Options
+The TXT registry supports two formats for storing DNS record metadata:
+- Legacy format: Creates a TXT record without record type information
+- New format: Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
+
+By default, the TXT registry creates records in both formats for backwards compatibility. You can configure it to use only the new format by using the `--txt-new-format-only` flag. This reduces the number of TXT records created, which can be helpful when working with provider-specific record limits.
+
+Note: The following record types always use only the new format regardless of this setting:
+- AAAA records
+- Encrypted TXT records (when using `--txt-encrypt-enabled`)
+
+Example:
+```sh
+# Default behavior - creates both formats
+external-dns --provider=aws --source=ingress --managed-record-types=A,TXT
+
+# Only create new format records (alongside other required flags)
+external-dns --provider=aws --source=ingress --managed-record-types=A,TXT --txt-new-format-only
+```
+The `--txt-new-format-only` flag should be used in addition to your existing external-dns configuration flags. It does not implicitly configure TXT record handling - you still need to specify `--managed-record-types=TXT` if you want external-dns to manage TXT records.
+
+### Migration to New Format Only
+When transitioning from dual-format to new-format-only records:
+- Ensure all your `external-dns` instances support the new format
+- Enable the `--txt-new-format-only` flag on your external-dns instances
+Manually clean up any existing legacy format TXT records from your DNS provider
+
+Note: `external-dns` will not automatically remove legacy format records when switching to new-format-only mode. You'll need to clean up the old records manually if desired.
+
 ## Prefixes and Suffixes
 
 In order to avoid having the registry TXT records collide with
