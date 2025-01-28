@@ -64,7 +64,7 @@ const (
 	sameZoneAlias                              = "same-zone"
 )
 
-// see: https://docs.aws.amazon.com/general/latest/gr/elb.html
+// see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
 var canonicalHostedZones = map[string]string{
 	// Application Load Balancers and Classic Load Balancers
 	"us-east-2.elb.amazonaws.com":         "Z3AADJGX6KTTL2",
@@ -101,7 +101,7 @@ var canonicalHostedZones = map[string]string{
 	"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
 	"af-south-1.elb.amazonaws.com":        "Z268VQBMOI5EKX",
 	"il-central-1.elb.amazonaws.com":      "Z09170902867EHPV2DABU",
-	// Network Load Balancers
+	// Network Load Balancers https://docs.aws.amazon.com/general/latest/gr/elb.html#elb_region
 	"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
 	"elb.us-east-1.amazonaws.com":         "Z26RNL4JYFTOTI",
 	"elb.us-west-1.amazonaws.com":         "Z24FKFUX50B4VW",
@@ -140,7 +140,7 @@ var canonicalHostedZones = map[string]string{
 	"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	// Cloudfront and AWS API Gateway edge-optimized endpoints
 	"cloudfront.net": "Z2FDTNDATAQYW2",
-	// VPC Endpoint (PrivateLink)
+	// VPC Endpoint (PrivateLink) https://github.com/kubernetes-sigs/external-dns/issues/3429#issuecomment-1440415806
 	"eu-west-2.vpce.amazonaws.com":      "Z7K1066E3PUKB",
 	"us-east-2.vpce.amazonaws.com":      "ZC8PG0KIFKBRI",
 	"af-south-1.vpce.amazonaws.com":     "Z09302161J80N9A7UTP7U",
@@ -1163,9 +1163,15 @@ func isAWSAlias(ep *endpoint.Endpoint) string {
 
 // canonicalHostedZone returns the matching canonical zone for a given hostname.
 func canonicalHostedZone(hostname string) string {
-	for suffix, zone := range canonicalHostedZones {
-		if strings.HasSuffix(hostname, suffix) {
-			return zone
+	// strings.HasSuffix is optimized for this specific task and avoids the overhead associated with compiling and executing a regular expression.
+	if strings.HasSuffix(hostname, "aws.com") || strings.HasSuffix(hostname, "aws.com.cn") || strings.HasSuffix(hostname, "tor.com") || strings.HasSuffix(hostname, "ont.com") || strings.HasSuffix(hostname, "ont.net") {
+		parts := strings.Split(hostname, ".")
+		// iterate from the second-last part (zone) towards the beginning
+		for i := len(parts) - 2; i >= 0; i-- {
+			suffix := strings.Join(parts[i:], ".")
+			if zone, exists := canonicalHostedZones[suffix]; exists {
+				return zone
+			}
 		}
 	}
 
