@@ -16,22 +16,22 @@ require (
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.84
-	github.com/aws/aws-sdk-go-v2 v1.33.0
-	github.com/aws/aws-sdk-go-v2/config v1.29.1
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.54
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.28
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.39.5
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.48.2
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.34.6
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.9
+	github.com/aws/aws-sdk-go-v2 v1.34.0
+	github.com/aws/aws-sdk-go-v2/config v1.29.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.55
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.16.0
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.39.6
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.48.3
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.34.7
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.10
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/civo/civogo v0.3.92
+	github.com/civo/civogo v0.3.93
 	github.com/cloudflare/cloudflare-go v0.114.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.134.0
+	github.com/digitalocean/godo v1.135.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -43,32 +43,32 @@ require (
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.46.0
 	github.com/maxatome/go-testdeep v1.14.0
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.81.2
+	github.com/oracle/oci-go-sdk/v65 v65.81.3
 	github.com/ovh/go-ovh v1.6.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.12.2
 	github.com/projectcontour/contour v1.30.2
 	github.com/prometheus/client_golang v1.20.5
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.31
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1086
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1086
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1086
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1090
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1090
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1090
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
-	go.etcd.io/etcd/client/v3 v3.5.17
+	go.etcd.io/etcd/client/v3 v3.5.18
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.34.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/time v0.9.0
-	google.golang.org/api v0.217.0
+	google.golang.org/api v0.218.0
 	gopkg.in/ns1/ns1-go.v2 v2.13.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.24.2
@@ -91,17 +91,17 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.24 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.28 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.28 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.24.11 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.10 // indirect
-	github.com/aws/smithy-go v1.22.1 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.25 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.29 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.29 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.16 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.10 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.10 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.24.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.11 // indirect
+	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -185,8 +185,8 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.20 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.17 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.18 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.18 // indirect
 	go.mongodb.org/mongo-driver v1.17.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
@@ -202,9 +202,9 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.69.4 // indirect
-	google.golang.org/protobuf v1.36.2 // indirect
+	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
