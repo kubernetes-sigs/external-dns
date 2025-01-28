@@ -104,27 +104,28 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 	for _, tc := range basicZoneTags {
 		zoneTagFilter := NewZoneTagFilter(tc.zoneTagFilter)
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			zoneTagFilter.Match(tc.zoneTags)
 		}
 	}
 }
 
+var benchFixtures = []struct {
+	source filterZoneTags
+}{
+	// match
+	{generateTagFilterAndZoneTagsForMatch(10, 30)},
+	{generateTagFilterAndZoneTagsForMatch(5, 40)},
+	{generateTagFilterAndZoneTagsForMatch(30, 50)},
+	// 	no match
+	{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
+	{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
+	{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
+}
+
 func BenchmarkZoneTagFilterComplex(b *testing.B) {
-	tests := []struct {
-		source filterZoneTags
-	}{
-		// match
-		{generateTagFilterAndZoneTagsForMatch(10, 30)},
-		{generateTagFilterAndZoneTagsForMatch(5, 40)},
-		{generateTagFilterAndZoneTagsForMatch(30, 50)},
-		// 	no match
-		{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
-		{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
-		{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
-	}
-	for _, tc := range tests {
-		for i := 0; i < b.N; i++ {
+	for _, tc := range benchFixtures {
+		for range b.N {
 			tc.source.ZoneTagFilter.Match(tc.source.zoneTags)
 		}
 	}
