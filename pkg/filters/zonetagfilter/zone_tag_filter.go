@@ -36,8 +36,8 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 	z := ZoneTagFilter{}
 	z.zoneTags = tags
 	z.zoneTagsMap = make(map[string]string, len(tags))
+	// tags pre-processing, to make sure the pre-processing is not happening at the time of filtering
 	for _, tag := range z.zoneTags {
-		// TODO: what if tag is empty, this needs a test?
 		parts := strings.SplitN(tag, "=", 2)
 		key := strings.TrimSpace(parts[0])
 		if key == "" {
@@ -53,7 +53,6 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 	return z
 }
 
-// Match TODO: pre-process tags on Filter creation
 // Match checks whether a zone's set of tags matches the provided tag values
 func (f ZoneTagFilter) Match(tagsMap map[string]string) bool {
 	for key, v := range f.zoneTagsMap {

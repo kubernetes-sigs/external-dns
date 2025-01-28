@@ -329,12 +329,12 @@ func TestAWSZones(t *testing.T) {
 		zoneTagFilter  filters.ZoneTagFilter
 		expectedZones  map[string]*route53types.HostedZone
 	}{
-		{"no filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), allZones},
-		{"public filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("public"), provider.NewZoneTagFilter([]string{}), publicZones},
-		{"private filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("private"), provider.NewZoneTagFilter([]string{}), privateZones},
-		{"unknown filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("unknown"), provider.NewZoneTagFilter([]string{}), noZones},
-		{"zone id filter", provider.NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), privateZones},
-		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
+		{"no filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), filters.NewZoneTagFilter([]string{}), allZones},
+		{"public filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("public"), filters.NewZoneTagFilter([]string{}), publicZones},
+		{"private filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("private"), filters.NewZoneTagFilter([]string{}), privateZones},
+		{"unknown filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("unknown"), filters.NewZoneTagFilter([]string{}), noZones},
+		{"zone id filter", provider.NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneTypeFilter(""), filters.NewZoneTagFilter([]string{}), privateZones},
+		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), filters.NewZoneTagFilter([]string{"zone=3"}), privateZones},
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
 			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
@@ -349,7 +349,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 	client := NewRoute53APIStub(t)
 	provider := &AWSProvider{
 		clients:       map[string]Route53API{defaultAWSProfile: client},
-		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
+		zoneTagFilter: filters.NewZoneTagFilter([]string{"zone=2"}),
 		dryRun:        false,
 		zonesCache:    &zonesListCache{duration: 1 * time.Minute},
 	}
@@ -2030,10 +2030,10 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types
 }
 
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
-	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
+	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, filters.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }
 
-func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
+func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter filters.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{

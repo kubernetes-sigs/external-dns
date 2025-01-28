@@ -16,41 +16,45 @@ limitations under the License.
 
 package zonetagfilter
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type filterZoneTags struct {
 	filterTags []string
 	zoneTags   map[string]string
 }
 
+// generateTagFilterAndZoneTagsForMatch generates filter tags and zone tags that do match.
 func generateTagFilterAndZoneTagsForMatch(filter, zone int) filterZoneTags {
-	validate(filter, zone)
-
-	filterTags := make([]string, 0, filter)
-	for i := filter - 1; i >= 0; i-- {
-		filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i, i))
-	}
-	zoneTags := make(map[string]string, zone)
-	for i := 0; i < zone; i++ {
-		zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i)
-	}
-	return filterZoneTags{filterTags, zoneTags}
+	return generateTagFilterAndZoneTags(filter, zone, true)
 }
 
-// TODO: explain what is doing this function
+// generateTagFilterAndZoneTagsForNotMatch generates filter tags and zone tags that do not match.
 func generateTagFilterAndZoneTagsForNotMatch(filter, zone int) filterZoneTags {
-	validate(filter, zone)
+	return generateTagFilterAndZoneTags(filter, zone, false)
+}
 
+// generateTagFilterAndZoneTags generates filter tags and zone tags based on the match parameter.
+func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
+	validate(filter, zone)
 	filterTags := make([]string, 0, filter)
-	for i := filter - 1; i >= 0; i-- {
-		filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i+50, i))
-	}
 	zoneTags := make(map[string]string, zone)
-	for i := 0; i < zone; i++ {
-		zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i+2)
+
+	for i := filter - 1; i >= 0; i-- {
+		if match {
+			filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i, i))
+		} else {
+			filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i+50, i))
+		}
 	}
+
+	for i := 0; i < zone; i++ {
+		if match {
+			zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i)
+		} else {
+			zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i+2)
+		}
+	}
+
 	return filterZoneTags{filterTags, zoneTags}
 }
 
