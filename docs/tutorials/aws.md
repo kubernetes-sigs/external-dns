@@ -73,7 +73,7 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 * [Static credentials](#static-credentials)
 * [IAM Roles for Service Accounts](#iam-roles-for-service-accounts)
 
-For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.  Feel free to change this to something else, such `externaldns` or `kube-addons`.  Make sure to edit the `subjects[0].namespace` for the `ClusterRoleBinding` resource when deploying ExternalDNS with RBAC enabled.  See [Manifest (for clusters with RBAC enabled)](#manifest-for-clusteres-with-rbac-enabled)  for more information.
+For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.  Feel free to change this to something else, such `externaldns` or `kube-addons`.  Make sure to edit the `subjects[0].namespace` for the `ClusterRoleBinding` resource when deploying ExternalDNS with RBAC enabled.  See [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled) for more information.
 
 Additionally, throughout this tutorial, the example domain of `example.com` is used.  Change this to appropriate domain under your control.  See [Set up a hosted zone](#set-up-a-hosted-zone) section.
 
@@ -248,7 +248,7 @@ This is the preferred method as it implements [PoLP](https://csrc.nist.gov/gloss
 
 **IMPORTANT**: This method requires using KSA (Kubernetes service account) and RBAC.
 
-This method requires deploying with RBAC.  See [Manifest (for clusters with RBAC enabled)](#manifest-for-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
+This method requires deploying with RBAC.  See [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
 
 **NOTE**: Similar methods to IRSA on AWS are [kiam](https://github.com/uswitch/kiam), which is in maintenence mode, and has [instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for creating an IAM role, and also [kube2iam](https://github.com/jtblin/kube2iam).  IRSA is the officially supported method for EKS clusters, and so for non-EKS clusters on AWS, these other tools could be an option.
 
@@ -347,7 +347,7 @@ When annotation is added to service account, the ExternalDNS pod(s) scheduled wi
 
 #### Deploy ExternalDNS using IRSA
 
-Follow the steps under [Manifest (for clusters with RBAC enabled)](#manifest-for-clusters-with-rbac-enabled).  Make sure to comment out the service account section if this has been created already.
+Follow the steps under [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled).  Make sure to comment out the service account section if this has been created already.
 
 If you deployed ExternalDNS before adding the service account annotation and the corresponding role, you will likely see error with `failed to list hosted zones: AccessDenied: User`.  You can delete the current running ExternalDNS pod(s) after updating the annotation, so that new pods scheduled will have appropriate configuration to access Route53.
 
@@ -991,3 +991,95 @@ Because those limits are in place, `aws-batch-change-size` can be set to any val
 ## Using CRD source to manage DNS records in AWS
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
+
+## Strategies for Scoping Zones
+
+> Without specifying these flags, management applies to all zones.
+
+In order to manage specific zones,  you may need to combine multiple options
+
+| Argument                    | Description                                                                 | Flow Control |
+|:----------------------------|:----------------------------------------------------------------------------|:------------:|
+| `--zone-id-filter`          | Specify multiple times if needed                                            |      OR      |
+| `--domain-filter`           | By domain suffix - specify multiple times if needed                         |      OR      |
+| `--regex-domain-filter`     | By domain suffix but as a regex - overrides domain-filter                   |     AND      |
+| `--exclude-domains`         | To exclude a domain or subdomain                                            |      OR      |
+| `--regex-domain-exclusion`  | Subtracts its matches from `regex-domain-filter`'s matches                  |     AND      |
+| `--aws-zone-type`           | Only sync zones of this type `[public\|private]`                            |      OR      |
+| `--aws-zone-tags`           | Only sync zones with this tag                                               |     AND      |
+
+Minimum required configuration
+
+```sh
+args:
+    --provider=aws
+    --registry=txt
+    --source=service
+```
+
+### Filter by Zone Type
+
+> If this flag is not specified, management applies to both public and private zones.
+
+```sh
+args:
+    --aws-zone-type=private|public # choose between public or private
+    ...
+```
+
+### Filter by Domain
+
+> Specify multiple times if needed.
+
+```sh
+args:
+    --domain-filter=example.com
+    --domain-filter=.paradox.example.com
+    ...
+```
+
+Example `--domain-filter=example.com` will allow for zone `example.com` and any zones that end in `.example.com`, including `an.example.com`, i.e., the subdomains of example.com.
+
+When there are multiple domains, filter `--domain-filter=example.com` will match domains `example.com`, `ex.par.example.com`, `par.example.com`, `x.par.eu-west-1.example.com`.
+
+And if the filter is prepended with `.` e.g., `--domain-filter=.example.com` it will allow *only* zones that end in `.example.com`, i.e., the subdomains of example.com but not the `example.com` zone itself. Example result: `ex.par.eu-west-1.example.com`, `ex.par.example.com`, `par.example.com`.
+
+> Note: if you prepend the filter with ".", it will not attempt to match parent zones.
+
+### Filter by Zone ID
+
+> Specify multiple times if needed, the flow logic is OR
+
+```sh
+args:
+    --zone-id-filter=ABCDEF12345678
+    --zone-id-filter=XYZDEF12345888
+    ...
+```
+
+### Filter by Tag
+
+> Specify multiple times if needed, the flow logic is AND
+
+Keys only
+
+```sh
+args:
+    --aws-zone-tags=owner
+    --aws-zone-tags=vertical
+```
+
+Or specify keys with values
+
+```sh
+args:
+    --aws-zone-tags=owner=k8s
+    --aws-zone-tags=vertical=k8s
+```
+
+Can't specify multiple or separate values with commas: `key1=val1,key2=val2` at the moment.
+
+```sh
+args:
+    --aws-zone-tags=team=k8s,vertical=platform
+```

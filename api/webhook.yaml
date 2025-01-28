@@ -44,7 +44,7 @@ paths:
                   - example.com
         '500':
           description: |
-            Negociation failed.
+            Negotiation failed.
 
   /records:
     get:

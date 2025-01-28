@@ -70,13 +70,13 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          changed=$(ct list-changed)
+          changed=$(ct list-changed --target-branch=master)
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Run chart-testing lint
-        run: ct lint --check-version-increment=false
+        run: ct lint --target-branch=master --check-version-increment=false
 
       - name: Create Kind cluster
         if: steps.changes.outputs.changed == 'true'
@@ -86,4 +86,4 @@ jobs:
 
       - name: Run chart-testing install
         if: steps.changes.outputs.changed == 'true'
-        run: ct install
+        run: ct install --target-branch=master
