@@ -73,7 +73,7 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 * [Static credentials](#static-credentials)
 * [IAM Roles for Service Accounts](#iam-roles-for-service-accounts)
 
-For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.  Feel free to change this to something else, such `externaldns` or `kube-addons`.  Make sure to edit the `subjects[0].namespace` for the `ClusterRoleBinding` resource when deploying ExternalDNS with RBAC enabled.  See [Manifest (for clusters with RBAC enabled)](#manifest-for-clusteres-with-rbac-enabled)  for more information.
+For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.  Feel free to change this to something else, such `externaldns` or `kube-addons`.  Make sure to edit the `subjects[0].namespace` for the `ClusterRoleBinding` resource when deploying ExternalDNS with RBAC enabled.  See [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled) for more information.
 
 Additionally, throughout this tutorial, the example domain of `example.com` is used.  Change this to appropriate domain under your control.  See [Set up a hosted zone](#set-up-a-hosted-zone) section.
 
@@ -248,7 +248,7 @@ This is the preferred method as it implements [PoLP](https://csrc.nist.gov/gloss
 
 **IMPORTANT**: This method requires using KSA (Kubernetes service account) and RBAC.
 
-This method requires deploying with RBAC.  See [Manifest (for clusters with RBAC enabled)](#manifest-for-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
+This method requires deploying with RBAC.  See [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
 
 **NOTE**: Similar methods to IRSA on AWS are [kiam](https://github.com/uswitch/kiam), which is in maintenence mode, and has [instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for creating an IAM role, and also [kube2iam](https://github.com/jtblin/kube2iam).  IRSA is the officially supported method for EKS clusters, and so for non-EKS clusters on AWS, these other tools could be an option.
 
@@ -347,7 +347,7 @@ When annotation is added to service account, the ExternalDNS pod(s) scheduled wi
 
 #### Deploy ExternalDNS using IRSA
 
-Follow the steps under [Manifest (for clusters with RBAC enabled)](#manifest-for-clusters-with-rbac-enabled).  Make sure to comment out the service account section if this has been created already.
+Follow the steps under [When using clusters with RBAC enabled](#when-using-clusters-with-rbac-enabled).  Make sure to comment out the service account section if this has been created already.
 
 If you deployed ExternalDNS before adding the service account annotation and the corresponding role, you will likely see error with `failed to list hosted zones: AccessDenied: User`.  You can delete the current running ExternalDNS pod(s) after updating the annotation, so that new pods scheduled will have appropriate configuration to access Route53.
 
