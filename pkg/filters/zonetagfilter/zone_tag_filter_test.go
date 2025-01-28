@@ -67,6 +67,24 @@ func TestZoneTagFilterMatch(t *testing.T) {
 	}
 }
 
+func TestZoneTagFilterNotSupportedFormat(t *testing.T) {
+	tests := []struct {
+		desc string
+		tags []string
+		want []string
+	}{
+		{desc: "multiple or separate values with commas", tags: []string{"key1=val1,key2=val2"}, want: []string{"key1=val1,key2=val2"}},
+		{desc: "exclude tag", tags: []string{"!key1"}, want: []string{"!key1"}},
+		{desc: "exclude tags", tags: []string{"!key1=val"}, want: []string{"!key1=val"}},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s", tc.desc), func(t *testing.T) {
+			got := NewZoneTagFilter(tc.tags)
+			assert.Equal(t, tc.want, got.zoneTags)
+		})
+	}
+}
+
 func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	tests := []struct {
 		filters int
