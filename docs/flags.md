@@ -49,6 +49,7 @@
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
+| `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
 | `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional). Default is true. |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |

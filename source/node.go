@@ -34,16 +34,17 @@ import (
 )
 
 type nodeSource struct {
-	client             kubernetes.Interface
-	annotationFilter   string
-	fqdnTemplate       *template.Template
-	nodeInformer       coreinformers.NodeInformer
-	labelSelector      labels.Selector
-	exposeInternalIPV6 bool
+	client               kubernetes.Interface
+	annotationFilter     string
+	fqdnTemplate         *template.Template
+	nodeInformer         coreinformers.NodeInformer
+	labelSelector        labels.Selector
+	excludeUnschedulable bool
+	exposeInternalIPV6   bool
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6 bool) (Source, error) {
+func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6 bool, excludeUnschedulable bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -71,12 +72,13 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	}
 
 	return &nodeSource{
-		client:             kubeClient,
-		annotationFilter:   annotationFilter,
-		fqdnTemplate:       tmpl,
-		nodeInformer:       nodeInformer,
-		labelSelector:      labelSelector,
-		exposeInternalIPV6: exposeInternalIPv6,
+		client:               kubeClient,
+		annotationFilter:     annotationFilter,
+		fqdnTemplate:         tmpl,
+		nodeInformer:         nodeInformer,
+		labelSelector:        labelSelector,
+		excludeUnschedulable: excludeUnschedulable,
+		exposeInternalIPV6:   exposeInternalIPv6,
 	}, nil
 }
 
@@ -104,7 +106,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			continue
 		}
 
-		if node.Spec.Unschedulable {
+		if node.Spec.Unschedulable && ns.excludeUnschedulable {
 			log.Debugf("Skipping node %s because it is unschedulable", node.Name)
 			continue
 		}
