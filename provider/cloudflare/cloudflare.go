@@ -108,8 +108,17 @@ func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflare.Resourc
 }
 
 func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
-	_, err := z.service.UpdateDataLocalizationRegionalHostname(ctx, rc, rp)
-	return err
+    _, err := z.service.UpdateDataLocalizationRegionalHostname(ctx, rc, rp)
+    if err != nil {
+        if cloudflareError, ok := err.(*cloudflare.Error); ok {
+			if cloudflareError.Code == 1002 {
+                log.Errorf("Permission denied: %v", cloudflareError)
+                return nil // Ignore the error and continue without failing
+            }
+        }
+        return err
+    }
+    return nil
 }
 
 func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
@@ -380,7 +389,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
 				if regionalHostnameErr != nil {
 					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", regionalHostnameErr)
+					log.WithFields(logFields).Errorf("failed to update record when editing region: %v", regionalHostnameErr)
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
