@@ -126,6 +126,7 @@ var (
 		WebhookProviderURL:          "http://localhost:8888",
 		WebhookProviderReadTimeout:  5 * time.Second,
 		WebhookProviderWriteTimeout: 10 * time.Second,
+		ExcludeUnschedulable:        true,
 	}
 
 	overriddenConfig = &Config{
@@ -235,6 +236,7 @@ var (
 		WebhookProviderURL:          "http://localhost:8888",
 		WebhookProviderReadTimeout:  5 * time.Second,
 		WebhookProviderWriteTimeout: 10 * time.Second,
+		ExcludeUnschedulable:        false,
 	}
 )
 
@@ -370,6 +372,7 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
+				"--no-exclude-unschedulable",
 				"--rfc2136-batch-change-size=100",
 				"--ibmcloud-proxied",
 				"--ibmcloud-config-file=ibmcloud.json",
@@ -482,6 +485,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                 "/path/to/transip.key",
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":      "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":            "A\nAAAA\nCNAME\nNS",
+				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":           "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":       "100",
 				"EXTERNAL_DNS_IBMCLOUD_PROXIED":                "1",
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":            "ibmcloud.json",

@@ -77,6 +77,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				labels.Everything(),
+				true,
 			)
 
 			if ti.expectError {
@@ -93,17 +94,18 @@ func testNodeSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		title            string
-		annotationFilter string
-		labelSelector    string
-		fqdnTemplate     string
-		nodeName         string
-		nodeAddresses    []v1.NodeAddress
-		labels           map[string]string
-		annotations      map[string]string
-		unschedulable    bool // default to false
-		expected         []*endpoint.Endpoint
-		expectError      bool
+		title                string
+		annotationFilter     string
+		labelSelector        string
+		fqdnTemplate         string
+		nodeName             string
+		nodeAddresses        []v1.NodeAddress
+		labels               map[string]string
+		annotations          map[string]string
+		unschedulable        bool // default to false
+		excludeUnschedulable bool // default to false
+		expected             []*endpoint.Endpoint
+		expectError          bool
 	}{
 		{
 			title:         "node with short hostname returns one endpoint",
@@ -323,11 +325,22 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:         "unschedulable node return nothing",
-			nodeName:      "node1",
-			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			unschedulable: true,
-			expected:      []*endpoint.Endpoint{},
+			title:                "unschedulable node return nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable:        true,
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+		},
+		{
+			title:                "unschedulable node returns node with excludeUnschedulable=false",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable:        true,
+			excludeUnschedulable: false,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 		},
 	} {
 		tc := tc
@@ -368,6 +381,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				labelSelector,
+				tc.excludeUnschedulable,
 			)
 			require.NoError(t, err)
 
