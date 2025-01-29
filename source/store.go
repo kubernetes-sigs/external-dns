@@ -82,6 +82,7 @@ type Config struct {
 	ResolveLoadBalancerHostname    bool
 	TraefikDisableLegacy           bool
 	TraefikDisableNew              bool
+	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
 }
 
@@ -126,6 +127,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
 		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
 		TraefikDisableNew:              cfg.TraefikDisableNew,
+		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
 	}
 }
@@ -264,7 +266,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6)
+		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {

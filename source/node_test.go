@@ -83,6 +83,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				ti.fqdnTemplate,
 				labels.Everything(),
 				true,
+				true,
 			)
 
 			if ti.expectError {
@@ -99,18 +100,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		title              string
-		annotationFilter   string
-		labelSelector      string
-		fqdnTemplate       string
-		nodeName           string
-		nodeAddresses      []v1.NodeAddress
-		labels             map[string]string
-		annotations        map[string]string
-		exposeInternalIPv6 bool // default to true for this version. Change later when the next minor version is released.
-		unschedulable      bool // default to false
-		expected           []*endpoint.Endpoint
-		expectError        bool
+		title                string
+		annotationFilter     string
+		labelSelector        string
+		fqdnTemplate         string
+		nodeName             string
+		nodeAddresses        []v1.NodeAddress
+		labels               map[string]string
+		annotations          map[string]string
+		excludeUnschedulable bool // default to false
+		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
+		unschedulable        bool // default to false
+		expected             []*endpoint.Endpoint
+		expectError          bool
 	}{
 		{
 			title:              "node with short hostname returns one endpoint",
@@ -363,12 +365,23 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:              "unschedulable node return nothing",
-			nodeName:           "node1",
-			exposeInternalIPv6: true,
-			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			unschedulable:      true,
-			expected:           []*endpoint.Endpoint{},
+			title:                "unschedulable node return nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			exposeInternalIPv6:   true,
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable:        true,
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+		},
+		{
+			title:                "unschedulable node returns node with excludeUnschedulable=false",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			unschedulable:        true,
+			excludeUnschedulable: false,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 		},
 	} {
 		tc := tc
@@ -408,6 +421,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				tc.fqdnTemplate,
 				labelSelector,
 				tc.exposeInternalIPv6,
+				tc.excludeUnschedulable,
 			)
 			require.NoError(t, err)
 
@@ -426,18 +440,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 
 func testNodeEndpointsWithIPv6(t *testing.T) {
 	for _, tc := range []struct {
-		title              string
-		annotationFilter   string
-		labelSelector      string
-		fqdnTemplate       string
-		nodeName           string
-		nodeAddresses      []v1.NodeAddress
-		labels             map[string]string
-		annotations        map[string]string
-		exposeInternalIPv6 bool // default to true for this version. Change later when the next minor version is released.
-		unschedulable      bool // default to false
-		expected           []*endpoint.Endpoint
-		expectError        bool
+		title                string
+		annotationFilter     string
+		labelSelector        string
+		fqdnTemplate         string
+		nodeName             string
+		nodeAddresses        []v1.NodeAddress
+		labels               map[string]string
+		annotations          map[string]string
+		excludeUnschedulable bool // defaults to false
+		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
+		unschedulable        bool // default to false
+		expected             []*endpoint.Endpoint
+		expectError          bool
 	}{
 		{
 			title:              "node with only internal IPs should return internal IPvs irrespective of exposeInternalIPv6",
@@ -516,6 +531,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			tc.fqdnTemplate,
 			labelSelector,
 			tc.exposeInternalIPv6,
+			tc.excludeUnschedulable,
 		)
 		require.NoError(t, err)
 
