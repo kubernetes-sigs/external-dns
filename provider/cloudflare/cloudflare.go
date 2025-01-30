@@ -109,16 +109,7 @@ func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflare.Resourc
 
 func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
     _, err := z.service.UpdateDataLocalizationRegionalHostname(ctx, rc, rp)
-    if err != nil {
-        if cloudflareError, ok := err.(*cloudflare.Error); ok {
-			if cloudflareError.Code == 1002 {
-                log.Errorf("Permission denied: %v", cloudflareError)
-                return nil // Ignore the error and continue without failing
-            }
-        }
-        return err
-    }
-    return nil
+	return err
 }
 
 func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
