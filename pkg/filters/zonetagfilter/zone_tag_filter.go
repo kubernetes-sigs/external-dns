@@ -20,11 +20,9 @@ import (
 	"strings"
 )
 
-// For AWS every zone could have up to 50 tags, and it could be up-to 500 zones in a region
-
 // ZoneTagFilter holds a list of zone tags to filter by
 type ZoneTagFilter struct {
-	zoneTagsMap map[string]string
+	tagsMap map[string]string
 }
 
 // NewZoneTagFilter returns a new ZoneTagFilter given a list of zone tags
@@ -33,7 +31,7 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 		tags = []string{}
 	}
 	z := ZoneTagFilter{}
-	z.zoneTagsMap = make(map[string]string, len(tags))
+	z.tagsMap = make(map[string]string, len(tags))
 	// tags pre-processing, to make sure the pre-processing is not happening at the time of filtering
 	for _, tag := range tags {
 		parts := strings.SplitN(tag, "=", 2)
@@ -43,9 +41,9 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 		}
 		if len(parts) == 2 {
 			value := strings.TrimSpace(parts[1])
-			z.zoneTagsMap[key] = value
+			z.tagsMap[key] = value
 		} else {
-			z.zoneTagsMap[key] = ""
+			z.tagsMap[key] = ""
 		}
 	}
 	return z
@@ -53,7 +51,7 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 
 // Match checks whether a zone's set of tags matches the provided tag values
 func (f ZoneTagFilter) Match(tagsMap map[string]string) bool {
-	for key, v := range f.zoneTagsMap {
+	for key, v := range f.tagsMap {
 		if value, hasTag := tagsMap[key]; !hasTag || (v != "" && value != v) {
 			return false
 		}
@@ -63,5 +61,5 @@ func (f ZoneTagFilter) Match(tagsMap map[string]string) bool {
 
 // IsEmpty returns true if there are no tags for the filter
 func (f ZoneTagFilter) IsEmpty() bool {
-	return len(f.zoneTags) == 0
+	return len(f.tagsMap) == 0
 }
