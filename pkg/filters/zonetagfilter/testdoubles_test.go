@@ -20,7 +20,7 @@ import "fmt"
 
 type filterZoneTags struct {
 	ZoneTagFilter
-	zoneTags map[string]string
+	inputTags map[string]string
 }
 
 // generateTagFilterAndZoneTagsForMatch generates filter tags and zone tags that do match.
@@ -36,26 +36,27 @@ func generateTagFilterAndZoneTagsForNotMatch(filter, zone int) filterZoneTags {
 // generateTagFilterAndZoneTags generates filter tags and zone tags based on the match parameter.
 func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
 	validate(filter, zone)
-	filterTags := make([]string, 0, filter)
-	zoneTags := make(map[string]string, zone)
+	toFilterTags := make([]string, 0, filter)
+	inputTags := make(map[string]string, zone)
 
-	for i := filter - 1; i >= 0; i-- {
-		if match {
-			filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i, i))
-		} else {
-			filterTags = append(filterTags, fmt.Sprintf("tag-%d=value-%d", i+50, i))
+	for i := 0; i < filter; i++ {
+		tagIndex := i
+		if !match {
+			tagIndex += 50
 		}
+		toFilterTags = append(toFilterTags, fmt.Sprintf("tag-%d=value-%d", tagIndex, i))
 	}
 
 	for i := 0; i < zone; i++ {
-		if match {
-			zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i)
-		} else {
-			zoneTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", i+2)
+		tagIndex := i
+		if !match {
+			// Make sure the input tags are different from the filter tags
+			tagIndex += 2
 		}
+		inputTags[fmt.Sprintf("tag-%d", i)] = fmt.Sprintf("value-%d", tagIndex)
 	}
 
-	return filterZoneTags{NewZoneTagFilter(filterTags), zoneTags}
+	return filterZoneTags{NewZoneTagFilter(toFilterTags), inputTags}
 }
 
 func validate(filter int, zone int) {

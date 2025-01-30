@@ -97,7 +97,7 @@ func TestZoneTagFilterMatchGeneratedValues(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("filters:%d zones:%d", tc.filters, tc.zones), func(t *testing.T) {
-			assert.True(t, tc.source.ZoneTagFilter.Match(tc.source.zoneTags))
+			assert.True(t, tc.source.ZoneTagFilter.Match(tc.source.inputTags))
 		})
 	}
 }
@@ -114,7 +114,7 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("filters:%d zones:%d", tc.filters, tc.zones), func(t *testing.T) {
-			assert.False(t, tc.source.ZoneTagFilter.Match(tc.source.zoneTags))
+			assert.False(t, tc.source.ZoneTagFilter.Match(tc.source.inputTags))
 		})
 	}
 }
@@ -144,7 +144,7 @@ var benchFixtures = []struct {
 func BenchmarkZoneTagFilterComplex(b *testing.B) {
 	for _, tc := range benchFixtures {
 		for range b.N {
-			tc.source.ZoneTagFilter.Match(tc.source.zoneTags)
+			tc.source.ZoneTagFilter.Match(tc.source.inputTags)
 		}
 	}
 }
