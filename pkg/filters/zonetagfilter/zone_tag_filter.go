@@ -24,7 +24,6 @@ import (
 
 // ZoneTagFilter holds a list of zone tags to filter by
 type ZoneTagFilter struct {
-	zoneTags    []string
 	zoneTagsMap map[string]string
 }
 
@@ -34,10 +33,9 @@ func NewZoneTagFilter(tags []string) ZoneTagFilter {
 		tags = []string{}
 	}
 	z := ZoneTagFilter{}
-	z.zoneTags = tags
 	z.zoneTagsMap = make(map[string]string, len(tags))
 	// tags pre-processing, to make sure the pre-processing is not happening at the time of filtering
-	for _, tag := range z.zoneTags {
+	for _, tag := range tags {
 		parts := strings.SplitN(tag, "=", 2)
 		key := strings.TrimSpace(parts[0])
 		if key == "" {
