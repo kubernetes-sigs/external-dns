@@ -24,10 +24,10 @@ import (
 )
 
 var basicZoneTags = []struct {
-	name          string
-	zoneTagFilter []string
-	zoneTags      map[string]string
-	matches       bool
+	name       string
+	tagsFilter []string
+	zoneTags   map[string]string
+	matches    bool
 }{
 	{
 		"single tag no match", []string{"tag1=value1"}, map[string]string{"tag0": "value0"}, false,
@@ -56,13 +56,16 @@ var basicZoneTags = []struct {
 	{
 		"empty tag filter matches all", []string{""}, map[string]string{"tag0": "value0"}, true,
 	},
+	{
+		"tag filter with empty key is ignored", []string{"tag1=value1", "=haha"}, map[string]string{"tag1": "value1"}, true,
+	},
 }
 
 func TestZoneTagFilterMatch(t *testing.T) {
 	for _, tc := range basicZoneTags {
-		zoneTagFilter := NewZoneTagFilter(tc.zoneTagFilter)
+		filter := NewZoneTagFilter(tc.tagsFilter)
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.matches, zoneTagFilter.Match(tc.zoneTags))
+			assert.Equal(t, tc.matches, filter.Match(tc.zoneTags))
 		})
 	}
 }
@@ -121,7 +124,7 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 
 func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 	for _, tc := range basicZoneTags {
-		zoneTagFilter := NewZoneTagFilter(tc.zoneTagFilter)
+		zoneTagFilter := NewZoneTagFilter(tc.tagsFilter)
 		for range b.N {
 			zoneTagFilter.Match(tc.zoneTags)
 		}
