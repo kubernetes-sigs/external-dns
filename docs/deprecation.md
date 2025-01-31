@@ -1,6 +1,6 @@
 # External DNS Deprecation Policy
 
-This document defines the Deprecation Policy for External Secrets Operator Components.
+This document defines the Deprecation Policy for External DNS.
 
 Kubernetes is a dynamic system driven by APIs, which evolve with each new release. A crucial aspect of any API-driven system is having a well-defined deprecation policy. This policy informs users about APIs that are slated for removal or modification. Kubernetes follows this principle and periodically refines or upgrades its APIs or capabilities. Consequently, older features are marked as deprecated and eventually phased out. To avoid breaking existing users, we should follow a simple deprecation policy for behaviors that a slated to be removed.
 
@@ -31,7 +31,6 @@ This includes, but isn't limited to:
 - Release process
 - Docker Images (including multi-arch builds)
 - Image Signature (including provenance, providers, keys)
-- OLM-specific builds
 
 ## Including features and behaviors to the Deprecation Policy
 
@@ -39,9 +38,9 @@ Any `maintainer` or `contributor` may propose including a feature, component, or
 
 The proposal must clearly outline the rationale for inclusion, the impact on users, stability, long term maintenance plan, and day-to-day activities, if such.
 
-The proposal must be formalized by submitting a `docs/proposal/xxx-design.md` document as a Pull Request. Pull request must be labeled with `kind/proposal`
+The proposal must be formalized by submitting a `docs/proposal/EDP-XXX.md` document in a Pull Request. Pull request must be labeled with `kind/proposal`. 
 
-The proposal template location is [here](docs/proposal/design-template.md)
+The proposal template location is [here](docs/proposal/design-template.md). The template is quite complete, one can remove any unnecessary or irrelevant section on a specific proposal.
 
 ## Deprecation Process
 
@@ -70,11 +69,12 @@ Upon approval, the proposing maintainer is responsible for implementing the chan
   - log.Warn("The XXX is on the path of ***DEPRECATION***. We recommend that you use YYY (link to docs)")
 * Documenting the deprecation in release notes and relevant documentation.
 * Updating APIs, metrics, or behaviors per the Kubernetes Deprecation Policy if in scope.
-* If the feature is entirely deprecated archival of any associated repositories (external provider as example).
+* If the feature is entirely deprecated, archival of any associated repositories (external provider as example).
 
 ### Deprecation Notice in Release
 
 Deprecation must be introduced in the next release. The release must follow semantic versioning:
+
 * If the project is in the 0.x stage, a `minor` version `bump` is required.
 * For projects 1.x and beyond, a major version bump is required. For the features completely removed.
   - If it's a flag change/flip, the `minor` version `bump` is acceptable
