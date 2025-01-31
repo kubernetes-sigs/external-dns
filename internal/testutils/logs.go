@@ -32,7 +32,7 @@ import (
 //
 //	buf := LogsToBuffer(t)
 //	... do something that logs ...
-//	if !strings.Contains(buf.String(), "expected log message") {
+//	assert.Contains(t, buf.String(), "expected log message")
 func LogsToBuffer(t *testing.T) *bytes.Buffer {
 	t.Helper()
 	buf := new(bytes.Buffer)
