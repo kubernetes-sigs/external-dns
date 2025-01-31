@@ -32,7 +32,8 @@ nav:
       - Rate Limits: docs/rate-limits.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
-      - Release: docs/release.md
+      - Release: docs/release.
+      - Deprecation Policy: docs/deprecation.md
       - docs/contributing/*
 
 theme:
