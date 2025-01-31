@@ -14,6 +14,7 @@ We follow the [Kubernetes Deprecation Policy](https://kubernetes.io/docs/referen
 * Annotations objects or it's values
 * Controller Configuration: CLI flags & environment variables
 * Metrics as defined in the [Kubernetes docs](https://kubernetes.io/docs/reference/using-api/deprecation-policy/#deprecating-a-metric)
+* Revert a specific behavior without an alternative (flag,crd or annotation)
 
 ### Non-Scope
 
