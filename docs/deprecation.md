@@ -2,7 +2,9 @@
 
 This document defines the Deprecation Policy for External Secrets Operator Components.
 
-Kubernetes is a dynamic system driven by APIs, which evolve with each new release. A crucial aspect of any API-driven system is having a well-defined deprecation policy. This policy informs users about APIs that are slated for removal or modification. Kubernetes follows this principle and periodically refines or upgrades its APIs or capabilities. Consequently, older features are marked as deprecated and eventually phased out.
+Kubernetes is a dynamic system driven by APIs, which evolve with each new release. A crucial aspect of any API-driven system is having a well-defined deprecation policy. This policy informs users about APIs that are slated for removal or modification. Kubernetes follows this principle and periodically refines or upgrades its APIs or capabilities. Consequently, older features are marked as deprecated and eventually phased out. To avoid breaking existing users, we should follow a simple deprecation policy for behaviors that a slated to be removed.
+
+The features and capabilities either to evolve or need to be removed.
 
 ## Deprecation Policy
 
@@ -65,7 +67,7 @@ Votes may be conducted asynchronously, with a reasonable deadline for responses 
 Upon approval, the proposing maintainer is responsible for implementing the changes required to mark the feature as deprecated. This includes:
 
 * Updating the codebase with deprecation warnings where applicable.
-  - log.Warn("The XXX is on the path of deprecation. We reccomend that you use YYY (link to docs)")
+  - log.Warn("The XXX is on the path of ***DEPRECATION***. We recommend that you use YYY (link to docs)")
 * Documenting the deprecation in release notes and relevant documentation.
 * Updating APIs, metrics, or behaviors per the Kubernetes Deprecation Policy if in scope.
 * If the feature is entirely deprecated archival of any associated repositories (external provider as example).
