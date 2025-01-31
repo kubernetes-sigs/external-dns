@@ -3,6 +3,7 @@
 In Kubernetes, **leader election** is a mechanism used by applications, controllers, or distributed systems to designate one instance or node as the "leader" that is responsible for managing specific tasks, while others operate as followers or standbys. This ensures coordinated and fault-tolerant operations in highly available systems.
 
 - [Kubernetes Coordinated Leader Election](https://kubernetes.io/docs/concepts/cluster-administration/coordinated-leader-election/)
+- [Kubernetes Concepts: Leases](https://kubernetes.io/docs/concepts/architecture/leases/)
 
 ### **Leader Election in Kubernetes**
 
@@ -30,9 +31,25 @@ sequenceDiagram
     Note over R2,R3: Replicas remain on standby<br>as long as leader is active
 ```
 
-![leader election](../img/leader-election.sequnce.mermaid "leader election")
+*** Leader Election Flow ***
 
-- [Kubernetes Concepts: Leases](https://kubernetes.io/docs/concepts/architecture/leases/)
+```mermaid
+graph TD
+subgraph Active Replica
+A[Replica 1]
+end
+subgraph Kubernetes Resource Lock
+A["fa:fa-server  Replica 1"] --> |Hold The Lock| C@{ label: "Lock" }
+end
+subgraph Standby Replicas
+  D["fa:fa-server  Replica 2"] -->|Poll| C
+  E["fa:fa-server  Replica 3"] -->|Poll| C["fa:fa-lock Lock"]
+end
+	style C color:#8C52FF,fill:#A6A6A6
+	style A color:#8C52FF,fill:#00BF63
+	style D fill:#FFDE59
+	style E color:#000000,fill:#FFDE59
+```
 
 #### Enable Leader Election
 
