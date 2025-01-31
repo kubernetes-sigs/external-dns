@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant R1 as Replica 1 (Leader)
+    participant LR as Lock Resource
+    participant R2 as Replica 2 (Standby)
+    participant R3 as Replica 3 (Standby)
+
+    R1->>LR: Update Lock Resource
+    Note over LR: currentLeader: R1<br>timeStamp: 12:21<br>leaseDuration: 10s
+
+    loop Every polling period
+        R2->>LR: Poll leader status
+        LR-->>R2: Return lock info
+        R3->>LR: Poll leader status
+        LR-->>R3: Return lock info
+    end
+
+    Note over R2,R3: Replicas remain on standby<br>as long as leader is active

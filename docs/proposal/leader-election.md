@@ -8,7 +8,29 @@ In Kubernetes, **leader election** is a mechanism used by applications, controll
 
 The leader election mechanism implemented in Go code relies on Kubernetes coordination features, specifically Lease object in the `coordination.k8s.io` API Group. Lease locks provide a way to acquire a lease on a shared resource, which can be used to determine the leader among a group of nodes.
 
-![leader election](../img/leader-election.png "leader election")
+*** Leader Election Sequence Diagram ***
+
+```mermaid
+sequenceDiagram
+    participant R1 as Replica 1 (Leader)
+    participant LR as Lock Resource
+    participant R2 as Replica 2 (Standby)
+    participant R3 as Replica 3 (Standby)
+
+    R1->>LR: Update Lock Resource
+    Note over LR: currentLeader: R1<br>timeStamp: 12:21<br>leaseDuration: 10s
+
+    loop Every polling period
+        R2->>LR: Poll leader status
+        LR-->>R2: Return lock info
+        R3->>LR: Poll leader status
+        LR-->>R3: Return lock info
+    end
+
+    Note over R2,R3: Replicas remain on standby<br>as long as leader is active
+```
+
+![leader election](../img/leader-election.sequnce.mermaid "leader election")
 
 - [Kubernetes Concepts: Leases](https://kubernetes.io/docs/concepts/architecture/leases/)
 
