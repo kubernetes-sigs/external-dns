@@ -8,7 +8,7 @@ Currently we don't release regularly. Whenever we think it makes sense to releas
 
 A new staging image is released weekly and can be found at [gcr.io/k8s-staging-external-dns/external-dns](https://console.cloud.google.com/gcr/images/k8s-staging-external-dns/GLOBAL/external-dns?pli=1&inv=1&invt=AboL6Q).
 
-> Consider the potential time lag between merging changes into the master branch and the subsequent creation of the staging image.
+> There is a time lag between merging changes into the master branch and the subsequent creation of the staging image.
 
 Example command to fetch `10` most recent staging images:
 
