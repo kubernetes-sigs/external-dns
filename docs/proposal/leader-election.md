@@ -51,6 +51,21 @@ end
 	style E color:#000000,fill:#FFDE59
 ```
 
+***How Leader Is Elected***
+
+```mermaid
+flowchart TD
+    A[Start Leader Election] -->|Replica 1 Becomes Leader| B(Update Lock Resource)
+    B --> C{Is Leader Active?}
+    C -->|Yes| D[Replicas 2 & 3 Poll Leader Status]
+    C -->|No| E[Trigger New Election]
+    E -->|New Leader Found| F[Replica X Becomes Leader]
+    E -->|No Leader| G[Retry Election]
+    F --> B
+    G --> C
+    D --> C
+```
+
 #### Enable Leader Election
 
 Minimum supported cluster version is `v1.26`.
