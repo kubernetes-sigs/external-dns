@@ -47,7 +47,7 @@ subgraph Standby Replicas
 end
 	style C color:#8C52FF,fill:#A6A6A6
 	style A color:#8C52FF,fill:#00BF63
-	style D fill:#FFDE59
+	style D color:#000000,fill:#FFDE59
 	style E color:#000000,fill:#FFDE59
 ```
 
@@ -68,7 +68,7 @@ flowchart TD
 
 #### Enable Leader Election
 
-Minimum supported cluster version is `v1.26`.
+Minimum supported Kubernetes version is `v1.26`.
 
 > Currently, this feature is "opt-in". The `--enable-leader-election` flag must be explicitly provided to activate it in the service.
 
@@ -111,6 +111,7 @@ args:
 ### **Why Leader Election is Important**
 
 Leader election ensures that:
+
 - **High Availability**: Fail-over to a new leader ensures availability even if the current leader goes down.
 - **Data Consistency**: Only one leader acts on critical tasks, preventing duplicate work or conflicting updates.
 - **Workload Distribution**: Secondary replicas can be on standby, reducing resource contention.
