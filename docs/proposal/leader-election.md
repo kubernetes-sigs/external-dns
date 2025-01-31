@@ -16,17 +16,17 @@ The leader election mechanism implemented in Go code relies on Kubernetes coordi
 
 Minimum supported cluster version is `v1.26`.
 
-> Currently, this feature is "opt-in". The `-enable` flag must be explicitly provided to activate it in the service.
+> Currently, this feature is "opt-in". The `--enable-leader-election` flag must be explicitly provided to activate it in the service.
 
-| **Flag**                                | **Description**                                       |
-|:----------------------------------------|:------------------------------------------------------|
-| `--enable-leader-election-experimental` | This flag is required to enable leader election logic |
+| **Flag**                   | **Description**                                       |
+|:---------------------------|:------------------------------------------------------|
+| `--enable-leader-election` | This flag is required to enable leader election logic |
 
 ```yml
 args:
    --registry=txt \
    --source=fake \
-   --enable-leader-election-experimental
+   --enable-leader-election
 ```
 
 ### **How Leader Election Works in Kubernetes**
