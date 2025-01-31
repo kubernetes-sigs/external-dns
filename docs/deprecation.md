@@ -37,9 +37,9 @@ Any `maintainer` or `contributor` may propose including a feature, component, or
 
 The proposal must clearly outline the rationale for inclusion, the impact on users, stability, long term maintenance plan, and day-to-day activities, if such.
 
-The proposal must be formalized by submitting a `docs/proposal/xxx-design.md` document as a Pull Request.
+The proposal must be formalized by submitting a `docs/proposal/xxx-design.md` document as a Pull Request. Pull request must be labeled with `kind/proposal`
 
-The proposal template is [here](docs/proposal/design-template.md)
+The proposal template location is [here](docs/proposal/design-template.md)
 
 ## Deprecation Process
 
