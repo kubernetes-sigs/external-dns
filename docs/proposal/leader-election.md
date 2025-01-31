@@ -30,6 +30,7 @@ args:
 ```
 
 ### **How Leader Election Works in Kubernetes**
+
 1. **Lease API**:
    - Kubernetes provides a built-in `Lease` object in the `coordination.k8s.io/v1` API group, specifically designed for leader election.
    - The leader writes a lease object with metadata (such as its identity and timestamp) to signal that it is the current leader.
@@ -46,6 +47,7 @@ args:
 ---
 
 ### **Key Concepts**
+
 - **Lease Duration**: Defines how long the leader is considered valid after the last lease renewal. Short lease durations result in faster failovers but higher contention and potential performance impact.
 - **Leader Identity**: Usually the name or ID of the pod that holds the leadership role.
 - **Backoff and Contention**: Followers typically wait and retry with a backoff period to avoid overwhelming the system when a leader is lost.
@@ -53,6 +55,7 @@ args:
 ---
 
 ### **Why Leader Election is Important**
+
 Leader election ensures that:
 - **High Availability**: Fail-over to a new leader ensures availability even if the current leader goes down.
 - **Data Consistency**: Only one leader acts on critical tasks, preventing duplicate work or conflicting updates.
