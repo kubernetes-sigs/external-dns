@@ -331,12 +331,14 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		log.Info("All records are already up to date")
 		return nil
 	}
+
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := p.changesByZone(zones, changes)
+
 	var failedZones []string
 	for zoneID, changes := range changesByZone {
 		records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
@@ -503,8 +505,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 			}
 			return nil, err
 		}
-		// log page records
-		log.Debugf("Fetched %d records from page %d", len(pageRecords), resultInfo.Page)
+
 		records = append(records, pageRecords...)
 		params.ResultInfo = resultInfo.Next()
 		if params.ResultInfo.Done() {
