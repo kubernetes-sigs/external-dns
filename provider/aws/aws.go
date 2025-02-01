@@ -364,7 +364,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 
 				// Only fetch tags if a tag filter was specified
 				if !p.zoneTagFilter.IsEmpty() {
-					zonesToValidate = append(zonesToValidate, *zone.Id)
+					zonesToValidate = append(zonesToValidate, cleanZoneID(*zone.Id))
 				}
 
 				// should we add to the zones map if tags not vetted yet?
@@ -375,7 +375,6 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 			}
 
 			// move to tagsForZone function
-			// make sure not exceeding the loop out of index
 			batchSize := 10
 			for i := 0; i < len(zonesToValidate); i += batchSize {
 				zTags, err := p.tagsForZone(ctx, zonesToValidate[i:min(i+batchSize, len(zonesToValidate))], profile)
