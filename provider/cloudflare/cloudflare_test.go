@@ -49,7 +49,6 @@ type mockCloudFlareClient struct {
 	listZonesError        error
 	listZonesContextError error
 	dnsRecordsError       error
-	dnsRegionError        error
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
