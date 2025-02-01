@@ -49,6 +49,7 @@ type mockCloudFlareClient struct {
 	listZonesError        error
 	listZonesContextError error
 	dnsRecordsError       error
+	dnsRegionError        error
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -1460,5 +1461,47 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	change := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0])
 	if change.RegionalHostname.RegionKey != "us" {
 		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.RegionKey)
+	}
+}
+
+// Test basic posible scenarios for the submitChanges function
+func TestCloudFlareProvider_submitChanges(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": {
+			{
+				ID:      "1234567890",
+				Name:    "bar.com",
+				Type:    endpoint.RecordTypeA,
+				TTL:     1,
+				Content: "1.2.3.4",
+				Proxied: proxyEnabled,
+			},
+		},
+	})
+	provider := &CloudFlareProvider{
+		Client: client,
+	}
+
+	// Create a slice of *cloudFlareChange
+	changes := []*cloudFlareChange{
+		{
+			Action: cloudFlareUpdate,
+			ResourceRecord: cloudflare.DNSRecord{
+				Name: "bar.com",
+				Type: "A",
+				ID:   "1234567890",
+				Content: "1.2.3.4",
+			},
+			RegionalHostname: cloudflare.RegionalHostname{
+				Hostname:  "bar.com",
+				RegionKey: "us",
+			},
+		},
+	}
+	
+	// Should not return an error
+	err := provider.submitChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
 	}
 }
