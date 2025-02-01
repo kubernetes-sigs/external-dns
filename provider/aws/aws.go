@@ -206,6 +206,7 @@ type Route53API interface {
 	CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error)
 	ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error)
 	ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error)
+	ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error)
 }
 
 // Route53Change wrapper to handle ownership relation throughout the provider implementation
@@ -342,6 +343,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 				// nothing to do here. Falling through to general error handling
 				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 			}
+			var zonesToValidate []string
 			for _, zone := range resp.HostedZones {
 				if !p.zoneIDFilter.Match(*zone.Id) {
 					continue
@@ -362,19 +364,29 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 
 				// Only fetch tags if a tag filter was specified
 				if !p.zoneTagFilter.IsEmpty() {
-					tags, err := p.tagsForZone(ctx, *zone.Id, profile)
-					if err != nil {
-						tagErr = err
-						break
-					}
-					if !p.zoneTagFilter.Match(tags) {
-						continue
-					}
+					zonesToValidate = append(zonesToValidate, *zone.Id)
 				}
 
+				// should we add to the zones map if tags not vetted yet?
 				zones[*zone.Id] = &profiledZone{
 					profile: profile,
 					zone:    &zone,
+				}
+			}
+
+			// move to tagsForZone function
+			// make sure not exceeding the loop out of index
+			batchSize := 10
+			for i := 0; i < len(zonesToValidate); i += batchSize {
+				zTags, err := p.tagsForZone(ctx, zonesToValidate[i:min(i+batchSize, len(zonesToValidate))], profile)
+				if err != nil {
+					tagErr = err
+					break
+				}
+				for k, v := range zTags {
+					if !p.zoneTagFilter.Match(v) {
+						delete(zones, k)
+					}
 				}
 			}
 		}
@@ -940,23 +952,26 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile string) (map[string]string, error) {
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (map[string]map[string]string, error) {
 	client := p.clients[profile]
 
-	// TODO: this will make single API request for each zone, which consumes API requests
-	// more effective way is to batch requests https://github.com/aws/aws-sdk-go-v2/blob/ed8a3caa0df9ce36a5b60aebeee201187098d205/service/route53/api_op_ListTagsForResources.go#L37
-	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
+	response, err := client.ListTagsForResources(ctx, &route53.ListTagsForResourcesInput{
 		ResourceType: route53types.TagResourceTypeHostedzone,
-		ResourceId:   aws.String(cleanZoneID(zoneID)),
+		ResourceIds:  zoneIDs,
 	})
 	if err != nil {
-		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %w", zoneID, err)
+		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %v", zoneIDs, err)
 	}
-	tagMap := map[string]string{}
-	for _, tag := range response.ResourceTagSet.Tags {
-		tagMap[*tag.Key] = *tag.Value
+	result := map[string]map[string]string{}
+	for _, res := range response.ResourceTagSets {
+		id := res.ResourceId
+		tagMap := map[string]string{}
+		for _, tag := range res.Tags {
+			tagMap[*tag.Key] = *tag.Value
+		}
+		result[*id] = tagMap
 	}
-	return tagMap, nil
+	return result, nil
 }
 
 // count bytes for all changes values
