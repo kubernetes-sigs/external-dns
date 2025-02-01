@@ -331,7 +331,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		log.Info("All records are already up to date")
 		return nil
 	}
-	log.Info("Applying changes to zone.")
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
@@ -340,7 +339,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	changesByZone := p.changesByZone(zones, changes)
 	var failedZones []string
 	for zoneID, changes := range changesByZone {
-		log.Info("Processing zone: ", zoneID)
 		records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
 		if err != nil {
 			return fmt.Errorf("could not fetch records from zone, %v", err)
@@ -355,7 +353,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				"action": change.Action,
 				"zone":   zoneID,
 			}
-			log.Info("Processing change: ", logFields)
 
 			log.WithFields(logFields).Info("Changing record.")
 
@@ -366,13 +363,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			resourceContainer := cloudflare.ZoneIdentifier(zoneID)
 			if change.Action == cloudFlareUpdate {
 				recordID := p.getRecordID(records, change.ResourceRecord)
-				log.Info("Updating record: ", recordID)
 				if recordID == "" {
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
 				recordParam := updateDNSRecordParam(*change)
-				log.Info("recordParam: ", recordParam)
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
@@ -380,7 +375,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
 				regionalHostnameParam := updateDataLocalizationRegionalHostnameParams(*change)
-				log.Info("regionalHostnameParam: ", regionalHostnameParam)
 				regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
 				if regionalHostnameErr != nil {
 					failedChange = true
@@ -406,7 +400,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				}
 			}
 		}
-		log.Info("Changes submitted.")
 		if failedChange {
 			failedZones = append(failedZones, zoneID)
 		}
@@ -457,14 +450,7 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 }
 
 func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
-	log.Info("records to get ID from: ", records)
 	for _, zoneRecord := range records {
-		log.Info("zone Name: ", zoneRecord.Name)
-		log.Info("record Name: ", record.Name)
-		log.Info("zone Type: ", zoneRecord.Type)
-		log.Info("record Type: ", record.Type)
-		log.Info("zone Content: ", zoneRecord.Content)
-		log.Info("record Content: ", record.Content)
 		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type && zoneRecord.Content == record.Content {
 			return zoneRecord.ID
 		}
