@@ -33,7 +33,8 @@ nav:
     - TTL: docs/ttl.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
-      - Release: docs/release.md
+      - Release: docs/release.
+      - Deprecation Policy: docs/deprecation.md
       - docs/contributing/*
 
 theme:

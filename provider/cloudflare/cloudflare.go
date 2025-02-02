@@ -380,7 +380,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
 				if regionalHostnameErr != nil {
 					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", regionalHostnameErr)
+					log.WithFields(logFields).Errorf("failed to update record when editing region: %v", regionalHostnameErr)
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
