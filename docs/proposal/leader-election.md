@@ -1,3 +1,13 @@
+```yaml
+---
+title: leader election proposal
+version: v1
+authors: @ivankatliarchuk
+creation-date: 2025-jan-30
+status: draft
+---
+```
+
 # Leader Election
 
 In Kubernetes, **leader election** is a mechanism used by applications, controllers, or distributed systems to designate one instance or node as the "leader" that is responsible for managing specific tasks, while others operate as followers or standbys. This ensures coordinated and fault-tolerant operations in highly available systems.
