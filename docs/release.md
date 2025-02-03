@@ -4,6 +4,19 @@
 
 Currently we don't release regularly. Whenever we think it makes sense to release a new version we do it, but we aim to do a new release every month. You might want to ask in our Slack channel [external-dns](https://kubernetes.slack.com/archives/C771MKDKQ) when the next release will come out.
 
+## Staging Release cycle
+
+A new staging image is released weekly and can be found at [gcr.io/k8s-staging-external-dns/external-dns](https://console.cloud.google.com/gcr/images/k8s-staging-external-dns/GLOBAL/external-dns?pli=1&inv=1&invt=AboL6Q).
+
+> There is a time lag between merging changes into the master branch and the subsequent creation of the staging image.
+
+Example command to fetch `10` most recent staging images:
+
+```sh
+export EXT_DNS_VERSION="v0.15.1"
+curl -sLk https://gcr.io/v2/k8s-staging-external-dns/external-dns/tags/list | jq | grep "$EXT_DNS_VERSION" | tail -n 10
+```
+
 ## Versioning convention
 
 These are the conventions that we will be using for releases following `0.7.6`:
