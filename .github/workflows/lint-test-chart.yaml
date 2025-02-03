@@ -59,7 +59,7 @@ jobs:
           version: latest
 
       - name: Install Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           token: ${{ github.token }}
           python-version: "3.x"
@@ -70,13 +70,13 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          changed=$(ct list-changed)
+          changed=$(ct list-changed --target-branch=master)
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Run chart-testing lint
-        run: ct lint --check-version-increment=false
+        run: ct lint --target-branch=master --check-version-increment=false
 
       - name: Create Kind cluster
         if: steps.changes.outputs.changed == 'true'
@@ -86,4 +86,4 @@ jobs:
 
       - name: Run chart-testing install
         if: steps.changes.outputs.changed == 'true'
-        run: ct install
+        run: ct install --target-branch=master
