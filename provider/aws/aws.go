@@ -219,12 +219,14 @@ type Route53Change struct {
 type Route53Changes []*Route53Change
 
 type profiledZone struct {
-	profile string
-	zone    *route53types.HostedZone
+	profile  string
+	zone     *route53types.HostedZone
+	zoneName string
+	client   Route53API
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {
-	ret := []route53types.Change{}
+	ret := make([]route53types.Change, 0)
 	for _, c := range cs {
 		ret = append(ret, c.Change)
 	}
@@ -240,7 +242,7 @@ type zonesListCache struct {
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	provider.BaseProvider
-	clients               map[string]Route53API
+	clients               map[string][]*AWSZoneConfig
 	dryRun                bool
 	batchChangeSize       int
 	batchChangeSizeBytes  int
@@ -281,7 +283,7 @@ type AWSConfig struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSProvider, error) {
+func NewAWSProvider(awsConfig AWSConfig, clients map[string][]*AWSZoneConfig) (*AWSProvider, error) {
 	provider := &AWSProvider{
 		clients:               clients,
 		domainFilter:          awsConfig.DomainFilter,
@@ -327,59 +329,64 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 
 	zones := make(map[string]*profiledZone)
 
-	for profile, client := range p.clients {
+	for profile, hostedZoneClients := range p.clients {
 		var tagErr error
-		paginator := route53.NewListHostedZonesPaginator(client, &route53.ListHostedZonesInput{})
 
-		for paginator.HasMorePages() {
-			resp, err := paginator.NextPage(ctx)
-			if err != nil {
-				var te *route53types.ThrottlingException
-				if errors.As(err, &te) {
-					log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
-					continue
+		for _, client := range hostedZoneClients {
+			paginator := route53.NewListHostedZonesPaginator(client.Route53Config, &route53.ListHostedZonesInput{})
+
+			for paginator.HasMorePages() {
+				resp, err := paginator.NextPage(ctx)
+				if err != nil {
+					var te *route53types.ThrottlingException
+					if errors.As(err, &te) {
+						log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
+						continue
+					}
+					// nothing to do here. Falling through to general error handling
+					return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 				}
-				// nothing to do here. Falling through to general error handling
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+				for _, zone := range resp.HostedZones {
+					if !p.zoneIDFilter.Match(*zone.Id) {
+						continue
+					}
+
+					if !p.zoneTypeFilter.Match(zone) {
+						continue
+					}
+
+					if !p.domainFilter.Match(*zone.Name) {
+						if !p.zoneMatchParent {
+							continue
+						}
+						if !p.domainFilter.MatchParent(*zone.Name) {
+							continue
+						}
+					}
+
+					// Only fetch tags if a tag filter was specified
+					if !p.zoneTagFilter.IsEmpty() {
+						tags, err := p.tagsForZone(ctx, *zone.Id, client.Route53Config)
+						if err != nil {
+							tagErr = err
+							break
+						}
+						if !p.zoneTagFilter.Match(tags) {
+							continue
+						}
+					}
+
+					zones[*zone.Id] = &profiledZone{
+						profile:  profile,
+						zone:     &zone,
+						zoneName: client.HostedZoneName,
+						client:   client.Route53Config,
+					}
+				}
 			}
-			for _, zone := range resp.HostedZones {
-				if !p.zoneIDFilter.Match(*zone.Id) {
-					continue
-				}
-
-				if !p.zoneTypeFilter.Match(zone) {
-					continue
-				}
-
-				if !p.domainFilter.Match(*zone.Name) {
-					if !p.zoneMatchParent {
-						continue
-					}
-					if !p.domainFilter.MatchParent(*zone.Name) {
-						continue
-					}
-				}
-
-				// Only fetch tags if a tag filter was specified
-				if !p.zoneTagFilter.IsEmpty() {
-					tags, err := p.tagsForZone(ctx, *zone.Id, profile)
-					if err != nil {
-						tagErr = err
-						break
-					}
-					if !p.zoneTagFilter.Match(tags) {
-						continue
-					}
-				}
-
-				zones[*zone.Id] = &profiledZone{
-					profile: profile,
-					zone:    &zone,
-				}
+			if tagErr != nil {
+				return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
 			}
-		}
-		if tagErr != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
 		}
 	}
 
@@ -437,8 +444,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, z := range zones {
-		client := p.clients[z.profile]
-
+		client := z.client
 		paginator := route53.NewListResourceRecordSetsPaginator(client, &route53.ListResourceRecordSetsInput{
 			HostedZoneId: z.zone.Id,
 			MaxItems:     aws.Int32(route53PageSize),
@@ -670,7 +676,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 				successfulChanges := 0
 
-				client := p.clients[zones[z].profile]
+				client := zones[z].client
 				if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 					log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
@@ -940,9 +946,7 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile string) (map[string]string, error) {
-	client := p.clients[profile]
-
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, client Route53API) (map[string]string, error) {
 	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
 		ResourceType: route53types.TagResourceTypeHostedzone,
 		ResourceId:   aws.String(zoneID),
