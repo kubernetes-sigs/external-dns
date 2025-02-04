@@ -1486,9 +1486,9 @@ func TestCloudFlareProvider_submitChanges(t *testing.T) {
 		{
 			Action: cloudFlareUpdate,
 			ResourceRecord: cloudflare.DNSRecord{
-				Name: "bar.com",
-				Type: "A",
-				ID:   "1234567890",
+				Name:    "bar.com",
+				Type:    endpoint.RecordTypeA,
+				ID:      "1234567890",
 				Content: "1.2.3.4",
 			},
 			RegionalHostname: cloudflare.RegionalHostname{
@@ -1497,7 +1497,67 @@ func TestCloudFlareProvider_submitChanges(t *testing.T) {
 			},
 		},
 	}
-	
+
+	// Should not return an error
+	err := provider.submitChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+}
+
+func TestCloudFlareProvider_submitChangesError(t *testing.T) {
+    client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+        "001": {
+            {
+                ID:      "1234567890",
+                Name:    "my-domain-here.app",
+                Type:    endpoint.RecordTypeCNAME,
+                TTL:     1,
+                Content: "my-tunnel-guid-here.cfargotunnel.com",
+                Proxied: proxyEnabled,
+            },
+            {
+                ID:      "9876543210",
+                Name:    "my-domain-here.app",
+                Type:    endpoint.RecordTypeTXT,
+                TTL:     1,
+                Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
+            },
+        },
+    })
+	// zoneIdFilter := provider.NewZoneIDFilter([]string{"001"})
+    provider := &CloudFlareProvider{
+        Client: client,
+    }
+
+    changes := []*cloudFlareChange{
+        {
+            Action: cloudFlareUpdate,
+            ResourceRecord: cloudflare.DNSRecord{
+                Name:    "my-domain-here.app",
+                Type:    endpoint.RecordTypeCNAME,
+                ID:      "1234567890",
+                Content: "my-tunnel-guid-here.cfargotunnel.com",
+            },
+            RegionalHostname: cloudflare.RegionalHostname{
+                Hostname: "my-domain-here.app",
+            },
+        },
+        {
+            Action: cloudFlareUpdate,
+            ResourceRecord: cloudflare.DNSRecord{
+                Name:    "my-domain-here.app",
+                Type:    endpoint.RecordTypeTXT,
+                ID:      "9876543210",
+                Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
+            },
+            RegionalHostname: cloudflare.RegionalHostname{
+                Hostname: "my-domain-here.app",
+				RegionKey: "",
+            },
+        },
+    }
+
 	// Should not return an error
 	err := provider.submitChanges(context.Background(), changes)
 	if err != nil {
