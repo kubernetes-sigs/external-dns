@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -224,7 +223,6 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	// && if the filter isn't just a blank string (used in tests)
 	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
 		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
-		debug.PrintStack()
 		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
 			log.Debugf("looking up zone %s", zoneID)
 			detailResponse, err := p.Client.ZoneDetails(ctx, zoneID)
@@ -455,10 +453,7 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 
 func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
 	for _, zoneRecord := range records {
-		log.Info("zoneRecord type: ", zoneRecord.Type)
-		log.Info("record: ", record.Type)
 		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type && zoneRecord.Content == record.Content {
-			log.Info("zoneRecord ID: ", zoneRecord.ID)
 			return zoneRecord.ID
 		}
 	}

@@ -1505,7 +1505,7 @@ func TestCloudFlareProvider_submitChanges(t *testing.T) {
 	}
 }
 
-func TestCloudFlareProvider_submitChangesError(t *testing.T) {
+func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
     client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
         "001": {
             {
