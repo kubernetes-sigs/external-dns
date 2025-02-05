@@ -116,9 +116,9 @@ rules:
     resources: ["routegroups/status"]
     verbs: ["patch","update"]
 {{- end }}
-{{- if has "f5-virtualserver" .Values.sources }}
+{{- if or (has "f5-virtualserver" .Values.sources) (has "f5-transportserver" .Values.sources) }}
   - apiGroups: ["cis.f5.com"]
-    resources: ["virtualservers"]
+    resources: ["virtualservers", "transportservers"]
     verbs: ["get","watch","list"]
 {{- end }}
 {{- with .Values.rbac.additionalPermissions }}
