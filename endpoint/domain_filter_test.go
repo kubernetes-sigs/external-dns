@@ -419,22 +419,13 @@ func TestDomainFilterWithExclusions(t *testing.T) {
 				"exclude": tt.exclusions,
 			})
 
-			result := []string{}
-			excluded := []string{}
-
 			for _, domain := range tt.domains {
-				if domainFilter.Match(domain) {
-					result = append(result, domain)
-				} else {
-					excluded = append(excluded, domain)
-				}
 				assert.Equal(t, tt.expected, domainFilter.Match(domain), "%v", domain)
 				assert.Equal(t, tt.expected, domainFilter.Match(domain+"."), "%v", domain+".")
 
 				assert.Equal(t, tt.expected, deserialized.Match(domain), "deserialized %v", domain)
 				assert.Equal(t, tt.expected, deserialized.Match(domain+"."), "deserialized %v", domain+".")
 			}
-			fmt.Println(result, "excluded:", excluded)
 		})
 	}
 }
