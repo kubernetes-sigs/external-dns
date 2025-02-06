@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added ability to configure `imagePullSecrets` via helm `global` value. ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
 - Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values. ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
+- Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source. ([#5066](https://github.com/kubernetes-sigs/external-dns/pull/5066)) _@visokoo_
 
 ### Changed
 
