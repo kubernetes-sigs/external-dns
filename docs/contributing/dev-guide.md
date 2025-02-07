@@ -44,11 +44,11 @@ If added any flags, re-generate flags documentation
 make generate-flags-documentation
 ```
 
-We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation. In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the provider itself, such as function tests.
+We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation. In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
 
 ### Continuous Integration
 
-When submitting a pull request, you'll notice that we run several automated processes on your proposed change.Some of these processes are tests to ensure your contribution aligns with our standards. While we strive for accuracy, some users may find these tests confusing.
+When submitting a pull request, you'll notice that we run several automated processes on your proposed change. Some of these processes are tests to ensure your contribution aligns with our standards. While we strive for accuracy, some users may find these tests confusing.
 
 ## Execute code without building binary
 
