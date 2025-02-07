@@ -1,32 +1,3 @@
-# Quick Start
-
-- [Git](https://git-scm.com/downloads)
-- [Go 1.23+](https://golang.org/dl/)
-- [Go modules](https://github.com/golang/go/wiki/Modules)
-- [golangci-lint](https://github.com/golangci/golangci-lint)
-- [ko](https://ko.build/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
-
-Compile and run locally against a remote k8s cluster.
-```shell
-git clone https://github.com/kubernetes-sigs/external-dns.git && cd external-dns
-make build
-# login to remote k8s cluster
-./build/external-dns --source=service --provider=inmemory --once
-```
-
-Run linting, unit tests, and coverage report.
-```shell
-make lint
-make test
-make cover-html
-```
-
-Build container image.
-```shell
-make build.push IMAGE=your-registry/external-dns
-```
-
 # Design
 
 ExternalDNS's sources of DNS records live in package [source](https://github.com/kubernetes-sigs/external-dns/tree/master/source). They implement the `Source` interface that has a single method `Endpoints` which returns the represented source's objects converted to `Endpoints`. Endpoints are just a tuple of DNS name and target where target can be an IP or another hostname.
