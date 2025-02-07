@@ -30,9 +30,7 @@ git clone https://github.com/kubernetes-sigs/external-dns.git && cd external-dns
 
 The project uses the make build system. It'll run code generators, tests and static code analysis.
 
-Building the operator binary and docker image:
-
-Run tests and lint the code:
+Build, run tests and lint the code:
 
 ```shell
 make go-lint
