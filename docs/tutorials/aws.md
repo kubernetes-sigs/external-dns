@@ -244,7 +244,7 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 
 [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) ([IAM roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)) allows cluster operators to map AWS IAM Roles to Kubernetes Service Accounts.  This essentially allows only ExternalDNS pods to access Route53 without exposing any static credentials.
 
-This is the preferred method as it implements [PoLP](https://csrc.nist.gov/glossary/term/principle_of_least_privilege) ([Principal of Least Privilege](https://csrc.nist.gov/glossary/term/principle_of_least_privilege)).
+This is the preferred method as it implements [PoLP](https://csrc.nist.gov/glossary/term/principle_of_least_privilege) ([Principle of Least Privilege](https://csrc.nist.gov/glossary/term/principle_of_least_privilege)).
 
 **IMPORTANT**: This method requires using KSA (Kubernetes service account) and RBAC.
 
