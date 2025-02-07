@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source. ([#5066](https://github.com/kubernetes-sigs/external-dns/pull/5066)) _@visokoo_
 
+### Fixed
+
+- Fixed handling of non-string types in `serviceAccount.metadata.annotations` field. ([#5067](https://github.com/kubernetes-sigs/external-dns/pull/5067)) _@hjoshi123_
+
 ## [v1.15.1] - 2023-09-10
 
 ### Added
