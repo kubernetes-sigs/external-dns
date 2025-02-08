@@ -197,8 +197,8 @@ ExternalDNS uses the hostname annotation to determine which services should be r
 
 ### Create the deployment and service
 
-```
-$ kubectl create -f nginx.yaml
+```sh
+kubectl create -f nginx.yaml
 ```
 
 Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the GoDaddy DNS records.
@@ -211,7 +211,7 @@ Use the GoDaddy web console or API to verify that the A record for your domain s
 
 Once you successfully configure and verify record management via ExternalDNS, you can delete the tutorial's example:
 
-```
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+```sh
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml
 ```

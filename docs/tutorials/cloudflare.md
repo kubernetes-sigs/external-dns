@@ -14,9 +14,8 @@ We highly recommend to read this tutorial if you haven't used Cloudflare before:
 
 Snippet from [Cloudflare - Getting Started](https://api.cloudflare.com/#getting-started-endpoints):
 
->Cloudflare's API exposes the entire Cloudflare infrastructure via a standardized programmatic interface. Using Cloudflare's API, you can do just about anything you can do on cloudflare.com via the customer dashboard.
-
->The Cloudflare API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Cloudflare, you can obtain your API key from the bottom of the "My Account" page, found here: [Go to My account](https://dash.cloudflare.com/profile).
+> Cloudflare's API exposes the entire Cloudflare infrastructure via a standardized programmatic interface. Using Cloudflare's API, you can do just about anything you can do on cloudflare.com via the customer dashboard.
+> The Cloudflare API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Cloudflare, you can obtain your API key from the bottom of the "My Account" page, found here: [Go to My account](https://dash.cloudflare.com/profile).
 
 API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set.
 Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
@@ -31,7 +30,8 @@ If you would like to further restrict the API permissions to a specific zone (or
 
 ## Throttling
 
-Cloudflare API has a [global rate limit of 1,200 requests per five minutes](https://developers.cloudflare.com/fundamentals/api/reference/limits/). Running several fast polling ExternalDNS instances in a given account can easily hit that limit. The AWS Provider [docs](./aws.md#throttling) has some recommendations that can be followed here too, but in particular, consider passing `--cloudflare-dns-records-per-page` with a high value (maximum is 5,000).
+Cloudflare API has a [global rate limit of 1,200 requests per five minutes](https://developers.cloudflare.com/fundamentals/api/reference/limits/). Running several fast polling ExternalDNS instances in a given account can easily hit that limit.
+The AWS Provider [docs](./aws.md#throttling) has some recommendations that can be followed here too, but in particular, consider passing `--cloudflare-dns-records-per-page` with a high value (maximum is 5,000).
 
 ## Deploy ExternalDNS
 
@@ -85,7 +85,6 @@ env:
         name: cloudflare-api-key
         key: apiKey
 ```
-
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
 
@@ -273,7 +272,7 @@ will cause ExternalDNS to remove the corresponding DNS records.
 Create the deployment and service:
 
 ```shell
-$ kubectl create -f nginx.yaml
+kubectl create -f nginx.yaml
 ```
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
@@ -294,8 +293,8 @@ This should show the external IP address of the service as the A record for your
 Now that we have verified that ExternalDNS will automatically manage Cloudflare DNS records, we can delete the tutorial's example:
 
 ```shell
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml
 ```
 
 ## Setting cloudflare-proxied on a per-ingress basis

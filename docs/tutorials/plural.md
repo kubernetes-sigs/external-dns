@@ -199,8 +199,8 @@ will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
 
-```
-$ kubectl create -f nginx.yaml
+```sh
+kubectl create -f nginx.yaml
 ```
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
@@ -218,6 +218,6 @@ The records should show the external IP address of the service as the A record f
 
 Now that we have verified that ExternalDNS will automatically manage Plural DNS records, we can delete the tutorial's example:
 
-```
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+```sh
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml

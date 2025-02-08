@@ -36,6 +36,7 @@ specs to provide all intended hostnames, since the Gateway that ultimately route
 requests/connections won't recognize additional hostnames from the annotation.
 
 ## Manifest with RBAC
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount

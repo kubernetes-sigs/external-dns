@@ -6,7 +6,8 @@ This tutorial describes how to setup ExternalDNS for usage within a [GKE](https:
 
 *If you prefer to try-out ExternalDNS in one of the existing environments you can skip this step*
 
-The following instructions use [access scopes](https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam) to provide ExternalDNS with the permissions it needs to manage DNS records within a single [project](https://cloud.google.com/docs/overview#projects), the organizing entity to allocate resources.
+The following instructions use [access scopes](https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam) to provide ExternalDNS
+with the permissions it needs to manage DNS records within a single [project](https://cloud.google.com/docs/overview#projects), the organizing entity to allocate resources.
 
 Note that since these permissions are associated with the instance, all pods in the cluster will also have these permissions. As such, this approach is not suitable for anything but testing environments.
 
@@ -41,11 +42,16 @@ gcloud container clusters create $GKE_CLUSTER_NAME \
   --scopes "https://www.googleapis.com/auth/ndev.clouddns.readwrite"
 ```
 
-**WARNING**: Note that this cluster will use the default [compute engine GSA](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) that contians the overly permissive project editor (`roles/editor`) role. So essentially, anything on the cluster could potentially grant escalated privileges.  Also, as mentioned earlier, the access scope `ndev.clouddns.readwrite` will allow anything running on the cluster to have read/write permissions on all Cloud DNS zones within the same project.
+> [!WARNING]
+> Note that this cluster will use the default [compute engine GSA](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) that contians the overly permissive project editor (`roles/editor`) role.
+> So essentially, anything on the cluster could potentially grant escalated privileges.
+> Also, as mentioned earlier, the access scope `ndev.clouddns.readwrite` will allow anything running on the cluster to have read/write permissions on all Cloud DNS zones within the same project.
 
 ### Cloud DNS Zone
 
-Create a DNS zone which will contain the managed DNS records. If using your own domain that was registered with a third-party domain registrar, you should point your domain's name servers to the values under the `nameServers` key. Please consult your registrar's documentation on how to do that.  This tutorial will use example domain of  `example.com`.
+Create a DNS zone which will contain the managed DNS records.
+If using your own domain that was registered with a third-party domain registrar, you should point your domain's name servers to the values under the `nameServers` key.
+Please consult your registrar's documentation on how to do that. This tutorial will use example domain of `example.com`.
 
 ```bash
 gcloud dns managed-zones create "example-com" --dns-name "example.com." \
@@ -61,7 +67,7 @@ gcloud dns record-sets list \
 
 Outputs:
 
-```
+```sh
 NAME          TYPE  TTL    DATA
 example.com.  NS    21600  ns-cloud-e1.googledomains.com.,ns-cloud-e2.googledomains.com.,ns-cloud-e3.googledomains.com.,ns-cloud-e4.googledomains.com.
 ```
@@ -70,7 +76,8 @@ In this case it's `ns-cloud-{e1-e4}.googledomains.com.` but your's could slightl
 
 ## Cross project access scenario using Google Service Account
 
-More often, following best practices in regards to security and operations, Cloud DNS zones will be managed in a separate project from the Kubernetes cluster.  This section shows how setup ExternalDNS to access Cloud DNS from a different project. These steps will also work for single project scenarios as well.
+More often, following best practices in regards to security and operations, Cloud DNS zones will be managed in a separate project from the Kubernetes cluster.
+This section shows how setup ExternalDNS to access Cloud DNS from a different project. These steps will also work for single project scenarios as well.
 
 ExternalDNS will need permissions to make changes to the Cloud DNS zone. There are three ways to configure the access needed:
 
@@ -301,7 +308,7 @@ Deploy ExternalDNS with the following steps below, documented under [Deploy Exte
 #### Update ExternalDNS pods
 
 !!! note "Only required if not enabled on all nodes"
-    If you have GKE Workload Identity enabled on all nodes in your cluster, the below step is not necessary 
+    If you have GKE Workload Identity enabled on all nodes in your cluster, the below step is not necessary
 
 Update the Pod spec to schedule the workloads on nodes that use Workload Identity and to use the annotated Kubernetes service account.
 
@@ -464,7 +471,7 @@ gcloud dns record-sets list --zone "example-com" --name "nginx.example.com."
 
 Example output:
 
-```
+```sh
 NAME                TYPE  TTL  DATA
 nginx.example.com.  A     300  104.155.60.49
 nginx.example.com.  TXT   300  "heritage=external-dns,external-dns/owner=my-identifier"
@@ -514,7 +521,8 @@ Create the ingress objects with:
 kubectl create --namespace "default" --filename ingress.yaml
 ```
 
-Note that this will ingress object will use the default ingress controller that comes with GKE to create a L7 load balancer in addition to the L4 load balancer previously with the service object.  To use only the L7 load balancer, update the service manafest to change the Service type to `NodePort` and remove the ExternalDNS annotation.
+Note that this will ingress object will use the default ingress controller that comes with GKE to create a L7 load balancer in addition to the L4 load balancer previously with the service object.
+To use only the L7 load balancer, update the service manafest to change the Service type to `NodePort` and remove the ExternalDNS annotation.
 
 After roughly two minutes check that a corresponding DNS record for your Ingress was created.
 
@@ -523,9 +531,10 @@ gcloud dns record-sets list \
     --zone "example-com" \
     --name "server.example.com." \
 ```
+
 Output:
 
-```
+```sh
 NAME                 TYPE  TTL  DATA
 server.example.com.  A     300  130.211.46.224
 server.example.com.  TXT   300  "heritage=external-dns,external-dns/owner=my-identifier"

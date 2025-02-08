@@ -72,21 +72,20 @@ When running on Alibaba Cloud, you need to make sure that your nodes (on which E
 ## Set up a Alibaba Cloud DNS service or Private Zone service
 
 Alibaba Cloud DNS Service is the domain name resolution and management service for public access. It routes access from end-users to the designated web app.
-Alibaba Cloud Private Zone is the domain name resolution and management service for VPC internal access. 
+Alibaba Cloud Private Zone is the domain name resolution and management service for VPC internal access.
 
 *If you prefer to try-out ExternalDNS in one of the existing domain or zone you can skip this step*
 
 Create a DNS domain which will contain the managed DNS records. For public DNS service, the domain name should be valid and owned by yourself.
 
 ```console
-$ aliyun alidns AddDomain --DomainName "external-dns-test.com"
+aliyun alidns AddDomain --DomainName "external-dns-test.com"
 ```
-
 
 Make a note of the ID of the hosted zone you just created.
 
 ```console
-$ aliyun alidns DescribeDomains --KeyWord="external-dns-test.com" | jq -r '.Domains.Domain[0].DomainId'
+aliyun alidns DescribeDomains --KeyWord="external-dns-test.com" | jq -r '.Domains.Domain[0].DomainId'
 ```
 
 ## Deploy ExternalDNS
@@ -95,6 +94,7 @@ Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -208,8 +208,6 @@ spec:
           type: Directory
 ```
 
-
-
 ## Arguments
 
 This list is not the full list, but a few arguments that where chosen.
@@ -220,7 +218,6 @@ This list is not the full list, but a few arguments that where chosen.
 
 * If value is `public`, it will sync with records in Alibaba Cloud DNS Service
 * If value is `private`, it will sync with records in Alibaba Cloud Private Zone Service
-
 
 ## Verify ExternalDNS works (Ingress example)
 
@@ -337,7 +334,7 @@ Note created TXT record alongside ALIAS record. TXT record signifies that the co
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
 ```console
-$ dig nginx.external-dns-test.com.
+dig nginx.external-dns-test.com.
 ```
 
 If you hooked up your DNS zone with its parent zone correctly you can use `curl` to access your site.
@@ -380,13 +377,13 @@ This will set the DNS record's TTL to 60 seconds.
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
 
 ```console
-$ kubectl delete service nginx
+kubectl delete service nginx
 ```
 
 Give ExternalDNS some time to clean up the DNS records for you. Then delete the hosted zone if you created one for the testing purpose.
 
 ```console
-$ aliyun alidns DeleteDomain --DomainName external-dns-test.com
+aliyun alidns DeleteDomain --DomainName external-dns-test.com
 ```
 
 For more info about Alibaba Cloud external dns, please refer this [docs](https://yq.aliyun.com/articles/633412)

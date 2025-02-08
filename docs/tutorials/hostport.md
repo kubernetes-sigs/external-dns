@@ -3,7 +3,9 @@
 This tutorial describes how to setup ExternalDNS for usage in conjunction with a Headless service.
 
 ## Use cases
-The main use cases that inspired this feature is the necessity for fixed addressable hostnames with services, such as Kafka when trying to access them from outside the cluster. In this scenario, quite often, only the Node IP addresses are actually routable and as in systems like Kafka more direct connections are preferable.
+
+The main use cases that inspired this feature is the necessity for fixed addressable hostnames with services, such as Kafka when trying to access them from outside the cluster.
+In this scenario, quite often, only the Node IP addresses are actually routable and as in systems like Kafka more direct connections are preferable.
 
 ## Setup
 
@@ -12,7 +14,9 @@ We will go through a small example of deploying a simple Kafka with use of a hea
 ### External DNS
 
 A simple deploy could look like this:
+
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -44,6 +48,7 @@ spec:
 ```
 
 ### Manifest (for clusters with RBAC enabled)
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -108,7 +113,6 @@ spec:
         - --txt-owner-id=dev.example.org
 ```
 
-
 ### Kafka Stateful Set
 
 First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `ksvc`
@@ -155,6 +159,7 @@ spec:
         requests:
           storage:  500Gi
 ```
+
 Very important here, is to set the `hostPort`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
 
 ### Headless Service
@@ -162,7 +167,7 @@ Very important here, is to set the `hostPort`(only works if the PodSecurityPolic
 Now we need to define a headless service to use to expose the Kafka pods. There are generally two approaches to use expose the nodeport of a Headless service:
 
 1. Add `--fqdn-template={{name}}.example.org`
-2. Use a full annotation 
+2. Use a full annotation
 
 If you go with #1, you just need to define the headless service, here is an example of the case #2:
 
@@ -181,8 +186,10 @@ spec:
   selector:
     component: kafka
 ```
+
 This will create 3 dns records:
-```
+
+```sh
 kafka-0.example.org
 kafka-1.example.org
 kafka-2.example.org
@@ -192,7 +199,7 @@ If you set `--fqdn-template={{name}}.example.org` you can omit the annotation.
 Generally it is a better approach to use  `--fqdn-template={{name}}.example.org`, because then
 you would get the service name inside the generated A records:
 
-```
+```sh
 kafka-0.ksvc.example.org
 kafka-1.ksvc.example.org
 kafka-2.ksvc.example.org
