@@ -1,6 +1,6 @@
 # Sources and Providers
 
-ExternalDNS supports swapping out endpoint **sources** and DNS **providers** and both sides are pluggable. There currently exist three sources and four provider implementations.
+ExternalDNS supports swapping out endpoint **sources** and DNS **providers** and both sides are pluggable. There currently exist multiple sources for different provider implementations.
 
 ### Sources
 
