@@ -4,7 +4,7 @@
 
 global:
   # -- Global image pull secrets.
-  imagePullSecrets: [] # @schema item: object
+  imagePullSecrets: []  # @schema item: object
 
 image: # @schema additionalProperties: false
   # -- (string) Image repository for the `external-dns` container.
@@ -12,7 +12,7 @@ image: # @schema additionalProperties: false
   # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
   tag: # @schema type:[string, null]
   # -- (string) Image pull policy for the `external-dns` container.
-  pullPolicy: IfNotPresent # @schema enum:[IfNotPresent, Always];
+  pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
 
 # -- Image pull secrets.
 imagePullSecrets: [] # @schema item: object

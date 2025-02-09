@@ -32,10 +32,17 @@ EOF
 
 install() {
   if [[ -x $(which helm) ]]; then
+      echo "installing https://github.com/losisin/helm-values-schema-json.git plugin"
       helm plugin install https://github.com/losisin/helm-values-schema-json.git | true
       helm plugin list | grep "schema"
 
+      echo "installing helm-docs"
       go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest | true
+
+      if [[ -x $(which brew) ]]; then
+        echo "installing chart-testing https://github.com/helm/chart-testing"
+        brew install chart-testing
+      fi
     else
       echo "helm is not installed"
       echo "install helm https://helm.sh/docs/intro/install/ and try again"
@@ -72,6 +79,8 @@ diff_schema() {
 lint_chart() {
   cd charts/external-dns
   helm lint . --debug --strict
+  # lint with chart testing tool
+  ct lint --target-branch=master --check-version-increment=false
 }
 
 helm_docs() {
