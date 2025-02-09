@@ -61,7 +61,7 @@ rules:
     verbs: ["get","watch","list"]
   - apiGroups: [""]
     resources: ["namespaces"]
-    verbs: ["get","watch","list"]    
+    verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "gateway-httproute" .Values.sources }}
   - apiGroups: ["gateway.networking.k8s.io"]

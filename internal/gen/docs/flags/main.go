@@ -41,11 +41,13 @@ const markdownTemplate = `# Flags
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
 <!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
+<!-- markdownlint-disable MD013 -->
 
 | Flag | Description  |
 | :------ | :----------- |
 {{- range . }}
-| {{ .Name }} | {{ .Description }} | {{- end -}}
+| {{ .Name }} | {{ .Description }} |
+{{- end -}}
 `
 
 // It generates a markdown file
@@ -61,6 +63,7 @@ func main() {
 	if err != nil {
 		_ = fmt.Errorf("failed to generate markdown file '%s': %v\n", path, err.Error())
 	}
+	content = content + "\n"
 	_ = writeToFile(path, content)
 }
 
