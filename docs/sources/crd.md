@@ -15,37 +15,37 @@ Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/ext
 type TTL int64
 type Targets []string
 type ProviderSpecificProperty struct {
- Name  string `json:"name,omitempty"`
- Value string `json:"value,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 type ProviderSpecific []ProviderSpecificProperty
 type Labels map[string]string
 
 type Endpoint struct {
- // The hostname of the DNS record
- DNSName string `json:"dnsName,omitempty"`
- // The targets the DNS record points to
- Targets Targets `json:"targets,omitempty"`
- // RecordType type of record, e.g. CNAME, A, SRV, TXT etc
- RecordType string `json:"recordType,omitempty"`
- // TTL for the record
- RecordTTL TTL `json:"recordTTL,omitempty"`
- // Labels stores labels defined for the Endpoint
- // +optional
- Labels Labels `json:"labels,omitempty"`
- // ProviderSpecific stores provider specific config
- // +optional
- ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// The hostname of the DNS record
+	DNSName string `json:"dnsName,omitempty"`
+	// The targets the DNS record points to
+	Targets Targets `json:"targets,omitempty"`
+	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
+	RecordType string `json:"recordType,omitempty"`
+	// TTL for the record
+	RecordTTL TTL `json:"recordTTL,omitempty"`
+	// Labels stores labels defined for the Endpoint
+	// +optional
+	Labels Labels `json:"labels,omitempty"`
+	// ProviderSpecific stores provider specific config
+	// +optional
+	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 }
 
 type DNSEndpointSpec struct {
- Endpoints []*Endpoint `json:"endpoints,omitempty"`
+	Endpoints []*Endpoint `json:"endpoints,omitempty"`
 }
 
 type DNSEndpointStatus struct {
- // The generation observed by the external-dns controller.
- // +optional
- ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// The generation observed by the external-dns controller.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // +genclient
@@ -56,13 +56,12 @@ type DNSEndpointStatus struct {
 // +kubebuilder:resource:path=dnsendpoints
 // +kubebuilder:subresource:status
 type DNSEndpoint struct {
- metav1.TypeMeta   `json:",inline"`
- metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
- Spec   DNSEndpointSpec   `json:"spec,omitempty"`
- Status DNSEndpointStatus `json:"status,omitempty"`
+	Spec   DNSEndpointSpec   `json:"spec,omitempty"`
+	Status DNSEndpointStatus `json:"status,omitempty"`
 }
-
 ```
 
 Refer to [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) to create and register the CRD.
@@ -99,7 +98,7 @@ dnsendpoint.externaldns.k8s.io "examplednsrecord" created
 
 Run external-dns in dry-mode to see whether external-dns picks up the DNS record from CRD.
 
-```yaml
+```sh
 $ build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run
 INFO[0000] running in dry-run mode. No changes to DNS records will be made.
 INFO[0000] Connected to cluster at https://192.168.99.100:8443
