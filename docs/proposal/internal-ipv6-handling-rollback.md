@@ -17,7 +17,7 @@ This proposal aims to introduce a feature flag in 'external-dns' to control the 
 
 ## Motivation
 
-The discussion in [Issue #4566](https://github.com/kubernetes-sigs/external-dns/issues/4566) and the subsequent [Pull Request #4574](https://github.com/kubernetes-sigs/external-dns/pull/4574) highlighted concerns regarding the treatment of IPv6 internal node IPs. To address these concerns without causing immediate disruption, a feature flag will allow users to opt into the new behavior, providing flexibility during the transition.
+The discussion in [issue#4566](https://github.com/kubernetes-sigs/external-dns/issues/4566) and the subsequent [pr#4574](https://github.com/kubernetes-sigs/external-dns/pull/4574) and [pr#4808](https://github.com/kubernetes-sigs/external-dns/pull/4808) highlighted concerns regarding the treatment of IPv6 internal node IPs. To address these concerns without causing immediate disruption, a feature flag will allow users to opt into the new behavior, providing flexibility during the transition.
 
 ## Proposal
 
