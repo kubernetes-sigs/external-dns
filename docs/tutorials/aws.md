@@ -339,6 +339,8 @@ kubectl patch serviceaccount "external-dns" --namespace ${EXTERNALDNS_NS:-"defau
  "{\"metadata\": { \"annotations\": { \"eks.amazonaws.com/role-arn\": \"$ROLE_ARN\" }}}"
 ```
 
+> NOTE: For AWS EKS clusters with auto-mode enabled where the [authentication mode](https://www.eksworkshop.com/docs/security/cluster-access-management/managing) is `API` (recommended), the condition on `trust.json` on `$OIDC_PROVIDER:sub` will cause the external-dns pods to error with: "Not authorized to perform sts:AssumeRoleWithWebIdentity". Simply remove that condition and rely just on the `$OIDC_PROVIDER:aud` condition. This is because `API` authentication mode does not leverage RBAC configuration. 
+
 If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing the the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.
 
 When the service account annotations are updated, then the current running pods will have to be terminated, so that new pod(s) with proper configuration (environment variables) will be created automatically.
