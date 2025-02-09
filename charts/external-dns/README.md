@@ -154,7 +154,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | service.ipFamilyPolicy | string | `nil` | Service IP family policy. |
 | service.port | int | `7979` | Service HTTP port. |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account. Templates are allowed in both the key and the value. Example: `example.com/annotation/{{ .Values.nameOverride }}: {{ .Values.nameOverride }}` |
-| serviceAccount.automountServiceAccountToken | bool | `nil` | Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`. |
+| serviceAccount.automountServiceAccountToken | string | `nil` | Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`. |
 | serviceAccount.create | bool | `true` | If `true`, create a new `ServiceAccount`. |
 | serviceAccount.labels | object | `{}` | Labels to add to the service account. |
 | serviceAccount.name | string | `nil` | If this is set and `serviceAccount.create` is `true` this will be used for the created `ServiceAccount` name, if set and `serviceAccount.create` is `false` then this will define an existing `ServiceAccount` to use. |
