@@ -21,13 +21,17 @@ The discussion in [issue#4566](https://github.com/kubernetes-sigs/external-dns/i
 
 ## Proposal
 
-1. ***Introduce Feature Flag***
+- ***Introduce Feature Flag***
    -  Add a feature flag, e.g., `--expose-internal-ipv6=true`, to control the handling of IPv6 internal node IPs.
    -  In the current version, this flag will default to `true`, maintaining the existing behavior.
 
 - ***Flip Default Behavior in Next Minor Version***
     -  In the subsequent minor release, change the default value of `--expose-internal-ipv6` to `false`, adopting the new behavior by default.
     -  Users can still override this behavior by explicitly setting the flag as needed.
+
+- ***Propose/Add an annotation for this specific use case***
+    -  Provide support for `external-dns.alpha.kubernetes.io/expose-internal-ipv6` in follow-up releases.
+    -  Managing dual annotation and flag may introduce complexity.
 
 Proposed Changes in `source/node.go` file.
 
