@@ -4,18 +4,18 @@
 
 global:
   # -- Global image pull secrets.
-  imagePullSecrets: []
+  imagePullSecrets: [] # @schema item: object
 
-image:
-  # -- Image repository for the `external-dns` container.
+image: # @schema additionalProperties: false
+  # -- (string) Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns
-  # -- (string) Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
-  tag:
-  # -- Image pull policy for the `external-dns` container.
-  pullPolicy: IfNotPresent
+  # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
+  tag: # @schema type:[string, null]
+  # -- (string) Image pull policy for the `external-dns` container.
+  pullPolicy: IfNotPresent # @schema enum:[IfNotPresent, Always];
 
 # -- Image pull secrets.
-imagePullSecrets: []
+imagePullSecrets: [] # @schema item: object
 
 # -- (string) Override the name of the chart.
 nameOverride:
@@ -35,20 +35,22 @@ serviceAccount:
   annotations: {}
   # -- (string) If this is set and `serviceAccount.create` is `true` this will be used for the created `ServiceAccount` name, if set and `serviceAccount.create` is `false` then this will define an existing `ServiceAccount` to use.
   name:
-  # -- Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`.
+  # -- (bool) Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`.
   automountServiceAccountToken:
 
 service:
   # -- Service annotations.
   annotations: {}
   # -- Service HTTP port.
-  port: 7979
-  # -- Service IP families.
-  ipFamilies: []
-  # -- (string) Service IP family policy.
-  ipFamilyPolicy:
+  port: 7979 # @schema minimum:0; default:7979
+  # -- Service IP families (e.g. IPv4 and/or IPv6).
+  ipFamilies: [] # @schema type: [array, null]; item: string; itemEnum: ["IPv4", "IPv6"]; minItems:0; maxItems:2; uniqueItems: true;
+  #  - IPv4
+  #  - IPv6
+  # -- Service IP family policy.
+  ipFamilyPolicy: # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null];
 
-rbac:
+rbac: # @schema additionalProperties: true
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
   create: true
   # -- Additional rules to add to the `ClusterRole`.
@@ -61,11 +63,11 @@ deploymentAnnotations: {}
 extraContainers: {}
 
 # -- [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).
-deploymentStrategy:
-  type: Recreate
+deploymentStrategy: # @schema additionalProperties: true
+  type: Recreate # @schema enum:[Recreate, RollingUpdate]; type:string; default: Recreate
 
 # -- (int) Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``.
-revisionHistoryLimit:
+revisionHistoryLimit: # @schema type:[integer, null];minimum:0
 
 # -- Labels to add to the `Pod`.
 podLabels: {}
@@ -76,7 +78,7 @@ podAnnotations: {}
 # -- (bool) Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.
 automountServiceAccountToken:
 
-# -- If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.
+# -- (bool) If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.
 shareProcessNamespace: false
 
 # -- [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation.
@@ -189,12 +191,12 @@ serviceMonitor:
   targetLabels: []
 
 # -- Log level.
-logLevel: info
+logLevel: info # @schema enum:[panic, debug, info, warning, error, fatal]; type:string; default: "info"
 
 # -- Log format.
-logFormat: text
+logFormat: text # @schema enum:["text", "json"]; type:string; default: "text"
 
-# -- Interval for DNS updates.
+# -- (string) Interval for DNS updates.
 interval: 1m
 
 # -- If `true`, triggers run loop on create/update/delete events in addition of regular interval.
@@ -209,11 +211,11 @@ sources:
   - ingress
 
 # -- How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`.
-policy: upsert-only
+policy: upsert-only # @schema enum:[sync, upsert-only]; type:string; default: "upsert-only"
 
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
-registry: txt
+registry: txt # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
 # -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
 txtOwnerId:
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
@@ -280,7 +282,7 @@ provider:
       failureThreshold: 6
       successThreshold: 1
     service:
-      # -- Webhook exposed HTTP port for the service.
+      # -- (int) Webhook exposed HTTP port for the service.
       port: 8080
     # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
     # @default -- See _values.yaml_
@@ -294,7 +296,7 @@ provider:
       relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
-extraArgs: []
+extraArgs: [] # @schema type: [array, null]; item: string; uniqueItems: true;
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).

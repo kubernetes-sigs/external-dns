@@ -177,7 +177,6 @@ Refer to [pushing images](https://minikube.sigs.k8s.io/docs/handbook/pushing/#4-
 
 ## Building image and push to a registry
 
-
 Build container image and push to a specific registry
 
 ```shell
@@ -207,6 +206,34 @@ Modify chart or values and validate the diff
 ```sh
 ❯❯ helm template external-dns charts/external-dns --output-dir _scratch
 ❯❯ kubectl diff -f _scratch/external-dns --recursive=true --show-managed-fields=false
+```
+
+### Helm Values
+
+This helm chart comes with a JSON schema generated from values with [helm schema](https://github.com/losisin/helm-values-schema-json.git) plugin.
+
+1. Install required plugin(s)
+
+```sh
+❯❯ scripts/helm-tools.sh --install
+```
+
+2. Ensure that the schema is always up-to-date
+
+```sh
+❯❯ scripts/helm-tools.sh --diff
+```
+
+3. When not up-to-date, update JSON schema
+
+```sh
+❯❯ scripts/helm-tools.sh --schema
+```
+
+4. Runs a series of tests to verify that the chart is well-formed, linted and JSON schema is valid
+
+```sh
+❯❯ scripts/helm-tools.sh --lint
 ```
 
 ## Deploy with kubernetes manifests
