@@ -77,6 +77,42 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Proxied: proxyDisabled,
 	},
 }
+var ExampleCustomHostnames = []cloudflare.CustomHostname{
+	{
+		ID:                 "1234567890",
+		Hostname:           "foobar.fancybar.com",
+		CustomOriginServer: "foobar.bar.com",
+		SSL: &cloudflare.CustomHostnameSSL{
+			ID:     "f415534f-3ea7-4dbc-a5ef-7e9beaf5e0ae",
+			Type:   "dv",
+			Method: "http",
+			Status: "active",
+			Settings: cloudflare.CustomHostnameSSLSettings{
+				MinTLSVersion: "1.0",
+			},
+			BundleMethod:         "ubiquitous",
+			Wildcard:             boolPtr(false),
+			CertificateAuthority: "google",
+		},
+	},
+	{
+		ID:                 "1231231233",
+		Hostname:           "bar.fancyfoo.com",
+		CustomOriginServer: "bar.foo.com",
+		SSL: &cloudflare.CustomHostnameSSL{
+			ID:     "f415534f-3ea7-4dbc-a5ef-7e9beaf5e0ae",
+			Type:   "dv",
+			Method: "http",
+			Status: "active",
+			Settings: cloudflare.CustomHostnameSSLSettings{
+				MinTLSVersion: "1.0",
+			},
+			BundleMethod:         "ubiquitous",
+			Wildcard:             boolPtr(false),
+			CertificateAuthority: "google",
+		},
+	},
+}
 
 func NewMockCloudFlareClient() *mockCloudFlareClient {
 	return &mockCloudFlareClient{
@@ -233,6 +269,25 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudfla
 
 func (m *mockCloudFlareClient) UserDetails(ctx context.Context) (cloudflare.User, error) {
 	return m.User, nil
+}
+
+func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflare.CustomHostname) ([]cloudflare.CustomHostname, cloudflare.ResultInfo, error) {
+	return ExampleCustomHostnames,
+		cloudflare.ResultInfo{
+			Page:       1,
+			PerPage:    100,
+			Count:      len(ExampleCustomHostnames),
+			Total:      len(ExampleCustomHostnames),
+			TotalPages: 1,
+		}, nil
+}
+
+func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflare.CustomHostname) (*cloudflare.CustomHostnameResponse, error) {
+	return &cloudflare.CustomHostnameResponse{}, nil
+}
+
+func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, zoneID string, customHostnameID string) error {
+	return nil
 }
 
 func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
