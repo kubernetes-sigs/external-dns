@@ -771,7 +771,7 @@ func TestDomainFilterMatchParent(t *testing.T) {
 	}
 }
 
-func TestDomainFilterWithExclusion(t *testing.T) {
+func TestSimpleDomainFilterWithExclusion(t *testing.T) {
 	test := []struct {
 		domainFilter    []string
 		exclusionFilter []string
