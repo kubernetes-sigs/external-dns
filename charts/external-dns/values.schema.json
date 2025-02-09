@@ -668,13 +668,22 @@
       "type": "boolean"
     },
     "txtOwnerId": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "txtPrefix": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "txtSuffix": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "type": "object"

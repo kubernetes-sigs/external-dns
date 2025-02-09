@@ -217,13 +217,13 @@ policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
 registry: txt  # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
 # -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
-txtOwnerId:
+txtOwnerId:  # @schema type:[string, null]; default: null
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtSuffix`.
-txtPrefix:
+txtPrefix:  # @schema type:[string, null]; default: null
 # -- (string) Specify a suffix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtPrefix`.
-txtSuffix:
+txtSuffix:  # @schema type:[string, null]; default: null
 
 # -- Limit possible target zones by domain suffixes.
 domainFilters: []
