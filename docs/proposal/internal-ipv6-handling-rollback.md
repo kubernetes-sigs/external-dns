@@ -71,4 +71,4 @@ _As a SecDevOps_, I want to use a feature flag to selectively enable or disable 
    -  Directly change the behavior without a feature flag, which could lead to unexpected issues for users.
 - ***No Change***
    -  Maintain the current behavior, potentially leaving the concerns unaddressed.
-   -  Users may not be able to update an `external-dns` version due to security concerns.
+   -  Users may not be able to update an `external-dns` version due to security, compliance or any other concerns.
