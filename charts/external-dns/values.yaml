@@ -6,16 +6,16 @@ global:
   # -- Global image pull secrets.
   imagePullSecrets: []  # @schema item: object
 
-image: # @schema additionalProperties: false
+image:  # @schema additionalProperties: false
   # -- (string) Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns
   # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
-  tag: # @schema type:[string, null]
+  tag:  # @schema type:[string, null]
   # -- (string) Image pull policy for the `external-dns` container.
   pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
 
 # -- Image pull secrets.
-imagePullSecrets: [] # @schema item: object
+imagePullSecrets: []  # @schema item: object
 
 # -- (string) Override the name of the chart.
 nameOverride:
@@ -42,9 +42,9 @@ service:
   # -- Service annotations.
   annotations: {}
   # -- Service HTTP port.
-  port: 7979 # @schema minimum:0; default:7979
+  port: 7979  # @schema minimum:0; default:7979
   # -- Service IP families (e.g. IPv4 and/or IPv6).
-  ipFamilies: [] # @schema type: [array, null]; item: string; itemEnum: ["IPv4", "IPv6"]; minItems:0; maxItems:2; uniqueItems: true;
+  ipFamilies: []  # @schema type: [array, null]; item: string; itemEnum: ["IPv4", "IPv6"]; minItems:0; maxItems:2; uniqueItems: true;
   #  - IPv4
   #  - IPv6
   # -- Service IP family policy.
@@ -63,11 +63,11 @@ deploymentAnnotations: {}
 extraContainers: {}
 
 # -- [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).
-deploymentStrategy: # @schema additionalProperties: true
-  type: Recreate # @schema enum:[Recreate, RollingUpdate]; type:string; default: Recreate
+deploymentStrategy:  # @schema additionalProperties: true
+  type: Recreate  # @schema enum:[Recreate, RollingUpdate]; type:string; default: Recreate
 
 # -- (int) Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``.
-revisionHistoryLimit: # @schema type:[integer, null];minimum:0
+revisionHistoryLimit:  # @schema type:[integer, null];minimum:0
 
 # -- Labels to add to the `Pod`.
 podLabels: {}
@@ -191,10 +191,10 @@ serviceMonitor:
   targetLabels: []
 
 # -- Log level.
-logLevel: info # @schema enum:[panic, debug, info, warning, error, fatal]; type:string; default: "info"
+logLevel: info  # @schema enum:[panic, debug, info, warning, error, fatal]; type:string; default: "info"
 
 # -- Log format.
-logFormat: text # @schema enum:["text", "json"]; type:string; default: "text"
+logFormat: text  # @schema enum:["text", "json"]; type:string; default: "text"
 
 # -- (string) Interval for DNS updates.
 interval: 1m
@@ -211,11 +211,11 @@ sources:
   - ingress
 
 # -- How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`.
-policy: upsert-only # @schema enum:[sync, upsert-only]; type:string; default: "upsert-only"
+policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "upsert-only"
 
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
-registry: txt # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
+registry: txt  # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
 # -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
 txtOwnerId:
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
@@ -296,7 +296,7 @@ provider:
       relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
-extraArgs: [] # @schema type: [array, null]; item: string; uniqueItems: true;
+extraArgs: []  # @schema type: [array, null]; item: string; uniqueItems: true;
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
