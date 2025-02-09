@@ -115,7 +115,10 @@
       "type": "string"
     },
     "labelFilter": {
-      "type": "null"
+      "pattern": "^[a-zA-Z0-9._-]+=[a-zA-Z0-9._-]+$",
+      "type": [
+        "string"
+      ]
     },
     "livenessProbe": {
       "properties": {

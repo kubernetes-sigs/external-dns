@@ -54,8 +54,8 @@ update_schema() {
   cd charts/external-dns
   helm schema  -indent 2 \
     -draft 7 \
-    -input values.yaml \
     -input ci/schema-values.yaml \
+    -input values.yaml \
     -output values.schema.json
 }
 
@@ -63,8 +63,8 @@ diff_schema() {
   cd charts/external-dns
   helm schema  -indent 2 \
     -draft 7 \
-    -input values.yaml \
     -input ci/schema-values.yaml \
+    -input values.yaml \
     -output diff-schema.schema.json
   trap 'rm -rf -- "diff-schema.schema.json"' EXIT
   CURRENT_SCHEMA=$(cat values.schema.json)
@@ -78,7 +78,9 @@ diff_schema() {
 
 lint_chart() {
   cd charts/external-dns
-  helm lint . --debug --strict
+  helm lint . --debug --strict \
+  --values values.yaml \
+  --values ci/ci-values.yaml
   # lint with chart testing tool
   ct lint --target-branch=master --check-version-increment=false
 }

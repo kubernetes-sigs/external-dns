@@ -231,8 +231,8 @@ domainFilters: []
 # -- Intentionally exclude domains from being managed.
 excludeDomains: []
 
-# -- (string) Filter resources queried for endpoints by label selector
-labelFilter:  # schema type:[string,null]; default: null
+# -- Filter resources queried for endpoints by label selector
+labelFilter:  # @schema pattern:^[a-zA-Z0-9._-]+=[a-zA-Z0-9._-]+$; type: string;
 
 # -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true;
