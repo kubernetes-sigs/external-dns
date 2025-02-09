@@ -104,6 +104,8 @@ var ttlAnnotationGroup = parser.Annotation{
 }
 ```
 
+Or example simplified version of annotation processing [project countour](https://github.com/projectcontour/contour/blob/23c1779d25b4737c1d470677d581bb74e310145d/internal/annotation/annotations.go)
+
 ### User Stories
 
 1.  **Cluster Administrator**
