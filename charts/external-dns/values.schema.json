@@ -173,7 +173,14 @@
       ]
     },
     "managedRecordTypes": {
-      "type": "array"
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ],
+      "uniqueItems": true
     },
     "nameOverride": {
       "type": "null"
