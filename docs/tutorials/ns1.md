@@ -57,7 +57,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
 
 ```shell
-provider: 
+provider:
   name: ns1
 env:
   - name: NS1_APIKEY
@@ -123,7 +123,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]

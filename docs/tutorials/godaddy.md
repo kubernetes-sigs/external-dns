@@ -29,8 +29,8 @@ Connect your `kubectl` client to the cluster with which you want to test Externa
 Create a values.yaml file to configure ExternalDNS to use GoDaddy as the DNS provider. This file should include the necessary environment variables:
 
 ```shell
-provider: 
-  name: godaddy 
+provider:
+  name: godaddy
 extraArgs:
   - --godaddy-api-key=YOUR_API_KEY
   - --godaddy-api-secret=YOUR_API_SECRET

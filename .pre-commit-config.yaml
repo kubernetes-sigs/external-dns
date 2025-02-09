@@ -1,7 +1,10 @@
 ---
+default_language_version:
+  node: system
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -9,7 +12,6 @@ repos:
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
       - id: check-symlinks
-      - id: check-vcs-permalinks
       - id: destroyed-symlinks
       - id: end-of-file-fixer
       - id: fix-byte-order-marker

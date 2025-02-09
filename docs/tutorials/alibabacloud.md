@@ -150,7 +150,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -197,7 +197,7 @@ spec:
         - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
-        - --alibaba-cloud-config-file= # enable sts token 
+        - --alibaba-cloud-config-file= # enable sts token
         volumeMounts:
         - mountPath: /usr/share/zoneinfo
           name: hostpath
@@ -323,7 +323,7 @@ $ aliyun alidns DescribeDomainRecords --DomainName=external-dns-test.com
         "Locked": false,
         "Line": "default",
         "TTL": 600
-      }      
+      }
     ]
   }
 }

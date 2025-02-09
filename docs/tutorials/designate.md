@@ -101,7 +101,7 @@ rules:
   resources: ["pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -171,7 +171,7 @@ If your OpenStack-Installation is configured with a self-sign certificate, you c
 ```yaml
         volumeMounts:
         - mountPath: /etc/ssl/certs/
-          name: cacerts 
+          name: cacerts
       volumes:
       - name: cacerts
         secret:

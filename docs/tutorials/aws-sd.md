@@ -45,10 +45,10 @@ To use the AWS Cloud Map API, a user must have permissions to create the DNS nam
 
 ### IAM Permissions with ABAC
 
-You can use Attribute-based access control(ABAC) for advanced deployments.  
+You can use Attribute-based access control(ABAC) for advanced deployments.
 
-You can define AWS tags that are applied to services created by the controller. By doing so, you can have precise control over your IAM policy to limit the scope of the permissions to services managed by the controller, rather than having to grant full permissions on your entire AWS account.  
-To pass tags to service creation, use either CLI flags or environment variables:  
+You can define AWS tags that are applied to services created by the controller. By doing so, you can have precise control over your IAM policy to limit the scope of the permissions to services managed by the controller, rather than having to grant full permissions on your entire AWS account.
+To pass tags to service creation, use either CLI flags or environment variables:
 
 *cli:* `--aws-sd-create-tag=key1=value1 --aws-sd-create-tag=key2=value2`
 

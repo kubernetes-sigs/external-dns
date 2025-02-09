@@ -32,7 +32,7 @@ env:
         name: PLURAL_ACCESS_TOKEN
         key: plural-env
   - name: PLURAL_ENDPOINT
-    value: https://app.plural.sh 
+    value: https://app.plural.sh
 ```
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
@@ -95,7 +95,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]

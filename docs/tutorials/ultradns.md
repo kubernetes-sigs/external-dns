@@ -47,7 +47,7 @@ spec:
       - name: external-dns
         image: registry.k8s.io/external-dns/external-dns:v0.15.1
         args:
-        - --source=service 
+        - --source=service
         - --source=ingress # ingress is also possible
         - --domain-filter=example.com # (Recommended) We recommend to use this filter as it minimize the time to propagate changes, as there are less number of zones to look into..
         - --provider=ultradns
@@ -119,7 +119,7 @@ spec:
       - name: external-dns
         image: registry.k8s.io/external-dns/external-dns:v0.15.1
         args:
-        - --source=service 
+        - --source=service
         - --source=ingress
         - --domain-filter=example.com #(Recommended) We recommend to use this filter as it minimize the time to propagate changes, as there are less number of zones to look into..
         - --provider=ultradns

@@ -20,6 +20,7 @@ assignees: ''
 **Anything else we need to know?**:
 
 **Environment**:
+
 - External-DNS version (use `external-dns --version`):
 - DNS provider:
 - Others:

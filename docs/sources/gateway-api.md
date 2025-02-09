@@ -53,7 +53,7 @@ rules:
   resources: ["namespaces"]
   verbs: ["get","watch","list"]
 - apiGroups: ["gateway.networking.k8s.io"]
-  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"] 
+  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

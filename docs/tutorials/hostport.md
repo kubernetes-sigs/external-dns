@@ -41,7 +41,7 @@ spec:
         - --source=service
         - --source=ingress
         - --namespace=dev
-        - --domain-filter=example.org. 
+        - --domain-filter=example.org.
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.example.org
@@ -64,7 +64,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -107,7 +107,7 @@ spec:
         - --source=service
         - --source=ingress
         - --namespace=dev
-        - --domain-filter=example.org. 
+        - --domain-filter=example.org.
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.example.org
@@ -131,7 +131,7 @@ spec:
         component: kafka
     spec:
       containers:
-      - name:  kafka        
+      - name:  kafka
         image: confluent/kafka
         ports:
         - containerPort: 9092
