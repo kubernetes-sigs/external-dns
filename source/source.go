@@ -70,7 +70,8 @@ const (
 // Provider-specific annotations
 const (
 	// The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
@@ -193,6 +194,13 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 	if exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareProxiedKey,
+			Value: v,
+		})
+	}
+	v, exists = annotations[CloudflareCustomHostnameKey]
+	if exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareCustomHostnameKey,
 			Value: v,
 		})
 	}
