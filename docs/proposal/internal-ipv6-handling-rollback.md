@@ -3,9 +3,9 @@
 ---
 title: "Proposal: Rollback IPv6 internal Node IP exposure"
 version: if applicable
-authors: you, me
+authors: https://github.com/ivankatliarchuk
 creation-date: 2025-01-01
-status: draft
+status: proposal
 ---
 ```
 
