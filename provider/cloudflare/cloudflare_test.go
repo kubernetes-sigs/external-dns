@@ -272,12 +272,12 @@ func (m *mockCloudFlareClient) UserDetails(ctx context.Context) (cloudflare.User
 }
 
 func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflare.CustomHostname) ([]cloudflare.CustomHostname, cloudflare.ResultInfo, error) {
-	return ExampleCustomHostnames,
+	return []cloudflare.CustomHostname{},
 		cloudflare.ResultInfo{
 			Page:       1,
 			PerPage:    100,
-			Count:      len(ExampleCustomHostnames),
-			Total:      len(ExampleCustomHostnames),
+			Count:      0,
+			Total:      0,
 			TotalPages: 1,
 		}, nil
 }
