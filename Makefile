@@ -33,7 +33,7 @@ controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0 ;\
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.1 ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
@@ -71,7 +71,7 @@ lint: licensecheck go-lint oas-lint
 # generates CRD using controller-gen
 .PHONY: crd
 crd: controller-gen
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > charts/external-dns/crds/dnsendpoint.yaml
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
