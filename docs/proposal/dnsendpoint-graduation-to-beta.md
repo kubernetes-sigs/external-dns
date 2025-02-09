@@ -50,6 +50,8 @@ To graduate the `DNSEndpoint` API to beta, we propose the following actions:
 
 Proposed folder structure for `apis`. Examples - [gateway-api](https://github.com/kubernetes-sigs/gateway-api/tree/main/apis)
 
+***Multiple APIs under same version***
+
 ```yml
 ├── apis
 │   ├── v1alpha
@@ -64,6 +66,29 @@ Proposed folder structure for `apis`. Examples - [gateway-api](https://github.co
 │   │   ├── util/validation
 │   │   ├── doc.go
 │   │   └── zz_generated.***.go
+```
+
+Or similar folder structure for `apis`. Examples - [cert-manager](https://github.com/cert-manager/cert-manager/tree/master/pkg/apis)
+
+***APIs versioned independently***
+
+```yml
+├── apis
+│   ├── dnsendpoint
+│   │   ├── v1alpha
+│   │   │   ├── util/validation
+│   │   │   ├── doc.go
+│   │   │   └── zz_generated.***.go
+│   │   ├── v1beta  # outside of scope currently, just an example
+│   │   │   ├── util/validation
+│   │   │   ├── doc.go
+│   │   │   └── zz_generated.***.go
+│   │   ├── v1       # outside of scope currently, just an example
+│   │   │   ├── util/validation
+│   │   │   ├── doc.go
+│   │   │   └── zz_generated.***.go
+│   ├── dnsentry
+│   │   ├── v1alpha
 ```
 
 ### User Stories
