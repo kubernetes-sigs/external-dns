@@ -18,9 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Added ability to generate schema with `helm plugin`. ([#4989](https://github.com/kubernetes-sigs/external-dns/pull/4989)) _@ivankatliarchuk_
+- Added `docs/contributing/dev-guide.md#helm-values` guide. ([#4989](https://github.com/kubernetes-sigs/external-dns/pull/4989)) _@ivankatliarchuk_
+
 ### Changed
 
 - Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source. ([#5066](https://github.com/kubernetes-sigs/external-dns/pull/5066)) _@visokoo_
+- Regenerate JSON schema with `helm-values-schema-json' plugin. ([#4989](https://github.com/kubernetes-sigs/external-dns/pull/4989)) _@ivankatliarchuk_
 
 ### Fixed
 

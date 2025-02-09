@@ -9,22 +9,24 @@ set -e
 # Execute
 # scripts/helm-tools.sh
 # scripts/helm-tools.sh -h
-# scripts/helm-tools.sh --diff
 # scripts/helm-tools.sh --install
+# scripts/helm-tools.sh --diff
 # scripts/helm-tools.sh --schema
 # scripts/helm-tools.sh --lint
+# scripts/helm-tools.sh --docs
 
 show_help() {
 cat << EOF
 'external-dns' helm linter helper commands
 
 Usage: $(basename "$0") <options>
-    -d, --diff          Run schema diff validation
-    --docs              Show available documentation
+    -d, --diff          Schema diff validation
+    --docs              Re-generate helm documentation
     -h, --help          Display help
     -i, --install       Install required tooling
     -l, --lint          Lint chart
     -s, --schema        Generate schema
+    --show-docs         Show available documentation
 EOF
 }
 
@@ -32,6 +34,8 @@ install() {
   if [[ -x $(which helm) ]]; then
       helm plugin install https://github.com/losisin/helm-values-schema-json.git | true
       helm plugin list | grep "schema"
+
+      go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest | true
     else
       echo "helm is not installed"
       echo "install helm https://helm.sh/docs/intro/install/ and try again"
@@ -70,17 +74,25 @@ lint_chart() {
   helm lint . --debug --strict
 }
 
-function show_docs() {
+helm_docs() {
+  cd charts/external-dns
+  helm-docs
+}
+
+show_docs() {
   open "https://github.com/losisin/helm-values-schema-json?tab=readme-ov-file"
 }
 
 function main() {
   case $1 in
-    --docs)
+    --show-docs)
       show_docs
       ;;
     -d|--diff)
       diff_schema
+      ;;
+    --docs)
+      helm_docs
       ;;
     -i|--install)
       install

@@ -236,6 +236,14 @@ This helm chart comes with a JSON schema generated from values with [helm schema
 ❯❯ scripts/helm-tools.sh --lint
 ```
 
+5. Auto-generate documentation for helm charts into markdown files.
+
+```sh
+❯❯ scripts/helm-tools.sh --docs
+```
+
+6. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) and Create pull request
+
 ## Deploy with kubernetes manifests
 
 > Note; kubernetes manifest are not up to date. Consider to create an `examples` folder
