@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added ability to generate schema with `helm plugin`. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+- Added ability to generate schema with `helm plugin schema`. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
 - Added `docs/contributing/dev-guide.md#helm-values` guide. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
 
 ### Changed

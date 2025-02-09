@@ -48,9 +48,9 @@ service:
   #  - IPv4
   #  - IPv6
   # -- Service IP family policy.
-  ipFamilyPolicy: # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null];
+  ipFamilyPolicy:  # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null];
 
-rbac: # @schema additionalProperties: true
+rbac:  # @schema additionalProperties: true
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
   create: true
   # -- Additional rules to add to the `ClusterRole`.
@@ -75,7 +75,7 @@ podLabels: {}
 # -- Annotations to add to the `Pod`.
 podAnnotations: {}
 
-# -- (bool) Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.
+# -- (string) Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.
 automountServiceAccountToken:
 
 # -- (bool) If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.
