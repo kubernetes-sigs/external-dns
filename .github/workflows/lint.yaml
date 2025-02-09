@@ -1,24 +1,16 @@
 name: Lint
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
-permissions:
-  contents: read  #  to fetch code (actions/checkout)
-  checks: write
-
 jobs:
   lint:
-    permissions:
-      contents: read         # to fetch code (actions/checkout)
-      checks: write          # to create a new check based on the results (shogo82148/actions-goveralls)
-      pull-requests: write   # to comment PR with recommendations on insensitive language
-
-    name: Lint
+    name: Markdown, Go and OAS
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  #  to fetch code (actions/checkout)
+      checks: write
     steps:
 
     - name: Check out code into the Go module directory
@@ -29,20 +21,6 @@ jobs:
       with:
         files: '.'
         config_file: ".markdownlint.json"
-
-    - name: Setup node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version-file: .nvmrc
-
-    - name: Check insensitive language
-      uses: brown-ccv/alex-recommends@v1.2.1
-      with:
-        GITHUB_TOKEN: ${{ secrets.TRAEFIKER_GITHUB_TOKEN }}
-        message_id: 'alex'
-        profanity_sureness: 2
-        pr_only: false
-        glob_pattern: '**.md'
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v5
