@@ -195,7 +195,7 @@ func (c *Changes) All() iter.Seq[*RRSetChange] {
 		rrSetCreates := map[RRKey]*RRSetChange{}
 		rrSetDeletes := map[RRKey]*RRSetChange{}
 		rrSetUpdates := map[RRKey]*RRSetChange{}
-		for _, action := range []struct {
+		actions := []struct {
 			endpoints    *[]*endpoint.Endpoint
 			rrSetChanges *map[RRKey]*RRSetChange
 		}{
@@ -203,7 +203,8 @@ func (c *Changes) All() iter.Seq[*RRSetChange] {
 			{endpoints: &c.UpdateOld, rrSetChanges: &rrSetUpdates},
 			{endpoints: &c.Create, rrSetChanges: &rrSetCreates},
 			{endpoints: &c.Delete, rrSetChanges: &rrSetDeletes},
-		} {
+		}
+		for _, action := range actions {
 			for _, ep := range *action.endpoints {
 				rrKey := newRRKey(ep)
 				change, ok := rrSetUpdates[rrKey]
@@ -234,9 +235,10 @@ func (c *Changes) All() iter.Seq[*RRSetChange] {
 				}
 			}
 		}
-		for _, rrSetChanges := range []*map[RRKey]*RRSetChange{
+		changes := []*map[RRKey]*RRSetChange{
 			&rrSetDeletes, &rrSetUpdates, &rrSetCreates,
-		} {
+		}
+		for _, rrSetChanges := range changes {
 			for rrSetChange := range maps.Values(*rrSetChanges) {
 				if !yield(rrSetChange) {
 					return

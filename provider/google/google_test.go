@@ -92,7 +92,7 @@ func TestGoogleZonesFilters(t *testing.T) {
 			}: []*dns.ResourceRecordSet{},
 		},
 	))
-	for _, test := range []struct{
+	tests := []struct{
 		name string
 		domainFilter endpoint.DomainFilter
 		zoneIDFilter provider.ZoneIDFilter
@@ -153,7 +153,8 @@ func TestGoogleZonesFilters(t *testing.T) {
 				"svc-local": {Name: "svc-local", DnsName: "svc.local.", Id: 10005, Visibility: "private"},
 			},
 		},
-	} {
+	}
+	for _, test := range tests {
 		p.domainFilter = test.domainFilter
 		p.zoneTypeFilter = test.zoneTypeFilter
 		p.zoneIDFilter = test.zoneIDFilter
