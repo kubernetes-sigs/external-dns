@@ -22,14 +22,18 @@ You can either use existing ones or you can create a new token, as explained in 
 Scaleway provider supports configuring credentials using profiles or supplying it directly with environment variables.
 
 ### Configuration using a config file
+
 You can supply the credentials through a config file:
+
 1. Create the config file. Check out [Scaleway docs](https://github.com/scaleway/scaleway-sdk-go/blob/master/scw/README.md#scaleway-config) for instructions
 2. Mount it as a Secret into the Pod
 3. Configure environment variable `SCW_PROFILE` to match the profile name in the config file
 4. Configure environment variable `SCW_CONFIG_PATH` to match the location of the mounted config file
 
 ### Configuration using environment variables
+
 Two environment variables are needed to run ExternalDNS with Scaleway DNS:
+
 - `SCW_ACCESS_KEY` which is the Access Key.
 - `SCW_SECRET_KEY` which is the Secret Key.
 
@@ -41,6 +45,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 The following example are suited for development. For a production usage, prefer secrets over environment, and use a [tagged release](https://github.com/kubernetes-sigs/external-dns/releases).
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -87,6 +92,7 @@ spec:
 ```
 
 ### Manifest (for clusters with RBAC enabled)
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -166,7 +172,6 @@ spec:
     ###
 ```
 
-
 ## Deploying an Nginx Service
 
 Create a service file called 'nginx.yaml' with the following contents:
@@ -215,7 +220,7 @@ ExternalDNS uses this annotation to determine what services should be registered
 Create the deployment and service:
 
 ```console
-$ kubectl create -f nginx.yaml
+kubectl create -f nginx.yaml
 ```
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
@@ -234,7 +239,7 @@ This should show the external IP address of the service as the A record for your
 
 Now that we have verified that ExternalDNS will automatically manage Scaleway DNS records, we can delete the tutorial's example:
 
-```
-$ kubectl delete service -f nginx.yaml
-$ kubectl delete service -f externaldns.yaml
+```sh
+kubectl delete service -f nginx.yaml
+kubectl delete service -f externaldns.yaml
 ```

@@ -27,15 +27,16 @@ var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
 
 ### To add or delete an API key
 
-1.  Log into the NS1 portal at [my.nsone.net](http://my.nsone.net).
+1. Log into the NS1 portal at [my.nsone.net](http://my.nsone.net).
 
-2.  Click your username in the upper-right corner, and navigate to **Account Settings** \> **Users & Teams**.
+2. Click your username in the upper-right corner, and navigate to **Account Settings** \> **Users & Teams**.
 
-3.  Navigate to the _API Keys_ tab, and click **Add Key**.
+3. Navigate to the _API Keys_ tab, and click **Add Key**.
 
-4.  Enter the name of the application and modify permissions and settings as desired. Once complete, click **Create Key**. The new API key appears in the list.
+4. Enter the name of the application and modify permissions and settings as desired. Once complete, click **Create Key**. The new API key appears in the list.
 
-    Note: Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account. For more information, refer to the article [Creating and Managing API Keys](https://help.ns1.com/hc/en-us/articles/360026140094-Creating-managing-users) in the NS1 Knowledge Base.
+> [!NOTE]
+> Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account. For more information, refer to the article [Creating and Managing API Keys](https://help.ns1.com/hc/en-us/articles/360026140094-Creating-managing-users) in the NS1 Knowledge Base.
 
 ## Deploy ExternalDNS
 
@@ -56,7 +57,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
 
 ```shell
-provider: 
+provider:
   name: ns1
 env:
   - name: NS1_APIKEY
@@ -122,7 +123,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -223,8 +224,8 @@ ExternalDNS uses the hostname annotation to determine which services should be r
 
 ### Create the deployment and service
 
-```
-$ kubectl create -f nginx.yaml
+```sh
+kubectl create -f nginx.yaml
 ```
 
 Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the NS1 DNS records.
@@ -237,7 +238,7 @@ Use the NS1 portal or API to verify that the A record for your domain shows the 
 
 Once you successfully configure and verify record management via ExternalDNS, you can delete the tutorial's example:
 
-```
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+```sh
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml
 ```

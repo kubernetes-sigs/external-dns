@@ -541,7 +541,7 @@ func newMutableMockOCIDNSClient(zones []dns.ZoneSummary, recordsByZone map[strin
 
 	for zoneID, records := range recordsByZone {
 		for _, record := range records {
-			c.records[zoneID][ociRecordKey(*record.Rtype, *record.Domain)] = record
+			c.records[zoneID][ociRecordKey(*record.Rtype, *record.Domain, *record.Rdata)] = record
 		}
 	}
 
@@ -577,8 +577,18 @@ func (c *mutableMockOCIDNSClient) GetZoneRecords(ctx context.Context, request dn
 	return
 }
 
-func ociRecordKey(rType, domain string) string {
-	return rType + "/" + domain
+func ociRecordKey(rType, domain string, ip string) string {
+	rdata := ""
+	if rType == "A" { // adds support for multi-targets with same rtype and domain
+		rdata = "_" + ip
+	}
+	return rType + "_" + domain + rdata
+}
+
+func sortEndpointTargets(endpoints []*endpoint.Endpoint) {
+	for _, ep := range endpoints {
+		sort.Strings([]string(ep.Targets))
+	}
 }
 
 func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error) {
@@ -599,7 +609,7 @@ func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request 
 	})
 
 	for _, op := range request.Items {
-		k := ociRecordKey(*op.Rtype, *op.Domain)
+		k := ociRecordKey(*op.Rtype, *op.Domain, *op.Rdata)
 		switch op.Operation {
 		case dns.RecordOperationOperationAdd:
 			records[k] = dns.Record{
@@ -702,6 +712,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 }
 
 func TestOCIApplyChanges(t *testing.T) {
+
 	testCases := []struct {
 		name              string
 		zones             []dns.ZoneSummary
@@ -840,8 +851,13 @@ func TestOCIApplyChanges(t *testing.T) {
 					Rtype:  common.String(endpoint.RecordTypeA),
 					Ttl:    common.Int(ociRecordTTL),
 				}, {
-					Domain: common.String("bar.foo.com"),
+					Domain: common.String("car.foo.com"),
 					Rdata:  common.String("bar.com."),
+					Rtype:  common.String(endpoint.RecordTypeCNAME),
+					Ttl:    common.Int(ociRecordTTL),
+				}, {
+					Domain: common.String("bar.foo.com"),
+					Rdata:  common.String("baz.com."),
 					Rtype:  common.String(endpoint.RecordTypeCNAME),
 					Ttl:    common.Int(ociRecordTTL),
 				}},
@@ -851,10 +867,10 @@ func TestOCIApplyChanges(t *testing.T) {
 					"foo.foo.com",
 					endpoint.RecordTypeA,
 					endpoint.TTL(ociRecordTTL),
-					"baz.com.",
+					"127.0.0.1",
 				)},
 				UpdateOld: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"bar.foo.com",
+					"car.foo.com",
 					endpoint.RecordTypeCNAME,
 					endpoint.TTL(ociRecordTTL),
 					"baz.com.",
@@ -886,6 +902,129 @@ func TestOCIApplyChanges(t *testing.T) {
 					"127.0.0.1"),
 			},
 		},
+		{
+			name: "combine_multi_target",
+			zones: []dns.ZoneSummary{{
+				Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
+				Name: common.String("foo.com"),
+			}},
+
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+					"foo.foo.com",
+					endpoint.RecordTypeA,
+					endpoint.TTL(ociRecordTTL),
+					"192.168.1.2",
+				), endpoint.NewEndpointWithTTL(
+					"foo.foo.com",
+					endpoint.RecordTypeA,
+					endpoint.TTL(ociRecordTTL),
+					"192.168.2.5",
+				)},
+			},
+			expectedEndpoints: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+				"foo.foo.com",
+				endpoint.RecordTypeA,
+				endpoint.TTL(ociRecordTTL), "192.168.1.2", "192.168.2.5",
+			)},
+		},
+		{
+			name: "remove_from_multi_target",
+			zones: []dns.ZoneSummary{{
+				Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
+				Name: common.String("foo.com"),
+			}},
+			records: map[string][]dns.Record{
+				"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959": {{
+					Domain: common.String("foo.foo.com"),
+					Rdata:  common.String("192.168.1.2"),
+					Rtype:  common.String(endpoint.RecordTypeA),
+					Ttl:    common.Int(ociRecordTTL),
+				}, {
+					Domain: common.String("foo.foo.com"),
+					Rdata:  common.String("192.168.2.5"),
+					Rtype:  common.String(endpoint.RecordTypeA),
+					Ttl:    common.Int(ociRecordTTL),
+				}},
+			},
+			changes: &plan.Changes{
+				Delete: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+					"foo.foo.com",
+					endpoint.RecordTypeA,
+					endpoint.TTL(ociRecordTTL),
+					"192.168.1.2",
+				)},
+			},
+			expectedEndpoints: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+				"foo.foo.com",
+				endpoint.RecordTypeA,
+				endpoint.TTL(ociRecordTTL), "192.168.2.5",
+			)},
+		},
+		{
+			name: "update_multi_target",
+			zones: []dns.ZoneSummary{{
+				Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
+				Name: common.String("foo.com"),
+			}},
+			records: map[string][]dns.Record{
+				"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959": {{
+					Domain: common.String("first.foo.com"),
+					Rdata:  common.String("10.77.4.5"),
+					Rtype:  common.String(endpoint.RecordTypeA),
+					Ttl:    common.Int(ociRecordTTL),
+				}},
+			},
+			changes: &plan.Changes{
+				UpdateOld: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+					"first.foo.com",
+					endpoint.RecordTypeA,
+					endpoint.TTL(ociRecordTTL),
+					"10.77.4.5",
+				)},
+				UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+					"first.foo.com",
+					endpoint.RecordTypeA,
+					endpoint.TTL(ociRecordTTL),
+					"10.77.6.10",
+				)},
+			},
+			expectedEndpoints: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+				"first.foo.com",
+				endpoint.RecordTypeA,
+				endpoint.TTL(ociRecordTTL),
+				"10.77.6.10",
+			)},
+		},
+		{
+			name: "increase_multi_target",
+			zones: []dns.ZoneSummary{{
+				Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
+				Name: common.String("foo.com"),
+			}},
+			records: map[string][]dns.Record{
+				"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959": {{
+					Domain: common.String("first.foo.com"),
+					Rdata:  common.String("10.77.4.5"),
+					Rtype:  common.String(endpoint.RecordTypeA),
+					Ttl:    common.Int(ociRecordTTL),
+				}},
+			},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+					"first.foo.com",
+					endpoint.RecordTypeA,
+					endpoint.TTL(ociRecordTTL),
+					"10.77.6.10",
+				)},
+			},
+			expectedEndpoints: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
+				"first.foo.com",
+				endpoint.RecordTypeA,
+				endpoint.TTL(ociRecordTTL),
+				"10.77.4.5", "10.77.6.10",
+			)},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -904,6 +1043,8 @@ func TestOCIApplyChanges(t *testing.T) {
 			require.Equal(t, tc.err, err)
 			endpoints, err := provider.Records(ctx)
 			require.NoError(t, err)
+			sortEndpointTargets(endpoints)
+			sortEndpointTargets(tc.expectedEndpoints)
 			require.ElementsMatch(t, tc.expectedEndpoints, endpoints)
 		})
 	}
