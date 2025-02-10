@@ -23,6 +23,7 @@ command-line argument. Alternatively, a location may be explicitly specified via
 of Google Cloud's [locations/regions](https://cloud.google.com/docs/geography-and-regions).
 
 For example:
+
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
@@ -44,6 +45,7 @@ annotation must also be applied providing a string value representation of an in
 the list of potential responses.
 
 For example:
+
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
