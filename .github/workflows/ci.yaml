@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, rc ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, rc ]
 
 permissions:
   contents: read  #  to fetch code (actions/checkout)
