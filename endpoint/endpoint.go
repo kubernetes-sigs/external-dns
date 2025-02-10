@@ -399,10 +399,10 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 }
 
 // Check endpoint if is it properly formatted according to RFC standards
-func CheckEndpoint(endpoint Endpoint) bool {
-	switch recordType := endpoint.RecordType; recordType {
+func (e *Endpoint) CheckEndpoint() bool {
+	switch recordType := e.RecordType; recordType {
 	case "MX":
-		for _, target := range endpoint.Targets {
+		for _, target := range e.Targets {
 			// MX records must have a preference value to indicate priority, e.g. "10 example.com"
 			// as per https://www.rfc-editor.org/rfc/rfc974.txt
 			targetParts := strings.Fields(strings.TrimSpace(target))
@@ -417,7 +417,7 @@ func CheckEndpoint(endpoint Endpoint) bool {
 			}
 		}
 	case "SRV":
-		for _, target := range endpoint.Targets {
+		for _, target := range e.Targets {
 			// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
 			// as per https://www.rfc-editor.org/rfc/rfc2782.txt
 			targetParts := strings.Fields(strings.TrimSpace(target))

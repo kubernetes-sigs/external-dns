@@ -437,7 +437,7 @@ func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpo
 func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var validEndpoints []*endpoint.Endpoint
 	for i := 0; i < len(endpoints); i++ {
-		if !endpoint.CheckEndpoint(*endpoints[i]) {
+		if !endpoints[i].CheckEndpoint() {
 			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
 			continue
 		}

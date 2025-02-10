@@ -534,7 +534,7 @@ func TestPDNScheckEndpoint(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := CheckEndpoint(tt.endpoint)
+		actual := tt.endpoint.CheckEndpoint()
 		assert.Equal(t, tt.expected, actual)
 	}
 }
