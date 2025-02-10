@@ -11,10 +11,10 @@ keywords:
   - dns
   - service
   - ingress
-home: https://github.com/kubernetes-sigs/external-dns/
-icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+home: https://github.com/conduitxyz/external-dns/
+icon: https://github.com/conduitxyz/external-dns/raw/master/docs/img/external-dns.png
 sources:
-  - https://github.com/kubernetes-sigs/external-dns/
+  - https://github.com/conduitxyz/external-dns/
 maintainers:
   - name: stevehipwell
     email: steve.hipwell@gmail.com
