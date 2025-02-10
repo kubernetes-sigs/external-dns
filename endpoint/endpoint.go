@@ -401,7 +401,7 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 // Check endpoint if is it properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {
-	case "MX":
+	case RecordTypeMX:
 		for _, target := range e.Targets {
 			// MX records must have a preference value to indicate priority, e.g. "10 example.com"
 			// as per https://www.rfc-editor.org/rfc/rfc974.txt
@@ -411,12 +411,13 @@ func (e *Endpoint) CheckEndpoint() bool {
 			}
 
 			preferenceRaw := targetParts[0]
-			_, err := strconv.ParseInt(preferenceRaw, 10, 32)
+			_, err := strconv.ParseUint(preferenceRaw, 10, 16)
 			if err != nil {
+				log.Debugf("Invalid %s record target: %s. Invalid integer value in target.", recordType, target)
 				return false
 			}
 		}
-	case "SRV":
+	case RecordTypeSRV:
 		for _, target := range e.Targets {
 			// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
 			// as per https://www.rfc-editor.org/rfc/rfc2782.txt
@@ -426,8 +427,9 @@ func (e *Endpoint) CheckEndpoint() bool {
 			}
 
 			for _, part := range targetParts[:3] {
-				_, err := strconv.ParseInt(part, 10, 32)
+				_, err := strconv.ParseUint(part, 10, 16)
 				if err != nil {
+					log.Debugf("Invalid %s record target: %s. Invalid integer value in target.", recordType, target)
 					return false
 				}
 			}
