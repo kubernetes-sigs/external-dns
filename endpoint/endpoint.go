@@ -402,36 +402,47 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
-		for _, target := range e.Targets {
-			// MX records must have a preference value to indicate priority, e.g. "10 example.com"
-			// as per https://www.rfc-editor.org/rfc/rfc974.txt
-			targetParts := strings.Fields(strings.TrimSpace(target))
-			if len(targetParts) != 2 {
-				return false
-			}
-
-			preferenceRaw := targetParts[0]
-			_, err := strconv.ParseUint(preferenceRaw, 10, 16)
-			if err != nil {
-				log.Debugf("Invalid %s record target: %s. Invalid integer value in target.", recordType, target)
-				return false
-			}
-		}
+		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
-		for _, target := range e.Targets {
-			// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
-			// as per https://www.rfc-editor.org/rfc/rfc2782.txt
-			targetParts := strings.Fields(strings.TrimSpace(target))
-			if len(targetParts) != 4 {
-				return false
-			}
+		return e.Targets.ValidateSRVRecord()
+	}
+	return true
+}
 
-			for _, part := range targetParts[:3] {
-				_, err := strconv.ParseUint(part, 10, 16)
-				if err != nil {
-					log.Debugf("Invalid %s record target: %s. Invalid integer value in target.", recordType, target)
-					return false
-				}
+func (t Targets) ValidateMXRecord() bool {
+	for _, target := range t {
+		// MX records must have a preference value to indicate priority, e.g. "10 example.com"
+		// as per https://www.rfc-editor.org/rfc/rfc974.txt
+		targetParts := strings.Fields(strings.TrimSpace(target))
+		if len(targetParts) != 2 {
+			log.Debugf("Invalid MX record target: %s. MX records must have a preference value to indicate priority, e.g. '10 example.com'", target)
+			return false
+		}
+		preferenceRaw := targetParts[0]
+		_, err := strconv.ParseUint(preferenceRaw, 10, 16)
+		if err != nil {
+			log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
+			return false
+		}
+	}
+	return true
+}
+
+func (t Targets) ValidateSRVRecord() bool {
+	for _, target := range t {
+		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
+		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
+		targetParts := strings.Fields(strings.TrimSpace(target))
+		if len(targetParts) != 4 {
+			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
+			return false
+		}
+
+		for _, part := range targetParts[:3] {
+			_, err := strconv.ParseUint(part, 10, 16)
+			if err != nil {
+				log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
+				return false
 			}
 		}
 	}
