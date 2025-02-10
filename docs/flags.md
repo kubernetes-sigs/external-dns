@@ -56,7 +56,7 @@
 | `--zone-name-filter=` | Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional) |
 | `--zone-id-filter=` | Filter target zones by hosted zone id; specify multiple times for multiple zones (optional) |
 | `--google-project=""` | When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP. |
-| `--google-location=""` | When using the Google provider, current location is auto-detected, when running on GCP. Specify location with this. May be specified when running outside GCP. |
+| `--google-location=""` | When using the Google provider, current location is auto-detected, when running on GCP. Specify other location with this. May be specified when running outside GCP. |
 | `--google-batch-change-size=1000` | When using the Google provider, set the maximum number of changes that will be applied in each batch. |
 | `--google-batch-change-interval=1s` | When using the Google provider, set the interval between batch changes. |
 | `--google-zone-visibility=` | When using the Google provider, filter for zones with this visibility (optional, options: public, private) |
