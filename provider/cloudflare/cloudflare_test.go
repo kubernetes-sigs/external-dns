@@ -1464,7 +1464,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 }
 
 // Test basic posible scenarios for the submitChanges function
-func TestCloudFlareProvider_submitChanges(t *testing.T) {
+func TestCloudFlareProvider_submitChangesARecord(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": {
 			{
@@ -1505,7 +1505,7 @@ func TestCloudFlareProvider_submitChanges(t *testing.T) {
 	}
 }
 
-func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
+func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
     client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
         "001": {
             {
@@ -1563,4 +1563,67 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+}
+
+func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
+    // Create a mock CloudFlare client with APEX records
+    client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+        "001": {
+            {
+                ID:      "1234567890",
+                Name:    "@", // APEX record
+                Type:    endpoint.RecordTypeCNAME,
+                TTL:     1,
+                Content: "my-tunnel-guid-here.cfargotunnel.com",
+                Proxied: proxyEnabled,
+            },
+            {
+                ID:      "9876543210",
+                Name:    "@", // APEX record
+                Type:    endpoint.RecordTypeTXT,
+                TTL:     1,
+                Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
+            },
+        },
+    })
+
+    // Create a CloudFlare provider instance
+    provider := &CloudFlareProvider{
+        Client: client,
+    }
+
+    // Define changes to submit
+    changes := []*cloudFlareChange{
+        {
+            Action: cloudFlareUpdate,
+            ResourceRecord: cloudflare.DNSRecord{
+                Name:    "@", // APEX record
+                Type:    endpoint.RecordTypeCNAME,
+                ID:      "1234567890",
+                Content: "my-tunnel-guid-here.cfargotunnel.com",
+            },
+            RegionalHostname: cloudflare.RegionalHostname{
+                Hostname: "@", // APEX record
+            },
+        },
+        {
+            Action: cloudFlareUpdate,
+            ResourceRecord: cloudflare.DNSRecord{
+                Name:    "@", // APEX record
+                Type:    endpoint.RecordTypeTXT,
+                ID:      "9876543210",
+                Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
+            },
+            RegionalHostname: cloudflare.RegionalHostname{
+                Hostname: "@", // APEX record
+                RegionKey: "",
+            },
+        },
+    }
+
+    // Submit changes and verify no error is returned
+    err := provider.submitChanges(context.Background(), changes)
+    if err != nil {
+        t.Errorf("should not fail, %s", err)
+    }
 }
