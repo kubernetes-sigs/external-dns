@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Lint markdown
-      uses: nosborn/github-action-markdown-cli@v3.3.0
+      uses: nosborn/github-action-markdown-cli@v3.4.0
       with:
         files: '.'
         config_file: ".markdownlint.json"
