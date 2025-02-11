@@ -173,7 +173,7 @@ serviceMonitor:
   annotations: {}
   # -- (string) If set create the `ServiceMonitor` in an alternate namespace.
   namespace:
-  # -- If set override the _Prometheus_ default interval.
+  # -- (string) If set override the _Prometheus_ default interval.
   interval:
   # -- (string) If set override the _Prometheus_ default scrape timeout.
   scrapeTimeout:
@@ -196,7 +196,7 @@ logLevel: info  # @schema enum:[panic, debug, info, warning, error, fatal]; type
 # -- Log format.
 logFormat: text  # @schema enum:["text", "json"]; type:string; default: "text"
 
-# -- (string) Interval for DNS updates.
+# -- Interval for DNS updates.
 interval: 1m
 
 # -- If `true`, triggers run loop on create/update/delete events in addition of regular interval.
