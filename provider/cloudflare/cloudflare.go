@@ -431,17 +431,18 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					continue
 				}
 				recordParam := updateDNSRecordParam(*change)
-				regionalHostnameParam := updateDataLocalizationRegionalHostnameParams(*change)
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
-				regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
-				if regionalHostnameErr != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record when editing region: %v", regionalHostnameErr)
+				if regionalHostnameParam := updateDataLocalizationRegionalHostnameParams(*change); regionalHostnameParam.RegionKey != "" {
+					regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
+					if regionalHostnameErr != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to update record when editing region: %v", regionalHostnameErr)
+					}
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
