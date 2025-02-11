@@ -20,6 +20,8 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Updated _ExternalDNS_ image repo to ghcr.io/conduitxyz/external-dns"
     - kind: added
       description: "Added ability to configure `imagePullSecrets` via helm `global` value."
     - kind: added
