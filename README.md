@@ -5,13 +5,17 @@ hide:
 ---
 
 <p align="center">
-	<img src="docs/img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
+ <img src="docs/img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
 </p>
 
 # ExternalDNS
 
-[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions) [![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns) [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases) [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns) [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns) [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
-
+[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
+[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
+[![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
+[![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
+[![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -21,7 +25,9 @@ This README is a part of the complete documentation, available [here](https://ku
 
 ## What It Does
 
-Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers. Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records. *Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
+Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers.
+Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records.
+*Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
 
 In a broader sense, ExternalDNS allows you to control DNS records dynamically via Kubernetes resources in a DNS provider-agnostic way.
 
@@ -34,42 +40,45 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 - [current release process](./docs/release.md)
 
 ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various DNS providers:
-* [Google Cloud DNS](https://cloud.google.com/dns/docs/)
-* [AWS Route 53](https://aws.amazon.com/route53/)
-* [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
-* [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
-* [Civo](https://www.civo.com)
-* [CloudFlare](https://www.cloudflare.com/dns)
-* [DigitalOcean](https://www.digitalocean.com/products/networking)
-* [DNSimple](https://dnsimple.com/)
-* [OpenStack Designate](https://docs.openstack.org/designate/latest/)
-* [PowerDNS](https://www.powerdns.com/)
-* [CoreDNS](https://coredns.io/)
-* [Exoscale](https://www.exoscale.com/dns/)
-* [Oracle Cloud Infrastructure DNS](https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm)
-* [Linode DNS](https://www.linode.com/docs/networking/dns/)
-* [RFC2136](https://tools.ietf.org/html/rfc2136)
-* [NS1](https://ns1.com/)
-* [TransIP](https://www.transip.eu/domain-name/)
-* [OVH](https://www.ovh.com)
-* [Scaleway](https://www.scaleway.com)
-* [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
-* [GoDaddy](https://www.godaddy.com)
-* [Gandi](https://www.gandi.net)
-* [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
-* [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
-* [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
-* [Plural](https://www.plural.sh/)
-* [Pi-hole](https://pi-hole.net/)
 
-ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones. We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
+- [Google Cloud DNS](https://cloud.google.com/dns/docs/)
+- [AWS Route 53](https://aws.amazon.com/route53/)
+- [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
+- [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
+- [Civo](https://www.civo.com)
+- [CloudFlare](https://www.cloudflare.com/dns)
+- [DigitalOcean](https://www.digitalocean.com/products/networking)
+- [DNSimple](https://dnsimple.com/)
+- [OpenStack Designate](https://docs.openstack.org/designate/latest/)
+- [PowerDNS](https://www.powerdns.com/)
+- [CoreDNS](https://coredns.io/)
+- [Exoscale](https://www.exoscale.com/dns/)
+- [Oracle Cloud Infrastructure DNS](https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm)
+- [Linode DNS](https://www.linode.com/docs/networking/dns/)
+- [RFC2136](https://tools.ietf.org/html/rfc2136)
+- [NS1](https://ns1.com/)
+- [TransIP](https://www.transip.eu/domain-name/)
+- [OVH](https://www.ovh.com)
+- [Scaleway](https://www.scaleway.com)
+- [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
+- [GoDaddy](https://www.godaddy.com)
+- [Gandi](https://www.gandi.net)
+- [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
+- [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
+- [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
+- [Plural](https://www.plural.sh/)
+- [Pi-hole](https://pi-hole.net/)
+
+ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.
+We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster.
+You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`.
 
 ## New providers
 
-No new provider will be added to ExternalDNS _in-tree_.
+No new provider will be added to ExternalDNS *in-tree*.
 
 ExternalDNS has introduced a webhook system, which can be used to add a new provider.
 See PR #3063 for all the discussions about it.
@@ -101,9 +110,11 @@ Known providers using webhooks:
 
 ## Status of in-tree providers
 
-ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge, which introduces lots of toil and potential risks.
+ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors).
+Maintaining all of those in a central repository is a challenge, which introduces lots of toil and potential risks.
 
-This mean that `external-dns` has begun the process to move providers out of tree. See #4347 for more details. Those who are interested can create a webhook provider based on an _in-tree_ provider and after submit a PR to reference it here.
+This mean that `external-dns` has begun the process to move providers out of tree. See #4347 for more details.
+Those who are interested can create a webhook provider based on an *in-tree* provider and after submit a PR to reference it here.
 
 We define the following stability levels for providers:
 
@@ -153,59 +164,59 @@ A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) w
 | Kubernetes >= 1.19 and <= 1.21 | :white_check_mark: | :white_check_mark: |
 | Kubernetes >= 1.22             |        :x:         | :white_check_mark: |
 
-## Running ExternalDNS:
+## Running ExternalDNS
 
 The are two ways of running ExternalDNS:
 
-* Deploying to a Cluster
-* Running Locally
+- Deploying to a Cluster
+- Running Locally
 
 ### Deploying to a Cluster
 
 The following tutorials are provided:
 
-* [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
-* [Alibaba Cloud](docs/tutorials/alibabacloud.md)
-* AWS
-	* [AWS Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md)
-	* [Route53](docs/tutorials/aws.md)
-		* [Same domain for public and private Route53 zones](docs/tutorials/aws-public-private-route53.md)
-	* [Cloud Map](docs/tutorials/aws-sd.md)
-	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
-* [Azure DNS](docs/tutorials/azure.md)
-* [Azure Private DNS](docs/tutorials/azure-private-dns.md)
-* [Civo](docs/tutorials/civo.md)
-* [Cloudflare](docs/tutorials/cloudflare.md)
-* [CoreDNS](docs/tutorials/coredns.md)
-* [DigitalOcean](docs/tutorials/digitalocean.md)
-* [DNSimple](docs/tutorials/dnsimple.md)
-* [Exoscale](docs/tutorials/exoscale.md)
-* [ExternalName Services](docs/tutorials/externalname.md)
-* Google Kubernetes Engine
-	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
-	* [Using the Nginx Ingress Controller](docs/tutorials/gke-nginx.md)
-* [Headless Services](docs/tutorials/hostport.md)
-* [Istio Gateway Source](docs/sources/istio.md)
-* [Linode](docs/tutorials/linode.md)
-* [NS1](docs/tutorials/ns1.md)
-* [NS Record Creation with CRD Source](docs/sources/ns-record.md)
-* [MX Record Creation with CRD Source](docs/sources/mx-record.md)
-* [TXT Record Creation with CRD Source](docs/sources/txt-record.md)
-* [OpenStack Designate](docs/tutorials/designate.md)
-* [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
-* [PowerDNS](docs/tutorials/pdns.md)
-* [RFC2136](docs/tutorials/rfc2136.md)
-* [TransIP](docs/tutorials/transip.md)
-* [OVH](docs/tutorials/ovh.md)
-* [Scaleway](docs/tutorials/scaleway.md)
-* [UltraDNS](docs/tutorials/ultradns.md)
-* [GoDaddy](docs/tutorials/godaddy.md)
-* [Gandi](docs/tutorials/gandi.md)
-* [IBM Cloud](docs/tutorials/ibmcloud.md)
-* [Nodes as source](docs/sources/nodes.md)
-* [TencentCloud](docs/tutorials/tencentcloud.md)
-* [Plural](docs/tutorials/plural.md)
-* [Pi-hole](docs/tutorials/pihole.md)
+- [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
+- [Alibaba Cloud](docs/tutorials/alibabacloud.md)
+- AWS
+  - [AWS Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md)
+  - [Route53](docs/tutorials/aws.md)
+    - [Same domain for public and private Route53 zones](docs/tutorials/aws-public-private-route53.md)
+  - [Cloud Map](docs/tutorials/aws-sd.md)
+  - [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
+- [Azure DNS](docs/tutorials/azure.md)
+- [Azure Private DNS](docs/tutorials/azure-private-dns.md)
+- [Civo](docs/tutorials/civo.md)
+- [Cloudflare](docs/tutorials/cloudflare.md)
+- [CoreDNS](docs/tutorials/coredns.md)
+- [DigitalOcean](docs/tutorials/digitalocean.md)
+- [DNSimple](docs/tutorials/dnsimple.md)
+- [Exoscale](docs/tutorials/exoscale.md)
+- [ExternalName Services](docs/tutorials/externalname.md)
+- Google Kubernetes Engine
+  - [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
+  - [Using the Nginx Ingress Controller](docs/tutorials/gke-nginx.md)
+- [Headless Services](docs/tutorials/hostport.md)
+- [Istio Gateway Source](docs/sources/istio.md)
+- [Linode](docs/tutorials/linode.md)
+- [NS1](docs/tutorials/ns1.md)
+- [NS Record Creation with CRD Source](docs/sources/ns-record.md)
+- [MX Record Creation with CRD Source](docs/sources/mx-record.md)
+- [TXT Record Creation with CRD Source](docs/sources/txt-record.md)
+- [OpenStack Designate](docs/tutorials/designate.md)
+- [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
+- [PowerDNS](docs/tutorials/pdns.md)
+- [RFC2136](docs/tutorials/rfc2136.md)
+- [TransIP](docs/tutorials/transip.md)
+- [OVH](docs/tutorials/ovh.md)
+- [Scaleway](docs/tutorials/scaleway.md)
+- [UltraDNS](docs/tutorials/ultradns.md)
+- [GoDaddy](docs/tutorials/godaddy.md)
+- [Gandi](docs/tutorials/gandi.md)
+- [IBM Cloud](docs/tutorials/ibmcloud.md)
+- [Nodes as source](docs/sources/nodes.md)
+- [TencentCloud](docs/tutorials/tencentcloud.md)
+- [Plural](docs/tutorials/plural.md)
+- [Pi-hole](docs/tutorials/pihole.md)
 
 ### Running Locally
 
@@ -249,7 +260,8 @@ Locally run a single sync loop of ExternalDNS.
 external-dns --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
 ```
 
-This should output the DNS records it will modify to match the managed zone with the DNS records you desire. It also assumes you are running in the `default` namespace. See the [FAQ](docs/faq.md) for more information regarding namespaces.
+This should output the DNS records it will modify to match the managed zone with the DNS records you desire.
+It also assumes you are running in the `default` namespace. See the [FAQ](docs/faq.md) for more information regarding namespaces.
 
 Note: TXT records will have the `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
 
@@ -267,10 +279,11 @@ dig +short nginx.example.org.
 ```
 
 Now you can experiment and watch how ExternalDNS makes sure that your DNS records are configured as desired. Here are a couple of things you can try out:
-* Change the desired hostname by modifying the Service's annotation.
-* Recreate the Service and see that the DNS record will be updated to point to the new load balancer IP.
-* Add another Service to create more DNS records.
-* Remove Services to clean up your managed zone.
+
+- Change the desired hostname by modifying the Service's annotation.
+- Recreate the Service and see that the DNS record will be updated to point to the new load balancer IP.
+- Add another Service to create more DNS records.
+- Remove Services to clean up your managed zone.
 
 The **tutorials** section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
 
@@ -278,7 +291,8 @@ The **tutorials** section contains examples, including Ingress resources, and sh
 
 If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
 
-If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record. It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
+If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
+It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
 
 ## Contributing
 
@@ -305,12 +319,12 @@ For an overview on how to write new Sources and Providers check out [Sources and
 
 ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
-* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
-* Zalando's [Mate](https://github.com/linki/mate)
-* Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
+- Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
+- Zalando's [Mate](https://github.com/linki/mate)
+- Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### User Demo How-To Blogs and Examples
 
-* A full demo on GKE Kubernetes. See [How-to Kubernetes with DNS management (ssl-manager pre-req)](https://medium.com/@jpantjsoha/how-to-kubernetes-with-dns-management-for-gitops-31239ea75d8d)
-* Run external-dns on GKE with workload identity. See [Kubernetes, ingress-nginx, cert-manager & external-dns](https://blog.atomist.com/kubernetes-ingress-nginx-cert-manager-external-dns/)
-* [ExternalDNS integration with Azure DNS using workload identity](https://cloudchronicles.blog/blog/ExternalDNS-integration-with-Azure-DNS-using-workload-identity/)
+- A full demo on GKE Kubernetes. See [How-to Kubernetes with DNS management (ssl-manager pre-req)](https://medium.com/@jpantjsoha/how-to-kubernetes-with-dns-management-for-gitops-31239ea75d8d)
+- Run external-dns on GKE with workload identity. See [Kubernetes, ingress-nginx, cert-manager & external-dns](https://blog.atomist.com/kubernetes-ingress-nginx-cert-manager-external-dns/)
+- [ExternalDNS integration with Azure DNS using workload identity](https://cloudchronicles.blog/blog/ExternalDNS-integration-with-Azure-DNS-using-workload-identity/)

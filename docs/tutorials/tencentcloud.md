@@ -10,10 +10,12 @@ Tencent Cloud DNSPod Service is the domain name resolution and management servic
 Tencent Cloud PrivateDNS Service is the domain name resolution and management service for VPC internal access.
 
 * If you want to use internal dns service in Tencent Cloud.
+
 1. Set up the args `--tencent-cloud-zone-type=private`
 2. Create a DNS domain in PrivateDNS console. DNS domain which will contain the managed DNS records.
 
 * If you want to use public dns service in Tencent Cloud.
+
 1. Set up the args `--tencent-cloud-zone-type=public`
 2. Create a Domain in DnsPod console. DNS domain which will contain the managed DNS records.
 
@@ -55,9 +57,9 @@ In Tencent CAM Console. you may get the secretId and secretKey pair. make sure t
 }
 ```
 
-# Deploy ExternalDNS
+## Deploy ExternalDNS
 
-## Manifest (for clusters with RBAC enabled)
+### Manifest (for clusters with RBAC enabled)
 
 ```yaml
 apiVersion: v1
@@ -163,9 +165,9 @@ spec:
         name: config-volume
 ```
 
-# Example
+## Example
 
-## Service
+### Service
 
 ```yaml
 apiVersion: v1
@@ -210,7 +212,5 @@ spec:
 `nginx-internal.external-dns-test.com` will record to the ClusterIP.
 all of the DNS Record ttl will be 600.
 
-# Attention
-
-This makes ExternalDNS safe for running in environments where there are other records managed via other means.
-
+> [!WARNING]
+> This makes ExternalDNS safe for running in environments where there are other records managed via other means.

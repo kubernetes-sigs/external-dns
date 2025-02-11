@@ -112,4 +112,3 @@ external-dns ... --managed-record-types=A --managed-record-types=CNAME --managed
 
 1. If the Service has one or more `spec.externalIPs`, uses the values in that field.
 2. Otherwise, creates a target with the value of the Service's `externalName` field.
-

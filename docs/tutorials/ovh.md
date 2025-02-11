@@ -21,6 +21,7 @@ You first need to create an OVH application.
 Using the [OVH documentation](https://docs.ovh.com/gb/en/api/first-steps-with-ovh-api/#advanced-usage-pair-ovhcloud-apis-with-an-application_2) you will have your `Application key` and `Application secret`
 
 And you will need to generate your consumer key, here the permissions needed :
+
 - GET on `/domain/zone`
 - GET on `/domain/zone/*/record`
 - GET on `/domain/zone/*/record/*`
@@ -230,8 +231,8 @@ ExternalDNS uses the hostname annotation to determine which services should be r
 
 ### Create the deployment and service
 
-```
-$ kubectl create -f nginx.yaml
+```sh
+kubectl create -f nginx.yaml
 ```
 
 Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the OVH DNS records.
@@ -244,7 +245,7 @@ Use the OVH manager or API to verify that the A record for your domain shows the
 
 Once you successfully configure and verify record management via ExternalDNS, you can delete the tutorial's example:
 
-```
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+```sh
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml
 ```
