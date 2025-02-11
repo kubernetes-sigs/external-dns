@@ -137,6 +137,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
+		listenEndpointEvents:           listenEndpointEvents,
 	}, nil
 }
 
