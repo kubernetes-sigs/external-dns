@@ -54,7 +54,7 @@ update_schema() {
   cd charts/external-dns
   helm schema  -indent 2 \
     -draft 7 \
-    -input ci/schema-values.yaml \
+    -input schema/values.yaml \
     -input values.yaml \
     -output values.schema.json
 }

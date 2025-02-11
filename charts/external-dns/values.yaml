@@ -7,11 +7,11 @@ global:
   imagePullSecrets: []  # @schema item: object
 
 image:  # @schema additionalProperties: false
-  # -- (string) Image repository for the `external-dns` container.
+  # -- Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns
   # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
   tag:  # @schema type:[string, null]
-  # -- (string) Image pull policy for the `external-dns` container.
+  # -- Image pull policy for the `external-dns` container.
   pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
 
 # -- Image pull secrets.
@@ -35,7 +35,7 @@ serviceAccount:
   annotations: {}
   # -- (string) If this is set and `serviceAccount.create` is `true` this will be used for the created `ServiceAccount` name, if set and `serviceAccount.create` is `false` then this will define an existing `ServiceAccount` to use.
   name:
-  # -- (string) Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`.
+  # -- Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`.
   automountServiceAccountToken:
 
 service:
@@ -78,7 +78,7 @@ podAnnotations: {}
 # -- (bool) Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.
 automountServiceAccountToken:
 
-# -- (bool) If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.
+# -- If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.
 shareProcessNamespace: false
 
 # -- [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation.
@@ -173,7 +173,7 @@ serviceMonitor:
   annotations: {}
   # -- (string) If set create the `ServiceMonitor` in an alternate namespace.
   namespace:
-  # -- (string) If set override the _Prometheus_ default interval.
+  # -- If set override the _Prometheus_ default interval.
   interval:
   # -- (string) If set override the _Prometheus_ default scrape timeout.
   scrapeTimeout:
@@ -282,7 +282,7 @@ provider:
       failureThreshold: 6
       successThreshold: 1
     service:
-      # -- (int) Webhook exposed HTTP port for the service.
+      # -- Webhook exposed HTTP port for the service.
       port: 8080
     # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
     # @default -- See _values.yaml_
