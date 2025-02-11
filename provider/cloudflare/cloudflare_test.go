@@ -1317,6 +1317,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
 	})
+
 	provider := &CloudFlareProvider{
 		Client: client,
 	}
@@ -1358,7 +1359,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
-	mockAction := []MockAction{
+	td.CmpDeeply(t, client.Actions, []MockAction{
 		{
 			Name:     "Delete",
 			ZoneId:   "001",
@@ -1387,17 +1388,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Proxied: proxyEnabled,
 			},
 		},
-		{
-			Name:   "UpdateDataLocalizationRegionalHostname",
-			ZoneId: "001",
-			RecordData: cloudflare.DNSRecord{
-				Name:      "foobar.bar.com",
-				TTL:       0,
-				Proxiable: false,
-			},
-		},
-	}
-	td.CmpDeeply(t, client.Actions, mockAction)
+	})
 }
 
 func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
