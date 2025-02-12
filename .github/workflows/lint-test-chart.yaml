@@ -35,7 +35,7 @@ jobs:
           CURRENT_SCHEMA=$(cat values.schema.json)
           GENERATED_SCHEMA=$(cat diff-schema.schema.json)
           if [ "$CURRENT_SCHEMA" != "$GENERATED_SCHEMA" ]; then
-            echo "Schema must be re-generated! Run 'scripts/helm-tools.sh --schema'" 1>&2
+            echo "Schema not up to date. Please run 'scripts/helm-tools.sh --schema' and commit changes!" 1>&2
             diff diff-schema.schema.json values.schema.json
             exit 1
           fi
