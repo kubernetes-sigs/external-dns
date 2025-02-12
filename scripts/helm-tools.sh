@@ -52,19 +52,13 @@ install() {
 
 update_schema() {
   cd charts/external-dns
-  helm schema  -indent 2 \
-    -draft 7 \
-    -input schema/values.yaml \
-    -input values.yaml \
-    -output values.schema.json
+  # uses .schema.yamle
+  helm schema
 }
 
 diff_schema() {
   cd charts/external-dns
-  helm schema  -indent 2 \
-    -draft 7 \
-    -input ci/schema-values.yaml \
-    -input values.yaml \
+  helm schema  \
     -output diff-schema.schema.json
   trap 'rm -rf -- "diff-schema.schema.json"' EXIT
   CURRENT_SCHEMA=$(cat values.schema.json)
