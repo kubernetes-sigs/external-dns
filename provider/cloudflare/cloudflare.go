@@ -620,9 +620,9 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 // listCustomHostnamesWithPagination performs automatic pagination of results on requests to cloudflare.CustomHostnames
 func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Context, zoneID string) ([]cloudflare.CustomHostname, error) {
 	var chs []cloudflare.CustomHostname
-	page := 1
+	resultInfo := cloudflare.ResultInfo{Page: 1}
 	for {
-		pageCustomHostnameListResponse, resultInfo, err := p.Client.CustomHostnames(ctx, zoneID, page, cloudflare.CustomHostname{})
+		pageCustomHostnameListResponse, resultInfo, err := p.Client.CustomHostnames(ctx, zoneID, resultInfo.Page, cloudflare.CustomHostname{})
 		if err != nil {
 			var apiErr *cloudflare.Error
 			if errors.As(err, &apiErr) {
@@ -635,11 +635,12 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 		}
 
 		chs = append(chs, pageCustomHostnameListResponse...)
-		if resultInfo.TotalPages >= page {
+		resultInfo = resultInfo.Next()
+		if resultInfo.Done() {
 			break
 		}
-		page++
 	}
+	log.Infof("got hostnames: %v", chs)
 	return chs, nil
 }
 
