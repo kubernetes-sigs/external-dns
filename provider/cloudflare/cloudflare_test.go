@@ -1606,7 +1606,7 @@ func TestCloudflareCreateCustomHostname(t *testing.T) {
 			t.Errorf("should not fail, %s", err)
 		}
 
-		chs, chErr := provider.customHostnamesWithPagination(ctx, "001")
+		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, "001")
 		if chErr != nil {
 			t.Errorf("should not fail, %s", chErr)
 		}

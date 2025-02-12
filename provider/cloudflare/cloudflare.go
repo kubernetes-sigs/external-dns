@@ -299,7 +299,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 			return nil, err
 		}
 
-		chs, chErr := p.customHostnamesWithPagination(ctx, zone.ID)
+		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zone.ID)
 		if chErr != nil {
 			return nil, chErr
 		}
@@ -372,7 +372,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			return fmt.Errorf("could not fetch records from zone, %v", err)
 		}
 
-		chs, chErr := p.customHostnamesWithPagination(ctx, zoneID)
+		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
 		if chErr != nil {
 			return fmt.Errorf("could not fetch custom hostnames from zone, %v", chErr)
 		}
@@ -617,8 +617,8 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 	return records, nil
 }
 
-// customHostnamesWithPagination performs automatic pagination of results on requests to cloudflare.CustomHostnames
-func (p *CloudFlareProvider) customHostnamesWithPagination(ctx context.Context, zoneID string) ([]cloudflare.CustomHostname, error) {
+// listCustomHostnamesWithPagination performs automatic pagination of results on requests to cloudflare.CustomHostnames
+func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Context, zoneID string) ([]cloudflare.CustomHostname, error) {
 	var chs []cloudflare.CustomHostname
 	page := 1
 	for {
