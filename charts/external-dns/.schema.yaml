@@ -3,7 +3,7 @@ input:
   - schema/values.yaml
   - values.yaml
 
-draft: 2020
+draft: 7
 indent: 2
 output: values.schema.json
 
