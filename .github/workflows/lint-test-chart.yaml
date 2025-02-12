@@ -25,10 +25,20 @@ jobs:
           version: latest
 
       - name: Run helm values.schema.json check
+        working-directory: charts/external-dns
         run: |
           set -euo pipefail
           helm plugin install https://github.com/losisin/helm-values-schema-json.git
-          scripts/helm-tools.sh --diff
+
+          helm schema -output diff-schema.schema.json
+
+          CURRENT_SCHEMA=$(cat values.schema.json)
+          GENERATED_SCHEMA=$(cat diff-schema.schema.json)
+          if [ "$CURRENT_SCHEMA" != "$GENERATED_SCHEMA" ]; then
+            echo "Schema must be re-generated! Run 'scripts/helm-tools.sh --schema'" 1>&2
+            diff diff-schema.schema.json values.schema.json
+            exit 1
+          fi
 
       - name: Install Helm Docs
         uses: action-stars/install-tool-from-github-release@ece2623611b240002e0dd73a0d685505733122f6 # v0.2.4
