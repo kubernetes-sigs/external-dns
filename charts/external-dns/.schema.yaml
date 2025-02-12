@@ -1,4 +1,4 @@
-# Required
+# ref: https://github.com/losisin/helm-values-schema-json.git
 input:
   - schema/values.yaml
   - values.yaml
