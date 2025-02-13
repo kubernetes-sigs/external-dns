@@ -1083,3 +1083,5 @@ Can't specify multiple or separate values with commas: `key1=val1,key2=val2` at 
 args:
     --aws-zone-tags=team=k8s,vertical=platform
 ```
+
+Filter only by value `=tag-value` is not supported.
