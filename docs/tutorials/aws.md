@@ -1084,4 +1084,4 @@ args:
     --aws-zone-tags=team=k8s,vertical=platform
 ```
 
-Filter only by value `=tag-value` is not supported.
+Filter only by value `--aws-zone-tags==tag-value` is not supported.
