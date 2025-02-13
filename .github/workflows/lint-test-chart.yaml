@@ -24,19 +24,18 @@ jobs:
           token: ${{ github.token }}
           version: latest
 
-      - name: Run helm values.schema.json check
+      - name: Run Helm Schema  check
         working-directory: charts/external-dns
         run: |
           set -euo pipefail
+          
           helm plugin install https://github.com/losisin/helm-values-schema-json.git
 
-          helm schema -output diff-schema.schema.json
+          helm schema
 
-          CURRENT_SCHEMA=$(cat values.schema.json)
-          GENERATED_SCHEMA=$(cat diff-schema.schema.json)
-          if [ "$CURRENT_SCHEMA" != "$GENERATED_SCHEMA" ]; then
-            echo "Schema not up to date. Please run 'scripts/helm-tools.sh --schema' and commit changes!" 1>&2
-            diff diff-schema.schema.json values.schema.json
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
+          then
+            echo "Schema not up to date. Please run helm schema and commit changes!" >&2
             exit 1
           fi
 
