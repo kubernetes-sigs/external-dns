@@ -44,7 +44,8 @@ If added any flags, re-generate flags documentation
 make generate-flags-documentation
 ```
 
-We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation. In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
+We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation.
+In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
 
 ### Continuous Integration
 
@@ -74,8 +75,8 @@ We use [Minikube](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fmacos%2Fx86-6
 
 - [Create local cluster](#create-a-local-cluster)
 - [Build and load local images](#building-local-images)
-- [Deploy with Helm](#deploy-with-helm)
-- [Deploy with kubernetes manifests]()
+- Deploy with Helm
+- Deploy with kubernetes manifests
 
 ## Create a local cluster
 
@@ -203,6 +204,7 @@ Deploy manifests to a cluster with required values
 ```
 
 Modify chart or values and validate the diff
+
 ```sh
 ❯❯ helm template external-dns charts/external-dns --output-dir _scratch
 ❯❯ kubectl diff -f _scratch/external-dns --recursive=true --show-managed-fields=false

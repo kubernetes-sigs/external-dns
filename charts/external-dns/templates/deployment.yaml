@@ -204,6 +204,10 @@ spec:
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
+      {{- with .nodeAffinity }}
+        nodeAffinity:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
       {{- with .podAffinity }}
         podAffinity:
           {{- with .preferredDuringSchedulingIgnoredDuringExecution }}

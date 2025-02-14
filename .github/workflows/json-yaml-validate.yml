@@ -1,4 +1,4 @@
-name: json-yaml-validate 
+name: json-yaml-validate
 on:
   push:
     branches: [ master ]

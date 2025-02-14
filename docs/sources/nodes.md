@@ -12,7 +12,7 @@ This avoid exposing Unhealthy, NotReady or SchedulingDisabled (cordon) nodes.
 
 ## Manifest (for cluster without RBAC enabled)
 
-```
+```yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -48,7 +48,7 @@ spec:
 
 ## Manifest (for cluster with RBAC enabled)
 
-```
+```yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
