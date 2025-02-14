@@ -61,3 +61,5 @@ docs/CONTRIBUTING.md
 docs/index.md
 docs/redirect
 site
+_scratch
+Pipfile

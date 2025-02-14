@@ -7,6 +7,7 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
 We are going to use OpenStack CLI - `openstack` utility, which is an umbrella application for most of OpenStack clients including `designate`.
 
 All OpenStack CLIs require authentication parameters to be provided. These parameters include:
+
 * URL of the OpenStack identity service (`keystone`) which is responsible for user authentication and also served as a registry for other
   OpenStack services. Designate endpoints must be registered in `keystone` in order to ExternalDNS and OpenStack CLI be able to find them.
 * OpenStack region name
@@ -29,8 +30,9 @@ way to get yourself an OpenStack installation to play with is to use [DevStack](
 ## Creating DNS zones
 
 All domain names that are ExternalDNS is going to create must belong to one of DNS zones created in advance. Here is an example of how to create `example.com` DNS zone:
+
 ```console
-$ openstack zone create --email dnsmaster@example.com example.com.
+openstack zone create --email dnsmaster@example.com example.com.
 ```
 
 It is important to manually create all the zones that are going to be used for kubernetes entities (ExternalDNS sources) before starting ExternalDNS.
@@ -99,7 +101,7 @@ rules:
   resources: ["pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -159,15 +161,17 @@ spec:
 Create the deployment for ExternalDNS:
 
 ```console
-$ kubectl create -f externaldns.yaml
+kubectl create -f externaldns.yaml
 ```
 
 ### Optional: Trust self-sign certificates
+
 If your OpenStack-Installation is configured with a self-sign certificate, you could extend the `pod.spec` with following secret-mount:
+
 ```yaml
         volumeMounts:
         - mountPath: /etc/ssl/certs/
-          name: cacerts 
+          name: cacerts
       volumes:
       - name: cacerts
         secret:
@@ -176,7 +180,6 @@ If your OpenStack-Installation is configured with a self-sign certificate, you c
 ```
 
 content of the secret `self-sign-certs` must be the certificate/chain in PEM format.
-
 
 ## Deploying an Nginx Service
 
@@ -225,9 +228,8 @@ ExternalDNS uses this annotation to determine what services should be registered
 Create the deployment and service:
 
 ```console
-$ kubectl create -f nginx.yaml
+kubectl create -f nginx.yaml
 ```
-
 
 Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and notify Designate,
 which in turn synchronize DNS records with underlying DNS server backend.
@@ -237,13 +239,13 @@ which in turn synchronize DNS records with underlying DNS server backend.
 To verify that DNS record was indeed created, you can use the following command:
 
 ```console
-$ openstack recordset list example.com.
+openstack recordset list example.com.
 ```
 
 There should be a record for my-app.example.com having `ACTIVE` status. And of course, the ultimate method to verify is to issue a DNS query:
 
 ```console
-$ dig my-app.example.com @controller
+dig my-app.example.com @controller
 ```
 
 ## Cleanup
@@ -251,6 +253,6 @@ $ dig my-app.example.com @controller
 Now that we have verified that ExternalDNS created all DNS records, we can delete the tutorial's example:
 
 ```console
-$ kubectl delete service -f nginx.yaml
-$ kubectl delete service -f externaldns.yaml
+kubectl delete service -f nginx.yaml
+kubectl delete service -f externaldns.yaml
 ```

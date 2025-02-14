@@ -162,6 +162,16 @@ ko:
 	scripts/install-ko.sh
 
 # generate-flags-documentation: Generate documentation (docs/flags.md)
-.PHONE: generate-flags-documentation
+.PHONY: generate-flags-documentation
 generate-flags-documentation:
 	go run internal/gen/docs/flags/main.go
+
+pre-commit-install: ## Install pre-commit hooks
+	@pre-commit install
+	@pre-commit gc
+
+pre-commit-uninstall: ## Uninstall hooks
+	@pre-commit uninstall
+
+pre-commit-validate: ## Validate files with pre-commit hooks
+	@pre-commit run --all-files
