@@ -81,7 +81,6 @@ func WithZoneTagFilters(filters []string) func(awsProvider *AWSProvider) {
   return func(awsProvider *AWSProvider) {
     awsProvider.zoneTagFilter = provider.NewZoneTagFilter(filters)
   }
-
 }
 
 func NewRoute53APIFixtureStub(zones *HostedZones) *Route53APIFixtureStub {
