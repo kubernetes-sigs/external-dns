@@ -28,8 +28,7 @@ cover:
 cover-html: cover
 	go tool cover -html cover.out
 
-# find or download controller-gen
-# download controller-gen if necessary
+#? controller-gen: download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
