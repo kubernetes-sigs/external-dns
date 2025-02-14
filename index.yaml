@@ -4,6 +4,39 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source."
+        - kind: fixed
+          description: "Fixed handling of non-string types in `serviceAccount.metadata.annotations` field."
+        - kind: fixed
+          description: "Fixed regression where `affinity.nodeAffinity` was being ignored."
+    apiVersion: v2
+    appVersion: 0.15.1
+    created: "2025-02-14T12:54:41.548335829Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 4022b2b19f9e14ec871db795b7e5c4c6b4ef22e08cd779e8b50c0d73fef04c6e
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.15.2/external-dns-1.15.2.tgz
+    version: 1.15.2
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Added ability to configure `imagePullSecrets` via helm `global` value."
         - kind: added
           description: "Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values."
@@ -887,4 +920,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-01-27T09:47:42.026683423Z"
+generated: "2025-02-14T12:54:41.548569133Z"
