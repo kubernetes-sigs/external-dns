@@ -1,8 +1,10 @@
 # Gloo Proxy Source
+
 This tutorial describes how to configure ExternalDNS to use the Gloo Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-### Manifest (for clusters without RBAC enabled)
+## Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -31,7 +33,8 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Manifest (for clusters with RBAC enabled)
+## Manifest (for clusters with RBAC enabled)
+
 Could be change if you have mulitple sources
 
 ```yaml
@@ -98,4 +101,3 @@ spec:
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
-

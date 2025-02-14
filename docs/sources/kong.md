@@ -3,7 +3,7 @@
 This tutorial describes how to configure ExternalDNS to use the Kong TCPIngress source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-### Manifest (for clusters without RBAC enabled)
+## Manifest (for clusters without RBAC enabled)
 
 ```yaml
 apiVersion: apps/v1
@@ -32,7 +32,8 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Manifest (for clusters with RBAC enabled)
+## Manifest (for clusters with RBAC enabled)
+
 Could be changed if you have mulitple sources
 
 ```yaml

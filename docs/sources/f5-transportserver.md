@@ -9,20 +9,24 @@ The F5 Networks TransportServer CRD is part of [this](https://github.com/F5Netwo
 1. Make sure that you have the `k8s-bigip-ctlr` installed in your cluster. The needed CRDs are bundled within the controller.
 
 2. In your Helm `values.yaml` add:
-```
+
+```yaml
 sources:
   - ...
   - f5-transportserver
   - ...
 ```
+
 or add it in your `Deployment` if you aren't installing `external-dns` via Helm:
-```
+
+```yaml
 args:
 - --source=f5-transportserver
 ```
 
 Note that, in case you're not installing via Helm, you'll need the following in the `ClusterRole` bound to the service account of `external-dns`:
-```
+
+```yaml
 - apiGroups:
   - cis.f5.com
   resources:
@@ -35,7 +39,7 @@ Note that, in case you're not installing via Helm, you'll need the following in 
 
 ### Example TransportServer CR w/ host in spec
 
-```
+```yaml
 apiVersion: cis.f5.com/v1
 kind: TransportServer
 metadata:
@@ -58,7 +62,7 @@ spec:
 
 If the `external-dns.alpha.kubernetes.io/target` annotation is set, the record created will reflect that and everything else will be ignored.
 
-```
+```yaml
 apiVersion: cis.f5.com/v1
 kind: TransportServer
 metadata:
@@ -83,7 +87,7 @@ spec:
 
 If `virtualServerAddress` is set, the record created will reflect that. `external-dns.alpha.kubernetes.io/target` will take precedence though.
 
-```
+```yaml
 apiVersion: cis.f5.com/v1
 kind: TransportServer
 metadata:

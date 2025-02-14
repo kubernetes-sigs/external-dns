@@ -12,9 +12,12 @@ By default, the pod source will look into the pod annotations to find the FQDN a
 
 ## Configuration for registering all pods with their associated PTR record
 
-A use case where combining these options can be pertinent is when you are running on-premise Kubernetes clusters without SNAT enabled for the pod network. You might want to register all the pods in the DNS with their associated PTR record so that the source of some traffic outside of the cluster can be rapidly associated with a workload using the "nslookup" or "dig" command on the pod IP. This can be particularly useful if you are running a large number of Kubernetes clusters.
+A use case where combining these options can be pertinent is when you are running on-premise Kubernetes clusters without SNAT enabled for the pod network.
+You might want to register all the pods in the DNS with their associated PTR record so that the source of some traffic outside of the cluster can be rapidly associated with a workload using the "nslookup" or "dig" command on the pod IP.
+This can be particularly useful if you are running a large number of Kubernetes clusters.
 
 You will then use the following mix of options:
+
 - `--domain-filter=example.org`
 - `--domain-filter=10.0.0.in-addr.arpa`
 - `--source=pod`

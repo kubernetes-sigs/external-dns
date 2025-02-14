@@ -3,6 +3,7 @@
 This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.
 
 It comprises of the following steps:
+
 1) Provision Azure Private DNS
 2) Configure service principal for managing the zone
 3) Deploy ExternalDNS
@@ -15,6 +16,7 @@ Everything will be deployed on Kubernetes.
 Therefore, please see the subsequent prerequisites.
 
 ## Prerequisites
+
 - Azure Kubernetes Service is deployed and ready
 - [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and `kubectl` installed on the box to execute the subsequent steps
 
@@ -25,8 +27,8 @@ not automatically create zones.
 
 For this tutorial, we will create a Azure resource group named 'externaldns' that can easily be deleted later.
 
-```
-$ az group create -n externaldns -l westeurope
+```sh
+az group create -n externaldns -l westeurope
 ```
 
 Substitute a more suitable location for the resource group if desired.
@@ -34,7 +36,7 @@ Substitute a more suitable location for the resource group if desired.
 As a prerequisite for Azure Private DNS to resolve records is to define links with VNETs.
 Thus, first create a VNET.
 
-```
+```sh
 $ az network vnet create \
   --name myvnet \
   --resource-group externaldns \
@@ -46,20 +48,21 @@ $ az network vnet create \
 
 Next, create a Azure Private DNS zone for "example.com":
 
-```
-$ az network private-dns zone create -g externaldns -n example.com
+```sh
+az network private-dns zone create -g externaldns -n example.com
 ```
 
 Substitute a domain you own for "example.com" if desired.
 
 Finally, create the mentioned link with the VNET.
 
-```
+```sh
 $ az network private-dns link vnet create -g externaldns -n mylink \
    -z example.com -v myvnet --registration-enabled false
 ```
 
 ## Configure service principal for managing the zone
+
 ExternalDNS needs permissions to make changes in Azure Private DNS.
 These permissions are roles assigned to the service principal used by ExternalDNS.
 
@@ -67,7 +70,8 @@ A service principal with a minimum access level of `Private DNS Zone Contributor
 More powerful role-assignments like `Owner` or assignments on subscription-level work too.
 
 Start off by **creating the service principal** without role-assignments.
-```
+
+```sh
 $ az ad sp create-for-rbac --skip-assignment -n http://externaldns-sp
 {
   "appId": "appId GUID",  <-- aadClientId value
@@ -76,12 +80,13 @@ $ az ad sp create-for-rbac --skip-assignment -n http://externaldns-sp
   "tenant": "AzureAD Tenant Id"  <-- tenantId value
 }
 ```
+
 > Note: Alternatively, you can issue `az account show --query "tenantId"` to retrieve the id of your AAD Tenant too.
 
 Next, assign the roles to the service principal.
 But first **retrieve the ID's** of the objects to assign roles on.
 
-```
+```sh
 # find out the resource ids of the resource group where the dns zone is deployed, and the dns zone itself
 $ az group show --name externaldns --query id -o tsv
 /subscriptions/id/resourceGroups/externaldns
@@ -89,8 +94,10 @@ $ az group show --name externaldns --query id -o tsv
 $ az network private-dns zone show --name example.com -g externaldns --query id -o tsv
 /subscriptions/.../resourceGroups/externaldns/providers/Microsoft.Network/privateDnsZones/example.com
 ```
+
 Now, **create role assignments**.
-```
+
+```sh
 # 1. as a reader to the resource group
 $ az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>
 
@@ -103,6 +110,7 @@ $ az role assignment create --role "Private DNS Zone Contributor" --assignee <ap
 When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
 
 ## Deploy ExternalDNS
+
 Configure `kubectl` to be able to communicate and authenticate with your cluster.
 This is per default done through the file `~/.kube/config`.
 
@@ -116,6 +124,7 @@ Then apply one of the following manifests depending on whether you use RBAC or n
 The credentials of the service principal are provided to ExternalDNS as environment-variables.
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -153,6 +162,7 @@ spec:
 ```
 
 ### Manifest (for clusters with RBAC enabled, cluster access)
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -224,6 +234,7 @@ spec:
 ```
 
 ### Manifest (for clusters with RBAC enabled, namespace access)
+
 This configuration is the same as above, except it only requires privileges for the current namespace, not for the whole cluster.
 However, access to [nodes](https://kubernetes.io/docs/concepts/architecture/nodes/) requires cluster access, so when using this manifest,
 services with type `NodePort` will be skipped!
@@ -296,8 +307,8 @@ spec:
 
 Create the deployment for ExternalDNS:
 
-```
-$ kubectl create -f externaldns.yaml
+```sh
+kubectl create -f externaldns.yaml
 ```
 
 ## Create an nginx deployment
@@ -350,7 +361,10 @@ spec:
   type: LoadBalancer
 ```
 
-In the service we used multiple annptations. The annotation `service.beta.kubernetes.io/azure-load-balancer-internal` is used to create an internal load balancer. The annotation `external-dns.alpha.kubernetes.io/hostname` is used to create a DNS record for the load balancer that will point to the internal IP address in the VNET allocated by the internal load balancer. The annotation `external-dns.alpha.kubernetes.io/internal-hostname` is used to create a private DNS record for the load balancer that will point to the cluster IP.
+In the service we used multiple annotations.
+The annotation `service.beta.kubernetes.io/azure-load-balancer-internal` is used to create an internal load balancer.
+The annotation `external-dns.alpha.kubernetes.io/hostname` is used to create a DNS record for the load balancer that will point to the internal IP address in the VNET allocated by the internal load balancer.
+The annotation `external-dns.alpha.kubernetes.io/internal-hostname` is used to create a private DNS record for the load balancer that will point to the cluster IP.
 
 ## Install NGINX Ingress Controller (Optional)
 
@@ -358,7 +372,7 @@ Helm is used to deploy the ingress controller.
 
 We employ the popular chart [ingress-nginx](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx).
 
-```
+```sh
 $ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 $ helm repo update
 $ helm install [RELEASE_NAME] ingress-nginx/ingress-nginx
@@ -373,13 +387,13 @@ In the subsequent parameter we will make use of this. If you don't want to work 
 
 Verify the correct propagation of the loadbalancer's ip by listing the ingresses.
 
-```
-$ kubectl get ingress
+```sh
+kubectl get ingress
 ```
 
 The address column should contain the ip for each ingress. ExternalDNS will pick up exactly this piece of information.
 
-```
+```sh
 NAME     HOSTS             ADDRESS          PORTS   AGE
 nginx1   sample1.aks.com   52.167.195.110   80      6d22h
 nginx2   sample2.aks.com   52.167.195.110   80      6d21h
@@ -387,7 +401,7 @@ nginx2   sample2.aks.com   52.167.195.110   80      6d21h
 
 If you do not want to deploy the ingress controller with Helm, ensure to pass the following cmdline-flags to it through the mechanism of your choice:
 
-```
+```sh
 flags:
 --publish-service=<namespace of ingress-controller >/<svcname of ingress-controller>
 --update-status=true (default-value)
@@ -444,8 +458,8 @@ When those hostnames are removed or renamed the corresponding DNS records are al
 
 Create the deployment, service and ingress object:
 
-```
-$ kubectl create -f nginx.yaml
+```sh
+kubectl create -f nginx.yaml
 ```
 
 Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute.
@@ -454,8 +468,8 @@ Since your external IP would have already been assigned to the nginx-ingress ser
 
 Run the following command to view the A records for your Azure Private DNS zone:
 
-```
-$ az network private-dns record-set a list -g externaldns -z example.com
+```sh
+az network private-dns record-set a list -g externaldns -z example.com
 ```
 
 Substitute the zone for the one created above if a different domain was used.
