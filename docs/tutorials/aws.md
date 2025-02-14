@@ -1101,10 +1101,10 @@ args:
 ```
 
 Can't specify multiple or separate values with commas: `key1=val1,key2=val2` at the moment.
+Filter only by value `--aws-zone-tags==tag-value` is not supported.
 
 ```sh
 args:
-    --aws-zone-tags=team=k8s,vertical=platform
+    --aws-zone-tags=team=k8s,vertical=platform # this is not supported
+    --aws-zone-tags==tag-value # this is not supported
 ```
-
-Filter only by value `--aws-zone-tags==tag-value` is not supported.
