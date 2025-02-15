@@ -47,7 +47,7 @@ func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, m
 	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
 		return nil, errors.New("either both cert and key or none must be provided")
 	}
-	var certificates []tls.Certificate
+	certificates := make([]tls.Certificate, 0)
 	if certPath != "" {
 		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 		if err != nil {
@@ -75,7 +75,13 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 		return nil, nil
 	}
 
-	roots := x509.NewCertPool()
+	roots := new(x509.CertPool)
+	// Start with the system cert pool and then add the custom CA cert
+	roots, _ = x509.SystemCertPool()
+	if roots == nil {
+		roots = x509.NewCertPool()
+	}
+
 	pem, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %w", caPath, err)

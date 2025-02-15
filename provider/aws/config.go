@@ -18,8 +18,10 @@ package aws
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
 	"strings"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
@@ -39,6 +41,10 @@ type AWSSessionConfig struct {
 	AssumeRoleExternalID string
 	APIRetries           int
 	Profile              string
+	TLSCAFilePath        string
+	TLSCertPath          string
+	TLSCertKeyPath       string
+	TLSSkipVerify        bool
 }
 
 func CreateDefaultV2Config(cfg *externaldns.Config) awsv2.Config {
@@ -47,6 +53,10 @@ func CreateDefaultV2Config(cfg *externaldns.Config) awsv2.Config {
 			AssumeRole:           cfg.AWSAssumeRole,
 			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
 			APIRetries:           cfg.AWSAPIRetries,
+			TLSCertPath:          cfg.TLSClientCert,
+			TLSCertKeyPath:       cfg.TLSClientCertKey,
+			TLSCAFilePath:        cfg.TLSCA,
+			TLSSkipVerify:        cfg.AWSSkipTLSVerify,
 		},
 	)
 	if err != nil {
@@ -68,6 +78,10 @@ func CreateV2Configs(cfg *externaldns.Config) map[string]awsv2.Config {
 					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
 					APIRetries:           cfg.AWSAPIRetries,
 					Profile:              profile,
+					TLSCertPath:          cfg.TLSClientCert,
+					TLSCertKeyPath:       cfg.TLSClientCertKey,
+					TLSCAFilePath:        cfg.TLSCA,
+					TLSSkipVerify:        cfg.AWSSkipTLSVerify,
 				},
 			)
 			if err != nil {
@@ -80,11 +94,25 @@ func CreateV2Configs(cfg *externaldns.Config) map[string]awsv2.Config {
 }
 
 func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {
+	tlsConfig, err := tlsutils.NewTLSConfig(awsConfig.TLSCertPath, awsConfig.TLSCertKeyPath, awsConfig.TLSCAFilePath, "", awsConfig.TLSSkipVerify,
+		tls.VersionTLS13)
+
+	if err != nil {
+		return awsv2.Config{}, fmt.Errorf("instantiating TLS config: %w", err)
+	}
+
+	httpClient := &http.Client{}
+	if tlsConfig != nil {
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
+	}
+
 	defaultOpts := []func(*config.LoadOptions) error{
 		config.WithRetryer(func() awsv2.Retryer {
 			return retry.AddWithMaxAttempts(retry.NewStandard(), awsConfig.APIRetries)
 		}),
-		config.WithHTTPClient(instrumented_http.NewClient(&http.Client{}, &instrumented_http.Callbacks{
+		config.WithHTTPClient(instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{
 			PathProcessor: func(path string) string {
 				parts := strings.Split(path, "/")
 				return parts[len(parts)-1]
