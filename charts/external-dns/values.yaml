@@ -4,18 +4,18 @@
 
 global:
   # -- Global image pull secrets.
-  imagePullSecrets: []
+  imagePullSecrets: []  # @schema item: object
 
-image:
+image:  # @schema additionalProperties: false
   # -- Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns
-  # -- (string) Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
-  tag:
+  # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
+  tag:  # @schema type:[string, null]
   # -- Image pull policy for the `external-dns` container.
-  pullPolicy: IfNotPresent
+  pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
 
 # -- Image pull secrets.
-imagePullSecrets: []
+imagePullSecrets: []  # @schema item: object
 
 # -- (string) Override the name of the chart.
 nameOverride:
@@ -42,13 +42,15 @@ service:
   # -- Service annotations.
   annotations: {}
   # -- Service HTTP port.
-  port: 7979
-  # -- Service IP families.
-  ipFamilies: []
-  # -- (string) Service IP family policy.
-  ipFamilyPolicy:
+  port: 7979  # @schema minimum:0; default:7979
+  # -- Service IP families (e.g. IPv4 and/or IPv6).
+  ipFamilies: []  # @schema type: [array, null]; item: string; itemEnum: ["IPv4", "IPv6"]; minItems:0; maxItems:2; uniqueItems: true;
+  #  - IPv4
+  #  - IPv6
+  # -- Service IP family policy.
+  ipFamilyPolicy:  # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null];
 
-rbac:
+rbac:  # @schema additionalProperties: true
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
   create: true
   # -- Additional rules to add to the `ClusterRole`.
@@ -61,11 +63,11 @@ deploymentAnnotations: {}
 extraContainers: {}
 
 # -- [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).
-deploymentStrategy:
-  type: Recreate
+deploymentStrategy:  # @schema additionalProperties: true
+  type: Recreate  # @schema enum:[Recreate, RollingUpdate]; type:string; default: Recreate
 
 # -- (int) Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``.
-revisionHistoryLimit:
+revisionHistoryLimit:  # @schema type:[integer, null];minimum:0
 
 # -- Labels to add to the `Pod`.
 podLabels: {}
@@ -189,10 +191,10 @@ serviceMonitor:
   targetLabels: []
 
 # -- Log level.
-logLevel: info
+logLevel: info  # @schema enum:[panic, debug, info, warning, error, fatal]; type:string; default: "info"
 
 # -- Log format.
-logFormat: text
+logFormat: text  # @schema enum:["text", "json"]; type:string; default: "text"
 
 # -- Interval for DNS updates.
 interval: 1m
@@ -209,19 +211,19 @@ sources:
   - ingress
 
 # -- How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`.
-policy: upsert-only
+policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "upsert-only"
 
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
-registry: txt
+registry: txt  # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
 # -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
-txtOwnerId:
+txtOwnerId:  # @schema type:[string, null]; default: null
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtSuffix`.
-txtPrefix:
+txtPrefix:  # @schema type:[string, null]; default: null
 # -- (string) Specify a suffix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtPrefix`.
-txtSuffix:
+txtSuffix:  # @schema type:[string, null]; default: null
 
 # -- Limit possible target zones by domain suffixes.
 domainFilters: []
@@ -229,11 +231,11 @@ domainFilters: []
 # -- Intentionally exclude domains from being managed.
 excludeDomains: []
 
-# -- (string) Filter resources queried for endpoints by label selector
-labelFilter:
+# -- Filter resources queried for endpoints by label selector
+labelFilter:  # @schema pattern:^[a-zA-Z0-9._-]+=[a-zA-Z0-9._-]+$; type: [string,null];
 
 # -- Record types to manage (default: A, AAAA, CNAME)
-managedRecordTypes: []
+managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true;
 
 provider:
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
@@ -294,7 +296,7 @@ provider:
       relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
-extraArgs: []
+extraArgs: []  # @schema type: [array, null]; item: string; uniqueItems: true;
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).

@@ -151,7 +151,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | secretConfiguration.subPath | string | `nil` | Sub-path for mounting the `Secret`, this can be templated. |
 | securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `external-dns` container. |
 | service.annotations | object | `{}` | Service annotations. |
-| service.ipFamilies | list | `[]` | Service IP families. |
+| service.ipFamilies | list | `[]` | Service IP families (e.g. IPv4 and/or IPv6). |
 | service.ipFamilyPolicy | string | `nil` | Service IP family policy. |
 | service.port | int | `7979` | Service HTTP port. |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account. Templates are allowed in both the key and the value. Example: `example.com/annotation/{{ .Values.nameOverride }}: {{ .Values.nameOverride }}` |
