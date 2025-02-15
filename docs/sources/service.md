@@ -114,5 +114,6 @@ external-dns ... --managed-record-types=A --managed-record-types=CNAME --managed
 2. Otherwise, creates a target with the value of the Service's `externalName` field.
 
 ## Endpoints Reconciliation
+
 By default, ExternalDNS does not watch for endpoint changes and does not automatically reconcile DNS records as the endpoints, as matched by the Service's selector, change.
 To enable reconcile on endpoints changes, you must specify the `--listen-endpoint-events` flag, however be aware that this may increase the number of reconciliations performed by the controller, and the number of requests to the DNS provider.
