@@ -66,6 +66,7 @@
 | `--aws-profile=` | When using the AWS provider, name of the profile to use |
 | `--aws-assume-role=""` | When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional) |
 | `--aws-assume-role-external-id=""` | When using the AWS API and assuming a role then specify this external ID` (optional) |
+| `--[no-]aws-skip-tls-verify` | When using TLS with the aws provider, disable verification of any TLS certificates |
 | `--aws-batch-change-size=1000` | When using the AWS provider, set the maximum number of changes that will be applied in each batch. |
 | `--aws-batch-change-size-bytes=32000` | When using the AWS provider, set the maximum byte size that will be applied in each batch. |
 | `--aws-batch-change-size-values=1000` | When using the AWS provider, set the maximum total record values that will be applied in each batch. |
