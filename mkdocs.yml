@@ -26,7 +26,7 @@ nav:
     - DynamoDB: docs/registry/dynamodb.md
   - Advanced Topics:
     - Initial Design: docs/initial-design.md
-    - Leader Election: docs/proposal/leader-election.md
+    - Leader Election: docs/proposal/001-leader-election.md
     - MultiTarget: docs/proposal/multi-target.md
     - NAT64: docs/nat64.md
     - Rate Limits: docs/rate-limits.md
