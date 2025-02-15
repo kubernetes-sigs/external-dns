@@ -31,7 +31,8 @@ helm init
 ### Installing etcd
 
 [etcd operator](https://github.com/coreos/etcd-operator) is used to manage etcd clusters.
-```
+
+```sh
 helm install stable/etcd-operator --name my-etcd-op
 ```
 
@@ -45,7 +46,7 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/exa
 
 In order to make CoreDNS work with etcd backend, values.yaml of the chart should be changed with corresponding configurations.
 
-```
+```sh
 wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.yaml
 ```
 

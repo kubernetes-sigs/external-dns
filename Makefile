@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cover-html creates coverage report for whole project excluding vendor and opens result in the default browser
+#? cover: Creates coverage report for whole project excluding vendor and opens result in the default browser
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
@@ -24,11 +24,11 @@ cover:
 	gocovmerge `ls *.coverprofile` > cover.out
 	rm *.coverprofile
 
+#? cover-html: Run tests with coverage and open coverage report in the browser
 cover-html: cover
 	go tool cover -html cover.out
 
-# find or download controller-gen
-# download controller-gen if necessary
+#? controller-gen: download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	@{ \
@@ -40,15 +40,16 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
+#? golangci-lint: Install golangci-lint tool
 golangci-lint:
 	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.63.4
 
-# Run the golangci-lint tool
+#? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
 go-lint: golangci-lint
 	golangci-lint run --timeout=30m ./...
 
-# Run the licensecheck script to check for license headers
+#? licensecheck: Run the to check for license headers
 .PHONY: licensecheck
 licensecheck:
 	@echo ">> checking license header"
@@ -60,25 +61,25 @@ licensecheck:
                exit 1; \
        fi
 
-# Requires to install spectral. See https://github.com/stoplightio/spectral
+#? oas-lint: Requires to install spectral. See github.com/stoplightio/spectral
 oas-lint:
 	spectral lint api/*.yaml
 
-# Run all the linters
+#? lint: Run all the linters
 .PHONY: lint
 lint: licensecheck go-lint oas-lint
 
-# generates CRD using controller-gen
+#? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd: controller-gen
 	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
 
-# The verify target runs tasks similar to the CI tasks, but without code coverage
+#? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
 test:
 	go test -race -coverprofile=profile.cov ./...
 
-# The build targets allow to build the binary and container image
+#? build: The build targets allow to build the binary and container image
 .PHONY: build
 
 BINARY        ?= external-dns
@@ -148,9 +149,9 @@ clean:
 	@rm -rf build
 	@go clean -cache
 
- # Builds and push container images to the staging bucket.
-.PHONY: release.staging
 
+.PHONY: release.staging
+#? release.staging: Builds and push container images to the staging bucket.
 release.staging: test
 	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
 
@@ -161,7 +162,25 @@ release.prod: test
 ko:
 	scripts/install-ko.sh
 
-# generate-flags-documentation: Generate documentation (docs/flags.md)
-.PHONE: generate-flags-documentation
+.PHONY: generate-flags-documentation
+#? generate-flags-documentation: Generate documentation (docs/flags.md)
 generate-flags-documentation:
 	go run internal/gen/docs/flags/main.go
+
+#? pre-commit-install: Install pre-commit hooks
+pre-commit-install:
+	@pre-commit install
+	@pre-commit gc
+
+#? pre-commit-uninstall: Uninstall pre-commit hooks
+pre-commit-uninstall:
+	@pre-commit uninstall
+
+#? pre-commit-validate: Validate files with pre-commit hooks
+pre-commit-validate:
+	@pre-commit run --all-files
+
+.PHONY: help
+#? help: Get more info on available commands
+help: Makefile
+	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'

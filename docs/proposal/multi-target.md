@@ -1,4 +1,5 @@
 # Multiple Targets per hostname
+
 *(November 2017)*
 
 ## Purpose
@@ -13,13 +14,14 @@ ingress/service owns the record it can have multiple targets enable iff they are
 See https://github.com/kubernetes-sigs/external-dns/issues/239
 
 ## Current behaviour
+
 *(as of the moment of writing)*
 
 Central piece of enabling multi-target is having consistent and correct behaviour in `plan` component in regards to how endpoints generated
 from kubernetes resources are mapped to dns records. Current implementation of the `plan` has inconsistent behaviour in the following scenarios, all
 of which must be resolved before multi-target support can be enabled in the provider implementations:
 
-1.  No records registered so far. Two **different** ingresses request same hostname but different targets, e.g. Ingress A: example.com -> 1.1.1.1 and Ingress B: example.com -> 2.2.2.2
+1. No records registered so far. Two **different** ingresses request same hostname but different targets, e.g. Ingress A: example.com -> 1.1.1.1 and Ingress B: example.com -> 2.2.2.2
     * *Current Behaviour*: both are added to the "Create" (records to be created) list and passed to Provider
     * *Expected Behaviour*: only one (random/ or according to predefined strategy) should be chosen and passed to Provider
 
@@ -48,11 +50,11 @@ For this feature to work we have to make sure that:
 should store back-reference for the resource this record was created for, i.e. `"heritage=external-dns,external-dns/resource=ingress/default/my-ingress-object-name"`
 2. DNS records are updated only:
 
-    - If owning resource target list has changed
+    * If owning resource target list has changed
 
-    - If owning resource record is not found in the desired list (meaning it was deleted), therefore it will now be owned by another record. So its target list will be updated
+    * If owning resource record is not found in the desired list (meaning it was deleted), therefore it will now be owned by another record. So its target list will be updated
 
-    - Changes related to other record properties (e.g. TTL)
+    * Changes related to other record properties (e.g. TTL)
 
 4. All of the issues described in `Current Behaviour` sections are resolved
 
@@ -93,6 +95,7 @@ These PRs should be considered after common agreement about the way to address m
 ### How to proceed from here
 
 The following steps are needed:
+
 1. Make sure consensus regarding the approach is achieved via collaboration on the current document
 2. Notify all PR (see above) authors about the agreed approach
 3. Implementation:
@@ -114,5 +117,5 @@ The following steps are needed:
 
 ## Open questions
 
-- Handling cases when ingress/service targets include both hostnames and IPs - postpone this until use cases occurs
-- "Weighted records scope": https://github.com/kubernetes-sigs/external-dns/issues/196 - this should be considered once multi-target support is implemented
+* Handling cases when ingress/service targets include both hostnames and IPs - postpone this until use cases occurs
+* "Weighted records scope": https://github.com/kubernetes-sigs/external-dns/issues/196 - this should be considered once multi-target support is implemented
