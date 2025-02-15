@@ -4,7 +4,7 @@
 title: New Feature or Deprecation/Removal Proposal
 version: if applicable
 authors: you, me
-creation-date: 2025-01-01
+creation-date: 2025-jan-01
 status: draft
 ---
 ```
