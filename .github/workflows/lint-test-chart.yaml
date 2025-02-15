@@ -24,15 +24,13 @@ jobs:
           token: ${{ github.token }}
           version: latest
 
-      - name: Run Helm Schema  check
+      - name: Run Helm Schema check
         working-directory: charts/external-dns
         run: |
           set -euo pipefail
           
           helm plugin install https://github.com/losisin/helm-values-schema-json.git
-
           helm schema
-
           if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
           then
             echo "Schema not up to date. Please run helm schema and commit changes!" >&2

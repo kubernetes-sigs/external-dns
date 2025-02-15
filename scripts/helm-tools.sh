@@ -65,7 +65,7 @@ diff_schema() {
   GENERATED_SCHEMA=$(cat diff-schema.schema.json)
   if [ "$CURRENT_SCHEMA" != "$GENERATED_SCHEMA" ]; then
     echo "Schema must be re-generated! Run 'scripts/helm-tools.sh --schema'" 1>&2
-    diff diff-schema.schema.json values.schema.json
+    diff -Nau diff-schema.schema.json values.schema.json
     exit 1
   fi
 }
