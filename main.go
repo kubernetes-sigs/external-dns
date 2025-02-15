@@ -90,6 +90,10 @@ func main() {
 		log.Fatalf("config validation failed: %v", err)
 	}
 
+	if cfg.DryRun {
+		log.Info("running in dry-run mode. No changes to DNS records will be made.")
+	}
+
 	ll, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		log.Fatalf("failed to parse log level: %v", err)
@@ -104,14 +108,6 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	execute(cfg, ctx, cancel)
-}
-
-func execute(cfg *externaldns.Config, ctx context.Context, cancel context.CancelFunc) {
-	if cfg.DryRun {
-		log.Info("running in dry-run mode. No changes to DNS records will be made.")
-	}
 
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
