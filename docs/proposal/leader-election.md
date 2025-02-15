@@ -10,12 +10,13 @@ status: not-planned
 
 # Leader Election
 
-In Kubernetes, **leader election** is a mechanism used by applications, controllers, or distributed systems to designate one instance or node as the "leader" that is responsible for managing specific tasks, while others operate as followers or standbys. This ensures coordinated and fault-tolerant operations in highly available systems.
+In Kubernetes, **leader election** is a mechanism used by applications, controllers, or distributed systems to designate one instance or node as the "leader" that is responsible for managing specific tasks, while others operate as followers or standbys.
+This ensures coordinated and fault-tolerant operations in highly available systems.
 
 - [Kubernetes Coordinated Leader Election](https://kubernetes.io/docs/concepts/cluster-administration/coordinated-leader-election/)
 - [Kubernetes Concepts: Leases](https://kubernetes.io/docs/concepts/architecture/leases/)
 
-### **Leader Election in Kubernetes**
+## **Leader Election in Kubernetes**
 
 The leader election mechanism implemented in Go code relies on Kubernetes coordination features, specifically Lease object in the `coordination.k8s.io` API Group. Lease locks provide a way to acquire a lease on a shared resource, which can be used to determine the leader among a group of nodes.
 
@@ -76,7 +77,7 @@ flowchart TD
     D --> C
 ```
 
-#### Enable Leader Election
+### Enable Leader Election
 
 Minimum supported Kubernetes version is `v1.26`.
 
@@ -132,9 +133,13 @@ Leader election ensures that:
 
 Leader election functionality is critical for building reliable, fault-tolerant, and scalable applications on Kubernetes.
 
-- **Cluster Upgrades**: Leader election ensures smooth cluster upgrades by designating one instance as responsible for orchestrating upgrades or managing specific components during the process. By preventing multiple instances from making changes concurrently, it avoids conflicts and reduces downtime, ensuring consistency across the cluster.
-- **Workload Running on Spot Instances**: For workloads running on cost-effective but ephemeral spot instances, leader election is crucial for resiliency. When a spot instance running the leader is preempted, the failover process enables a standby instance to seamlessly take over leadership, ensuring continued execution of critical tasks.
-- **Requirement for Disaster Recovery**: In disaster recovery scenarios, leader election provides fault tolerance by allowing another instance to take over when the primary leader becomes unavailable. This guarantees operational continuity even in the face of unexpected failures, supporting robust disaster recovery strategies.
-- **High Availability (HA) Scenarios**: In highly available systems, leader election ensures that a single active leader manages essential processes or state, while backups remain ready to step in instantly in case of failure. This minimizes recovery time objectives (RTO) and eliminates single points of failure.
+- **Cluster Upgrades**: Leader election ensures smooth cluster upgrades by designating one instance as responsible for orchestrating upgrades or managing specific components during the process.
+By preventing multiple instances from making changes concurrently, it avoids conflicts and reduces downtime, ensuring consistency across the cluster.
+- **Workload Running on Spot Instances**: For workloads running on cost-effective but ephemeral spot instances, leader election is crucial for resiliency.
+When a spot instance running the leader is preempted, the failover process enables a standby instance to seamlessly take over leadership, ensuring continued execution of critical tasks.
+- **Requirement for Disaster Recovery**: In disaster recovery scenarios, leader election provides fault tolerance by allowing another instance to take over when the primary leader becomes unavailable.
+This guarantees operational continuity even in the face of unexpected failures, supporting robust disaster recovery strategies.
+- **High Availability (HA) Scenarios**: In highly available systems, leader election ensures that a single active leader manages essential processes or state, while backups remain ready to step in instantly in case of failure.
+This minimizes recovery time objectives (RTO) and eliminates single points of failure.
 - **Enhanced Reliability in Distributed Systems**: Incorporating leader election into your distributed system enhances its overall reliability. It avoids the pitfalls of uncoordinated task execution, providing deterministic behavior and ensuring only one instance manages critical tasks at any given time.
 - **Conflict Prevention**: Leader election serves as a guard against conflicts arising from multiple instances attempting to execute the same tasks. By ensuring that only the elected leader acts on shared resources or processes, it prevents data corruption, inconsistencies, and wasted computational effort.
