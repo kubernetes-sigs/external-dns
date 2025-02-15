@@ -75,12 +75,7 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 		return nil, nil
 	}
 
-	// Start with the system cert pool and then add the custom CA cert
-	roots, _ := x509.SystemCertPool()
-	if roots == nil {
-		roots = x509.NewCertPool()
-	}
-
+	roots := x509.NewCertPool()
 	pem, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %w", caPath, err)
