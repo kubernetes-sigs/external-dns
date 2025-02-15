@@ -1,7 +1,7 @@
 ```yaml
 ---
 title: leader election proposal
-version: v1
+version: 0.15.1
 authors: @ivankatliarchuk
 creation-date: 2025-jan-30
 status: not-planned
@@ -93,7 +93,7 @@ args:
    --enable-leader-election
 ```
 
-### **How Leader Election Works in Kubernetes**
+## **How Leader Election Works in Kubernetes**
 
 1. **Lease API**:
    - Kubernetes provides a built-in `Lease` object in the `coordination.k8s.io/v1` API group, specifically designed for leader election.
