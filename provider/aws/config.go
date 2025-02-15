@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"sigs.k8s.io/external-dns/pkg/tlsutils"
 	"strings"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
@@ -33,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
 )
 
 // AWSSessionConfig contains configuration to create a new AWS provider.

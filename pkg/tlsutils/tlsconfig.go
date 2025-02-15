@@ -75,9 +75,8 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 		return nil, nil
 	}
 
-	roots := new(x509.CertPool)
 	// Start with the system cert pool and then add the custom CA cert
-	roots, _ = x509.SystemCertPool()
+	roots, _ := x509.SystemCertPool()
 	if roots == nil {
 		roots = x509.NewCertPool()
 	}
