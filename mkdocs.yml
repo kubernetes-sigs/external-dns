@@ -25,11 +25,12 @@ nav:
     - TXT: docs/registry/txt.md
     - DynamoDB: docs/registry/dynamodb.md
   - Advanced Topics:
-      - Initial Design: docs/initial-design.md
-      - TTL: docs/ttl.md
-      - NAT64: docs/nat64.md
-      - MultiTarget: docs/proposal/multi-target.md
-      - Rate Limits: docs/rate-limits.md
+    - Initial Design: docs/initial-design.md
+    - Leader Election: docs/proposal/001-leader-election.md
+    - MultiTarget: docs/proposal/multi-target.md
+    - NAT64: docs/nat64.md
+    - Rate Limits: docs/rate-limits.md
+    - TTL: docs/ttl.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.
