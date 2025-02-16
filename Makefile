@@ -44,6 +44,10 @@ endif
 golangci-lint:
 	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.63.4
 
+#? golangci-lint-verify: Verify golangci-lint configuration
+golangci-lint-verify: golangci-lint
+	@golangci-lint config verify
+
 #? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
 go-lint: golangci-lint

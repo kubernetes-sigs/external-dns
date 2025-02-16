@@ -27,6 +27,13 @@ jobs:
       with:
         go-version-file: go.mod
 
+    # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
+    - name: Verify linter configuration
+      uses: golangci/golangci-lint-action@v6
+      with:
+        verify: true
+        version: v1.63
+
     - name: Lint go code
       uses: golangci/golangci-lint-action@v6
       with:
