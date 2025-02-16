@@ -1,6 +1,7 @@
 # EditorConfig helps developers define and maintain consistent
 # coding styles between different editors and IDEs
 # editorconfig.org
+# https://github.com/editorconfig/editorconfig-core-go/blob/master/.editorconfig
 
 root = true
 
@@ -16,5 +17,6 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[Makefile]
+[{Makefile,go.mod,go.sum,*.go,.gitmodules}]
 indent_style = tab
+indent_size = 4

@@ -57,7 +57,7 @@ func TestAWSZonesFilterWithTags(t *testing.T) {
 	z, err := provider.Zones(ctx)
 	assert.NoError(t, err)
 	assert.EqualValues(t, 24, len(z))
-	assert.Equal(t, 169, stub.calls["listtagsforresource"])
+	assert.Equal(t, 17, stub.calls["listtagsforresource"])
 }
 
 func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {

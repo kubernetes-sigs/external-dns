@@ -134,9 +134,9 @@ func (c *Route53APICounter) ListHostedZones(ctx context.Context, input *route53.
 	return c.wrapped.ListHostedZones(ctx, input, optFns...)
 }
 
-func (c *Route53APICounter) ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error) {
+func (c *Route53APICounter) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	c.calls["ListTagsForResource"]++
-	return c.wrapped.ListTagsForResource(ctx, input, optFns...)
+	return c.wrapped.ListTagsForResources(ctx, input, optFns...)
 }
 
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
@@ -161,22 +161,31 @@ func specialCharactersEscape(s string) string {
 	return result.String()
 }
 
-func (r *Route53APIStub) ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error) {
+func (r *Route53APIStub) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
-		zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, *input.ResourceId)
+		// zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, *input.ResourceId)
+		// if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
+		// 	return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
+		// }
+		var sets []route53types.ResourceTagSet
+
+		for _, el := range input.ResourceIds {
+		zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, el)
 		if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
 			return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
 		}
-		tags := r.zoneTags[zoneId]
-		return &route53.ListTagsForResourceOutput{
-			ResourceTagSet: &route53types.ResourceTagSet{
-				ResourceId:   input.ResourceId,
-				ResourceType: input.ResourceType,
-				Tags:         tags,
-			},
-		}, nil
+		if r.zoneTags[el] != nil {
+			sets = append(sets, route53types.ResourceTagSet{
+				ResourceId:   &el,
+				ResourceType: route53types.TagResourceTypeHostedzone,
+				Tags:         r.zoneTags[el],
+			})
+		}
+		return &route53.ListTagsForResourcesOutput{ResourceTagSets: sets}, nil
 	}
-	return &route53.ListTagsForResourceOutput{}, nil
+
+	}
+	return &route53.ListTagsForResourcesOutput{}, nil
 }
 
 func (r *Route53APIStub) ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
