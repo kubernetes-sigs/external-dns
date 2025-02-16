@@ -6,12 +6,11 @@ There is a pseudo-API exposed that ExternalDNS is able to use to manage these re
 
 __NOTE:__ Your Pi-hole must be running [version 5.9 or newer](https://pi-hole.net/blog/2022/02/12/pi-hole-ftl-v5-14-web-v5-11-and-core-v5-9-released).
 
-
 ## Deploy ExternalDNS
 
 You can skip to the [manifest](#externaldns-manifest) if authentication is disabled on your Pi-hole instance or you don't want to use secrets.
 
-If your Pi-hole server's admin dashboard is protected by a password, you'll likely want to create a secret first containing its value. 
+If your Pi-hole server's admin dashboard is protected by a password, you'll likely want to create a secret first containing its value.
 This is optional since you _do_ retain the option to pass it as a flag with `--pihole-password`.
 
 You can create the secret with:
@@ -21,12 +20,12 @@ kubectl create secret generic pihole-password \
     --from-literal EXTERNAL_DNS_PIHOLE_PASSWORD=supersecret
 ```
 
-Replacing **"supersecret"** with the actual password to your Pi-hole server.
+Replacing __"supersecret"__ with the actual password to your Pi-hole server.
 
 ### ExternalDNS Manifest
 
-Apply the following manifest to deploy ExternalDNS, editing values for your environment accordingly. 
-Be sure to change the namespace in the `ClusterRoleBinding` if you are using a namespace other than **default**.
+Apply the following manifest to deploy ExternalDNS, editing values for your environment accordingly.
+Be sure to change the namespace in the `ClusterRoleBinding` if you are using a namespace other than __default__.
 
 ```yaml
 ---
@@ -107,9 +106,9 @@ spec:
 
 ### Arguments
 
- - `--pihole-server (env: EXTERNAL_DNS_PIHOLE_SERVER)` - The address of the Pi-hole web server
- - `--pihole-password (env: EXTERNAL_DNS_PIHOLE_PASSWORD)` - The password to the Pi-hole web server (if enabled)
- - `--pihole-tls-skip-verify (env: EXTERNAL_DNS_PIHOLE_TLS_SKIP_VERIFY)` - Skip verification of any TLS certificates served by the Pi-hole web server.
+- `--pihole-server (env: EXTERNAL_DNS_PIHOLE_SERVER)` - The address of the Pi-hole web server
+- `--pihole-password (env: EXTERNAL_DNS_PIHOLE_PASSWORD)` - The password to the Pi-hole web server (if enabled)
+- `--pihole-tls-skip-verify (env: EXTERNAL_DNS_PIHOLE_TLS_SKIP_VERIFY)` - Skip verification of any TLS certificates served by the Pi-hole web server.
 
 ## Verify ExternalDNS Works
 

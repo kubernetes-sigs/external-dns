@@ -40,3 +40,5 @@ serviceAccount:
     notTemplated/version: "v1.2.3"
     justValueTemplated/version: "{{ .Chart.Version }}"
     "{{ .Chart.Name }}/chart": "{{ .Chart.Version }}"
+    booleanVersion: "true"
+    number: "1"

@@ -1,0 +1,11 @@
+# ref: https://github.com/losisin/helm-values-schema-json.git
+input:
+  - schema/values.yaml
+  - values.yaml
+
+draft: 7
+indent: 2
+output: values.schema.json
+
+schemaRoot:
+  additionalProperties: true

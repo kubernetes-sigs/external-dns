@@ -18,14 +18,14 @@ By default, the ExternalDNS OCI provider is configured to use Global OCI
 DNS Zones. If you want to use Private OCI DNS Zones, add the following
 argument to the ExternalDNS controller:
 
-```
+```sh
 --oci-zone-scope=PRIVATE
 ```
 
 To use both Global and Private OCI DNS Zones, set the OCI Zone Scope to be
 empty:
 
-```
+```sh
 --oci-zone-scope=
 ```
 
@@ -60,7 +60,7 @@ compartment: ocid1.compartment.oc1...
 Create a secret using the config file above:
 
 ```shell
-$ kubectl create secret generic external-dns-config --from-file=oci.yaml
+kubectl create secret generic external-dns-config --from-file=oci.yaml
 ```
 
 ### OCI IAM Instance Principal
@@ -73,7 +73,7 @@ the target compartment to the dynamic group covering your instance running
 ExternalDNS.
 E.g.:
 
-```
+```sql
 Allow dynamic-group <dynamic-group-name> to manage dns in compartment id <target-compartment-OCID>
 ```
 
@@ -93,7 +93,7 @@ OCI IAM policy exists with a statement granting the `manage dns` permission on z
 records in the target compartment covering your OKE cluster running ExternalDNS.
 E.g.:
 
-```
+```sql
 Allow any-user to manage dns in compartment <compartment-name> where all {request.principal.type='workload',request.principal.cluster_id='<cluster-ocid>',request.principal.service_account='external-dns'}
 ```
 
@@ -111,7 +111,7 @@ compartment: ocid1.compartment.oc1...
 Create a secret using the config file above:
 
 ```shell
-$ kubectl create secret generic external-dns-config --from-file=oci.yaml
+kubectl create secret generic external-dns-config --from-file=oci.yaml
 ```
 
 ## Manifest (for clusters with RBAC enabled)
@@ -237,11 +237,10 @@ spec:
 
 Apply the manifest above and wait roughly two minutes and check that a corresponding DNS record for your service was created.
 
-```
-$ kubectl apply -f nginx.yaml
+```sh
+kubectl apply -f nginx.yaml
 ```
 
 [1]: https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm
 [2]: https://docs.cloud.oracle.com/iaas/Content/Identity/Reference/dnspolicyreference.htm
 [3]: https://docs.cloud.oracle.com/iaas/Content/Identity/Tasks/callingservicesfrominstances.htm
-

@@ -3,8 +3,9 @@
 This tutorial describes how to configure External DNS to use the Contour `HTTPProxy` source.
 Using the `HTTPProxy` resource with External DNS requires Contour version 1.5 or greater.
 
-### Example manifests for External DNS
-#### Without RBAC
+## Example manifests for External DNS
+
+### Without RBAC
 
 ```yaml
 apiVersion: apps/v1
@@ -37,7 +38,8 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-#### With RBAC
+### With RBAC
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -53,7 +55,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -107,10 +109,12 @@ spec:
 ```
 
 ### Verify External DNS works
-The following instructions are based on the 
+
+The following instructions are based on the
 [Contour example workload](https://github.com/projectcontour/contour/tree/master/examples/example-workload/httpproxy).
 
-#### Install a sample service
+### Install a sample service
+
 ```bash
 $ kubectl apply -f - <<EOF
 apiVersion: apps/v1
@@ -153,7 +157,7 @@ EOF
 
 Then create an `HTTPProxy`:
 
-```
+```sh
 $ kubectl apply -f - <<EOF
 apiVersion: projectcontour.io/v1
 kind: HTTPProxy
@@ -174,7 +178,8 @@ spec:
 EOF
 ```
 
-#### Access the sample service using `curl`
+### Access the sample service using `curl`
+
 ```bash
 $ curl -i http://kuard.example.com/healthy
 HTTP/1.1 200 OK

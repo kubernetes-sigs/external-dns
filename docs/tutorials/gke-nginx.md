@@ -7,9 +7,9 @@ This tutorial describes how to setup ExternalDNS for usage within a GKE cluster 
 Setup your environment to work with Google Cloud Platform. Fill in your values as needed, e.g. target project.
 
 ```console
-$ gcloud config set project "zalando-external-dns-test"
-$ gcloud config set compute/region "europe-west1"
-$ gcloud config set compute/zone "europe-west1-d"
+gcloud config set project "zalando-external-dns-test"
+gcloud config set compute/region "europe-west1"
+gcloud config set compute/zone "europe-west1-d"
 ```
 
 ## GKE Node Scopes
@@ -109,11 +109,13 @@ spec:
 
 #### Without a separate TCP load balancer
 
-By default, the controller will update your Ingress objects with the public IPs of the nodes running your nginx controller instances. You should run multiple instances in case of pod or node failure. The controller will do leader election and will put multiple IPs as targets in your Ingress objects in that case. It could also make sense to run it as a DaemonSet. However, we'll just run a single replica. You have to open the respective ports on all of your worker nodes to allow nginx to receive traffic.
+By default, the controller will update your Ingress objects with the public IPs of the nodes running your nginx controller instances.
+You should run multiple instances in case of pod or node failure. The controller will do leader election and will put multiple IPs as targets in your Ingress objects in that case.
+It could also make sense to run it as a DaemonSet. However, we'll just run a single replica. You have to open the respective ports on all of your worker nodes to allow nginx to receive traffic.
 
 ```console
-$ gcloud compute firewall-rules create "allow-http" --allow tcp:80 --source-ranges "0.0.0.0/0" --target-tags "gke-external-dns-9488ba14-node"
-$ gcloud compute firewall-rules create "allow-https" --allow tcp:443 --source-ranges "0.0.0.0/0" --target-tags "gke-external-dns-9488ba14-node"
+gcloud compute firewall-rules create "allow-http" --allow tcp:80 --source-ranges "0.0.0.0/0" --target-tags "gke-external-dns-9488ba14-node"
+gcloud compute firewall-rules create "allow-https" --allow tcp:443 --source-ranges "0.0.0.0/0" --target-tags "gke-external-dns-9488ba14-node"
 ```
 
 Change `--target-tags` to the corresponding tags of your nodes. You can find them by describing your instances or by looking at the default firewall rules created by GKE for your cluster.
@@ -158,7 +160,10 @@ spec:
 
 #### With a separate TCP load balancer
 
-However, you can also have the ingress controller proxied by a Kubernetes Service. This will instruct the controller to populate this Service's external IP as the external IP of the Ingress. This exposes the nginx proxies via a Layer 4 load balancer (`type=LoadBalancer`) which is more reliable than the other method. With that approach, you can run as many nginx proxy instances on your cluster as you like or have them autoscaled. This is the preferred way of running the nginx controller.
+However, you can also have the ingress controller proxied by a Kubernetes Service.
+This will instruct the controller to populate this Service's external IP as the external IP of the Ingress.
+This exposes the nginx proxies via a Layer 4 load balancer (`type=LoadBalancer`) which is more reliable than the other method. With that approach, you can run as many nginx proxy instances on your cluster as you like or have them autoscaled.
+This is the preferred way of running the nginx controller.
 
 Apply the following manifests to your cluster. Note, how the controller is receiving an additional flag telling it which Service it should treat as its public endpoint and how it doesn't need hostPorts anymore.
 
@@ -236,7 +241,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -382,15 +387,15 @@ $ curl via-ingress.external-dns-test.gcp.zalan.do
 Make sure to delete all Service and Ingress objects before terminating the cluster so all load balancers and DNS entries get cleaned up correctly.
 
 ```console
-$ kubectl delete service nginx-ingress-controller
-$ kubectl delete ingress nginx
+kubectl delete service nginx-ingress-controller
+kubectl delete ingress nginx
 ```
 
 Give ExternalDNS some time to clean up the DNS records for you. Then delete the managed zone and cluster.
 
 ```console
-$ gcloud dns managed-zones delete "external-dns-test-gcp-zalan-do"
-$ gcloud container clusters delete "external-dns"
+gcloud dns managed-zones delete "external-dns-test-gcp-zalan-do"
+gcloud container clusters delete "external-dns"
 ```
 
 Also delete the NS records for your removed zone from the parent zone.
@@ -679,16 +684,16 @@ Make sure to delete all service and ingress objects before terminating the
 cluster so all load balancers and DNS entries get cleaned up correctly.
 
 ```console
-$ kubectl delete service --namespace=ingress-nginx ingress-nginx-controller
-$ kubectl delete ingress nginx
+kubectl delete service --namespace=ingress-nginx ingress-nginx-controller
+kubectl delete ingress nginx
 ```
 
 Give ExternalDNS some time to clean up the DNS records for you. Then delete the
 managed zone and cluster.
 
 ```console
-$ gcloud dns managed-zones delete external-dns-test-gcp-zalan-do
-$ gcloud container clusters delete external-dns
+gcloud dns managed-zones delete external-dns-test-gcp-zalan-do
+gcloud container clusters delete external-dns
 ```
 
 Also delete the NS records for your removed zone from the parent zone.
