@@ -210,6 +210,42 @@ Modify chart or values and validate the diff
 ❯❯ kubectl diff -f _scratch/external-dns --recursive=true --show-managed-fields=false
 ```
 
+### Helm Values
+
+This helm chart comes with a JSON schema generated from values with [helm schema](https://github.com/losisin/helm-values-schema-json.git) plugin.
+
+1. Install required plugin(s)
+
+```sh
+❯❯ scripts/helm-tools.sh --install
+```
+
+2. Ensure that the schema is always up-to-date
+
+```sh
+❯❯ scripts/helm-tools.sh --diff
+```
+
+3. When not up-to-date, update JSON schema
+
+```sh
+❯❯ scripts/helm-tools.sh --schema
+```
+
+4. Runs a series of tests to verify that the chart is well-formed, linted and JSON schema is valid
+
+```sh
+❯❯ scripts/helm-tools.sh --lint
+```
+
+5. Auto-generate documentation for helm charts into markdown files.
+
+```sh
+❯❯ scripts/helm-tools.sh --docs
+```
+
+6. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) under `## UNRELEASED` section and `open` pull request
+
 ## Deploy with kubernetes manifests
 
 > Note; kubernetes manifest are not up to date. Consider to create an `examples` folder
