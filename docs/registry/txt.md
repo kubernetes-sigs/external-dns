@@ -21,10 +21,10 @@ Example:
 
 ```sh
 # Default behavior - creates both formats
-external-dns --provider=aws --source=ingress --managed-record-types=A,TXT
+external-dns --provider=aws --source=ingress --managed-record-types=A --managed-record-types=TXT
 
 # Only create new format records (alongside other required flags)
-external-dns --provider=aws --source=ingress --managed-record-types=A,TXT --txt-new-format-only
+external-dns --provider=aws --source=ingress --managed-record-types=A --managed-record-types=TXT --txt-new-format-only
 ```
 
 The `--txt-new-format-only` flag should be used in addition to your existing external-dns configuration flags. It does not implicitly configure TXT record handling - you still need to specify `--managed-record-types=TXT` if you want external-dns to manage TXT records.
