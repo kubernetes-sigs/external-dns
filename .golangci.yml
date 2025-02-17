@@ -3,8 +3,6 @@ linters-settings:
     default-signifies-exhaustive: false
   goimports:
     local-prefixes: sigs.k8s.io/external-dns
-  maligned:
-    suggest-new: true
   misspell:
     locale: US
   revive:
@@ -67,7 +65,5 @@ issues:
       linters: [ typecheck ]
     - path: source/kong_tcpingress.go
       linters: [ typecheck ]
-
-run:
   exclude-files:
     - endpoint/zz_generated.deepcopy.go
