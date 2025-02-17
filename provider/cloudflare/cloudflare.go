@@ -631,6 +631,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 					return nil, provider.NewSoftError(err)
 				}
 			}
+			log.Errorf("zone %s failed to fetch custom hostnames, is Cloudflare for SaaS enabled? %v", zoneID, err)
 			return nil, err
 		}
 
@@ -640,7 +641,6 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 			break
 		}
 	}
-	log.Infof("got hostnames: %v", chs)
 	return chs, nil
 }
 
