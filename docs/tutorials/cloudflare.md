@@ -311,7 +311,7 @@ If not set the value will default to `global`.
 ## Setting cloudflare-custom-hostname
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: "<custom hostname>"` annotation, you can have [custom hostnames](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/domain-support/) automatically managed for A/CNAME record as a custom origin.
-Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product.
+Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
 
 ## Using CRD source to manage DNS records in Cloudflare
 
