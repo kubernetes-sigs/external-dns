@@ -51,6 +51,7 @@ golangci-lint-verify: golangci-lint
 #? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
 go-lint: golangci-lint
+	gofmt -l -s -w .
 	golangci-lint run --timeout=30m ./...
 
 #? licensecheck: Run the to check for license headers
