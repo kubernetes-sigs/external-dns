@@ -631,7 +631,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 					return nil, provider.NewSoftError(err)
 				}
 			}
-			log.Errorf("zone %s failed to fetch custom hostnames, please if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
+			log.Errorf("zone %s failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
 			return nil, err
 		}
 
