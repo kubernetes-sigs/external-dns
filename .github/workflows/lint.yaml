@@ -27,6 +27,17 @@ jobs:
       with:
         go-version-file: go.mod
 
+    - name: Go formatting
+      run: |
+        if [ -z "$(gofmt -l .)" ]; then
+          echo -e "All '*.go' files are properly formatted."
+        else
+          echo -e "Please run 'make go-lint' to fix. Some files need formatting:"
+          gofmt -d -l .
+          exit 1
+        fi
+
+
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
       uses: golangci/golangci-lint-action@v6
