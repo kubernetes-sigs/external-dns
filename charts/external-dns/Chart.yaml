@@ -11,17 +11,15 @@ keywords:
   - dns
   - service
   - ingress
-home: https://github.com/conduitxyz/external-dns/
-icon: https://github.com/conduitxyz/external-dns/raw/master/docs/img/external-dns.png
+home: https://github.com/kubernetes-sigs/external-dns/
+icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
 sources:
-  - https://github.com/conduitxyz/external-dns/
+  - https://github.com/kubernetes-sigs/external-dns/
 maintainers:
   - name: stevehipwell
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Updated _ExternalDNS_ image repo to ghcr.io/conduitxyz/external-dns"
     - kind: added
       description: "Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source."
     - kind: fixed

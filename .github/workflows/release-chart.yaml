@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - rc
     paths:
       - "charts/external-dns/Chart.yaml"
 
@@ -14,7 +13,7 @@ jobs:
     permissions:
       contents: write #  to push chart release and create a release (helm/chart-releaser-action)
 
-    if: github.repository == 'conduitxyz/external-dns'
+    if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
     defaults:
       run:

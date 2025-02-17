@@ -1,9 +1,9 @@
 name: json-yaml-validate
 on:
   push:
-    branches: [ master, rc ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, rc ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:

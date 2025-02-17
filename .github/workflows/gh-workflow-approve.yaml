@@ -7,7 +7,6 @@ on:
       - synchronize
     branches:
       - master
-      - rc
 
 jobs:
   approve:
