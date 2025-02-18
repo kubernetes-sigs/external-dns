@@ -9,7 +9,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 * Manifest (for clusters with RBAC enabled)
 * Update existing ExternalDNS Deployment
 
-### Manifest (for clusters without RBAC enabled)
+## Manifest (for clusters without RBAC enabled)
 
 ```yaml
 apiVersion: apps/v1
@@ -43,7 +43,7 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Manifest (for clusters with RBAC enabled)
+## Manifest (for clusters with RBAC enabled)
 
 ```yaml
 apiVersion: v1
@@ -114,7 +114,7 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Update existing ExternalDNS Deployment
+## Update existing ExternalDNS Deployment
 
 * For clusters with running `external-dns`, you can just update the deployment.
 * With access to the `kube-system` namespace, update the existing `external-dns` deployment.
@@ -134,26 +134,29 @@ kubectl patch clusterrole external-dns --type='json' \
   -p='[{"op": "add", "path": "/rules/4", "value": { "apiGroups": [ "networking.istio.io"], "resources": ["gateways"],"verbs": ["get", "watch", "list" ]} }]'
 ```
 
-### Verify that Istio Gateway/VirtualService Source works
+## Verify that Istio Gateway/VirtualService Source works
 
 Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/)
 to deploy a sample service that will be exposed outside of the service mesh.
 The following are relevant snippets from that tutorial.
 
-#### Install a sample service
+### Install a sample service
+
 With automatic sidecar injection:
+
 ```bash
-$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml
 ```
 
 Otherwise:
+
 ```bash
-$ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml)
+kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml)
 ```
 
-#### Using a Gateway as a source
+### Using a Gateway as a source
 
-##### Create an Istio Gateway:
+#### Create an Istio Gateway
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
@@ -175,7 +178,7 @@ spec:
 EOF
 ```
 
-##### Configure routes for traffic entering via the Gateway:
+#### Configure routes for traffic entering via the Gateway
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
@@ -202,9 +205,9 @@ spec:
 EOF
 ```
 
-#### Using a VirtualService as a source
+### Using a VirtualService as a source
 
-##### Create an Istio Gateway:
+#### Create an Istio Gateway
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
@@ -226,7 +229,7 @@ spec:
 EOF
 ```
 
-##### Configure routes for traffic entering via the Gateway:
+#### Configure routes for traffic entering via the Gateway
 
 ```bash
 $ cat <<EOF | kubectl apply -f -
@@ -258,7 +261,8 @@ Please take a look at the [source service documentation](../sources/service.md) 
 
 It is also possible to set the targets manually by using the `external-dns.alpha.kubernetes.io/target` annotation on the Istio Ingress Gateway resource or the Istio VirtualService.
 
-#### Access the sample service using `curl`
+### Access the sample service using `curl`
+
 ```bash
 $ curl -I http://httpbin.example.com/status/200
 HTTP/1.1 200 OK
@@ -272,6 +276,7 @@ x-envoy-upstream-service-time: 5
 ```
 
 Accessing any other URL that has not been explicitly exposed should return an HTTP 404 error:
+
 ```bash
 $ curl -I http://httpbin.example.com/headers
 HTTP/1.1 404 Not Found
@@ -282,7 +287,7 @@ transfer-encoding: chunked
 
 **Note:** The `-H` flag in the original Istio tutorial is no longer necessary in the `curl` commands.
 
-### Optional Gateway Annotation
+## Optional Gateway Annotation
 
 To support setups where an Ingress resource is used provision an external LB you can add the following annotation to your Gateway
 
@@ -310,7 +315,7 @@ spec:
 EOF
 ```
 
-### Debug ExternalDNS
+## Debug ExternalDNS
 
 * Look for the deployment pod to see the status
 
@@ -321,7 +326,7 @@ external-dns-6b84999479-4knv9     1/1     Running   0   3h29m
 * Watch for the logs as follows
 
 ```console
-$ kubectl logs -f external-dns-6b84999479-4knv9
+kubectl logs -f external-dns-6b84999479-4knv9
 ```
 
 At this point, you can `create` or `update` any `Istio Gateway` object with `hosts` entries array.

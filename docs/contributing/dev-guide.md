@@ -44,7 +44,8 @@ If added any flags, re-generate flags documentation
 make generate-flags-documentation
 ```
 
-We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation. In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
+We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation.
+In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
 
 ### Continuous Integration
 
@@ -74,8 +75,8 @@ We use [Minikube](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fmacos%2Fx86-6
 
 - [Create local cluster](#create-a-local-cluster)
 - [Build and load local images](#building-local-images)
-- [Deploy with Helm](#deploy-with-helm)
-- [Deploy with kubernetes manifests]()
+- Deploy with Helm
+- Deploy with kubernetes manifests
 
 ## Create a local cluster
 
@@ -177,7 +178,6 @@ Refer to [pushing images](https://minikube.sigs.k8s.io/docs/handbook/pushing/#4-
 
 ## Building image and push to a registry
 
-
 Build container image and push to a specific registry
 
 ```shell
@@ -204,10 +204,47 @@ Deploy manifests to a cluster with required values
 ```
 
 Modify chart or values and validate the diff
+
 ```sh
 ❯❯ helm template external-dns charts/external-dns --output-dir _scratch
 ❯❯ kubectl diff -f _scratch/external-dns --recursive=true --show-managed-fields=false
 ```
+
+### Helm Values
+
+This helm chart comes with a JSON schema generated from values with [helm schema](https://github.com/losisin/helm-values-schema-json.git) plugin.
+
+1. Install required plugin(s)
+
+```sh
+❯❯ scripts/helm-tools.sh --install
+```
+
+2. Ensure that the schema is always up-to-date
+
+```sh
+❯❯ scripts/helm-tools.sh --diff
+```
+
+3. When not up-to-date, update JSON schema
+
+```sh
+❯❯ scripts/helm-tools.sh --schema
+```
+
+4. Runs a series of tests to verify that the chart is well-formed, linted and JSON schema is valid
+
+```sh
+❯❯ scripts/helm-tools.sh --lint
+```
+
+5. Auto-generate documentation for helm charts into markdown files.
+
+```sh
+❯❯ scripts/helm-tools.sh --docs
+```
+
+6. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) under `## UNRELEASED` section and `open` pull request
 
 ## Deploy with kubernetes manifests
 

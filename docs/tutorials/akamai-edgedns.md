@@ -6,11 +6,12 @@ External-DNS v0.8.0 or greater.
 
 ### Zones
 
-External-DNS manages service endpoints in existing DNS zones. The Akamai provider does not add, remove or configure new zones. The [Akamai Control Center](https://control.akamai.com) or [Akamai DevOps Tools](https://developer.akamai.com/devops), [Akamai CLI](https://developer.akamai.com/cli) and [Akamai Terraform Provider](https://developer.akamai.com/tools/integrations/terraform) can create and manage Edge DNS zones. 
+External-DNS manages service endpoints in existing DNS zones. The Akamai provider does not add, remove or configure new zones.
+The [Akamai Control Center](https://control.akamai.com) or [Akamai DevOps Tools](https://developer.akamai.com/devops), [Akamai CLI](https://developer.akamai.com/cli) and [Akamai Terraform Provider](https://developer.akamai.com/tools/integrations/terraform) can create and manage Edge DNS zones.
 
 ### Akamai Edge DNS Authentication
 
-The Akamai Edge DNS provider requires valid Akamai Edgegrid API authentication credentials to access zones and manage  DNS records. 
+The Akamai Edge DNS provider requires valid Akamai Edgegrid API authentication credentials to access zones and manage  DNS records.
 
 Either directly by key or indirectly via a file can set credentials for the provider. The Akamai credential keys and mappings to the Akamai provider utilizing different presentation methods are:
 
@@ -81,7 +82,6 @@ Finally, install the ExternalDNS chart with Helm using the configuration specifi
 ```shell
 helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
-
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -224,8 +224,8 @@ spec:
 
 Create the deployment for External-DNS:
 
-```
-$ kubectl apply -f externaldns.yaml
+```sh
+kubectl apply -f externaldns.yaml
 ```
 
 ## Deploying an Nginx Service
@@ -271,8 +271,8 @@ spec:
 
 Create the deployment and service object:
 
-```
-$ kubectl apply -f nginx.yaml
+```sh
+kubectl apply -f nginx.yaml
 ```
 
 ## Verify Akamai Edge DNS Records
@@ -280,14 +280,14 @@ $ kubectl apply -f nginx.yaml
 Wait 3-5 minutes before validating the records to allow the record changes to propagate to all the Akamai name servers.
 
 Validate records using the [Akamai Control Center](http://control.akamai.com) or by executing a dig, nslookup or similar DNS command.
- 
+
 ## Cleanup
 
 Once you successfully configure and verify record management via External-DNS, you can delete the tutorial's examples:
 
-```
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+```sh
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml
 ```
 
 ## Additional Information

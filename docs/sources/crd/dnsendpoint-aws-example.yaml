@@ -9,7 +9,7 @@ spec:
       - name: "aws/failover"
         value: "PRIMARY"
       - name: "aws/health-check-id"
-        value: "asdf1234-as12-as12-as12-asdf12345678" 
+        value: "asdf1234-as12-as12-as12-asdf12345678"
       - name: "aws/evaluate-target-health"
         value: "true"
     recordType: CNAME

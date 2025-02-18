@@ -18,6 +18,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Helm
+        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
+        with:
+          token: ${{ github.token }}
+          version: latest
+
+      - name: Run Helm Schema check
+        working-directory: charts/external-dns
+        run: |
+          set -euo pipefail
+          
+          helm plugin install https://github.com/losisin/helm-values-schema-json.git
+          helm schema
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
+          then
+            echo "Schema not up to date. Please run helm schema and commit changes!" >&2
+            exit 1
+          fi
+
       - name: Install Helm Docs
         uses: action-stars/install-tool-from-github-release@ece2623611b240002e0dd73a0d685505733122f6 # v0.2.4
         with:
@@ -51,12 +70,6 @@ jobs:
 
       - name: Run Artifact Hub lint
         run: ah lint --kind helm || exit 1
-
-      - name: Install Helm
-        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
-        with:
-          token: ${{ github.token }}
-          version: latest
 
       - name: Install Python
         uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
