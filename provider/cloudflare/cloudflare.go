@@ -707,6 +707,9 @@ func groupByNameAndTypeWithCh(records []cloudflare.DNSRecord, chs []cloudflare.C
 
 	// create single endpoint with all the targets for each name/type
 	for _, records := range groups {
+		if len(records) == 0 {
+			return endpoints
+		}
 		targets := make([]string, len(records))
 		for i, record := range records {
 			targets[i] = record.Content
@@ -716,7 +719,11 @@ func groupByNameAndTypeWithCh(records []cloudflare.DNSRecord, chs []cloudflare.C
 			records[0].Type,
 			endpoint.TTL(records[0].TTL),
 			targets...)
-		ep.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(*records[0].Proxied))
+		proxied := false
+		if records[0].Proxied != nil {
+			proxied = *records[0].Proxied
+		}
+		ep.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
 		if _, ok := customOriginServers[records[0].Name]; ok {
 			ep.WithProviderSpecific(source.CloudflareCustomHostnameKey, customOriginServers[records[0].Name])
 		}

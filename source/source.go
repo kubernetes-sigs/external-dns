@@ -190,15 +190,13 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	v, exists := annotations[CloudflareProxiedKey]
-	if exists {
+	if v, exists := annotations[CloudflareProxiedKey]; exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareProxiedKey,
 			Value: v,
 		})
 	}
-	v, exists = annotations[CloudflareCustomHostnameKey]
-	if exists {
+	if v, exists := annotations[CloudflareCustomHostnameKey]; exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareCustomHostnameKey,
 			Value: v,
