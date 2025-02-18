@@ -1208,7 +1208,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.ElementsMatch(t, groupByNameAndType(tc.Records), tc.ExpectedEndpoints)
+		assert.ElementsMatch(t, groupByNameAndTypeWithCustomHostnames(tc.Records, []cloudflare.CustomHostname{}), tc.ExpectedEndpoints)
 	}
 }
 

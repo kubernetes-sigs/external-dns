@@ -307,7 +307,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
 		// and record to allow the planner to calculate the correct plan. See #992.
-		endpoints = append(endpoints, groupByNameAndTypeWithCh(records, chs)...)
+		endpoints = append(endpoints, groupByNameAndTypeWithCustomHostnames(records, chs)...)
 	}
 
 	return endpoints, nil
@@ -674,11 +674,7 @@ func getEndpointCustomHostname(endpoint *endpoint.Endpoint) string {
 	return ""
 }
 
-func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
-	return groupByNameAndTypeWithCh(records, []cloudflare.CustomHostname{})
-}
-
-func groupByNameAndTypeWithCh(records []cloudflare.DNSRecord, chs []cloudflare.CustomHostname) []*endpoint.Endpoint {
+func groupByNameAndTypeWithCustomHostnames(records []cloudflare.DNSRecord, chs []cloudflare.CustomHostname) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
 	// group supported records by name and type
@@ -723,9 +719,12 @@ func groupByNameAndTypeWithCh(records []cloudflare.DNSRecord, chs []cloudflare.C
 		if records[0].Proxied != nil {
 			proxied = *records[0].Proxied
 		}
+		if ep == nil {
+			continue
+		}
 		ep.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
-		if _, ok := customOriginServers[records[0].Name]; ok {
-			ep.WithProviderSpecific(source.CloudflareCustomHostnameKey, customOriginServers[records[0].Name])
+		if customHostname, ok := customOriginServers[records[0].Name]; ok {
+			ep.WithProviderSpecific(source.CloudflareCustomHostnameKey, customHostname)
 		}
 
 		endpoints = append(endpoints, ep)
