@@ -2,7 +2,8 @@
 
 This tutorial describes how to set up ExternalDNS for usage within a Kubernetes cluster with [AWS Cloud Map API](https://docs.aws.amazon.com/cloud-map/).
 
-**AWS Cloud Map** API is an alternative approach to managing DNS records directly using the Route53 API. It is more suitable for a dynamic environment where service endpoints change frequently. It abstracts away technical details of the DNS protocol and offers a simplified model. AWS Cloud Map consists of three main API calls:
+**AWS Cloud Map** API is an alternative approach to managing DNS records directly using the Route53 API. It is more suitable for a dynamic environment where service endpoints change frequently.
+It abstracts away technical details of the DNS protocol and offers a simplified model. AWS Cloud Map consists of three main API calls:
 
 * CreatePublicDnsNamespace – automatically creates a DNS hosted zone
 * CreateService – creates a new named service inside the specified namespace
@@ -14,7 +15,7 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
-```
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -43,10 +44,11 @@ To use the AWS Cloud Map API, a user must have permissions to create the DNS nam
 ```
 
 ### IAM Permissions with ABAC
-You can use Attribute-based access control(ABAC) for advanced deployments.  
 
-You can define AWS tags that are applied to services created by the controller. By doing so, you can have precise control over your IAM policy to limit the scope of the permissions to services managed by the controller, rather than having to grant full permissions on your entire AWS account.  
-To pass tags to service creation, use either CLI flags or environment variables:  
+You can use Attribute-based access control(ABAC) for advanced deployments.
+
+You can define AWS tags that are applied to services created by the controller. By doing so, you can have precise control over your IAM policy to limit the scope of the permissions to services managed by the controller, rather than having to grant full permissions on your entire AWS account.
+To pass tags to service creation, use either CLI flags or environment variables:
 
 *cli:* `--aws-sd-create-tag=key1=value1 --aws-sd-create-tag=key2=value2`
 
@@ -54,7 +56,7 @@ To pass tags to service creation, use either CLI flags or environment variables:
 
 Using tags, your `servicediscovery` policy can become:
 
-```
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -123,13 +125,13 @@ Using tags, your `servicediscovery` policy can become:
 Create a DNS namespace using the AWS Cloud Map API:
 
 ```console
-$ aws servicediscovery create-public-dns-namespace --name "external-dns-test.my-org.com"
+aws servicediscovery create-public-dns-namespace --name "external-dns-test.my-org.com"
 ```
 
 Verify that the namespace was truly created
 
 ```console
-$ aws servicediscovery list-namespaces
+aws servicediscovery list-namespaces
 ```
 
 ## Deploy ExternalDNS
@@ -284,7 +286,6 @@ spec:
 
 After one minute check that a corresponding DNS record for your service was created in your hosted zone. We recommended that you use the [Amazon Route53 console](https://console.aws.amazon.com/route53) for that purpose.
 
-
 ## Custom TTL
 
 The default DNS record TTL (time to live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
@@ -336,7 +337,7 @@ spec:
 Delete all service objects before terminating the cluster so all load balancers get cleaned up correctly.
 
 ```console
-$ kubectl delete service nginx
+kubectl delete service nginx
 ```
 
 Give ExternalDNS some time to clean up the DNS records for you. Then delete the remaining service and namespace.
@@ -356,7 +357,7 @@ $ aws servicediscovery list-services
 ```
 
 ```console
-$ aws servicediscovery delete-service --id srv-6dygt5ywvyzvi3an
+aws servicediscovery delete-service --id srv-6dygt5ywvyzvi3an
 ```
 
 ```console
@@ -374,5 +375,5 @@ $ aws servicediscovery list-namespaces
 ```
 
 ```console
-$ aws servicediscovery delete-namespace --id ns-durf2oxu4gxcgo6z
+aws servicediscovery delete-namespace --id ns-durf2oxu4gxcgo6z
 ```

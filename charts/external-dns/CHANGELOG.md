@@ -20,22 +20,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Ability to configure `imagePullSecrets` via helm `global` value ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
-- Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
+- Added ability to generate schema with `helm plugin schema`. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+- Added `docs/contributing/dev-guide.md#helm-values` guide. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+
+### Changed
+
+- Regenerate JSON schema with `helm-values-schema-json' plugin. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+
+## [v1.15.2] - 2025-02-14
+
+### Changed
+
+- Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source. ([#5066](https://github.com/kubernetes-sigs/external-dns/pull/5066)) _@visokoo_
 
 ### Fixed
 
-- Fixed automatic addition of pod selector labels to `affinity` and `topologySpreadConstraints` if not defined. _@pvickery-ParamountCommerce_
+- Fixed handling of non-string types in `serviceAccount.metadata.annotations` field. ([#5067](https://github.com/kubernetes-sigs/external-dns/pull/5067)) _@hjoshi123_
+- Fixed regression where `affinity.nodeAffinity` was being ignored. ([#5046](https://github.com/kubernetes-sigs/external-dns/pull/5046)) _@mkhpalm_
+
+## [v1.15.1] - 2025-01-27
+
+### Added
+
+- Added ability to configure `imagePullSecrets` via helm `global` value. ([#4667](https://github.com/kubernetes-sigs/external-dns/pull/4667)) _@jkroepke_
+- Added options to configure `labelFilter` and `managedRecordTypes` via dedicated helm values. ([#4849](https://github.com/kubernetes-sigs/external-dns/pull/4849)) _@abaguas_
 
 ### Changed
 
-- Allow templating `serviceaccount.annotations` keys and values, by rendering them using the `tpl` built-in function. [#4958](https://github.com/kubernetes-sigs/external-dns/pull/4958) _@fcrespofastly_
+- Allow templating `serviceaccount.annotations` keys and values, by rendering them using the `tpl` built-in function. ([#4958](https://github.com/kubernetes-sigs/external-dns/pull/4958)) _@fcrespofastly_
+- Updated _ExternalDNS_ OCI image version to [v0.15.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.1). ([#5028](https://github.com/kubernetes-sigs/external-dns/pull/5028)) _@stevehipwell_
 
-## [v1.15.0] - 2023-09-10
+### Fixed
+
+- Fixed automatic addition of pod selector labels to `affinity` and `topologySpreadConstraints` if not defined. ([#4666](https://github.com/kubernetes-sigs/external-dns/pull/4666)) _@pvickery-ParamountCommerce_
+- Fixed missing Ingress permissions when using Istio sources. ([#4845](https://github.com/kubernetes-sigs/external-dns/pull/4845)) _@joekhoobyar_
+
+## [v1.15.0] - 2024-09-11
 
 ### Changed
 
-- Updated _ExternalDNS_ OCI image version to [v0.15.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0). ([#xxxx](https://github.com/kubernetes-sigs/external-dns/pull/xxxx)) _@stevehipwell_
+- Updated _ExternalDNS_ OCI image version to [v0.15.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0). ([#4735](https://github.com/kubernetes-sigs/external-dns/pull/4735)) _@stevehipwell_
 
 ### Fixed
 
@@ -44,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed to add correct webhook metric port to `Service` and `ServiceMonitor`. ([#4643](https://github.com/kubernetes-sigs/external-dns/pull/4643)) _@kimsondrup_
 - Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes. ([#4691](https://github.com/kubernetes-sigs/external-dns/pull/4691)) _@kimsondrup_ & _@hatrx_
 
-## [v1.14.5] - 2023-06-10
+## [v1.14.5] - 2024-06-10
 
 ### Added
 
@@ -61,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed the `ServiceMonitor` job name to correctly use the instance label. ([#4541](https://github.com/kubernetes-sigs/external-dns/pull/4541)) _@stevehipwell_
 
-## [v1.14.4] - 2023-04-03
+## [v1.14.4] - 2024-04-05
 
 ### Added
 
@@ -72,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated _ExternalDNS_ OCI image version to [v0.14.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.1). ([#4357](https://github.com/kubernetes-sigs/external-dns/pull/4357)) _@stevehipwell_
 
-## [v1.14.3] - 2023-01-26
+## [v1.14.3] - 2024-01-26
 
 ### Fixed
 
@@ -86,7 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Restore template support in `.Values.provider` and `.Values.provider.name`
 
-## [v1.14.1] - 2024-01-11
+## [v1.14.1] - 2024-01-12
 
 ### Fixed
 
@@ -110,7 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `secretConfiguration` value has been deprecated in favour of creating secrets external to the Helm chart and configuring their use via the `extraVolumes` & `extraVolumeMounts` values. ([#4161](https://github.com/kubernetes-sigs/external-dns/pull/4161)) [@stevehipwell](https://github.com/stevehipwell)
 
-## [v1.13.1] - 2023-09-07
+## [v1.13.1] - 2023-09-08
 
 ### Added
 
@@ -213,6 +237,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.15.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2
+[v1.15.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.1
 [v1.15.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.0
 [v1.14.5]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.5
 [v1.14.4]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.4

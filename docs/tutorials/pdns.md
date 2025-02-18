@@ -55,7 +55,8 @@ spec:
         - --interval=30s
 ```
 
-#### Domain Filter (`--domain-filter`)
+### Domain Filter (`--domain-filter`)
+
 When the `--domain-filter` argument is specified, external-dns will only create DNS records for host names (specified in ingress objects and services with the external-dns annotation) related to zones that match the `--domain-filter` argument in the external-dns deployment manifest.
 
 eg. ```--domain-filter=example.org``` will allow for zone `example.org` and any zones in PowerDNS that ends in `.example.org`, including `an.example.org`, ie. the subdomains of example.org.
@@ -65,11 +66,13 @@ eg. ```--domain-filter=.example.org``` will allow *only* zones that end in `.exa
 The filter can also match parent zones. For example `--domain-filter=a.example.com` will allow for zone `example.com`. If you want to match parent zones, you cannot pre-pend your filter with a ".", eg. `--domain-filter=.example.com` will not attempt to match parent zones.
 
 ### Regex Domain Filter (`--regex-domain-filter`)
+
 `--regex-domain-filter` limits possible domains and target zone with a regex. It overrides domain filters and can be specified only once.
 
 ## RBAC
 
 If your cluster is RBAC enabled, you also need to setup the following, before you can run external-dns:
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -151,27 +154,30 @@ spec:
       port: 80
       targetPort: 5678
 ```
+
 **Important!**: Don't run dig, nslookup or similar immediately (until you've
 confirmed the record exists). You'll get hit by [negative DNS caching](https://tools.ietf.org/html/rfc2308), which is hard to flush.
 
 Run the following to make sure everything is in order:
 
 ```bash
-$ kubectl get services echo
-$ kubectl get endpoints echo
+kubectl get services echo
+kubectl get endpoints echo
 ```
 
 Make sure everything looks correct, i.e the service is defined and receives a
 public IP, and that the endpoint also has a pod IP.
 
 Once that's done, wait about 30s-1m (interval for external-dns to kick in), then do:
+
 ```bash
-$ curl -H "X-API-Key: ${PDNS_API_KEY}" ${PDNS_API_URL}/api/v1/servers/localhost/zones/example.com. | jq '.rrsets[] | select(.name | contains("echo"))'
+curl -H "X-API-Key: ${PDNS_API_KEY}" ${PDNS_API_URL}/api/v1/servers/localhost/zones/example.com. | jq '.rrsets[] | select(.name | contains("echo"))'
 ```
 
 Once the API shows the record correctly, you can double check your record using:
+
 ```bash
-$ dig @${PDNS_FQDN} echo.example.com.
+dig @${PDNS_FQDN} echo.example.com.
 ```
 
 ## Using CRD source to manage DNS records in PowerDNS

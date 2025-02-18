@@ -50,11 +50,13 @@ type Config struct {
 	FQDNTemplate                   string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
+	IgnoreNonHostNetworkPods       bool
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
 	GatewayNamespace               string
 	GatewayLabelFilter             string
 	Compatibility                  string
+	PodSourceDomain                string
 	PublishInternal                bool
 	PublishHostIP                  bool
 	AlwaysPublishNotReadyAddresses bool
@@ -230,7 +232,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility)
+		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility, cfg.IgnoreNonHostNetworkPods, cfg.PodSourceDomain)
 	case "gateway-httproute":
 		return NewGatewayHTTPRouteSource(p, cfg)
 	case "gateway-grpcroute":
@@ -354,6 +356,16 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 			return nil, err
 		}
 		return NewF5VirtualServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+	case "f5-transportserver":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	}
 
 	return nil, ErrSourceNotFound

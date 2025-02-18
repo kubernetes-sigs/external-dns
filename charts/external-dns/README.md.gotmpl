@@ -27,7 +27,8 @@ helm upgrade --install {{ template "chart.name" . }} external-dns/{{ template "c
 
 ## Providers
 
-Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
+Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value.
+For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
 See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-providers) for more info on available providers and tutorials.
 
 ### Providers with Specific Configuration Support
@@ -40,13 +41,13 @@ See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-provider
 
 For set up for a specific provider using the Helm chart, see the following links:
 
-- [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
-- [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
-- [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
-- [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
-- [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
-- [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
-- [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
+* [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
+* [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
+* [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
+* [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
+* [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
+* [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
+* [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
 
 ## Namespaced Scoped Installation
 

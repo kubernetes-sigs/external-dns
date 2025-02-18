@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -244,7 +245,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	if err != nil {
 		var apiErr *cloudflare.Error
 		if errors.As(err, &apiErr) {
-			if apiErr.ClientRateLimited() {
+			if apiErr.ClientRateLimited() || apiErr.StatusCode >= http.StatusInternalServerError {
 				// Handle rate limit error as a soft error
 				return nil, provider.NewSoftError(err)
 			}
@@ -379,7 +380,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				regionalHostnameErr := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam)
 				if regionalHostnameErr != nil {
 					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", regionalHostnameErr)
+					log.WithFields(logFields).Errorf("failed to update record when editing region: %v", regionalHostnameErr)
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
@@ -498,7 +499,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 		if err != nil {
 			var apiErr *cloudflare.Error
 			if errors.As(err, &apiErr) {
-				if apiErr.ClientRateLimited() {
+				if apiErr.ClientRateLimited() || apiErr.StatusCode >= http.StatusInternalServerError {
 					// Handle rate limit error as a soft error
 					return nil, provider.NewSoftError(err)
 				}

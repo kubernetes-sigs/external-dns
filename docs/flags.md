@@ -2,6 +2,7 @@
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
 <!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
+<!-- markdownlint-disable MD013 -->
 
 | Flag | Description  |
 | :------ | :----------- |
@@ -15,7 +16,7 @@
 | `--cf-password=""` | The password to log into the cloud foundry API |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
-| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, traefik-proxy) |
+| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
 | `--openshift-router-name=OPENSHIFT-ROUTER-NAME` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
 | `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
@@ -24,11 +25,13 @@
 | `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
 | `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting |
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
+| `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
 | `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
 | `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
+| `--pod-source-domain=""` | Domain to use for pods records (optional) |
 | `--[no-]publish-internal-services` | Allow external-dns to publish DNS records for ClusterIP services (optional) |
 | `--[no-]publish-host-ip` | Allow external-dns to publish host-ip for headless services (optional) |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
@@ -49,7 +52,7 @@
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
 | `--regex-domain-filter=` | Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional) |
-| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional) |
+| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); Require 'regex-domain-filter'  |
 | `--zone-name-filter=` | Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional) |
 | `--zone-id-filter=` | Filter target zones by hosted zone id; specify multiple times for multiple zones (optional) |
 | `--google-project=""` | When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP. |
@@ -120,7 +123,7 @@
 | `--exoscale-apizone="ch-gva-2"` | When using Exoscale provider, specify the API Zone (optional) |
 | `--exoscale-apikey=""` | Provide your API Key for the Exoscale provider |
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
-| `--rfc2136-host=""` | When using the RFC2136 provider, specify the host of the DNS server |
+| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
 | `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entries of the DNS server to use |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |
@@ -137,6 +140,7 @@
 | `--rfc2136-batch-change-size=50` | When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch. |
 | `--[no-]rfc2136-use-tls` | When using the RFC2136 provider, communicate with name server over tls |
 | `--[no-]rfc2136-skip-tls-verify` | When using TLS with the RFC2136 provider, disable verification of any TLS certificates |
+| `--rfc2136-load-balancing-strategy=disabled` | When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled) |
 | `--transip-account=""` | When using the TransIP provider, specify the account name (required when --provider=transip) |
 | `--transip-keyfile=""` | When using the TransIP provider, specify the path to the private key file (required when --provider=transip) |
 | `--pihole-server=""` | When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole) |
@@ -152,6 +156,7 @@
 | `--txt-wildcard-replacement=""` | When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional) |
 | `--[no-]txt-encrypt-enabled` | When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled) |
 | `--txt-encrypt-aes-key=""` | When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true) |
+| `--[no-]txt-new-format-only` | When using the TXT registry, only use new format records which include record type information (e.g., prefix: 'a-'). Reduces number of TXT records (default: disabled) |
 | `--dynamodb-region=""` | When using the DynamoDB registry, the AWS region of the DynamoDB table (optional) |
 | `--dynamodb-table="external-dns"` | When using the DynamoDB registry, the name of the DynamoDB table (default: "external-dns") |
 | `--txt-cache-interval=0s` | The interval between cache synchronizations in duration format (default: disabled) |
