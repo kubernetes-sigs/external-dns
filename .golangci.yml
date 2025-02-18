@@ -34,6 +34,8 @@ linters:
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-files:
+    - endpoint/zz_generated.deepcopy.go
   exclude-rules:
     - path: _test\.go
       linters:
@@ -65,5 +67,3 @@ issues:
       linters: [ typecheck ]
     - path: source/kong_tcpingress.go
       linters: [ typecheck ]
-  exclude-files:
-    - endpoint/zz_generated.deepcopy.go
