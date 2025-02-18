@@ -11,7 +11,7 @@ require (
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.19.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.6.2
 	github.com/IBM/go-sdk-core/v5 v5.18.5
-	github.com/IBM/networking-go-sdk v0.51.1
+	github.com/IBM/networking-go-sdk v0.51.2
 	github.com/Yamashou/gqlgenc v0.30.3
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
@@ -26,7 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.14
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/civo/civogo v0.3.93
+	github.com/civo/civogo v0.3.94
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
@@ -57,9 +57,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.32
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1097
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1097
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1097
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1100
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1099
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1099
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.5.18
@@ -71,11 +71,12 @@ require (
 	google.golang.org/api v0.221.0
 	gopkg.in/ns1/ns1-go.v2 v2.13.0
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v1.24.3
 	istio.io/client-go v1.24.3
-	k8s.io/api v0.32.1
-	k8s.io/apimachinery v0.32.1
-	k8s.io/client-go v0.32.1
+	k8s.io/api v0.32.2
+	k8s.io/apimachinery v0.32.2
+	k8s.io/client-go v0.32.2
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/gateway-api v1.2.1
 )
@@ -210,7 +211,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
 	moul.io/http2curl v1.0.0 // indirect
