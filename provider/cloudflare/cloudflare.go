@@ -416,12 +416,12 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 						chDelErr := p.Client.DeleteCustomHostname(ctx, zoneID, chID)
 						if chDelErr != nil {
 							failedChange = true
-							log.WithFields(logFields).Errorf("failed to remove custom hostname %v/%v: %v", chID, oldCh, chDelErr)
+							log.WithFields(logFields).Errorf("failed to remove replacing custom hostname %v/%v: %v", chID, oldCh, chDelErr)
 						}
 						_, chAddErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
 						if chAddErr != nil {
 							failedChange = true
-							log.WithFields(logFields).Errorf("failed to add custom hostname %v: %v", change.CustomHostname.Hostname, chAddErr)
+							log.WithFields(logFields).Errorf("failed to add replacing custom hostname %v: %v", change.CustomHostname.Hostname, chAddErr)
 						}
 					}
 				}
