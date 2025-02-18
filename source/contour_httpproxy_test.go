@@ -1145,7 +1145,7 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 		},
 		Spec: spec,
 		Status: projectcontour.HTTPProxyStatus{
-			LoadBalancer:  lb,
+			LoadBalancer: lb,
 		},
 	}
 
