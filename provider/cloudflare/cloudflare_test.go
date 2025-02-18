@@ -1498,7 +1498,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	}
 }
 
-func TestCloudflareCreateCustomHostname(t *testing.T) {
+func TestCloudflareCustomHostnameOperations(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
 	})
