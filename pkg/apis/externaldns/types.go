@@ -374,6 +374,7 @@ var defaultConfig = &Config{
 func NewConfig() *Config {
 	return &Config{
 		AWSSDCreateTag: map[string]string{},
+		AWSDomainRoles: map[string]string{},
 	}
 }
 
