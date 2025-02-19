@@ -17,16 +17,11 @@
 .DEFAULT_GOAL := build
 
 cover:
-	go get github.com/wadey/gocovmerge
-	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
-	$(eval PKGS_DELIM := $(shell echo $(PKGS) | tr / -'))
-	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c
-	gocovmerge `ls *.coverprofile` > cover.out
-	rm *.coverprofile
+	@go test -cover -coverprofile=cover.out -v ./...
 
 #? cover-html: Run tests with coverage and open coverage report in the browser
 cover-html: cover
-	go tool cover -html cover.out
+	@go tool cover -html=cover.out
 
 #? controller-gen: download controller-gen if necessary
 controller-gen:
@@ -44,9 +39,14 @@ endif
 golangci-lint:
 	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.63.4
 
+#? golangci-lint-verify: Verify golangci-lint configuration
+golangci-lint-verify: golangci-lint
+	@golangci-lint config verify
+
 #? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
 go-lint: golangci-lint
+	gofmt -l -s -w .
 	golangci-lint run --timeout=30m ./...
 
 #? licensecheck: Run the to check for license headers

@@ -11,6 +11,7 @@
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
+| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to Endpoints, for Service source (default: false) |
 | `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
 | `--cf-username=""` | The username to log into the cloud foundry API |
 | `--cf-password=""` | The password to log into the cloud foundry API |
