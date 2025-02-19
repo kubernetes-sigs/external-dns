@@ -25,6 +25,91 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+func TestGetProviderSpecificAnnotations(t *testing.T) {
+	tests := []struct {
+		title       string
+		annotations map[string]string
+		properties  endpoint.ProviderSpecific
+		identifier  *string
+	}{
+		{
+			title: "None",
+			annotations: map[string]string{},
+			properties: endpoint.ProviderSpecific{},
+		},
+		{
+			title: "SetIdentifier",
+			annotations: map[string]string{
+				SetIdentifierKey: "identifier",
+			},
+			identifier: &[]string{"identifier"}[0],
+			properties: endpoint.ProviderSpecific{},
+		},
+		{
+			title: "ProviderProperty",
+			annotations: map[string]string{
+				annotationKeyPrefix + "property": "value",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "property",
+					Value: "value",
+				},
+			},
+		},
+		{
+			title: "ProviderWebhook",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/webhook-property": "value",
+			},
+			properties: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name: "webhook/property",
+					Value: "value",
+				},
+			},
+		},
+	}
+	for _, name := range []string{
+		"access",
+		"alias",
+		"endpoints-type",
+		"controller",
+		"dualstack",
+		"hostname",
+		"ingress",
+		"ingress-hostname-source",
+		"internal-hostname",
+		"set-identifier",
+		"target",
+		"ttl",
+	} {
+		tests = append(tests, struct {
+			title       string
+			annotations map[string]string
+			properties  endpoint.ProviderSpecific
+			identifier  *string
+		}{
+			title: "Core" + name,
+			annotations: map[string]string{
+				annotationKeyPrefix + name: "",
+			},
+			properties: endpoint.ProviderSpecific{},
+		})
+	}
+	for _, test := range tests {
+		t.Run(test.title, func(t *testing.T) {
+			properties, identifier := getProviderSpecificAnnotations(test.annotations)
+			assert.Equal(t, test.properties, properties)
+			if test.identifier != nil {
+				assert.Equal(t, *test.identifier, identifier)
+			} else {
+				assert.Equal(t, "", identifier)
+			}
+		})
+	}
+}
+
 func TestGetTTLFromAnnotations(t *testing.T) {
 	for _, tc := range []struct {
 		title       string
