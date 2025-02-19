@@ -33,7 +33,7 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         args: --timeout=30m
-        version: v1.63
+        version: v1.64
 
       # Run Spectral
     - name: Lint OpenAPI spec
