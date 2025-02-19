@@ -2,6 +2,7 @@
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
 <!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
+<!-- markdownlint-disable MD013 -->
 
 | Flag | Description  |
 | :------ | :----------- |
@@ -10,6 +11,7 @@
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
+| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to Endpoints, for Service source (default: false) |
 | `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
 | `--cf-username=""` | The username to log into the cloud foundry API |
 | `--cf-password=""` | The password to log into the cloud foundry API |
@@ -51,7 +53,7 @@
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
 | `--regex-domain-filter=` | Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional) |
-| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional) |
+| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); Require 'regex-domain-filter'  |
 | `--zone-name-filter=` | Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional) |
 | `--zone-id-filter=` | Filter target zones by hosted zone id; specify multiple times for multiple zones (optional) |
 | `--google-project=""` | When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP. |
@@ -122,7 +124,7 @@
 | `--exoscale-apizone="ch-gva-2"` | When using Exoscale provider, specify the API Zone (optional) |
 | `--exoscale-apikey=""` | Provide your API Key for the Exoscale provider |
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
-| `--rfc2136-host=""` | When using the RFC2136 provider, specify the host of the DNS server |
+| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
 | `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entries of the DNS server to use |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |
@@ -139,6 +141,7 @@
 | `--rfc2136-batch-change-size=50` | When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch. |
 | `--[no-]rfc2136-use-tls` | When using the RFC2136 provider, communicate with name server over tls |
 | `--[no-]rfc2136-skip-tls-verify` | When using TLS with the RFC2136 provider, disable verification of any TLS certificates |
+| `--rfc2136-load-balancing-strategy=disabled` | When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled) |
 | `--transip-account=""` | When using the TransIP provider, specify the account name (required when --provider=transip) |
 | `--transip-keyfile=""` | When using the TransIP provider, specify the path to the private key file (required when --provider=transip) |
 | `--pihole-server=""` | When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole) |

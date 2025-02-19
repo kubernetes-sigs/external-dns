@@ -17,15 +17,18 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
@@ -107,8 +110,6 @@ func newTestEndpointWithTTL(dnsName, recordType string, ttl int64, targets ...st
 }
 
 func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
-	t.Parallel()
-
 	fromAll := v1.NamespacesFromAll
 	fromSame := v1.NamespacesFromSame
 	fromSelector := v1.NamespacesFromSelector
@@ -133,12 +134,13 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 	hostnames := func(names ...v1.Hostname) []v1.Hostname { return names }
 
 	tests := []struct {
-		title      string
-		config     Config
-		namespaces []*corev1.Namespace
-		gateways   []*v1beta1.Gateway
-		routes     []*v1beta1.HTTPRoute
-		endpoints  []*endpoint.Endpoint
+		title           string
+		config          Config
+		namespaces      []*corev1.Namespace
+		gateways        []*v1beta1.Gateway
+		routes          []*v1beta1.HTTPRoute
+		endpoints       []*endpoint.Endpoint
+		logExpectations []string
 	}{
 		{
 			title: "GatewayNamespace",
@@ -1119,11 +1121,62 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.example.internal", "A", "4.3.2.1", "2.3.4.5"),
 			},
 		},
+		{
+			title:      "MultipleGatewaysMultipleRoutes",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("default", "one"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+				{
+					ObjectMeta: objectMeta("default", "two"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+					},
+					Status: gatewayStatus("2.3.4.5"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: objectMeta("default", "one"),
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("test.one.internal"),
+					},
+					Status: httpRouteStatus(
+						gwParentRef("default", "one"),
+					),
+				},
+				{
+					ObjectMeta: objectMeta("default", "two"),
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("test.two.internal"),
+					},
+					Status: httpRouteStatus(
+						gwParentRef("default", "two"),
+					),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.one.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
+			},
+			logExpectations: []string{
+				"level=debug msg=\"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]\"",
+				"level=debug msg=\"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]\"",
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.title, func(t *testing.T) {
-			t.Parallel()
+			if len(tt.logExpectations) == 0 {
+				t.Parallel()
+			}
 
 			ctx := context.Background()
 			gwClient := gatewayfake.NewSimpleClientset()
@@ -1149,9 +1202,17 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
+			var b *bytes.Buffer
+			if len(tt.logExpectations) > 0 {
+				b = testutils.LogsToBuffer(log.DebugLevel, t)
+			}
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
 			validateEndpoints(t, endpoints, tt.endpoints)
+
+			for _, msg := range tt.logExpectations {
+				require.Contains(t, b.String(), msg)
+			}
 		})
 	}
 }

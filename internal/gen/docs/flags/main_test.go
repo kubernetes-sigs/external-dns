@@ -73,6 +73,7 @@ func TestFlagsMdUpToDate(t *testing.T) {
 	flags := computeFlags()
 	actual, err := flags.generateMarkdownTable()
 	assert.NoError(t, err)
+	actual = actual + "\n"
 	assert.True(t, len(expected) == len(actual), "expected file '%s' to be up to date. execute 'make generate-flags-documentation", fileName)
 }
 

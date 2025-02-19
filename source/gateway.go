@@ -234,14 +234,17 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		}
 
 		// Create endpoints from hostnames and targets.
+		var routeEndpoints []*endpoint.Endpoint
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
 		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
 		ttl := getTTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			routeEndpoints = append(routeEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
-		setDualstackLabel(rt, endpoints)
-		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, endpoints)
+		setDualstackLabel(rt, routeEndpoints)
+		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
+
+		endpoints = append(endpoints, routeEndpoints...)
 	}
 	return endpoints, nil
 }

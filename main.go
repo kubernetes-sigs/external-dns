@@ -127,6 +127,7 @@ func main() {
 		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
+		ListenEndpointEvents:           cfg.ListenEndpointEvents,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
 		Compatibility:                  cfg.Compatibility,
@@ -317,9 +318,8 @@ func main() {
 			CAFilePath:            cfg.TLSCA,
 			ClientCertFilePath:    cfg.TLSClientCert,
 			ClientCertKeyFilePath: cfg.TLSClientCertKey,
-			ServerName:            "",
 		}
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136CreatePTR, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
