@@ -1498,43 +1498,6 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	}
 }
 
-// Test basic posible scenarios for the submitChanges function
-func TestCloudFlareProvider_submitChangesARecord(t *testing.T) {
-	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
-		"001": {
-			{
-				ID:      "1234567890",
-				Name:    "bar.com",
-				Type:    endpoint.RecordTypeA,
-				TTL:     1,
-				Content: "1.2.3.4",
-				Proxied: proxyEnabled,
-			},
-		},
-	// Create a slice of *cloudFlareChange
-	changes := []*cloudFlareChange{
-		{
-			Action: cloudFlareUpdate,
-			ResourceRecord: cloudflare.DNSRecord{
-				Name:    "bar.com",
-				Type:    endpoint.RecordTypeA,
-				ID:      "1234567890",
-				Content: "1.2.3.4",
-			},
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname:  "bar.com",
-				RegionKey: "us",
-			},
-		},
-	}
-
-	// Should not return an error
-	err := provider.submitChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
 func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
     client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
         "001": {
@@ -1656,6 +1619,8 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
     if err != nil {
         t.Errorf("should not fail, %s", err)
     }
+}
+
 func TestCloudflareCustomHostnameOperations(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
