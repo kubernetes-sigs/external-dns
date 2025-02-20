@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,319 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
+
+
+func TestChangesAll(t *testing.T) {
+	assert.Equal(t, []*RRSetChange(nil), slices.Collect((&Changes{}).All()))
+	assert.Equal(t, []*RRSetChange{
+		&RRSetChange{
+			Name: "delete.",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					Targets: endpoint.Targets{"Delete"},
+				},
+			},
+		},
+		&RRSetChange{
+			Name: "update.",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					Targets: endpoint.Targets{"UpdateOld"},
+				},
+			},
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					Targets: endpoint.Targets{"UpdateNew"},
+				},
+			},
+		},
+		&RRSetChange{
+			Name: "create.",
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					Targets: endpoint.Targets{"Create"},
+				},
+			},
+		}}, slices.Collect((&Changes{
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					Targets: endpoint.Targets{"Create"},
+				},
+			},
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					Targets: endpoint.Targets{"Delete"},
+				},
+			},
+			UpdateNew: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					Targets: endpoint.Targets{"UpdateNew"},
+				},
+			},
+			UpdateOld: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					Targets: endpoint.Targets{"UpdateOld"},
+				},
+			},
+		}).All()),
+	)
+	assert.ElementsMatch(t, []*RRSetChange{
+		&RRSetChange{
+			Name: "create.",
+			Type: "TXT",
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					RecordType: "TXT",
+					SetIdentifier: "1",
+					Targets: endpoint.Targets{"Create/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					RecordType: "TXT",
+					SetIdentifier: "2",
+					Targets: endpoint.Targets{"Create/TXT/2"},
+				},
+			},
+		},
+		&RRSetChange{
+			Name: "create.",
+			Type: "CNAME",
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"Create/CNAME"},
+				},
+			},
+		}}, slices.Collect((&Changes{
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					RecordType: "TXT",
+					SetIdentifier: "1",
+					Targets: endpoint.Targets{"Create/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"Create/CNAME"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Create",
+					RecordType: "TXT",
+					SetIdentifier: "2",
+					Targets: endpoint.Targets{"Create/TXT/2"},
+				},
+			},
+		}).All()),
+	)
+	assert.ElementsMatch(t, []*RRSetChange{
+		&RRSetChange{
+			Name: "delete.",
+			Type: "TXT",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					RecordType: "TXT",
+					SetIdentifier: "1",
+					Targets: endpoint.Targets{"Delete/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					RecordType: "TXT",
+					SetIdentifier: "2",
+					Targets: endpoint.Targets{"Delete/TXT/2"},
+				},
+			},
+		},
+		&RRSetChange{
+			Name: "delete.",
+			Type: "CNAME",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"Delete/CNAME"},
+				},
+			},
+		}}, slices.Collect((&Changes{
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					SetIdentifier: "1",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"Delete/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"Delete/CNAME"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Delete",
+					SetIdentifier: "2",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"Delete/TXT/2"},
+				},
+			},
+		}).All()),
+	)
+	assert.ElementsMatch(t, []*RRSetChange{
+		&RRSetChange{
+			Name: "update.",
+			Type: "TXT",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "1",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"UpdateOld/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "2",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"UpdateOld/TXT/2"},
+				},
+			},
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "1",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"UpdateNew/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "2",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"UpdateNew/TXT/2"},
+				},
+			},
+		},
+		&RRSetChange{
+			Name: "update.",
+			Type: "CNAME",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"UpdateOld/CNAME"},
+				},
+			},
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"UpdateNew/CNAME"},
+				},
+			},
+		}}, slices.Collect((&Changes{
+			UpdateNew: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "1",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"UpdateNew/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "CNAME",
+					Targets: endpoint.Targets{"UpdateNew/CNAME"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "2",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"UpdateNew/TXT/2"},
+				},
+			},
+			UpdateOld: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: endpoint.RecordTypeTXT,
+					SetIdentifier: "1",
+					Targets: endpoint.Targets{"UpdateOld/TXT/1"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets: endpoint.Targets{"UpdateOld/CNAME"},
+				},
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					SetIdentifier: "2",
+					RecordType: endpoint.RecordTypeTXT,
+					Targets: endpoint.Targets{"UpdateOld/TXT/2"},
+				},
+			},
+		}).All()),
+	)
+	assert.ElementsMatch(t, []*RRSetChange{
+		&RRSetChange{
+			Name: "update.",
+			Type: "TXT",
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"Delete/TXT"},
+				},
+			},
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"Create/TXT"},
+				},
+			},
+		}}, slices.Collect((&Changes{
+			Create: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"Create/TXT"},
+				},
+			},
+			Delete: []*endpoint.Endpoint{
+				&endpoint.Endpoint{
+					DNSName: "Update",
+					RecordType: "TXT",
+					Targets: endpoint.Targets{"Delete/TXT"},
+				},
+			},
+		}).All()),
+	)
+}
+
+func TestChangesHasChanges(t *testing.T) {
+	assert.Equal(t, false, (&Changes{}).HasChanges())
+	assert.Equal(t, true, (&Changes{
+		Create: []*endpoint.Endpoint{&endpoint.Endpoint{}},
+	}).HasChanges())
+	assert.Equal(t, true, (&Changes{
+		Delete: []*endpoint.Endpoint{&endpoint.Endpoint{}},
+	}).HasChanges())
+	assert.Equal(t, true, (&Changes{
+		UpdateOld: []*endpoint.Endpoint{&endpoint.Endpoint{}},
+	}).HasChanges())
+	assert.Equal(t, true, (&Changes{
+		UpdateNew: []*endpoint.Endpoint{&endpoint.Endpoint{}},
+	}).HasChanges())
+	assert.Equal(t, false, (&Changes{
+		UpdateOld: []*endpoint.Endpoint{&endpoint.Endpoint{}},
+		UpdateNew: []*endpoint.Endpoint{&endpoint.Endpoint{}},
+	}).HasChanges())
+}
 
 type PlanTestSuite struct {
 	suite.Suite
