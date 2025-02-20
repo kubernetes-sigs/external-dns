@@ -35,9 +35,13 @@ func Test_newV2Config(t *testing.T) {
 		defer os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE")
 
 		// when
-		cfg, err := newV2Config(AWSSessionConfig{Profile: "profile2"})
+		cfgs, err := newV2Config(AWSSessionConfig{Profile: "profile2"})
 		require.NoError(t, err)
-		creds, err := cfg.Credentials.Retrieve(context.Background())
+
+		assert.GreaterOrEqual(t, len(cfgs), 1)
+		cfg := cfgs[0]
+
+		creds, err := cfg.Config.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)
@@ -53,9 +57,12 @@ func Test_newV2Config(t *testing.T) {
 		defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
 
 		// when
-		cfg, err := newV2Config(AWSSessionConfig{})
+		cfgs, err := newV2Config(AWSSessionConfig{})
 		require.NoError(t, err)
-		creds, err := cfg.Credentials.Retrieve(context.Background())
+		assert.GreaterOrEqual(t, len(cfgs), 1)
+		cfg := cfgs[0]
+
+		creds, err := cfg.Config.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)
