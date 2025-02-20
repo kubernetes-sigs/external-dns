@@ -479,7 +479,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				}
 			}
 		}
-
 		if failedChange {
 			failedZones = append(failedZones, zoneID)
 		}
