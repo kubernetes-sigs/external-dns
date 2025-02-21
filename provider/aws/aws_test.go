@@ -347,7 +347,7 @@ func TestAWSZones(t *testing.T) {
 func TestAWSZonesWithTagFilterError(t *testing.T) {
 	client := NewRoute53APIStub(t)
 	provider := &AWSProvider{
-		clients:       map[string]Route53API{defaultAWSProfile: client},
+		clients:       map[string][]*AWSZoneConfig{defaultAWSProfile: {{Route53Config: client}}},
 		zoneTagFilter: provider.NewZoneTagFilter([]string{"zone=2"}),
 		dryRun:        false,
 		zonesCache:    &zonesListCache{duration: 1 * time.Minute},
@@ -851,14 +851,14 @@ func TestAWSApplyChanges(t *testing.T) {
 		ctx := tt.setup(provider)
 
 		provider.zonesCache = &zonesListCache{duration: 0 * time.Minute}
-		counter := NewRoute53APICounter(provider.clients[defaultAWSProfile])
-		provider.clients[defaultAWSProfile] = counter
+		counter := NewRoute53APICounter(provider.clients[defaultAWSProfile][0].Route53Config)
+		provider.clients[defaultAWSProfile][0].Route53Config = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
 
 		assert.Equal(t, 1, counter.calls["ListHostedZonesPages"], tt.name)
 		assert.Equal(t, tt.listRRSets, counter.calls["ListResourceRecordSetsPages"], tt.name)
 
-		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
+		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile][0].Route53Config, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
 			{
 				Name:            aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
@@ -955,7 +955,7 @@ func TestAWSApplyChanges(t *testing.T) {
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}},
 			},
 		})
-		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
+		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile][0].Route53Config, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
 			{
 				Name:            aws.String("escape-\\045\\041s\\050\\074nil\\076\\051-codes.zone-2.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
@@ -1132,8 +1132,8 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 
 	validateRecords(t,
 		append(
-			listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
-			listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")...),
+			listAWSRecords(t, provider.clients[defaultAWSProfile][0].Route53Config, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+			listAWSRecords(t, provider.clients[defaultAWSProfile][0].Route53Config, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")...),
 		originalRecords)
 }
 
@@ -1757,7 +1757,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 		Create: adjusted,
 	}))
 
-	recordSets := listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+	recordSets := listAWSRecords(t, provider.clients[defaultAWSProfile][0].Route53Config, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
 	validateRecords(t, recordSets, []route53types.ResourceRecordSet{
 		{
@@ -1821,7 +1821,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 			Create: adjusted,
 		}))
 
-		recordSets := listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+		recordSets := listAWSRecords(t, provider.clients[defaultAWSProfile][0].Route53Config, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
 		validateRecords(t, recordSets, []route53types.ResourceRecordSet{
 			{
@@ -1980,7 +1980,7 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53types.Hoste
 		HostedZoneConfig: zone.Config,
 	}
 
-	if _, err := provider.clients[defaultAWSProfile].CreateHostedZone(context.Background(), params); err != nil {
+	if _, err := provider.clients[defaultAWSProfile][0].Route53Config.CreateHostedZone(context.Background(), params); err != nil {
 		var hzExists *route53types.HostedZoneAlreadyExists
 		require.ErrorAs(t, err, &hzExists)
 	}
@@ -2036,7 +2036,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
-		clients:               map[string]Route53API{defaultAWSProfile: client},
+		clients:               map[string][]*AWSZoneConfig{defaultAWSProfile: {{Route53Config: client}}},
 		batchChangeSize:       defaultBatchChangeSize,
 		batchChangeSizeBytes:  defaultBatchChangeSizeBytes,
 		batchChangeSizeValues: defaultBatchChangeSizeValues,
@@ -2076,7 +2076,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		Config: &route53types.HostedZoneConfig{PrivateZone: false},
 	})
 
-	setupZoneTags(provider.clients[defaultAWSProfile].(*Route53APIStub))
+	setupZoneTags(provider.clients[defaultAWSProfile][0].Route53Config.(*Route53APIStub))
 
 	setAWSRecords(t, provider, records)
 
