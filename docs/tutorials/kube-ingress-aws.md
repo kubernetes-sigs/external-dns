@@ -168,6 +168,11 @@ domains: `echoserver.mycluster.example.org` and `echoserver.example.org`. All
 four records alias the ALB that is associated with the Ingress object. As the
 ALB is IPv4 only, the AAAA alias records have no effect.
 
+If you would like ExternalDNS to not create AAAA records at all, you can add the
+following command line parameter: `--exclude-record-types=AAAA`. Please be
+aware, this will disable AAAA record creation even for dualstack enabled load
+balancers.
+
 Note that the above example makes use of the YAML anchor feature to avoid having
 to repeat the http section for multiple hosts that use the exact same paths. If
 this Ingress object will only be fronting one backend Service, we might instead
