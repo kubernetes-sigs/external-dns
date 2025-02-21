@@ -37,11 +37,6 @@ import (
 )
 
 const (
-	// ALBDualstackAnnotationKey is the annotation used for determining if an ALB ingress is dualstack
-	ALBDualstackAnnotationKey = "alb.ingress.kubernetes.io/ip-address-type"
-	// ALBDualstackAnnotationValue is the value of the ALB dualstack annotation that indicates it is dualstack
-	ALBDualstackAnnotationValue = "dualstack"
-
 	// Possible values for the ingress-hostname-source annotation
 	IngressHostnameSourceAnnotationOnlyValue   = "annotation-only"
 	IngressHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
@@ -171,7 +166,6 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		}
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
-		sc.setDualstackLabel(ing, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
@@ -272,16 +266,6 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 	}
 
 	return filteredList, nil
-}
-
-func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints []*endpoint.Endpoint) {
-	val, ok := ingress.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to ingress %s/%s.", ingress.Namespace, ingress.Name)
-		for _, ep := range endpoints {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
-	}
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
