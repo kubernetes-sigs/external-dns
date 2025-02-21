@@ -81,6 +81,7 @@ var (
 type traefikSource struct {
 	annotationFilter           string
 	ignoreHostnameAnnotation   bool
+	ignoreIngressRouteSpec     bool
 	dynamicKubeClient          dynamic.Interface
 	ingressRouteInformer       informers.GenericInformer
 	ingressRouteTcpInformer    informers.GenericInformer
@@ -93,7 +94,7 @@ type traefikSource struct {
 	unstructuredConverter      *unstructuredConverter
 }
 
-func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, disableLegacy bool, disableNew bool) (Source, error) {
+func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, ignoreIngressRouteSpec bool, disableLegacy bool, disableNew bool) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
@@ -157,6 +158,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 	return &traefikSource{
 		annotationFilter:           annotationFilter,
 		ignoreHostnameAnnotation:   ignoreHostnameAnnotation,
+		ignoreIngressRouteSpec:     ignoreIngressRouteSpec,
 		dynamicKubeClient:          dynamicKubeClient,
 		ingressRouteInformer:       ingressRouteInformer,
 		ingressRouteTcpInformer:    ingressRouteTcpInformer,
@@ -679,17 +681,19 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 		}
 	}
 
-	for _, route := range ingressRoute.Spec.Routes {
-		match := route.Match
+	if !ts.ignoreIngressRouteSpec {
+		for _, route := range ingressRoute.Spec.Routes {
+			match := route.Match
 
-		for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
-			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
-				host = strings.TrimPrefix(host, "`")
-				host = strings.TrimSuffix(host, "`")
+			for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
+				for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
+					host = strings.TrimPrefix(host, "`")
+					host = strings.TrimSuffix(host, "`")
 
-				// Checking for host = * is required, as Host(`*`) can be set
-				if host != "*" && host != "" {
-					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					// Checking for host = * is required, as Host(`*`) can be set
+					if host != "*" && host != "" {
+						endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					}
 				}
 			}
 		}
@@ -715,18 +719,20 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 		}
 	}
 
-	for _, route := range ingressRoute.Spec.Routes {
-		match := route.Match
+	if !ts.ignoreIngressRouteSpec {
+		for _, route := range ingressRoute.Spec.Routes {
+			match := route.Match
 
-		for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
-			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
-				host = strings.TrimPrefix(host, "`")
-				host = strings.TrimSuffix(host, "`")
+			for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
+				for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
+					host = strings.TrimPrefix(host, "`")
+					host = strings.TrimSuffix(host, "`")
 
-				// Checking for host = * is required, as HostSNI(`*`) can be set
-				// in the case of TLS passthrough
-				if host != "*" && host != "" {
-					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					// Checking for host = * is required, as HostSNI(`*`) can be set
+					// in the case of TLS passthrough
+					if host != "*" && host != "" {
+						endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					}
 				}
 			}
 		}
