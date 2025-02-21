@@ -902,6 +902,11 @@ env:
 
 The DynamoDB Registry can be used to store dns records metadata. See the [DynamoDB Registry Tutorial](../registry/dynamodb.md) for more information.
 
+## Disable AAAA Record Creation
+
+If you would like ExternalDNS to not create AAAA records at all, you can add the following command line parameter: `--exclude-record-types=AAAA`.
+Please be aware, this will disable AAAA record creation even for dualstack enabled load balancers.
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
