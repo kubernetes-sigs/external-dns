@@ -433,6 +433,19 @@ func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpo
 	return endpoints, nil
 }
 
+// AdjustEndpoints performs checks on the provided endpoints and will skip any potentially failing changes.
+func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	var validEndpoints []*endpoint.Endpoint
+	for i := 0; i < len(endpoints); i++ {
+		if !endpoints[i].CheckEndpoint() {
+			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
+			continue
+		}
+		validEndpoints = append(validEndpoints, endpoints[i])
+	}
+	return validEndpoints, nil
+}
+
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
 func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
