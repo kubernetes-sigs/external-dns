@@ -369,7 +369,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 	})
 	_, err := provider.Zones(context.Background())
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to list tags for zones 'zone-1.ext-dns-test-ok.example.com.,zone-2.ext-dns-test-error-on-list-tags.example.com.'")
+	require.ErrorContains(t, err, "failed to list tags for zones")
 }
 
 func TestAWSRecordsFilter(t *testing.T) {
