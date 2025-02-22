@@ -231,11 +231,11 @@ func (cs Route53Changes) Route53Changes() []route53types.Change {
 	return ret
 }
 
-type ZoneTags map[string]map[string]string
+type zoneTags map[string]map[string]string
 
 // filterZonesByTags filters the provided zones map by matching the tags against the provider's zoneTagFilter.
 // It removes any zones from the map that do not match the filter criteria.
-func (z ZoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZone) {
+func (z zoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZone) {
 	for zone, tags := range z {
 		if !p.zoneTagFilter.Match(tags) {
 			delete(zones, zone)
@@ -244,7 +244,7 @@ func (z ZoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZo
 }
 
 // append adds tags to the ZoneTags for a given zoneID.
-func (z ZoneTags) append(id string, tags []route53types.Tag) {
+func (z zoneTags) append(id string, tags []route53types.Tag) {
 	zoneId := fmt.Sprintf("/hostedzone/%s", id)
 	if _, exists := z[zoneId]; !exists {
 		z[zoneId] = make(map[string]string)
@@ -964,10 +964,10 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (ZoneTags, error) {
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (zoneTags, error) {
 	client := p.clients[profile]
 
-	result := ZoneTags{}
+	result := zoneTags{}
 	// Currently supported up to 10 health checks or hosted zones.
 	batchSize := 10
 
