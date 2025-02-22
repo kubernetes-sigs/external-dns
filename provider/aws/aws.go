@@ -231,6 +231,29 @@ func (cs Route53Changes) Route53Changes() []route53types.Change {
 	return ret
 }
 
+type ZoneTags map[string]map[string]string
+
+// filterZonesByTags filters the provided zones map by matching the tags against the provider's zoneTagFilter.
+// It removes any zones from the map that do not match the filter criteria.
+func (z ZoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZone) {
+	for zone, tags := range z {
+		if !p.zoneTagFilter.Match(tags) {
+			delete(zones, zone)
+		}
+	}
+}
+
+// append adds tags to the ZoneTags for a given zoneID.
+func (z ZoneTags) append(id string, tags []route53types.Tag) {
+	zoneId := fmt.Sprintf("/hostedzone/%s", id)
+	if _, exists := z[zoneId]; !exists {
+		z[zoneId] = make(map[string]string)
+	}
+	for _, tag := range tags {
+		z[zoneId][*tag.Key] = *tag.Value
+	}
+}
+
 type zonesListCache struct {
 	age      time.Time
 	duration time.Duration
@@ -341,7 +364,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 				// nothing to do here. Falling through to general error handling
 				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 			}
-			var zonesToValidate []string
+			var zonesToTagFilter []string
 			for _, zone := range resp.HostedZones {
 				if !p.zoneIDFilter.Match(*zone.Id) {
 					continue
@@ -361,7 +384,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 				}
 
 				if !p.zoneTagFilter.IsEmpty() {
-					zonesToValidate = append(zonesToValidate, cleanZoneID(*zone.Id))
+					zonesToTagFilter = append(zonesToTagFilter, cleanZoneID(*zone.Id))
 				}
 
 				zones[*zone.Id] = &profiledZone{
@@ -370,15 +393,11 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 				}
 			}
 
-			if len(zonesToValidate) > 0 {
-				if zTags, err := p.tagsForZone(ctx, zonesToValidate, profile); err != nil {
+			if len(zonesToTagFilter) > 0 {
+				if zTags, err := p.tagsForZone(ctx, zonesToTagFilter, profile); err != nil {
 					return nil, provider.NewSoftErrorf("failed to list tags for zones %w", err)
 				} else {
-					for zone, tags := range zTags {
-						if !p.zoneTagFilter.Match(tags) {
-							delete(zones, zone)
-						}
-					}
+					zTags.filterZonesByTags(p, zones)
 				}
 			}
 		}
@@ -943,16 +962,15 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (map[string]map[string]string, error) {
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (ZoneTags, error) {
 	client := p.clients[profile]
 
-	result := map[string]map[string]string{}
+	result := ZoneTags{}
 	// Currently supported up to 10 health checks or hosted zones.
 	batchSize := 10
 
 	for i := 0; i < len(zoneIDs); i += batchSize {
 		batch := zoneIDs[i:min(i+batchSize, len(zoneIDs))]
-
 		if len(batch) == 0 {
 			break
 		}
@@ -965,11 +983,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile
 		}
 
 		for _, res := range response.ResourceTagSets {
-			tagMap := map[string]string{}
-			for _, tag := range res.Tags {
-				tagMap[*tag.Key] = *tag.Value
-			}
-			result[fmt.Sprintf("/hostedzone/%s", *res.ResourceId)] = tagMap
+			result.append(*res.ResourceId, res.Tags)
 		}
 	}
 	return result, nil
