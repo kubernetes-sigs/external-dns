@@ -163,27 +163,22 @@ func specialCharactersEscape(s string) string {
 
 func (r *Route53APIStub) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	if input.ResourceType == route53types.TagResourceTypeHostedzone {
-		// zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, *input.ResourceId)
-		// if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
-		// 	return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
-		// }
 		var sets []route53types.ResourceTagSet
-
 		for _, el := range input.ResourceIds {
-		zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, el)
-		if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
-			return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
-		}
-		if r.zoneTags[el] != nil {
-			sets = append(sets, route53types.ResourceTagSet{
-				ResourceId:   &el,
-				ResourceType: route53types.TagResourceTypeHostedzone,
-				Tags:         r.zoneTags[el],
-			})
+			zoneId := fmt.Sprintf("/%s/%s", input.ResourceType, el)
+			if strings.Contains(zoneId, "ext-dns-test-error-on-list-tags") {
+				return nil, fmt.Errorf("operation error Route53APIStub: ListTagsForResource")
+			}
+
+			if r.zoneTags[zoneId] != nil {
+				sets = append(sets, route53types.ResourceTagSet{
+					ResourceId:   &el,
+					ResourceType: route53types.TagResourceTypeHostedzone,
+					Tags:         r.zoneTags[zoneId],
+				})
+			}
 		}
 		return &route53.ListTagsForResourcesOutput{ResourceTagSets: sets}, nil
-	}
-
 	}
 	return &route53.ListTagsForResourcesOutput{}, nil
 }
@@ -342,7 +337,8 @@ func TestAWSZones(t *testing.T) {
 		{"private filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("private"), provider.NewZoneTagFilter([]string{}), privateZones},
 		{"unknown filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("unknown"), provider.NewZoneTagFilter([]string{}), noZones},
 		{"zone id filter", provider.NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), privateZones},
-		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
+		{"tag filter zero zone match", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=not-exists"}), noZones},
+		{"tag filter single zone match", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
 	} {
 		t.Run(ti.msg, func(t *testing.T) {
 			provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
@@ -373,7 +369,7 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 	})
 	_, err := provider.Zones(context.Background())
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to list tags for zone /hostedzone/zone-2.ext-dns-test-error-on-list-tags")
+	require.ErrorContains(t, err, "failed to list tags for zones 'zone-1.ext-dns-test-ok.example.com.,zone-2.ext-dns-test-error-on-list-tags.example.com.'")
 }
 
 func TestAWSRecordsFilter(t *testing.T) {

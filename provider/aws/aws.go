@@ -389,7 +389,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 			}
 		}
 		if tagErr != nil {
-			return nil, provider.NewSoftErrorf("failed to list zones tags: %w", tagErr)
+			return nil, provider.NewSoftErrorf("failed to list tags for zones %w", tagErr)
 		}
 	}
 
@@ -958,16 +958,15 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile
 		ResourceIds:  zoneIDs,
 	})
 	if err != nil {
-		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %v", zoneIDs, err)
+		return nil, provider.NewSoftErrorf("failed to list tags for zones '%s'. %v", strings.Join(zoneIDs, ","), err)
 	}
 	result := map[string]map[string]string{}
 	for _, res := range response.ResourceTagSets {
-		id := res.ResourceId
 		tagMap := map[string]string{}
 		for _, tag := range res.Tags {
 			tagMap[*tag.Key] = *tag.Value
 		}
-		result[*id] = tagMap
+		result[fmt.Sprintf("/hostedzone/%s", *res.ResourceId)] = tagMap
 	}
 	return result, nil
 }
