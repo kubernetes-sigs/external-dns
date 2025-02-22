@@ -1,4 +1,4 @@
-# AWS Filtering
+# AWS Filters
 
 This document provides guidance on filtering AWS zones using various strategies and flags.
 
@@ -6,7 +6,7 @@ This document provides guidance on filtering AWS zones using various strategies 
 
 > Without specifying these flags, management applies to all zones.
 
-In order to manage specific zones,  you may need to combine multiple options
+In order to manage specific zones,  there is a possibility to combine multiple options
 
 | Argument                   | Description                                                | Flow Control |
 |:---------------------------|:-----------------------------------------------------------|:------------:|
