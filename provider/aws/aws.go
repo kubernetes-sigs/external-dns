@@ -658,6 +658,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	var failedZones []string
+	debugLevel := log.DebugLevel
 	for z, cs := range changesByZone {
 		log := log.WithFields(log.Fields{
 			"zoneName": *zones[z].zone.Name,
@@ -700,10 +701,11 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 					if len(changesByOwnership) > 1 {
 						log.Debug("Trying to submit change sets one-by-one instead")
-
 						for _, changes := range changesByOwnership {
-							for _, c := range changes {
-								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
+							if log.Logger.IsLevelEnabled(debugLevel) {
+								for _, c := range changes {
+									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
+								}
 							}
 							params.ChangeBatch = &route53types.ChangeBatch{
 								Changes: changes.Route53Changes(),
