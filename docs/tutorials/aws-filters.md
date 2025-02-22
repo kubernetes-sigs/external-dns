@@ -149,14 +149,14 @@ sequenceDiagram
     participant AWSProvider
     participant Route53Client
 
-    external-dns->>AWSProvider: zones(ctx)
+    external-dns->>AWSProvider: zones
     alt Cache is valid
         AWSProvider-->>external-dns: return cached zones
     else
 
-        AWSProvider->>Route53Client: ListHostedZonesPaginator(client, &route53.ListHostedZonesInput{})
-        loop While paginator.HasMorePages()
-            Route53Client->>AWSProvider: paginator.NextPage(ctx)
+        AWSProvider->>Route53Client: ListHostedZonesPaginator
+        loop While paginator.HasMorePages
+            Route53Client->>AWSProvider: paginator.NextPage
             alt ThrottlingException
                 AWSProvider->>external-dns: error
             else
@@ -164,7 +164,7 @@ sequenceDiagram
             end
             AWSProvider->>AWSProvider: Filter zones
             alt Tags need validation
-                AWSProvider->>Route53Client: ListTagsForResources(ctx, zonesToValidate, profile)
+                AWSProvider->>Route53Client: ListTagsForResources
                 Route53Client->>AWSProvider: return tags
                 AWSProvider->>AWSProvider: Validate tags
             end
