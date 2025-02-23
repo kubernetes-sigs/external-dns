@@ -49,9 +49,9 @@ func NewMetricsRegister() *MetricRegistry {
 // Usage: MustRegister(...)
 // Example:
 //
-//		func init() {
+//	func init() {
 //	     metrics.RegisterMetric.MustRegister(errorsTotal)
-//		}
+//	}
 func (m *MetricRegistry) MustRegister(cs IMetric) {
 	switch v := cs.(type) {
 	case CounterMetric, GaugeMetric, CounterVecMetric:
