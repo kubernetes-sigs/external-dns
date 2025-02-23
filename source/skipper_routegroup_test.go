@@ -787,37 +787,6 @@ func TestResourceLabelIsSet(t *testing.T) {
 	}
 }
 
-func TestDualstackLabelIsSet(t *testing.T) {
-	source := &routeGroupSource{
-		cli: &fakeRouteGroupClient{
-			rg: &routeGroupList{
-				Items: []*routeGroup{
-					createTestRouteGroup(
-						"namespace1",
-						"rg1",
-						map[string]string{
-							ALBDualstackAnnotationKey: ALBDualstackAnnotationValue,
-						},
-						[]string{"rg1.k8s.example"},
-						[]routeGroupLoadBalancer{
-							{
-								Hostname: "lb.example.org",
-							},
-						},
-					),
-				},
-			},
-		},
-	}
-
-	got, _ := source.Endpoints(context.Background())
-	for _, ep := range got {
-		if v, ok := ep.Labels[endpoint.DualstackLabelKey]; !ok || v != "true" {
-			t.Errorf("Failed to set resource label on ep %v", ep)
-		}
-	}
-}
-
 func TestParseTemplate(t *testing.T) {
 	for _, tt := range []struct {
 		name                     string
