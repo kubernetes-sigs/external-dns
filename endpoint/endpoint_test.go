@@ -19,6 +19,8 @@ package endpoint
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -439,5 +441,100 @@ func TestDuplicatedEndpointsWithOverlappingZones(t *testing.T) {
 				t.Errorf("RemoveDuplicates() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestPDNScheckEndpoint(t *testing.T) {
+	tests := []struct {
+		description string
+		endpoint    Endpoint
+		expected    bool
+	}{
+		{
+			description: "Valid MX record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid MX record with multiple targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 example.com", "20 backup.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "MX record with valid and invalid targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"example.com", "backup.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record with missing priority value",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record with too many arguments",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 example.com abc"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record with non-integer priority",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"abc example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid SRV record target",
+			endpoint: Endpoint{
+				DNSName:    "_service._tls.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 20 5060 service.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid SRV record with missing part",
+			endpoint: Endpoint{
+				DNSName:    "_service._tls.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 20 5060"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid SRV record with non-integer part",
+			endpoint: Endpoint{
+				DNSName:    "_service._tls.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 20 abc service.example.com"},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		actual := tt.endpoint.CheckEndpoint()
+		assert.Equal(t, tt.expected, actual)
 	}
 }
