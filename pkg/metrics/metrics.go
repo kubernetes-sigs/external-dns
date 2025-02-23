@@ -18,7 +18,6 @@ package metrics
 
 import (
 	"runtime"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -28,8 +27,6 @@ import (
 
 var (
 	RegisterMetric = NewMetricsRegister()
-
-	registerOnce = sync.Once{}
 )
 
 func NewMetricsRegister() *MetricRegistry {
