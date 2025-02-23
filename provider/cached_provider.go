@@ -50,16 +50,16 @@ var (
 	)
 )
 
+func init() {
+	metrics.RegisterMetric.MustRegister(cachedRecordsCallsTotal)
+	metrics.RegisterMetric.MustRegister(cachedApplyChangesCallsTotal)
+}
+
 type CachedProvider struct {
 	Provider
 	RefreshDelay time.Duration
 	lastRead     time.Time
 	cache        []*endpoint.Endpoint
-}
-
-func init() {
-	metrics.RegisterMetric.MustRegister(cachedRecordsCallsTotal)
-	metrics.RegisterMetric.MustRegister(cachedApplyChangesCallsTotal)
 }
 
 func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedProvider {

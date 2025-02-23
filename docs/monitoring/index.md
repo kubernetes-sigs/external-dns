@@ -34,7 +34,7 @@ For more detailed information on how to instrument application with Prometheus, 
 
 ## What metrics can I get from ExternalDNS and what do they mean?
 
-- We maintain a [metrics page](./metrics.md) with a list of supported custom metrics.
+- The project maintain a [metrics page](./metrics.md) with a list of supported custom metrics.
 - [Go runtime](https://pkg.go.dev/runtime/metrics#hdr-Supported_metrics) metrics also available for scraping.
 
 ExternalDNS exposes 3 types of metrics: Sources, Registry errors and Cache hits.

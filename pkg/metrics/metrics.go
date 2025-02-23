@@ -64,16 +64,14 @@ func (m *MetricRegistry) MustRegister(cs IMetric) {
 			m.mName[cs.Get().FQDN] = true
 		}
 		m.Metrics = append(m.Metrics, cs.Get())
-		registerOnce.Do(func() {
-			switch metric := v.(type) {
-			case CounterMetric:
-				m.Registerer.MustRegister(metric.Counter)
-			case GaugeMetric:
-				m.Registerer.MustRegister(metric.Gauge)
-			case CounterVecMetric:
-				m.Registerer.MustRegister(metric.CounterVec)
-			}
-		})
+		switch metric := v.(type) {
+		case CounterMetric:
+			m.Registerer.MustRegister(metric.Counter)
+		case GaugeMetric:
+			m.Registerer.MustRegister(metric.Gauge)
+		case CounterVecMetric:
+			m.Registerer.MustRegister(metric.CounterVec)
+		}
 		log.Debugf("Register metric: %s", cs.Get().FQDN)
 	default:
 		log.Warnf("Unsupported metric type: %T", v)

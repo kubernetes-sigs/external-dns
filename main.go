@@ -453,8 +453,8 @@ func serveMetrics(address string) {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	log.Debugf("serving 'healthz' on 'localhpst:%s/healthz'", address)
-	log.Debugf("serving 'metrics' on 'localhpst:%s/metrics'", address)
+	log.Debugf("serving 'healthz' on 'localhost:%s/healthz'", address)
+	log.Debugf("serving 'metrics' on 'localhost:%s/metrics'", address)
 	log.Debugf("registered '%d' metrics", len(metrics.RegisterMetric.Metrics))
 
 	http.Handle("/metrics", promhttp.Handler())
