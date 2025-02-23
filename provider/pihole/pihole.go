@@ -47,6 +47,8 @@ type PiholeConfig struct {
 	DomainFilter endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
 	DryRun bool
+	// PiHole API version =<5 ou >=6
+	APIVersion string
 }
 
 // Helper struct for de-duping DNS entry updates.
