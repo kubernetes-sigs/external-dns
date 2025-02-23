@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2024 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"strings"
 	"text/template"
 
+	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -64,7 +65,7 @@ func main() {
 		_ = fmt.Errorf("failed to generate markdown file '%s': %v\n", path, err.Error())
 	}
 	content = content + "\n"
-	_ = writeToFile(path, content)
+	_ = utils.WriteToFile(path, content)
 }
 
 func computeFlags() Flags {
@@ -94,7 +95,7 @@ func computeFlags() Flags {
 }
 
 func (f *Flags) generateMarkdownTable() (string, error) {
-	tmpl := template.Must(template.New("flags.md.tpl").Parse(markdownTemplate))
+	tmpl := template.Must(template.New("flags.md.tpl").Funcs(utils.FuncMap()).Parse(markdownTemplate))
 
 	var b bytes.Buffer
 	err := tmpl.Execute(&b, f)
@@ -102,17 +103,4 @@ func (f *Flags) generateMarkdownTable() (string, error) {
 		return "", err
 	}
 	return b.String(), nil
-}
-
-func writeToFile(filename string, content string) error {
-	file, fileErr := os.Create(filename)
-	if fileErr != nil {
-		_ = fmt.Errorf("failed to create file: %v", fileErr)
-	}
-	defer file.Close()
-	_, writeErr := file.WriteString(content)
-	if writeErr != nil {
-		_ = fmt.Errorf("failed to write to file: %s", filename)
-	}
-	return nil
 }

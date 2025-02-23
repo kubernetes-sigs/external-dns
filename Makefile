@@ -167,6 +167,11 @@ ko:
 generate-flags-documentation:
 	go run internal/gen/docs/flags/main.go
 
+.PHONY: generate-metrics-documentation
+#? generate-metrics-documentation: Generate documentation (docs/monitoring/metrics.md)
+generate-metrics-documentation:
+	go run internal/gen/docs/metrics/main.go
+
 #? pre-commit-install: Install pre-commit hooks
 pre-commit-install:
 	@pre-commit install
