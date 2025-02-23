@@ -27,6 +27,7 @@ import (
 	"unsafe"
 
 	"github.com/prometheus/client_golang/prometheus"
+
 	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 
