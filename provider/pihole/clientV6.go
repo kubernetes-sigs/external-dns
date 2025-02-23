@@ -1,22 +1,7 @@
-/*
-Copyright 2017 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package pihole
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -30,31 +15,19 @@ import (
 
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/html"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
 )
 
-// declares the "API" actions performed against the Pihole server.
-type piholeAPI interface {
-	// listRecords returns endpoints for the given record type (A or CNAME).
-	listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error)
-	// createRecord will create a new record for the given endpoint.
-	createRecord(ctx context.Context, ep *endpoint.Endpoint) error
-	// deleteRecord will delete the given record.
-	deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error
-}
-
 // piholeClient implements the piholeAPI.
-type piholeClient struct {
+type piholeClientV6 struct {
 	cfg        PiholeConfig
 	httpClient *http.Client
 	token      string
 }
 
-// newPiholeClient creates a new Pihole API client.
-func newPiholeClient(cfg PiholeConfig) (piholeAPI, error) {
+// newPiholeClient creates a new Pihole API V6 client.
+func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 	if cfg.Server == "" {
 		return nil, ErrNoPiholeServer
 	}
@@ -75,7 +48,7 @@ func newPiholeClient(cfg PiholeConfig) (piholeAPI, error) {
 	}
 	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
 
-	p := &piholeClient{
+	p := &piholeClientV6{
 		cfg:        cfg,
 		httpClient: cl,
 	}
@@ -89,7 +62,7 @@ func newPiholeClient(cfg PiholeConfig) (piholeAPI, error) {
 	return p, nil
 }
 
-func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	form := &url.Values{}
 	form.Add("action", "get")
 	if p.token != "" {
@@ -174,23 +147,23 @@ loop:
 	return out, nil
 }
 
-func (p *piholeClient) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (p *piholeClientV6) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
 	return p.apply(ctx, "add", ep)
 }
 
-func (p *piholeClient) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (p *piholeClientV6) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
 	return p.apply(ctx, "delete", ep)
 }
 
-func (p *piholeClient) aRecordsScript() string {
+func (p *piholeClientV6) aRecordsScript() string {
 	return fmt.Sprintf("%s/admin/scripts/pi-hole/php/customdns.php", p.cfg.Server)
 }
 
-func (p *piholeClient) cnameRecordsScript() string {
+func (p *piholeClientV6) cnameRecordsScript() string {
 	return fmt.Sprintf("%s/admin/scripts/pi-hole/php/customcname.php", p.cfg.Server)
 }
 
-func (p *piholeClient) urlForRecordType(rtype string) (string, error) {
+func (p *piholeClientV6) urlForRecordType(rtype string) (string, error) {
 	switch rtype {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
 		return p.aRecordsScript(), nil
@@ -201,12 +174,19 @@ func (p *piholeClient) urlForRecordType(rtype string) (string, error) {
 	}
 }
 
-type actionResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+// ApiAuthResponse Define a struct to match the JSON response /auth/app structure
+type ApiAuthResponse struct {
+	Session struct {
+		Valid    bool   `json:"valid"`
+		TOTP     bool   `json:"totp"`
+		SID      string `json:"sid"`
+		CSRF     string `json:"csrf"`
+		Validity int    `json:"validity"`
+	} `json:"session"`
+	Took float64 `json:"took"`
 }
 
-func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
+func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
 	if !p.cfg.DomainFilter.Match(ep.DNSName) {
 		log.Debugf("Skipping %s %s that does not match domain filter", action, ep.DNSName)
 		return nil
@@ -268,21 +248,24 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	return nil
 }
 
-func (p *piholeClient) retrieveNewToken(ctx context.Context) error {
+func (p *piholeClientV6) retrieveNewToken(ctx context.Context) error {
 	if p.cfg.Password == "" {
 		return nil
 	}
 
 	form := &url.Values{}
 	form.Add("pw", p.cfg.Password)
-	url := fmt.Sprintf("%s/admin/index.php?login", p.cfg.Server)
+	url := fmt.Sprintf("%s/api/auth", p.cfg.Server)
 	log.Debugf("Fetching new token from %s", url)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
+	// Define the JSON payload
+	jsonData := []byte(`{"password":"` + p.cfg.Password + `"}`)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
-	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	req.Header.Add("content-type", "application/json")
 
 	body, err := p.do(req)
 	if err != nil {
@@ -290,14 +273,21 @@ func (p *piholeClient) retrieveNewToken(ctx context.Context) error {
 	}
 	defer body.Close()
 
-	// If successful the request will redirect us to an HTML page with a hidden
-	// div containing the token...The token gives us access to other PHP
-	// endpoints via a form value.
-	p.token, err = parseTokenFromLogin(body)
+	jRes, err := io.ReadAll(body)
+	if err != nil {
+		fmt.Println("Error reading response:", err)
+		return nil
+	}
+	// Parse JSON response
+	var apiResponse ApiAuthResponse
+	err = json.Unmarshal(jRes, &apiResponse)
+	// Set the token
+	p.token = apiResponse.Session.SID
+
 	return err
 }
 
-func (p *piholeClient) newDNSActionForm(action string, ep *endpoint.Endpoint) *url.Values {
+func (p *piholeClientV6) newDNSActionForm(action string, ep *endpoint.Endpoint) *url.Values {
 	form := &url.Values{}
 	form.Add("action", action)
 	form.Add("domain", ep.DNSName)
@@ -313,7 +303,7 @@ func (p *piholeClient) newDNSActionForm(action string, ep *endpoint.Endpoint) *u
 	return form
 }
 
-func (p *piholeClient) do(req *http.Request) (io.ReadCloser, error) {
+func (p *piholeClientV6) do(req *http.Request) (io.ReadCloser, error) {
 	res, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -323,56 +313,4 @@ func (p *piholeClient) do(req *http.Request) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("received non-200 status code from request: %s", res.Status)
 	}
 	return res.Body, nil
-}
-
-func parseTokenFromLogin(body io.ReadCloser) (string, error) {
-	doc, err := html.Parse(body)
-	if err != nil {
-		return "", err
-	}
-
-	tokenNode := getElementById(doc, "token")
-	if tokenNode == nil {
-		return "", errors.New("could not parse token from login response")
-	}
-
-	return tokenNode.FirstChild.Data, nil
-}
-
-func getAttribute(n *html.Node, key string) (string, bool) {
-	for _, attr := range n.Attr {
-		if attr.Key == key {
-			return attr.Val, true
-		}
-	}
-	return "", false
-}
-
-func hasID(n *html.Node, id string) bool {
-	if n.Type == html.ElementNode {
-		s, ok := getAttribute(n, "id")
-		if ok && s == id {
-			return true
-		}
-	}
-	return false
-}
-
-func traverse(n *html.Node, id string) *html.Node {
-	if hasID(n, id) {
-		return n
-	}
-
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		result := traverse(c, id)
-		if result != nil {
-			return result
-		}
-	}
-
-	return nil
-}
-
-func getElementById(n *html.Node, id string) *html.Node {
-	return traverse(n, id)
 }
