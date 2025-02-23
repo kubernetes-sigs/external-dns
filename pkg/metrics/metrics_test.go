@@ -17,10 +17,7 @@ limitations under the License.
 package metrics
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
-	"unsafe"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -45,24 +42,24 @@ func TestMustRegister(t *testing.T) {
 		{
 			name: "single metric",
 			metrics: []IMetric{
-				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter"}),
+				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_1"}),
 			},
 			expected: 1,
 		},
 		{
 			name: "two metrics",
 			metrics: []IMetric{
-				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "test_gauge"}),
-				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter"}),
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "test_gauge_2", Subsystem: "test"}),
+				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_2", Subsystem: "app"}),
 			},
 			expected: 2,
 		},
 		{
 			name: "mix of metrics",
 			metrics: []IMetric{
-				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "test_gauge"}),
-				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter"}),
-				NewCounterVecWithOpts(prometheus.CounterOpts{Name: "test_counter_vec"}, []string{"label"}),
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "test_gauge_3"}),
+				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_3"}),
+				NewCounterVecWithOpts(prometheus.CounterOpts{Name: "test_counter_vec_3"}, []string{"label"}),
 			},
 			expected: 3,
 		},
@@ -81,7 +78,6 @@ func TestMustRegister(t *testing.T) {
 			for _, m := range tt.metrics {
 				registry.MustRegister(m)
 			}
-
 			assert.Len(t, registry.Metrics, tt.expected)
 		})
 	}
@@ -104,24 +100,4 @@ func TestNewMetricsRegister(t *testing.T) {
 	assert.NotNil(t, registry.Registerer)
 	assert.Empty(t, registry.Metrics)
 	assert.Empty(t, registry.mName)
-
-	labels := prometheus.DefaultRegisterer
-
-	// hacks to get the runtime metrics from prometheus library
-	values := reflect.ValueOf(labels).Elem().FieldByName("dimHashesByName")
-	values = reflect.NewAt(values.Type(), unsafe.Pointer(values.UnsafeAddr())).Elem()
-
-	switch v := values.Interface().(type) {
-	case map[string]uint64:
-		for k := range v {
-			fmt.Println(k)
-		}
-	}
-	// for k, v := range dimHashesByName {
-	// 	fmt.Println(k, v)
-	// }
-
-	// assert.Equal(t, cfg.Version, labels["version"])
-	// assert.Equal(t, runtime.GOARCH, labels["go-arch"])
-	// assert.Equal(t, runtime.Version(), labels["go-version"])
 }
