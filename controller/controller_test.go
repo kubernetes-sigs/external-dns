@@ -234,8 +234,8 @@ func TestRunOnce(t *testing.T) {
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
 	// check the verified records
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords.Gauge))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords.Gauge))
 }
 
 // TestRun tests that Run correctly starts and stops
@@ -268,8 +268,8 @@ func TestRun(t *testing.T) {
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
 	// check the verified records
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords.Gauge))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords.Gauge))
 }
 
 func valueFromMetric(metric prometheus.Gauge) uint64 {
@@ -520,7 +520,7 @@ func TestVerifyARecords(t *testing.T) {
 		},
 		[]*plan.Changes{},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords.Gauge))
 
 	testControllerFiltersDomains(
 		t,
@@ -564,8 +564,8 @@ func TestVerifyARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(verifiedAAAARecords))
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords.Gauge))
+	assert.Equal(t, math.Float64bits(0), valueFromMetric(verifiedAAAARecords.Gauge))
 }
 
 func TestVerifyAAAARecords(t *testing.T) {
@@ -598,7 +598,7 @@ func TestVerifyAAAARecords(t *testing.T) {
 		},
 		[]*plan.Changes{},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedAAAARecords))
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedAAAARecords.Gauge))
 
 	testControllerFiltersDomains(
 		t,
@@ -642,8 +642,8 @@ func TestVerifyAAAARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(verifiedARecords))
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedAAAARecords))
+	assert.Equal(t, math.Float64bits(0), valueFromMetric(verifiedARecords.Gauge))
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedAAAARecords.Gauge))
 }
 
 func TestARecords(t *testing.T) {
@@ -689,8 +689,8 @@ func TestARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceARecords))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryARecords))
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceARecords.Gauge))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryARecords.Gauge))
 }
 
 func TestAAAARecords(t *testing.T) {
@@ -736,6 +736,6 @@ func TestAAAARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceAAAARecords))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryAAAARecords))
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceAAAARecords.Gauge))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryAAAARecords.Gauge))
 }

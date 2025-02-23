@@ -38,10 +38,11 @@ make test
 make cover-html
 ```
 
-If added any flags, re-generate flags documentation
+If added any flags or metrics, re-generate documentation
 
 ```shell
 make generate-flags-documentation
+make generate-metrics-documentation
 ```
 
 We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation.

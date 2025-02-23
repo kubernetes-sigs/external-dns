@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
@@ -34,7 +35,7 @@ import (
 )
 
 var (
-	registryErrorsTotal = prometheus.NewCounter(
+	registryErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
@@ -42,7 +43,7 @@ var (
 			Help:      "Number of Registry errors.",
 		},
 	)
-	sourceErrorsTotal = prometheus.NewCounter(
+	sourceErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
@@ -50,7 +51,7 @@ var (
 			Help:      "Number of Source errors.",
 		},
 	)
-	sourceEndpointsTotal = prometheus.NewGauge(
+	sourceEndpointsTotal = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
@@ -58,7 +59,7 @@ var (
 			Help:      "Number of Endpoints in all sources",
 		},
 	)
-	registryEndpointsTotal = prometheus.NewGauge(
+	registryEndpointsTotal = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
@@ -66,7 +67,7 @@ var (
 			Help:      "Number of Endpoints in the registry",
 		},
 	)
-	lastSyncTimestamp = prometheus.NewGauge(
+	lastSyncTimestamp = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
@@ -74,7 +75,7 @@ var (
 			Help:      "Timestamp of last successful sync with the DNS provider",
 		},
 	)
-	lastReconcileTimestamp = prometheus.NewGauge(
+	lastReconcileTimestamp = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
@@ -82,7 +83,7 @@ var (
 			Help:      "Timestamp of last attempted sync with the DNS provider",
 		},
 	)
-	controllerNoChangesTotal = prometheus.NewCounter(
+	controllerNoChangesTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
@@ -90,21 +91,21 @@ var (
 			Help:      "Number of reconcile loops ending up with no changes on the DNS provider side.",
 		},
 	)
-	deprecatedRegistryErrors = prometheus.NewCounter(
+	deprecatedRegistryErrors = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
 			Subsystem: "registry",
 			Name:      "errors_total",
 			Help:      "Number of Registry errors.",
 		},
 	)
-	deprecatedSourceErrors = prometheus.NewCounter(
+	deprecatedSourceErrors = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
 			Subsystem: "source",
 			Name:      "errors_total",
 			Help:      "Number of Source errors.",
 		},
 	)
-	registryARecords = prometheus.NewGauge(
+	registryARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
@@ -112,7 +113,7 @@ var (
 			Help:      "Number of Registry A records.",
 		},
 	)
-	registryAAAARecords = prometheus.NewGauge(
+	registryAAAARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
@@ -120,7 +121,7 @@ var (
 			Help:      "Number of Registry AAAA records.",
 		},
 	)
-	sourceARecords = prometheus.NewGauge(
+	sourceARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
@@ -128,7 +129,7 @@ var (
 			Help:      "Number of Source A records.",
 		},
 	)
-	sourceAAAARecords = prometheus.NewGauge(
+	sourceAAAARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
@@ -136,7 +137,7 @@ var (
 			Help:      "Number of Source AAAA records.",
 		},
 	)
-	verifiedARecords = prometheus.NewGauge(
+	verifiedARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
@@ -144,7 +145,7 @@ var (
 			Help:      "Number of DNS A-records that exists both in source and registry.",
 		},
 	)
-	verifiedAAAARecords = prometheus.NewGauge(
+	verifiedAAAARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
@@ -155,21 +156,21 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(registryErrorsTotal)
-	prometheus.MustRegister(sourceErrorsTotal)
-	prometheus.MustRegister(sourceEndpointsTotal)
-	prometheus.MustRegister(registryEndpointsTotal)
-	prometheus.MustRegister(lastSyncTimestamp)
-	prometheus.MustRegister(lastReconcileTimestamp)
-	prometheus.MustRegister(deprecatedRegistryErrors)
-	prometheus.MustRegister(deprecatedSourceErrors)
-	prometheus.MustRegister(controllerNoChangesTotal)
-	prometheus.MustRegister(registryARecords)
-	prometheus.MustRegister(registryAAAARecords)
-	prometheus.MustRegister(sourceARecords)
-	prometheus.MustRegister(sourceAAAARecords)
-	prometheus.MustRegister(verifiedARecords)
-	prometheus.MustRegister(verifiedAAAARecords)
+	metrics.RegisterMetric.MustRegister(registryErrorsTotal)
+	metrics.RegisterMetric.MustRegister(sourceErrorsTotal)
+	metrics.RegisterMetric.MustRegister(sourceEndpointsTotal)
+	metrics.RegisterMetric.MustRegister(registryEndpointsTotal)
+	metrics.RegisterMetric.MustRegister(lastSyncTimestamp)
+	metrics.RegisterMetric.MustRegister(lastReconcileTimestamp)
+	metrics.RegisterMetric.MustRegister(deprecatedRegistryErrors)
+	metrics.RegisterMetric.MustRegister(deprecatedSourceErrors)
+	metrics.RegisterMetric.MustRegister(controllerNoChangesTotal)
+	metrics.RegisterMetric.MustRegister(registryARecords)
+	metrics.RegisterMetric.MustRegister(registryAAAARecords)
+	metrics.RegisterMetric.MustRegister(sourceARecords)
+	metrics.RegisterMetric.MustRegister(sourceAAAARecords)
+	metrics.RegisterMetric.MustRegister(verifiedARecords)
+	metrics.RegisterMetric.MustRegister(verifiedAAAARecords)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -203,7 +204,7 @@ type Controller struct {
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce(ctx context.Context) error {
-	lastReconcileTimestamp.SetToCurrentTime()
+	lastReconcileTimestamp.Gauge.SetToCurrentTime()
 
 	c.runAtMutex.Lock()
 	c.lastRunAt = time.Now()
@@ -211,30 +212,30 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	records, err := c.Registry.Records(ctx)
 	if err != nil {
-		registryErrorsTotal.Inc()
-		deprecatedRegistryErrors.Inc()
+		registryErrorsTotal.Counter.Inc()
+		deprecatedRegistryErrors.Counter.Inc()
 		return err
 	}
 
-	registryEndpointsTotal.Set(float64(len(records)))
+	registryEndpointsTotal.Gauge.Set(float64(len(records)))
 	regARecords, regAAAARecords := countAddressRecords(records)
-	registryARecords.Set(float64(regARecords))
-	registryAAAARecords.Set(float64(regAAAARecords))
+	registryARecords.Gauge.Set(float64(regARecords))
+	registryAAAARecords.Gauge.Set(float64(regAAAARecords))
 	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints(ctx)
 	if err != nil {
-		sourceErrorsTotal.Inc()
-		deprecatedSourceErrors.Inc()
+		sourceErrorsTotal.Counter.Inc()
+		deprecatedSourceErrors.Counter.Inc()
 		return err
 	}
-	sourceEndpointsTotal.Set(float64(len(endpoints)))
+	sourceEndpointsTotal.Gauge.Set(float64(len(endpoints)))
 	srcARecords, srcAAAARecords := countAddressRecords(endpoints)
-	sourceARecords.Set(float64(srcARecords))
-	sourceAAAARecords.Set(float64(srcAAAARecords))
+	sourceARecords.Gauge.Set(float64(srcARecords))
+	sourceAAAARecords.Gauge.Set(float64(srcAAAARecords))
 	vARecords, vAAAARecords := countMatchingAddressRecords(endpoints, records)
-	verifiedARecords.Set(float64(vARecords))
-	verifiedAAAARecords.Set(float64(vAAAARecords))
+	verifiedARecords.Gauge.Set(float64(vARecords))
+	verifiedAAAARecords.Gauge.Set(float64(vAAAARecords))
 	endpoints, err = c.Registry.AdjustEndpoints(endpoints)
 	if err != nil {
 		return fmt.Errorf("adjusting endpoints: %w", err)
@@ -256,16 +257,16 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	if plan.Changes.HasChanges() {
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)
 		if err != nil {
-			registryErrorsTotal.Inc()
-			deprecatedRegistryErrors.Inc()
+			registryErrorsTotal.Counter.Inc()
+			deprecatedRegistryErrors.Counter.Inc()
 			return err
 		}
 	} else {
-		controllerNoChangesTotal.Inc()
+		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")
 	}
 
-	lastSyncTimestamp.SetToCurrentTime()
+	lastSyncTimestamp.Gauge.SetToCurrentTime()
 
 	return nil
 }

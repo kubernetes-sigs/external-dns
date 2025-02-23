@@ -28,6 +28,7 @@ nav:
     - Initial Design: docs/initial-design.md
     - Leader Election: docs/proposal/001-leader-election.md
     - MultiTarget: docs/proposal/multi-target.md
+    - Monitoring: docs/monitoring/*
     - NAT64: docs/nat64.md
     - Rate Limits: docs/rate-limits.md
     - TTL: docs/ttl.md
