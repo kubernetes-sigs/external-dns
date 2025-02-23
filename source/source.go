@@ -29,6 +29,7 @@ import (
 	"time"
 	"unicode"
 
+	sprig "github.com/go-task/slim-sprig/v3"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -148,9 +149,11 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 	if fqdnTemplate == "" {
 		return nil, nil
 	}
-	funcs := template.FuncMap{
-		"trimPrefix": strings.TrimPrefix,
-	}
+
+	funcs := sprig.HermeticTxtFuncMap()
+	funcs["isIPv6"] = isIPv6String
+	funcs["isIPv4"] = isIPv4String
+
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
 
@@ -270,6 +273,25 @@ func suitableType(target string) string {
 		return endpoint.RecordTypeAAAA
 	}
 	return endpoint.RecordTypeCNAME
+}
+
+// isIPv6String reports whether the target string is an IPv6 address,
+// including IPv4-mapped IPv6 addresses.
+func isIPv6String(target string) bool {
+	netIP, err := netip.ParseAddr(target)
+	if err != nil {
+		return false
+	}
+	return netIP.Is6()
+}
+
+// isIPv4String reports whether the target string is an IPv4 address.
+func isIPv4String(target string) bool {
+	netIP, err := netip.ParseAddr(target)
+	if err != nil {
+		return false
+	}
+	return netIP.Is4()
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
