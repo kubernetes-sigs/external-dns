@@ -33,7 +33,7 @@ func NewMetricsRegister() *MetricRegistry {
 	reg := prometheus.WrapRegistererWith(
 		prometheus.Labels{
 			"version":    cfg.Version,
-			"arch":    runtime.GOARCH,
+			"arch":       runtime.GOARCH,
 			"go_version": runtime.Version(),
 		},
 		prometheus.DefaultRegisterer)
