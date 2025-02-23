@@ -64,13 +64,14 @@ curl https://localhost:7979/metrics
 
 ## Available Go Runtime Metrics
 
-> The following Go runtime metrics are available for scraping. Please note that they may change over time.
-
+> The following Go runtime metrics are available for scraping. Please note that they may change over time and they are OS dependent.
+{{- if .RuntimeMetrics }}
 | Name                  |
 |:----------------------|
 {{- range .RuntimeMetrics }}
 | {{ . }} |
 {{- end -}}
+{{- end }}
 `
 
 func main() {
@@ -78,19 +79,24 @@ func main() {
 	path := fmt.Sprintf("%s/docs/monitoring/metrics.md", testPath)
 	fmt.Printf("generate file '%s' with configured metrics\n", path)
 
-	content, err := generateMarkdownTable(metrics.RegisterMetric)
+	content, err := generateMarkdownTable(metrics.RegisterMetric, true)
 	if err != nil {
-		_ = fmt.Errorf("failed to generate markdown file '%s': %v\n", path, err.Error())
+		_ = fmt.Errorf("failed to generate markdown file '%s': %v", path, err.Error())
 	}
 	content = content + "\n"
 	_ = utils.WriteToFile(path, content)
 }
 
-func generateMarkdownTable(m *metrics.MetricRegistry) (string, error) {
+func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string, error) {
 	tmpl := template.Must(template.New("metrics.md.tpl").Funcs(utils.FuncMap()).Parse(markdownTemplate))
 
 	sortMetrics(m.Metrics)
-	runtimeMetrics := getRuntimeMetrics(prometheus.DefaultRegisterer)
+	var runtimeMetrics []string
+	if withRuntime {
+		runtimeMetrics = getRuntimeMetrics(prometheus.DefaultRegisterer)
+	} else {
+		runtimeMetrics = []string{}
+	}
 
 	var b bytes.Buffer
 	err := tmpl.Execute(&b, struct {

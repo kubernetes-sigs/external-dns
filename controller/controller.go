@@ -43,7 +43,6 @@ var (
 			Help:      "Number of Registry errors.",
 		},
 	)
-
 	sourceErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
 			Namespace: "external_dns",

@@ -44,7 +44,7 @@ curl https://localhost:7979/metrics
 
 ## Available Go Runtime Metrics
 
-> The following Go runtime metrics are available for scraping. Please note that they may change over time.
+> The following Go runtime metrics are available for scraping. Please note that they may change over time and they are OS dependent.
 
 | Name                  |
 |:----------------------|
