@@ -171,3 +171,4 @@
 | `--webhook-provider-read-timeout=5s` | The read timeout for the webhook provider in duration format (default: 5s) |
 | `--webhook-provider-write-timeout=10s` | The write timeout for the webhook provider in duration format (default: 10s) |
 | `--[no-]webhook-server` | When enabled, runs as a webhook server instead of a controller. (default: false). |
+| `--aws-domain-roles=AWS-DOMAIN-ROLES` | When using the AWS provider, specify the domain roles to use for the hosted zone (optional) |

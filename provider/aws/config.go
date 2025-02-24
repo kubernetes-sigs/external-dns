@@ -33,6 +33,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
+type STSClient interface {
+	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
 // AWSSessionConfig contains configuration to create a new AWS provider.
 type AWSSessionConfig struct {
 	AssumeRole           string
@@ -55,7 +59,7 @@ func CreateDefaultV2Config(cfg *externaldns.Config) *AWSZoneConfig {
 			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
 			APIRetries:           cfg.AWSAPIRetries,
 			DomainRolesMap:       cfg.AWSDomainRoles,
-		},
+		}, nil,
 	)
 	if err != nil {
 		logrus.Fatal(err)
@@ -84,6 +88,7 @@ func CreateV2Configs(cfg *externaldns.Config) map[string][]*AWSZoneConfig {
 					Profile:              profile,
 					DomainRolesMap:       cfg.AWSDomainRoles,
 				},
+				nil,
 			)
 			if err != nil {
 				logrus.Fatal(err)
@@ -94,7 +99,7 @@ func CreateV2Configs(cfg *externaldns.Config) map[string][]*AWSZoneConfig {
 	return result
 }
 
-func newV2Config(awsConfig AWSSessionConfig) ([]*AWSZoneConfig, error) {
+func newV2Config(awsConfig AWSSessionConfig, stsClient STSClient) ([]*AWSZoneConfig, error) {
 	hostedZonesConfigs := make([]*AWSZoneConfig, 0)
 	defaultOpts := []func(*config.LoadOptions) error{
 		config.WithRetryer(func() awsv2.Retryer {
@@ -119,13 +124,15 @@ func newV2Config(awsConfig AWSSessionConfig) ([]*AWSZoneConfig, error) {
 		return hostedZonesConfigs, nil
 	}
 
-	for dom, role := range awsConfig.DomainRolesMap {
+	for domain, role := range awsConfig.DomainRolesMap {
 		if role != "" {
-			stsSvc := sts.NewFromConfig(cfg)
+			if stsClient == nil {
+				stsClient = sts.NewFromConfig(cfg)
+			}
 			var assumeRoleOpts []func(*stscredsv2.AssumeRoleOptions)
 			if awsConfig.AssumeRoleExternalID != "" {
 				logrus.Infof("Assuming role %s with external id", awsConfig.AssumeRole)
-				logrus.Debugf("External id: %s", awsConfig.AssumeRoleExternalID)
+				logrus.Debugf("External id: %q", awsConfig.AssumeRoleExternalID)
 				assumeRoleOpts = []func(*stscredsv2.AssumeRoleOptions){
 					func(opts *stscredsv2.AssumeRoleOptions) {
 						opts.ExternalID = &awsConfig.AssumeRoleExternalID
@@ -134,10 +141,10 @@ func newV2Config(awsConfig AWSSessionConfig) ([]*AWSZoneConfig, error) {
 			} else {
 				logrus.Infof("Assuming role: %s", role)
 			}
-			creds := stscredsv2.NewAssumeRoleProvider(stsSvc, role, assumeRoleOpts...)
+			creds := stscredsv2.NewAssumeRoleProvider(stsClient, role, assumeRoleOpts...)
 			cfg.Credentials = awsv2.NewCredentialsCache(creds)
 
-			hostedZonesConfigs = append(hostedZonesConfigs, &AWSZoneConfig{Config: cfg, HostedZoneName: dom})
+			hostedZonesConfigs = append(hostedZonesConfigs, &AWSZoneConfig{Config: cfg, HostedZoneName: domain})
 		}
 	}
 

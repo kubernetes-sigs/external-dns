@@ -226,7 +226,7 @@ type profiledZone struct {
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {
-	ret := make([]route53types.Change, 0)
+	ret := []route53types.Change{}
 	for _, c := range cs {
 		ret = append(ret, c.Change)
 	}
@@ -330,62 +330,11 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 	zones := make(map[string]*profiledZone)
 
 	for profile, hostedZoneClients := range p.clients {
-		var tagErr error
-
+		var err error
 		for _, client := range hostedZoneClients {
-			paginator := route53.NewListHostedZonesPaginator(client.Route53Config, &route53.ListHostedZonesInput{})
-
-			for paginator.HasMorePages() {
-				resp, err := paginator.NextPage(ctx)
-				if err != nil {
-					var te *route53types.ThrottlingException
-					if errors.As(err, &te) {
-						log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
-						continue
-					}
-					// nothing to do here. Falling through to general error handling
-					return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
-				}
-				for _, zone := range resp.HostedZones {
-					if !p.zoneIDFilter.Match(*zone.Id) {
-						continue
-					}
-
-					if !p.zoneTypeFilter.Match(zone) {
-						continue
-					}
-
-					if !p.domainFilter.Match(*zone.Name) {
-						if !p.zoneMatchParent {
-							continue
-						}
-						if !p.domainFilter.MatchParent(*zone.Name) {
-							continue
-						}
-					}
-
-					// Only fetch tags if a tag filter was specified
-					if !p.zoneTagFilter.IsEmpty() {
-						tags, err := p.tagsForZone(ctx, *zone.Id, client.Route53Config)
-						if err != nil {
-							tagErr = err
-							break
-						}
-						if !p.zoneTagFilter.Match(tags) {
-							continue
-						}
-					}
-
-					zones[*zone.Id] = &profiledZone{
-						profile:  profile,
-						zone:     &zone,
-						zoneName: client.HostedZoneName,
-						client:   client.Route53Config,
-					}
-				}
-			}
-			if tagErr != nil {
-				return nil, provider.NewSoftErrorf("failed to list zones tags: %w", tagErr)
+			zones, err = p.fetchFilteredZonesForClient(ctx, client, profile)
+			if err != nil {
+				return nil, provider.NewSoftErrorf("failed to list zones tags: %w", err)
 			}
 		}
 	}
@@ -400,6 +349,62 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 	}
 
 	return zones, nil
+}
+
+func (p *AWSProvider) fetchFilteredZonesForClient(ctx context.Context, client *AWSZoneConfig, profile string) (map[string]*profiledZone, error) {
+	profileZones := make(map[string]*profiledZone)
+	paginator := route53.NewListHostedZonesPaginator(client.Route53Config, &route53.ListHostedZonesInput{})
+
+	for paginator.HasMorePages() {
+		resp, err := paginator.NextPage(ctx)
+		if err != nil {
+			var te *route53types.ThrottlingException
+			if errors.As(err, &te) {
+				log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
+				continue
+			}
+			// nothing to do here. Falling through to general error handling
+			return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+		}
+		for _, zone := range resp.HostedZones {
+			if !p.zoneIDFilter.Match(*zone.Id) {
+				continue
+			}
+
+			if !p.zoneTypeFilter.Match(zone) {
+				continue
+			}
+
+			if !p.domainFilter.Match(*zone.Name) {
+				if !p.zoneMatchParent {
+					continue
+				}
+				if !p.domainFilter.MatchParent(*zone.Name) {
+					continue
+				}
+			}
+
+			// Only fetch tags if a tag filter was specified
+			if !p.zoneTagFilter.IsEmpty() {
+				tags, err := p.tagsForZone(ctx, *zone.Id, client.Route53Config)
+				if err != nil {
+					return nil, provider.NewSoftErrorf("failed to list tags for zone %s using aws profile %q: %v", *zone.Id, profile, err)
+				}
+				if !p.zoneTagFilter.Match(tags) {
+					continue
+				}
+			}
+
+			profileZones[*zone.Id] = &profiledZone{
+				profile:  profile,
+				zone:     &zone,
+				zoneName: client.HostedZoneName,
+				client:   client.Route53Config,
+			}
+		}
+	}
+
+	return profileZones, nil
 }
 
 // wildcardUnescape converts \\052.abc back to *.abc
