@@ -36,6 +36,7 @@ specs to provide all intended hostnames, since the Gateway that ultimately route
 requests/connections won't recognize additional hostnames from the annotation.
 
 ## Manifest with RBAC
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -52,7 +53,7 @@ rules:
   resources: ["namespaces"]
   verbs: ["get","watch","list"]
 - apiGroups: ["gateway.networking.k8s.io"]
-  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"] 
+  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

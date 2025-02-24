@@ -9,6 +9,7 @@ The main use cases that inspired this feature is the necessity for having a subd
 ## Setup
 
 ### External DNS
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -54,7 +55,8 @@ spec:
 ```
 
 This will create 2 CNAME records pointing to `aws.example.org`:
-```
+
+```sh
 tenant1.example.org
 tenant2.example.org
 ```
@@ -76,7 +78,8 @@ spec:
 ```
 
 This will create 2 A records pointing to `111.111.111.111`:
-```
+
+```sh
 tenant1.example.org
 tenant2.example.org
 ```

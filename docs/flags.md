@@ -2,6 +2,7 @@
 
 <!-- THIS FILE MUST NOT BE EDITED BY HAND -->
 <!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
+<!-- markdownlint-disable MD013 -->
 
 | Flag | Description  |
 | :------ | :----------- |
@@ -10,6 +11,7 @@
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
+| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to Endpoints, for Service source (default: false) |
 | `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
 | `--cf-username=""` | The username to log into the cloud foundry API |
 | `--cf-password=""` | The password to log into the cloud foundry API |
@@ -51,7 +53,7 @@
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
 | `--regex-domain-filter=` | Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional) |
-| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional) |
+| `--regex-domain-exclusion=` | Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); Require 'regex-domain-filter'  |
 | `--zone-name-filter=` | Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional) |
 | `--zone-id-filter=` | Filter target zones by hosted zone id; specify multiple times for multiple zones (optional) |
 | `--google-project=""` | When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP. |

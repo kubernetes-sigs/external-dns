@@ -55,6 +55,7 @@ type serviceSource struct {
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
 	resolveLoadBalancerHostname    bool
+	listenEndpointEvents           bool
 	serviceInformer                coreinformers.ServiceInformer
 	endpointsInformer              coreinformers.EndpointsInformer
 	podInformer                    coreinformers.PodInformer
@@ -64,7 +65,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname bool) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -136,6 +137,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
+		listenEndpointEvents:           listenEndpointEvents,
 	}, nil
 }
 
@@ -718,10 +720,13 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 	return endpoints
 }
 
-func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for service")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	if sc.listenEndpointEvents {
+		sc.endpointsInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
 }

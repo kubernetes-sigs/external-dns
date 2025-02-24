@@ -18,7 +18,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-## [v1.15.1] - 2023-09-10
+### Added
+
+- Added ability to generate schema with `helm plugin schema`. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+- Added `docs/contributing/dev-guide.md#helm-values` guide. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+
+### Changed
+
+- Regenerate JSON schema with `helm-values-schema-json' plugin. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+
+## [v1.15.2] - 2025-02-14
+
+### Changed
+
+- Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source. ([#5066](https://github.com/kubernetes-sigs/external-dns/pull/5066)) _@visokoo_
+
+### Fixed
+
+- Fixed handling of non-string types in `serviceAccount.metadata.annotations` field. ([#5067](https://github.com/kubernetes-sigs/external-dns/pull/5067)) _@hjoshi123_
+- Fixed regression where `affinity.nodeAffinity` was being ignored. ([#5046](https://github.com/kubernetes-sigs/external-dns/pull/5046)) _@mkhpalm_
+
+## [v1.15.1] - 2025-01-27
 
 ### Added
 
@@ -217,6 +237,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.15.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2
 [v1.15.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.1
 [v1.15.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.0
 [v1.14.5]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.5

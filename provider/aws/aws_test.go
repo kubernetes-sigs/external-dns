@@ -1919,7 +1919,7 @@ func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
 
 func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for suffix, _ := range canonicalHostedZones {
+		for suffix := range canonicalHostedZones {
 			_ = canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
 		}
 	}
@@ -1927,7 +1927,7 @@ func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
 
 func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for _, _ = range canonicalHostedZones {
+		for range canonicalHostedZones {
 			_ = canonicalHostedZone("extremely.long.zone-2.ext.dns.test.zone.non.canonical.example.com")
 		}
 	}

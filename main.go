@@ -127,6 +127,7 @@ func main() {
 		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
+		ListenEndpointEvents:           cfg.ListenEndpointEvents,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
 		Compatibility:                  cfg.Compatibility,

@@ -1,6 +1,6 @@
 # external-dns
 
-![Version: 1.15.1](https://img.shields.io/badge/Version-1.15.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.15.1](https://img.shields.io/badge/AppVersion-0.15.1-informational?style=flat-square)
+![Version: 1.15.2](https://img.shields.io/badge/Version-1.15.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.15.1](https://img.shields.io/badge/AppVersion-0.15.1-informational?style=flat-square)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -27,12 +27,13 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 After you've installed the repo you can install the chart.
 
 ```shell
-helm upgrade --install external-dns external-dns/external-dns --version 1.15.1
+helm upgrade --install external-dns external-dns/external-dns --version 1.15.2
 ```
 
 ## Providers
 
-Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
+Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value.
+For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
 See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-providers) for more info on available providers and tutorials.
 
 ### Providers with Specific Configuration Support
@@ -45,13 +46,13 @@ See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-provider
 
 For set up for a specific provider using the Helm chart, see the following links:
 
-- [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
-- [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
-- [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
-- [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
-- [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
-- [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
-- [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
+* [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
+* [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
+* [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
+* [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
+* [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
+* [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
+* [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
 
 ## Namespaced Scoped Installation
 
@@ -150,7 +151,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | secretConfiguration.subPath | string | `nil` | Sub-path for mounting the `Secret`, this can be templated. |
 | securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `external-dns` container. |
 | service.annotations | object | `{}` | Service annotations. |
-| service.ipFamilies | list | `[]` | Service IP families. |
+| service.ipFamilies | list | `[]` | Service IP families (e.g. IPv4 and/or IPv6). |
 | service.ipFamilyPolicy | string | `nil` | Service IP family policy. |
 | service.port | int | `7979` | Service HTTP port. |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account. Templates are allowed in both the key and the value. Example: `example.com/annotation/{{ .Values.nameOverride }}: {{ .Values.nameOverride }}` |
