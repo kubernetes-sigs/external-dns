@@ -64,7 +64,7 @@ const (
 	sameZoneAlias                              = "same-zone"
 	// Currently supported up to 10 health checks or hosted zones.
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
-	batchSize := 10
+	batchSize = 10
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
