@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"os"
 	"strings"
@@ -25,6 +26,11 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+)
+
+var (
+	//go:embed "templates/*"
+	templates embed.FS
 )
 
 type Flag struct {
@@ -37,19 +43,6 @@ type Flags []Flag
 func (f *Flags) addFlag(name, description string) {
 	*f = append(*f, Flag{Name: name, Description: description})
 }
-
-const markdownTemplate = `# Flags
-
-<!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
-<!-- markdownlint-disable MD013 -->
-
-| Flag | Description  |
-| :------ | :----------- |
-{{- range . }}
-| {{ .Name }} | {{ .Description }} |
-{{- end -}}
-`
 
 // It generates a markdown file
 // with the supported flags and writes it to the 'docs/flags.md' file.
@@ -95,10 +88,11 @@ func computeFlags() Flags {
 }
 
 func (f *Flags) generateMarkdownTable() (string, error) {
-	tmpl := template.Must(template.New("flags.md.tpl").Funcs(utils.FuncMap()).Parse(markdownTemplate))
+	tmpl := template.New("").Funcs(utils.FuncMap())
+	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
 
 	var b bytes.Buffer
-	err := tmpl.Execute(&b, f)
+	err := tmpl.ExecuteTemplate(&b, "main.gotpl", f)
 	if err != nil {
 		return "", err
 	}

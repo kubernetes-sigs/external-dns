@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"os"
 	"reflect"
@@ -37,43 +38,10 @@ import (
 	_ "sigs.k8s.io/external-dns/provider/webhook"
 )
 
-const markdownTemplate = `# Available Metrics
-
-<!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW METRIC ADDED PLEASE RUN 'make generate-metrics-documentation' -->
-<!-- markdownlint-disable MD013 -->
-
-All metrics available for scraping are exposed on the {{backtick 1}}/metrics{{backtick 1}} endpoint.
-The metrics are in the Prometheus exposition format.
-
-To access the metrics:
-
-{{backtick 3}}sh
-curl https://localhost:7979/metrics
-{{backtick 3}}
-
-## Supported Metrics
-
-> Full metric name is constructed as follows:
-> {{backtick 1}}external_dns_<subsystem>_<name>{{backtick 1}}
-
-| Name                             | Metric Type | Subsystem   |  Help                                                 |
-|:---------------------------------|:------------|:------------|:------------------------------------------------------|
-{{- range .Metrics }}
-| {{ .Name }} | {{ .Type | capitalize }} | {{ .Subsystem }} | {{ .Help }} |
-{{- end }}
-
-## Available Go Runtime Metrics
-
-> The following Go runtime metrics are available for scraping. Please note that they may change over time and they are OS dependent.
-{{- if .RuntimeMetrics }}
-| Name                  |
-|:----------------------|
-{{- range .RuntimeMetrics }}
-| {{ . }} |
-{{- end -}}
-{{- end }}
-`
+var (
+	//go:embed "templates/*"
+	templates embed.FS
+)
 
 func main() {
 	testPath, _ := os.Getwd()
@@ -82,14 +50,16 @@ func main() {
 
 	content, err := generateMarkdownTable(metrics.RegisterMetric, true)
 	if err != nil {
-		_ = fmt.Errorf("failed to generate markdown file '%s': %v", path, err.Error())
+		_, _ = fmt.Fprintf(os.Stderr, "failed to generate markdown file '%s': %v\n", path, err)
+		os.Exit(1)
 	}
 	content = content + "\n"
 	_ = utils.WriteToFile(path, content)
 }
 
 func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string, error) {
-	tmpl := template.Must(template.New("metrics.md.tpl").Funcs(utils.FuncMap()).Parse(markdownTemplate))
+	tmpl := template.New("").Funcs(utils.FuncMap())
+	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
 
 	sortMetrics(m.Metrics)
 	var runtimeMetrics []string
@@ -100,7 +70,7 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 	}
 
 	var b bytes.Buffer
-	err := tmpl.Execute(&b, struct {
+	err := tmpl.ExecuteTemplate(&b, "main.gotpl", struct {
 		Metrics        []*metrics.Metric
 		RuntimeMetrics []string
 	}{

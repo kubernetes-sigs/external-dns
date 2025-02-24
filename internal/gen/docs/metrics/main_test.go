@@ -78,11 +78,8 @@ func TestMetricsMdUpToDate(t *testing.T) {
 
 	reg := metrics.RegisterMetric
 	actual, err := generateMarkdownTable(reg, false)
-
 	assert.NoError(t, err)
-	actual = actual + "\n"
 	assert.Contains(t, string(expected), actual)
-	// assert.True(t, len(expected) == len(actual), "expected file '%s' to be up to date. execute 'make generate-metrics-documentation", fileName)
 }
 
 func TestMetricsMdExtraMetricAdded(t *testing.T) {
