@@ -50,7 +50,7 @@ type Route53APIFixtureStub struct {
 
 func providerFilters(client *Route53APIFixtureStub, options ...func(awsProvider *AWSProvider)) *AWSProvider {
 	p := &AWSProvider{
-		clients:              map[string]Route53API{defaultAWSProfile: client},
+		clients:              map[string][]*AWSZoneConfig{defaultAWSProfile: {{Route53Config: client}}},
 		evaluateTargetHealth: false,
 		dryRun:               false,
 		domainFilter:         endpoint.NewDomainFilter([]string{}),
