@@ -70,7 +70,7 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 	}
 
 	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "main.gotpl", struct {
+	err := tmpl.ExecuteTemplate(&b, "metrics.gotpl", struct {
 		Metrics        []*metrics.Metric
 		RuntimeMetrics []string
 	}{

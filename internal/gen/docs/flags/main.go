@@ -92,7 +92,7 @@ func (f *Flags) generateMarkdownTable() (string, error) {
 	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
 
 	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "main.gotpl", f)
+	err := tmpl.ExecuteTemplate(&b, "flags.gotpl", f)
 	if err != nil {
 		return "", err
 	}
