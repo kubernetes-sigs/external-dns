@@ -62,6 +62,9 @@ const (
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 	providerSpecificHealthCheckID              = "aws/health-check-id"
 	sameZoneAlias                              = "same-zone"
+	// Currently supported up to 10 health checks or hosted zones.
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
+	batchSize := 10
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -968,8 +971,6 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile
 	client := p.clients[profile]
 
 	result := zoneTags{}
-	// Currently supported up to 10 health checks or hosted zones.
-	batchSize := 10
 
 	for i := 0; i < len(zoneIDs); i += batchSize {
 		batch := zoneIDs[i:min(i+batchSize, len(zoneIDs))]
