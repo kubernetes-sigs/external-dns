@@ -787,9 +787,15 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			if ep.RecordType == endpoint.RecordTypeCNAME {
 				// This needs to match two records from Route53, one alias for 'A' (IPv4)
 				// and one alias for 'AAAA' (IPv6).
-				epCnameAaaa := *ep
-				epCnameAaaa.RecordType = endpoint.RecordTypeAAAA
-				aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &epCnameAaaa)
+				aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &endpoint.Endpoint{
+					DNSName:          ep.DNSName,
+					Targets:          ep.Targets,
+					RecordType:       endpoint.RecordTypeAAAA,
+					RecordTTL:        ep.RecordTTL,
+					Labels:           ep.Labels,
+					ProviderSpecific: ep.ProviderSpecific,
+					SetIdentifier:    ep.SetIdentifier,
+				})
 				ep.RecordType = endpoint.RecordTypeA
 			}
 		} else {

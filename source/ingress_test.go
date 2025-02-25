@@ -47,7 +47,7 @@ func (suite *IngressSuite) SetupTest() {
 		name:      "foo-with-targets",
 		namespace: "default",
 		dnsnames:  []string{"foo"},
-		ips:       []string{"8.8.8.8"},
+		ips:       []string{"8.8.8.8", "2606:4700:4700::1111"},
 		hostnames: []string{"v1"},
 	}).Ingress()
 	_, err := fakeClient.NetworkingV1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
@@ -204,10 +204,24 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 		},
 		{
-			title: "one rule.host two lb.IP and two lb.Hostname",
+			title: "one rule.host one lb.IPv6",
+			ingress: fakeIngress{
+				dnsnames: []string{"foo.bar"},
+				ips:      []string{"2606:4700:4700::1111"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2606:4700:4700::1111"},
+				},
+			},
+		},
+		{
+			title: "one rule.host two lb.IP, two lb.IPv6 and two lb.Hostname",
 			ingress: fakeIngress{
 				dnsnames:  []string{"foo.bar"},
-				ips:       []string{"8.8.8.8", "127.0.0.1"},
+				ips:       []string{"8.8.8.8", "127.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -215,6 +229,11 @@ func testEndpointsFromIngress(t *testing.T) {
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2606:4700:4700::1111", "2606:4700:4700::1001"},
 				},
 				{
 					DNSName:    "foo.bar",
@@ -435,6 +454,30 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2001:DB8::1"},
+				},
+			},
+		},
+		{
+			title:           "dualstack ingress",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8", "2001:DB8::1"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeAAAA,
