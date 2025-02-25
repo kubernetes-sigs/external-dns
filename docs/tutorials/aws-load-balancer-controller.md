@@ -148,9 +148,10 @@ multiple aliases for the resulting ALB.
 
 AWS [supports both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces for ALBs][4]
 and [NLBs][5]. The AWS Load Balancer Controller uses the `alb.ingress.kubernetes.io/ip-address-type`
-annotation (which defaults to `ipv4`) to determine this. ExternalDNS will always
-create both A and AAAA alias DNS records by default, regardless of this
-annotation.
+annotation (which defaults to `ipv4`) to determine this. ExternalDNS creates
+both A and AAAA alias DNS records by default, regardless of this annotation.
+It's possible to create only A records with the following command line
+parameter: `--exclude-record-types=AAAA`
 
 [4]: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#ip-address-type
 [5]: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#ip-address-type
