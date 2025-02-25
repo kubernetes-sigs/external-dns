@@ -251,6 +251,44 @@ ExternalDNS will create A and AAAA alias records for: `echoserver.example.org`.
 ExternalDNS will use these alias records to automatically maintain IP addresses
 of the NLB.
 
+## Dualstack Load Balancers
+
+AWS [supports both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces for ALBs][5]
+and [NLBs][6]. The Kubernetes Ingress AWS controller supports the `alb.ingress.kubernetes.io/ip-address-type`
+annotation (which defaults to `ipv4`) to determine this. ExternalDNS will always
+create both A and AAAA alias DNS records by default, regardless of this
+annotation.
+
+[5]: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#ip-address-type
+[6]: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#ip-address-type
+
+Example:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    alb.ingress.kubernetes.io/ip-address-type: dualstack
+  name: echoserver
+spec:
+  ingressClassName: skipper
+  rules:
+  - host: echoserver.example.org
+    http:
+      paths:
+      - path: /
+        backend:
+          service:
+            name: echoserver
+            port:
+              number: 80
+        pathType: Prefix
+```
+
+The above Ingress object will result in the creation of an ALB with a dualstack
+interface.
+
 ## RouteGroup (optional)
 
 [Kube-ingress-aws-controller][1], [Skipper][4] and external-dns
