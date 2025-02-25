@@ -982,7 +982,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile
 			ResourceIds:  batch,
 		})
 		if err != nil {
-			return nil, provider.NewSoftErrorf("failed to list tags for zones '%s'. %v", strings.Join(zoneIDs, ","), err)
+			return nil, provider.NewSoftErrorf("failed to list tags for zones. %v", err)
 		}
 
 		for _, res := range response.ResourceTagSets {
