@@ -85,3 +85,5 @@ curl https://localhost:7979/metrics
 | process_start_time_seconds |
 | process_virtual_memory_bytes |
 | process_virtual_memory_max_bytes |
+| process_network_receive_bytes_total |
+| process_network_transmit_bytes_total |

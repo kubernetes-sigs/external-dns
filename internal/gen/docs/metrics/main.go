@@ -65,6 +65,11 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 	var runtimeMetrics []string
 	if withRuntime {
 		runtimeMetrics = getRuntimeMetrics(prometheus.DefaultRegisterer)
+		// available when promhttp.Handler() is activated
+		runtimeMetrics = append(runtimeMetrics, []string{
+			"process_network_receive_bytes_total",
+			"process_network_transmit_bytes_total",
+		}...)
 	} else {
 		runtimeMetrics = []string{}
 	}
