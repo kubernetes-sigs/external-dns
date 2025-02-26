@@ -12,11 +12,13 @@ status: proposal
 
 ## Summary
 
-The `DNSEndpoint` API in Kubernetes SIGs `external-dns` is currently in alpha. To ensure its stability and readiness for production environments, we propose defining and agreeing upon the necessary requirements for its graduation to beta. By defining clear criteria, we aim to ensure stability, usability, and compatibility with the broader Kubernetes ecosystem. On completions of all this items, we should be in the position to graduate `DNSEndpoint` to `v1beta`.
+The `DNSEndpoint` API in Kubernetes SIGs `external-dns` is currently in alpha. To ensure its stability and readiness for production environments, we propose defining and agreeing upon the necessary requirements for its graduation to beta.
+By defining clear criteria, we aim to ensure stability, usability, and compatibility with the broader Kubernetes ecosystem. On completions of all this items, we should be in the position to graduate `DNSEndpoint` to `v1beta`.
 
 ## Motivation
 
-The DNSEndpoint API is a crucial component of the ExternalDNS project, allowing users to manage DNS records dynamically. Currently, it remains in the alpha stage, limiting its adoption due to potential instability and lack of guaranteed backward compatibility. By advancing to beta, we can provide users with a more reliable API and encourage wider adoption with confidence in its long-term viability and support.
+The DNSEndpoint API is a crucial component of the ExternalDNS project, allowing users to manage DNS records dynamically.
+Currently, it remains in the alpha stage, limiting its adoption due to potential instability and lack of guaranteed backward compatibility. By advancing to beta, we can provide users with a more reliable API and encourage wider adoption with confidence in its long-term viability and support.
 
 ### Goals
 
@@ -100,19 +102,19 @@ Or similar folder structure for `apis`. Examples - [cert-manager](https://github
 
 #### Story 1: Cluster Operator/Admin Managing External DNS
 
-_As a cluster operator or administrator_, I want a stable `DNSEndpoint` API to reliably manage DNS records within Kubernetes so that I can ensure consistent and automated DNS resolution for my services.
+*As a cluster operator or administrator*, I want a stable `DNSEndpoint` API to reliably manage DNS records within Kubernetes so that I can ensure consistent and automated DNS resolution for my services.
 
 #### Story 2: Developers Integrating External DNS
 
-_As a developer_, I want a well-documented `DNSEndpoint` API that allows me to programmatically define and manage DNS records without worrying about breaking changes.
+*As a developer*, I want a well-documented `DNSEndpoint` API that allows me to programmatically define and manage DNS records without worrying about breaking changes.
 
 #### Story 3: Cloud-Native Deployments
 
-_As an SRE_, I need a tested and validated `DNSEndpoint` API that integrates seamlessly with cloud-native networking services, ensuring high availability and scalability.
+*As an SRE*, I need a tested and validated `DNSEndpoint` API that integrates seamlessly with cloud-native networking services, ensuring high availability and scalability.
 
 #### Story 4: Platform Engineer
 
-_As a platform engineer_, I want stronger validation and defaulting so that I can reduce misconfigurations and operational overhead.
+*As a platform engineer*, I want stronger validation and defaulting so that I can reduce misconfigurations and operational overhead.
 
 ### API
 
@@ -155,15 +157,23 @@ How should the new CRD or feature behave? Are there edge cases?
 ## Alternatives
 
 1. **Remain in Alpha**: The DNSEndpoint API could remain in alpha indefinitely, but this would discourage adoption and limit its reliability.
-  - Pros: No immediate changes or migration concerns.
-  - Cons: Lack of progress discourages adoption, and users may seek alternative solutions.
+
+- Pros: No immediate changes or migration concerns.
+- Cons: Lack of progress discourages adoption, and users may seek alternative solutions.
+
 2. **Graduate Directly to GA**: Skipping the beta phase could accelerate stability, but it would limit the opportunity for community feedback and refinement.
+
 3. **Introduce a New API Version**: Instead of modifying the existing API, a new version (e.g., `v2alpha1`) could be introduced, allowing gradual migration.
+
     - Pros: Allowing gradual migration like `v1alpha1` -> `v2alpha1` -> `v1beta`
     - Cons: This approach would require maintaining multiple versions simultaneously.
+
 4. **Redesign the API Before Graduation**
+
     - Pros: Provides an opportunity to fix any fundamental design flaws before moving to beta.
     - Cons: Increases complexity, delays the beta release, and may introduce unnecessary work for existing users.
+
 5. **Deprecate DNSEndpoint and Rely on External Solutions or Annotations**
+
     - Pros: Potentially reduces the maintenance burden on the Kubernetes SIG.
     - Cons: Forces users to migrate to third-party solutions or away from CRDs, reducing the cohesion of external-dns within Kubernetes.
