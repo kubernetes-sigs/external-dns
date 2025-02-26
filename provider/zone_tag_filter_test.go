@@ -57,7 +57,7 @@ var basicZoneTags = []struct {
 		"empty tag filter matches all", []string{""}, map[string]string{"tag0": "value0"}, true,
 	},
 	{
-		"tag filter without key and equal sign", []string{"tag1=value1", "=haha"}, map[string]string{"tag1": "value1"}, false,
+		"tag filter without key and equal sign", []string{"tag1=value1", "=haha"}, map[string]string{"tag1": "value1"}, true,
 	},
 }
 
@@ -74,16 +74,17 @@ func TestZoneTagFilterNotSupportedFormat(t *testing.T) {
 	tests := []struct {
 		desc string
 		tags []string
-		want []string
+		want map[string]string
 	}{
-		{desc: "multiple or separate values with commas", tags: []string{"key1=val1,key2=val2"}, want: []string{"key1=val1,key2=val2"}},
-		{desc: "exclude tag", tags: []string{"!key1"}, want: []string{"!key1"}},
-		{desc: "exclude tags", tags: []string{"!key1=val"}, want: []string{"!key1=val"}},
+		{desc: "multiple or separate values with commas", tags: []string{"key1=val1,key2=val2"}, want: map[string]string{"key1": "val1,key2=val2"}},
+		{desc: "exclude tag", tags: []string{"!key1"}, want: map[string]string{"!key1": ""}},
+		{desc: "exclude tags", tags: []string{"!key1=val"}, want: map[string]string{"!key1": "val"}},
+		{desc: "key is empty", tags: []string{"=val"}, want: map[string]string{}},
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%s", tc.desc), func(t *testing.T) {
 			got := NewZoneTagFilter(tc.tags)
-			assert.Equal(t, tc.want, got.zoneTags)
+			assert.Equal(t, tc.want, got.tagsMap)
 		})
 	}
 }

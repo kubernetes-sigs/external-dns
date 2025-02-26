@@ -1,5 +1,4 @@
-DNS provider API rate limits considerations
-===========================================
+# DNS provider API rate limits considerations
 
 ## Introduction
 
@@ -31,12 +30,12 @@ This option is enabled using the `--provider-cache-time=15m` command line argume
 You can evaluate the behaviour of the cache thanks to the built-in metrics
 
 * `external_dns_provider_cache_records_calls`
-   * The number of calls to the provider cache Records list.
-   * The label `from_cache=true` indicates that the records were retrieved from memory and the DNS provider was not reached
-   * The label `from_cache=false` indicates that the cache was not used and the records were retrieved from the provider
+  * The number of calls to the provider cache Records list.
+  * The label `from_cache=true` indicates that the records were retrieved from memory and the DNS provider was not reached
+  * The label `from_cache=false` indicates that the cache was not used and the records were retrieved from the provider
 * `external_dns_provider_cache_apply_changes_calls`
-   * The number of calls to the provider cache ApplyChanges.
-   * Each ApplyChange systematically invalidates the cache and makes subsequent Records list to be retrieved from the provider without cache.
+  * The number of calls to the provider cache ApplyChanges.
+  * Each ApplyChange systematically invalidates the cache and makes subsequent Records list to be retrieved from the provider without cache.
 
 ## Related options
 
@@ -60,7 +59,8 @@ to match the specific needs of your deployments, with the goal to reduce the num
   * `--ovh-api-rate-limit=20` When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)
 
 * Global
-  * `--registry=txt` The registry implementation to use to keep track of DNS record ownership. Other registry options such as dynamodb can help mitigate rate limits by storing the registry outside of the DNS hosted zone (default: txt, options: txt, noop, dynamodb, aws-sd)
+  * `--registry=txt` The registry implementation to use to keep track of DNS record ownership.
+    * Other registry options such as dynamodb can help mitigate rate limits by storing the registry outside of the DNS hosted zone (default: txt, options: txt, noop, dynamodb, aws-sd)
   * `--txt-cache-interval=0s` The interval between cache synchronizations in duration format (default: disabled)
   * `--interval=1m0s` The interval between two consecutive synchronizations in duration format (default: 1m)
   * `--min-event-sync-interval=5s` The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)

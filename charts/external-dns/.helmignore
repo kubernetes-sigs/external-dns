@@ -21,3 +21,6 @@
 .idea/
 *.tmproj
 .vscode/
+ci/
+schema/
+.schema.yaml

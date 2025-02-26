@@ -1,39 +1,50 @@
 name: Lint
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
-permissions:
-  contents: read  #  to fetch code (actions/checkout)
-  checks: write
-
 jobs:
-
-  build:
+  lint:
+    name: Markdown, Go and OAS
+    runs-on: ubuntu-latest
     permissions:
       contents: read  #  to fetch code (actions/checkout)
-      checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
-
-    name: Build
-    runs-on: ubuntu-latest
+      checks: write
     steps:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - name: Lint markdown
+      uses: nosborn/github-action-markdown-cli@v3.4.0
+      with:
+        files: '.'
+        config_file: ".markdownlint.json"
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
 
-    - name: Lint go code
+    - name: Go formatting
+      run: |
+        if [ -z "$(gofmt -l .)" ]; then
+          echo -e "All '*.go' files are properly formatted."
+        else
+          echo -e "Please run 'make go-lint' to fix. Some files need formatting:"
+          gofmt -d -l .
+          exit 1
+        fi
+
+
+    # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
+    - name: Verify linter configuration and Lint go code
       uses: golangci/golangci-lint-action@v6
       with:
+        verify: true
         args: --timeout=30m
-        version: v1.63
+        version: v1.64
 
       # Run Spectral
     - name: Lint OpenAPI spec

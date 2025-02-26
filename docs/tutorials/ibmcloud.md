@@ -7,29 +7,35 @@ IBM Cloud commands and assumes that the Kubernetes cluster was created via IBM C
 are being run on an orchestration node.
 
 ## Creating a IBMCloud DNS zone
+
 The IBMCloud provider for ExternalDNS will find suitable zones for domains it manages; it will
 not automatically create zones.
 For public zone, This tutorial assume that the [IBMCloud Internet Services](https://cloud.ibm.com/catalog/services/internet-services) was provisioned and the [cis cli plugin](https://cloud.ibm.com/docs/cis?topic=cis-cli-plugin-cis-cli) was installed with IBMCloud CLI
 For private zone, This tutorial assume that the [IBMCloud DNS Services](https://cloud.ibm.com/catalog/services/dns-services) was provisioned and the [dns cli plugin](https://cloud.ibm.com/docs/dns-svcs?topic=dns-svcs-cli-plugin-dns-services-cli-commands) was installed with IBMCloud CLI
 
 ### Public Zone
+
 For this tutorial, we create public zone named `example.com` on IBMCloud Internet Services instance `external-dns-public`
+
+```sh
+ibmcloud cis domain-add example.com -i external-dns-public
 ```
-$ ibmcloud cis domain-add example.com -i external-dns-public
-```
+
 Follow [step](https://cloud.ibm.com/docs/cis?topic=cis-getting-started#configure-your-name-servers-with-the-registrar-or-existing-dns-provider) to active your zone
 
 ### Private Zone
+
 For this tutorial, we create private zone named `example.com` on IBMCloud DNS Services instance `external-dns-private`
-```
-$ ibmcloud dns zone-create example.com -i external-dns-private
+
+```sh
+ibmcloud dns zone-create example.com -i external-dns-private
 ```
 
 ## Creating configuration file
 
 The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named azure.json with content similar to this:
 
-```
+```json
 {
   "apiKey": "1234567890abcdefghijklmnopqrstuvwxyz",
   "instanceCrn": "crn:v1:bluemix:public:internet-svcs:global:a/bcf1865e99742d38d2d5fc3fb80a5496:b950da8a-5be6-4691-810e-36388c77b0a3::"
@@ -41,9 +47,11 @@ You can create or find the `apiKey` in your ibmcloud IAM --> [API Keys page](htt
 You can find the `instanceCrn` in your service instance details
 
 Now you can create a file named 'ibmcloud.json' with values gathered above and with the structure of the example above. Use this file to create a Kubernetes secret:
+
+```sh
+kubectl create secret generic ibmcloud-config-file --from-file=/local/path/to/ibmcloud.json
 ```
-$ kubectl create secret generic ibmcloud-config-file --from-file=/local/path/to/ibmcloud.json
-```
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
@@ -105,7 +113,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -213,8 +221,8 @@ will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
 
-```
-$ kubectl create -f nginx.yaml
+```sh
+kubectl create -f nginx.yaml
 ```
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
@@ -223,10 +231,12 @@ Once the service has an external IP assigned, ExternalDNS will notice the new se
 the IBMCloud DNS records.
 
 ## Verifying IBMCloud DNS records
+
 Run the following command to view the A records:
 
 ### Public Zone
-```
+
+```sh
 # Get the domain ID with below command on IBMCloud Internet Services instance `external-dns-public`
 $ ibmcloud cis domains -i external-dns-public
 # Get the records with domain ID
@@ -234,21 +244,23 @@ $ ibmcloud cis dns-records DOMAIN_ID  -i external-dns-public
 ```
 
 ### Private Zone
-```
+
+```sh
 # Get the domain ID with below command on IBMCloud DNS Services instance `external-dns-private`
 $ ibmcloud dns zones -i external-dns-private
 # Get the records with domain ID
 $ ibmcloud dns resource-records ZONE_ID  -i external-dns-public
 ```
+
 This should show the external IP address of the service as the A record for your domain.
 
 ## Cleanup
 
 Now that we have verified that ExternalDNS will automatically manage IBMCloud DNS records, we can delete the tutorial's example:
 
-```
-$ kubectl delete -f nginx.yaml
-$ kubectl delete -f externaldns.yaml
+```sh
+kubectl delete -f nginx.yaml
+kubectl delete -f externaldns.yaml
 ```
 
 ## Setting proxied records on public zone
@@ -257,6 +269,9 @@ Using the `external-dns.alpha.kubernetes.io/ibmcloud-proxied: "true"` annotation
 
 ## Active priviate zone with VPC allocated
 
-By default, IBMCloud DNS Services don't active your private zone with new zone added, with externale DNS, you can use `external-dns.alpha.kubernetes.io/ibmcloud-vpc: "crn:v1:bluemix:public:is:us-south:a/bcf1865e99742d38d2d5fc3fb80a5496::vpc:r006-74353823-a60d-42e4-97c5-5e2551278435"` annotation on your ingress or service, it will active your private zone with in specific VPC for that record created in. this setting won't work if the private zone was active already.
+By default, IBMCloud DNS Services don't active your private zone with new zone added.
+With External DNS, you can use `external-dns.alpha.kubernetes.io/ibmcloud-vpc: "crn:v1:bluemix:public:is:us-south:a/bcf1865e99742d38d2d5fc3fb80a5496::vpc:r006-74353823-a60d-42e4-97c5-5e2551278435"` annotation on your ingress or service.
+It will active your private zone with in specific VPC for that record created in.
+This setting won't work if the private zone was active already.
 
 Note: the annotaion value is the VPC CRN, every IBM Cloud service have a valid CRN.
