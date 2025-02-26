@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"strings"
 
@@ -32,14 +31,8 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 		return nil, ErrNoPiholeServer
 	}
 
-	// Setup a persistent cookiejar for storing PHP session information
-	jar, err := cookiejar.New(&cookiejar.Options{})
-	if err != nil {
-		return nil, err
-	}
-	// Setup an HTTP client using the cookiejar
+	// Setup an HTTP client
 	httpClient := &http.Client{
-		Jar: jar,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: cfg.TLSInsecureSkipVerify,
@@ -62,7 +55,7 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 	return p, nil
 }
 
-func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]string, error) {
 	apiUrl, err := p.urlForRecordType(rtype)
 	if err != nil {
 		return nil, err
@@ -88,12 +81,21 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 	}
 
 	// Pi-Hole does not allow for a record to have multiple targets.
-	out := make([]*endpoint.Endpoint, 0)
 	var results []string
 	if endpoint.RecordTypeCNAME == rtype {
 		results = apiResponse.Config.DNS.CnameRecords
 	} else {
 		results = apiResponse.Config.DNS.Hosts
+	}
+
+	return results, nil
+}
+
+func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+	out := make([]*endpoint.Endpoint, 0)
+	results, err := p.getConfigValue(ctx, rtype)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, rec := range results {
@@ -133,19 +135,19 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 }
 
 func (p *piholeClientV6) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
-	return p.apply(ctx, "add", ep)
+	return p.apply(ctx, http.MethodPut, ep)
 }
 
 func (p *piholeClientV6) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
-	return p.apply(ctx, "delete", ep)
+	return p.apply(ctx, http.MethodDelete, ep)
 }
 
 func (p *piholeClientV6) aRecordsScript() string {
-	return fmt.Sprintf("%s/api/config/dns%2Fhosts", p.cfg.Server)
+	return fmt.Sprintf("%s/api/config/dns/hosts", p.cfg.Server)
 }
 
 func (p *piholeClientV6) cnameRecordsScript() string {
-	return fmt.Sprintf("%s/api/config/dns%2FcnameRecords", p.cfg.Server)
+	return fmt.Sprintf("%s/api/config/dns/cnameRecords", p.cfg.Server)
 }
 
 func (p *piholeClientV6) urlForRecordType(rtype string) (string, error) {
@@ -194,11 +196,12 @@ type ApiRecordsResponse struct {
 }
 
 func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
+
 	if !p.cfg.DomainFilter.Match(ep.DNSName) {
 		log.Debugf("Skipping %s %s that does not match domain filter", action, ep.DNSName)
 		return nil
 	}
-	url, err := p.urlForRecordType(ep.RecordType)
+	apiUrl, err := p.urlForRecordType(ep.RecordType)
 	if err != nil {
 		log.Warnf("Skipping unsupported endpoint %s %s %v", ep.DNSName, ep.RecordType, ep.Targets)
 		return nil
@@ -211,45 +214,32 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 
 	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 
-	form := p.newDNSActionForm(action, ep)
+	// Get the current record
 	if strings.Contains(ep.DNSName, "*") {
 		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole DNS names cannot return wildcard"))
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 
-	body, err := p.do(req)
-	if err != nil {
-		return err
-	}
-	defer body.Close()
-
-	raw, err := io.ReadAll(body)
-	if err != nil {
-		return nil
-	}
-
-	var res actionResponse
-	if err := json.Unmarshal(raw, &res); err != nil {
-		// Unfortunately this could also be a generic server or auth error.
-		err = errors.New(string(raw))
-		if strings.Contains(err.Error(), "expired") && p.cfg.Password != "" {
-			// Try to fetch a new token and redo the request.
-			log.Info("Pihole token has expired, fetching a new one")
-			if err := p.retrieveNewToken(ctx); err != nil {
-				return err
-			}
-			return p.apply(ctx, action, ep)
+	switch ep.RecordType {
+	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
+		apiUrl = url.PathEscape(fmt.Sprintf("%s/%s %s", apiUrl, ep.Targets, ep.DNSName))
+		break
+	case endpoint.RecordTypeCNAME:
+		if ep.RecordTTL.IsConfigured() {
+			apiUrl = url.PathEscape(fmt.Sprintf("%s/%s,%s,%d", apiUrl, ep.Targets, ep.DNSName, ep.RecordTTL))
+		} else {
+			apiUrl = url.PathEscape(fmt.Sprintf("%s/%s,%s", apiUrl, ep.Targets, ep.DNSName))
 		}
-		// Return raw body as error.
+		break
+	}
+
+	req, err := http.NewRequestWithContext(ctx, action, apiUrl, nil)
+	if err != nil {
 		return err
 	}
 
-	if !res.Success {
-		return errors.New(res.Message)
+	_, err = p.do(req)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -355,20 +345,4 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("received %s status code from request: [%s] %s (%s) - %fs", res.Status, apiError.Error.Key, apiError.Error.Message, apiError.Error.Hint, apiError.Took)
 	}
 	return jRes, nil
-}
-
-func (p *piholeClientV6) newDNSActionForm(action string, ep *endpoint.Endpoint) *url.Values {
-	form := &url.Values{}
-	form.Add("action", action)
-	form.Add("domain", ep.DNSName)
-	switch ep.RecordType {
-	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		form.Add("ip", ep.Targets[0])
-	case endpoint.RecordTypeCNAME:
-		form.Add("target", ep.Targets[0])
-	}
-	if p.token != "" {
-		form.Add("token", p.token)
-	}
-	return form
 }
