@@ -3,7 +3,7 @@
 title: leader election proposal
 version: 0.15.1
 authors: @ivankatliarchuk
-creation-date: 2025-jan-30
+creation-date: 2025-01-30
 status: not-planned
 ---
 ```

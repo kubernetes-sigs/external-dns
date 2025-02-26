@@ -4,7 +4,7 @@
 title: New Feature or Deprecation/Removal Proposal
 version: if applicable
 authors: you, me
-creation-date: 2025-jan-01
+creation-date: 2025-01-25 # format ISO 8601: YYYY-MM-DD
 status: draft|approved|rejected|not-planned|partially-implemented|implemented
 ---
 ```
