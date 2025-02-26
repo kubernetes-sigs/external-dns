@@ -42,13 +42,13 @@ The proposal aims to formalize the promotion process by addressing API design, u
 
 To graduate the `DNSEndpoint` API to beta, we propose the following actions:
 
-1. Refactor `endpoint` folder, move away `api/crd` related stuff to `apis/<apiVersion> folder`
-2. Documentation for API to be generated automatically with test coverage, similar to `docs/flags.md`
-3. API(s) and CRD(s) discoverable. [doc.crds.dev](https://doc.crds.dev/github.com/kubernetes-sigs/external-dns). Example [crosplane](https://doc.crds.dev/github.com/crossplane/crossplane@v0.10.0)
-4. Review and change .status object such that people can debug and monitor DNSEndpoint object behavior.
-5. Capture feedback from the community on missing functionality for DNSEndpoint CRD
+1. Capture feedback from the community on missing functionality for DNSEndpoint CRD
    - In a form of Github issue, pin the issue to the project
    - Link all CRD related issues to it
+2. Refactor `endpoint` folder, move away `api/crd` related stuff to `apis/<apiVersion> folder`
+3. Documentation for API to be generated automatically with test coverage, similar to `docs/flags.md`
+4. API(s) and CRD(s) discoverable. [doc.crds.dev](https://doc.crds.dev/github.com/kubernetes-sigs/external-dns). Example [crosplane](https://doc.crds.dev/github.com/crossplane/crossplane@v0.10.0)
+5. Review and change .status object such that people can debug and monitor DNSEndpoint object behavior.
 6. Introduce metrics related to DNSEndpoint CRD
    - Number of CRDs discovered
    - Number of CRDs by status success|fail
