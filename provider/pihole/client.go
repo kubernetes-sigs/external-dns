@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-// declares the "API" actions performed against the Pihole server.
+// piholeAPI declares the "API" actions performed against the Pihole server.
 type piholeAPI interface {
 	// listRecords returns endpoints for the given record type (A or CNAME).
 	listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error)

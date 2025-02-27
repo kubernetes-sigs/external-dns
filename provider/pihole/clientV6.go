@@ -1,3 +1,19 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package pihole
 
 import (
@@ -10,10 +26,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -104,6 +122,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		})
 		var DNSName string
 		var Target string
+		var Ttl endpoint.TTL
 		// A/AAAA record format is target(IP) DNSName
 		DNSName = recs[1]
 		Target = recs[0]
@@ -122,12 +141,22 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			// CNAME format is DNSName,target
 			DNSName = recs[0]
 			Target = recs[1]
+			if len(recs) == 3 { // TTL is present
+				// Parse string to int64 first
+				ttlInt, err := strconv.ParseInt(recs[2], 10, 64)
+				if err != nil {
+					// Handle parsing error or fail test
+					log.Warnf("failed to parse TTL value '%s': %v; using a TTL of 0", recs[2], err)
+				}
+				Ttl = endpoint.TTL(ttlInt)
+			}
 			break
 		}
 
 		out = append(out, &endpoint.Endpoint{
 			DNSName:    DNSName,
 			Targets:    []string{Target},
+			RecordTTL:  Ttl,
 			RecordType: rtype,
 		})
 	}
@@ -221,13 +250,13 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 
 	switch ep.RecordType {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		apiUrl = url.PathEscape(fmt.Sprintf("%s/%s %s", apiUrl, ep.Targets, ep.DNSName))
+		apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s %s", ep.Targets, ep.DNSName)))
 		break
 	case endpoint.RecordTypeCNAME:
 		if ep.RecordTTL.IsConfigured() {
-			apiUrl = url.PathEscape(fmt.Sprintf("%s/%s,%s,%d", apiUrl, ep.Targets, ep.DNSName, ep.RecordTTL))
+			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL)))
 		} else {
-			apiUrl = url.PathEscape(fmt.Sprintf("%s/%s,%s", apiUrl, ep.Targets, ep.DNSName))
+			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets)))
 		}
 		break
 	}
@@ -273,7 +302,7 @@ func (p *piholeClientV6) retrieveNewToken(ctx context.Context) error {
 		fmt.Println("Error reading response:", err)
 	} else {
 		// Set the token
-		if apiResponse.Session.SID == "" {
+		if apiResponse.Session.SID != "" {
 			p.token = apiResponse.Session.SID
 		}
 	}
@@ -323,7 +352,9 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK &&
+		res.StatusCode != http.StatusCreated &&
+		res.StatusCode != http.StatusNoContent {
 		// Parse JSON response
 		var apiError ApiErrorResponse
 		err = json.Unmarshal(jRes, &apiError)
