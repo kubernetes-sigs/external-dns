@@ -171,7 +171,7 @@ type RecordParamsTypes interface {
 }
 
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func updateDNSRecordParam(cfc cloudFlareChange) (cloudflare.UpdateDNSRecordParams) {
+func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
 	recordParam := cloudflare.UpdateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
@@ -197,7 +197,7 @@ func updateDataLocalizationRegionalHostnameParams(cfc cloudFlareChange) cloudfla
 }
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getCreateDNSRecordParam(cfc cloudFlareChange) (cloudflare.CreateDNSRecordParams) {
+func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordParams {
 	recordParam := cloudflare.CreateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
