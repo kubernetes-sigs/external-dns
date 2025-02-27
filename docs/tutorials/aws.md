@@ -1116,6 +1116,7 @@ If you have multiple zones and want to manage them with different roles, you can
 ```sh
 args:
   --aws-domain-roles=example.com=arn:aws:iam::123456789012:role/external-dns-role
+  --aws-domain-roles=example.org=arn:aws:iam::123456789011:role/external-dns-role
 ```
 
 `--aws-domain-roles` is a map of domain names to IAM roles. The domain/hosted zone names should match the `--domain-filter` values.
