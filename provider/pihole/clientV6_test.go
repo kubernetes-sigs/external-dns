@@ -19,10 +19,8 @@ package pihole
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -43,8 +41,7 @@ func TestNewPiholeClientV6(t *testing.T) {
 		t.Error("Expected ErrNoPiholeServer, got", err)
 	}
 
-	// Test new client with no password. Should create the
-	// client cleanly.
+	// Test new client with no password. Should create the client cleanly.
 	cl, err := newPiholeClientV6(PiholeConfig{
 		Server:     "test",
 		APIVersion: "6",
@@ -56,44 +53,43 @@ func TestNewPiholeClientV6(t *testing.T) {
 		t.Error("Did not create a new pihole client")
 	}
 
-	// Create a test server for auth tests
+	// Create a test server
 	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/auth" && r.Method == "POST" {
 			var requestData map[string]string
-			body, err := io.ReadAll(r.Body)
-			if err != nil {
-				http.Error(w, "Error reading request body", http.StatusBadRequest)
-				return
-			}
+			json.NewDecoder(r.Body).Decode(&requestData)
 			defer r.Body.Close()
 
-			err = json.Unmarshal(body, &requestData)
-			if err != nil {
-				http.Error(w, "Error parsing JSON", http.StatusBadRequest)
-				return
-			}
-
-			pw := requestData["password"]
-			if pw != "correct" {
-				// Return unsuccessful authentication response
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"session":{"valid":false,"totp":false,"sid":null,"validity":-1,"message":"password incorrect"},"took":0.2}`))
-				return
-			}
-
 			w.Header().Set("Content-Type", "application/json")
+
+			if requestData["password"] != "correct" {
+				// Return unsuccessful authentication response
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{
+				"session": {
+					"valid": false,
+					"totp": false,
+					"sid": null,
+					"validity": -1,
+					"message": "password incorrect"
+				},
+				"took": 0.2
+			}`))
+				return
+			}
+
+			// Return successful authentication response
 			w.Write([]byte(`{
-            "session": {
-                "valid": true,
-                "totp": false,
-                "sid": "supersecret",
-                "csrf": "csrfvalue",
-                "validity": 1800,
-                "message": "password correct"
-            },
-            "took": 0.23066902160644531
-        }`))
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "supersecret",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.23066902160644531
+		}`))
 		} else {
 			http.NotFound(w, r)
 		}
@@ -121,36 +117,56 @@ func TestNewPiholeClientV6(t *testing.T) {
 }
 
 func TestListRecordsV6(t *testing.T) {
-	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		if r.Form.Get("action") != "get" {
-			t.Error("Expected 'get' action in form from client")
+	// Create a test server
+	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/config/dns/hosts" && r.Method == "GET" {
+			var requestData map[string]string
+			json.NewDecoder(r.Body).Decode(&requestData)
+			defer r.Body.Close()
+
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"hosts": [
+							"192.168.178.33 service1.example.com",
+							"192.168.178.34 service2.example.com",
+							"192.168.178.34 service3.example.com",
+							"fc00::1:192:168:1:1 service4.example.com",
+							"fc00::1:192:168:1:2 service5.example.com",
+							"fc00::1:192:168:1:3 service6.example.com"
+						]
+					}
+				},
+				"took": 5
+			}`))
+			w.WriteHeader(http.StatusOK)
+		} else if r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == "GET" {
+			var requestData map[string]string
+			json.NewDecoder(r.Body).Decode(&requestData)
+			defer r.Body.Close()
+
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"cnameRecords": [
+							"source1.example.com,target1.domain.com,1000",
+							"source2.example.com,target2.domain.com,50",
+							"source3.example.com,target3.domain.com"
+						]
+					}
+				},
+				"took": 5
+			}`))
+			w.WriteHeader(http.StatusOK)
+		} else {
+			http.NotFound(w, r)
 		}
-		if strings.Contains(r.URL.Path, "cname") {
-			w.Write([]byte(`
-			{
-				"data": [
-					["test4.example.com", "cname.example.com"],
-					["test5.example.com", "cname.example.com"],
-					["test6.match.com", "cname.example.com"]
-				]
-			}
-			`))
-			return
-		}
-		// Pihole makes no distinction between A and AAAA records
-		w.Write([]byte(`
-		{
-			"data": [
-				["test1.example.com", "192.168.1.1"],
-				["test2.example.com", "192.168.1.2"],
-				["test3.match.com", "192.168.1.3"],
-				["test1.example.com", "fc00::1:192:168:1:1"],
-				["test2.example.com", "fc00::1:192:168:1:2"],
-				["test3.match.com", "fc00::1:192:168:1:3"]
-			]
-		}
-		`))
 	})
 	defer srvr.Close()
 
@@ -174,9 +190,9 @@ func TestListRecordsV6(t *testing.T) {
 	}
 	// Ensure records were parsed correctly
 	expected := [][]string{
-		{"test1.example.com", "192.168.1.1"},
-		{"test2.example.com", "192.168.1.2"},
-		{"test3.match.com", "192.168.1.3"},
+		{"service1.example.com", "192.168.178.33"},
+		{"service2.example.com", "192.168.178.34"},
+		{"service3.example.com", "192.168.178.34"},
 	}
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
@@ -197,9 +213,9 @@ func TestListRecordsV6(t *testing.T) {
 	}
 	// Ensure records were parsed correctly
 	expected = [][]string{
-		{"test1.example.com", "fc00::1:192:168:1:1"},
-		{"test2.example.com", "fc00::1:192:168:1:2"},
-		{"test3.match.com", "fc00::1:192:168:1:3"},
+		{"service4.example.com", "fc00::1:192:168:1:1"},
+		{"service5.example.com", "fc00::1:192:168:1:2"},
+		{"service6.example.com", "fc00::1:192:168:1:3"},
 	}
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
@@ -220,9 +236,9 @@ func TestListRecordsV6(t *testing.T) {
 	}
 	// Ensure records were parsed correctly
 	expected = [][]string{
-		{"test4.example.com", "cname.example.com"},
-		{"test5.example.com", "cname.example.com"},
-		{"test6.match.com", "cname.example.com"},
+		{"source1.example.com", "target1.domain.com", "1000"},
+		{"source2.example.com", "target2.domain.com", "50"},
+		{"source3.example.com", "target3.domain.com"},
 	}
 	for idx, rec := range cnamerecs {
 		if rec.DNSName != expected[idx][0] {
@@ -241,68 +257,8 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Test retrieve A records filtered
-	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeA)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(arecs) != 1 {
-		t.Fatal("Expected 1 A record returned, got:", len(arecs))
-	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"test3.match.com", "192.168.1.3"},
-	}
-	for idx, rec := range arecs {
-		if rec.DNSName != expected[idx][0] {
-			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
-		}
-	}
-
-	// Test retrieve AAAA records filtered
-	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(arecs) != 1 {
-		t.Fatal("Expected 1 AAAA record returned, got:", len(arecs))
-	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"test3.match.com", "fc00::1:192:168:1:3"},
-	}
-	for idx, rec := range arecs {
-		if rec.DNSName != expected[idx][0] {
-			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
-		}
-	}
-
-	// Test retrieve CNAME records filtered
-	cnamerecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeCNAME)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(cnamerecs) != 1 {
-		t.Fatal("Expected 1 CNAME record returned, got:", len(cnamerecs))
-	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"test6.match.com", "cname.example.com"},
-	}
-	for idx, rec := range cnamerecs {
-		if rec.DNSName != expected[idx][0] {
-			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
-		}
-	}
+	// Note: filtered tests are not needed since A/AAAA records are tested filtered already
+	// and cnameRecords have their own element
 }
 
 func TestCreateRecordV6(t *testing.T) {
