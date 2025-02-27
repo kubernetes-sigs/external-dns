@@ -1108,3 +1108,15 @@ args:
     --aws-zone-tags=team=k8s,vertical=platform # this is not supported
     --aws-zone-tags==tag-value # this is not supported
 ```
+
+### Add Roles specific to the zone
+
+If you have multiple zones and want to manage them with different roles, you can configure `external-dns` with the following option:
+
+```sh
+args:
+  --aws-domain-roles=example.com=arn:aws:iam::123456789012:role/external-dns-role
+```
+
+`--aws-domain-roles` is a map of domain names to IAM roles. The domain/hosted zone names should match the `--domain-filter` values.
+AWS also sets STS rate limits on a per account per region basis i.e. for a single account on a single region you can make 600 requests per second.
