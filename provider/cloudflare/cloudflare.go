@@ -171,7 +171,7 @@ type RecordParamsTypes interface {
 }
 
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func updateDNSRecordParam(cfc cloudFlareChange) (cloudflare.UpdateDNSRecordParams, error) {
+func updateDNSRecordParam(cfc cloudFlareChange) (cloudflare.UpdateDNSRecordParams) {
 	recordParam := cloudflare.UpdateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
@@ -185,7 +185,7 @@ func updateDNSRecordParam(cfc cloudFlareChange) (cloudflare.UpdateDNSRecordParam
 		recordParam.Content = cfc.ResourceRecord.Content
 	}
 
-	return recordParam, nil
+	return recordParam
 }
 
 // updateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
@@ -197,7 +197,7 @@ func updateDataLocalizationRegionalHostnameParams(cfc cloudFlareChange) cloudfla
 }
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getCreateDNSRecordParam(cfc cloudFlareChange) (cloudflare.CreateDNSRecordParams, error) {
+func getCreateDNSRecordParam(cfc cloudFlareChange) (cloudflare.CreateDNSRecordParams) {
 	recordParam := cloudflare.CreateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
@@ -211,7 +211,7 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) (cloudflare.CreateDNSRecordPa
 		recordParam.Content = cfc.ResourceRecord.Content
 	}
 
-	return recordParam, nil
+	return recordParam
 }
 
 // parseSRVContent parses the SRV record content string into the structured data required by the Cloudflare API
@@ -476,12 +476,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				recordParam, err := updateDNSRecordParam(*change)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to get update DNS record param: %v", err)
-					continue
-				}
+				recordParam := updateDNSRecordParam(*change)
 				recordParam.ID = recordID
 				err = p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
@@ -516,12 +511,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to delete custom hostname %v/%v: %v", chID, oldCh, chErr)
 				}
 			} else if change.Action == cloudFlareCreate {
-				recordParam, err := getCreateDNSRecordParam(*change)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to get create DNS record param: %v", err)
-					continue
-				}
+				recordParam := getCreateDNSRecordParam(*change)
 				_, err = p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					failedChange = true
