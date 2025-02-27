@@ -262,37 +262,17 @@ func TestListRecordsV6(t *testing.T) {
 
 func TestCreateRecordV6(t *testing.T) {
 	var ep *endpoint.Endpoint
-	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		if r.Form.Get("action") != "add" {
-			t.Error("Expected 'add' action in form from client")
+	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
+
+			// Return A records
+			w.WriteHeader(http.StatusCreated)
+		} else {
+			http.NotFound(w, r)
 		}
-		if r.Form.Get("domain") != ep.DNSName {
-			t.Error("Invalid domain in form:", r.Form.Get("domain"), "Expected:", ep.DNSName)
-		}
-		switch ep.RecordType {
-		case endpoint.RecordTypeA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		// Pihole makes no distinction between A and AAAA records
-		case endpoint.RecordTypeAAAA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		case endpoint.RecordTypeCNAME:
-			if r.Form.Get("target") != ep.Targets[0] {
-				t.Error("Invalid target in form:", r.Form.Get("target"), "Expected:", ep.Targets[0])
-			}
-		}
-		out, err := json.Marshal(actionResponse{
-			Success: true,
-			Message: "",
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		w.Write(out)
 	})
 	defer srvr.Close()
 
@@ -328,8 +308,19 @@ func TestCreateRecordV6(t *testing.T) {
 
 	// Test create CNAME record
 	ep = &endpoint.Endpoint{
-		DNSName:    "test.example.com",
-		Targets:    []string{"test.cname.com"},
+		DNSName:    "source1.example.com",
+		Targets:    []string{"target1.domain.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record with TTL
+	ep = &endpoint.Endpoint{
+		DNSName:    "source2.example.com",
+		Targets:    []string{"target2.domain.com"},
+		RecordTTL:  endpoint.TTL(500),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
@@ -349,37 +340,17 @@ func TestCreateRecordV6(t *testing.T) {
 
 func TestDeleteRecordV6(t *testing.T) {
 	var ep *endpoint.Endpoint
-	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		if r.Form.Get("action") != "delete" {
-			t.Error("Expected 'delete' action in form from client")
+	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "DELETE" && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
+
+			// Return A records
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			http.NotFound(w, r)
 		}
-		if r.Form.Get("domain") != ep.DNSName {
-			t.Error("Invalid domain in form:", r.Form.Get("domain"), "Expected:", ep.DNSName)
-		}
-		switch ep.RecordType {
-		case endpoint.RecordTypeA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		// Pihole makes no distinction between A and AAAA records
-		case endpoint.RecordTypeAAAA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		case endpoint.RecordTypeCNAME:
-			if r.Form.Get("target") != ep.Targets[0] {
-				t.Error("Invalid target in form:", r.Form.Get("target"), "Expected:", ep.Targets[0])
-			}
-		}
-		out, err := json.Marshal(actionResponse{
-			Success: true,
-			Message: "",
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		w.Write(out)
 	})
 	defer srvr.Close()
 
@@ -415,8 +386,19 @@ func TestDeleteRecordV6(t *testing.T) {
 
 	// Test delete CNAME record
 	ep = &endpoint.Endpoint{
-		DNSName:    "test.example.com",
-		Targets:    []string{"test.cname.com"},
+		DNSName:    "source1.example.com",
+		Targets:    []string{"target1.domain.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test delete CNAME record with TTL
+	ep = &endpoint.Endpoint{
+		DNSName:    "source2.example.com",
+		Targets:    []string{"target2.domain.com"},
+		RecordTTL:  endpoint.TTL(500),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.deleteRecord(context.Background(), ep); err != nil {
