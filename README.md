@@ -108,6 +108,7 @@ Known providers using webhooks:
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
+| OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
 
 ## Status of in-tree providers
 
