@@ -250,13 +250,13 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 
 	switch ep.RecordType {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		apiUrl = url.PathEscape(fmt.Sprintf("%s/%s %s", apiUrl, ep.Targets, ep.DNSName))
+		apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s %s", ep.Targets, ep.DNSName)))
 		break
 	case endpoint.RecordTypeCNAME:
 		if ep.RecordTTL.IsConfigured() {
-			apiUrl = url.PathEscape(fmt.Sprintf("%s/%s,%s,%d", apiUrl, ep.Targets, ep.DNSName, ep.RecordTTL))
+			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL)))
 		} else {
-			apiUrl = url.PathEscape(fmt.Sprintf("%s/%s,%s", apiUrl, ep.Targets, ep.DNSName))
+			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets)))
 		}
 		break
 	}
@@ -352,7 +352,9 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK &&
+		res.StatusCode != http.StatusCreated &&
+		res.StatusCode != http.StatusNoContent {
 		// Parse JSON response
 		var apiError ApiErrorResponse
 		err = json.Unmarshal(jRes, &apiError)
