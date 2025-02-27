@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/linki/instrumented_http"
@@ -121,6 +122,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		})
 		var DNSName string
 		var Target string
+		var Ttl endpoint.TTL
 		// A/AAAA record format is target(IP) DNSName
 		DNSName = recs[1]
 		Target = recs[0]
@@ -139,12 +141,22 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			// CNAME format is DNSName,target
 			DNSName = recs[0]
 			Target = recs[1]
+			if len(recs) == 3 { // TTL is present
+				// Parse string to int64 first
+				ttlInt, err := strconv.ParseInt(recs[2], 10, 64)
+				if err != nil {
+					// Handle parsing error or fail test
+					log.Warnf("failed to parse TTL value '%s': %v; using a TTL of 0", recs[2], err)
+				}
+				Ttl = endpoint.TTL(ttlInt)
+			}
 			break
 		}
 
 		out = append(out, &endpoint.Endpoint{
 			DNSName:    DNSName,
 			Targets:    []string{Target},
+			RecordTTL:  Ttl,
 			RecordType: rtype,
 		})
 	}

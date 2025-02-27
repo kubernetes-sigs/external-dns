@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -247,14 +248,12 @@ func TestListRecordsV6(t *testing.T) {
 		if rec.Targets[0] != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
-	}
-
-	// Same tests but with a domain filter
-
-	cfg.DomainFilter = endpoint.NewDomainFilter([]string{"match.com"})
-	cl, err = newPiholeClientV6(cfg)
-	if err != nil {
-		t.Fatal(err)
+		if len(expected[idx]) == 3 {
+			expectedTTL, _ := strconv.ParseInt(expected[idx][2], 10, 64)
+			if int64(rec.RecordTTL) != expectedTTL {
+				t.Error("Got invalid TTL:", rec.RecordTTL, "expected:", expected[idx][2])
+			}
+		}
 	}
 
 	// Note: filtered tests are not needed since A/AAAA records are tested filtered already
