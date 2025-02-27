@@ -254,9 +254,9 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 		break
 	case endpoint.RecordTypeCNAME:
 		if ep.RecordTTL.IsConfigured() {
-			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL)))
+			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s,%d", ep.Targets, ep.DNSName, ep.RecordTTL)))
 		} else {
-			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets)))
+			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s", ep.Targets, ep.DNSName)))
 		}
 		break
 	}
