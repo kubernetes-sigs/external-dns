@@ -47,7 +47,7 @@ type PiholeConfig struct {
 	DomainFilter endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
 	DryRun bool
-	// PiHole API version =<5 ou >=6, default is 5
+	// PiHole API version =<5 or >=6, default is 5
 	APIVersion string
 }
 
