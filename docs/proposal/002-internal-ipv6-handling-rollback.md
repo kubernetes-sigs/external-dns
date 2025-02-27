@@ -3,8 +3,8 @@
 ---
 title: "Proposal: Rollback IPv6 internal Node IP exposure"
 version: if applicable
-authors: @ivankatliarchuk
-creation-date: 2025-jan-01
+authors: @ivankatliarchuk, @szuecs, @mloiseleur
+creation-date: 2025-01-01
 status: approved
 ---
 ```
