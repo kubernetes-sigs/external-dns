@@ -58,9 +58,7 @@ func TestNewPiholeClientV6(t *testing.T) {
 
 	// Create a test server for auth tests
 	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
-		// Only handle POST requests to /api/auth
 		if r.URL.Path == "/api/auth" && r.Method == "POST" {
-			// Read the JSON request body
 			var requestData map[string]string
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
@@ -69,14 +67,12 @@ func TestNewPiholeClientV6(t *testing.T) {
 			}
 			defer r.Body.Close()
 
-			// Parse JSON request
 			err = json.Unmarshal(body, &requestData)
 			if err != nil {
 				http.Error(w, "Error parsing JSON", http.StatusBadRequest)
 				return
 			}
 
-			// Check if password is correct
 			pw := requestData["password"]
 			if pw != "correct" {
 				// Return unsuccessful authentication response
@@ -86,7 +82,6 @@ func TestNewPiholeClientV6(t *testing.T) {
 				return
 			}
 
-			// Return successful authentication response with artificial SID and CSRF token
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(`{
             "session": {
