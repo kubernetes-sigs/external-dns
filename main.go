@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"k8s.io/klog/v2"
 	"net/http"
 	"os"
 	"os/signal"
@@ -355,7 +356,7 @@ func main() {
 				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
 				DomainFilter:          domainFilter,
 				DryRun:                cfg.DryRun,
-				APIVersion:            cfg.ApiVersion,
+				APIVersion:            cfg.PiholeApiVersion,
 			},
 		)
 	case "ibmcloud":

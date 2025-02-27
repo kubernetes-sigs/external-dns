@@ -207,6 +207,7 @@ type Config struct {
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
+	PiholeApiVersion                              string
 	PluralCluster                                 string
 	PluralProvider                                string
 	WebhookProviderURL                            string
@@ -368,6 +369,7 @@ var defaultConfig = &Config{
 	PiholeServer:                                  "",
 	PiholePassword:                                "",
 	PiholeTLSInsecureSkipVerify:                   false,
+	PiholeApiVersion:                              "5",
 	PluralCluster:                                 "",
 	PluralProvider:                                "",
 	WebhookProviderURL:                            "http://localhost:8888",
