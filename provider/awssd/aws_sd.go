@@ -245,17 +245,15 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) (creates []*endp
 		current := updateNewMap[old.DNSName]
 
 		if !old.Targets.Same(current.Targets) {
-			// if targets changed, only deregister removed targets (i.e. in `UpdateOld` but not in `UpdateNew`)
+			currentTargetsMap := make(map[string]struct{}, len(current.Targets))
+			for _, new_target := range current.Targets {
+				currentTargetsMap[new_target] = struct{}{}
+			}
+
+			// If targets changed, only deregister removed targets (i.e. in `UpdateOld` but not in `UpdateNew`)
 			targets_to_remove := make(endpoint.Targets, 0)
 			for _, old_target := range old.Targets {
-				found := false
-				for _, new_target := range current.Targets {
-					if old_target == new_target {
-						found = true
-						break
-					}
-				}
-				if !found {
+				if _, found := currentTargetsMap[old_target]; !found {
 					targets_to_remove = append(targets_to_remove, old_target)
 				}
 			}
