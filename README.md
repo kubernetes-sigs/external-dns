@@ -104,6 +104,7 @@ Known providers using webhooks:
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
+| OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
 | RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
