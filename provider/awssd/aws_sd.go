@@ -246,19 +246,19 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) (creates []*endp
 
 		if !old.Targets.Same(current.Targets) {
 			currentTargetsMap := make(map[string]struct{}, len(current.Targets))
-			for _, new_target := range current.Targets {
-				currentTargetsMap[new_target] = struct{}{}
+			for _, newTarget := range current.Targets {
+				currentTargetsMap[newTarget] = struct{}{}
 			}
 
 			// If targets changed, only deregister removed targets (i.e. in `UpdateOld` but not in `UpdateNew`)
-			targets_to_remove := make(endpoint.Targets, 0)
-			for _, old_target := range old.Targets {
-				if _, found := currentTargetsMap[old_target]; !found {
-					targets_to_remove = append(targets_to_remove, old_target)
+			targetsToRemove := make(endpoint.Targets, 0)
+			for _, oldTarget := range old.Targets {
+				if _, found := currentTargetsMap[oldTarget]; !found {
+					targetsToRemove = append(targetsToRemove, oldTarget)
 				}
 			}
 
-			old.Targets = targets_to_remove
+			old.Targets = targetsToRemove
 			deletes = append(deletes, old)
 		}
 
