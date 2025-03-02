@@ -147,6 +147,7 @@
 | `--pihole-server=""` | When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole) |
 | `--pihole-password=""` | When using the Pihole provider, the password to the server if it is protected |
 | `--[no-]pihole-tls-skip-verify` | When using the Pihole provider, disable verification of any TLS certificates |
+| `--pihole-api-version="5"` | When using the Pihole provider, specify the pihole API version |
 | `--plural-cluster=""` | When using the plural provider, specify the cluster name you're running with |
 | `--plural-provider=""` | When using the plural provider, specify the provider name you're running with |
 | `--policy=sync` | Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only) |

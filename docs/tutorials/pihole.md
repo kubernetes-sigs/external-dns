@@ -98,6 +98,8 @@ spec:
         # the policy to upsert-only so they do not get deleted.
         - --policy=upsert-only
         - --provider=pihole
+        # Switch to pihole V6 API
+        - --pihole-api-version=6
         # Change this to the actual address of your Pi-hole web server
         - --pihole-server=http://pihole-web.pihole.svc.cluster.local
       securityContext:
@@ -109,6 +111,7 @@ spec:
 - `--pihole-server (env: EXTERNAL_DNS_PIHOLE_SERVER)` - The address of the Pi-hole web server
 - `--pihole-password (env: EXTERNAL_DNS_PIHOLE_PASSWORD)` - The password to the Pi-hole web server (if enabled)
 - `--pihole-tls-skip-verify (env: EXTERNAL_DNS_PIHOLE_TLS_SKIP_VERIFY)` - Skip verification of any TLS certificates served by the Pi-hole web server.
+- `--pihole-api-version (env: EXTERNAL_DNS_PIHOLE_API_VERSION)` - Specify the pihole API version (default is 5. Eligible values are 5 or 6).
 
 ## Verify ExternalDNS Works
 
