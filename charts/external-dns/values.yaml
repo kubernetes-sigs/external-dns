@@ -302,8 +302,8 @@ secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
   enabled: false
   # -- Mount path for the `Secret`, this can be templated.
-  mountPath:
+  mountPath:  # @schema type:[string, null]; default: null
   # -- Sub-path for mounting the `Secret`, this can be templated.
-  subPath:
+  subPath:  # @schema type:[string, null]; default: null
   # -- `Secret` data.
   data: {}
