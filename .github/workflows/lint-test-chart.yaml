@@ -61,7 +61,7 @@ jobs:
       - name: Run Helm Unit Tests
         run: |
           set -euo pipefail
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git >&2
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git >/dev/null 2>&1
           helm unittest -f 'tests/*_test.yaml' --color charts/external-dns
 
       - name: Install Artifact Hub CLI
