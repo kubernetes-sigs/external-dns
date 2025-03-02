@@ -1,0 +1,28 @@
+suite: Deployment configuration
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should provide expected defaults
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: metadata.namespace
+          value: default
+      - notExists:
+          path: spec.template.spec.automountServiceAccountToken
+
+  - it: should have not be able to change replicas when specified via values
+    set:
+      deployment:
+        replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
