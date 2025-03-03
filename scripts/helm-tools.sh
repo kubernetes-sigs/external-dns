@@ -14,6 +14,8 @@ set -e
 # scripts/helm-tools.sh --schema
 # scripts/helm-tools.sh --lint
 # scripts/helm-tools.sh --docs
+# scripts/helm-tools.sh --helm-template
+# scripts/helm-tools.sh --helm-unittest
 
 show_help() {
 cat << EOF
@@ -26,6 +28,8 @@ Usage: $(basename "$0") <options>
     -i, --install       Install required tooling
     -l, --lint          Lint chart
     -s, --schema        Generate schema
+    --helm-unittest     Run helm unittest(s)
+    --helm-template     Run helm template
     --show-docs         Show available documentation
 EOF
 }
@@ -89,6 +93,16 @@ helm_docs() {
   helm-docs
 }
 
+helm_unittest() {
+  helm unittest -f 'tests/*_test.yaml' --color charts/external-dns
+}
+
+helm_template() {
+  helm template external-dns charts/external-dns \
+		--output-dir _scratch \
+		-n kube-system
+}
+
 show_docs() {
   open "https://github.com/losisin/helm-values-schema-json?tab=readme-ov-file"
 }
@@ -97,6 +111,12 @@ function main() {
   case $1 in
     --show-docs)
       show_docs
+      ;;
+    --helm-unittest)
+      helm_unittest
+      ;;
+    --helm-template)
+      helm_unittest
       ;;
     -d|--diff)
       diff_schema
