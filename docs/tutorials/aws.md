@@ -536,7 +536,7 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well.
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create two ALIAS records (one 'A' for IPv4 and one 'AAAA' for IPv6) when the target is an ALIAS as well.
 To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./gke-nginx.md#with-a-separate-tcp-load-balancer).
 In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container.
 If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
@@ -650,6 +650,32 @@ This should show something like:
 ]
 ```
 
+Or for IPv6 (AAAA) records:
+
+```bash
+aws route53 list-resource-record-sets --output json --hosted-zone-id $ZONE_ID \
+  --query "ResourceRecordSets[?Name == 'nginx.example.com.']|[?Type == 'AAAA']"
+```
+
+This should show something like:
+
+```json
+[
+    {
+        "Name": "nginx.example.com.",
+        "Type": "AAAA",
+        "AliasTarget": {
+            "HostedZoneId": "ZEWFWZ4R16P7IB",
+            "DNSName": "ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": true
+        }
+    }
+]
+```
+
+IPv6 (AAAA) records are created when ALIAS is enabled even for load balancers that do not have dualstack enabled.
+However, Route53 returns empty sets when querying such records, meaning they are harmless and IPv4 will work as normal.
+
 You can also fetch the corresponding text records:
 
 ```bash
@@ -674,9 +700,9 @@ This will show something like:
 ]
 ```
 
-Note created TXT record alongside ALIAS record. TXT record signifies that the corresponding ALIAS record is managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
+Note created TXT record alongside ALIAS records. TXT record signifies that the corresponding ALIAS records are managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
 
-For more information about ALIAS record, see [Choosing between alias and non-alias records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html).
+For more information about ALIAS records, see [Choosing between alias and non-alias records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html).
 
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
@@ -876,6 +902,11 @@ env:
 
 The DynamoDB Registry can be used to store dns records metadata. See the [DynamoDB Registry Tutorial](../registry/dynamodb.md) for more information.
 
+## Disable AAAA Record Creation
+
+If you would like ExternalDNS to not create AAAA records at all, you can add the following command line parameter: `--exclude-record-types=AAAA`.
+Please be aware, this will disable AAAA record creation even for dualstack enabled load balancers.
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
@@ -1014,97 +1045,3 @@ Because those limits are in place, `aws-batch-change-size` can be set to any val
 ## Using CRD source to manage DNS records in AWS
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
-
-## Strategies for Scoping Zones
-
-> Without specifying these flags, management applies to all zones.
-
-In order to manage specific zones,  you may need to combine multiple options
-
-| Argument                    | Description                                                                 | Flow Control |
-|:----------------------------|:----------------------------------------------------------------------------|:------------:|
-| `--zone-id-filter`          | Specify multiple times if needed                                            |      OR      |
-| `--domain-filter`           | By domain suffix - specify multiple times if needed                         |      OR      |
-| `--regex-domain-filter`     | By domain suffix but as a regex - overrides domain-filter                   |     AND      |
-| `--exclude-domains`         | To exclude a domain or subdomain                                            |      OR      |
-| `--regex-domain-exclusion`  | Subtracts its matches from `regex-domain-filter`'s matches                  |     AND      |
-| `--aws-zone-type`           | Only sync zones of this type `[public\|private]`                            |      OR      |
-| `--aws-zone-tags`           | Only sync zones with this tag                                               |     AND      |
-
-Minimum required configuration
-
-```sh
-args:
-    --provider=aws
-    --registry=txt
-    --source=service
-```
-
-### Filter by Zone Type
-
-> If this flag is not specified, management applies to both public and private zones.
-
-```sh
-args:
-    --aws-zone-type=private|public # choose between public or private
-    ...
-```
-
-### Filter by Domain
-
-> Specify multiple times if needed.
-
-```sh
-args:
-    --domain-filter=example.com
-    --domain-filter=.paradox.example.com
-    ...
-```
-
-Example `--domain-filter=example.com` will allow for zone `example.com` and any zones that end in `.example.com`, including `an.example.com`, i.e., the subdomains of example.com.
-
-When there are multiple domains, filter `--domain-filter=example.com` will match domains `example.com`, `ex.par.example.com`, `par.example.com`, `x.par.eu-west-1.example.com`.
-
-And if the filter is prepended with `.` e.g., `--domain-filter=.example.com` it will allow *only* zones that end in `.example.com`, i.e., the subdomains of example.com but not the `example.com` zone itself. Example result: `ex.par.eu-west-1.example.com`, `ex.par.example.com`, `par.example.com`.
-
-> Note: if you prepend the filter with ".", it will not attempt to match parent zones.
-
-### Filter by Zone ID
-
-> Specify multiple times if needed, the flow logic is OR
-
-```sh
-args:
-    --zone-id-filter=ABCDEF12345678
-    --zone-id-filter=XYZDEF12345888
-    ...
-```
-
-### Filter by Tag
-
-> Specify multiple times if needed, the flow logic is AND
-
-Keys only
-
-```sh
-args:
-    --aws-zone-tags=owner
-    --aws-zone-tags=vertical
-```
-
-Or specify keys with values
-
-```sh
-args:
-    --aws-zone-tags=owner=k8s
-    --aws-zone-tags=vertical=k8s
-```
-
-Can't specify multiple or separate values with commas: `key1=val1,key2=val2` at the moment.
-Filter only by value `--aws-zone-tags==tag-value` is not supported.
-
-```sh
-args:
-    --aws-zone-tags=team=k8s,vertical=platform # this is not supported
-    --aws-zone-tags==tag-value # this is not supported
-```

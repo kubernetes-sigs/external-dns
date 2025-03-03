@@ -280,7 +280,6 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		}
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, eps)
-		sc.setRouteGroupDualstackLabel(rg, eps)
 		endpoints = append(endpoints, eps...)
 	}
 
@@ -322,16 +321,6 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-func (sc *routeGroupSource) setRouteGroupDualstackLabel(rg *routeGroup, eps []*endpoint.Endpoint) {
-	val, ok := rg.Metadata.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to routegroup %s/%s.", rg.Metadata.Namespace, rg.Metadata.Name)
-		for _, ep := range eps {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
-	}
 }
 
 // annotation logic ported from source/ingress.go without Spec.TLS part, because it'S not supported in RouteGroup
