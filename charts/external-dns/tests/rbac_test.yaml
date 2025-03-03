@@ -107,3 +107,49 @@ tests:
             - apiGroups: ["cis.f5.com"]
               resources: ["virtualservers", "transportservers"]
               verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'gateway-api' with source 'gateway-httproute'
+    set:
+      sources:
+        - gateway-httproute
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: [""]
+              resources: ["namespaces"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["httproutes"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'gateway-api' with sources 'tlsroute,tcproute,udproute'
+    set:
+      sources:
+        - gateway-tlsroute
+        - gateway-tcproute
+        - gateway-udproute
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: [""]
+              resources: ["namespaces"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["tlsroutes"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["tcproutes"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["udproutes"]
+              verbs: ["get","watch","list"]
