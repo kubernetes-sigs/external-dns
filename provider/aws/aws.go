@@ -62,6 +62,9 @@ const (
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 	providerSpecificHealthCheckID              = "aws/health-check-id"
 	sameZoneAlias                              = "same-zone"
+	// Currently supported up to 10 health checks or hosted zones.
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
+	batchSize = 10
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -205,7 +208,7 @@ type Route53API interface {
 	ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error)
 	CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error)
 	ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error)
-	ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error)
+	ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error)
 }
 
 // Route53Change wrapper to handle ownership relation throughout the provider implementation
@@ -229,6 +232,29 @@ func (cs Route53Changes) Route53Changes() []route53types.Change {
 		ret = append(ret, c.Change)
 	}
 	return ret
+}
+
+type zoneTags map[string]map[string]string
+
+// filterZonesByTags filters the provided zones map by matching the tags against the provider's zoneTagFilter.
+// It removes any zones from the map that do not match the filter criteria.
+func (z zoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZone) {
+	for zone, tags := range z {
+		if !p.zoneTagFilter.Match(tags) {
+			delete(zones, zone)
+		}
+	}
+}
+
+// append adds tags to the ZoneTags for a given zoneID.
+func (z zoneTags) append(id string, tags []route53types.Tag) {
+	zoneId := fmt.Sprintf("/hostedzone/%s", id)
+	if _, exists := z[zoneId]; !exists {
+		z[zoneId] = make(map[string]string)
+	}
+	for _, tag := range tags {
+		z[zoneId][*tag.Key] = *tag.Value
+	}
 }
 
 type zonesListCache struct {
@@ -328,7 +354,6 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 	zones := make(map[string]*profiledZone)
 
 	for profile, client := range p.clients {
-		var tagErr error
 		paginator := route53.NewListHostedZonesPaginator(client, &route53.ListHostedZonesInput{})
 
 		for paginator.HasMorePages() {
@@ -342,6 +367,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 				// nothing to do here. Falling through to general error handling
 				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 			}
+			var zonesToTagFilter []string
 			for _, zone := range resp.HostedZones {
 				if !p.zoneIDFilter.Match(*zone.Id) {
 					continue
@@ -360,16 +386,8 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					}
 				}
 
-				// Only fetch tags if a tag filter was specified
 				if !p.zoneTagFilter.IsEmpty() {
-					tags, err := p.tagsForZone(ctx, *zone.Id, profile)
-					if err != nil {
-						tagErr = err
-						break
-					}
-					if !p.zoneTagFilter.Match(tags) {
-						continue
-					}
+					zonesToTagFilter = append(zonesToTagFilter, cleanZoneID(*zone.Id))
 				}
 
 				zones[*zone.Id] = &profiledZone{
@@ -377,14 +395,21 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					zone:    &zone,
 				}
 			}
-		}
-		if tagErr != nil {
-			return nil, provider.NewSoftErrorf("failed to list zones tags: %w", tagErr)
+
+			if len(zonesToTagFilter) > 0 {
+				if zTags, err := p.tagsForZone(ctx, zonesToTagFilter, profile); err != nil {
+					return nil, provider.NewSoftErrorf("failed to list tags for zones %w", err)
+				} else {
+					zTags.filterZonesByTags(p, zones)
+				}
+			}
 		}
 	}
 
-	for _, zone := range zones {
-		log.Debugf("Considering zone: %s (domain: %s)", *zone.zone.Id, *zone.zone.Name)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		for _, zone := range zones {
+			log.Debugf("Considering zone: %s (domain: %s)", *zone.zone.Id, *zone.zone.Name)
+		}
 	}
 
 	if p.zonesCache.duration > time.Duration(0) {
@@ -636,6 +661,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	var failedZones []string
+	debugLevel := log.DebugLevel
 	for z, cs := range changesByZone {
 		log := log.WithFields(log.Fields{
 			"zoneName": *zones[z].zone.Name,
@@ -678,10 +704,11 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 					if len(changesByOwnership) > 1 {
 						log.Debug("Trying to submit change sets one-by-one instead")
-
 						for _, changes := range changesByOwnership {
-							for _, c := range changes {
-								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
+							if log.Logger.IsLevelEnabled(debugLevel) {
+								for _, c := range changes {
+									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
+								}
 							}
 							params.ChangeBatch = &route53types.ChangeBatch{
 								Changes: changes.Route53Changes(),
@@ -940,23 +967,29 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, profile string) (map[string]string, error) {
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (zoneTags, error) {
 	client := p.clients[profile]
 
-	// TODO: this will make single API request for each zone, which consumes API requests
-	// more effective way is to batch requests https://github.com/aws/aws-sdk-go-v2/blob/ed8a3caa0df9ce36a5b60aebeee201187098d205/service/route53/api_op_ListTagsForResources.go#L37
-	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
-		ResourceType: route53types.TagResourceTypeHostedzone,
-		ResourceId:   aws.String(cleanZoneID(zoneID)),
-	})
-	if err != nil {
-		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %w", zoneID, err)
+	result := zoneTags{}
+
+	for i := 0; i < len(zoneIDs); i += batchSize {
+		batch := zoneIDs[i:min(i+batchSize, len(zoneIDs))]
+		if len(batch) == 0 {
+			break
+		}
+		response, err := client.ListTagsForResources(ctx, &route53.ListTagsForResourcesInput{
+			ResourceType: route53types.TagResourceTypeHostedzone,
+			ResourceIds:  batch,
+		})
+		if err != nil {
+			return nil, provider.NewSoftErrorf("failed to list tags for zones. %v", err)
+		}
+
+		for _, res := range response.ResourceTagSets {
+			result.append(*res.ResourceId, res.Tags)
+		}
 	}
-	tagMap := map[string]string{}
-	for _, tag := range response.ResourceTagSet.Tags {
-		tagMap[*tag.Key] = *tag.Value
-	}
-	return tagMap, nil
+	return result, nil
 }
 
 // count bytes for all changes values
