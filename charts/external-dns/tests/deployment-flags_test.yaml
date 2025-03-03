@@ -91,3 +91,29 @@ tests:
       - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--namespace=default"
+
+  - it: should manage multiple zones with 'extraArgs'
+    set:
+      extraArgs:
+        - --zone-id-filter=/hostedzone/Z00001
+        - --zone-id-filter=/hostedzone/Z00002
+        - --zone-id-filter=/hostedzone/Z00003
+        - --zone-id-filter=/hostedzone/Z00004
+        - --zone-id-filter=/hostedzone/Z00005
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --zone-id-filter=/hostedzone/Z00001
+            - --zone-id-filter=/hostedzone/Z00002
+            - --zone-id-filter=/hostedzone/Z00003
+            - --zone-id-filter=/hostedzone/Z00004
+            - --zone-id-filter=/hostedzone/Z00005
