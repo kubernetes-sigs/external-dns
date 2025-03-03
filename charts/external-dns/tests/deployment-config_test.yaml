@@ -62,6 +62,14 @@ tests:
               successThreshold: 1
               timeoutSeconds: 5
 
+  - it: should have service account set
+    release:
+      name: test
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: test-external-dns
+
   - it: should have not be able to change replicas when specified via values
     set:
       deployment:
