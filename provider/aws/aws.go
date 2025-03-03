@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -508,7 +509,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						ttl = recordTTL
 					}
 					ep := endpoint.
-						NewEndpointWithTTL(name, endpoint.RecordTypeA, ttl, *r.AliasTarget.DNSName).
+						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 						WithProviderSpecific(providerSpecificAlias, "true")
 					newEndpoints = append(newEndpoints, ep)
@@ -756,17 +757,8 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 	changes := make(Route53Changes, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		change, dualstack := p.newChange(action, endpoint)
+		change := p.newChange(action, endpoint)
 		changes = append(changes, change)
-		if dualstack {
-			// make a copy of change, modify RRS type to AAAA, then add new change
-			rrs := *change.ResourceRecordSet
-			change2 := &Route53Change{
-				Change: route53types.Change{Action: change.Action, ResourceRecordSet: &rrs},
-			}
-			change2.ResourceRecordSet.Type = route53types.RRTypeAaaa
-			changes = append(changes, change2)
-		}
 	}
 
 	return changes
@@ -778,13 +770,17 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 // Example: CNAME endpoints pointing to ELBs will have a `alias` provider-specific property
 // added to match the endpoints generated from existing alias records in Route53.
 func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Holds CNAME targets that we will treat as Alias records. Such records are
+	// hard coded to 'A' type aliases but we also need their 'AAAA' counterparts.
+	var aliasCnameAaaaEndpoints []*endpoint.Endpoint
+
 	for _, ep := range endpoints {
 		alias := false
 
 		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
 			alias = aliasString == "true"
 			if alias {
-				if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeCNAME {
+				if !slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}, ep.RecordType) {
 					ep.DeleteProviderSpecificProperty(providerSpecificAlias)
 				}
 			} else {
@@ -803,7 +799,6 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		}
 
 		if alias {
-			ep.RecordType = endpoint.RecordTypeA
 			if ep.RecordTTL.IsConfigured() {
 				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, recordTTL)
 				ep.RecordTTL = recordTTL
@@ -815,18 +810,35 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			} else {
 				ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
 			}
+
+			if ep.RecordType == endpoint.RecordTypeCNAME {
+				// This needs to match two records from Route53, one alias for 'A' (IPv4)
+				// and one alias for 'AAAA' (IPv6).
+				aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &endpoint.Endpoint{
+					DNSName:          ep.DNSName,
+					Targets:          ep.Targets,
+					RecordType:       endpoint.RecordTypeAAAA,
+					RecordTTL:        ep.RecordTTL,
+					Labels:           ep.Labels,
+					ProviderSpecific: ep.ProviderSpecific,
+					SetIdentifier:    ep.SetIdentifier,
+				})
+				ep.RecordType = endpoint.RecordTypeA
+			}
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
 	}
+
+	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
 	return endpoints, nil
 }
 
-// newChange returns a route53 Change and a boolean indicating if there should also be a change to a AAAA record
+// newChange returns a route53 Change
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.Endpoint) (*Route53Change, bool) {
+func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.Endpoint) *Route53Change {
 	change := &Route53Change{
 		Change: route53types.Change{
 			Action: action,
@@ -835,17 +847,12 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 			},
 		},
 	}
-	dualstack := false
+	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 			evalTargetHealth = prop == "true"
 		}
-		// If the endpoint has a Dualstack label, append a change for AAAA record as well.
-		if val, ok := ep.Labels[endpoint.DualstackLabelKey]; ok {
-			dualstack = val == "true"
-		}
-		change.ResourceRecordSet.Type = route53types.RRTypeA
 		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
 			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
@@ -854,7 +861,6 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeBytes += len([]byte(ep.Targets[0]))
 		change.sizeValues += 1
 	} else {
-		change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 		if !ep.RecordTTL.IsConfigured() {
 			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
 		} else {
@@ -926,7 +932,7 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.OwnedRecord = ownedRecord
 	}
 
-	return change, dualstack
+	return change
 }
 
 // searches for `changes` that are contained in `queue` and returns the `changes` separated by whether they were found in the queue (`foundChanges`) or not (`notFoundChanges`)
@@ -1175,7 +1181,7 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
 	isAlias, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
-	if exists && isAlias == "true" && ep.RecordType == endpoint.RecordTypeA && len(ep.Targets) > 0 {
+	if exists && isAlias == "true" && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 
 		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {

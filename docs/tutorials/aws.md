@@ -536,7 +536,7 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well.
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create two ALIAS records (one 'A' for IPv4 and one 'AAAA' for IPv6) when the target is an ALIAS as well.
 To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./gke-nginx.md#with-a-separate-tcp-load-balancer).
 In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container.
 If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
@@ -650,6 +650,32 @@ This should show something like:
 ]
 ```
 
+Or for IPv6 (AAAA) records:
+
+```bash
+aws route53 list-resource-record-sets --output json --hosted-zone-id $ZONE_ID \
+  --query "ResourceRecordSets[?Name == 'nginx.example.com.']|[?Type == 'AAAA']"
+```
+
+This should show something like:
+
+```json
+[
+    {
+        "Name": "nginx.example.com.",
+        "Type": "AAAA",
+        "AliasTarget": {
+            "HostedZoneId": "ZEWFWZ4R16P7IB",
+            "DNSName": "ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.",
+            "EvaluateTargetHealth": true
+        }
+    }
+]
+```
+
+IPv6 (AAAA) records are created when ALIAS is enabled even for load balancers that do not have dualstack enabled.
+However, Route53 returns empty sets when querying such records, meaning they are harmless and IPv4 will work as normal.
+
 You can also fetch the corresponding text records:
 
 ```bash
@@ -674,9 +700,9 @@ This will show something like:
 ]
 ```
 
-Note created TXT record alongside ALIAS record. TXT record signifies that the corresponding ALIAS record is managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
+Note created TXT record alongside ALIAS records. TXT record signifies that the corresponding ALIAS records are managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
 
-For more information about ALIAS record, see [Choosing between alias and non-alias records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html).
+For more information about ALIAS records, see [Choosing between alias and non-alias records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html).
 
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
@@ -875,6 +901,11 @@ env:
 ## DynamoDB Registry
 
 The DynamoDB Registry can be used to store dns records metadata. See the [DynamoDB Registry Tutorial](../registry/dynamodb.md) for more information.
+
+## Disable AAAA Record Creation
+
+If you would like ExternalDNS to not create AAAA records at all, you can add the following command line parameter: `--exclude-record-types=AAAA`.
+Please be aware, this will disable AAAA record creation even for dualstack enabled load balancers.
 
 ## Clean up
 
