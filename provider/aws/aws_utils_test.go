@@ -124,16 +124,21 @@ func (r Route53APIFixtureStub) ListHostedZones(ctx context.Context, input *route
 	return output, nil
 }
 
-func (r Route53APIFixtureStub) ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error) {
+func (r Route53APIFixtureStub) ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error) {
 	r.calls["listtagsforresource"]++
-	tags := r.zoneTags[*input.ResourceId]
-	return &route53.ListTagsForResourceOutput{
-		ResourceTagSet: &route53types.ResourceTagSet{
-			ResourceId:   input.ResourceId,
-			ResourceType: input.ResourceType,
-			Tags:         tags,
-		},
-	}, nil
+
+	var sets []route53types.ResourceTagSet
+
+	for _, el := range input.ResourceIds {
+		if r.zoneTags[el] != nil {
+			sets = append(sets, route53types.ResourceTagSet{
+				ResourceId:   &el,
+				ResourceType: route53types.TagResourceTypeHostedzone,
+				Tags:         r.zoneTags[el],
+			})
+		}
+	}
+	return &route53.ListTagsForResourcesOutput{ResourceTagSets: sets}, nil
 }
 
 func unmarshalTestHelper(input string, obj any, t *testing.T) {

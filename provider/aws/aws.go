@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -62,6 +63,9 @@ const (
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 	providerSpecificHealthCheckID              = "aws/health-check-id"
 	sameZoneAlias                              = "same-zone"
+	// Currently supported up to 10 health checks or hosted zones.
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
+	batchSize = 10
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -205,7 +209,7 @@ type Route53API interface {
 	ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error)
 	CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error)
 	ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error)
-	ListTagsForResource(ctx context.Context, input *route53.ListTagsForResourceInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourceOutput, error)
+	ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error)
 }
 
 // Route53Change wrapper to handle ownership relation throughout the provider implementation
@@ -231,6 +235,29 @@ func (cs Route53Changes) Route53Changes() []route53types.Change {
 		ret = append(ret, c.Change)
 	}
 	return ret
+}
+
+type zoneTags map[string]map[string]string
+
+// filterZonesByTags filters the provided zones map by matching the tags against the provider's zoneTagFilter.
+// It removes any zones from the map that do not match the filter criteria.
+func (z zoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZone) {
+	for zone, tags := range z {
+		if !p.zoneTagFilter.Match(tags) {
+			delete(zones, zone)
+		}
+	}
+}
+
+// append adds tags to the ZoneTags for a given zoneID.
+func (z zoneTags) append(id string, tags []route53types.Tag) {
+	zoneId := fmt.Sprintf("/hostedzone/%s", id)
+	if _, exists := z[zoneId]; !exists {
+		z[zoneId] = make(map[string]string)
+	}
+	for _, tag := range tags {
+		z[zoneId][*tag.Key] = *tag.Value
+	}
 }
 
 type zonesListCache struct {
@@ -333,14 +360,17 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		var err error
 		for _, client := range hostedZoneClients {
 			zones, err = p.fetchFilteredZonesForClient(ctx, client, profile)
+
 			if err != nil {
 				return nil, provider.NewSoftErrorf("failed to list zones tags: %w", err)
 			}
 		}
 	}
 
-	for _, zone := range zones {
-		log.Debugf("Considering zone: %s (domain: %s)", *zone.zone.Id, *zone.zone.Name)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		for _, zone := range zones {
+			log.Debugf("Considering zone: %s (domain: %s)", *zone.zone.Id, *zone.zone.Name)
+		}
 	}
 
 	if p.zonesCache.duration > time.Duration(0) {
@@ -366,6 +396,7 @@ func (p *AWSProvider) fetchFilteredZonesForClient(ctx context.Context, client *A
 			// nothing to do here. Falling through to general error handling
 			return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 		}
+		var zonesToTagFilter []string
 		for _, zone := range resp.HostedZones {
 			if !p.zoneIDFilter.Match(*zone.Id) {
 				continue
@@ -384,15 +415,8 @@ func (p *AWSProvider) fetchFilteredZonesForClient(ctx context.Context, client *A
 				}
 			}
 
-			// Only fetch tags if a tag filter was specified
 			if !p.zoneTagFilter.IsEmpty() {
-				tags, err := p.tagsForZone(ctx, *zone.Id, client.Route53Config)
-				if err != nil {
-					return nil, provider.NewSoftErrorf("failed to list tags for zone %s using aws profile %q: %v", *zone.Id, profile, err)
-				}
-				if !p.zoneTagFilter.Match(tags) {
-					continue
-				}
+				zonesToTagFilter = append(zonesToTagFilter, cleanZoneID(*zone.Id))
 			}
 
 			profileZones[*zone.Id] = &profiledZone{
@@ -400,6 +424,14 @@ func (p *AWSProvider) fetchFilteredZonesForClient(ctx context.Context, client *A
 				zone:     &zone,
 				zoneName: client.HostedZoneName,
 				client:   client.Route53Config,
+			}
+		}
+
+		if len(zonesToTagFilter) > 0 {
+			if zTags, err := p.tagsForZone(ctx, zonesToTagFilter, client.Route53Config); err != nil {
+				return nil, provider.NewSoftErrorf("failed to list tags for zones %w", err)
+			} else {
+				zTags.filterZonesByTags(p, profileZones)
 			}
 		}
 	}
@@ -495,7 +527,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						ttl = recordTTL
 					}
 					ep := endpoint.
-						NewEndpointWithTTL(name, endpoint.RecordTypeA, ttl, *r.AliasTarget.DNSName).
+						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 						WithProviderSpecific(providerSpecificAlias, "true")
 					newEndpoints = append(newEndpoints, ep)
@@ -648,6 +680,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	var failedZones []string
+	debugLevel := log.DebugLevel
 	for z, cs := range changesByZone {
 		log := log.WithFields(log.Fields{
 			"zoneName": *zones[z].zone.Name,
@@ -690,10 +723,11 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 					if len(changesByOwnership) > 1 {
 						log.Debug("Trying to submit change sets one-by-one instead")
-
 						for _, changes := range changesByOwnership {
-							for _, c := range changes {
-								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
+							if log.Logger.IsLevelEnabled(debugLevel) {
+								for _, c := range changes {
+									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
+								}
 							}
 							params.ChangeBatch = &route53types.ChangeBatch{
 								Changes: changes.Route53Changes(),
@@ -741,17 +775,8 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 	changes := make(Route53Changes, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		change, dualstack := p.newChange(action, endpoint)
+		change := p.newChange(action, endpoint)
 		changes = append(changes, change)
-		if dualstack {
-			// make a copy of change, modify RRS type to AAAA, then add new change
-			rrs := *change.ResourceRecordSet
-			change2 := &Route53Change{
-				Change: route53types.Change{Action: change.Action, ResourceRecordSet: &rrs},
-			}
-			change2.ResourceRecordSet.Type = route53types.RRTypeAaaa
-			changes = append(changes, change2)
-		}
 	}
 
 	return changes
@@ -763,13 +788,17 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 // Example: CNAME endpoints pointing to ELBs will have a `alias` provider-specific property
 // added to match the endpoints generated from existing alias records in Route53.
 func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Holds CNAME targets that we will treat as Alias records. Such records are
+	// hard coded to 'A' type aliases but we also need their 'AAAA' counterparts.
+	var aliasCnameAaaaEndpoints []*endpoint.Endpoint
+
 	for _, ep := range endpoints {
 		alias := false
 
 		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
 			alias = aliasString == "true"
 			if alias {
-				if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeCNAME {
+				if !slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}, ep.RecordType) {
 					ep.DeleteProviderSpecificProperty(providerSpecificAlias)
 				}
 			} else {
@@ -788,7 +817,6 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		}
 
 		if alias {
-			ep.RecordType = endpoint.RecordTypeA
 			if ep.RecordTTL.IsConfigured() {
 				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, recordTTL)
 				ep.RecordTTL = recordTTL
@@ -800,18 +828,35 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			} else {
 				ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
 			}
+
+			if ep.RecordType == endpoint.RecordTypeCNAME {
+				// This needs to match two records from Route53, one alias for 'A' (IPv4)
+				// and one alias for 'AAAA' (IPv6).
+				aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, &endpoint.Endpoint{
+					DNSName:          ep.DNSName,
+					Targets:          ep.Targets,
+					RecordType:       endpoint.RecordTypeAAAA,
+					RecordTTL:        ep.RecordTTL,
+					Labels:           ep.Labels,
+					ProviderSpecific: ep.ProviderSpecific,
+					SetIdentifier:    ep.SetIdentifier,
+				})
+				ep.RecordType = endpoint.RecordTypeA
+			}
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
 	}
+
+	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
 	return endpoints, nil
 }
 
-// newChange returns a route53 Change and a boolean indicating if there should also be a change to a AAAA record
+// newChange returns a route53 Change
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.Endpoint) (*Route53Change, bool) {
+func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.Endpoint) *Route53Change {
 	change := &Route53Change{
 		Change: route53types.Change{
 			Action: action,
@@ -820,17 +865,12 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 			},
 		},
 	}
-	dualstack := false
+	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 			evalTargetHealth = prop == "true"
 		}
-		// If the endpoint has a Dualstack label, append a change for AAAA record as well.
-		if val, ok := ep.Labels[endpoint.DualstackLabelKey]; ok {
-			dualstack = val == "true"
-		}
-		change.ResourceRecordSet.Type = route53types.RRTypeA
 		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
 			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
@@ -839,7 +879,6 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeBytes += len([]byte(ep.Targets[0]))
 		change.sizeValues += 1
 	} else {
-		change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
 		if !ep.RecordTTL.IsConfigured() {
 			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
 		} else {
@@ -911,7 +950,7 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.OwnedRecord = ownedRecord
 	}
 
-	return change, dualstack
+	return change
 }
 
 // searches for `changes` that are contained in `queue` and returns the `changes` separated by whether they were found in the queue (`foundChanges`) or not (`notFoundChanges`)
@@ -952,21 +991,27 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string, client Route53API) (map[string]string, error) {
-	// TODO: this will make single API request for each zone, which consumes API requests
-	// more effective way is to batch requests https://github.com/aws/aws-sdk-go-v2/blob/ed8a3caa0df9ce36a5b60aebeee201187098d205/service/route53/api_op_ListTagsForResources.go#L37
-	response, err := client.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{
-		ResourceType: route53types.TagResourceTypeHostedzone,
-		ResourceId:   aws.String(cleanZoneID(zoneID)),
-	})
-	if err != nil {
-		return nil, provider.NewSoftErrorf("failed to list tags for zone %s: %w", zoneID, err)
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, client Route53API) (zoneTags, error) {
+	result := zoneTags{}
+
+	for i := 0; i < len(zoneIDs); i += batchSize {
+		batch := zoneIDs[i:min(i+batchSize, len(zoneIDs))]
+		if len(batch) == 0 {
+			break
+		}
+		response, err := client.ListTagsForResources(ctx, &route53.ListTagsForResourcesInput{
+			ResourceType: route53types.TagResourceTypeHostedzone,
+			ResourceIds:  batch,
+		})
+		if err != nil {
+			return nil, provider.NewSoftErrorf("failed to list tags for zones. %v", err)
+		}
+
+		for _, res := range response.ResourceTagSets {
+			result.append(*res.ResourceId, res.Tags)
+		}
 	}
-	tagMap := map[string]string{}
-	for _, tag := range response.ResourceTagSet.Tags {
-		tagMap[*tag.Key] = *tag.Value
-	}
-	return tagMap, nil
+	return result, nil
 }
 
 // count bytes for all changes values
@@ -1152,7 +1197,7 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
 	isAlias, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
-	if exists && isAlias == "true" && ep.RecordType == endpoint.RecordTypeA && len(ep.Targets) > 0 {
+	if exists && isAlias == "true" && slices.Contains([]string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}, ep.RecordType) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 
 		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {

@@ -18,6 +18,8 @@ package aws
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -57,7 +59,36 @@ func TestAWSZonesFilterWithTags(t *testing.T) {
 	z, err := provider.Zones(ctx)
 	assert.NoError(t, err)
 	assert.EqualValues(t, 24, len(z))
-	assert.Equal(t, 169, stub.calls["listtagsforresource"])
+	assert.Equal(t, 17, stub.calls["listtagsforresource"])
+}
+
+func TestAWSZonesFiltersWithTags(t *testing.T) {
+	tests := []struct {
+		filters     []string
+		want, calls int
+	}{
+		{[]string{"owner=ext-dns"}, 169, 17},
+		{[]string{"domain=n3.n2.n1.ex.com"}, 1, 17},
+		{[]string{"parentdomain=n3.n2.n1.ex.com"}, 1, 17},
+		{[]string{"vpcid=vpc-not-exists"}, 0, 17},
+	}
+
+	for _, tt := range tests {
+		tName := fmt.Sprintf("filters=%s and zones=%d", strings.Join(tt.filters, ","), tt.want)
+		t.Run(tName, func(t *testing.T) {
+			var zones HostedZones
+			unmarshalTestHelper("/fixtures/160-plus-zones.yaml", &zones, t)
+
+			stub := NewRoute53APIFixtureStub(&zones)
+			provider := providerFilters(stub,
+				WithZoneTagFilters(tt.filters),
+			)
+			z, err := provider.Zones(context.Background())
+			assert.NoError(t, err)
+			assert.EqualValues(t, tt.want, len(z))
+			assert.EqualValues(t, tt.calls, stub.calls["listtagsforresource"])
+		})
+	}
 }
 
 func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
