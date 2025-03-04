@@ -222,13 +222,6 @@ func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 		return err
 	}
 
-	// Deletes must be executed first to support update case.
-	// When just list of targets is updated `[1.2.3.4] -> [1.2.3.4, 1.2.3.5]` it is translated to:
-	// ```
-	// deletes = [1.2.3.4]
-	// creates = [1.2.3.4, 1.2.3.5]
-	// ```
-	// then when deletes are executed after creates it will miss the `1.2.3.4` instance.
 	err = p.submitDeletes(ctx, namespaces, changes.Delete)
 	if err != nil {
 		return err
@@ -252,7 +245,20 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) (creates []*endp
 		current := updateNewMap[old.DNSName]
 
 		if !old.Targets.Same(current.Targets) {
-			// when targets differ the old instances need to be de-registered first
+			currentTargetsMap := make(map[string]struct{}, len(current.Targets))
+			for _, newTarget := range current.Targets {
+				currentTargetsMap[newTarget] = struct{}{}
+			}
+
+			// If targets changed, only deregister removed targets (i.e. in `UpdateOld` but not in `UpdateNew`)
+			targetsToRemove := make(endpoint.Targets, 0)
+			for _, oldTarget := range old.Targets {
+				if _, found := currentTargetsMap[oldTarget]; !found {
+					targetsToRemove = append(targetsToRemove, oldTarget)
+				}
+			}
+
+			old.Targets = targetsToRemove
 			deletes = append(deletes, old)
 		}
 

@@ -52,6 +52,9 @@ type AWSSDClientStub struct {
 
 	// map[service_id] => map[inst_id]instance
 	instances map[string]map[string]*sdtypes.Instance
+
+	// []inst_id
+	deregistered []string
 }
 
 func (s *AWSSDClientStub) CreateService(ctx context.Context, input *sd.CreateServiceInput, optFns ...func(*sd.Options)) (*sd.CreateServiceOutput, error) {
@@ -79,6 +82,7 @@ func (s *AWSSDClientStub) CreateService(ctx context.Context, input *sd.CreateSer
 func (s *AWSSDClientStub) DeregisterInstance(ctx context.Context, input *sd.DeregisterInstanceInput, optFns ...func(options *sd.Options)) (*sd.DeregisterInstanceOutput, error) {
 	serviceInstances := s.instances[*input.ServiceId]
 	delete(serviceInstances, *input.InstanceId)
+	s.deregistered = append(s.deregistered, *input.InstanceId)
 
 	return &sd.DeregisterInstanceOutput{}, nil
 }
@@ -434,6 +438,60 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	// make sure all instances are gone
 	endpoints, _ = provider.Records(ctx)
 	assert.Empty(t, endpoints)
+}
+
+func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	oldEndpoints := []*endpoint.Endpoint{
+		{DNSName: "service1.private.com", Targets: endpoint.Targets{"1.2.3.4", "1.2.3.5"}, RecordType: endpoint.RecordTypeA, RecordTTL: 60},
+	}
+
+	newEndpoints := []*endpoint.Endpoint{
+		{DNSName: "service1.private.com", Targets: endpoint.Targets{"1.2.3.4", "1.2.3.6"}, RecordType: endpoint.RecordTypeA, RecordTTL: 60},
+	}
+
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
+
+	ctx := context.Background()
+
+	// apply creates
+	provider.ApplyChanges(ctx, &plan.Changes{
+		Create: oldEndpoints,
+	})
+
+	ctx = context.Background()
+
+	// apply update
+	provider.ApplyChanges(ctx, &plan.Changes{
+		UpdateOld: oldEndpoints,
+		UpdateNew: newEndpoints,
+	})
+
+	// make sure services were created
+	assert.Len(t, api.services["private"], 1)
+	existingServices, _ := provider.ListServicesByNamespaceID(ctx, namespaces["private"].Id)
+	assert.NotNil(t, existingServices["service1"])
+
+	// make sure instances were registered
+	endpoints, _ := provider.Records(ctx)
+	assert.True(t, testutils.SameEndpoints(newEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", newEndpoints, endpoints)
+
+	// make sure only one instance is de-registered
+	assert.Len(t, api.deregistered, 1)
+	assert.Equal(t, api.deregistered[0], "1.2.3.5", "wrong target de-registered")
 }
 
 func TestAWSSDProvider_ListNamespaces(t *testing.T) {
