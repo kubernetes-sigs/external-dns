@@ -184,3 +184,11 @@ pre-commit-validate:
 #? help: Get more info on available commands
 help: Makefile
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
+
+#? helm-test: Run unit tests
+helm-test:
+	scripts/helm-tools.sh --helm-unittest
+
+#? helm-template: Run helm template
+helm-template:
+	scripts/helm-tools.sh --helm-template
