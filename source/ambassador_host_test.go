@@ -246,8 +246,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:    hostAnnotation,
-						CloudflareProxiedKey: "true",
+						ambHostAnnotation: hostAnnotation,
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -272,7 +272,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Name:  "cloudflare-proxied",
 						Value: "true",
 					}},
 				},

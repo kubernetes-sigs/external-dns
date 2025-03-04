@@ -2,17 +2,10 @@ apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
 metadata:
   name: examplednsrecord
-spec:
-  endpoints:
-  - dnsName: subdomain.foo.bar.com
-    providerSpecific:
-      - name: "aws/failover"
-        value: "PRIMARY"
-      - name: "aws/health-check-id"
-        value: "asdf1234-as12-as12-as12-asdf12345678"
-      - name: "aws/evaluate-target-health"
-        value: "true"
-    recordType: CNAME
-    setIdentifier: some-unique-id
-    targets:
-    - other-subdomain.foo.bar.com
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "subdomain.foo.bar.com"
+    external-dns.alpha.kubernetes.io/target: "other-subdomain.foo.bar.com"
+    external-dns.alpha.kubernetes.io/set-identifier: "some-unique-id"
+    external-dns.alpha.kubernetes.io/aws-failover: "PRIMARY"
+    external-dns.alpha.kubernetes.io/aws-health-check-id: "asdf1234-as12-as12-as12-asdf12345678"
+    external-dns.alpha.kubernetes.io/aws-evaluate-target-health: "true"
