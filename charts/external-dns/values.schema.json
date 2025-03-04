@@ -497,10 +497,16 @@
           "type": "boolean"
         },
         "mountPath": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "subPath": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "type": "object"

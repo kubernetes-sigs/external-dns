@@ -244,7 +244,13 @@ This helm chart comes with a JSON schema generated from values with [helm schema
 ❯❯ scripts/helm-tools.sh --docs
 ```
 
-6. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) under `## UNRELEASED` section and `open` pull request
+6. Run helm unittets.
+
+```sh
+❯❯ make helm-test
+```
+
+7. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) under `## UNRELEASED` section and `open` pull request
 
 ## Deploy with kubernetes manifests
 
