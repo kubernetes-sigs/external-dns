@@ -47,7 +47,7 @@ golangci-lint-verify: golangci-lint
 .PHONY: go-lint
 go-lint: golangci-lint
 	gofmt -l -s -w .
-	golangci-lint run --timeout=30m ./...
+	golangci-lint run --timeout=30m --fix ./...
 
 #? licensecheck: Run the to check for license headers
 .PHONY: licensecheck
@@ -149,7 +149,6 @@ clean:
 	@rm -rf build
 	@go clean -cache
 
-
 .PHONY: release.staging
 #? release.staging: Builds and push container images to the staging bucket.
 release.staging: test
@@ -166,6 +165,11 @@ ko:
 #? generate-flags-documentation: Generate documentation (docs/flags.md)
 generate-flags-documentation:
 	go run internal/gen/docs/flags/main.go
+
+.PHONY: generate-metrics-documentation
+#? generate-metrics-documentation: Generate documentation (docs/monitoring/metrics.md)
+generate-metrics-documentation:
+	go run internal/gen/docs/metrics/main.go
 
 #? pre-commit-install: Install pre-commit hooks
 pre-commit-install:

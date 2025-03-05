@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/akamai"
@@ -449,8 +450,12 @@ func handleSigterm(cancel func()) {
 func serveMetrics(address string) {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
+
+	log.Debugf("serving 'healthz' on 'localhost:%s/healthz'", address)
+	log.Debugf("serving 'metrics' on 'localhost:%s/metrics'", address)
+	log.Debugf("registered '%d' metrics", len(metrics.RegisterMetric.Metrics))
 
 	http.Handle("/metrics", promhttp.Handler())
 

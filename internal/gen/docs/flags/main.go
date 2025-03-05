@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,12 +18,19 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"os"
 	"strings"
 	"text/template"
 
+	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+)
+
+var (
+	//go:embed "templates/*"
+	templates embed.FS
 )
 
 type Flag struct {
@@ -36,19 +43,6 @@ type Flags []Flag
 func (f *Flags) addFlag(name, description string) {
 	*f = append(*f, Flag{Name: name, Description: description})
 }
-
-const markdownTemplate = `# Flags
-
-<!-- THIS FILE MUST NOT BE EDITED BY HAND -->
-<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
-<!-- markdownlint-disable MD013 -->
-
-| Flag | Description  |
-| :------ | :----------- |
-{{- range . }}
-| {{ .Name }} | {{ .Description }} |
-{{- end -}}
-`
 
 // It generates a markdown file
 // with the supported flags and writes it to the 'docs/flags.md' file.
@@ -64,7 +58,7 @@ func main() {
 		_ = fmt.Errorf("failed to generate markdown file '%s': %v\n", path, err.Error())
 	}
 	content = content + "\n"
-	_ = writeToFile(path, content)
+	_ = utils.WriteToFile(path, content)
 }
 
 func computeFlags() Flags {
@@ -94,25 +88,13 @@ func computeFlags() Flags {
 }
 
 func (f *Flags) generateMarkdownTable() (string, error) {
-	tmpl := template.Must(template.New("flags.md.tpl").Parse(markdownTemplate))
+	tmpl := template.New("").Funcs(utils.FuncMap())
+	template.Must(tmpl.ParseFS(templates, "templates/*.gotpl"))
 
 	var b bytes.Buffer
-	err := tmpl.Execute(&b, f)
+	err := tmpl.ExecuteTemplate(&b, "flags.gotpl", f)
 	if err != nil {
 		return "", err
 	}
 	return b.String(), nil
-}
-
-func writeToFile(filename string, content string) error {
-	file, fileErr := os.Create(filename)
-	if fileErr != nil {
-		_ = fmt.Errorf("failed to create file: %v", fileErr)
-	}
-	defer file.Close()
-	_, writeErr := file.WriteString(content)
-	if writeErr != nil {
-		_ = fmt.Errorf("failed to write to file: %s", filename)
-	}
-	return nil
 }
