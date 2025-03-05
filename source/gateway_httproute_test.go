@@ -105,6 +105,7 @@ func newTestEndpointWithTTL(dnsName, recordType string, ttl int64, targets ...st
 		DNSName:    dnsName,
 		Targets:    append([]string(nil), targets...), // clone targets
 		RecordType: recordType,
+		Labels:     endpoint.NewLabels(),
 		RecordTTL:  endpoint.TTL(ttl),
 	}
 }
@@ -178,7 +179,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/route-namespace/test"),
 			},
 		},
 		{
@@ -214,7 +216,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("route-namespace.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("route-namespace.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/route-namespace/test"),
 			},
 		},
 		{
@@ -258,7 +261,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
@@ -299,7 +303,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("labels-match.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("labels-match.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/labels-match"),
 			},
 		},
 		{
@@ -340,7 +345,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("annotations-match.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotations-match.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/annotations-match"),
 			},
 		},
 		{
@@ -400,7 +406,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4", "2.3.4.5"),
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4", "2.3.4.5").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
@@ -435,8 +442,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
-				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
+				newTestEndpoint("bar.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
@@ -471,11 +480,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
-			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
 			title:      "PortNumberMatch",
 			config:     Config{},
 			namespaces: namespaces("default"),
@@ -515,8 +524,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
-				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
+				newTestEndpoint("bar.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
@@ -543,7 +554,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/no-hostname"),
 			},
 		},
 		{
@@ -570,7 +582,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/no-hostname"),
 			},
 		},
 		{
@@ -597,7 +610,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("*.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("*.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/no-hostname"),
 			},
 		},
 		{
@@ -622,7 +636,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/no-hostname"),
 			},
 		},
 		{
@@ -664,7 +679,16 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			config:     Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
-				ObjectMeta: objectMeta("default", "test"),
+				TypeMeta: metav1.TypeMeta{
+					Kind: "Gateway",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						hostnameAnnotationKey: "annotation.gateway.internal",
+					},
+				},
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
 				},
@@ -673,7 +697,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "without-hostame",
+						Name:      "without-hostname",
 						Namespace: "default",
 						Annotations: map[string]string{
 							hostnameAnnotationKey: "annotation.without-hostname.internal",
@@ -686,7 +710,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "with-hostame",
+						Name:      "with-hostname",
 						Namespace: "default",
 						Annotations: map[string]string{
 							hostnameAnnotationKey: "annotation.with-hostname.internal",
@@ -699,9 +723,16 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("annotation.without-hostname.internal", "A", "1.2.3.4"),
-				newTestEndpoint("annotation.with-hostname.internal", "A", "1.2.3.4"),
-				newTestEndpoint("with-hostname.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotation.gateway.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "gateway/default/test"),
+				newTestEndpoint("annotation.gateway.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "gateway/default/test"),
+				newTestEndpoint("annotation.without-hostname.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/without-hostname"),
+				newTestEndpoint("annotation.with-hostname.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/with-hostname"),
+				newTestEndpoint("with-hostname.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/with-hostname"),
 			},
 		},
 		{
@@ -719,7 +750,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "with-hostame",
+					Name:      "test",
 					Namespace: "default",
 					Annotations: map[string]string{
 						hostnameAnnotationKey: "annotation.with-hostname.internal",
@@ -731,7 +762,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("with-hostname.internal", "A", "1.2.3.4"),
+				newTestEndpoint("with-hostname.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
@@ -764,10 +796,14 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("fqdn-without-hostnames.zero.internal", "A", "1.2.3.4"),
-				newTestEndpoint("fqdn-without-hostnames.one.internal", "A", "1.2.3.4"),
-				newTestEndpoint("fqdn-without-hostnames.two.internal", "A", "1.2.3.4"),
-				newTestEndpoint("fqdn-with-hostnames.internal", "A", "1.2.3.4"),
+				newTestEndpoint("fqdn-without-hostnames.zero.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/fqdn-without-hostnames"),
+				newTestEndpoint("fqdn-without-hostnames.one.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/fqdn-without-hostnames"),
+				newTestEndpoint("fqdn-without-hostnames.two.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/fqdn-without-hostnames"),
+				newTestEndpoint("fqdn-with-hostnames.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/fqdn-with-hostnames"),
 			},
 		},
 		{
@@ -792,8 +828,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("fqdn-with-hostnames.internal", "A", "1.2.3.4"),
-				newTestEndpoint("combine-fqdn-with-hostnames.internal", "A", "1.2.3.4"),
+				newTestEndpoint("fqdn-with-hostnames.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/fqdn-with-hostnames"),
+				newTestEndpoint("combine-fqdn-with-hostnames.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/fqdn-with-hostnames"),
 			},
 		},
 		{
@@ -832,8 +870,68 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("invalid-ttl.internal", "A", "1.2.3.4"),
-				newTestEndpointWithTTL("valid-ttl.internal", "A", 15, "1.2.3.4"),
+				newTestEndpoint("invalid-ttl.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/invalid-ttl"),
+				newTestEndpointWithTTL("valid-ttl.internal", "A", 15, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/valid-ttl"),
+			},
+		},
+		{
+			title:      "TTLGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "test",
+					Namespace:   "default",
+					Annotations: map[string]string{ttlAnnotationKey: "15s"},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "no-ttl",
+						Namespace: "default",
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("no-ttl.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "longer-ttl",
+						Namespace:   "default",
+						Annotations: map[string]string{ttlAnnotationKey: "20s"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("longer-ttl.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "shorter-ttl",
+						Namespace:   "default",
+						Annotations: map[string]string{ttlAnnotationKey: "5s"},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("shorter-ttl.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("no-ttl.internal", "A", 15, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/no-ttl"),
+				newTestEndpointWithTTL("longer-ttl.internal", "A", 15, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/longer-ttl"),
+				newTestEndpointWithTTL("shorter-ttl.internal", "A", 5, "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/shorter-ttl"),
 			},
 		},
 		{
@@ -863,8 +961,64 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("provider-annotations.com", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/provider-annotations").
 					WithProviderSpecific("alias", "true").
 					WithSetIdentifier("test-set-identifier"),
+			},
+		},
+		{
+			title:      "ProviderAnnotationsGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "default",
+					Annotations: map[string]string{
+						SetIdentifierKey: "gateway",
+						"external-dns.alpha.kubernetes.io/webhook-property": "gateway",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "with-provider-annotations",
+						Namespace: "default",
+						Annotations: map[string]string{
+							SetIdentifierKey: "route",
+							"external-dns.alpha.kubernetes.io/webhook-property": "route",
+						},
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("with-provider-annotations.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "without-provider-annotations",
+						Namespace: "default",
+					},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("without-provider-annotations.internal"),
+					},
+					Status: httpRouteStatus(gwParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("with-provider-annotations.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/with-provider-annotations").
+					WithProviderSpecific("webhook/property", "route").
+					WithSetIdentifier("route"),
+				newTestEndpoint("without-provider-annotations.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/without-provider-annotations").
+					WithProviderSpecific("webhook/property", "gateway").
+					WithSetIdentifier("gateway"),
 			},
 		},
 		{
@@ -904,8 +1058,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.one.internal", "A", "1.2.3.4"),
-				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
+				newTestEndpoint("test.one.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
+				newTestEndpoint("test.two.internal", "A", "2.3.4.5").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/test"),
 			},
 		},
 		{
@@ -943,7 +1099,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("same-namespace.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("same-namespace.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/same-namespace/test"),
 			},
 		},
 		{
@@ -1002,7 +1159,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/foo/test"),
 			},
 		},
 		{
@@ -1070,11 +1228,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "4.3.2.1"),
+				newTestEndpoint("test.example.internal", "A", "4.3.2.1").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/route-namespace/test"),
 			},
 		},
 		{
-			title: "MutlipleGatewaysOneAnnotationOverride",
+			title: "MultipleGatewaysOneAnnotationOverride",
 			config: Config{
 				GatewayNamespace: "gateway-namespace",
 			},
@@ -1118,7 +1277,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "4.3.2.1", "2.3.4.5"),
+				newTestEndpoint("test.example.internal", "A", "4.3.2.1", "2.3.4.5").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/route-namespace/test"),
 			},
 		},
 		{
@@ -1162,8 +1322,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.one.internal", "A", "1.2.3.4"),
-				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
+				newTestEndpoint("test.one.internal", "A", "1.2.3.4").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/one"),
+				newTestEndpoint("test.two.internal", "A", "2.3.4.5").
+					WithLabel(endpoint.ResourceLabelKey, "httproute/default/two"),
 			},
 			logExpectations: []string{
 				"level=debug msg=\"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]\"",

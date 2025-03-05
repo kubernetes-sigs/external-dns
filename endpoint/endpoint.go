@@ -251,6 +251,12 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	}
 }
 
+// WithLabel attaches a label key/value pair to the Endpoint and returns the Endpoint.
+func (e *Endpoint) WithLabel(key, value string) *Endpoint {
+	e.Labels[key] = value
+	return e
+}
+
 // WithSetIdentifier applies the given set identifier to the endpoint.
 func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 	e.SetIdentifier = setIdentifier
