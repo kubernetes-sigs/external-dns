@@ -223,8 +223,10 @@ type Route53Change struct {
 type Route53Changes []*Route53Change
 
 type profiledZone struct {
-	profile string
-	zone    *route53types.HostedZone
+	profile  string
+	zone     *route53types.HostedZone
+	zoneName string
+	client   Route53API
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {
@@ -267,7 +269,7 @@ type zonesListCache struct {
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	provider.BaseProvider
-	clients               map[string]Route53API
+	clients               map[string][]*AWSZoneConfig
 	dryRun                bool
 	batchChangeSize       int
 	batchChangeSizeBytes  int
@@ -308,7 +310,7 @@ type AWSConfig struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSProvider, error) {
+func NewAWSProvider(awsConfig AWSConfig, clients map[string][]*AWSZoneConfig) (*AWSProvider, error) {
 	provider := &AWSProvider{
 		clients:               clients,
 		domainFilter:          awsConfig.DomainFilter,
@@ -354,55 +356,13 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 
 	zones := make(map[string]*profiledZone)
 
-	for profile, client := range p.clients {
-		paginator := route53.NewListHostedZonesPaginator(client, &route53.ListHostedZonesInput{})
+	for profile, hostedZoneClients := range p.clients {
+		var err error
+		for _, client := range hostedZoneClients {
+			zones, err = p.fetchFilteredZonesForClient(ctx, client, profile)
 
-		for paginator.HasMorePages() {
-			resp, err := paginator.NextPage(ctx)
 			if err != nil {
-				var te *route53types.ThrottlingException
-				if errors.As(err, &te) {
-					log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
-					continue
-				}
-				// nothing to do here. Falling through to general error handling
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
-			}
-			var zonesToTagFilter []string
-			for _, zone := range resp.HostedZones {
-				if !p.zoneIDFilter.Match(*zone.Id) {
-					continue
-				}
-
-				if !p.zoneTypeFilter.Match(zone) {
-					continue
-				}
-
-				if !p.domainFilter.Match(*zone.Name) {
-					if !p.zoneMatchParent {
-						continue
-					}
-					if !p.domainFilter.MatchParent(*zone.Name) {
-						continue
-					}
-				}
-
-				if !p.zoneTagFilter.IsEmpty() {
-					zonesToTagFilter = append(zonesToTagFilter, cleanZoneID(*zone.Id))
-				}
-
-				zones[*zone.Id] = &profiledZone{
-					profile: profile,
-					zone:    &zone,
-				}
-			}
-
-			if len(zonesToTagFilter) > 0 {
-				if zTags, err := p.tagsForZone(ctx, zonesToTagFilter, profile); err != nil {
-					return nil, provider.NewSoftErrorf("failed to list tags for zones %w", err)
-				} else {
-					zTags.filterZonesByTags(p, zones)
-				}
+				return nil, provider.NewSoftErrorf("failed to list zones tags: %w", err)
 			}
 		}
 	}
@@ -419,6 +379,64 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 	}
 
 	return zones, nil
+}
+
+func (p *AWSProvider) fetchFilteredZonesForClient(ctx context.Context, client *AWSZoneConfig, profile string) (map[string]*profiledZone, error) {
+	profileZones := make(map[string]*profiledZone)
+	paginator := route53.NewListHostedZonesPaginator(client.Route53Config, &route53.ListHostedZonesInput{})
+
+	for paginator.HasMorePages() {
+		resp, err := paginator.NextPage(ctx)
+		if err != nil {
+			var te *route53types.ThrottlingException
+			if errors.As(err, &te) {
+				log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
+				continue
+			}
+			// nothing to do here. Falling through to general error handling
+			return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+		}
+		var zonesToTagFilter []string
+		for _, zone := range resp.HostedZones {
+			if !p.zoneIDFilter.Match(*zone.Id) {
+				continue
+			}
+
+			if !p.zoneTypeFilter.Match(zone) {
+				continue
+			}
+
+			if !p.domainFilter.Match(*zone.Name) {
+				if !p.zoneMatchParent {
+					continue
+				}
+				if !p.domainFilter.MatchParent(*zone.Name) {
+					continue
+				}
+			}
+
+			if !p.zoneTagFilter.IsEmpty() {
+				zonesToTagFilter = append(zonesToTagFilter, cleanZoneID(*zone.Id))
+			}
+
+			profileZones[*zone.Id] = &profiledZone{
+				profile:  profile,
+				zone:     &zone,
+				zoneName: client.HostedZoneName,
+				client:   client.Route53Config,
+			}
+		}
+
+		if len(zonesToTagFilter) > 0 {
+			if zTags, err := p.tagsForZone(ctx, zonesToTagFilter, client.Route53Config); err != nil {
+				return nil, provider.NewSoftErrorf("failed to list tags for zones %w", err)
+			} else {
+				zTags.filterZonesByTags(p, profileZones)
+			}
+		}
+	}
+
+	return profileZones, nil
 }
 
 // wildcardUnescape converts \\052.abc back to *.abc
@@ -463,7 +481,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, z := range zones {
-		client := p.clients[z.profile]
+		client := z.client
 
 		paginator := route53.NewListResourceRecordSetsPaginator(client, &route53.ListResourceRecordSetsInput{
 			HostedZoneId: z.zone.Id,
@@ -697,7 +715,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 				successfulChanges := 0
 
-				client := p.clients[zones[z].profile]
+				client := zones[z].client
 				if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 					log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
@@ -973,9 +991,7 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 	return changesByOwnership
 }
 
-func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, profile string) (zoneTags, error) {
-	client := p.clients[profile]
-
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneIDs []string, client Route53API) (zoneTags, error) {
 	result := zoneTags{}
 
 	for i := 0; i < len(zoneIDs); i += batchSize {
