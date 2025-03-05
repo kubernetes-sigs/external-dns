@@ -1,24 +1,24 @@
 # OVHcloud
 
 This tutorial describes how to setup ExternalDNS for use within a
-Kubernetes cluster using OVH DNS.
+Kubernetes cluster using OVHcloud DNS.
 
 Make sure to use **>=0.6** version of ExternalDNS for this tutorial.
 
-## Creating a zone with OVH DNS
+## Creating a zone with OVHcloud DNS
 
-If you are new to OVH, we recommend you first read the following
+If you are new to OVHcloud, we recommend you first read the following
 instructions for creating a zone.
 
-[Creating a zone using the OVH manager](https://docs.ovh.com/gb/en/domains/create_a_dns_zone_for_a_domain_which_is_not_registered_at_ovh/)
+[Creating a zone using the OVHcloud Manager](https://help.ovhcloud.com/csm/en-gb-dns-create-dns-zone?id=kb_article_view&sysparm_article=KB0051667/)
 
-[Creating a zone using the OVH API](https://api.ovh.com/console/)
+[Creating a zone using the OVHcloud API](https://api.ovh.com/console/)
 
-## Creating OVH Credentials
+## Creating OVHcloud Credentials
 
-You first need to create an OVH application.
-
-Using the [OVH documentation](https://docs.ovh.com/gb/en/api/first-steps-with-ovh-api/#advanced-usage-pair-ovhcloud-apis-with-an-application_2) you will have your `Application key` and `Application secret`
+You first need to create an OVHcloud application: follow the
+[OVHcloud documentation](https://help.ovhcloud.com/csm/en-gb-api-getting-started-ovhcloud-api?id=kb_article_view&sysparm_article=KB0042784#advanced-usage-pair-ovhcloud-apis-with-an-application)
+ you will have your `Application key` and `Application secret`
 
 And you will need to generate your consumer key, here the permissions needed :
 
@@ -223,7 +223,7 @@ spec:
 
 **A note about annotations**
 
-Verify that the annotation on the service uses the same hostname as the OVH DNS zone created above. The annotation may also be a subdomain of the DNS zone (e.g. 'www.example.com').
+Verify that the annotation on the service uses the same hostname as the OVHcloud DNS zone created above. The annotation may also be a subdomain of the DNS zone (e.g. 'www.example.com').
 
 The TTL annotation can be used to configure the TTL on DNS records managed by ExternalDNS and is optional. If this annotation is not set, the TTL on records managed by ExternalDNS will default to 10.
 
@@ -235,11 +235,11 @@ ExternalDNS uses the hostname annotation to determine which services should be r
 kubectl create -f nginx.yaml
 ```
 
-Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the OVH DNS records.
+Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the OVHcloud DNS records.
 
-## Verifying OVH DNS records
+## Verifying OVHcloud DNS records
 
-Use the OVH manager or API to verify that the A record for your domain shows the external IP address of the services.
+Use the OVHcloud manager or API to verify that the A record for your domain shows the external IP address of the services.
 
 ## Cleanup
 
