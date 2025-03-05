@@ -127,6 +127,7 @@ type Config struct {
 	InMemoryZones                      []string
 	OVHEndpoint                        string
 	OVHApiRateLimit                    int
+	OVHEnableCNAMERelative             bool
 	PDNSServer                         string
 	PDNSServerID                       string
 	PDNSAPIKey                         string `secure:"yes"`
@@ -287,6 +288,7 @@ var defaultConfig = &Config{
 	InMemoryZones:                []string{},
 	OVHEndpoint:                  "ovh-eu",
 	OVHApiRateLimit:              20,
+	OVHEnableCNAMERelative:       false,
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
 	PDNSAPIKey:                   "",
@@ -532,6 +534,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
 	app.Flag("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)").Default(strconv.Itoa(defaultConfig.OVHApiRateLimit)).IntVar(&cfg.OVHApiRateLimit)
+	app.Flag("ovh-enable-cname-relative", "When using the OVH provider, specify if CNAME should be treated as relative if target omit the final dot (default: false)").Default(strconv.FormatBool(defaultConfig.OVHEnableCNAMERelative)).BoolVar(&cfg.OVHEnableCNAMERelative)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)").Default(defaultConfig.PDNSServerID).StringVar(&cfg.PDNSServerID)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)

@@ -46,7 +46,7 @@ func (f *Flags) addFlag(name, description string) {
 
 // It generates a markdown file
 // with the supported flags and writes it to the 'docs/flags.md' file.
-// to re-generate `docs/flags.md` execute 'go run internal/gen/main.go'
+// to re-generate `docs/flags.md` execute 'go run internal/gen/docs/flags/main.go'
 func main() {
 	testPath, _ := os.Getwd()
 	path := fmt.Sprintf("%s/docs/flags.md", testPath)
