@@ -39,27 +39,29 @@ import (
 )
 
 const (
+	// The prefix used for all supported annotations
+	annotationKeyPrefix = "external-dns.alpha.kubernetes.io/"
 	// The annotation used for figuring out which controller is responsible
-	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
+	controllerAnnotationKey = annotationKeyPrefix + "controller"
 	// The annotation used for defining the desired hostname
-	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
+	hostnameAnnotationKey = annotationKeyPrefix + "hostname"
 	// The annotation used for specifying whether the public or private interface address is used
-	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
+	accessAnnotationKey = annotationKeyPrefix + "access"
 	// The annotation used for specifying the type of endpoints to use for headless services
-	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
+	endpointsTypeAnnotationKey = annotationKeyPrefix + "endpoints-type"
 	// The annotation used for defining the desired ingress/service target
-	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
+	targetAnnotationKey = annotationKeyPrefix + "target"
 	// The annotation used for defining the desired DNS record TTL
-	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	ttlAnnotationKey = annotationKeyPrefix + "ttl"
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
-	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
+	aliasAnnotationKey = annotationKeyPrefix + "alias"
 	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
-	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
+	ingressHostnameSourceKey = annotationKeyPrefix + "ingress-hostname-source"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
-	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+	internalHostnameAnnotationKey = annotationKeyPrefix + "internal-hostname"
 )
 
 const (
@@ -69,11 +71,7 @@ const (
 
 // Provider-specific annotations
 const (
-	// The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
-	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
-
-	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
+	SetIdentifierKey = annotationKeyPrefix + "set-identifier"
 )
 
 const (
@@ -182,62 +180,50 @@ func splitHostnameAnnotation(annotation string) []string {
 	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
 }
 
-func getAliasFromAnnotations(annotations map[string]string) bool {
-	aliasAnnotation, exists := annotations[aliasAnnotationKey]
-	return exists && aliasAnnotation == "true"
-}
-
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
-
-	if v, exists := annotations[CloudflareProxiedKey]; exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareProxiedKey,
-			Value: v,
-		})
-	}
-	if v, exists := annotations[CloudflareCustomHostnameKey]; exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareCustomHostnameKey,
-			Value: v,
-		})
-	}
-	if getAliasFromAnnotations(annotations) {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  "alias",
-			Value: "true",
-		})
-	}
 	setIdentifier := ""
-	for k, v := range annotations {
-		if k == SetIdentifierKey {
-			setIdentifier = v
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/aws-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("aws/%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("scw/%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("ibmcloud-%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/webhook-") {
-			// Support for wildcard annotations for webhook providers
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/webhook-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("webhook/%s", attr),
-				Value: v,
-			})
+	for key, value := range annotations {
+		if !strings.HasPrefix(key, annotationKeyPrefix) {
+			continue
 		}
+		name := strings.TrimPrefix(key, annotationKeyPrefix)
+		switch name {
+		case "access":
+			continue
+		case "alias":
+			if value != "true" {
+				continue
+			}
+		case "endpoints-type":
+			continue
+		case "controller":
+			continue
+		case "dualstack":
+			continue
+		case "hostname":
+			continue
+		case "ingress":
+			continue
+		case "ingress-hostname-source":
+			continue
+		case "internal-hostname":
+			continue
+		case "set-identifier":
+			setIdentifier = value
+			continue
+		case "target":
+			continue
+		case "ttl":
+			continue
+		}
+		if strings.HasPrefix(name, "webhook-") {
+			name = strings.Replace(name, "-", "/", 1)
+		}
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  name,
+			Value: value,
+		})
 	}
 	return providerSpecificAnnotations, setIdentifier
 }

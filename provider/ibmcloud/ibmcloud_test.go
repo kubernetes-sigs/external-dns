@@ -161,7 +161,7 @@ func newTestIBMCloudProvider(private bool) *IBMCloudProvider {
 			Targets: endpoint.Targets{"4.3.2.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "ibmcloud-vpc",
+					Name:  vpcFilter,
 					Value: "crn:v1:staging:public:is:us-south:a/0821fa9f9ebcc7b7c9a0d6e9bf9442a4::vpc:be33cdad-9a03-4bfa-82ca-eadb9f1de688",
 				},
 			},
@@ -223,7 +223,7 @@ func TestPublic_ApplyChanges(t *testing.T) {
 				Targets:    endpoint.NewTargets("4.3.2.1"),
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  "ibmcloud-proxied",
+						Name:  proxyFilter,
 						Value: "false",
 					},
 				},
@@ -237,7 +237,7 @@ func TestPublic_ApplyChanges(t *testing.T) {
 				Targets:    endpoint.NewTargets("1.2.3.4"),
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  "ibmcloud-proxied",
+						Name:  proxyFilter,
 						Value: "false",
 					},
 				},
@@ -251,7 +251,7 @@ func TestPublic_ApplyChanges(t *testing.T) {
 				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  "ibmcloud-proxied",
+						Name:  proxyFilter,
 						Value: "true",
 					},
 				},
@@ -284,7 +284,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 			Targets:    endpoint.NewTargets("4.3.2.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "ibmcloud-vpc",
+					Name:  vpcFilter,
 					Value: "crn:v1:staging:public:is:us-south:a/0821fa9f9ebcc7b7c9a0d6e9bf9442a4::vpc:be33cdad-9a03-4bfa-82ca-eadb9f1de688",
 				},
 			},
@@ -352,7 +352,7 @@ func TestAdjustEndpoints(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "ibmcloud-proxied",
+					Name:  proxyFilter,
 					Value: "1",
 				},
 			},
@@ -364,7 +364,7 @@ func TestAdjustEndpoints(t *testing.T) {
 
 	assert.Equal(t, endpoint.TTL(0), ep[0].RecordTTL)
 	assert.Equal(t, "test.example.com", ep[0].DNSName)
-	proxied, _ := ep[0].GetProviderSpecificProperty("ibmcloud-proxied")
+	proxied, _ := ep[0].GetProviderSpecificProperty(proxyFilter)
 	assert.Equal(t, "true", proxied)
 }
 
