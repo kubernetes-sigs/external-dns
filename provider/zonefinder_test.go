@@ -27,10 +27,12 @@ func TestZoneIDName(t *testing.T) {
 	z.Add("123456", "foo.bar")
 	z.Add("123456", "qux.baz")
 	z.Add("654321", "foo.qux.baz")
+	z.Add("987654", "エイミー.みんな")
 
 	assert.Equal(t, ZoneIDName{
 		"123456": "qux.baz",
 		"654321": "foo.qux.baz",
+		"987654": "エイミー.みんな",
 	}, z)
 
 	// simple entry in a domain
@@ -62,4 +64,9 @@ func TestZoneIDName(t *testing.T) {
 	zoneID, zoneName = z.FindZone("foo.qux.baz")
 	assert.Equal(t, "foo.qux.baz", zoneName)
 	assert.Equal(t, "654321", zoneID)
+
+	// entry gets normalized before finding
+	zoneID, zoneName = z.FindZone("xn--eckh0ome.xn--q9jyb4c")
+	assert.Equal(t, "エイミー.みんな", zoneName)
+	assert.Equal(t, "987654", zoneID)
 }
