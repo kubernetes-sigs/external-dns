@@ -148,7 +148,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// We simply assume that TXT records for the registry will always have only one target.
 		// If there are no targets (e.g for routing policy based records in google), direct targets will be empty
 		if len(record.Targets) == 0 {
-			log.Errorf("TXT record has no targets", record.DNSName)
+			log.Errorf("TXT record has no targets %s", record.DNSName)
 			continue
 		}
 		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)

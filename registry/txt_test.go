@@ -1798,3 +1798,38 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 			"TXT record should have 'a-' prefix when using new format only")
 	}
 }
+
+func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "empty-targets.test-zone.example.org",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{},
+			},
+			{
+				DNSName:    "valid-targets.test-zone.example.org",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{"target1"},
+			},
+		},
+	})
+
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	expectedRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "valid-targets.test-zone.example.org",
+			Targets:    endpoint.Targets{"target1"},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels:     map[string]string{},
+		},
+	}
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+}
