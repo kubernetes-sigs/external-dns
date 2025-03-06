@@ -19,7 +19,9 @@ package provider
 import (
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 func TestZoneIDName(t *testing.T) {
@@ -69,4 +71,8 @@ func TestZoneIDName(t *testing.T) {
 	zoneID, zoneName = z.FindZone("xn--eckh0ome.xn--q9jyb4c")
 	assert.Equal(t, "エイミー.みんな", zoneName)
 	assert.Equal(t, "987654", zoneID)
+
+	b := testutils.LogsToBuffer(log.WarnLevel, t)
+	zoneID, zoneName = z.FindZone("???")
+	assert.Contains(t, b.String(), "level=warning msg=\"Failed to convert hostname '???' to its Unicode form: idna: disallowed rune U+003F\"")
 }

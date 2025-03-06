@@ -19,6 +19,7 @@ package provider
 import (
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/idna"
 )
 
@@ -31,6 +32,7 @@ func (z ZoneIDName) Add(zoneID, zoneName string) {
 func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
 	name, err := idna.Lookup.ToUnicode(hostname)
 	if err != nil {
+		log.Warnf("Failed to convert hostname '%s' to its Unicode form: %v", hostname, err)
 		name = hostname
 	}
 	for zoneID, zoneName := range z {
