@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var kongGroupdVersionResource = schema.GroupVersionResource{
@@ -126,7 +127,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		targets := getTargetsFromTargetAnnotation(tcpIngress.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)
 		if len(targets) == 0 {
 			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
 				if lb.IP != "" {
@@ -162,11 +163,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 // filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
 func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -197,12 +194,12 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 
 	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(tcpIngress.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(tcpIngress.Annotations)
 
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(tcpIngress.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}

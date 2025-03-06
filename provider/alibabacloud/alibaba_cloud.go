@@ -29,8 +29,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/denverdino/aliyungo/metadata"
+	yaml "github.com/goccy/go-yaml"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -492,7 +492,7 @@ func (p *AlibabaCloudProvider) escapeTXTRecordValue(value string) string {
 
 func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 	if strings.HasPrefix(value, "heritage=") {
-		return fmt.Sprintf("\"%s\"", strings.Replace(value, ";", ",", -1))
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, ";", ","))
 	}
 	return value
 }

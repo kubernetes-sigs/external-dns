@@ -9,8 +9,12 @@ jobs:
     name: Markdown, Go and OAS
     runs-on: ubuntu-latest
     permissions:
-      contents: read  #  to fetch code (actions/checkout)
+      # Required: allow read access to the content for analysis.
+      contents: read
+      # For OAS check
       checks: write
+      # For go lang linter
+      pull-requests: read
     steps:
 
     - name: Check out code into the Go module directory
@@ -40,11 +44,11 @@ jobs:
 
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
-      uses: golangci/golangci-lint-action@v6
+      uses: golangci/golangci-lint-action@v7
       with:
         verify: true
         args: --timeout=30m
-        version: v1.64
+        version: v2.0
 
       # Run Spectral
     - name: Lint OpenAPI spec

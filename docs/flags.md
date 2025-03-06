@@ -28,6 +28,7 @@
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
 | `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
+| `--gateway-name=GATEWAY-NAME` | Limit Gateways of Route endpoints to a specific name (default: all names) |
 | `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
 | `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
@@ -48,7 +49,9 @@
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
-| `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, designate, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
+| `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
+| `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional). Default is true. |
+| `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
@@ -86,6 +89,9 @@
 | `--tencent-cloud-config-file="/etc/kubernetes/tencent-cloud.json"` | When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud) |
 | `--tencent-cloud-zone-type=` | When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private) |
 | `--[no-]cloudflare-proxied` | When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled) |
+| `--[no-]cloudflare-custom-hostnames` | When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires "Cloudflare for SaaS" enabled. (default: disabled) |
+| `--cloudflare-custom-hostnames-min-tls-version=1.0` | When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3) |
+| `--cloudflare-custom-hostnames-certificate-authority=google` | When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
 | `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth) |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
@@ -103,6 +109,7 @@
 | `--inmemory-zone=` | Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional) |
 | `--ovh-endpoint="ovh-eu"` | When using the OVH provider, specify the endpoint (default: ovh-eu) |
 | `--ovh-api-rate-limit=20` | When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20) |
+| `--[no-]ovh-enable-cname-relative` | When using the OVH provider, specify if CNAME should be treated as relative on target without final dot (default: false) |
 | `--pdns-server="http://localhost:8081"` | When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns) |
 | `--pdns-server-id="localhost"` | When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost) |
 | `--pdns-api-key=""` | When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns) |
@@ -147,6 +154,7 @@
 | `--pihole-server=""` | When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole) |
 | `--pihole-password=""` | When using the Pihole provider, the password to the server if it is protected |
 | `--[no-]pihole-tls-skip-verify` | When using the Pihole provider, disable verification of any TLS certificates |
+| `--pihole-api-version="5"` | When using the Pihole provider, specify the pihole API version (default: 5, options: 5, 6) |
 | `--plural-cluster=""` | When using the plural provider, specify the cluster name you're running with |
 | `--plural-provider=""` | When using the plural provider, specify the provider name you're running with |
 | `--policy=sync` | Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only) |

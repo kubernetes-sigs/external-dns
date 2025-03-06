@@ -100,10 +100,12 @@ spec:
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
             {{- end }}
+            {{- if and .Values.txtPrefix .Values.txtSuffix }}
+            {{- fail (printf "'txtPrefix' and 'txtSuffix' are mutually exclusive") }}
+            {{- end }}
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
-            {{- end }}
-            {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
+            {{- else if .Values.txtSuffix }}
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- if .Values.namespaced }}

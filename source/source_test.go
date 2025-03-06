@@ -17,130 +17,96 @@ limitations under the License.
 package source
 
 import (
-	"fmt"
-	"strconv"
+	"context"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func TestGetTTLFromAnnotations(t *testing.T) {
-	for _, tc := range []struct {
-		title       string
-		annotations map[string]string
-		expectedTTL endpoint.TTL
+func TestParseTemplate(t *testing.T) {
+	for _, tt := range []struct {
+		name                     string
+		annotationFilter         string
+		fqdnTemplate             string
+		combineFQDNAndAnnotation bool
+		expectError              bool
 	}{
 		{
-			title:       "TTL annotation not present",
-			annotations: map[string]string{"foo": "bar"},
-			expectedTTL: endpoint.TTL(0),
+			name:         "invalid template",
+			expectError:  true,
+			fqdnTemplate: "{{.Name",
 		},
 		{
-			title:       "TTL annotation value is not a number",
-			annotations: map[string]string{ttlAnnotationKey: "foo"},
-			expectedTTL: endpoint.TTL(0),
+			name:        "valid empty template",
+			expectError: false,
 		},
 		{
-			title:       "TTL annotation value is empty",
-			annotations: map[string]string{ttlAnnotationKey: ""},
-			expectedTTL: endpoint.TTL(0),
+			name:         "valid template",
+			expectError:  false,
+			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
-			title:       "TTL annotation value is negative number",
-			annotations: map[string]string{ttlAnnotationKey: "-1"},
-			expectedTTL: endpoint.TTL(0),
+			name:         "valid template",
+			expectError:  false,
+			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
 		},
 		{
-			title:       "TTL annotation value is too high",
-			annotations: map[string]string{ttlAnnotationKey: fmt.Sprintf("%d", 1<<32)},
-			expectedTTL: endpoint.TTL(0),
+			name:                     "valid template",
+			expectError:              false,
+			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
+			combineFQDNAndAnnotation: true,
 		},
 		{
-			title:       "TTL annotation value is set correctly using integer",
-			annotations: map[string]string{ttlAnnotationKey: "60"},
-			expectedTTL: endpoint.TTL(60),
-		},
-		{
-			title:       "TTL annotation value is set correctly using duration (whole)",
-			annotations: map[string]string{ttlAnnotationKey: "10m"},
-			expectedTTL: endpoint.TTL(600),
-		},
-		{
-			title:       "TTL annotation value is set correctly using duration (fractional)",
-			annotations: map[string]string{ttlAnnotationKey: "20.5s"},
-			expectedTTL: endpoint.TTL(20),
+			name:             "non-empty annotation filter label",
+			expectError:      false,
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
-		t.Run(tc.title, func(t *testing.T) {
-			ttl := getTTLFromAnnotations(tc.annotations, "resource/test")
-			assert.Equal(t, tc.expectedTTL, ttl)
-		})
-	}
-}
-
-func TestSuitableType(t *testing.T) {
-	for _, tc := range []struct {
-		target, recordType, expected string
-	}{
-		{"8.8.8.8", "", "A"},
-		{"2001:db8::1", "", "AAAA"},
-		{"::ffff:c0a8:101", "", "AAAA"},
-		{"foo.example.org", "", "CNAME"},
-		{"bar.eu-central-1.elb.amazonaws.com", "", "CNAME"},
-	} {
-
-		recordType := suitableType(tc.target)
-
-		if recordType != tc.expected {
-			t.Errorf("expected %s, got %s", tc.expected, recordType)
-		}
-	}
-}
-
-func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
-	for _, tc := range []struct {
-		title         string
-		annotations   map[string]string
-		expectedKey   string
-		expectedValue bool
-	}{
-		{
-			title:         "Cloudflare proxied annotation is set correctly to true",
-			annotations:   map[string]string{CloudflareProxiedKey: "true"},
-			expectedKey:   CloudflareProxiedKey,
-			expectedValue: true,
-		},
-		{
-			title:         "Cloudflare proxied annotation is set correctly to false",
-			annotations:   map[string]string{CloudflareProxiedKey: "false"},
-			expectedKey:   CloudflareProxiedKey,
-			expectedValue: false,
-		},
-		{
-			title: "Cloudflare proxied annotation among another annotations is set correctly to true",
-			annotations: map[string]string{
-				"random annotation 1": "random value 1",
-				CloudflareProxiedKey:  "false",
-				"random annotation 2": "random value 2",
-			},
-			expectedKey:   CloudflareProxiedKey,
-			expectedValue: false,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == tc.expectedKey {
-					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
-					return
-				}
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := parseTemplate(tt.fqdnTemplate)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
-			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
 		})
 	}
+}
 
+func TestFqdnTemplate(t *testing.T) {
+	tests := []struct {
+		name          string
+		fqdnTemplate  string
+		expectedError bool
+	}{
+		{
+			name:          "empty template",
+			fqdnTemplate:  "",
+			expectedError: false,
+		},
+		{
+			name:          "valid template",
+			fqdnTemplate:  "{{ .Name }}.example.com",
+			expectedError: false,
+		},
+	}
+
+<<<<<<< HEAD
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpl, err := parseTemplate(tt.fqdnTemplate)
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Nil(t, tmpl)
+			} else {
+				assert.NoError(t, err)
+				if tt.fqdnTemplate == "" {
+					assert.Nil(t, tmpl)
+				} else {
+					assert.NotNil(t, tmpl)
+=======
 	for _, tc := range []struct {
 		title         string
 		annotations   map[string]string
@@ -172,6 +138,41 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 				}
 			}
 			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %s", tc.expectedKey, tc.expectedValue)
+		})
+	}
+
+	for _, tc := range []struct {
+		title         string
+		annotations   map[string]string
+		expectedKey   string
+		expectedValue string
+	}{
+		{
+			title:         "Cloudflare region key annotation is set correctly",
+			annotations:   map[string]string{CloudflareRegionKey: "us"},
+			expectedKey:   CloudflareRegionKey,
+			expectedValue: "us",
+		},
+		{
+			title: "Cloudflare region key annotation among another annotations is set correctly",
+			annotations: map[string]string{
+				"random annotation 1": "random value 1",
+				CloudflareRegionKey:   "us",
+				"random annotation 2": "random value 2",
+			},
+			expectedKey:   CloudflareRegionKey,
+			expectedValue: "us",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
+			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
+				if providerSpecificAnnotation.Name == tc.expectedKey {
+					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
+					return
+				}
+			}
+			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
 		})
 	}
 }
@@ -314,7 +315,56 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 				}
 				if !expectedResultFound {
 					t.Errorf("provider specific annotation %s has not been set", expectedAnnotationKey)
+>>>>>>> c3f0cd66 (fix cloudflare regional hostnames)
 				}
+			}
+		})
+	}
+}
+
+type mockInformerFactory struct {
+	syncResults map[reflect.Type]bool
+}
+
+func (m *mockInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
+	return m.syncResults
+}
+
+func TestWaitForCacheSync(t *testing.T) {
+	tests := []struct {
+		name        string
+		syncResults map[reflect.Type]bool
+		expectError bool
+	}{
+		{
+			name:        "all caches synced",
+			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): true},
+			expectError: false,
+		},
+		{
+			name:        "some caches not synced",
+			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): false},
+			expectError: true,
+		},
+		{
+			name:        "context timeout",
+			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): false},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			defer cancel()
+
+			factory := &mockInformerFactory{syncResults: tt.syncResults}
+			err := waitForCacheSync(ctx, factory)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

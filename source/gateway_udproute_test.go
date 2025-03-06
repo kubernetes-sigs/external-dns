@@ -73,7 +73,13 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "api-annotation.foobar.internal",
 			},
 		},
-		Spec: v1alpha2.UDPRouteSpec{},
+		Spec: v1alpha2.UDPRouteSpec{
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("default", "internal"),
+				},
+			},
+		},
 		Status: v1alpha2.UDPRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},

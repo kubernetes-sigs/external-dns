@@ -7,7 +7,7 @@
       "type": "object"
     },
     "automountServiceAccountToken": {
-      "type": "null"
+      "type": "boolean"
     },
     "commonLabels": {
       "properties": {},
@@ -33,13 +33,26 @@
       "type": "object"
     },
     "dnsConfig": {
-      "type": "null"
+      "type": [
+        "object",
+        "null"
+      ]
     },
     "dnsPolicy": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "domainFilters": {
       "type": "array"
+    },
+    "enabled": {
+      "description": "No effect - reserved for use in sub-charting",
+      "type": [
+        "boolean",
+        "null"
+      ]
     },
     "env": {
       "type": "array"
@@ -68,7 +81,10 @@
       "type": "array"
     },
     "fullnameOverride": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "global": {
       "properties": {
@@ -116,7 +132,6 @@
       "type": "string"
     },
     "labelFilter": {
-      "pattern": "^[a-zA-Z0-9._-]+=[a-zA-Z0-9._-]+$",
       "type": [
         "string",
         "null"
@@ -188,7 +203,10 @@
       "uniqueItems": true
     },
     "nameOverride": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "namespaced": {
       "type": "boolean"
@@ -235,7 +253,10 @@
       ]
     },
     "priorityClassName": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "provider": {
       "properties": {
@@ -259,10 +280,16 @@
                   "type": "string"
                 },
                 "repository": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "tag": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               },
               "type": "object"
@@ -398,7 +425,10 @@
           "type": "object"
         }
       },
-      "type": "object"
+      "type": [
+        "object",
+        "string"
+      ]
     },
     "rbac": {
       "additionalProperties": true,
@@ -594,7 +624,7 @@
           "type": "object"
         },
         "automountServiceAccountToken": {
-          "type": "null"
+          "type": "boolean"
         },
         "create": {
           "type": "boolean"
@@ -604,7 +634,10 @@
           "type": "object"
         },
         "name": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "type": "object"
@@ -620,28 +653,43 @@
           "type": "object"
         },
         "bearerTokenFile": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "enabled": {
           "type": "boolean"
         },
         "interval": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "metricRelabelings": {
           "type": "array"
         },
         "namespace": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "relabelings": {
           "type": "array"
         },
         "scheme": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "scrapeTimeout": {
-          "type": "null"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "targetLabels": {
           "type": "array"
@@ -663,7 +711,10 @@
       "type": "array"
     },
     "terminationGracePeriodSeconds": {
-      "type": "null"
+      "type": [
+        "integer",
+        "null"
+      ]
     },
     "tolerations": {
       "type": "array"

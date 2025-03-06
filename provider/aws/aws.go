@@ -87,6 +87,7 @@ var canonicalHostedZones = map[string]string{
 	"ap-southeast-3.elb.amazonaws.com":    "Z08888821HLRG5A9ZRTER",
 	"ap-southeast-4.elb.amazonaws.com":    "Z09517862IB2WZLPXG76F",
 	"ap-southeast-5.elb.amazonaws.com":    "Z06010284QMVVW7WO5J",
+	"ap-southeast-7.elb.amazonaws.com":    "Z0390008CMBRTHFGWBCB",
 	"ap-northeast-1.elb.amazonaws.com":    "Z14GRHDCWA56QT",
 	"eu-central-1.elb.amazonaws.com":      "Z215JYRZR1TBD5",
 	"eu-central-2.elb.amazonaws.com":      "Z06391101F2ZOEP8P5EB3",
@@ -101,6 +102,7 @@ var canonicalHostedZones = map[string]string{
 	"cn-northwest-1.elb.amazonaws.com.cn": "ZM7IZAIOVVDZF",
 	"us-gov-west-1.elb.amazonaws.com":     "Z33AYJ8TM3BH4J",
 	"us-gov-east-1.elb.amazonaws.com":     "Z166TLBEWOO7G0",
+	"mx-central-1.elb.amazonaws.com":      "Z023552324OKD1BB28BH5",
 	"me-central-1.elb.amazonaws.com":      "Z08230872XQRWHG2XF6I",
 	"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
 	"af-south-1.elb.amazonaws.com":        "Z268VQBMOI5EKX",
@@ -122,6 +124,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ap-southeast-3.amazonaws.com":    "Z01971771FYVNCOVWJU1G",
 	"elb.ap-southeast-4.amazonaws.com":    "Z01156963G8MIIL7X90IV",
 	"elb.ap-southeast-5.amazonaws.com":    "Z026317210H9ACVTRO6FB",
+	"elb.ap-southeast-7.amazonaws.com":    "Z054363131YWATEMWRG5L",
 	"elb.ap-northeast-1.amazonaws.com":    "Z31USIVHYNEOWT",
 	"elb.eu-central-1.amazonaws.com":      "Z3F0SRJ5LGBH90",
 	"elb.eu-central-2.amazonaws.com":      "Z02239872DOALSIDCX66S",
@@ -136,6 +139,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
 	"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
 	"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
+	"elb.mx-central-1.amazonaws.com":      "Z02031231H3ID6HYJ9A7U",
 	"elb.me-central-1.amazonaws.com":      "Z00282643NTTLPANJJG2P",
 	"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
 	"elb.af-south-1.amazonaws.com":        "Z203XCE67M25HM",
@@ -250,7 +254,7 @@ func (z zoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZo
 // append adds tags to the ZoneTags for a given zoneID.
 func (z zoneTags) append(id string, tags []route53types.Tag) {
 	zoneId := fmt.Sprintf("/hostedzone/%s", id)
-	if _, exists := z[zoneId]; !exists {
+	if _, ok := z[zoneId]; !ok {
 		z[zoneId] = make(map[string]string)
 	}
 	for _, tag := range tags {

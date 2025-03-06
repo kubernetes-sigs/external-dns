@@ -96,7 +96,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
 
-	config.ContentConfig.GroupVersion = &groupVersion
+	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
@@ -184,7 +184,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
-				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
+				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
@@ -200,7 +200,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				}
 			}
 			if illegalTarget {
-				log.Warnf("Endpoint %s with DNSName %s has an illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
+				log.Warnf("Endpoint %s with DNSName %s has an illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
@@ -231,7 +231,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 func (cs *crdSource) setResourceLabel(crd *endpoint.DNSEndpoint, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("crd/%s/%s", crd.ObjectMeta.Namespace, crd.ObjectMeta.Name)
+		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("crd/%s/%s", crd.Namespace, crd.Name)
 	}
 }
 

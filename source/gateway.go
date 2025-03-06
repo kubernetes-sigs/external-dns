@@ -40,6 +40,7 @@ import (
 	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -54,6 +55,8 @@ type gatewayRoute interface {
 	Metadata() *metav1.ObjectMeta
 	// Hostnames returns the route's specified hostnames.
 	Hostnames() []v1.Hostname
+	// ParentRefs returns the route's parent references as defined in the route spec.
+	ParentRefs() []v1.ParentReference
 	// Protocol returns the route's protocol type.
 	Protocol() v1.ProtocolType
 	// RouteStatus returns the route's common status.
@@ -82,6 +85,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 }
 
 type gatewayRouteSource struct {
+	gwName      string
 	gwNamespace string
 	gwLabels    labels.Selector
 	gwInformer  informers_v1beta1.GatewayInformer
@@ -161,6 +165,7 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	}
 
 	src := &gatewayRouteSource{
+		gwName:      config.GatewayName,
 		gwNamespace: config.GatewayNamespace,
 		gwLabels:    gwLabels,
 		gwInformer:  gwInformer,
@@ -232,8 +237,8 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		// Create endpoints from hostnames and targets.
 		var routeEndpoints []*endpoint.Endpoint
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
-		ttl := getTTLFromAnnotations(annots, resource)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
+		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
 			routeEndpoints = append(routeEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -292,10 +297,24 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	}
 	hostTargets := make(map[string]endpoint.Targets)
 
+	routeParentRefs := rt.ParentRefs()
+
+	if len(routeParentRefs) == 0 {
+		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
+		return hostTargets, nil
+	}
+
 	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
+		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+		// Ensure that the parent reference is in the routeParentRefs list
+		if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
+			log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+
 		group := strVal((*string)(ref.Group), gatewayGroup)
 		kind := strVal((*string)(ref.Kind), gatewayKind)
 		if group != gatewayGroup || kind != gatewayKind {
@@ -303,12 +322,17 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 		// Lookup the Gateway and its Listeners.
-		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
 		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
 		if !ok {
 			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
+		// Confirm the Gateway has the correct name, if specified.
+		if c.src.gwName != "" && c.src.gwName != gw.gateway.Name {
+			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
+			continue
+		}
+
 		// Confirm the Gateway has accepted the Route.
 		if !gwRouteIsAccepted(rps.Conditions) {
 			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
@@ -350,7 +374,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
+				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
@@ -380,7 +404,7 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
 	// but other sources don't check if fqdn-template is set. Which should it be?
 	if !c.src.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
@@ -447,6 +471,26 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 		if gvk.Group == group && gvk.Kind == string(gk.Kind) {
 			return true
 		}
+	}
+	return false
+}
+
+func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
+	// Ensure that the parent reference is in the routeParentRefs list
+	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+	group := strVal((*string)(ref.Group), gatewayGroup)
+	kind := strVal((*string)(ref.Kind), gatewayKind)
+	for _, rpr := range routeParentRefs {
+		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
+		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
+		if rprGroup != group || rprKind != kind {
+			continue
+		}
+		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
+		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
+			continue
+		}
+		return true
 	}
 	return false
 }

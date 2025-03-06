@@ -73,7 +73,13 @@ func TestGatewayTCPRouteSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "api-annotation.foobar.internal",
 			},
 		},
-		Spec: v1alpha2.TCPRouteSpec{},
+		Spec: v1alpha2.TCPRouteSpec{
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("default", "internal"),
+				},
+			},
+		},
 		Status: v1alpha2.TCPRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},
