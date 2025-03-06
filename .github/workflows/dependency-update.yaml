@@ -5,7 +5,8 @@ on:
     branches: [main, master]
   schedule:
     # https://crontab.guru/
-    - cron: '0 4 * * *'
+    # once a day
+    - cron: '0 0 * * *'
 
 jobs:
   update-versions-with-renovate:
