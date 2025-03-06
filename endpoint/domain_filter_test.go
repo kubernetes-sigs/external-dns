@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -321,7 +322,7 @@ var domainFilterTests = []domainFilterTest{
 
 var regexDomainFilterTests = []regexDomainFilterTest{
 	{
-		regexp.MustCompile("\\.org$"),
+		regexp.MustCompile(`\.org$`),
 		regexp.MustCompile(""),
 		[]string{"foo.org", "bar.org", "foo.bar.org"},
 		true,
@@ -330,7 +331,7 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("\\.bar\\.org$"),
+		regexp.MustCompile(`\.bar\.org$`),
 		regexp.MustCompile(""),
 		[]string{"foo.org", "bar.org", "example.com"},
 		false,
@@ -339,7 +340,7 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
 		regexp.MustCompile(""),
 		[]string{"foo.org", "bar.org", "example.foo.org", "example.bar.org", "a.example.foo.org", "a.example.bar.org"},
 		true,
@@ -348,18 +349,18 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
-		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
+		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
 		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
 		true,
 		map[string]string{
-			"regexInclude": "(?:foo|bar)\\.org$",
-			"regexExclude": "^example\\.(?:foo|bar)\\.org$",
+			"regexInclude": `(?:foo|bar)\.org$`,
+			"regexExclude": `^example\.(?:foo|bar)\.org$`,
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
-		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
+		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
 		[]string{"example.foo.org", "example.bar.org"},
 		false,
 		map[string]string{
@@ -368,8 +369,8 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 		},
 	},
 	{
-		regexp.MustCompile("(?:foo|bar)\\.org$"),
-		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		regexp.MustCompile(`(?:foo|bar)\.org$`),
+		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
 		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
 		true,
 		map[string]string{
@@ -766,6 +767,54 @@ func TestDomainFilterMatchParent(t *testing.T) {
 				assert.Equal(t, tt.expected, deserialized.MatchParent(domain), "deserialized %v", domain)
 				assert.Equal(t, tt.expected, deserialized.MatchParent(domain+"."), "deserialized %v", domain+".")
 			}
+		})
+	}
+}
+
+func TestSimpleDomainFilterWithExclusion(t *testing.T) {
+	test := []struct {
+		domainFilter    []string
+		exclusionFilter []string
+		domains         []string
+		want            []string
+	}{
+		{
+			domainFilter:    []string{"ex.com"},
+			exclusionFilter: []string{"subdomain.ex.com"},
+			domains:         []string{"subdomain.ex.com", "ex.com", "subdomain.ex.com.", ".subdomain.ex.com", "one.subdomain.ex.com", "ex.com."},
+			want:            []string{"ex.com", "ex.com."},
+		},
+		{
+			domainFilter:    []string{"ex.com"},
+			exclusionFilter: []string{},
+			domains:         []string{"subdomain.ex.com", "ex.com", "subdomain.ex.com.", ".subdomain.ex.com", "one.subdomain.ex.com", "ex.com."},
+			want:            []string{"subdomain.ex.com", "ex.com", "subdomain.ex.com.", ".subdomain.ex.com", "one.subdomain.ex.com", "ex.com."},
+		},
+		{
+			domainFilter:    []string{"ex.com"},
+			exclusionFilter: []string{"one.subdomain.ex.com"},
+			domains:         []string{"subdomain.ex.com", "ex.com", "subdomain.ex.com.", ".subdomain.ex.com", "one.subdomain.ex.com", "ex.com."},
+			want:            []string{"subdomain.ex.com", "ex.com", "subdomain.ex.com.", ".subdomain.ex.com", "ex.com."},
+		},
+		{
+			domainFilter:    []string{"ex.com"},
+			exclusionFilter: []string{".ex.com"},
+			domains:         []string{"subdomain.ex.com", "ex.com", "subdomain.ex.com.", ".subdomain.ex.com", "one.subdomain.ex.com", "ex.com."},
+			want:            []string{"ex.com", "ex.com."},
+		},
+	}
+
+	for _, tt := range test {
+		t.Run(fmt.Sprintf("include:%s-exclude:%s", strings.Join(tt.domainFilter, "_"), strings.Join(tt.exclusionFilter, "_")), func(t *testing.T) {
+			domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusionFilter)
+			var got []string
+			for _, domain := range tt.domains {
+				if domainFilter.Match(domain) {
+					got = append(got, domain)
+				}
+			}
+			assert.Equal(t, len(got), len(tt.want))
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }

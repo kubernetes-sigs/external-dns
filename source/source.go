@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"net"
+	"net/netip"
 	"reflect"
 	"strconv"
 	"strings"
@@ -70,7 +70,8 @@ const (
 // Provider-specific annotations
 const (
 	// The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
@@ -189,10 +190,15 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	v, exists := annotations[CloudflareProxiedKey]
-	if exists {
+	if v, exists := annotations[CloudflareProxiedKey]; exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareProxiedKey,
+			Value: v,
+		})
+	}
+	if v, exists := annotations[CloudflareCustomHostnameKey]; exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareCustomHostnameKey,
 			Value: v,
 		})
 	}
@@ -255,11 +261,12 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
-// In this case type A for IPs and type CNAME for everything else.
+// In this case type A/AAAA for IPs and type CNAME for everything else.
 func suitableType(target string) string {
-	if net.ParseIP(target) != nil && net.ParseIP(target).To4() != nil {
+	netIP, err := netip.ParseAddr(target)
+	if err == nil && netIP.Is4() {
 		return endpoint.RecordTypeA
-	} else if net.ParseIP(target) != nil && net.ParseIP(target).To16() != nil {
+	} else if err == nil && netIP.Is6() {
 		return endpoint.RecordTypeAAAA
 	}
 	return endpoint.RecordTypeCNAME
@@ -276,14 +283,8 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	for _, t := range targets {
 		switch suitableType(t) {
 		case endpoint.RecordTypeA:
-			if isIPv6String(t) {
-				continue
-			}
 			aTargets = append(aTargets, t)
 		case endpoint.RecordTypeAAAA:
-			if !isIPv6String(t) {
-				continue
-			}
 			aaaaTargets = append(aaaaTargets, t)
 		default:
 			cnameTargets = append(cnameTargets, t)
@@ -386,10 +387,4 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 		}
 	}
 	return nil
-}
-
-// isIPv6String returns if ip is IPv6.
-func isIPv6String(ip string) bool {
-	netIP := net.ParseIP(ip)
-	return netIP != nil && netIP.To4() == nil
 }

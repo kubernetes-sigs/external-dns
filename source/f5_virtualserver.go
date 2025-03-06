@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -147,6 +148,12 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
+		if !isVirtualServerReady(virtualServer) {
+			log.Warnf("F5 VirtualServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+				virtualServer.Namespace, virtualServer.Name)
+			continue
+		}
+
 		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
 
 		ttl := getTTLFromAnnotations(virtualServer.Annotations, resource)
@@ -155,6 +162,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
 			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
 		}
+
 		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
 			targets = append(targets, virtualServer.Status.VSAddress)
 		}
@@ -210,4 +218,13 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 	}
 
 	return filteredList, nil
+}
+
+func isVirtualServerReady(vs *f5.VirtualServer) bool {
+	if strings.ToLower(vs.Status.Status) != "ok" {
+		return false
+	}
+
+	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
+	return normalizedAddress != "none" && normalizedAddress != ""
 }

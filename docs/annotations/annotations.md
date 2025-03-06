@@ -59,10 +59,12 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 
 ## external-dns.alpha.kubernetes.io/hostname
 
-Specifies the domain for the resource's DNS records. 
+Specifies the domain for the resource's DNS records.
 
 Multiple hostnames can be specified through a comma-separated list, e.g.
 `svc.mydomain1.com,svc.mydomain2.com`.
+
+For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
 
 ## external-dns.alpha.kubernetes.io/ingress-hostname-source
 
@@ -80,7 +82,7 @@ Specifies the domain for the resource's DNS records that are for use from intern
 
 For `Services` of type `LoadBalancer`, uses the `Service`'s `ClusterIP`.
 
-For `Pods`, uses the `Pod`'s `Status.PodIP`.
+For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
 
 ## external-dns.alpha.kubernetes.io/target
 

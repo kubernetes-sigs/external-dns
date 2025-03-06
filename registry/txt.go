@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	b64 "encoding/base64"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -56,18 +58,31 @@ type TXTRegistry struct {
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
+
+	newFormatOnly bool
 }
 
-// NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+// NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
+// generate new format TXT records, otherwise it generates both old and new formats for
+// backwards compatibility.
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
+	cacheInterval time.Duration, txtWildcardReplacement string,
+	managedRecordTypes, excludeRecordTypes []string,
+	txtEncryptEnabled bool, txtEncryptAESKey []byte,
+	newFormatOnly bool) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
+
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
-		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+		var err error
+		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
+			return nil, errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
+		}
 	}
+
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
 		return nil, errors.New("the AES Encryption key must be set when TXT record encryption is enabled")
 	}
@@ -88,6 +103,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		newFormatOnly:       newFormatOnly,
 	}, nil
 }
 
@@ -131,7 +147,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		// We simply assume that TXT records for the registry will always have only one target.
 		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
-		if err == endpoint.ErrInvalidHeritage {
+		if errors.Is(err, endpoint.ErrInvalidHeritage) {
 			// if no heritage is found or it is invalid
 			// case when value of txt record cannot be identified
 			// record will not be removed as it will have empty owner
@@ -209,12 +225,14 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-// generateTXTRecord generates both "old" and "new" TXT records.
-// Once we decide to drop old format we need to drop toTXTName() and rename toNewTXTName
+// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
+// depending on the newFormatOnly configuration. The old format is maintained for backwards
+// compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
+	// Create legacy format record by default unless newFormatOnly is true
+	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -224,7 +242,8 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 			endpoints = append(endpoints, txt)
 		}
 	}
-	// new TXT record format (containing record type)
+
+	// Always create new format record
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
@@ -237,7 +256,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txtNew)
 	}
-
 	return endpoints
 }
 

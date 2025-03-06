@@ -1,5 +1,4 @@
-Configure DNS record TTL (Time-To-Live)
-=======================================
+# Configure DNS record TTL (Time-To-Live)
 
 An optional annotation `external-dns.alpha.kubernetes.io/ttl` is available to customize the TTL value of a DNS record.
 TTL is specified as an integer encoded as string representing seconds.
@@ -32,8 +31,7 @@ Both examples result in the same value of 60 seconds TTL.
 
 TTL must be a positive value.
 
-Providers
-=========
+## Providers
 
 - [x] AWS (Route53)
 - [x] Azure
@@ -49,29 +47,35 @@ Providers
 
 PRs welcome!
 
-Notes
-=====
+## Notes
+
 When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `endpoint.TTL.isConfigured()` will be false.
 
 ### AWS Provider
+
 The AWS Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
 
-## Azure
+### Azure
+
 TTL value should be between 1 and 2,147,483,647 seconds.
 By default it will be 300s.
 
-## CloudFlare Provider
+### CloudFlare Provider
+
 CloudFlare overrides the value to "auto" when the TTL is 0.
 
 ### DigitalOcean Provider
+
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
 
 ### DNSimple Provider
+
 The DNSimple Provider default TTL is used when the TTL is 0. The default TTL is 3600s.
 
 ### Google Provider
+
 Previously with the Google Provider, TTL's were hard-coded to 300s.
 For safety, the Google Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
@@ -80,10 +84,13 @@ For the moment, it is impossible to use a TTL value of 0 with the AWS, DigitalOc
 This behavior may change in the future.
 
 ### Linode Provider
+
 The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
 
 ### TransIP Provider
+
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
 
 ### UltraDNS
+
 The UltraDNS provider minimal TTL is used when the TTL is not provided. The default TTL is account level default TTL, if defined, otherwise 24 hours.

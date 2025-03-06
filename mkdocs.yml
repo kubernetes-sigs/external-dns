@@ -12,6 +12,7 @@ nav:
       - Changelog: charts/external-dns/CHANGELOG.md
   - About:
       - FAQ: docs/faq.md
+      - Flags: docs/flags.md
       - Out of Incubator: docs/20190708-external-dns-incubator.md
       - Code of Conduct: code-of-conduct.md
       - License: LICENSE.md
@@ -24,14 +25,17 @@ nav:
     - TXT: docs/registry/txt.md
     - DynamoDB: docs/registry/dynamodb.md
   - Advanced Topics:
-      - Initial Design: docs/initial-design.md
-      - TTL: docs/ttl.md
-      - NAT64: docs/nat64.md
-      - MultiTarget: docs/proposal/multi-target.md
-      - Rate Limits: docs/rate-limits.md
+    - Initial Design: docs/initial-design.md
+    - Leader Election: docs/proposal/001-leader-election.md
+    - Monitoring: docs/monitoring/*
+    - MultiTarget: docs/proposal/multi-target.md
+    - NAT64: docs/nat64.md
+    - Rate Limits: docs/rate-limits.md
+    - TTL: docs/ttl.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
-      - Release: docs/release.md
+      - Release: docs/release.
+      - Deprecation Policy: docs/deprecation.md
       - docs/contributing/*
 
 theme:

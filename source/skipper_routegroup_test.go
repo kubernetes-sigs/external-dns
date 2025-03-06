@@ -197,6 +197,28 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			},
 		},
 		{
+			name:   "Routegroup with hosts and destination IPv6 creates an endpoint",
+			source: &routeGroupSource{},
+			rg: createTestRouteGroup(
+				"namespace1",
+				"rg1",
+				nil,
+				[]string{"rg1.k8s.example"},
+				[]routeGroupLoadBalancer{
+					{
+						IP: "2001:DB8::1",
+					},
+				},
+			),
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets([]string{"2001:DB8::1"}),
+				},
+			},
+		},
+		{
 			name:   "Routegroup with hosts and mixed destinations creates endpoints",
 			source: &routeGroupSource{},
 			rg: createTestRouteGroup(
@@ -216,6 +238,34 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 					DNSName:    "rg1.k8s.example",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets([]string{"1.5.1.4"}),
+				},
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+				},
+			},
+		},
+		{
+			name:   "Routegroup with hosts and mixed destinations (IPv6) creates endpoints",
+			source: &routeGroupSource{},
+			rg: createTestRouteGroup(
+				"namespace1",
+				"rg1",
+				nil,
+				[]string{"rg1.k8s.example"},
+				[]routeGroupLoadBalancer{
+					{
+						Hostname: "lb.example.org",
+						IP:       "2001:DB8::1",
+					},
+				},
+			),
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets([]string{"2001:DB8::1"}),
 				},
 				{
 					DNSName:    "rg1.k8s.example",
@@ -782,37 +832,6 @@ func TestResourceLabelIsSet(t *testing.T) {
 	got, _ := source.Endpoints(context.Background())
 	for _, ep := range got {
 		if _, ok := ep.Labels[endpoint.ResourceLabelKey]; !ok {
-			t.Errorf("Failed to set resource label on ep %v", ep)
-		}
-	}
-}
-
-func TestDualstackLabelIsSet(t *testing.T) {
-	source := &routeGroupSource{
-		cli: &fakeRouteGroupClient{
-			rg: &routeGroupList{
-				Items: []*routeGroup{
-					createTestRouteGroup(
-						"namespace1",
-						"rg1",
-						map[string]string{
-							ALBDualstackAnnotationKey: ALBDualstackAnnotationValue,
-						},
-						[]string{"rg1.k8s.example"},
-						[]routeGroupLoadBalancer{
-							{
-								Hostname: "lb.example.org",
-							},
-						},
-					),
-				},
-			},
-		},
-	}
-
-	got, _ := source.Endpoints(context.Background())
-	for _, ep := range got {
-		if v, ok := ep.Labels[endpoint.DualstackLabelKey]; !ok || v != "true" {
 			t.Errorf("Failed to set resource label on ep %v", ep)
 		}
 	}

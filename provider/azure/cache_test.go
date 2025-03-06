@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestzonesCache(t *testing.T) {
+func TestZonesCache(t *testing.T) {
 	now := time.Now()
 	zoneName := "example.com"
 	var testCases = map[string]struct {

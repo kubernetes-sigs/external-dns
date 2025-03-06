@@ -150,7 +150,6 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		log.Debugf("Endpoints generated from TCPIngress: %s: %v", fullname, ingressEndpoints)
-		sc.setDualstackLabel(tcpIngress, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -190,16 +189,6 @@ func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) 
 	}
 
 	return filteredList, nil
-}
-
-func (sc *kongTCPIngressSource) setDualstackLabel(tcpIngress *TCPIngress, endpoints []*endpoint.Endpoint) {
-	val, ok := tcpIngress.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to TCPIngress %s/%s.", tcpIngress.Namespace, tcpIngress.Name)
-		for _, ep := range endpoints {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
-	}
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object

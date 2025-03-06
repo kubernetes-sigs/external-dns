@@ -34,3 +34,11 @@ topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: "topology.kubernetes.io/zone"
     whenUnsatisfiable: "ScheduleAnyway"
+
+serviceAccount:
+  annotations:
+    notTemplated/version: "v1.2.3"
+    justValueTemplated/version: "{{ .Chart.Version }}"
+    "{{ .Chart.Name }}/chart": "{{ .Chart.Version }}"
+    booleanVersion: "true"
+    number: "1"

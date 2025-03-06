@@ -83,19 +83,18 @@ The targets from each parent Gateway matching the \*Route are then combined and 
 
 ## Dualstack Routes
 
-Gateway resources may be served from an external-loadbalancer which may support both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces.
-External DNS Controller uses the `external-dns.alpha.kubernetes.io/dualstack` annotation to determine this. If this annotation is
-set to `true` then ExternalDNS will create two records (one A record
-and one AAAA record) for each hostname associated with the Route resource.
+Gateway resources may be served from an external-loadbalancer which may support
+both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces. When using the AWS
+Route53 provider, External DNS Controller will always create both A and AAAA
+alias DNS records by default, regardless of whether the load balancer is dual
+stack or not.
 
-Example:
+## Example
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  annotations:
-    external-dns.alpha.kubernetes.io/dualstack: "true"
   name: echo
 spec:
   hostnames:
@@ -112,7 +111,3 @@ spec:
             type: PathPrefix
             value: /echo
 ```
-
-The above HTTPRoute resource is backed by a dualstack Gateway.
-ExternalDNS will create both an A `echoserver.example.org` record and
-an AAAA record of the same name, that each are aliases for the same LB.

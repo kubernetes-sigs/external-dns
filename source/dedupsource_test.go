@@ -90,6 +90,38 @@ func testDedupEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
+		{
+			"two endpoints with same dnsname, same type, and same target return one endpoint",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			"two endpoints with same dnsname, different record type, and same target return two endpoints",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: "AAAA", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: "AAAA", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			"two endpoints with same dnsname, one with record type, one without, and same target return two endpoints",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			mockSource := new(testutils.MockSource)

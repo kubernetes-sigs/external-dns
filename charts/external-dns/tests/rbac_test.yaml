@@ -1,0 +1,155 @@
+suite: RBAC configuration
+templates:
+  - clusterrole.yaml
+  - clusterrolebinding.yaml
+  - serviceaccount.yaml
+release:
+  name: rbac
+tests:
+  - it: should create default RBAC related objects
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns-viewer
+        template: clusterrolebinding.yaml
+      - isKind:
+          of: ServiceAccount
+        template: serviceaccount.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns
+        template: serviceaccount.yaml
+
+  - it: should create default RBAC rules
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["list", "watch"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "watch", "list"]
+            - apiGroups: [""]
+              resources: ["services","endpoints"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'ambassador-host'
+    set:
+      sources:
+        - ambassador-host
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["getambassador.io"]
+              resources: ["hosts","ingresses"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'crd' and 'traefik-proxy'
+    set:
+      sources:
+        - crd
+        - traefik-proxy
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["externaldns.k8s.io"]
+              resources: ["dnsendpoints"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["externaldns.k8s.io"]
+              resources: ["dnsendpoints/status"]
+              verbs: ["*"]
+            - apiGroups: ["traefik.containo.us", "traefik.io"]
+              resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'f5' when 'f5-virtualserver' is set
+    set:
+      sources:
+        - f5-virtualserver
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["cis.f5.com"]
+              resources: ["virtualservers", "transportservers"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'f5' when 'f5-transportserver' is set
+    set:
+      sources:
+        - f5-transportserver
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["cis.f5.com"]
+              resources: ["virtualservers", "transportservers"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'gateway-api' with source 'gateway-httproute'
+    set:
+      sources:
+        - gateway-httproute
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: [""]
+              resources: ["namespaces"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["httproutes"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'gateway-api' with sources 'tlsroute,tcproute,udproute'
+    set:
+      sources:
+        - gateway-tlsroute
+        - gateway-tcproute
+        - gateway-udproute
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: [""]
+              resources: ["namespaces"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["tlsroutes"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["tcproutes"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["udproutes"]
+              verbs: ["get","watch","list"]
