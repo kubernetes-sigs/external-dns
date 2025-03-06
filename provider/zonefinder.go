@@ -16,7 +16,11 @@ limitations under the License.
 
 package provider
 
-import "strings"
+import (
+	"strings"
+
+	"golang.org/x/net/idna"
+)
 
 type ZoneIDName map[string]string
 
@@ -25,8 +29,12 @@ func (z ZoneIDName) Add(zoneID, zoneName string) {
 }
 
 func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
+	name, err := idna.Lookup.ToUnicode(hostname)
+	if err != nil {
+		name = hostname
+	}
 	for zoneID, zoneName := range z {
-		if hostname == zoneName || strings.HasSuffix(hostname, "."+zoneName) {
+		if name == zoneName || strings.HasSuffix(name, "."+zoneName) {
 			if suitableZoneName == "" || len(zoneName) > len(suitableZoneName) {
 				suitableZoneID = zoneID
 				suitableZoneName = zoneName
