@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -1819,6 +1821,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	})
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
+	b := testutils.LogsToBuffer(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
 
@@ -1832,4 +1835,5 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	}
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.Contains(t, b.String(), "TXT record has no targets empty-targets.test-zone.example.org")
 }
