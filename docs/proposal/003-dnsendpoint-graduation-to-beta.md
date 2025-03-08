@@ -1,7 +1,7 @@
 ```yaml
 ---
 title: "Proposal: Defining a path to Beta the DNSEndpoint API"
-version: tbd
+version: v1alpha1
 authors: @ivankatliarchuk, @raffo, @szuecs
 creation-date: 2025-02-09
 status: proposal
