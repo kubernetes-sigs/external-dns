@@ -25,15 +25,6 @@ const (
 	bannerTemplate = `Version=%s, GoVersion=%s, GitCommitShort=%s, Platform=%s, UserAgent=%s`
 )
 
-type HttpUserAgent struct {
-	Product string
-	Version string
-}
-
-func (u *HttpUserAgent) String() string {
-	return fmt.Sprintf("%s/%s", u.Product, u.Version)
-}
-
 var (
 	Version          = "unknown" // Set at the build time via `-ldflags "-X main.Version=<value>"`
 	GitCommit        = "unknown" // Set at the build time via `-ldflags "-X main.GitCommitSHA=<value>"`
