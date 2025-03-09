@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	bannerTemplate = `Version=%s, GoVersion=%s, GitCommitShortVersion=%s, Platform=%s, UserAgent=%s`
+	bannerTemplate = `Version=%s, GoVersion=%s, GitCommitShort=%s, Platform=%s, UserAgent=%s`
 )
 
 type HttpUserAgent struct {
