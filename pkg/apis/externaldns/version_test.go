@@ -29,7 +29,6 @@ func TestBanner(t *testing.T) {
 	GitCommit = "49a0c57c7"
 
 	want := Banner()
-	assert.Contains(t, want, "Version=1.0.0")
 	assert.Contains(t, want, "GoVersion=go1.17")
 	assert.Contains(t, want, "GitCommitShort=49a0c57c7")
 	assert.Contains(t, want, "UserAgent=ExternalDNS/1.0.0")

@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	bannerTemplate = `Version=%s, GoVersion=%s, GitCommitShort=%s, Platform=%s, UserAgent=%s`
+	bannerTemplate = `GitCommitShort=%s, GoVersion=%s, Platform=%s, UserAgent=%s`
 )
 
 var (
@@ -40,9 +40,8 @@ func Banner() string {
 	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 	return fmt.Sprintf(
 		bannerTemplate,
-		Version,
-		goVersion,
 		GitCommit,
+		goVersion,
 		platform,
 		UserAgent(),
 	)
