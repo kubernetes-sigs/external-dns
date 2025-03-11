@@ -61,6 +61,7 @@ type Config struct {
 	IgnoreIngressTLSSpec               bool
 	IgnoreIngressRulesSpec             bool
 	ListenEndpointEvents               bool
+	GatewayName                        string
 	GatewayNamespace                   string
 	GatewayLabelFilter                 string
 	Compatibility                      string
@@ -230,6 +231,7 @@ var defaultConfig = &Config{
 	IgnoreHostnameAnnotation:     false,
 	IgnoreIngressTLSSpec:         false,
 	IgnoreIngressRulesSpec:       false,
+	GatewayName:                  "",
 	GatewayNamespace:             "",
 	GatewayLabelFilter:           "",
 	Compatibility:                "",
@@ -453,6 +455,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
 	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: true)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
+	app.Flag("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)").StringVar(&cfg.GatewayName)
 	app.Flag("gateway-namespace", "Limit Gateways of Route endpoints to a specific namespace (default: all namespaces)").StringVar(&cfg.GatewayNamespace)
 	app.Flag("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)").StringVar(&cfg.GatewayLabelFilter)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
