@@ -38,6 +38,7 @@ import (
 )
 
 const (
+	foo = "bar"
 	defaultAWSProfile = "default"
 	recordTTL         = 300
 	// From the experiments, it seems that the default MaxItems applied is 100,
