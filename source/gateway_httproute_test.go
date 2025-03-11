@@ -183,6 +183,9 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
 			},
+			logExpectations: []string{
+				"level=debug msg=\"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test\"",
+			},
 		},
 		{
 			title: "GatewayNamespace",

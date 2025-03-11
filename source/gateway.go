@@ -312,7 +312,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 		// Confirm the Gateway has the correct name, if specified.
-		if c.src.gwName != "" && gw.gateway.Name != c.src.gwName {
+		if c.src.gwName != "" && c.src.gwName != gw.gateway.Name {
 			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
 			continue
 		}
