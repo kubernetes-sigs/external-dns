@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -1797,4 +1799,41 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 		assert.True(t, strings.HasPrefix(txtRecords[0].DNSName, "a-"),
 			"TXT record should have 'a-' prefix when using new format only")
 	}
+}
+
+func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "empty-targets.test-zone.example.org",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{},
+			},
+			{
+				DNSName:    "valid-targets.test-zone.example.org",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{"target1"},
+			},
+		},
+	})
+
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
+	b := testutils.LogsToBuffer(log.ErrorLevel, t)
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	expectedRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "valid-targets.test-zone.example.org",
+			Targets:    endpoint.Targets{"target1"},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels:     map[string]string{},
+		},
+	}
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.Contains(t, b.String(), "TXT record has no targets empty-targets.test-zone.example.org")
 }
