@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/source"
 )
 
 const (
@@ -44,6 +43,10 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultCloudFlareRecordTTL 1 = automatic
 	defaultCloudFlareRecordTTL = 1
+
+	providerSpecificCustomHostnameKey = "cloudflare-custom-hostname"
+	// providerSpecificProxied specifies whether traffic will go through Cloudflare
+	providerSpecificProxied = "cloudflare-proxied"
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -499,7 +502,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if proxied {
 			e.RecordTTL = 0
 		}
-		e.SetProviderSpecificProperty(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e.SetProviderSpecificProperty(providerSpecificProxied, strconv.FormatBool(proxied))
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
@@ -647,10 +650,10 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == source.CloudflareProxiedKey {
+		if v.Name == providerSpecificProxied {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", source.CloudflareProxiedKey, err)
+				log.Errorf("Failed parsing value of %s: %v", providerSpecificProxied, err)
 			} else {
 				proxied = b
 			}
@@ -666,7 +669,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 
 func getEndpointCustomHostname(endpoint *endpoint.Endpoint) string {
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == source.CloudflareCustomHostnameKey {
+		if v.Name == providerSpecificCustomHostnameKey {
 			return v.Value
 		}
 	}
@@ -721,9 +724,9 @@ func groupByNameAndTypeWithCustomHostnames(records []cloudflare.DNSRecord, chs [
 		if ep == nil {
 			continue
 		}
-		ep.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		ep.WithProviderSpecific(providerSpecificProxied, strconv.FormatBool(proxied))
 		if customHostname, ok := customOriginServers[records[0].Name]; ok {
-			ep.WithProviderSpecific(source.CloudflareCustomHostnameKey, customHostname)
+			ep.WithProviderSpecific(providerSpecificCustomHostnameKey, customHostname)
 		}
 
 		endpoints = append(endpoints, ep)

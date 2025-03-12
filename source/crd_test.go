@@ -56,7 +56,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 	return io.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
-func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
+func fakeRESTClient(spec *endpoint.DNSEndpointSpec, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
@@ -74,9 +74,7 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 			Labels:      labels,
 			Generation:  1,
 		},
-		Spec: endpoint.DNSEndpointSpec{
-			Endpoints: endpoints,
-		},
+		Spec: *spec,
 	}
 
 	codecFactory := serializer.WithoutConversionCodecFactory{
@@ -135,8 +133,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		apiVersion           string
 		registeredKind       string
 		kind                 string
+		spec                 *endpoint.DNSEndpointSpec
 		endpoints            []*endpoint.Endpoint
-		expectEndpoints      bool
 		expectError          bool
 		annotationFilter     string
 		labelFilter          string
@@ -149,16 +147,17 @@ func testCRDSourceEndpoints(t *testing.T) {
 			apiVersion:           "blah.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     true,
+			expectError: true,
 		},
 		{
 			title:                "invalid crd kind",
@@ -166,16 +165,120 @@ func testCRDSourceEndpoints(t *testing.T) {
 			apiVersion:           "test.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "JustEndpoint",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			title:                "endpoint with annotations",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "namespace",
+			registeredNamespace:  "namespace",
+			annotations: map[string]string{
+				hostnameAnnotationKey:            "example.com",
+				targetAnnotationKey:              "1.2.3.4",
+				ttlAnnotationKey:                 "180",
+				annotationKeyPrefix + "property": "value",
+			},
+			spec: &endpoint.DNSEndpointSpec{},
 			endpoints: []*endpoint.Endpoint{
 				{
-					DNSName:    "abc.example.org",
+					DNSName:    "example.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name:  "property",
+							Value: "value",
+						},
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     true,
+			expectError: false,
+		},
+		{
+			title:                "endpoint with provider property",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "namespace",
+			registeredNamespace:  "namespace",
+			annotations: map[string]string{
+				annotationKeyPrefix + "override": "ignored",
+				annotationKeyPrefix + "property": "value",
+			},
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "example.com",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+						ProviderSpecific: endpoint.ProviderSpecific{
+							endpoint.ProviderSpecificProperty{
+								Name:  "override",
+								Value: "value",
+							},
+							endpoint.ProviderSpecificProperty{
+								Name:  "aws/property",
+								Value: "value",
+							},
+							endpoint.ProviderSpecificProperty{
+								Name:  "scw/property",
+								Value: "value",
+							},
+							endpoint.ProviderSpecificProperty{
+								Name:  "webhook/property",
+								Value: "value",
+							},
+						},
+					},
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						endpoint.ProviderSpecificProperty{
+							Name:  "override",
+							Value: "value",
+						},
+						endpoint.ProviderSpecificProperty{
+							Name:  "aws-property",
+							Value: "value",
+						},
+						endpoint.ProviderSpecificProperty{
+							Name:  "scw-property",
+							Value: "value",
+						},
+						endpoint.ProviderSpecificProperty{
+							Name:  "webhook/property",
+							Value: "value",
+						},
+						endpoint.ProviderSpecificProperty{
+							Name:  "property",
+							Value: "value",
+						},
+					},
+				},
+			},
+			expectError: false,
 		},
 		{
 			title:                "endpoints within a specific namespace",
@@ -185,6 +288,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
 			registeredNamespace:  "foo",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
@@ -193,8 +306,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "no endpoints within a specific namespace",
@@ -204,16 +316,17 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
 			registeredNamespace:  "bar",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "invalid crd with no targets",
@@ -223,16 +336,17 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
 			registeredNamespace:  "foo",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with single endpoint",
@@ -242,6 +356,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
 			registeredNamespace:  "foo",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
@@ -250,8 +374,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with multiple endpoints",
@@ -261,6 +384,22 @@ func testCRDSourceEndpoints(t *testing.T) {
 			kind:                 "DNSEndpoint",
 			namespace:            "foo",
 			registeredNamespace:  "foo",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
+					{
+						DNSName:    "xyz.example.org",
+						Targets:    endpoint.Targets{"abc.example.org"},
+						RecordType: endpoint.RecordTypeCNAME,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
@@ -275,8 +414,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with annotation and non matching annotation filter",
@@ -288,16 +426,17 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			annotations:          map[string]string{"test": "that"},
 			annotationFilter:     "test=filter_something_else",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "valid crd gvk with annotation and matching annotation filter",
@@ -309,6 +448,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			annotations:          map[string]string{"test": "that"},
 			annotationFilter:     "test=that",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
@@ -317,30 +466,33 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
-		{
-			title:                "valid crd gvk with label and non matching label filter",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
-			namespace:            "foo",
-			registeredNamespace:  "foo",
-			labels:               map[string]string{"test": "that"},
-			labelFilter:          "test=filter_something_else",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
-				},
-			},
-			expectEndpoints: false,
-			expectError:     false,
-		},
+		// TODO: Label based Selectors are implemented by the REST client
+		//       Therefore this test case predominantly exercises the fake REST client,
+		//       which doesn't currently support label based filtering.
+		//{
+		//	title:                "valid crd gvk with label and non matching label filter",
+		//	registeredAPIVersion: "test.k8s.io/v1alpha1",
+		//	apiVersion:           "test.k8s.io/v1alpha1",
+		//	registeredKind:       "DNSEndpoint",
+		//	kind:                 "DNSEndpoint",
+		//	namespace:            "foo",
+		//	registeredNamespace:  "foo",
+		//	labels:               map[string]string{"test": "that"},
+		//	labelFilter:          "test=filter_something_else",
+		//	spec: &endpoint.DNSEndpointSpec{
+		//		Endpoints: []*endpoint.Endpoint{
+		//			{
+		//				DNSName:    "abc.example.org",
+		//				Targets:    endpoint.Targets{"1.2.3.4"},
+		//				RecordType: endpoint.RecordTypeA,
+		//				RecordTTL:  180,
+		//			},
+		//		},
+		//	},
+		//	expectError: false,
+		//},
 		{
 			title:                "valid crd gvk with label and matching label filter",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
@@ -351,6 +503,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"1.2.3.4"},
+						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
@@ -359,8 +521,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "Create NS record",
@@ -372,6 +533,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "abc.example.org",
+						Targets:    endpoint.Targets{"ns1.k8s.io", "ns2.k8s.io"},
+						RecordType: endpoint.RecordTypeNS,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
@@ -380,8 +551,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "Create SRV record",
@@ -393,6 +563,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "_svc._tcp.example.org",
+						Targets:    endpoint.Targets{"0 0 80 abc.example.org", "0 0 80 def.example.org"},
+						RecordType: endpoint.RecordTypeSRV,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "_svc._tcp.example.org",
@@ -401,8 +581,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "Create NAPTR record",
@@ -414,6 +593,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "example.org",
+						Targets:    endpoint.Targets{`100 10 "S" "SIP+D2U" "!^.*$!sip:customer-service@example.org!" _sip._udp.example.org.`, `102 10 "S" "SIP+D2T" "!^.*$!sip:customer-service@example.org!" _sip._tcp.example.org.`},
+						RecordType: endpoint.RecordTypeNAPTR,
+						RecordTTL:  180,
+					},
+				},
+			},
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
@@ -422,8 +611,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "illegal target CNAME",
@@ -435,16 +623,17 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"foo.example.org."},
-					RecordType: endpoint.RecordTypeCNAME,
-					RecordTTL:  180,
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "example.org",
+						Targets:    endpoint.Targets{"foo.example.org."},
+						RecordType: endpoint.RecordTypeCNAME,
+						RecordTTL:  180,
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectError: false,
 		},
 		{
 			title:                "illegal target NAPTR",
@@ -456,23 +645,24 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "example.org",
-					Targets:    endpoint.Targets{`100 10 "S" "SIP+D2U" "!^.*$!sip:customer-service@example.org!" _sip._udp.example.org`, `102 10 "S" "SIP+D2T" "!^.*$!sip:customer-service@example.org!" _sip._tcp.example.org`},
-					RecordType: endpoint.RecordTypeNAPTR,
-					RecordTTL:  180,
+			spec: &endpoint.DNSEndpointSpec{
+				Endpoints: []*endpoint.Endpoint{
+					{
+						DNSName:    "example.org",
+						Targets:    endpoint.Targets{`100 10 "S" "SIP+D2U" "!^.*$!sip:customer-service@example.org!" _sip._udp.example.org`, `102 10 "S" "SIP+D2T" "!^.*$!sip:customer-service@example.org!" _sip._tcp.example.org`},
+						RecordType: endpoint.RecordTypeNAPTR,
+						RecordTTL:  180,
+					},
 				},
 			},
-			expectEndpoints: false,
-			expectError:     false,
+			expectError: false,
 		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			restClient := fakeRESTClient(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
+			restClient := fakeRESTClient(ti.spec, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
 
@@ -497,7 +687,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 				require.NoErrorf(t, err, "Received err %v", err)
 			}
 
-			if len(receivedEndpoints) == 0 && !ti.expectEndpoints {
+			if len(receivedEndpoints) == 0 && len(ti.endpoints) == 0 {
 				return
 			}
 

@@ -10,7 +10,7 @@ The following table documents which sources support which annotations:
 | Connector    |            |          |                   |         |         |                     |
 | Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 | CloudFoundry |            |          |                   |         |         |                     |
-| CRD          |            |          |                   |         |         |                     |
+| CRD          |            | Yes      |                   | Yes     | Yes     | Yes                 |
 | F5           |            |          |                   | Yes     | Yes     |                     |
 | Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |
 | Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |
@@ -101,7 +101,13 @@ It must be between 1 and 2,147,483,647 seconds.
 
 ## Provider-specific annotations
 
-Some providers define their own annotations. Cloud-specific annotations have keys prefixed as follows:
+Provider-specific annotations are prefixed by `external-dns.alpha.kubernetes.io/`
+and the provider's name, for example `external-dns.alpha.kubernetes.io/aws-`.
+
+Individual provider implementations should be examined to identify the additional
+configuration offered via supported annotations.
+
+Currently, supported Cloud-specific annotations include the following prefixes:
 
 | Cloud      | Annotation prefix                              |
 |------------|------------------------------------------------|
