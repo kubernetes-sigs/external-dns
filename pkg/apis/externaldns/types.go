@@ -90,6 +90,7 @@ type Config struct {
 	AWSZoneTagFilter                   []string
 	AWSAssumeRole                      string
 	AWSProfiles                        []string
+	AWSSkipTLSVerify                   bool
 	AWSAssumeRoleExternalID            string `secure:"yes"`
 	AWSBatchChangeSize                 int
 	AWSBatchChangeSizeBytes            int
@@ -498,6 +499,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("aws-profile", "When using the AWS provider, name of the profile to use").Default("").StringsVar(&cfg.AWSProfiles)
 	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
 	app.Flag("aws-assume-role-external-id", "When using the AWS API and assuming a role then specify this external ID` (optional)").Default(defaultConfig.AWSAssumeRoleExternalID).StringVar(&cfg.AWSAssumeRoleExternalID)
+	app.Flag("aws-skip-tls-verify", "When using TLS with the aws provider, disable verification of any TLS certificates").BoolVar(&cfg.AWSSkipTLSVerify)
 	app.Flag("aws-batch-change-size", "When using the AWS provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSize)).IntVar(&cfg.AWSBatchChangeSize)
 	app.Flag("aws-batch-change-size-bytes", "When using the AWS provider, set the maximum byte size that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSizeBytes)).IntVar(&cfg.AWSBatchChangeSizeBytes)
 	app.Flag("aws-batch-change-size-values", "When using the AWS provider, set the maximum total record values that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSizeValues)).IntVar(&cfg.AWSBatchChangeSizeValues)

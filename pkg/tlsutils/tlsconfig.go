@@ -47,7 +47,7 @@ func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, m
 	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
 		return nil, errors.New("either both cert and key or none must be provided")
 	}
-	var certificates []tls.Certificate
+	certificates := make([]tls.Certificate, 0)
 	if certPath != "" {
 		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 		if err != nil {
