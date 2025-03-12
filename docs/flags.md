@@ -28,6 +28,7 @@
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
 | `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
+| `--gateway-name=GATEWAY-NAME` | Limit Gateways of Route endpoints to a specific name (default: all names) |
 | `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
 | `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |

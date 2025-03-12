@@ -100,6 +100,8 @@ spec:
         - --namespace=my-route-namespace
         # Optionally, limit Routes to those matching the given label selector.
         - --label-filter=my-route-label==my-route-value
+        # Optionally, limit Route endpoints to those Gateways with the given name.
+        - --gateway-name=my-gateway-name
         # Optionally, limit Route endpoints to those Gateways in the given namespace.
         - --gateway-namespace=my-gateway-namespace
         # Optionally, limit Route endpoints to those Gateways matching the given label selector.
