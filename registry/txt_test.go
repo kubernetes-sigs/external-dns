@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -1513,6 +1514,7 @@ func TestGenerateTXT(t *testing.T) {
 	p.CreateZone(testZone)
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
 	gotTXT := r.generateTXTRecord(record)
+	fmt.Println(gotTXT)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
 
@@ -1655,46 +1657,17 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 	}
 }
 
-/**
-
-helper methods
-
-*/
-
-func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
-	return newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID, nil)
-}
-
-func newEndpointWithOwnerAndOwnedRecord(dnsName, target, recordType, ownerID, ownedRecord string) *endpoint.Endpoint {
-	return newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID, endpoint.Labels{endpoint.OwnedRecordLabelKey: ownedRecord})
-}
-
-func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, target)
-	e.Labels[endpoint.OwnerLabelKey] = ownerID
-	for k, v := range labels {
-		e.Labels[k] = v
-	}
-	return e
-}
-
-func newEndpointWithOwnerResource(dnsName, target, recordType, ownerID, resource string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, target)
-	e.Labels[endpoint.OwnerLabelKey] = ownerID
-	e.Labels[endpoint.ResourceLabelKey] = resource
-	return e
-}
-
 func TestNewTXTRegistryWithNewFormatOnly(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 
-	r, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
+	buf := testutils.LogsToBuffer(log.DebugLevel, t)
+	_, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
 	require.NoError(t, err)
-	assert.False(t, r.newFormatOnly)
+	assert.NotContains(t, buf.String(), "--txt-new-format-only is left for backward compatibility")
 
-	r, err = NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, true)
+	_, err = NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, true)
 	require.NoError(t, err)
-	assert.True(t, r.newFormatOnly)
+	assert.Contains(t, buf.String(), "--txt-new-format-only is left for backward compatibility")
 }
 
 func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
@@ -1711,9 +1684,9 @@ func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 			name:            "legacy format enabled - standard record",
 			newFormatOnly:   false,
 			endpoint:        newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
-			expectedRecords: 2,
+			expectedRecords: 1,
 			expectedPrefix:  "a-",
-			description:     "Should generate both old and new format TXT records",
+			description:     "Should generate only new format TXT records",
 		},
 		{
 			name:            "new format only - standard record",

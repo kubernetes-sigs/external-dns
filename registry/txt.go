@@ -74,6 +74,11 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("owner id cannot be empty")
 	}
 
+	if newFormatOnly {
+		// TODO: capture log
+		log.Warn("--txt-new-format-only is left for backward compatibility, it will be removed in future releases")
+	}
+
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
@@ -103,7 +108,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
-		newFormatOnly:       newFormatOnly,
 	}, nil
 }
 
@@ -235,18 +239,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
-
-	// Create legacy format record by default unless newFormatOnly is true
-	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
-		// old TXT record format
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-		if txt != nil {
-			txt.WithSetIdentifier(r.SetIdentifier)
-			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-			txt.ProviderSpecific = r.ProviderSpecific
-			endpoints = append(endpoints, txt)
-		}
-	}
 
 	// Always create new format record
 	recordType := r.RecordType
