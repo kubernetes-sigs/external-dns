@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -1486,6 +1487,7 @@ func TestNewTXTScheme(t *testing.T) {
 		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
+	fmt.Println(err)
 	require.NoError(t, err)
 }
 

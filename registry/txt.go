@@ -73,7 +73,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	}
 
 	if newFormatOnly {
-		// TODO: capture log
 		log.Warn("--txt-new-format-only is left for backward compatibility, it will be removed in future releases")
 	}
 
