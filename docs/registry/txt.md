@@ -13,12 +13,14 @@ The TXT registry supports single format for storing DNS record metadata:
 
 ### Manually Cleanup Legacy TXT Records
 
+> While deleting registry TXT records won't cause downtime, a well-thought-out migration and cleanup plan is crucial.
+
 Occasionally, it may be necessary to remove outdated TXT records from your registry.
 
 The script could be found in [scripts/cleanup-legacy-txt-records.py](../../scripts/cleanup-legacy-txt-records.py) with instructions how to run it.
 The following Python script automates this cleanup process.
 The script performs targeted deletion of TXT records that include `ResourceRecords` matching the `heritage=external-dns,external-dns/owner=default` or similar pattern.
-In the event of unintended deletion of all TXT records, `external-dns` will initiate a full DNS record regeneration, along with`TXT` and `non-TXT` records. Just be awre, this operation's duration is directly proportional to the DNS estate size."
+In the event of unintended deletion of all TXT records managed by `external-dns`, `external-dns` will initiate a full DNS record regeneration, along with`TXT` and `non-TXT` records. Just be awre, this operation's duration is directly proportional to the DNS estate size."
 
 ### For version `v0.16.0 & v0.16.1`
 
