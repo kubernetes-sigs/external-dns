@@ -642,7 +642,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 	var chs []cloudflare.CustomHostname
 	resultInfo := cloudflare.ResultInfo{Page: 1}
 	for {
-		pageCustomHostnameListResponse, resultInfo, err := p.Client.CustomHostnames(ctx, zoneID, resultInfo.Page, cloudflare.CustomHostname{})
+		pageCustomHostnameListResponse, result, err := p.Client.CustomHostnames(ctx, zoneID, resultInfo.Page, cloudflare.CustomHostname{})
 		if err != nil {
 			var apiErr *cloudflare.Error
 			if errors.As(err, &apiErr) {
@@ -656,7 +656,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 		}
 
 		chs = append(chs, pageCustomHostnameListResponse...)
-		resultInfo = resultInfo.Next()
+		resultInfo = result.Next()
 		if resultInfo.Done() {
 			break
 		}

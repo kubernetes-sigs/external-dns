@@ -320,6 +320,8 @@ The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
 
+Due to a limitation within the cloudflare-go v0 API, the custom hostname page size is fixed at 50.
+
 ## Using CRD source to manage DNS records in Cloudflare
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
