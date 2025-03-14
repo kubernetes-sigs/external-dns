@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Warning: The script deletes all records that match certain values. It could delete both legacy and new records if there is no way to differentiate them.
+
 # This Python script is designed to help migrate DNS management to `external-dns` by cleaning up legacy TXT records in AWS Route 53.
 # It identifies and deletes TXT records that match a specified pattern, ensuring that `external-dns` can take over managing these resources.
 # The script performs the following steps:
@@ -58,7 +60,7 @@ import json, argparse, os, uuid, time
 
 MAX_ITEMS=300 # max is 300 https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/route53/client/list_resource_record_sets.html
 SLEEP=1 # in seconds, required to make sure Route53 API is not throttled
-OPERATION_UUID=uuid.uuid4()
+SESSION_ID=uuid.uuid4()
 
 def json_prettify(data):
     return json.dumps(data, indent=4, default=str)
@@ -77,6 +79,7 @@ class Record:
         self.resource_record = resource_record
 
     def is_for_deletion(self, contains):
+
         if contains in self.resource_record:
             return True
         return False
@@ -98,7 +101,7 @@ def records(config: Config) -> None:
     print(f"calculate TXT records to cleanup for 'zone:{config.zone_id}' and 'max records:{config.total_items}'")
     # https://botocore.amazonaws.com/v1/documentation/api/latest/reference/config.html
     cfg = AwsConfig(
-       user_agent=f"ExternalDNS/boto3-{OPERATION_UUID}",
+       user_agent=f"ExternalDNS/boto3-{SESSION_ID}",
 
     )
     r53client = boto3.client('route53', config=cfg)
@@ -196,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--run", action="store_true", help="Execute the cleanup. The tool will do a dry-run if --run is not specified.")
 
     print("Run this script at your own RISKS!!!!")
-    print(f"Session ID  '{OPERATION_UUID}'")
+    print(f"Session ID  '{SESSION_ID}'")
 
     args = parser.parse_args()
     print("arguments:",args)
