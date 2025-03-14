@@ -436,7 +436,7 @@ func (p *OVHProvider) records(ctx context.Context, zone *string, records chan<- 
 
 	if p.UseCache {
 		soa.records = ovhRecords
-		_ = p.cacheInstance.Add(*zone+"#soa", soa, time.Hour)
+		_ = p.cacheInstance.Add(*zone+"#soa", soa, cache.DefaultExpiration)
 	}
 
 	records <- ovhRecords
