@@ -28,6 +28,7 @@
 #
 # 3. **Main Functionality**:
 #    - Connects to AWS Route 53 using `boto3`.
+#    - Support single zone cleanup at a time.
 #    - Lists and filters TXT records based on the specified pattern.
 #    - Deletes the filtered records in batches, with an option for a dry run or actual deletion.
 #
@@ -41,14 +42,15 @@
 # 3. pipenv shell
 # 4. pip install boto3
 # 5. python scripts/cleanup-legacy-txt-records.py --help
-# WARNING: run this script at your own RISK
-# 6. DRY RUN python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --record-contain text
+# WARNING: run this script at your own RISK. This will delete all the TXT rerods that do contain certain string.
+# 6. DRY RUN python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --record-match text
+# 6.1 Before execution consider to stop `external-dns`
 # 7. Execute Deletion. First few times with reduced number of items
-# - python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 3 --batch-delete-count 1 --record-contain 'external-dns'
-# - python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 10000 --batch-delete-count 50 --run --record-contain "external-dns/owner=default"
+# - python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 3 --batch-delete-count 1 --record-match 'external-dns'
+# - python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 10000 --batch-delete-count 50 --run --record-match "external-dns/owner=default"
 
 # python scripts/cleanup-legacy-txt-records.py --help
-# python scripts/cleanup-legacy-txt-records.py --zone-id Z06155043AVN8RVC88TYY --total-items 3 --batch-delete-count 1 --record-contain "external-dns/owner=default"
+# python scripts/cleanup-legacy-txt-records.py --zone-id Z06155043AVN8RVC88TYY --total-items 300 --batch-delete-count 20 --record-match "external-dns/owner=default" --run
 
 import boto3
 from botocore.config import Config as AwsConfig
@@ -188,7 +190,7 @@ def delete_records(client: boto3.client, config: Config, records: list[Record]) 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cleanup legacy TXT records")
     parser.add_argument("--zone-id", type=str, required=True, help="Hosted Zone ID for which to run a cleanup.")
-    parser.add_argument("--record-contain", type=str, required=True, help="Record to contain value. Example 'external-dns/owner=default'")
+    parser.add_argument("--record-match", type=str, required=True, help="Record to match specific value. Example 'external-dns/owner=default'")
     parser.add_argument("--total-items", type=int, required=False, default=100, help="Number of items to delete. Default to 10")
     parser.add_argument("--batch-delete-count", type=int, required=False, default=2, help="Number of items to delete in single DELETE batch. Default to 2")
     parser.add_argument("--run", action="store_true", help="Execute the cleanup. The tool will do a dry-run if --run is not specified.")
@@ -200,7 +202,7 @@ if __name__ == "__main__":
     print("arguments:",args)
     cfg = Config(
         zone_id=args.zone_id,
-        contain=args.record_contain,
+        contain=args.record_match,
         total_items=args.total_items,
         batch=args.batch_delete_count,
         run=args.run,
