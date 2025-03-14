@@ -12,6 +12,12 @@ The TXT registry supports single format for storing DNS record metadata:
 
 - Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
 
+### Manually Cleanup Legacy TXT Records
+
+In some cases you might need to cleanup registry TXT records. The following snippet in Python code provides a simple cleanup functionality.
+
+The script could be found in [scripts/cleanup-legacy-txt-records.py](../../scripts/cleanup-legacy-txt-records.py) with instructions how to run it.
+
 ### For version `v0.16.0 & v0.16.1`
 
 The TXT registry supports two formats for storing DNS record metadata:
