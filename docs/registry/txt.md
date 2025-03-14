@@ -5,6 +5,15 @@ It stores DNS record metadata in TXT records, using the same provider.
 
 ## Record Format Options
 
+
+### For version `v0.16.2+`
+
+The TXT registry supports single format for storing DNS record metadata:
+
+- Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
+
+### For version `v0.16.0 & v0.16.1`
+
 The TXT registry supports two formats for storing DNS record metadata:
 
 - Legacy format: Creates a TXT record without record type information
@@ -31,13 +40,13 @@ The `--txt-new-format-only` flag should be used in addition to your existing ext
 
 ### Migration to New Format Only
 
+> Note: `external-dns` will not automatically remove legacy format records when switching to new-format-only mode. You'll need to clean up the old records manually if desired.
+
 When transitioning from dual-format to new-format-only records:
 
 - Ensure all your `external-dns` instances support the new format
 - Enable the `--txt-new-format-only` flag on your external-dns instances
 Manually clean up any existing legacy format TXT records from your DNS provider
-
-Note: `external-dns` will not automatically remove legacy format records when switching to new-format-only mode. You'll need to clean up the old records manually if desired.
 
 ## Prefixes and Suffixes
 
