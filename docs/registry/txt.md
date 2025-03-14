@@ -5,7 +5,6 @@ It stores DNS record metadata in TXT records, using the same provider.
 
 ## Record Format Options
 
-
 ### For version `v0.16.2+`
 
 The TXT registry supports single format for storing DNS record metadata:
