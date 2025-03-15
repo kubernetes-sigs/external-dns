@@ -14,7 +14,7 @@ A new staging image is released weekly and can be found at [gcr.io/k8s-staging-e
 Example command to fetch `10` most recent staging images:
 
 ```sh
-export EXT_DNS_VERSION="v0.15.1"
+export EXT_DNS_VERSION="v0.16.1"
 curl -sLk https://gcr.io/v2/k8s-staging-external-dns/external-dns/tags/list | jq | grep "$EXT_DNS_VERSION" | tail -n 10
 ```
 
@@ -46,7 +46,7 @@ You must be an official maintainer of the project to be able to do a release.
 - Branch out from the default branch and run `scripts/kustomize-version-updater.sh` to update the image tag used in the kustomization.yaml.
 - Create an issue to release the corresponding Helm chart via the chart release process (below) assigned to a chart maintainer
 - Create a PR with the kustomize change.
-- Create a PR to replace all versions for docker images in the tutorials. A possible script to use is `sd registry.k8s.io/external-dns/external-dns:v0.15.1`
+- Create a PR to replace all versions for docker images in the tutorials. A possible script to use is `sd registry.k8s.io/external-dns/external-dns:v0.16.1`
 - Once the PR is merged, all is done :-)
 
 ## How to release a new chart version
