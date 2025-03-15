@@ -38,13 +38,13 @@
 #    - The script is executed with command-line arguments specifying the hosted zone ID, record pattern, total items to delete, batch size, and whether to perform a dry run or actual deletion.
 #    - Check 'To Run script' section for more details
 
+# WARNING: run this script at your own RISK. This will delete all the TXT rerods that do contain certain string.
 # To Run script
 # 1. Python, pip and pipenv installed https://pipenv.pypa.io/en/latest/
 # 2. AWS Access https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html
 # 3. pipenv shell
 # 4. pip install boto3
 # 5. python scripts/cleanup-legacy-txt-records.py --help
-# WARNING: run this script at your own RISK. This will delete all the TXT rerods that do contain certain string.
 # 6. DRY RUN python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --record-match text
 # 6.1 Before execution consider to stop `external-dns`
 # 7. Execute Deletion. First few times with reduced number of items
