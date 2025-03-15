@@ -50,7 +50,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
-	"sigs.k8s.io/external-dns/provider/designate"
 	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/exoscale"
@@ -287,8 +286,6 @@ func main() {
 		)
 	case "inmemory":
 		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
-	case "designate":
-		p, err = designate.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
 		p, err = pdns.NewPDNSProvider(
 			ctx,
