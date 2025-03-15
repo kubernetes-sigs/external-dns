@@ -224,6 +224,18 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
+func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "CreateDataLocalizationRegionalHostname",
+		ZoneId:   rc.Identifier,
+		RecordId: "",
+		RecordData: cloudflare.DNSRecord{
+			Name: rp.Hostname,
+		},
+	})
+	return nil
+}
+
 func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "UpdateDataLocalizationRegionalHostname",
@@ -231,6 +243,18 @@ func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx contex
 		RecordId: "",
 		RecordData: cloudflare.DNSRecord{
 			Name: rp.Hostname,
+		},
+	})
+	return nil
+}
+
+func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "DeleteDataLocalizationRegionalHostname",
+		ZoneId:   rc.Identifier,
+		RecordId: "",
+		RecordData: cloudflare.DNSRecord{
+			Name: hostname,
 		},
 	})
 	return nil
@@ -1572,6 +1596,24 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	}
 }
 
+func TestCloudFlareProvider_createDataLocalizationRegionalHostnameParams(t *testing.T) {
+	change := &cloudFlareChange{
+		RegionalHostname: cloudflare.RegionalHostname{
+			Hostname:  "example.com",
+			RegionKey: "us",
+		},
+	}
+
+	params := createDataLocalizationRegionalHostnameParams(*change)
+	if params.Hostname != "example.com" {
+		t.Errorf("expected hostname to be 'example.com', but got '%s'", params.Hostname)
+	}
+
+	if params.RegionKey != "us" {
+		t.Errorf("expected region key to be 'us', but got '%s'", params.RegionKey)
+	}
+}
+
 func TestCloudFlareProvider_updateDataLocalizationRegionalHostnameParams(t *testing.T) {
 	change := &cloudFlareChange{
 		RegionalHostname: cloudflare.RegionalHostname{
@@ -1606,8 +1648,9 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	}
 
 	endpoint := &endpoint.Endpoint{
-		DNSName: "example.com",
-		Targets: []string{"192.0.2.1"},
+		DNSName:    "example.com",
+		RecordType: "A",
+		Targets:    []string{"192.0.2.1"},
 	}
 
 	change := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0], nil)
