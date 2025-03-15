@@ -16,7 +16,12 @@ limitations under the License.
 
 package provider
 
-import "strings"
+import (
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/idna"
+)
 
 type ZoneIDName map[string]string
 
@@ -25,8 +30,13 @@ func (z ZoneIDName) Add(zoneID, zoneName string) {
 }
 
 func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
+	name, err := idna.Lookup.ToUnicode(hostname)
+	if err != nil {
+		log.Warnf("Failed to convert hostname '%s' to its Unicode form: %v", hostname, err)
+		name = hostname
+	}
 	for zoneID, zoneName := range z {
-		if hostname == zoneName || strings.HasSuffix(hostname, "."+zoneName) {
+		if name == zoneName || strings.HasSuffix(name, "."+zoneName) {
 			if suitableZoneName == "" || len(zoneName) > len(suitableZoneName) {
 				suitableZoneID = zoneID
 				suitableZoneName = zoneName
