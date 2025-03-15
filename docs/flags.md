@@ -107,6 +107,7 @@
 | `--inmemory-zone=` | Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional) |
 | `--ovh-endpoint="ovh-eu"` | When using the OVH provider, specify the endpoint (default: ovh-eu) |
 | `--ovh-api-rate-limit=20` | When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20) |
+| `--[no-]ovh-enable-cname-relative` | When using the OVH provider, specify if CNAME should be treated as relative if target omit the final dot (default: false) |
 | `--pdns-server="http://localhost:8081"` | When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns) |
 | `--pdns-server-id="localhost"` | When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost) |
 | `--pdns-api-key=""` | When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns) |
