@@ -2315,7 +2315,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			Name:         "remove DNS record with unexpectedly missing custom hostname",
 			Endpoints:    []*endpoint.Endpoint{},
 			preApplyHook: "corrupt",
-			logOutput:    "level=info msg=\"Custom hostname newerror-getCustomHostnameOrigin.foo.fancybar.com not found\" action=DELETE record=create.foo.bar.com",
+			logOutput:    "level=warning msg=\"failed to delete custom hostname newerror-getCustomHostnameOrigin.foo.fancybar.com: not found\" action=DELETE record=create.foo.bar.com",
 		},
 		{
 			Name:         "duplicate custom hostname",
@@ -2372,8 +2372,8 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			t.Errorf("should not fail - %s, %s", tc.Name, chErr)
 		}
 		if tc.preApplyHook == "corrupt" {
-			chID, _ := getCustomHostnameIdWithOrigin(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com")
-			if chID != "" {
+			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); err == nil {
+				chID := ch.ID
 				t.Logf("corrupting custom hostname %v", chID)
 				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
 				oldCh := client.customHostnames[zoneID][oldIdx]
