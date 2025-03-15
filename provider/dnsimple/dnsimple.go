@@ -108,7 +108,7 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 	tc := oauth2.NewClient(context.Background(), ts)
 
 	client := dnsimple.NewClient(tc)
-	client.SetUserAgent(fmt.Sprintf("Kubernetes ExternalDNS/%s", externaldns.Version))
+	client.SetUserAgent(externaldns.UserAgent())
 
 	provider := &dnsimpleProvider{
 		client:       dnsimpleZoneService{service: client.Zones},

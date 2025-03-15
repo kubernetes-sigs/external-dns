@@ -87,7 +87,7 @@ func NewCivoProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*CivoProv
 	}
 
 	userAgent := &civogo.Component{
-		Name:    "external-dns",
+		Name:    externaldns.UserAgentProduct,
 		Version: externaldns.Version,
 	}
 	civoClient.SetUserAgent(userAgent)
