@@ -1,0 +1,4421 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="external-dns maintainers">
+      
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../../../docs/faq/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>Changelog - external-dns</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.bcfcd587.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#externaldns-helm-chart-changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="external-dns" class="md-header__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            external-dns
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Chart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../docs/faq/" class="md-tabs__link">
+          
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../docs/tutorials/akamai-edgedns/" class="md-tabs__link">
+          
+  
+    
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../docs/annotations/annotations/" class="md-tabs__link">
+          
+  
+    
+  
+  Annotations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../docs/sources/about/" class="md-tabs__link">
+          
+  
+    
+  
+  Sources
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../docs/registry/registry/" class="md-tabs__link">
+          
+  
+    
+  
+  Registries
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../docs/initial-design/" class="md-tabs__link">
+          
+  
+    
+  
+  Advanced Topics
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../CONTRIBUTING/" class="md-tabs__link">
+          
+  
+    
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="external-dns" class="md-nav__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    external-dns
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Chart
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Chart
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      UNRELEASED
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="UNRELEASED">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1152-2025-02-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.15.2 - 2025-02-14
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.15.2 - 2025-02-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1151-2025-01-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.15.1 - 2025-01-27
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.15.1 - 2025-01-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1150-2024-09-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.15.0 - 2024-09-11
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.15.0 - 2024-09-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1145-2024-06-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.5 - 2024-06-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.5 - 2024-06-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1144-2024-04-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.4 - 2024-04-05
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.4 - 2024-04-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1143-2024-01-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.3 - 2024-01-26
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.3 - 2024-01-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1142-2024-01-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.2 - 2024-01-22
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.2 - 2024-01-22">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1141-2024-01-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.1 - 2024-01-12
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.1 - 2024-01-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1140-2024-01-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.0 - 2024-01-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.0 - 2024-01-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1131-2023-09-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.13.1 - 2023-09-08
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.13.1 - 2023-09-08">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1130-2023-03-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.13.0 - 2023-03-30
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.13.0 - 2023-03-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1122-2023-03-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.12.2 - 2023-03-30
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.12.2 - 2023-03-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1121-2023-02-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.12.1 - 2023-02-06
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.12.1 - 2023-02-06">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1120-2022-11-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.12.0 - 2022-11-29
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.12.0 - 2022-11-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1110-2022-08-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.11.0 - 2022-08-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.11.0 - 2022-08-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1101-2022-07-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.10.1 - 2022-07-11
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.10.1 - 2022-07-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1100-2022-07-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.10.0 - 2022-07-08
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.10.0 - 2022-07-08">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v190-2022-04-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.9.0 - 2022-04-19
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.9.0 - 2022-04-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v180-2022-04-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.8.0 - 2022-04-13
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.8.0 - 2022-04-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/flags/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Flags
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/20190708-external-dns-incubator/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Out of Incubator
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../code-of-conduct/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Code of Conduct
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../LICENSE/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tutorials
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/akamai-edgedns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Akamai Edge DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/alibabacloud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Alibaba Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/aws-filters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Filters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/aws-load-balancer-controller/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Load Balancer Controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/aws-public-private-route53/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Route53 with same domain for public and private zones
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/aws-sd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Cloud Map API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/aws/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/azure-private-dns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure Private DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/azure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/civo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Civo DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/cloudflare/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cloudflare DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/contour/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contour HTTPProxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/coredns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CoreDNS with minikube
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/designate/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Designate DNS from OpenStack
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/digitalocean/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DigitalOcean DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/dnsimple/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DNSimple
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/exoscale/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exoscale
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/externalname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ExternalName Services
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/gandi/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gandi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/gke-nginx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GKE with nginx-ingress-controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/gke/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GKE with default controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/godaddy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GoDaddy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/hostport/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Headless Services
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/ibmcloud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IBMCloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/kops-dns-controller/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kOps dns-controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/kube-ingress-aws/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kube-ingress-aws-controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/linode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/ns1/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NS1
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/oracle/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Oracle Cloud Infrastructure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/ovh/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OVHcloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/pdns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PowerDNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/pihole/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pi-hole
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/plural/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plural
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/rfc2136/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    RFC2136 provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/scaleway/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scaleway
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/security-context/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running ExternalDNS with limited privileges
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/tencentcloud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tencent Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/transip/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TransIP
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/ultradns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UltraDNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/tutorials/webhook-provider/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Webhook provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Annotations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Annotations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/annotations/annotations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Sources
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Sources
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/about/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CRD Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/f5-transportserver/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    F5 Networks TransportServer Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/f5-virtualserver/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    F5 Networks VirtualServer Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/gateway-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gateway API Route Sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/gateway/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gateway sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/gloo-proxy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gloo Proxy Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/ingress/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Ingress source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/istio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Istio Gateway / Virtual Service Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/kong/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kong TCPIngress Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/mx-record/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MX record with CRD source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/nodes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster Nodes as Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/ns-record/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NS record with CRD source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/openshift/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenShift Route Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/pod/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pod Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/service/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Service source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/traefik-proxy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Traefik Proxy Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/sources/txt-record/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating TXT record with CRD source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Registries
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Registries
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/registry/registry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/registry/txt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TXT
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/registry/dynamodb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DynamoDB
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/initial-design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Initial Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/proposal/001-leader-election/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Leader Election
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../docs/monitoring/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Monitoring
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8_3" id="__nav_8_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_3">
+            <span class="md-nav__icon md-icon"></span>
+            Monitoring
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/monitoring/metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Available Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/proposal/multi-target/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MultiTarget
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/nat64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NAT64
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/rate-limits/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rate Limits
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/ttl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TTL
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../docs/contributing/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Contributing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubernetes Contributions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/release." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/deprecation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecation Policy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/contributing/chart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Helm Chart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/contributing/design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/contributing/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../docs/contributing/sources-and-providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sources and Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      UNRELEASED
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="UNRELEASED">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1152-2025-02-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.15.2 - 2025-02-14
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.15.2 - 2025-02-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1151-2025-01-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.15.1 - 2025-01-27
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.15.1 - 2025-01-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1150-2024-09-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.15.0 - 2024-09-11
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.15.0 - 2024-09-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1145-2024-06-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.5 - 2024-06-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.5 - 2024-06-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1144-2024-04-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.4 - 2024-04-05
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.4 - 2024-04-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1143-2024-01-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.3 - 2024-01-26
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.3 - 2024-01-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1142-2024-01-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.2 - 2024-01-22
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.2 - 2024-01-22">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1141-2024-01-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.1 - 2024-01-12
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.1 - 2024-01-12">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1140-2024-01-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.14.0 - 2024-01-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.14.0 - 2024-01-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1131-2023-09-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.13.1 - 2023-09-08
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.13.1 - 2023-09-08">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1130-2023-03-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.13.0 - 2023-03-30
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.13.0 - 2023-03-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1122-2023-03-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.12.2 - 2023-03-30
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.12.2 - 2023-03-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1121-2023-02-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.12.1 - 2023-02-06
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.12.1 - 2023-02-06">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1120-2022-11-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.12.0 - 2022-11-29
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.12.0 - 2022-11-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-changes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Changes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1110-2022-08-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.11.0 - 2022-08-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.11.0 - 2022-08-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1101-2022-07-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.10.1 - 2022-07-11
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.10.1 - 2022-07-11">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v1100-2022-07-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.10.0 - 2022-07-08
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.10.0 - 2022-07-08">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v190-2022-04-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.9.0 - 2022-04-19
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.9.0 - 2022-04-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v180-2022-04-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      v1.8.0 - 2022-04-13
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v1.8.0 - 2022-04-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="externaldns-helm-chart-changelog">ExternalDNS Helm Chart Changelog<a class="headerlink" href="#externaldns-helm-chart-changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to this project will be documented in this file.</p>
+<p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,<br />
+and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<hr />
+<!--
+### Added - For new features.
+### Changed - For changes in existing functionality.
+### Deprecated - For soon-to-be removed features.
+### Removed - For now removed features.
+### Fixed - For any bug fixes.
+### Security - In case of vulnerabilities.
+-->
+
+<h2 id="unreleased"><a href="https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns">UNRELEASED</a><a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added helm testing framework <code>helm plugin unittest</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5137">#5137</a>) <em>@ivankatliarchuk</em></li>
+<li>Added ability to generate schema with <code>helm plugin schema</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5075">#5075</a>) <em>@ivankatliarchuk</em></li>
+<li>Added <code>docs/contributing/dev-guide.md#helm-values</code> guide. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5075">#5075</a>) <em>@ivankatliarchuk</em></li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Regenerate JSON schema with `helm-values-schema-json&rsquo; plugin. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5075">#5075</a>) <em>@ivankatliarchuk</em></li>
+</ul>
+<h2 id="v1152-2025-02-14"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2">v1.15.2</a> - 2025-02-14<a class="headerlink" href="#v1152-2025-02-14" title="Permanent link">&para;</a></h2>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added <code>transportservers</code> resource to ClusterRole when specifying <code>f5-transportserver</code> or <code>f5-virtualserver</code> as a source. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5066">#5066</a>) <em>@visokoo</em></li>
+</ul>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed handling of non-string types in <code>serviceAccount.metadata.annotations</code> field. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5067">#5067</a>) <em>@hjoshi123</em></li>
+<li>Fixed regression where <code>affinity.nodeAffinity</code> was being ignored. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5046">#5046</a>) <em>@mkhpalm</em></li>
+</ul>
+<h2 id="v1151-2025-01-27"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.1">v1.15.1</a> - 2025-01-27<a class="headerlink" href="#v1151-2025-01-27" title="Permanent link">&para;</a></h2>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added ability to configure <code>imagePullSecrets</code> via helm <code>global</code> value. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4667">#4667</a>) <em>@jkroepke</em></li>
+<li>Added options to configure <code>labelFilter</code> and <code>managedRecordTypes</code> via dedicated helm values. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4849">#4849</a>) <em>@abaguas</em></li>
+</ul>
+<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Allow templating <code>serviceaccount.annotations</code> keys and values, by rendering them using the <code>tpl</code> built-in function. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4958">#4958</a>) <em>@fcrespofastly</em></li>
+<li>Updated <em>ExternalDNS</em> OCI image version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.1">v0.15.1</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/5028">#5028</a>) <em>@stevehipwell</em></li>
+</ul>
+<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed automatic addition of pod selector labels to <code>affinity</code> and <code>topologySpreadConstraints</code> if not defined. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4666">#4666</a>) <em>@pvickery-ParamountCommerce</em></li>
+<li>Fixed missing Ingress permissions when using Istio sources. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4845">#4845</a>) <em>@joekhoobyar</em></li>
+</ul>
+<h2 id="v1150-2024-09-11"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.0">v1.15.0</a> - 2024-09-11<a class="headerlink" href="#v1150-2024-09-11" title="Permanent link">&para;</a></h2>
+<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated <em>ExternalDNS</em> OCI image version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.15.0">v0.15.0</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4735">#4735</a>) <em>@stevehipwell</em></li>
+</ul>
+<h3 id="fixed_2">Fixed<a class="headerlink" href="#fixed_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed <code>provider.webhook.resources</code> behavior to correctly leverage resource limits. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4560">#4560</a>) <em>@crutonjohn</em></li>
+<li>Fixed <code>provider.webhook.imagePullPolicy</code> behavior to correctly leverage pull policy. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4643">#4643</a>) <em>@kimsondrup</em></li>
+<li>Fixed to add correct webhook metric port to <code>Service</code> and <code>ServiceMonitor</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4643">#4643</a>) <em>@kimsondrup</em></li>
+<li>Fixed to no longer require the unauthenticated webhook provider port to be exposed for health probes. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4691">#4691</a>) <em>@kimsondrup</em> &amp; <em>@hatrx</em></li>
+</ul>
+<h2 id="v1145-2024-06-10"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.5">v1.14.5</a> - 2024-06-10<a class="headerlink" href="#v1145-2024-06-10" title="Permanent link">&para;</a></h2>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added support for <code>extraContainers</code> argument. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4432">#4432</a>) <em>@omerap12</em></li>
+<li>Added support for setting <code>excludeDomains</code> argument.  (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4380">#4380</a>) <em>@bford-evs</em></li>
+</ul>
+<h3 id="changed_4">Changed<a class="headerlink" href="#changed_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated <em>ExternalDNS</em> OCI image version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.2">v0.14.2</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4541">#4541</a>) <em>@stevehipwell</em></li>
+<li>Updated <code>DNSEndpoint</code> CRD. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4541">#4541</a>) <em>@stevehipwell</em></li>
+<li>Changed the implementation for <code>revisionHistoryLimit</code> to be more generic. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4541">#4541</a>) <em>@stevehipwell</em></li>
+</ul>
+<h3 id="fixed_3">Fixed<a class="headerlink" href="#fixed_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed the <code>ServiceMonitor</code> job name to correctly use the instance label. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4541">#4541</a>) <em>@stevehipwell</em></li>
+</ul>
+<h2 id="v1144-2024-04-05"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.4">v1.14.4</a> - 2024-04-05<a class="headerlink" href="#v1144-2024-04-05" title="Permanent link">&para;</a></h2>
+<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added support for setting <code>dnsConfig</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4265">#4265</a>) <em>@davhdavh</em></li>
+<li>Added support for <code>DNSEndpoint</code> CRD. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4322">#4322</a>) <em>@onedr0p</em></li>
+</ul>
+<h3 id="changed_5">Changed<a class="headerlink" href="#changed_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated <em>ExternalDNS</em> OCI image version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.1">v0.14.1</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4357">#4357</a>) <em>@stevehipwell</em></li>
+</ul>
+<h2 id="v1143-2024-01-26"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.3">v1.14.3</a> - 2024-01-26<a class="headerlink" href="#v1143-2024-01-26" title="Permanent link">&para;</a></h2>
+<h3 id="fixed_4">Fixed<a class="headerlink" href="#fixed_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed args for webhook deployment. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4202">#4202</a>) <a href="https://github.com/webwurst">@webwurst</a></li>
+<li>Fixed support for <code>gateway-grpcroute</code>, <code>gateway-tlsroute</code>, <code>gateway-tcproute</code> &amp; <code>gateway-udproute</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4205">#4205</a>) <a href="https://github.com/orenlevi111">@orenlevi111</a></li>
+<li>Fixed incorrect implementation for setting the <code>automountServiceAccountToken</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4208">#4208</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h2 id="v1142-2024-01-22"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.2">v1.14.2</a> - 2024-01-22<a class="headerlink" href="#v1142-2024-01-22" title="Permanent link">&para;</a></h2>
+<h3 id="fixed_5">Fixed<a class="headerlink" href="#fixed_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Restore template support in <code>.Values.provider</code> and <code>.Values.provider.name</code></li>
+</ul>
+<h2 id="v1141-2024-01-12"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.1">v1.14.1</a> - 2024-01-12<a class="headerlink" href="#v1141-2024-01-12" title="Permanent link">&para;</a></h2>
+<h3 id="fixed_6">Fixed<a class="headerlink" href="#fixed_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed webhook install failure: <code>"http-webhook-metrics": must be no more than 15 characters</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4173">#4173</a>) <a href="https://github.com/gabe565">@gabe565</a></li>
+</ul>
+<h2 id="v1140-2024-01-10"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.0">v1.14.0</a> - 2024-01-10<a class="headerlink" href="#v1140-2024-01-10" title="Permanent link">&para;</a></h2>
+<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added the option to explicitly enable or disable service account token automounting. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3983">#3983</a>) <a href="https://github.com/gilles-gosuin">@gilles-gosuin</a></li>
+<li>Added the option to configure revisionHistoryLimit on the K8s Deployment resource. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4008">#4008</a>) <a href="https://github.com/arnisoph">@arnisoph</a></li>
+<li>Added support for webhook providers, as a sidecar. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4032">#4032</a> <a href="https://github.com/mloiseleur">@mloiseleur</a></li>
+<li>Added the option to configure ipFamilyPolicy and ipFamilies of external-dns Service.  (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4153">#4153</a>) <a href="https://github.com/dongjiang1989">@dongjiang1989</a></li>
+</ul>
+<h3 id="changed_6">Changed<a class="headerlink" href="#changed_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Avoid unnecessary pod restart on each helm chart version. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4103">#4103</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Updated <em>ExternalDNS</em> OCI image version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.0">v0.14.0</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4073">#4073</a>) <a href="https://github.com/appkins">@appkins</a></li>
+</ul>
+<h3 id="deprecated">Deprecated<a class="headerlink" href="#deprecated" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The <code>secretConfiguration</code> value has been deprecated in favour of creating secrets external to the Helm chart and configuring their use via the <code>extraVolumes</code> &amp; <code>extraVolumeMounts</code> values. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/4161">#4161</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h2 id="v1131-2023-09-08"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.13.1">v1.13.1</a> - 2023-09-08<a class="headerlink" href="#v1131-2023-09-08" title="Permanent link">&para;</a></h2>
+<h3 id="added_5">Added<a class="headerlink" href="#added_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added RBAC for Traefik to ClusterRole. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3325">#3325</a>) <a href="https://github.com/thomask33">@ThomasK33</a></li>
+<li>Added support for init containers. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3838">#3325</a>) <a href="https://github.com/calvinbui">@calvinbui</a></li>
+</ul>
+<h3 id="changed_7">Changed<a class="headerlink" href="#changed_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Disallowed privilege escalation in container security context and set the seccomp profile type to <code>RuntimeDefault</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3689">#3689</a>) <a href="https://github.com/nrvnrvn">@nrvnrvn</a></li>
+<li>Updated <em>ExternalDNS</em> OCI image version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.6">v0.13.6</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3917">#3917</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed RBAC rule for already removed <code>contour-ingressroute</code> source. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3764">#3764</a>) <a href="https://github.com/johngmyers">@johngmyers</a></li>
+</ul>
+<h2 id="v1130-2023-03-30"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.13.0">v1.13.0</a> - 2023-03-30<a class="headerlink" href="#v1130-2023-03-30" title="Permanent link">&para;</a></h2>
+<h3 id="all-changes">All Changes<a class="headerlink" href="#all-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5">v0.13.5</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3661">#3661</a>) <a href="https://github.com/GMartinez-Sisti">@GMartinez-Sisti</a></li>
+<li>Adding missing gateway-httproute cluster role permission. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3541">#3541</a>) <a href="https://github.com/nicon89">@nicon89</a></li>
+</ul>
+<h2 id="v1122-2023-03-30"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.12.2">v1.12.2</a> - 2023-03-30<a class="headerlink" href="#v1122-2023-03-30" title="Permanent link">&para;</a></h2>
+<h3 id="all-changes_1">All Changes<a class="headerlink" href="#all-changes_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added support for ServiceMonitor relabelling. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3366">#3366</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Updated chart icon path. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3494">#3492</a>) <a href="https://github.com/kundan2707">kundan2707</a></li>
+<li>Added RBAC for Gateway-API resources to ClusterRole. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3499">#3499</a>) <a href="https://github.com/MichaelVL">@michaelvl</a></li>
+<li>Added RBAC for F5 VirtualServer to ClusterRole. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3503">#3503</a>) <a href="https://github.com/mikejoh">@mikejoh</a></li>
+<li>Added support for running ExternalDNS with namespaced scope. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3403">#3403</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Updated <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.4">v0.13.4</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3516">#3516</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h2 id="v1121-2023-02-06"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.12.1">v1.12.1</a> - 2023-02-06<a class="headerlink" href="#v1121-2023-02-06" title="Permanent link">&para;</a></h2>
+<h3 id="all-changes_2">All Changes<a class="headerlink" href="#all-changes_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.2">v0.13.2</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3371">#3371</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+<li>Added <code>secretConfiguration.subPath</code> to mount specific files from secret as a sub-path. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3227">#3227</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Changed to use <code>registry.k8s.io</code> instead of <code>k8s.gcr.io</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3261">#3261</a>) <a href="https://github.com/johngmyers">@johngmyers</a></li>
+</ul>
+<h2 id="v1120-2022-11-29"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.12.0">v1.12.0</a> - 2022-11-29<a class="headerlink" href="#v1120-2022-11-29" title="Permanent link">&para;</a></h2>
+<h3 id="all-changes_3">All Changes<a class="headerlink" href="#all-changes_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added ability to provide ExternalDNS with secret configuration via <code>secretConfiguration</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3144">#3144</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Added the ability to template <code>provider</code> &amp; <code>extraArgs</code>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3144">#3144</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Added the ability to customise the service account labels. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3145">#3145</a>) <a href="https://github.com/jkroepke">@jkroepke</a></li>
+<li>Updated <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.1">v0.13.1</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/3197">#3197</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h2 id="v1110-2022-08-10"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.11.0">v1.11.0</a> - 2022-08-10<a class="headerlink" href="#v1110-2022-08-10" title="Permanent link">&para;</a></h2>
+<h3 id="added_6">Added<a class="headerlink" href="#added_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added support to configure <code>dnsPolicy</code> on the Helm chart deployment. <a href="https://github.com/michelzanini">@michelzanini</a></li>
+<li>Added ability to customise the deployment strategy. <a href="https://github.com/mac-chaffee">mac-chaffee</a></li>
+</ul>
+<h3 id="changed_8">Changed<a class="headerlink" href="#changed_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Updated <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.12.2">v0.12.2</a>. <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+<li>Changed default deployment strategy to <code>Recreate</code>. <a href="https://github.com/mac-chaffee">mac-chaffee</a></li>
+</ul>
+<h2 id="v1101-2022-07-11"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.10.1">v1.10.1</a> - 2022-07-11<a class="headerlink" href="#v1101-2022-07-11" title="Permanent link">&para;</a></h2>
+<h3 id="fixed_7">Fixed<a class="headerlink" href="#fixed_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed incorrect addition of <code>namespace</code> to <code>ClusterRole</code> &amp; <code>ClusterRoleBinding</code>. <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h2 id="v1100-2022-07-08"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.10.0">v1.10.0</a> - 2022-07-08<a class="headerlink" href="#v1100-2022-07-08" title="Permanent link">&para;</a></h2>
+<h3 id="added_7">Added<a class="headerlink" href="#added_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added <code>commonLabels</code> value to allow the addition of labels to all resources. <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+<li>Added support for <a href="https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/">Process Namespace Sharing</a> via the <code>shareProcessNamespace</code><br />
+ value. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/2715">#2715</a>) <a href="https://github.com/wolffberg">@wolffberg</a></li>
+</ul>
+<h3 id="changed_9">Changed<a class="headerlink" href="#changed_9" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Update <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.12.0">v0.12.0</a>. <a href="https://github.com/vojtechmares">@vojtechmares</a></li>
+<li>Set resource namespaces to <code>{{ .Release.Namespace }}</code> in the templates instead of waiting until apply time for inference. <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+<li>Fixed <code>rbac.additionalPermissions</code> default value.(<a href="https://github.com/kubernetes-sigs/external-dns/pull/2796">#2796</a>) <a href="https://github.com/tamalsaha">@tamalsaha</a></li>
+</ul>
+<h2 id="v190-2022-04-19"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.9.0">v1.9.0</a> - 2022-04-19<a class="headerlink" href="#v190-2022-04-19" title="Permanent link">&para;</a></h2>
+<h3 id="changed_10">Changed<a class="headerlink" href="#changed_10" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Update <em>ExternalDNS</em> version to <a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.11.0">v0.11.0</a>. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/2690">#2690</a>) <a href="https://github.com/stevehipwell">@stevehipwell</a></li>
+</ul>
+<h2 id="v180-2022-04-13"><a href="https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.8.0">v1.8.0</a> - 2022-04-13<a class="headerlink" href="#v180-2022-04-13" title="Permanent link">&para;</a></h2>
+<h3 id="added_8">Added<a class="headerlink" href="#added_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Add annotations to Deployment. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/2477">#2477</a>) <a href="https://github.com/beastob">@beastob</a></li>
+</ul>
+<h3 id="changed_11">Changed<a class="headerlink" href="#changed_11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fix RBAC for <code>istio-virtualservice</code> source when <code>istio-gateway</code> isn&rsquo;t also added. (<a href="https://github.com/kubernetes-sigs/external-dns/pull/2564">#2564</a>) <a href="https://github.com/mcwarman">@mcwarman</a></li>
+</ul>
+<!--
+RELEASE LINKS
+-->
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">March 4, 2025</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <!--
+  Copyright (c) 2016-2024 Martin Donath <martin.donath@squidfunk.com>
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+-->
+
+<!-- Copyright and theme information -->
+<div class="md-copyright">
+  
+  
+    Made with
+    <a
+      href="https://squidfunk.github.io/mkdocs-material/"
+      target="_blank" rel="noopener"
+    >
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate", "navigation.top", "navigation.tracking", "navigation.indexes", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>
