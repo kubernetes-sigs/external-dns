@@ -161,7 +161,7 @@
 | `--txt-wildcard-replacement=""` | When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional) |
 | `--[no-]txt-encrypt-enabled` | When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled) |
 | `--txt-encrypt-aes-key=""` | When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true) |
-| `--[no-]txt-new-format-only` | A key is reserved for TXT migraion. Enabling or disabling it will not take any effect. (deprecated) |
+| `--[no-]txt-new-format-only` | Was used during TXT format migration. Enabling or disabling it will not take any effect. (deprecated) |
 | `--dynamodb-region=""` | When using the DynamoDB registry, the AWS region of the DynamoDB table (optional) |
 | `--dynamodb-table="external-dns"` | When using the DynamoDB registry, the name of the DynamoDB table (default: "external-dns") |
 | `--txt-cache-interval=0s` | The interval between cache synchronizations in duration format (default: disabled) |
