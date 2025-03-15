@@ -404,10 +404,10 @@ func getCustomHostnameIdxByID(chs []cloudflare.CustomHostname, customHostnameID 
 	return -1
 }
 
-func (p *CloudFlareProvider) getCustomHostnameIDbyCustomHostnameAndOrigin(chs []cloudflare.CustomHostname, customHostname string, origin string) (string, string) {
-	for _, zoneCh := range chs {
-		if zoneCh.Hostname == customHostname && zoneCh.CustomOriginServer == origin {
-			return zoneCh.ID, zoneCh.Hostname
+func getCustomHostnameIDbyCustomHostnameAndOrigin(chs []cloudflare.CustomHostname, customHostname string, origin string) (string, string) {
+	for _, ch := range chs {
+		if ch.Hostname == customHostname && ch.CustomOriginServer == origin {
+			return ch.ID, ch.Hostname
 
 		}
 	}
@@ -1908,10 +1908,10 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			Name: "add custom hostname to more than one endpoint",
+			Name: "custom hostname to the same origin",
 			Endpoints: []*endpoint.Endpoint{
 				{
-					DNSName:    "fail.foo.bar.com",
+					DNSName:    "origin.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
@@ -1919,12 +1919,71 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "fail.foo.fancybar.com",
+							Value: "custom.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			shouldFail: false,
+		},
+		{
+			Name: "same custom hostname to the another origin",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "another-origin.foo.bar.com",
+					Targets:    endpoint.Targets{"3.4.5.6"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "custom.foo.fancybar.com",
 						},
 					},
 				},
 			},
 			shouldFail: true,
+		},
+		{
+			Name: "create CNAME records with custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "c.foo.bar.com",
+					Targets:    endpoint.Targets{"c.cname.foo.bar.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			shouldFail: false,
+		},
+		{
+			Name: "TXT registry record should not attempt to create custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "cname-c.foo.bar.com",
+					Targets: endpoint.Targets{
+						"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
+					},
+					RecordType: endpoint.RecordTypeTXT,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			shouldFail: false,
 		},
 		{
 			Name: "failing to update custom hostname",
@@ -2167,7 +2226,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 			Current:        records,
 			Desired:        endpoints,
 			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
 		}
 
 		planned := plan.Calculate()
@@ -2209,7 +2268,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		}
 
 		for expectedOrigin, expectedCustomHostname := range tc.ExpectedCustomHostnames {
-			_, ch := provider.getCustomHostnameIDbyCustomHostnameAndOrigin(chs, expectedCustomHostname, expectedOrigin)
+			_, ch := getCustomHostnameIDbyCustomHostnameAndOrigin(chs, expectedCustomHostname, expectedOrigin)
 			assert.Equal(t, expectedCustomHostname, ch)
 		}
 	}
@@ -2229,7 +2288,8 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 		Name                    string
 		Endpoints               []*endpoint.Endpoint
 		ExpectedCustomHostnames map[string]string
-		preApplyHook            bool
+		preApplyHook            string
+		logOutput               string
 	}{
 		{
 			Name: "create DNS record with custom hostname",
@@ -2248,17 +2308,46 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					},
 				},
 			},
-			preApplyHook: false,
+			preApplyHook: "",
+			logOutput:    "",
 		},
 		{
 			Name:         "remove DNS record with unexpectedly missing custom hostname",
 			Endpoints:    []*endpoint.Endpoint{},
-			preApplyHook: true,
+			preApplyHook: "corrupt",
+			logOutput:    "level=info msg=\"Custom hostname newerror-getCustomHostnameOrigin.foo.fancybar.com not found\" action=DELETE record=create.foo.bar.com",
+		},
+		{
+			Name:         "duplicate custom hostname",
+			Endpoints:    []*endpoint.Endpoint{},
+			preApplyHook: "duplicate",
+			logOutput:    "",
+		},
+		{
+			Name: "create DNS record with custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			preApplyHook: "",
+			logOutput:    "custom hostname a.foo.fancybar.com already exists with the same origin a.foo.bar.com, continue",
 		},
 	}
 
-	b := testutils.LogsToBuffer(log.InfoLevel, t)
 	for _, tc := range testCases {
+		b := testutils.LogsToBuffer(log.InfoLevel, t)
+
 		records, err := provider.Records(ctx)
 		if err != nil {
 			t.Errorf("should not fail, %s", err)
@@ -2278,12 +2367,12 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 
 		// manually corrupt custom hostname before the deletion step
 		// the purpose is to cause getCustomHostnameOrigin() to fail on change.Action == cloudFlareDelete
-		if tc.preApplyHook {
-			chs, chErr := provider.listCustomHostnamesWithPagination(ctx, zoneID)
-			if chErr != nil {
-				t.Errorf("should not fail - %s, %s", tc.Name, chErr)
-			}
-			chID, _ := provider.getCustomHostnameOrigin(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com")
+		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, zoneID)
+		if chErr != nil {
+			t.Errorf("should not fail - %s, %s", tc.Name, chErr)
+		}
+		if tc.preApplyHook == "corrupt" {
+			chID, _ := getCustomHostnameIdWithOrigin(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com")
 			if chID != "" {
 				t.Logf("corrupting custom hostname %v", chID)
 				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
@@ -2295,14 +2384,21 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 				}
 				client.customHostnames[zoneID][oldIdx] = ch
 			}
-		}
+		} else if tc.preApplyHook == "duplicate" { // manually inject duplicating custom hostname with the same name and origin
 
+			ch := cloudflare.CustomHostname{
+				ID:                 "ID-random-123",
+				Hostname:           "a.foo.fancybar.com",
+				CustomOriginServer: "a.foo.bar.com",
+			}
+			client.customHostnames[zoneID] = append(client.customHostnames[zoneID], ch)
+		}
 		err = provider.ApplyChanges(context.Background(), planned.Changes)
 		if err != nil {
 			t.Errorf("should not fail - %s, %s", tc.Name, err)
 		}
+		assert.Contains(t, b.String(), tc.logOutput)
 	}
-	assert.Contains(t, b.String(), "level=info msg=\"Custom hostname newerror-getCustomHostnameOrigin.foo.fancybar.com not found\" action=DELETE record=create.foo.bar.com")
 }
 
 func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
