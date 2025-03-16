@@ -245,16 +245,16 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (
 
 	if log.IsLevelEnabled(log.DebugLevel) {
 		for _, change := range changes.Create {
-			log.Debugf("OVH: changes CREATE dns:%q / targets:%v / type:%q", change.DNSName, change.Targets, change.RecordType)
+			log.Debugf("OVH: changes CREATE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
 		for _, change := range changes.UpdateOld {
-			log.Debugf("OVH: changes UPDATEOLD dns:%q / targets:%v / type:%q", change.DNSName, change.Targets, change.RecordType)
+			log.Debugf("OVH: changes UPDATEOLD dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
 		for _, change := range changes.UpdateNew {
-			log.Debugf("OVH: changes UPDATENEW dns:%q / targets:%v / type:%q", change.DNSName, change.Targets, change.RecordType)
+			log.Debugf("OVH: changes UPDATENEW dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
 		for _, change := range changes.Delete {
-			log.Debugf("OVH: changes DELETE dns:%q / targets:%v / type:%q", change.DNSName, change.Targets, change.RecordType)
+			log.Debugf("OVH: changes DELETE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
 	}
 
@@ -300,7 +300,7 @@ func (p *OVHProvider) change(ctx context.Context, change ovhChange) error {
 	case ovhCreate:
 		log.Debugf("OVH: Add an entry to %s", change.String())
 		if p.DryRun {
-			log.Infof("OVH: Dry-run: Would have created a DNS record for zone %q", change.Zone)
+			log.Infof("OVH: Dry-run: Would have created a DNS record for zone %s", change.Zone)
 			return nil
 		}
 		return p.client.PostWithContext(ctx, fmt.Sprintf("/domain/zone/%s/record", url.PathEscape(change.Zone)), change.ovhRecordFields, nil)
@@ -310,7 +310,7 @@ func (p *OVHProvider) change(ctx context.Context, change ovhChange) error {
 		}
 		log.Debugf("OVH: Delete an entry to %s", change.String())
 		if p.DryRun {
-			log.Infof("OVH: Dry-run: Would have deleted a DNS record for zone %q", change.Zone)
+			log.Infof("OVH: Dry-run: Would have deleted a DNS record for zone %s", change.Zone)
 			return nil
 		}
 		return p.client.DeleteWithContext(ctx, fmt.Sprintf("/domain/zone/%s/record/%d", url.PathEscape(change.Zone), change.ID), nil)
@@ -320,7 +320,7 @@ func (p *OVHProvider) change(ctx context.Context, change ovhChange) error {
 		}
 		log.Debugf("OVH: Update an entry to %s", change.String())
 		if p.DryRun {
-			log.Infof("OVH: Dry-run: Would have updated a DNS record for zone %q", change.Zone)
+			log.Infof("OVH: Dry-run: Would have updated a DNS record for zone %s", change.Zone)
 			return nil
 		}
 		return p.client.PutWithContext(ctx, fmt.Sprintf("/domain/zone/%s/record/%d", url.PathEscape(change.Zone), change.ID), change.ovhRecordFieldUpdate, nil)
@@ -389,7 +389,7 @@ func (p *OVHProvider) records(ctx context.Context, zone *string, records chan<- 
 		if cachedSoaItf, ok := p.cacheInstance.Get(*zone + "#soa"); ok {
 			cachedSoa := cachedSoaItf.(ovhSoa)
 
-			log.Debugf("OVH: Checking SOA against %v", cachedSoa.Serial)
+			log.Debugf("OVH: zone %s: Checking SOA against %v", *zone, cachedSoa.Serial)
 
 			m := new(dns.Msg)
 			m.SetQuestion(dns.Fqdn(*zone), dns.TypeSOA)
@@ -397,7 +397,7 @@ func (p *OVHProvider) records(ctx context.Context, zone *string, records chan<- 
 			if err == nil {
 				if s, ok := in.Answer[0].(*dns.SOA); ok {
 					if s.Serial == cachedSoa.Serial {
-						log.Debugf("OVH: SOA from cache is valid")
+						log.Debugf("OVH: zone %s: SOA from cache is valid", *zone)
 						records <- cachedSoa.records
 						return nil
 					}

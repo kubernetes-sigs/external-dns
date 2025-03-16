@@ -25,6 +25,7 @@ And you will need to generate your consumer key, here the permissions needed :
 - GET on `/domain/zone`
 - GET on `/domain/zone/*/record`
 - GET on `/domain/zone/*/record/*`
+- PUT on `/domain/zone/*/record/*`
 - POST on `/domain/zone/*/record`
 - DELETE on `/domain/zone/*/record/*`
 - GET on `/domain/zone/*/soa`
@@ -49,6 +50,10 @@ curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: applicati
     },
     {
       "method": "GET",
+      "path": "/domain/zone/*/record/*"
+    },
+    {
+      "method": "PUT",
       "path": "/domain/zone/*/record/*"
     },
     {
