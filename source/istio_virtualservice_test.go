@@ -2272,7 +2272,7 @@ func TestIstioVirtualServiceEventHandler(t *testing.T) {
 			level: log.DebugLevel,
 			logExpectations: []string{
 				"event handler added for 'service/v1' in 'namespace:istio-system' with 'name:istio-vsc'",
-				"event handler added for 'virtualservices.networking.istio.io/v1alpha3' in 'namespace:istio-system' with 'name:istio-vsc'",
+				"event handler added for 'virtualservice.networking.istio.io/v1alpha3' in 'namespace:istio-system' with 'name:istio-vsc'",
 				"event handler added for 'gateway.networking.istio.io/v1alpha3' in 'namespace:istio-system' with 'name:gateway1'",
 			},
 		},
