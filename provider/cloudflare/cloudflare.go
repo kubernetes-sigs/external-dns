@@ -229,7 +229,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		config, err = cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
+		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
 	provider := &CloudFlareProvider{
 		// Client: config,
@@ -254,10 +254,10 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
 		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
 		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
-			log.Debugf("looking up zone %s", zoneID)
+			log.Debugf("looking up zone %q", zoneID)
 			detailResponse, err := p.Client.ZoneDetails(ctx, zoneID)
 			if err != nil {
-				log.Errorf("zone %s lookup failed, %v", zoneID, err)
+				log.Errorf("zone %q lookup failed, %v", zoneID, err)
 				return result, err
 			}
 			log.WithFields(log.Fields{
@@ -285,7 +285,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 
 	for _, zone := range zonesResponse.Result {
 		if !p.domainFilter.Match(zone.Name) {
-			log.Debugf("zone %s not in domain filter", zone.Name)
+			log.Debugf("zone %q not in domain filter", zone.Name)
 			continue
 		}
 		result = append(result, zone)
@@ -395,7 +395,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			resourceContainer := cloudflare.ZoneIdentifier(zoneID)
 			records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
 			if err != nil {
-				return fmt.Errorf("could not fetch records from zone, %v", err)
+				return fmt.Errorf("could not fetch records from zone, %w", err)
 			}
 			chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
 			if chErr != nil {
@@ -408,21 +408,21 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					if prevCh, err := getCustomHostname(chs, prevChName); err == nil {
 						prevChID := prevCh.ID
 						if prevChID != "" && prevChName != newChName {
-							log.WithFields(logFields).Infof("Removing previous custom hostname %v/%v", prevChID, prevChName)
+							log.WithFields(logFields).Infof("Removing previous custom hostname %q/%q", prevChID, prevChName)
 							chErr := p.Client.DeleteCustomHostname(ctx, zoneID, prevChID)
 							if chErr != nil {
 								failedChange = true
-								log.WithFields(logFields).Errorf("failed to remove previous custom hostname %v/%v: %v", prevChID, prevChName, chErr)
+								log.WithFields(logFields).Errorf("failed to remove previous custom hostname %q/%q: %v", prevChID, prevChName, chErr)
 							}
 						}
 					}
 					if newChName != "" {
 						if prevChName != newChName {
-							log.WithFields(logFields).Infof("Adding custom hostname %v", newChName)
+							log.WithFields(logFields).Infof("Adding custom hostname %q", newChName)
 							_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
 							if chErr != nil {
 								failedChange = true
-								log.WithFields(logFields).Errorf("failed to add custom hostname %v: %v", newChName, chErr)
+								log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", newChName, chErr)
 							}
 						}
 					}
@@ -458,16 +458,16 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
 				}
 				if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] && change.CustomHostname.Hostname != "" {
-					log.WithFields(logFields).Infof("Deleting custom hostname %v", change.CustomHostname.Hostname)
+					log.WithFields(logFields).Infof("Deleting custom hostname %q", change.CustomHostname.Hostname)
 					if ch, err := getCustomHostname(chs, change.CustomHostname.Hostname); err == nil {
 						chID := ch.ID
 						chErr := p.Client.DeleteCustomHostname(ctx, zoneID, chID)
 						if chErr != nil {
 							failedChange = true
-							log.WithFields(logFields).Errorf("failed to delete custom hostname %v/%v: %v", chID, change.CustomHostname.Hostname, chErr)
+							log.WithFields(logFields).Errorf("failed to delete custom hostname %q/%q: %v", chID, change.CustomHostname.Hostname, chErr)
 						}
 					} else {
-						log.WithFields(logFields).Warnf("failed to delete custom hostname %v: %v", change.CustomHostname.Hostname, err)
+						log.WithFields(logFields).Warnf("failed to delete custom hostname %q: %v", change.CustomHostname.Hostname, err)
 					}
 				}
 			} else if change.Action == cloudFlareCreate {
@@ -478,19 +478,19 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
 				}
 				if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] && change.CustomHostname.Hostname != "" {
-					log.WithFields(logFields).Infof("Creating custom hostname %v", change.CustomHostname.Hostname)
+					log.WithFields(logFields).Infof("Creating custom hostname %q", change.CustomHostname.Hostname)
 					if ch, err := getCustomHostname(chs, change.CustomHostname.Hostname); err == nil {
 						if change.CustomHostname.CustomOriginServer == ch.CustomOriginServer {
-							log.WithFields(logFields).Warnf("custom hostname %v already exists with the same origin %v, continue", change.CustomHostname.Hostname, ch.CustomOriginServer)
+							log.WithFields(logFields).Warnf("custom hostname %q already exists with the same origin %q, continue", change.CustomHostname.Hostname, ch.CustomOriginServer)
 						} else {
 							failedChange = true
-							log.WithFields(logFields).Errorf("failed to create custom hostname, %v already exists with origin %v", change.CustomHostname.Hostname, ch.CustomOriginServer)
+							log.WithFields(logFields).Errorf("failed to create custom hostname, %q already exists with origin %q", change.CustomHostname.Hostname, ch.CustomOriginServer)
 						}
 					} else {
 						_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
 						if chErr != nil {
 							failedChange = true
-							log.WithFields(logFields).Errorf("failed to create custom hostname %v: %v", change.CustomHostname.Hostname, chErr)
+							log.WithFields(logFields).Errorf("failed to create custom hostname %q: %v", change.CustomHostname.Hostname, chErr)
 						}
 					}
 				}
@@ -502,7 +502,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	}
 
 	if len(failedZones) > 0 {
-		return fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones)
+		return fmt.Errorf("failed to submit all changes for the following zones: %q", failedZones)
 	}
 
 	return nil
@@ -536,7 +536,7 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 	for _, c := range changeSet {
 		zoneID, _ := zoneNameIDMapper.FindZone(c.ResourceRecord.Name)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecord.Name)
+			log.Debugf("Skipping record %q because no hosted zone matching record DNS Name was detected", c.ResourceRecord.Name)
 			continue
 		}
 		changes[zoneID] = append(changes[zoneID], c)
@@ -655,7 +655,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 					return nil, provider.NewSoftError(err)
 				}
 			}
-			log.Errorf("zone %s failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
+			log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
 			return nil, err
 		}
 
@@ -687,7 +687,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		if v.Name == source.CloudflareProxiedKey {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", source.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%q]: %v", source.CloudflareProxiedKey, err)
 			} else {
 				proxied = b
 			}
