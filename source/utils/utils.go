@@ -50,8 +50,6 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 	return endpoint.TTL(ttlValue)
 }
 
-// TODO: test
-// TODO: copied from source.go. Refactor to avoid duplication.
 // parseTTL parses TTL from string, returning duration in seconds.
 // parseTTL supports both integers like "600" and durations based
 // on Go Duration like "10m", hence "600" and "10m" represent the same value.
@@ -88,7 +86,9 @@ func suitableType(target string) string {
 	return endpoint.RecordTypeCNAME
 }
 
-// TODO: test
+// ParseIngress parses an ingress string in the format "namespace/name" or "name".
+// It returns the namespace and name extracted from the string, or an error if the format is invalid.
+// If the namespace is not provided, it defaults to an empty string.
 func ParseIngress(ingress string) (namespace, name string, err error) {
 	parts := strings.Split(ingress, "/")
 	if len(parts) == 2 {
@@ -102,7 +102,9 @@ func ParseIngress(ingress string) (namespace, name string, err error) {
 	return
 }
 
-// TODO: test
+// SelectorMatchesServiceSelector checks if all key-value pairs in the selector map
+// are present and match the corresponding key-value pairs in the svcSelector map.
+// It returns true if all pairs match, otherwise it returns false.
 func SelectorMatchesServiceSelector(selector, svcSelector map[string]string) bool {
 	for k, v := range selector {
 		if lbl, ok := svcSelector[k]; !ok || lbl != v {

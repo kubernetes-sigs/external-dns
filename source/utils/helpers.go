@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// TODO: test
 func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
@@ -85,7 +84,6 @@ func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	return endpoints
 }
 
-// TODO: test
 func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
