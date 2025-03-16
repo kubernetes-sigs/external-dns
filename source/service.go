@@ -83,8 +83,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
+			AddFunc: utils.CoreServiceAddFuncEventHandler,
 		},
 	)
 	endpointsInformer.Informer().AddEventHandler(

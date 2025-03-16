@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -3803,5 +3804,74 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints(context.Background())
 		require.NoError(b, err)
+	}
+}
+
+func TestCoreServiceEventHandler(t *testing.T) {
+	fakeClient := fake.NewSimpleClientset()
+
+	services := []*v1.Service{
+		(fakeIngressGatewayService{
+			ips:       []string{"8.8.8.8"},
+			hostnames: []string{"v1"},
+			namespace: "istio-system",
+			name:      "core-svc",
+		}).Service(),
+	}
+
+	for _, service := range services {
+		_, err := fakeClient.CoreV1().
+			Services(service.Namespace).
+			Create(context.Background(), service, metav1.CreateOptions{})
+		assert.NoError(t, err)
+	}
+
+	tests := []struct {
+		level           log.Level
+		logExpectations []string
+	}{
+		{
+			level: log.DebugLevel,
+			logExpectations: []string{
+				"event handler added for 'service/v1' in 'namespace:istio-system' with 'name:core-svc'",
+			},
+		},
+		{
+			level:           log.InfoLevel,
+			logExpectations: []string{},
+		},
+		{
+			level:           log.ErrorLevel,
+			logExpectations: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		buf := testutils.LogsToBuffer(test.level, t)
+		_, err := NewServiceSource(
+			context.TODO(),
+			fakeClient,
+			"",
+			"",
+			"{{.Name}}",
+			false,
+			"",
+			false,
+			false,
+			false,
+			[]string{},
+			false,
+			labels.Everything(),
+			false,
+			false,
+		)
+		assert.NoError(t, err)
+
+		if len(test.logExpectations) > 0 {
+			for _, msg := range test.logExpectations {
+				require.Contains(t, buf.String(), msg)
+			}
+		}
+		buf.Reset()
 	}
 }

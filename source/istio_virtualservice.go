@@ -35,6 +35,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/external-dns/source/istio"
 
 	"sigs.k8s.io/external-dns/source/utils"
 
@@ -87,25 +88,19 @@ func NewIstioVirtualServiceSource(
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("service added")
-			},
+			AddFunc: utils.CoreServiceAddFuncEventHandler,
 		},
 	)
 
 	virtualServiceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("virtual service added")
-			},
+			AddFunc: istio.VirtualServiceAddedEvent,
 		},
 	)
 
 	gatewayInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("gateway added")
-			},
+			AddFunc: istio.GatewayAddFuncEventHander,
 		},
 	)
 

@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -29,13 +28,13 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/external-dns/source/istio"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/utils"
@@ -46,6 +45,7 @@ import (
 const (
 	IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
 	ApiGatewayV1Alpha3        = "gateway.networking.istio.io/v1alpha3"
+	ApiVirtualServiceV1Alpha3 = "virtualservices.networking.istio.io/v1alpha3"
 )
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
@@ -89,35 +89,13 @@ func NewIstioGatewaySource(
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				// TODO: test this
-				if log.IsLevelEnabled(log.DebugLevel) {
-					service, ok := obj.(*corev1.Service)
-					if !ok {
-						log.Errorf("event handler not added. want 'service/v1' got '%s'", reflect.TypeOf(obj).String())
-						return
-					} else {
-						log.Debugf("event handler added for 'service/v1' in 'namespace:%s' with 'name:%s'.", service.Name, service.Namespace)
-					}
-				}
-			},
+			AddFunc: utils.CoreServiceAddFuncEventHandler,
 		},
 	)
 
 	gatewayInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				// TODO: test this
-				if log.IsLevelEnabled(log.DebugLevel) {
-					service, ok := obj.(*networkingv1alpha3.Gateway)
-					if !ok {
-						log.Errorf("event handler not added. want '%s' got '%s'", ApiGatewayV1Alpha3, reflect.TypeOf(obj).String())
-						return
-					} else {
-						log.Debugf("event handler added for '%s' in 'namespace:%s' with 'name:%s'", ApiGatewayV1Alpha3, service.Name, service.Namespace)
-					}
-				}
-			},
+			AddFunc: istio.GatewayAddFuncEventHander,
 		},
 	)
 

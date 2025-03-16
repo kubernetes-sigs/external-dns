@@ -21,18 +21,23 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	networkingv1pi "istio.io/api/networking/v1"
 	networkingv1alpha3api "istio.io/api/networking/v1alpha3"
+	networkingv1beta1api "istio.io/api/networking/v1beta1"
+	networkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -1635,4 +1640,284 @@ func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
 	gw.Spec.Servers = servers
 
 	return gw
+}
+
+func TestGatewayServiceEventHandler(t *testing.T) {
+	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	services := []*v1.Service{
+		(fakeIngressGatewayService{
+			ips:       []string{"8.8.8.8"},
+			hostnames: []string{"v1"},
+			namespace: "istio-system",
+			name:      "core-svc",
+		}).Service(),
+	}
+
+	for _, service := range services {
+		_, err := fakeKubernetesClient.CoreV1().
+			Services(service.Namespace).
+			Create(context.Background(), service, metav1.CreateOptions{})
+		assert.NoError(t, err)
+	}
+
+	tests := []struct {
+		level           log.Level
+		logExpectations []string
+	}{
+		{
+			level: log.DebugLevel,
+			logExpectations: []string{
+				"event handler added for 'service/v1' in 'namespace:istio-system' with 'name:core-svc'",
+			},
+		},
+		{
+			level:           log.InfoLevel,
+			logExpectations: []string{},
+		},
+		{
+			level:           log.ErrorLevel,
+			logExpectations: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		buf := testutils.LogsToBuffer(test.level, t)
+		_, err := NewIstioGatewaySource(
+			context.TODO(),
+			fakeKubernetesClient,
+			fakeIstioClient,
+			"",
+			"",
+			"",
+			false,
+			false,
+		)
+		assert.NoError(t, err)
+
+		if len(test.logExpectations) > 0 {
+			for _, msg := range test.logExpectations {
+				require.Contains(t, buf.String(), msg)
+			}
+		}
+		buf.Reset()
+	}
+}
+
+func TestGatewayIstioGatewayServiceEventHandlerV1Alpha3(t *testing.T) {
+	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	v1Alpha3gws := []*networkingv1alpha3.Gateway{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gateway1",
+				Namespace: "istio-system",
+			},
+			Spec: networkingv1alpha3api.Gateway{
+				Servers: []*networkingv1alpha3api.Server{
+					{
+						Hosts: []string{"example1.com"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, gw := range v1Alpha3gws {
+		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	tests := []struct {
+		level           log.Level
+		logExpectations []string
+	}{
+		{
+			level: log.DebugLevel,
+			logExpectations: []string{
+				"event handler added",
+				"gateway.networking.istio.io/v1alpha3",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		buf := testutils.LogsToBuffer(test.level, t)
+		_, err := NewIstioGatewaySource(
+			context.TODO(),
+			fakeKubernetesClient,
+			fakeIstioClient,
+			"",
+			"",
+			"",
+			false,
+			false,
+		)
+		assert.NoError(t, err)
+		if len(test.logExpectations) > 0 {
+			if len(test.logExpectations) > 0 {
+				for _, msg := range test.logExpectations {
+					require.Contains(t, buf.String(), msg)
+				}
+			} else {
+				require.Empty(t, buf.String())
+			}
+		}
+	}
+}
+
+func TestGatewayIstioGatewayServiceEventHandlerV1Beta1NotSupportedNoLogs(t *testing.T) {
+	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	gateway1 := &networkingv1beta1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dummy-gateway",
+			Namespace: "istio-system",
+			Labels: map[string]string{
+				"env": "test",
+			},
+		},
+		Spec: networkingv1beta1api.Gateway{
+			Servers: []*networkingv1beta1api.Server{
+				{
+					Port:  &networkingv1beta1api.Port{Number: 80, Name: "http", Protocol: "HTTP"},
+					Hosts: []string{"dummy.example.com"},
+				},
+			},
+		},
+	}
+
+	v1Beta1gws := []*networkingv1beta1.Gateway{
+		gateway1,
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gateway1",
+				Namespace: "istio-system",
+			},
+			Spec: networkingv1alpha3api.Gateway{
+				Servers: []*networkingv1alpha3api.Server{
+					{
+						Hosts: []string{"example1.com"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, gw := range v1Beta1gws {
+		_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	tests := []struct {
+		level           log.Level
+		logExpectations []string
+	}{
+		{
+			level:           log.DebugLevel,
+			logExpectations: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		buf := testutils.LogsToBuffer(test.level, t)
+		_, err := NewIstioGatewaySource(
+			context.TODO(),
+			fakeKubernetesClient,
+			fakeIstioClient,
+			"",
+			"",
+			"",
+			false,
+			false,
+		)
+		assert.NoError(t, err)
+		if len(test.logExpectations) > 0 {
+			for _, msg := range test.logExpectations {
+				require.Contains(t, buf.String(), msg)
+			}
+		} else {
+			require.Empty(t, buf.String())
+		}
+	}
+}
+
+func TestGatewayIstioGatewayServiceEventHandlerV1NotSupportedNoLogs(t *testing.T) {
+	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	gateway1 := &networkingv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dummy-gateway",
+			Namespace: "istio-system",
+			Labels: map[string]string{
+				"env": "test",
+			},
+		},
+		Spec: networkingv1pi.Gateway{
+			Servers: []*networkingv1beta1api.Server{
+				{
+					Port:  &networkingv1beta1api.Port{Number: 80, Name: "http", Protocol: "HTTP"},
+					Hosts: []string{"dummy.example.com"},
+				},
+			},
+		},
+	}
+
+	v1gws := []*networkingv1.Gateway{
+		gateway1,
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gateway1",
+				Namespace: "istio-system",
+			},
+			Spec: networkingv1alpha3api.Gateway{
+				Servers: []*networkingv1alpha3api.Server{
+					{
+						Hosts: []string{"example1.com"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, gw := range v1gws {
+		_, err := fakeIstioClient.NetworkingV1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	tests := []struct {
+		level           log.Level
+		logExpectations []string
+	}{
+		{
+			level:           log.DebugLevel,
+			logExpectations: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		buf := testutils.LogsToBuffer(test.level, t)
+		_, err := NewIstioGatewaySource(
+			context.TODO(),
+			fakeKubernetesClient,
+			fakeIstioClient,
+			"",
+			"",
+			"",
+			false,
+			false,
+		)
+		assert.NoError(t, err)
+		if len(test.logExpectations) > 0 {
+			for _, msg := range test.logExpectations {
+				require.Contains(t, buf.String(), msg)
+			}
+		} else {
+			require.Empty(t, buf.String())
+		}
+	}
 }
