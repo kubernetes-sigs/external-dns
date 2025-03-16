@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,6 +37,7 @@ import (
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -183,12 +183,7 @@ func newTSUnstructuredConverter() (*unstructuredConverter, error) {
 
 // filterByAnnotations filters a list of TransportServers by a given annotation selector.
 func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.TransportServer) ([]*f5.TransportServer, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := utils.ParseAnnotationFilter(ts.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

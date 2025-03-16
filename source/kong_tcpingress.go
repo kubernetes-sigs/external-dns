@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 var kongGroupdVersionResource = schema.GroupVersionResource{
@@ -162,11 +163,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 // filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
 func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := utils.ParseAnnotationFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

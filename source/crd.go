@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 // crdSource is an implementation of Source that provides endpoints by listing
@@ -270,11 +271,7 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *endpoint.DNS
 
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
 func (cs *crdSource) filterByAnnotations(dnsendpoints *endpoint.DNSEndpointList) (*endpoint.DNSEndpointList, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(cs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := utils.ParseAnnotationFilter(cs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

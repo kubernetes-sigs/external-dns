@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 // ambHostAnnotation is the annotation in the Host that maps to a Service
@@ -292,13 +293,7 @@ func newUnstructuredConverter() (*unstructuredConverter, error) {
 // Filter a list of Ambassador Host Resources to only return the ones that
 // contain the required External-DNS annotation filter
 func (sc *ambassadorHostSource) filterByAnnotations(ambassadorHosts []*ambassador.Host) ([]*ambassador.Host, error) {
-	// External-DNS Annotation Filter
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := utils.ParseAnnotationFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
