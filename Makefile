@@ -47,7 +47,7 @@ golangci-lint-verify: golangci-lint
 .PHONY: go-lint
 go-lint: golangci-lint
 	gofmt -l -s -w .
-	golangci-lint run --timeout=30m ./...
+	golangci-lint run --timeout=30m --fix ./...
 
 #? licensecheck: Run the to check for license headers
 .PHONY: licensecheck
@@ -149,7 +149,6 @@ clean:
 	@rm -rf build
 	@go clean -cache
 
-
 .PHONY: release.staging
 #? release.staging: Builds and push container images to the staging bucket.
 release.staging: test
@@ -166,6 +165,11 @@ ko:
 #? generate-flags-documentation: Generate documentation (docs/flags.md)
 generate-flags-documentation:
 	go run internal/gen/docs/flags/main.go
+
+.PHONY: generate-metrics-documentation
+#? generate-metrics-documentation: Generate documentation (docs/monitoring/metrics.md)
+generate-metrics-documentation:
+	go run internal/gen/docs/metrics/main.go
 
 #? pre-commit-install: Install pre-commit hooks
 pre-commit-install:
@@ -184,3 +188,11 @@ pre-commit-validate:
 #? help: Get more info on available commands
 help: Makefile
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
+
+#? helm-test: Run unit tests
+helm-test:
+	scripts/helm-tools.sh --helm-unittest
+
+#? helm-template: Run helm template
+helm-template:
+	scripts/helm-tools.sh --helm-template

@@ -182,48 +182,6 @@ or
 
 You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
 
-## What metrics can I get from ExternalDNS and what do they mean?
-
-ExternalDNS exposes 2 types of metrics: Sources and Registry errors.
-
-`Source`s are mostly Kubernetes API objects. Examples of `source` errors may be connection errors to the Kubernetes API server itself or missing RBAC permissions.
-It can also stem from incompatible configuration in the objects itself like invalid characters, processing a broken fqdnTemplate, etc.
-
-`Registry` errors are mostly Provider errors, unless there's some coding flaw in the registry package. Provider errors often arise due to accessing their APIs due to network or missing cloud-provider permissions when reading records.
-When applying a changeset, errors will arise if the changeset applied is incompatible with the current state.
-
-In case of an increased error count, you could correlate them with the `http_request_duration_seconds{handler="instrumented_http"}` metric which should show increased numbers for status codes 4xx (permissions, configuration, invalid changeset) or 5xx (apiserver down).
-
-You can use the host label in the metric to figure out if the request was against the Kubernetes API server (Source errors) or the DNS provider API (Registry/Provider errors).
-
-Here is the full list of available metrics provided by ExternalDNS:
-
-| Name                                                     | Description                                                        | Type    |
-| -------------------------------------------------------- | ------------------------------------------------------------------ | ------- |
-| external_dns_controller_last_sync_timestamp_seconds      | Timestamp of last successful sync with the DNS provider            | Gauge   |
-| external_dns_controller_last_reconcile_timestamp_seconds | Timestamp of last attempted sync with the DNS provider             | Gauge   |
-| external_dns_registry_endpoints_total                    | Number of Endpoints in all sources                                 | Gauge   |
-| external_dns_registry_errors_total                       | Number of Registry errors                                          | Counter |
-| external_dns_source_endpoints_total                      | Number of Endpoints in the registry                                | Gauge   |
-| external_dns_source_errors_total                         | Number of Source errors                                            | Counter |
-| external_dns_controller_verified_aaaa_records            | Number of DNS AAAA-records that exists both in source and registry | Gauge   |
-| external_dns_controller_verified_a_records               | Number of DNS A-records that exists both in source and registry    | Gauge   |
-| external_dns_registry_aaaa_records                       | Number of AAAA records in registry                                 | Gauge   |
-| external_dns_registry_a_records                          | Number of A records in registry                                    | Gauge   |
-| external_dns_source_aaaa_records                         | Number of AAAA records in source                                   | Gauge   |
-| external_dns_source_a_records                            | Number of A records in source                                      | Gauge   |
-
-If you're using the webhook provider, the following additional metrics will be provided:
-
-| Name                                                         | Description                                            | Type    |
-| ------------------------------------------------------------ | ------------------------------------------------------ | ------- |
-| external_dns_webhook_provider_records_errors_total           | Number of errors with the /records method              | Gauge   |
-| external_dns_webhook_provider_records_requests_total         | Number of requests made to the /records method         | Gauge   |
-| external_dns_webhook_provider_applychanges_errors_total      | Number of errors with the /applychanges method         | Gauge   |
-| external_dns_webhook_provider_applychanges_requests_total    | Number of requests made to the /applychanges method    | Gauge   |
-| external_dns_webhook_provider_adjustendpoints_errors_total   | Number of errors with the /adjustendpoints method      | Gauge   |
-| external_dns_webhook_provider_adjustendpoints_requests_total | Number of requests made to the /adjustendpoints method | Gauge   |
-
 ## How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
 
 Have a look at https://github.com/linki/mate/blob/v0.6.2/examples/google/README.md#permissions
@@ -239,7 +197,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.15.1
+  registry.k8s.io/external-dns/external-dns:v0.16.1
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 

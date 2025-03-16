@@ -24,3 +24,4 @@
 ci/
 schema/
 .schema.yaml
+tests/

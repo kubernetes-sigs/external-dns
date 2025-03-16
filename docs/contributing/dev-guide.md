@@ -38,10 +38,11 @@ make test
 make cover-html
 ```
 
-If added any flags, re-generate flags documentation
+If added any flags or metrics, re-generate documentation
 
 ```shell
 make generate-flags-documentation
+make generate-metrics-documentation
 ```
 
 We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation.
@@ -244,7 +245,13 @@ This helm chart comes with a JSON schema generated from values with [helm schema
 ❯❯ scripts/helm-tools.sh --docs
 ```
 
-6. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) under `## UNRELEASED` section and `open` pull request
+6. Run helm unittets.
+
+```sh
+❯❯ make helm-test
+```
+
+7. Add an entry to the chart [CHANGELOG.md](../../charts/external-dns/CHANGELOG.md) under `## UNRELEASED` section and `open` pull request
 
 ## Deploy with kubernetes manifests
 

@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/akamai"
@@ -128,6 +129,7 @@ func main() {
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
 		ListenEndpointEvents:           cfg.ListenEndpointEvents,
+		GatewayName:                    cfg.GatewayName,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
 		Compatibility:                  cfg.Compatibility,
@@ -252,7 +254,18 @@ func main() {
 	case "civo":
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage, cfg.CloudflareRegionKey)
+		p, err = cloudflare.NewCloudFlareProvider(
+			domainFilter,
+			zoneIDFilter,
+			cfg.CloudflareProxied,
+			cfg.DryRun,
+			cfg.CloudflareDNSRecordsPerPage,
+			cfg.CloudflareRegionKey,
+			cloudflare.CustomHostnamesConfig{
+				Enabled:              cfg.CloudflareCustomHostnames,
+				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
+				CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
+			})
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "digitalocean":
@@ -452,8 +465,12 @@ func handleSigterm(cancel func()) {
 func serveMetrics(address string) {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
+
+	log.Debugf("serving 'healthz' on 'localhost:%s/healthz'", address)
+	log.Debugf("serving 'metrics' on 'localhost:%s/metrics'", address)
+	log.Debugf("registered '%d' metrics", len(metrics.RegisterMetric.Metrics))
 
 	http.Handle("/metrics", promhttp.Handler())
 
