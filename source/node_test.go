@@ -18,6 +18,8 @@ package source
 
 import (
 	"context"
+	"fmt"
+	"k8s.io/utils/ptr"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,6 +79,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				labels.Everything(),
+				true,
 			)
 
 			if ti.expectError {
@@ -93,17 +96,18 @@ func testNodeSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		title            string
-		annotationFilter string
-		labelSelector    string
-		fqdnTemplate     string
-		nodeName         string
-		nodeAddresses    []v1.NodeAddress
-		labels           map[string]string
-		annotations      map[string]string
-		unschedulable    bool // default to false
-		expected         []*endpoint.Endpoint
-		expectError      bool
+		title              string
+		annotationFilter   string
+		labelSelector      string
+		fqdnTemplate       string
+		nodeName           string
+		nodeAddresses      []v1.NodeAddress
+		labels             map[string]string
+		annotations        map[string]string
+		exposeInternalIPv6 *bool // default to true for this version. Change later when the next minor version is released.
+		unschedulable      bool  // default to false
+		expected           []*endpoint.Endpoint
+		expectError        bool
 	}{
 		{
 			title:         "node with short hostname returns one endpoint",
@@ -198,6 +202,15 @@ func testNodeSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
 				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with only internal IPs with expose internal IP as false shouldn't return AAAA endpoints with internal IPs",
+			nodeName:           "node1",
+			exposeInternalIPv6: ptr.To(false),
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
 			},
 		},
 		{
@@ -361,6 +374,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 			_, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
 			require.NoError(t, err)
 
+			if tc.exposeInternalIPv6 == nil {
+				tc.exposeInternalIPv6 = new(bool)
+				*tc.exposeInternalIPv6 = true
+			}
+
+			fmt.Printf("node: %v %v\n", tc.nodeName, *tc.exposeInternalIPv6)
+
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
 				context.TODO(),
@@ -368,6 +388,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				labelSelector,
+				*tc.exposeInternalIPv6,
 			)
 			require.NoError(t, err)
 
