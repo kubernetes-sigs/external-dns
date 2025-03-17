@@ -49,7 +49,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [CloudFlare](https://www.cloudflare.com/dns)
 - [DigitalOcean](https://www.digitalocean.com/products/networking)
 - [DNSimple](https://dnsimple.com/)
-- [OpenStack Designate](https://docs.openstack.org/designate/latest/)
 - [PowerDNS](https://www.powerdns.com/)
 - [CoreDNS](https://coredns.io/)
 - [Exoscale](https://www.exoscale.com/dns/)
@@ -137,7 +136,6 @@ The following table clarifies the current status of the providers according to t
 | CloudFlare | Beta | |
 | DigitalOcean | Alpha | |
 | DNSimple | Alpha | |
-| OpenStack Designate | Alpha | |
 | PowerDNS | Alpha | |
 | CoreDNS | Alpha | |
 | Exoscale | Alpha | |
@@ -204,7 +202,6 @@ The following tutorials are provided:
 - [NS Record Creation with CRD Source](docs/sources/ns-record.md)
 - [MX Record Creation with CRD Source](docs/sources/mx-record.md)
 - [TXT Record Creation with CRD Source](docs/sources/txt-record.md)
-- [OpenStack Designate](docs/tutorials/designate.md)
 - [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 - [PowerDNS](docs/tutorials/pdns.md)
 - [RFC2136](docs/tutorials/rfc2136.md)
