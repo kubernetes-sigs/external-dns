@@ -131,6 +131,7 @@ type Config struct {
 	InMemoryZones                                 []string
 	OVHEndpoint                                   string
 	OVHApiRateLimit                               int
+	OVHEnableCNAMERelative                        bool
 	PDNSServer                                    string
 	PDNSServerID                                  string
 	PDNSAPIKey                                    string `secure:"yes"`
@@ -295,6 +296,7 @@ var defaultConfig = &Config{
 	InMemoryZones:                                 []string{},
 	OVHEndpoint:                                   "ovh-eu",
 	OVHApiRateLimit:                               20,
+	OVHEnableCNAMERelative:                        false,
 	PDNSServer:                                    "http://localhost:8081",
 	PDNSServerID:                                  "localhost",
 	PDNSAPIKey:                                    "",
@@ -484,7 +486,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
+	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("provider-cache-time", "The time to cache the DNS provider record list requests.").Default(defaultConfig.ProviderCacheTime.String()).DurationVar(&cfg.ProviderCacheTime)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
@@ -544,6 +546,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
 	app.Flag("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)").Default(strconv.Itoa(defaultConfig.OVHApiRateLimit)).IntVar(&cfg.OVHApiRateLimit)
+	app.Flag("ovh-enable-cname-relative", "When using the OVH provider, specify if CNAME should be treated as relative on target without final dot (default: false)").Default(strconv.FormatBool(defaultConfig.OVHEnableCNAMERelative)).BoolVar(&cfg.OVHEnableCNAMERelative)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)").Default(defaultConfig.PDNSServerID).StringVar(&cfg.PDNSServerID)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
