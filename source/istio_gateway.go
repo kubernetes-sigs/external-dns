@@ -34,6 +34,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	antns "sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/utils"
@@ -201,7 +202,7 @@ func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gateway) ([]*networkingv1alpha3.Gateway, error) {
-	selector, err := utils.ParseAnnotationFilter(sc.annotationFilter)
+	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

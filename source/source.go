@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 
+	antns "sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/utils"
 )
 
@@ -83,7 +84,7 @@ type Source interface {
 }
 
 func getTTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
-	return utils.TTLFromAnnotations(annotations, resource)
+	return antns.TTLFromAnnotations(annotations, resource)
 }
 
 type kubeObject interface {
@@ -144,7 +145,7 @@ func splitHostnameAnnotation(annotation string) []string {
 }
 
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
-	return utils.ProviderSpecificAnnotations(annotations)
+	return antns.ProviderSpecificAnnotations(annotations)
 }
 
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
