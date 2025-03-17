@@ -143,11 +143,6 @@ func splitHostnameAnnotation(annotation string) []string {
 	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
 }
 
-func getAliasFromAnnotations(annotations map[string]string) bool {
-	aliasAnnotation, exists := annotations[aliasAnnotationKey]
-	return exists && aliasAnnotation == "true"
-}
-
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	return utils.ProviderSpecificAnnotations(annotations)
 }
