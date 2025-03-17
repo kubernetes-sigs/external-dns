@@ -54,6 +54,7 @@ type Config struct {
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
 	ListenEndpointEvents           bool
+	GatewayName                    string
 	GatewayNamespace               string
 	GatewayLabelFilter             string
 	Compatibility                  string

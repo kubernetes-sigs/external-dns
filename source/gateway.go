@@ -82,6 +82,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 }
 
 type gatewayRouteSource struct {
+	gwName      string
 	gwNamespace string
 	gwLabels    labels.Selector
 	gwInformer  informers_v1beta1.GatewayInformer
@@ -161,6 +162,7 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	}
 
 	src := &gatewayRouteSource{
+		gwName:      config.GatewayName,
 		gwNamespace: config.GatewayNamespace,
 		gwLabels:    gwLabels,
 		gwInformer:  gwInformer,
@@ -307,6 +309,11 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
 		if !ok {
 			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+		// Confirm the Gateway has the correct name, if specified.
+		if c.src.gwName != "" && c.src.gwName != gw.gateway.Name {
+			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
 			continue
 		}
 		// Confirm the Gateway has accepted the Route.

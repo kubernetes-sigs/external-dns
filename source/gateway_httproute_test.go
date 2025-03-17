@@ -143,6 +143,51 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		logExpectations []string
 	}{
 		{
+			title: "GatewayName",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "gateway-name"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "not-gateway-name"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("2.3.4.5"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("route-namespace", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+				},
+				Status: httpRouteStatus( // The route is attached to both gateways.
+					gwParentRef("gateway-namespace", "gateway-name"),
+					gwParentRef("gateway-namespace", "not-gateway-name"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"level=debug msg=\"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test\"",
+			},
+		},
+		{
 			title: "GatewayNamespace",
 			config: Config{
 				GatewayNamespace: "gateway-namespace",

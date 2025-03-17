@@ -88,7 +88,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.15.1
+        image: registry.k8s.io/external-dns/external-dns:v0.16.1
         args:
         # Add desired Gateway API Route sources.
         - --source=gateway-httproute
@@ -100,6 +100,8 @@ spec:
         - --namespace=my-route-namespace
         # Optionally, limit Routes to those matching the given label selector.
         - --label-filter=my-route-label==my-route-value
+        # Optionally, limit Route endpoints to those Gateways with the given name.
+        - --gateway-name=my-gateway-name
         # Optionally, limit Route endpoints to those Gateways in the given namespace.
         - --gateway-namespace=my-gateway-namespace
         # Optionally, limit Route endpoints to those Gateways matching the given label selector.

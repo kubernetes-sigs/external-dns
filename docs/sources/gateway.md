@@ -43,6 +43,39 @@ Matching Gateways are discovered by iterating over the \*Route's `status.parents
 - Ignores parents with a `parentRef.group` other than
   `gateway.networking.k8s.io` or a `parentRef.kind` other than `Gateway`.
 
+- If the `--gateway-name` flag was specified, ignores parents with a `parentRef.name` other than the
+  specified value.
+
+  For example, given the following HTTPRoute:
+
+    ```yaml
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: echo
+    spec:
+      hostnames:
+        - echoserver.example.org
+      parentRefs:
+        - group: networking.k8s.io
+          kind: Gateway
+          name: internal
+    ---
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: echo2
+    spec:
+      hostnames:
+        - echoserver2.example.org
+      parentRefs:
+        - group: networking.k8s.io
+          kind: Gateway
+          name: external
+    ```
+
+  And using the `--gateway-name=external` flag, only the `echo2` HTTPRoute will be considered for DNS entries.
+
 - If the `--gateway-namespace` flag was specified, ignores parents with a `parentRef.namespace` other
   than the specified value.
 

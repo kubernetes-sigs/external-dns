@@ -1,9 +1,12 @@
 # See the OWNERS file documentation:
 #  https://github.com/kubernetes/community/blob/HEAD/contributors/guide/owners.md
 
-# These OWNERS files should stay in sync:
+## These OWNERS files should stay in sync:
 # https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes-sigs/external-dns/OWNERS
 # https://github.com/kubernetes/k8s.io/blob/master/registry.k8s.io/images/k8s-staging-external-dns/OWNERS
+
+## with this GitHub teams file:
+# https://github.com/kubernetes/org/blob/main/config/kubernetes-sigs/sig-network/teams.yaml
 
 approvers:
   - mloiseleur
@@ -22,3 +25,32 @@ emeritus_approvers:
   - linki
   - njuettner
   - seanmalloy
+
+filters:
+  "source/":
+    labels:
+    - source
+  "provider/aws(|sd)":
+    labels:
+    - provider/aws
+  "provider/azure":
+    labels:
+    - provider/azure
+  "provider/google":
+    labels:
+    - provider/google
+  "provider/coredns":
+    labels:
+    - provider/coredns
+  "provider/rfc2136":
+    labels:
+    - provider/rfc2136
+  "provider/pdns":
+    labels:
+    - provider/powerdns
+  "provider/cloudflare":
+    labels:
+    - provider/cloudflare
+  "provider/(akamai|alibabacloud|civo|designate|digitalocean|dnsimple|exoscale|gandi|godaddy|ibmcloud|linode|ns1|oci|ovh|pihole|plural|scaleway|tencentcloud|transip|ultradns)":
+    labels:
+    - provider
