@@ -24,16 +24,16 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
-	versioned "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/openshift/client-go/route/clientset/versioned"
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
@@ -194,11 +194,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 }
 
 func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*routev1.Route, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ors.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := utils.ParseAnnotationFilter(ors.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

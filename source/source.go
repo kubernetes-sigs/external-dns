@@ -20,22 +20,21 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math"
 	"net/netip"
 	"reflect"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
 	"unicode"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/external-dns/endpoint"
+
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 const (
@@ -76,11 +75,6 @@ const (
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
 
-const (
-	ttlMinimum = 1
-	ttlMaximum = math.MaxInt32
-)
-
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -89,40 +83,7 @@ type Source interface {
 }
 
 func getTTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
-	ttlNotConfigured := endpoint.TTL(0)
-	ttlAnnotation, exists := annotations[ttlAnnotationKey]
-	if !exists {
-		return ttlNotConfigured
-	}
-	ttlValue, err := parseTTL(ttlAnnotation)
-	if err != nil {
-		log.Warnf("%s: \"%v\" is not a valid TTL value: %v", resource, ttlAnnotation, err)
-		return ttlNotConfigured
-	}
-	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
-		log.Warnf("TTL value %q must be between [%d, %d]", ttlValue, ttlMinimum, ttlMaximum)
-		return ttlNotConfigured
-	}
-	return endpoint.TTL(ttlValue)
-}
-
-// parseTTL parses TTL from string, returning duration in seconds.
-// parseTTL supports both integers like "600" and durations based
-// on Go Duration like "10m", hence "600" and "10m" represent the same value.
-//
-// Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second
-// for the example).
-func parseTTL(s string) (ttlSeconds int64, err error) {
-	ttlDuration, errDuration := time.ParseDuration(s)
-	if errDuration != nil {
-		ttlInt, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return 0, errDuration
-		}
-		return ttlInt, nil
-	}
-
-	return int64(ttlDuration.Seconds()), nil
+	return utils.TTLFromAnnotations(annotations, resource)
 }
 
 type kubeObject interface {
@@ -188,58 +149,7 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 }
 
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
-	providerSpecificAnnotations := endpoint.ProviderSpecific{}
-
-	if v, exists := annotations[CloudflareProxiedKey]; exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareProxiedKey,
-			Value: v,
-		})
-	}
-	if v, exists := annotations[CloudflareCustomHostnameKey]; exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareCustomHostnameKey,
-			Value: v,
-		})
-	}
-	if getAliasFromAnnotations(annotations) {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  "alias",
-			Value: "true",
-		})
-	}
-	setIdentifier := ""
-	for k, v := range annotations {
-		if k == SetIdentifierKey {
-			setIdentifier = v
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/aws-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("aws/%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("scw/%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("ibmcloud-%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/webhook-") {
-			// Support for wildcard annotations for webhook providers
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/webhook-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("webhook/%s", attr),
-				Value: v,
-			})
-		}
-	}
-	return providerSpecificAnnotations, setIdentifier
+	return utils.ProviderSpecificAnnotations(annotations)
 }
 
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
@@ -274,60 +184,7 @@ func suitableType(target string) string {
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
 func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
-
-	var aTargets endpoint.Targets
-	var aaaaTargets endpoint.Targets
-	var cnameTargets endpoint.Targets
-
-	for _, t := range targets {
-		switch suitableType(t) {
-		case endpoint.RecordTypeA:
-			aTargets = append(aTargets, t)
-		case endpoint.RecordTypeAAAA:
-			aaaaTargets = append(aaaaTargets, t)
-		default:
-			cnameTargets = append(cnameTargets, t)
-		}
-	}
-
-	if len(aTargets) > 0 {
-		epA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, aTargets...)
-		if epA != nil {
-			epA.ProviderSpecific = providerSpecific
-			epA.SetIdentifier = setIdentifier
-			if resource != "" {
-				epA.Labels[endpoint.ResourceLabelKey] = resource
-			}
-			endpoints = append(endpoints, epA)
-		}
-	}
-
-	if len(aaaaTargets) > 0 {
-		epAAAA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeAAAA, ttl, aaaaTargets...)
-		if epAAAA != nil {
-			epAAAA.ProviderSpecific = providerSpecific
-			epAAAA.SetIdentifier = setIdentifier
-			if resource != "" {
-				epAAAA.Labels[endpoint.ResourceLabelKey] = resource
-			}
-			endpoints = append(endpoints, epAAAA)
-		}
-	}
-
-	if len(cnameTargets) > 0 {
-		epCNAME := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeCNAME, ttl, cnameTargets...)
-		if epCNAME != nil {
-			epCNAME.ProviderSpecific = providerSpecific
-			epCNAME.SetIdentifier = setIdentifier
-			if resource != "" {
-				epCNAME.Labels[endpoint.ResourceLabelKey] = resource
-			}
-			endpoints = append(endpoints, epCNAME)
-		}
-	}
-
-	return endpoints
+	return utils.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)
 }
 
 func getLabelSelector(annotationFilter string) (labels.Selector, error) {
