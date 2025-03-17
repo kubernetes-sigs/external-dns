@@ -57,7 +57,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [RFC2136](https://tools.ietf.org/html/rfc2136)
 - [NS1](https://ns1.com/)
 - [TransIP](https://www.transip.eu/domain-name/)
-- [OVH](https://www.ovh.com)
+- [OVHcloud](https://www.ovhcloud.com)
 - [Scaleway](https://www.scaleway.com)
 - [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 - [GoDaddy](https://www.godaddy.com)
@@ -85,7 +85,7 @@ See PR #3063 for all the discussions about it.
 Known providers using webhooks:
 
 | Provider              | Repo                                                                 |
-|-----------------------|----------------------------------------------------------------------|
+| --------------------- | -------------------------------------------------------------------- |
 | Abion                 | https://github.com/abiondevelopment/external-dns-webhook-abion       |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
 | Anexia                | https://github.com/ProbstenHias/external-dns-anexia-webhook          |
@@ -145,7 +145,7 @@ The following table clarifies the current status of the providers according to t
 | RFC2136 | Alpha | |
 | NS1 | Alpha | |
 | TransIP | Alpha | |
-| OVH | Alpha | |
+| OVHcloud | Beta | @rbeuque74 |
 | Scaleway DNS | Alpha | @Sh4d1 |
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
@@ -207,7 +207,7 @@ The following tutorials are provided:
 - [PowerDNS](docs/tutorials/pdns.md)
 - [RFC2136](docs/tutorials/rfc2136.md)
 - [TransIP](docs/tutorials/transip.md)
-- [OVH](docs/tutorials/ovh.md)
+- [OVHcloud](docs/tutorials/ovh.md)
 - [Scaleway](docs/tutorials/scaleway.md)
 - [UltraDNS](docs/tutorials/ultradns.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
