@@ -69,11 +69,11 @@ const (
 
 // Provider-specific annotations
 const (
-	// The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
-	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
+	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
+	CloudflareProxiedKey        = antns.CloudflareProxiedKey
+	CloudflareCustomHostnameKey = antns.CloudflareCustomHostnameKey
 
-	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
+	SetIdentifierKey = antns.SetIdentifierKey
 )
 
 // Source defines the interface Endpoint sources should implement.
