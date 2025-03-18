@@ -1031,19 +1031,19 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 
 func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
-	recordsMap := map[DNSRecordIndex]cloudflare.DNSRecord{
-		DNSRecordIndex{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
+	recordsMap := DNSRecordMap{
+		{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
 			Name:    "foo.com",
 			Type:    endpoint.RecordTypeCNAME,
 			Content: "foobar",
 			ID:      "1",
 		},
-		DNSRecordIndex{Name: "bar.de", Type: endpoint.RecordTypeA}: {
+		{Name: "bar.de", Type: endpoint.RecordTypeA}: {
 			Name: "bar.de",
 			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
-		DNSRecordIndex{Name: "bar.de", Type: endpoint.RecordTypeA, Content: "1.2.3.4"}: {
+		{Name: "bar.de", Type: endpoint.RecordTypeA, Content: "1.2.3.4"}: {
 			Name:    "bar.de",
 			Type:    endpoint.RecordTypeA,
 			Content: "1.2.3.4",
