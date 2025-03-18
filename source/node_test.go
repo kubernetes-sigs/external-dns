@@ -18,7 +18,6 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"k8s.io/utils/ptr"
 	"testing"
 
@@ -378,9 +377,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				tc.exposeInternalIPv6 = new(bool)
 				*tc.exposeInternalIPv6 = true
 			}
-
-			fmt.Printf("node: %v %v\n", tc.nodeName, *tc.exposeInternalIPv6)
-
+			
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
 				context.TODO(),

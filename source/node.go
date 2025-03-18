@@ -190,8 +190,6 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 		}
 	}
 
-	fmt.Printf("%v\n", addresses)
-
 	if len(addresses[v1.NodeExternalIP]) > 0 {
 		return append(addresses[v1.NodeExternalIP], ipv6Addresses...), nil
 	}
