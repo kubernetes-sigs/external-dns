@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 
 	antns "sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/cloudflare"
 	"sigs.k8s.io/external-dns/source/utils"
 )
 
@@ -48,11 +49,11 @@ const (
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress/service target
-	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
+	targetAnnotationKey = antns.TargetAnnotationKey
 	// The annotation used for defining the desired DNS record TTL
-	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	ttlAnnotationKey = antns.TtlAnnotationKey
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
-	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
+	aliasAnnotationKey = antns.AliasAnnotationKey
 	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
@@ -70,8 +71,8 @@ const (
 // Provider-specific annotations
 const (
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = antns.CloudflareProxiedKey
-	CloudflareCustomHostnameKey = antns.CloudflareCustomHostnameKey
+	CloudflareProxiedKey        = cloudflare.CloudflareProxiedKey
+	CloudflareCustomHostnameKey = cloudflare.CloudflareCustomHostnameKey
 
 	SetIdentifierKey = antns.SetIdentifierKey
 )

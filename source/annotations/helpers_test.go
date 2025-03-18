@@ -75,28 +75,28 @@ func TestTargetsFromTargetAnnotation(t *testing.T) {
 		{
 			name: "single target annotation",
 			annotations: map[string]string{
-				targetAnnotationKey: "example.com",
+				TargetAnnotationKey: "example.com",
 			},
 			expected: endpoint.Targets{"example.com"},
 		},
 		{
 			name: "multiple target annotations",
 			annotations: map[string]string{
-				targetAnnotationKey: "example.com,example.org",
+				TargetAnnotationKey: "example.com,example.org",
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},
 		{
 			name: "target annotation with trailing periods",
 			annotations: map[string]string{
-				targetAnnotationKey: "example.com.,example.org.",
+				TargetAnnotationKey: "example.com.,example.org.",
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},
 		{
 			name: "target annotation with spaces",
 			annotations: map[string]string{
-				targetAnnotationKey: " example.com , example.org ",
+				TargetAnnotationKey: " example.com , example.org ",
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},
@@ -126,7 +126,7 @@ func TestTTLFromAnnotations(t *testing.T) {
 		{
 			name: "valid TTL annotation",
 			annotations: map[string]string{
-				ttlAnnotationKey: "600",
+				TtlAnnotationKey: "600",
 			},
 			resource:    "test-resource",
 			expectedTTL: endpoint.TTL(600),
@@ -134,7 +134,7 @@ func TestTTLFromAnnotations(t *testing.T) {
 		{
 			name: "invalid TTL annotation",
 			annotations: map[string]string{
-				ttlAnnotationKey: "invalid",
+				TtlAnnotationKey: "invalid",
 			},
 			resource:    "test-resource",
 			expectedTTL: endpoint.TTL(0),
@@ -142,7 +142,7 @@ func TestTTLFromAnnotations(t *testing.T) {
 		{
 			name: "TTL annotation out of range",
 			annotations: map[string]string{
-				ttlAnnotationKey: "999999",
+				TtlAnnotationKey: "999999",
 			},
 			resource:    "test-resource",
 			expectedTTL: endpoint.TTL(999999),
@@ -165,12 +165,12 @@ func TestGetAliasFromAnnotations(t *testing.T) {
 	}{
 		{
 			name:        "alias annotation exists and is true",
-			annotations: map[string]string{aliasAnnotationKey: "true"},
+			annotations: map[string]string{AliasAnnotationKey: "true"},
 			expected:    true,
 		},
 		{
 			name:        "alias annotation exists and is false",
-			annotations: map[string]string{aliasAnnotationKey: "false"},
+			annotations: map[string]string{AliasAnnotationKey: "false"},
 			expected:    false,
 		},
 		{

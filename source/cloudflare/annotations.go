@@ -11,25 +11,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package annotations
-
-import (
-	"math"
-
-	"sigs.k8s.io/external-dns/source/cloudflare"
-)
+package cloudflare
 
 const (
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = cloudflare.CloudflareProxiedKey
-	CloudflareCustomHostnameKey = cloudflare.CloudflareCustomHostnameKey
-
-	SetIdentifierKey   = "external-dns.alpha.kubernetes.io/set-identifier"
-	AliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
-
-	TargetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
-
-	TtlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
-	ttlMinimum       = 1
-	ttlMaximum       = math.MaxInt32
+	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 )
