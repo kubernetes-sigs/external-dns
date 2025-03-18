@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/exp/maps"
+
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -1029,19 +1031,19 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 
 func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
-	records := []cloudflare.DNSRecord{
-		{
+	recordsMap := map[DNSRecordIndex]cloudflare.DNSRecord{
+		DNSRecordIndex{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
 			Name:    "foo.com",
 			Type:    endpoint.RecordTypeCNAME,
 			Content: "foobar",
 			ID:      "1",
 		},
-		{
+		DNSRecordIndex{Name: "bar.de", Type: endpoint.RecordTypeA}: {
 			Name: "bar.de",
 			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
-		{
+		DNSRecordIndex{Name: "bar.de", Type: endpoint.RecordTypeA, Content: "1.2.3.4"}: {
 			Name:    "bar.de",
 			Type:    endpoint.RecordTypeA,
 			Content: "1.2.3.4",
@@ -1049,29 +1051,29 @@ func TestCloudflareGetRecordID(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeA,
 		Content: "foobar",
 	}))
 
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "fizfuz",
 	}))
 
-	assert.Equal(t, "1", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "1", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "foobar",
 	}))
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "2.3.4.5",
 	}))
-	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "2", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "1.2.3.4",
@@ -2268,7 +2270,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		}
 
 		for expectedOrigin, expectedCustomHostname := range tc.ExpectedCustomHostnames {
-			_, ch := getCustomHostnameIDbyCustomHostnameAndOrigin(chs, expectedCustomHostname, expectedOrigin)
+			_, ch := getCustomHostnameIDbyCustomHostnameAndOrigin(maps.Values(chs), expectedCustomHostname, expectedOrigin)
 			assert.Equal(t, expectedCustomHostname, ch)
 		}
 	}
