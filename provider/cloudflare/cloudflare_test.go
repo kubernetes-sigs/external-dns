@@ -2315,7 +2315,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			Name:         "remove DNS record with unexpectedly missing custom hostname",
 			Endpoints:    []*endpoint.Endpoint{},
 			preApplyHook: "corrupt",
-			logOutput:    "level=warning msg=\"failed to delete custom hostname \\\"newerror-getCustomHostnameOrigin.foo.fancybar.com\\\": not found\" action=DELETE record=create.foo.bar.com",
+			logOutput:    "level=warning msg=\"failed to delete custom hostname \\\"newerror-getCustomHostnameOrigin.foo.fancybar.com\\\": failed to get custom hostname: \\\"newerror-getCustomHostnameOrigin.foo.fancybar.com\\\" not found\" action=DELETE record=create.foo.bar.com",
 		},
 		{
 			Name:         "duplicate custom hostname",
