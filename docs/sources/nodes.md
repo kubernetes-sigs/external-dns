@@ -10,6 +10,34 @@ The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl
 Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded.
 This avoid exposing Unhealthy, NotReady or SchedulingDisabled (cordon) nodes.
 
+## IPv6 Behavior
+
+Currently, ExternalDNS exposes the IPv6 `InternalIP` of the nodes. To alleviate this, you can use the `--expose-internal-ipv6`
+flag to not expose your internal ipv6 addresses. The flag is set to `true` by default. This behavior will change in the next minor release
+flipping the flag to `false` by default. You can still set the flag to `true` to expose the internal ipv6 addresses if needed.
+
+### Example spec (with `--expose-internal-ipv6` set to `false`)
+
+```yaml
+spec:
+  serviceAccountName: external-dns
+  containers:
+  - name: external-dns
+    image: registry.k8s.io/external-dns/external-dns:v0.16.1
+    args:
+    - --source=node # will use nodes as source
+    - --provider=aws
+    - --zone-name-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+    - --domain-filter=external-dns-test.my-org.com
+    - --aws-zone-type=public
+    - --registry=txt
+    - --fqdn-template={{.Name}}.external-dns-test.my-org.com
+    - --txt-owner-id=my-identifier
+    - --policy=sync
+    - --log-level=debug
+    - --expose-internal-ipv6=false
+```
+
 ## Manifest (for cluster without RBAC enabled)
 
 ```yaml

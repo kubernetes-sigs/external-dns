@@ -374,6 +374,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			if tc.exposeInternalIPv6 == nil {
+				t.Logf("WARNING: The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --expose-internal-ipv6=false flag to opt-in to the new behavior.")
 				tc.exposeInternalIPv6 = new(bool)
 				*tc.exposeInternalIPv6 = true
 			}
