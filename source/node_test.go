@@ -377,7 +377,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				tc.exposeInternalIPv6 = new(bool)
 				*tc.exposeInternalIPv6 = true
 			}
-			
+
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
 				context.TODO(),
