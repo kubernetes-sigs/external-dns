@@ -1312,7 +1312,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	for _, tc := range testCases {
 		records := make(DNSRecordsMap)
 		for _, r := range tc.Records {
-			records[getDNSRecordIndex(r)] = r
+			records[NewDNSRecordIndex(r)] = r
 		}
 		endpoints := groupByNameAndTypeWithCustomHostnames(records, CustomHostnamesMap{})
 		// Targets order could be random with underlying map
