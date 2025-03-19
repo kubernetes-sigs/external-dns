@@ -237,169 +237,6 @@
     "priorityClassName": {
       "type": "null"
     },
-    "provider": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "webhook": {
-          "properties": {
-            "args": {
-              "type": "array"
-            },
-            "env": {
-              "type": "array"
-            },
-            "extraVolumeMounts": {
-              "type": "array"
-            },
-            "image": {
-              "properties": {
-                "pullPolicy": {
-                  "type": "string"
-                },
-                "repository": {
-                  "type": "null"
-                },
-                "tag": {
-                  "type": "null"
-                }
-              },
-              "type": "object"
-            },
-            "limits": {
-              "properties": {
-                "cpu": {
-                  "type": "string"
-                },
-                "memory": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "livenessProbe": {
-              "properties": {
-                "failureThreshold": {
-                  "type": "integer"
-                },
-                "httpGet": {
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    },
-                    "port": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "initialDelaySeconds": {
-                  "type": "integer"
-                },
-                "periodSeconds": {
-                  "type": "integer"
-                },
-                "successThreshold": {
-                  "type": "integer"
-                },
-                "timeoutSeconds": {
-                  "type": "integer"
-                }
-              },
-              "type": "object"
-            },
-            "readinessProbe": {
-              "properties": {
-                "failureThreshold": {
-                  "type": "integer"
-                },
-                "httpGet": {
-                  "properties": {
-                    "path": {
-                      "type": "string"
-                    },
-                    "port": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "initialDelaySeconds": {
-                  "type": "integer"
-                },
-                "periodSeconds": {
-                  "type": "integer"
-                },
-                "successThreshold": {
-                  "type": "integer"
-                },
-                "timeoutSeconds": {
-                  "type": "integer"
-                }
-              },
-              "type": "object"
-            },
-            "requests": {
-              "properties": {
-                "cpu": {
-                  "type": "string"
-                },
-                "memory": {
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "resources": {
-              "properties": {},
-              "type": "object"
-            },
-            "securityContext": {
-              "properties": {},
-              "type": "object"
-            },
-            "service": {
-              "properties": {
-                "port": {
-                  "type": "integer"
-                }
-              },
-              "type": "object"
-            },
-            "serviceMonitor": {
-              "properties": {
-                "bearerTokenFile": {
-                  "type": "null"
-                },
-                "interval": {
-                  "type": "null"
-                },
-                "metricRelabelings": {
-                  "type": "array"
-                },
-                "relabelings": {
-                  "type": "array"
-                },
-                "scheme": {
-                  "type": "null"
-                },
-                "scrapeTimeout": {
-                  "type": "null"
-                },
-                "tlsConfig": {
-                  "properties": {},
-                  "type": "object"
-                }
-              },
-              "type": "object"
-            }
-          },
-          "type": "object"
-        }
-      },
-      "type": "object"
-    },
     "rbac": {
       "additionalProperties": true,
       "properties": {
@@ -442,16 +279,6 @@
         }
       },
       "type": "object"
-    },
-    "registry": {
-      "default": "txt",
-      "enum": [
-        "txt",
-        "aws-sd",
-        "dynamodb",
-        "noop"
-      ],
-      "type": "string"
     },
     "resources": {
       "properties": {
@@ -656,12 +483,6 @@
     "shareProcessNamespace": {
       "type": "boolean"
     },
-    "sources": {
-      "items": {
-        "type": "string"
-      },
-      "type": "array"
-    },
     "terminationGracePeriodSeconds": {
       "type": "null"
     },
@@ -671,26 +492,207 @@
     "topologySpreadConstraints": {
       "type": "array"
     },
-    "triggerLoopOnEvent": {
-      "type": "boolean"
-    },
-    "txtOwnerId": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "txtPrefix": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "txtSuffix": {
-      "type": [
-        "string",
-        "null"
-      ]
+    "externalDns": {
+      "provider": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "webhook": {
+            "properties": {
+              "args": {
+                "type": "array"
+              },
+              "env": {
+                "type": "array"
+              },
+              "extraVolumeMounts": {
+                "type": "array"
+              },
+              "image": {
+                "properties": {
+                  "pullPolicy": {
+                    "type": "string"
+                  },
+                  "repository": {
+                    "type": "null"
+                  },
+                  "tag": {
+                    "type": "null"
+                  }
+                },
+                "type": "object"
+              },
+              "limits": {
+                "properties": {
+                  "cpu": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "livenessProbe": {
+                "properties": {
+                  "failureThreshold": {
+                    "type": "integer"
+                  },
+                  "httpGet": {
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "port": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "initialDelaySeconds": {
+                    "type": "integer"
+                  },
+                  "periodSeconds": {
+                    "type": "integer"
+                  },
+                  "successThreshold": {
+                    "type": "integer"
+                  },
+                  "timeoutSeconds": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "readinessProbe": {
+                "properties": {
+                  "failureThreshold": {
+                    "type": "integer"
+                  },
+                  "httpGet": {
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "port": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "initialDelaySeconds": {
+                    "type": "integer"
+                  },
+                  "periodSeconds": {
+                    "type": "integer"
+                  },
+                  "successThreshold": {
+                    "type": "integer"
+                  },
+                  "timeoutSeconds": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "requests": {
+                "properties": {
+                  "cpu": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "resources": {
+                "properties": {},
+                "type": "object"
+              },
+              "securityContext": {
+                "properties": {},
+                "type": "object"
+              },
+              "service": {
+                "properties": {
+                  "port": {
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              },
+              "serviceMonitor": {
+                "properties": {
+                  "bearerTokenFile": {
+                    "type": "null"
+                  },
+                  "interval": {
+                    "type": "null"
+                  },
+                  "metricRelabelings": {
+                    "type": "array"
+                  },
+                  "relabelings": {
+                    "type": "array"
+                  },
+                  "scheme": {
+                    "type": "null"
+                  },
+                  "scrapeTimeout": {
+                    "type": "null"
+                  },
+                  "tlsConfig": {
+                    "properties": {},
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "registry": {
+        "default": "txt",
+        "enum": [
+          "txt",
+          "aws-sd",
+          "dynamodb",
+          "noop"
+        ],
+        "type": "string"
+      },
+      "sources": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "triggerLoopOnEvent": {
+        "type": "boolean"
+      },
+      "txtOwnerId": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "txtPrefix": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "txtSuffix": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
     }
   },
   "type": "object"
