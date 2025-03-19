@@ -11,6 +11,27 @@ The TXT registry supports single format for storing DNS record metadata:
 
 - Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
 
+The TXT registry would try to guarantee a consistency in between providers and sources, if provider supports the behaviour
+
+If you are dealing with APEX domains, example `example.com` and TXT records are failing to be created for managed record types specified by `--managed-record-types`, consider following options:
+
+1. TXT record with prefix based on requirements. Example `--txt-prefix="%{record_type}-abc-"` or `--txt-prefix="%{record_type}.abc-"`
+2. TXT record with suffix based on requirements. Example `--txt-suffix="-abc-%{record_type}"` or `--txt-suffix="-abc.%{record_type}."`
+
+Example when configured `--txt-prefix="%{record_type}-abc-"` for apex domain `example.com` the expected result is
+
+|             Name              |   TYPE   |
+|:-----------------------------:|:--------:|
+|   `a-abc-nginx-v2.ex.com.`    |  `TXT`   |
+| `cname-abc-nginx-v3.ex.com.`  | `CNAME`  |
+
+And when configured `--txt-suffix="-abc.%{record_type}"` for apex domain `example.com` the expected result is
+
+|             Name              |  TYPE   |
+|:-----------------------------:|:-------:|
+|   `nginx-v2-abc.a.ex.com.`    |  `TXT`  |
+| `nginx-v3-abc.cname.ex.com..` | `CNAME` |
+
 ### Manually Cleanup Legacy TXT Records
 
 > While deleting registry TXT records won't cause downtime, a well-thought-out migration and cleanup plan is crucial.
