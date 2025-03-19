@@ -648,7 +648,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 	}
 }
 
-func NewDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
+func newDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
 	return DNSRecordIndex{Name: r.Name, Type: r.Type, Content: r.Content}
 }
 
@@ -672,7 +672,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 		}
 
 		for _, r := range pageRecords {
-			records[NewDNSRecordIndex(r)] = r
+			records[newDNSRecordIndex(r)] = r
 		}
 		params.ResultInfo = resultInfo.Next()
 		if params.ResultInfo.Done() {
@@ -682,7 +682,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 	return records, nil
 }
 
-func NewCustomHostnameIndex(ch cloudflare.CustomHostname) CustomHostnameIndex {
+func newCustomHostnameIndex(ch cloudflare.CustomHostname) CustomHostnameIndex {
 	return CustomHostnameIndex{Hostname: ch.Hostname}
 }
 
@@ -707,7 +707,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 			return nil, err
 		}
 		for _, ch := range pageCustomHostnameListResponse {
-			chs[NewCustomHostnameIndex(ch)] = ch
+			chs[newCustomHostnameIndex(ch)] = ch
 		}
 		resultInfo = result.Next()
 		if resultInfo.Done() {
