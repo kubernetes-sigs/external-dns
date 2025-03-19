@@ -21,11 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
-
-	"golang.org/x/exp/maps"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -406,7 +405,7 @@ func getCustomHostnameIdxByID(chs []cloudflare.CustomHostname, customHostnameID 
 	return -1
 }
 
-func getCustomHostnameIDbyCustomHostnameAndOrigin(chs []cloudflare.CustomHostname, customHostname string, origin string) (string, string) {
+func getCustomHostnameIDbyCustomHostnameAndOrigin(chs CustomHostnamesMap, customHostname string, origin string) (string, string) {
 	for _, ch := range chs {
 		if ch.Hostname == customHostname && ch.CustomOriginServer == origin {
 			return ch.ID, ch.Hostname
@@ -1031,7 +1030,7 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 
 func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
-	recordsMap := DNSRecordMap{
+	recordsMap := DNSRecordsMap{
 		{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
 			Name:    "foo.com",
 			Type:    endpoint.RecordTypeCNAME,
@@ -1311,7 +1310,19 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.ElementsMatch(t, groupByNameAndTypeWithCustomHostnames(tc.Records, []cloudflare.CustomHostname{}), tc.ExpectedEndpoints)
+		records := make(DNSRecordsMap)
+		for _, r := range tc.Records {
+			records[getDNSRecordIndex(r)] = r
+		}
+		endpoints := groupByNameAndTypeWithCustomHostnames(records, CustomHostnamesMap{})
+		// Targets order could be random with underlying map
+		for _, ep := range endpoints {
+			slices.Sort(ep.Targets)
+		}
+		for _, ep := range tc.ExpectedEndpoints {
+			slices.Sort(ep.Targets)
+		}
+		assert.ElementsMatch(t, endpoints, tc.ExpectedEndpoints)
 	}
 }
 
@@ -2270,7 +2281,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		}
 
 		for expectedOrigin, expectedCustomHostname := range tc.ExpectedCustomHostnames {
-			_, ch := getCustomHostnameIDbyCustomHostnameAndOrigin(maps.Values(chs), expectedCustomHostname, expectedOrigin)
+			_, ch := getCustomHostnameIDbyCustomHostnameAndOrigin(chs, expectedCustomHostname, expectedOrigin)
 			assert.Equal(t, expectedCustomHostname, ch)
 		}
 	}
