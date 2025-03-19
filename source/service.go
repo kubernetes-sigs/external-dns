@@ -33,9 +33,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	antns "sigs.k8s.io/external-dns/source/annotations"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -422,7 +421,7 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 
 // filterByAnnotations filters a list of services by a given annotation selector.
 func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Service, error) {
-	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
+	selector, err := annotations.ParseAnnotationFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -436,10 +435,10 @@ func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Serv
 
 	for _, service := range services {
 		// convert the service's annotations to an equivalent label selector
-		annotations := labels.Set(service.Annotations)
+		a := labels.Set(service.Annotations)
 
 		// include service if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(a) {
 			filteredList = append(filteredList, service)
 		}
 	}

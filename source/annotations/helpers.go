@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func getAliasFromAnnotations(annotations map[string]string) bool {
+func hasAliasFromAnnotations(annotations map[string]string) bool {
 	aliasAnnotation, exists := annotations[AliasAnnotationKey]
 	return exists && aliasAnnotation == "true"
 }

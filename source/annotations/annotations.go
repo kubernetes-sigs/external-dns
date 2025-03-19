@@ -15,14 +15,12 @@ package annotations
 
 import (
 	"math"
-
-	"sigs.k8s.io/external-dns/source/cloudflare"
 )
 
 const (
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = cloudflare.CloudflareProxiedKey
-	CloudflareCustomHostnameKey = cloudflare.CloudflareCustomHostnameKey
+	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 
 	SetIdentifierKey   = "external-dns.alpha.kubernetes.io/set-identifier"
 	AliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"

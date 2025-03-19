@@ -33,9 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/external-dns/endpoint"
-
-	antns "sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/cloudflare"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/utils"
 )
 
@@ -49,11 +47,11 @@ const (
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress/service target
-	targetAnnotationKey = antns.TargetAnnotationKey
+	targetAnnotationKey = annotations.TargetAnnotationKey
 	// The annotation used for defining the desired DNS record TTL
-	ttlAnnotationKey = antns.TtlAnnotationKey
+	ttlAnnotationKey = annotations.TtlAnnotationKey
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
-	aliasAnnotationKey = antns.AliasAnnotationKey
+	aliasAnnotationKey = annotations.AliasAnnotationKey
 	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
@@ -71,10 +69,10 @@ const (
 // Provider-specific annotations
 const (
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = cloudflare.CloudflareProxiedKey
-	CloudflareCustomHostnameKey = cloudflare.CloudflareCustomHostnameKey
+	CloudflareProxiedKey        = annotations.CloudflareProxiedKey
+	CloudflareCustomHostnameKey = annotations.CloudflareCustomHostnameKey
 
-	SetIdentifierKey = antns.SetIdentifierKey
+	SetIdentifierKey = annotations.SetIdentifierKey
 )
 
 // Source defines the interface Endpoint sources should implement.
@@ -84,8 +82,8 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
-func getTTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
-	return antns.TTLFromAnnotations(annotations, resource)
+func getTTLFromAnnotations(input map[string]string, resource string) endpoint.TTL {
+	return annotations.TTLFromAnnotations(input, resource)
 }
 
 type kubeObject interface {
@@ -145,17 +143,17 @@ func splitHostnameAnnotation(annotation string) []string {
 	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
 }
 
-func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
-	return antns.ProviderSpecificAnnotations(annotations)
+func getProviderSpecificAnnotations(input map[string]string) (endpoint.ProviderSpecific, string) {
+	return annotations.ProviderSpecificAnnotations(input)
 }
 
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
 // Returns empty endpoints array if none are found.
-func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets {
+func getTargetsFromTargetAnnotation(input map[string]string) endpoint.Targets {
 	var targets endpoint.Targets
 
 	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, exists := annotations[targetAnnotationKey]
+	targetAnnotation, exists := input[targetAnnotationKey]
 	if exists && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")

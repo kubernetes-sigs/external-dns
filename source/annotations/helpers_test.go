@@ -182,7 +182,7 @@ func TestGetAliasFromAnnotations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getAliasFromAnnotations(tt.annotations)
+			result := hasAliasFromAnnotations(tt.annotations)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

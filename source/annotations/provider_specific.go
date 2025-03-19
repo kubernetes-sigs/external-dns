@@ -35,7 +35,7 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			Value: v,
 		})
 	}
-	if getAliasFromAnnotations(annotations) {
+	if hasAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",
 			Value: "true",
