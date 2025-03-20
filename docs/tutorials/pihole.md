@@ -5,6 +5,7 @@ Pi-hole has an internal list it checks last when resolving requests. This list c
 There is a pseudo-API exposed that ExternalDNS is able to use to manage these records.
 
 __NOTE:__ Your Pi-hole must be running [version 5.9 or newer](https://pi-hole.net/blog/2022/02/12/pi-hole-ftl-v5-14-web-v5-11-and-core-v5-9-released).
+__NOTE:__ Provider for Pi-hole version prior to 6.0 is now deprecated and will be removed in future release.
 __NOTE:__ Since Pi-hole version 6, you should use the flag *--pihole-api-version=6*
 
 ## Deploy ExternalDNS
