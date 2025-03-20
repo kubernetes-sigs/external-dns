@@ -487,9 +487,9 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.exposeInternalIPv6 {
-			buf := testutils.LogsToBuffer(log.DebugLevel, t)
-			warningMsg := "WARNING: The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --expose-internal-ipv6=false flag to opt-in to the new behavior."
-			log.Debug(warningMsg)
+			buf := testutils.LogsToBuffer(log.WarnLevel, t)
+			warningMsg := "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --expose-internal-ipv6=false flag to opt-in to the new behavior."
+			log.Warn(warningMsg)
 			assert.Contains(t, buf.String(), warningMsg)
 		}
 
