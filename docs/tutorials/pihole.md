@@ -5,7 +5,9 @@ Pi-hole has an internal list it checks last when resolving requests. This list c
 There is a pseudo-API exposed that ExternalDNS is able to use to manage these records.
 
 __NOTE:__ Your Pi-hole must be running [version 5.9 or newer](https://pi-hole.net/blog/2022/02/12/pi-hole-ftl-v5-14-web-v5-11-and-core-v5-9-released).
+
 __NOTE:__ Provider for Pi-hole version prior to 6.0 is now deprecated and will be removed in future release.
+
 __NOTE:__ Since Pi-hole version 6, you should use the flag *--pihole-api-version=6*
 
 ## Deploy ExternalDNS
@@ -13,7 +15,7 @@ __NOTE:__ Since Pi-hole version 6, you should use the flag *--pihole-api-version
 You can skip to the [manifest](#externaldns-manifest) if authentication is disabled on your Pi-hole instance or you don't want to use secrets.
 
 If your Pi-hole server's admin dashboard is protected by a password, you'll likely want to create a secret first containing its value.
-This is optional since you _do_ retain the option to pass it as a flag with `--pihole-password`.
+This is optional since you *do* retain the option to pass it as a flag with `--pihole-password`.
 
 You can create the secret with:
 
@@ -186,7 +188,7 @@ spec:
 
 You can then query your Pi-hole to see if the record was created.
 
-_Change `@192.168.100.2` to the actual address of your DNS server_
+_Change *@192.168.100.2* to the actual address of your DNS server_
 
 ```bash
 $ dig +short @192.168.100.2  nginx.external-dns-test.homelab.com
