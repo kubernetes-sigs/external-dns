@@ -25,14 +25,14 @@ Example when configured `--txt-prefix="%{record_type}-abc-"` for apex domain `ex
 |             Name              |   TYPE   |
 |:-----------------------------:|:--------:|
 |   `a-abc-nginx-v2.ex.com.`    |  `TXT`   |
-| `cname-abc-nginx-v3.ex.com.`  | `CNAME`  |
+| `nginx-v2.ex.com.`  | `CNAME`  |
 
 And when configured `--txt-suffix="-abc.%{record_type}"` for apex domain `example.com` the expected result is
 
 |             Name              |  TYPE   |
 |:-----------------------------:|:-------:|
 |   `nginx-v2-abc.a.ex.com.`    |  `TXT`  |
-| `nginx-v3-abc.cname.ex.com..` | `CNAME` |
+| `nginx-v3.ex.com..` | `CNAME` |
 
 ### Manually Cleanup Legacy TXT Records
 
