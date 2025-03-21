@@ -80,7 +80,7 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 	scwClient, err := scw.NewClient(
 		scw.WithProfile(p),
 		scw.WithEnv(),
-		scw.WithUserAgent("ExternalDNS/"+externaldns.Version),
+		scw.WithUserAgent(externaldns.UserAgent()),
 		scw.WithDefaultPageSize(uint32(defaultPageSize)),
 	)
 	if err != nil {

@@ -107,6 +107,8 @@ func main() {
 		klog.SetLogger(logr.Discard())
 	}
 
+	log.Info(externaldns.Banner())
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go serveMetrics(cfg.MetricsAddress)
@@ -269,7 +271,7 @@ func main() {
 	case "ovh":
 		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
 	case "linode":
-		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
+		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "coredns", "skydns":

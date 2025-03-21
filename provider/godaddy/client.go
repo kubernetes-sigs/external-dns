@@ -224,7 +224,7 @@ func (c *Client) NewRequest(method, path string, reqBody interface{}) (*http.Req
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("sso-key %s:%s", c.APIKey, c.APISecret))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "ExternalDNS/"+externaldns.Version)
+	req.Header.Set("User-Agent", externaldns.UserAgent())
 
 	// Send the request with requested timeout
 	c.Client.Timeout = c.Timeout
