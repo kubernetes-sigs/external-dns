@@ -399,14 +399,12 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 					}
 				}
 			}
-			if newChName != "" {
-				if prevChName != newChName {
-					log.WithFields(logFields).Infof("Adding custom hostname %q", newChName)
-					_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
-					if chErr != nil {
-						failedChange = true
-						log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", newChName, chErr)
-					}
+			if newChName != "" && prevChName != newChName {
+				log.WithFields(logFields).Infof("Adding custom hostname %q", newChName)
+				_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
+				if chErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", newChName, chErr)
 				}
 			}
 		}
