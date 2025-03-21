@@ -30,7 +30,7 @@ Hosted Zone IDs.
       "Action": [
         "route53:ListHostedZones",
         "route53:ListResourceRecordSets",
-        "route53:ListTagsForResource"
+        "route53:ListTagsForResources"
       ],
       "Resource": [
         "*"
