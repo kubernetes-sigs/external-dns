@@ -64,10 +64,8 @@ func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	switch cfg.APIVersion {
 	case "6":
 		api, err = newPiholeClientV6(cfg)
-		break
 	default:
 		api, err = newPiholeClient(cfg)
-		break
 	}
 	if err != nil {
 		return nil, err

@@ -131,12 +131,10 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			if strings.Contains(recs[0], ":") {
 				continue
 			}
-			break
 		case endpoint.RecordTypeAAAA:
 			if strings.Contains(recs[0], ".") {
 				continue
 			}
-			break
 		case endpoint.RecordTypeCNAME:
 			// CNAME format is DNSName,target
 			DNSName = recs[0]
@@ -150,7 +148,6 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 				}
 				Ttl = endpoint.TTL(ttlInt)
 			}
-			break
 		}
 
 		out = append(out, &endpoint.Endpoint{
@@ -225,7 +222,6 @@ type ApiRecordsResponse struct {
 }
 
 func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
-
 	if !p.cfg.DomainFilter.Match(ep.DNSName) {
 		log.Debugf("Skipping %s %s that does not match domain filter", action, ep.DNSName)
 		return nil
@@ -251,14 +247,12 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 	switch ep.RecordType {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
 		apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s %s", ep.Targets, ep.DNSName)))
-		break
 	case endpoint.RecordTypeCNAME:
 		if ep.RecordTTL.IsConfigured() {
 			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL)))
 		} else {
 			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets)))
 		}
-		break
 	}
 
 	req, err := http.NewRequestWithContext(ctx, action, apiUrl, nil)
@@ -357,7 +351,10 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		res.StatusCode != http.StatusNoContent {
 		// Parse JSON response
 		var apiError ApiErrorResponse
-		err = json.Unmarshal(jRes, &apiError)
+		err := json.Unmarshal(jRes, &apiError)
+		if err != nil {
+			return nil, err
+		}
 		log.Debugf("Error on request %s", req.Body)
 		if res.StatusCode == http.StatusUnauthorized && p.token != "" {
 			// Try to fetch a new token and redo the request.
