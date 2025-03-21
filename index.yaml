@@ -4,6 +4,43 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Add helm testing framework `helm plugin unittest`."
+        - kind: added
+          description: "Add ability to generate schema with `helm plugin schema`."
+        - kind: added
+          description: "Add `docs/contributing/dev-guide.md#helm-values` guide."
+        - kind: changed
+          description: "Regenerate JSON schema with `helm-values-schema-json' plugin."
+        - kind: changed
+          description: "Update _ExternalDNS_ OCI image version to [v0.16.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.16.1)."
+    apiVersion: v2
+    appVersion: 0.16.1
+    created: "2025-03-21T08:30:53.628335803Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 11ecd29a7c8fc370450467fa91d0dfd7ef58e734dba0ff56ef03ec2cb22bc456
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.16.0/external-dns-1.16.0.tgz
+    version: 1.16.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source."
         - kind: fixed
           description: "Fixed handling of non-string types in `serviceAccount.metadata.annotations` field."
@@ -920,4 +957,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-02-14T12:54:41.548569133Z"
+generated: "2025-03-21T08:30:53.628610978Z"
