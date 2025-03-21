@@ -57,7 +57,12 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	nodeInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Debug("node added")
+				node, ok := obj.(*v1.Node)
+				if !ok {
+					log.Errorf("expect *v1.Node, but got: %T", obj)
+					return
+				}
+				log.Debugf("node added: %s", node.ObjectMeta.Name)
 			},
 		},
 	)
