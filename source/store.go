@@ -80,6 +80,7 @@ type Config struct {
 	ResolveLoadBalancerHostname    bool
 	TraefikDisableLegacy           bool
 	TraefikDisableNew              bool
+	ExposeInternalIPv6             bool
 }
 
 // ClientGenerator provides clients
@@ -216,7 +217,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter)
+		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {
