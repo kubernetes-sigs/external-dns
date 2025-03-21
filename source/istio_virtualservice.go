@@ -36,6 +36,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	antns "sigs.k8s.io/external-dns/source/annotations"
+
+	"sigs.k8s.io/external-dns/source/utils"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -252,11 +256,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkingv1alpha3.VirtualService) ([]*networkingv1alpha3.VirtualService, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +435,7 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 }
 
 func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
-	namespace, name, err := parseIngress(ingressStr)
+	namespace, name, err := utils.ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}

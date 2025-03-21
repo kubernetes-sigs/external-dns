@@ -36,6 +36,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
+	antns "sigs.k8s.io/external-dns/source/annotations"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -162,11 +164,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 // filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
 func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
