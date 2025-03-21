@@ -55,6 +55,22 @@ var proxyEnabled *bool = boolPtr(true)
 // proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
 var proxyDisabled *bool = boolPtr(false)
 
+// for faster getRecordID() lookup
+type DNSRecordIndex struct {
+	Name    string
+	Type    string
+	Content string
+}
+
+type DNSRecordsMap map[DNSRecordIndex]cloudflare.DNSRecord
+
+// for faster getCustomHostname() lookup
+type CustomHostnameIndex struct {
+	Hostname string
+}
+
+type CustomHostnamesMap map[CustomHostnameIndex]cloudflare.CustomHostname
+
 var recordTypeProxyNotSupported = map[string]bool{
 	"LOC": true,
 	"MX":  true,
@@ -229,7 +245,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		config, err = cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
+		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
 	provider := &CloudFlareProvider{
 		// Client: config,
@@ -254,10 +270,10 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
 		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
 		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
-			log.Debugf("looking up zone %s", zoneID)
+			log.Debugf("looking up zone %q", zoneID)
 			detailResponse, err := p.Client.ZoneDetails(ctx, zoneID)
 			if err != nil {
-				log.Errorf("zone %s lookup failed, %v", zoneID, err)
+				log.Errorf("zone %q lookup failed, %v", zoneID, err)
 				return result, err
 			}
 			log.WithFields(log.Fields{
@@ -285,7 +301,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 
 	for _, zone := range zonesResponse.Result {
 		if !p.domainFilter.Match(zone.Name) {
-			log.Debugf("zone %s not in domain filter", zone.Name)
+			log.Debugf("zone %q not in domain filter", zone.Name)
 			continue
 		}
 		result = append(result, zone)
@@ -359,6 +375,75 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	return p.submitChanges(ctx, cloudflareChanges)
 }
 
+// submitCustomHostnameChanges implements Custom Hostname functionality for the Change, returns false if it fails
+func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zoneID string, change *cloudFlareChange, chs CustomHostnamesMap, logFields log.Fields) bool {
+	failedChange := false
+	// return early if disabled
+	if !p.CustomHostnamesConfig.Enabled {
+		return !failedChange
+	}
+
+	switch change.Action {
+	case cloudFlareUpdate:
+		if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] {
+			prevChName := change.CustomHostnamePrev
+			newChName := change.CustomHostname.Hostname
+			if prevCh, err := getCustomHostname(chs, prevChName); err == nil {
+				prevChID := prevCh.ID
+				if prevChID != "" && prevChName != newChName {
+					log.WithFields(logFields).Infof("Removing previous custom hostname %q/%q", prevChID, prevChName)
+					chErr := p.Client.DeleteCustomHostname(ctx, zoneID, prevChID)
+					if chErr != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to remove previous custom hostname %q/%q: %v", prevChID, prevChName, chErr)
+					}
+				}
+			}
+			if newChName != "" && prevChName != newChName {
+				log.WithFields(logFields).Infof("Adding custom hostname %q", newChName)
+				_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
+				if chErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to add custom hostname %q: %v", newChName, chErr)
+				}
+			}
+		}
+	case cloudFlareDelete:
+		if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] && change.CustomHostname.Hostname != "" {
+			log.WithFields(logFields).Infof("Deleting custom hostname %q", change.CustomHostname.Hostname)
+			if ch, err := getCustomHostname(chs, change.CustomHostname.Hostname); err == nil {
+				chID := ch.ID
+				chErr := p.Client.DeleteCustomHostname(ctx, zoneID, chID)
+				if chErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to delete custom hostname %q/%q: %v", chID, change.CustomHostname.Hostname, chErr)
+				}
+			} else {
+				log.WithFields(logFields).Warnf("failed to delete custom hostname %q: %v", change.CustomHostname.Hostname, err)
+			}
+		}
+	case cloudFlareCreate:
+		if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] && change.CustomHostname.Hostname != "" {
+			log.WithFields(logFields).Infof("Creating custom hostname %q", change.CustomHostname.Hostname)
+			if ch, err := getCustomHostname(chs, change.CustomHostname.Hostname); err == nil {
+				if change.CustomHostname.CustomOriginServer == ch.CustomOriginServer {
+					log.WithFields(logFields).Warnf("custom hostname %q already exists with the same origin %q, continue", change.CustomHostname.Hostname, ch.CustomOriginServer)
+				} else {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to create custom hostname, %q already exists with origin %q", change.CustomHostname.Hostname, ch.CustomOriginServer)
+				}
+			} else {
+				_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
+				if chErr != nil {
+					failedChange = true
+					log.WithFields(logFields).Errorf("failed to create custom hostname %q: %v", change.CustomHostname.Hostname, chErr)
+				}
+			}
+		}
+	}
+	return !failedChange
+}
+
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
 func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
@@ -395,37 +480,15 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			resourceContainer := cloudflare.ZoneIdentifier(zoneID)
 			records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
 			if err != nil {
-				return fmt.Errorf("could not fetch records from zone, %v", err)
+				return fmt.Errorf("could not fetch records from zone, %w", err)
 			}
 			chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
 			if chErr != nil {
 				return fmt.Errorf("could not fetch custom hostnames from zone, %v", chErr)
 			}
 			if change.Action == cloudFlareUpdate {
-				if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] {
-					prevCh := change.CustomHostnamePrev
-					newCh := change.CustomHostname.Hostname
-					if prevCh != "" {
-						prevChID, _ := p.getCustomHostnameOrigin(chs, prevCh)
-						if prevChID != "" && prevCh != newCh {
-							log.WithFields(logFields).Infof("Removing previous custom hostname %v/%v", prevChID, prevCh)
-							chErr := p.Client.DeleteCustomHostname(ctx, zoneID, prevChID)
-							if chErr != nil {
-								failedChange = true
-								log.WithFields(logFields).Errorf("failed to remove previous custom hostname %v/%v: %v", prevChID, prevCh, chErr)
-							}
-						}
-					}
-					if newCh != "" {
-						if prevCh != newCh {
-							log.WithFields(logFields).Infof("Adding custom hostname %v", newCh)
-							_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
-							if chErr != nil {
-								failedChange = true
-								log.WithFields(logFields).Errorf("failed to add custom hostname %v: %v", newCh, chErr)
-							}
-						}
-					}
+				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
+					failedChange = true
 				}
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
@@ -457,19 +520,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
 				}
-				if change.CustomHostname.Hostname == "" {
-					continue
-				}
-				log.WithFields(logFields).Infof("Deleting custom hostname %v", change.CustomHostname.Hostname)
-				chID, _ := p.getCustomHostnameOrigin(chs, change.CustomHostname.Hostname)
-				if chID == "" {
-					log.WithFields(logFields).Infof("Custom hostname %v not found", change.CustomHostname.Hostname)
-					continue
-				}
-				chErr := p.Client.DeleteCustomHostname(ctx, zoneID, chID)
-				if chErr != nil {
+				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
-					log.WithFields(logFields).Errorf("failed to delete custom hostname %v/%v: %v", chID, change.CustomHostname.Hostname, chErr)
 				}
 			} else if change.Action == cloudFlareCreate {
 				recordParam := getCreateDNSRecordParam(*change)
@@ -478,20 +530,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
 				}
-				if change.CustomHostname.Hostname == "" {
-					continue
-				}
-				log.WithFields(logFields).Infof("Creating custom hostname %v", change.CustomHostname.Hostname)
-				chID, chOrigin := p.getCustomHostnameOrigin(chs, change.CustomHostname.Hostname)
-				if chID != "" {
+				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
-					log.WithFields(logFields).Errorf("failed to create custom hostname, %v already exists for origin %v", change.CustomHostname.Hostname, chOrigin)
-					continue
-				}
-				_, chErr := p.Client.CreateCustomHostname(ctx, zoneID, change.CustomHostname)
-				if chErr != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to create custom hostname %v: %v", change.CustomHostname.Hostname, chErr)
 				}
 			}
 		}
@@ -501,7 +541,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	}
 
 	if len(failedZones) > 0 {
-		return fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones)
+		return fmt.Errorf("failed to submit all changes for the following zones: %q", failedZones)
 	}
 
 	return nil
@@ -535,7 +575,7 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 	for _, c := range changeSet {
 		zoneID, _ := zoneNameIDMapper.FindZone(c.ResourceRecord.Name)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecord.Name)
+			log.Debugf("Skipping record %q because no hosted zone matching record DNS Name was detected", c.ResourceRecord.Name)
 			continue
 		}
 		changes[zoneID] = append(changes[zoneID], c)
@@ -544,22 +584,21 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 	return changes
 }
 
-func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
-	for _, zoneRecord := range records {
-		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type && zoneRecord.Content == record.Content {
-			return zoneRecord.ID
-		}
+func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record cloudflare.DNSRecord) string {
+	if zoneRecord, ok := records[DNSRecordIndex{Name: record.Name, Type: record.Type, Content: record.Content}]; ok {
+		return zoneRecord.ID
 	}
 	return ""
 }
 
-func (p *CloudFlareProvider) getCustomHostnameOrigin(chs []cloudflare.CustomHostname, hostname string) (string, string) {
-	for _, zoneCh := range chs {
-		if zoneCh.Hostname == hostname {
-			return zoneCh.ID, zoneCh.CustomOriginServer
-		}
+func getCustomHostname(chs CustomHostnamesMap, chName string) (cloudflare.CustomHostname, error) {
+	if chName == "" {
+		return cloudflare.CustomHostname{}, fmt.Errorf("failed to get custom hostname: %q is empty", chName)
 	}
-	return "", ""
+	if ch, ok := chs[CustomHostnameIndex{Hostname: chName}]; ok {
+		return ch, nil
+	}
+	return cloudflare.CustomHostname{}, fmt.Errorf("failed to get custom hostname: %q not found", chName)
 }
 
 func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
@@ -580,7 +619,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 		newCustomHostname = cloudflare.CustomHostname{
 			Hostname:           getEndpointCustomHostname(endpoint),
 			CustomOriginServer: endpoint.DNSName,
-			SSL:                getCustomHostnamesSSLOptions(endpoint, p.CustomHostnamesConfig),
+			SSL:                getCustomHostnamesSSLOptions(p.CustomHostnamesConfig),
 		}
 	}
 	return &cloudFlareChange{
@@ -607,9 +646,14 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 	}
 }
 
+func newDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
+	return DNSRecordIndex{Name: r.Name, Type: r.Type, Content: r.Content}
+}
+
 // listDNSRecordsWithAutoPagination performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
-func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
-	var records []cloudflare.DNSRecord
+func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
+	// for faster getRecordID lookup
+	records := make(DNSRecordsMap)
 	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
 	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
 	for {
@@ -625,7 +669,9 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 			return nil, err
 		}
 
-		records = append(records, pageRecords...)
+		for _, r := range pageRecords {
+			records[newDNSRecordIndex(r)] = r
+		}
 		params.ResultInfo = resultInfo.Next()
 		if params.ResultInfo.Done() {
 			break
@@ -634,12 +680,16 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 	return records, nil
 }
 
+func newCustomHostnameIndex(ch cloudflare.CustomHostname) CustomHostnameIndex {
+	return CustomHostnameIndex{Hostname: ch.Hostname}
+}
+
 // listCustomHostnamesWithPagination performs automatic pagination of results on requests to cloudflare.CustomHostnames
-func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Context, zoneID string) ([]cloudflare.CustomHostname, error) {
+func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Context, zoneID string) (CustomHostnamesMap, error) {
 	if !p.CustomHostnamesConfig.Enabled {
 		return nil, nil
 	}
-	var chs []cloudflare.CustomHostname
+	chs := make(CustomHostnamesMap)
 	resultInfo := cloudflare.ResultInfo{Page: 1}
 	for {
 		pageCustomHostnameListResponse, result, err := p.Client.CustomHostnames(ctx, zoneID, resultInfo.Page, cloudflare.CustomHostname{})
@@ -651,11 +701,12 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 					return nil, provider.NewSoftError(err)
 				}
 			}
-			log.Errorf("zone %s failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
+			log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
 			return nil, err
 		}
-
-		chs = append(chs, pageCustomHostnameListResponse...)
+		for _, ch := range pageCustomHostnameListResponse {
+			chs[newCustomHostnameIndex(ch)] = ch
+		}
 		resultInfo = result.Next()
 		if resultInfo.Done() {
 			break
@@ -664,7 +715,7 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 	return chs, nil
 }
 
-func getCustomHostnamesSSLOptions(endpoint *endpoint.Endpoint, customHostnamesConfig CustomHostnamesConfig) *cloudflare.CustomHostnameSSL {
+func getCustomHostnamesSSLOptions(customHostnamesConfig CustomHostnamesConfig) *cloudflare.CustomHostnameSSL {
 	return &cloudflare.CustomHostnameSSL{
 		Type:                 "dv",
 		Method:               "http",
@@ -683,7 +734,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		if v.Name == source.CloudflareProxiedKey {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", source.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%q]: %v", source.CloudflareProxiedKey, err)
 			} else {
 				proxied = b
 			}
@@ -706,7 +757,7 @@ func getEndpointCustomHostname(endpoint *endpoint.Endpoint) string {
 	return ""
 }
 
-func groupByNameAndTypeWithCustomHostnames(records []cloudflare.DNSRecord, chs []cloudflare.CustomHostname) []*endpoint.Endpoint {
+func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
 	// group supported records by name and type
