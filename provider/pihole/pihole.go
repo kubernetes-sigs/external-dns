@@ -47,6 +47,8 @@ type PiholeConfig struct {
 	DomainFilter endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
 	DryRun bool
+	// PiHole API version =<5 or >=6, default is 5
+	APIVersion string
 }
 
 // Helper struct for de-duping DNS entry updates.
@@ -57,7 +59,14 @@ type piholeEntryKey struct {
 
 // NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
 func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
-	api, err := newPiholeClient(cfg)
+	var api piholeAPI
+	var err error
+	switch cfg.APIVersion {
+	case "6":
+		api, err = newPiholeClientV6(cfg)
+	default:
+		api, err = newPiholeClient(cfg)
+	}
 	if err != nil {
 		return nil, err
 	}
