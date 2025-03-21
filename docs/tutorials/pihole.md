@@ -188,7 +188,7 @@ spec:
 
 You can then query your Pi-hole to see if the record was created.
 
-_Change *@192.168.100.2* to the actual address of your DNS server_
+Change *@192.168.100.2* to the actual address of your DNS server
 
 ```bash
 $ dig +short @192.168.100.2  nginx.external-dns-test.homelab.com
