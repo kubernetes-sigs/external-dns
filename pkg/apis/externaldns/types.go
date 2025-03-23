@@ -214,6 +214,10 @@ type Config struct {
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
+	NomadAddress                                  string
+	NomadRegion                                   string
+	NomadToken                                    string `secure:"yes"`
+	NomadWaitTime                                 time.Duration
 }
 
 var defaultConfig = &Config{
@@ -378,6 +382,10 @@ var defaultConfig = &Config{
 	TraefikDisableNew:                             false,
 	NAT64Networks:                                 []string{},
 	ExcludeUnschedulable:                          true,
+	NomadAddress:                                  "",
+	NomadRegion:                                   "",
+	NomadToken:                                    "",
+	NomadWaitTime:                                 0,
 }
 
 // NewConfig returns new Config object
@@ -452,8 +460,15 @@ func App(cfg *Config) *kingpin.Application {
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(defaultConfig.SkipperRouteGroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
+	// Flags related to Nomad
+	app.Flag("nomad-address", "Nomad endpoint address, if empty it defaults to NOMAD_ADDR or http://127.0.0.1:4646").Default(defaultConfig.NomadAddress).StringVar(&cfg.NomadAddress)
+	app.Flag("nomad-region", "Nomad region to use. If not provided, the default agent region is used").Default(defaultConfig.NomadRegion).StringVar(&cfg.NomadRegion)
+	// app.Flag("nomad-namespace", "Nomad namespace to use. If not provided the default namespace is used").Default(defaultConfig.NomadNamespace).StringVar(&cfg.NomadNamespace)
+	app.Flag("nomad-token", "Nomad per-request ACL token").StringVar(&cfg.NomadToken)
+	app.Flag("nomad-wait-time", "WaitTime limits how long a Watch will block. If not provided, the agent default values will be used").Default(defaultConfig.NomadWaitTime.String()).DurationVar(&cfg.NomadWaitTime)
+
 	// Flags related to processing source
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy, nomad-service)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy", "nomad-service")
 	app.Flag("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.").StringVar(&cfg.OCPRouterName)
 	app.Flag("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
