@@ -40,6 +40,7 @@ require (
 	github.com/goccy/go-yaml v1.17.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/hashicorp/nomad/api v0.0.0-20250321175057-34ae5d5ae66b
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.49.0
 	github.com/maxatome/go-testdeep v1.14.0
@@ -137,10 +138,13 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
+	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
+	github.com/hashicorp/cronexpr v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
+	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect

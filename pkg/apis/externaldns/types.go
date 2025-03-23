@@ -214,6 +214,10 @@ type Config struct {
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
+	NomadAddress                                  string
+	NomadRegion                                   string
+	NomadToken                                    string `secure:"yes"`
+	NomadWaitTime                                 time.Duration
 }
 
 var defaultConfig = &Config{
@@ -306,6 +310,10 @@ var defaultConfig = &Config{
 	MinEventSyncInterval:         5 * time.Second,
 	Namespace:                    "",
 	NAT64Networks:                []string{},
+	NomadAddress:                 "",
+	NomadRegion:                  "",
+	NomadToken:                   "",
+	NomadWaitTime:                0,
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
 	OCIConfigFile:                "/etc/kubernetes/oci.yaml",
@@ -452,6 +460,13 @@ func App(cfg *Config) *kingpin.Application {
 
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(defaultConfig.SkipperRouteGroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
+
+	// Flags related to Nomad
+	app.Flag("nomad-address", "Nomad endpoint address, if empty it defaults to NOMAD_ADDR or http://127.0.0.1:4646").Default(defaultConfig.NomadAddress).StringVar(&cfg.NomadAddress)
+	app.Flag("nomad-region", "Nomad region to use. If not provided, the default agent region is used").Default(defaultConfig.NomadRegion).StringVar(&cfg.NomadRegion)
+	// app.Flag("nomad-namespace", "Nomad namespace to use. If not provided the default namespace is used").Default(defaultConfig.NomadNamespace).StringVar(&cfg.NomadNamespace)
+	app.Flag("nomad-token", "Nomad per-request ACL token").StringVar(&cfg.NomadToken)
+	app.Flag("nomad-wait-time", "WaitTime limits how long a Watch will block. If not provided, the agent default values will be used").Default(defaultConfig.NomadWaitTime.String()).DurationVar(&cfg.NomadWaitTime)
 
 	// Flags related to processing source
 	app.Flag("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)").BoolVar(&cfg.AlwaysPublishNotReadyAddresses)
