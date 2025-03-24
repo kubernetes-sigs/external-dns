@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Add missing types in the schema for empty values ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
+
 ## [v1.16.0] - 2025-03-20
 
 ### Added
