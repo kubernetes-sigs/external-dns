@@ -113,6 +113,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 		unschedulable        bool // default to false
 		expected             []*endpoint.Endpoint
 		expectError          bool
+		expectedLogs         []string
+		expectedAbsentLogs   []string
 	}{
 		{
 			title:              "node with short hostname returns one endpoint",
@@ -372,6 +374,9 @@ func testNodeSourceEndpoints(t *testing.T) {
 			unschedulable:        true,
 			excludeUnschedulable: true,
 			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is unschedulable",
+			},
 		},
 		{
 			title:                "unschedulable node returns node with excludeUnschedulable=false",
@@ -382,10 +387,15 @@ func testNodeSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
+			expectedAbsentLogs: []string{
+				"Skipping node node1 because it is unschedulable",
+			},
 		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			buf := testutils.LogsToBuffer(log.DebugLevel, t)
+
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
 				var err error
@@ -434,6 +444,14 @@ func testNodeSourceEndpoints(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			for _, entry := range tc.expectedLogs {
+				assert.Contains(t, buf.String(), entry)
+			}
+
+			for _, entry := range tc.expectedAbsentLogs {
+				assert.NotContains(t, buf.String(), entry)
+			}
 		})
 	}
 }
