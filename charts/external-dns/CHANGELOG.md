@@ -18,15 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.16.0] - 2025-03-20
+
 ### Added
 
-- Added helm testing framework `helm plugin unittest`. ([#5137](https://github.com/kubernetes-sigs/external-dns/pull/5137)) _@ivankatliarchuk_
-- Added ability to generate schema with `helm plugin schema`. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
-- Added `docs/contributing/dev-guide.md#helm-values` guide. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+- Add helm testing framework `helm plugin unittest`. ([#5137](https://github.com/kubernetes-sigs/external-dns/pull/5137)) _@ivankatliarchuk_
+- Add ability to generate schema with `helm plugin schema`. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+- Add `docs/contributing/dev-guide.md#helm-values` guide. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
 
 ### Changed
 
 - Regenerate JSON schema with `helm-values-schema-json' plugin. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
+- Update _ExternalDNS_ OCI image version to [v0.16.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.16.1). ([#xxxx](https://github.com/kubernetes-sigs/external-dns/pull/xxxx)) _@stevehipwell_
 
 ## [v1.15.2] - 2025-02-14
 
@@ -238,6 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.16.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.0
 [v1.15.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2
 [v1.15.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.1
 [v1.15.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.0
