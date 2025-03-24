@@ -452,7 +452,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {
 				Type:    v1.NodeExternalIP,
 				Address: "2001:DB8::8",
-			}},
+			}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
@@ -488,7 +488,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 
 		if tc.exposeInternalIPv6 {
 			buf := testutils.LogsToBuffer(log.WarnLevel, t)
-			warningMsg := "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --expose-internal-ipv6=false flag to opt-in to the new behavior."
+			warningMsg := "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
 			log.Warn(warningMsg)
 			assert.Contains(t, buf.String(), warningMsg)
 		}

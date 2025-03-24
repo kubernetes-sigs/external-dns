@@ -4,7 +4,7 @@ This tutorial describes how to configure ExternalDNS to use the cluster nodes as
 Using nodes (`--source=node`) as source is possible to synchronize a DNS zone with the nodes of a cluster.
 
 The node source adds an `A` record per each node `externalIP` (if not found, any IPv4 `internalIP` is used instead).
-It also adds an `AAAA` record per each node IPv6 `internalIP`.
+It also adds an `AAAA` record per each node IPv6 `internalIP`. Refer to the [IPv6 Behavior](#ipv6-behavior) section for more details.
 The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
 
 Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded.
@@ -12,11 +12,11 @@ This avoid exposing Unhealthy, NotReady or SchedulingDisabled (cordon) nodes.
 
 ## IPv6 Behavior
 
-Currently, ExternalDNS exposes the IPv6 `InternalIP` of the nodes. To alleviate this, you can use the `--expose-internal-ipv6`
-flag to not expose your internal ipv6 addresses. The flag is set to `true` by default. This behavior will change in the next minor release
-flipping the flag to `false` by default. You can still set the flag to `true` to expose the internal ipv6 addresses if needed.
+By default, ExternalDNS exposes the IPv6 `InternalIP` of the nodes. To prevent this, you can use the `--no-expose-internal-ipv6` flag.
+**The default behavior will change in the next minor release.** ExternalDNS will no longer expose the IPv6 `InternalIP` addresses by default.
+You can still explicitly expose the internal ipv6 addresses by using the `--expose-internal-ipv6` flag, if needed.
 
-### Example spec (with `--expose-internal-ipv6` set to `false`)
+### Example spec (without exposing IPv6 `InternalIP` addresses)
 
 ```yaml
 spec:
@@ -35,7 +35,7 @@ spec:
     - --txt-owner-id=my-identifier
     - --policy=sync
     - --log-level=debug
-    - --expose-internal-ipv6=false
+    - --no-expose-internal-ipv6
 ```
 
 ## Manifest (for cluster without RBAC enabled)

@@ -38,8 +38,8 @@ type nodeSource struct {
 	annotationFilter   string
 	fqdnTemplate       *template.Template
 	nodeInformer       coreinformers.NodeInformer
-	exposeInternalIPV6 bool
 	labelSelector      labels.Selector
+	exposeInternalIPV6 bool
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
