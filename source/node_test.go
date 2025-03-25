@@ -394,7 +394,12 @@ func testNodeSourceEndpoints(t *testing.T) {
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
-			buf := testutils.LogsToBuffer(log.DebugLevel, t)
+			var buf *bytes.Buffer
+			if len(tc.expectedLogs) == 0 && len(tc.expectedAbsentLogs) == 0 {
+				t.Parallel()
+			} else {
+				buf = testutils.LogsToBuffer(log.DebugLevel, t)
+			}
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
