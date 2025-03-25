@@ -47,6 +47,7 @@ jobs:
       with:
         file: profile.cov
         format: golang
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Send coverage
       uses: shogo82148/actions-goveralls@v1
