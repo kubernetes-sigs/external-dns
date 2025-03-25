@@ -68,7 +68,10 @@
       "type": "array"
     },
     "fullnameOverride": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "global": {
       "properties": {
@@ -188,7 +191,10 @@
       "uniqueItems": true
     },
     "nameOverride": {
-      "type": "null"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "namespaced": {
       "type": "boolean"
