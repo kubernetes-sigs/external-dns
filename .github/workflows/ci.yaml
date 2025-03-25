@@ -38,6 +38,7 @@ jobs:
       run: make test
 
     - name: Coveralls
+      # https://github.com/marketplace/actions/coveralls-github-action
       uses: coverallsapp/github-action@v2
       with:
         file: profile.cov
