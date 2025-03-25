@@ -45,11 +45,5 @@ jobs:
     - run: |
         make build
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@v2
-      with:
-        file: profile.cov
-        format: golang
-
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
