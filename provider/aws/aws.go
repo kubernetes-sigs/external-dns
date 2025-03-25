@@ -224,7 +224,6 @@ type Route53Change struct {
 
 type Route53Changes []*Route53Change
 
-// profiledZone
 type profiledZone struct {
 	profile string
 	zone    *route53types.HostedZone

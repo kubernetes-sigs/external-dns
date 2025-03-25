@@ -113,7 +113,6 @@ func main() {
 
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
-	go handleSigterm(cancel)
 
 	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
