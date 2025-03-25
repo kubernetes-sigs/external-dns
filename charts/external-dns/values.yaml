@@ -18,10 +18,10 @@ image:  # @schema additionalProperties: false
 imagePullSecrets: []  # @schema item: object
 
 # -- (string) Override the name of the chart.
-nameOverride:
+nameOverride: # @schema type:[string, null]
 
 # -- (string) Override the full name of the chart.
-fullnameOverride:
+fullnameOverride: # @schema type:[string, null]
 
 # -- Labels to add to all chart resources.
 commonLabels: {}
