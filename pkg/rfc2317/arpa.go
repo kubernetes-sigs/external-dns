@@ -28,6 +28,7 @@ import (
 // Given "10.20.30.0/24" returns "30.20.10.in-addr.arpa"
 // Given "10.20.30.0/25" returns "0/25.30.20.10.in-addr.arpa" (RFC2317)
 func CidrToInAddr(cidr string) (string, error) {
+	// test this
 	// If the user sent an IP instead of a CIDR (i.e. no "/"), turn it
 	// into a CIDR by adding /32 or /128 as appropriate.
 	ip := net.ParseIP(cidr)
