@@ -325,7 +325,7 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 
 type nameMapper interface {
 	toEndpointName(string) (endpointName string, recordType string)
-	toTXTName(string) string
+	// toTXTName(string) string
 	toNewTXTName(string, string) string
 	recordTypeInAffix() bool
 }
@@ -426,21 +426,21 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string
 	return "", ""
 }
 
-func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
-	DNSName := strings.SplitN(endpointDNSName, ".", 2)
+// func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
+// 	DNSName := strings.SplitN(endpointDNSName, ".", 2)
 
-	prefix := pr.dropAffixTemplate(pr.prefix)
-	suffix := pr.dropAffixTemplate(pr.suffix)
-	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if pr.wildcardReplacement != "" && DNSName[0] == "*" {
-		DNSName[0] = pr.wildcardReplacement
-	}
+// 	prefix := pr.dropAffixTemplate(pr.prefix)
+// 	suffix := pr.dropAffixTemplate(pr.suffix)
+// 	// If specified, replace a leading asterisk in the generated txt record name with some other string
+// 	if pr.wildcardReplacement != "" && DNSName[0] == "*" {
+// 		DNSName[0] = pr.wildcardReplacement
+// 	}
 
-	if len(DNSName) < 2 {
-		return prefix + DNSName[0] + suffix
-	}
-	return prefix + DNSName[0] + suffix + "." + DNSName[1]
-}
+// 	if len(DNSName) < 2 {
+// 		return prefix + DNSName[0] + suffix
+// 	}
+// 	return prefix + DNSName[0] + suffix + "." + DNSName[1]
+// }
 
 func (pr affixNameMapper) recordTypeInAffix() bool {
 	if strings.Contains(pr.prefix, recordTemplate) {

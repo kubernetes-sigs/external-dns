@@ -44,15 +44,15 @@
 # 2. AWS Access https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html
 # 3. pipenv shell
 # 4. pip install boto3
-# 5. python scripts/cleanup-legacy-txt-records.py --help
-# 6. DRY RUN python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --record-match text
+# 5. python scripts/aws-cleanup-legacy-txt-records.py --help
+# 6. DRY RUN python scripts/aws-cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --record-match text
 # 6.1 Before execution consider to stop `external-dns`
 # 7. Execute Deletion. First few times with reduced number of items
-# - python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 3 --batch-delete-count 1 --record-match 'external-dns'
-# - python scripts/cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 10000 --batch-delete-count 50 --run --record-match "external-dns/owner=default"
+# - python scripts/aws-cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 3 --batch-delete-count 1 --record-match 'external-dns'
+# - python scripts/aws-cleanup-legacy-txt-records.py --zone-id ASDFQEQREWRQADF --total-items 10000 --batch-delete-count 50 --run --record-match "external-dns/owner=default"
 
-# python scripts/cleanup-legacy-txt-records.py --help
-# python scripts/cleanup-legacy-txt-records.py --zone-id Z06155043AVN8RVC88TYY --total-items 300 --batch-delete-count 20 --record-match "external-dns/owner=default" --run
+# python scripts/aws-cleanup-legacy-txt-records.py --help
+# python scripts/aws-cleanup-legacy-txt-records.py --zone-id Z06155043AVN8RVC88TYY --total-items 300 --batch-delete-count 20 --record-match "external-dns/owner=default" --run
 
 import boto3
 from botocore.config import Config as AwsConfig
