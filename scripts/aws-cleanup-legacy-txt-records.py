@@ -38,7 +38,7 @@
 #    - The script is executed with command-line arguments specifying the hosted zone ID, record pattern, total items to delete, batch size, and whether to perform a dry run or actual deletion.
 #    - Check 'To Run script' section for more details
 
-# WARNING: run this script at your own RISK. This will delete all the TXT rerods that do contain certain string.
+# WARNING: run this script at your own RISK. This will delete all the TXT records that do contain certain string.
 # To Run script
 # 1. Python, pip and pipenv installed https://pipenv.pypa.io/en/latest/
 # 2. AWS Access https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html

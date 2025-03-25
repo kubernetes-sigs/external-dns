@@ -3,7 +3,7 @@
 The TXT registry is the default registry.
 It stores DNS record metadata in TXT records, using the same provider.
 
-If you plan to manage apex domains with external-dns whilst using a txt registry, you should ensure when using --txt-prefix that you specify the record type substitution and that it ends in a period ., to ensure the record is created under the same domain as the apex record being managed, i.e. --txt-prefix=someprefix-%{record_type}.
+If you plan to manage apex domains with external-dns whilst using a txt registry, you should ensure when using --txt-prefix that you specify the record type substitution and that it ends in a period (**.**). The record should be created under the same domain as the apex record being managed, i.e. --txt-prefix=someprefix-%{record_type}.
 
 ## Record Format Options
 
@@ -25,14 +25,14 @@ Example when configured `--txt-prefix="%{record_type}-abc-"` for apex domain `ex
 |             Name              |   TYPE   |
 |:-----------------------------:|:--------:|
 |   `a-abc-nginx-v2.ex.com.`    |  `TXT`   |
-| `cname-abc-nginx-v3.ex.com.`  | `CNAME`  |
+| `nginx-v2.ex.com.`  | `CNAME`  |
 
 And when configured `--txt-suffix="-abc.%{record_type}"` for apex domain `example.com` the expected result is
 
 |             Name              |  TYPE   |
 |:-----------------------------:|:-------:|
 |   `nginx-v2-abc.a.ex.com.`    |  `TXT`  |
-| `nginx-v3-abc.cname.ex.com..` | `CNAME` |
+| `nginx-v3.ex.com..` | `CNAME` |
 
 ### Manually Cleanup Legacy TXT Records
 
