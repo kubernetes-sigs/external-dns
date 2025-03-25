@@ -15,7 +15,6 @@ jobs:
     permissions:
       contents: read  #  to fetch code (actions/checkout)
       checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
-      issues: write
 
     name: Build
     runs-on: ubuntu-latest
