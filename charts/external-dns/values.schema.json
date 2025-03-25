@@ -259,20 +259,9 @@
                   "type": "string"
                 },
                 "repository": {
-                  "type": "null"
-                },
-                "tag": {
-                  "type": "null"
-                }
-              },
-              "type": "object"
-            },
-            "limits": {
-              "properties": {
-                "cpu": {
                   "type": "string"
                 },
-                "memory": {
+                "tag": {
                   "type": "string"
                 }
               },
@@ -336,17 +325,6 @@
                 },
                 "timeoutSeconds": {
                   "type": "integer"
-                }
-              },
-              "type": "object"
-            },
-            "requests": {
-              "properties": {
-                "cpu": {
-                  "type": "string"
-                },
-                "memory": {
-                  "type": "string"
                 }
               },
               "type": "object"
@@ -454,30 +432,7 @@
       "type": "string"
     },
     "resources": {
-      "properties": {
-        "limits": {
-          "properties": {
-            "cpu": {
-              "type": "string"
-            },
-            "memory": {
-              "type": "string"
-            }
-          },
-          "type": "object"
-        },
-        "requests": {
-          "properties": {
-            "cpu": {
-              "type": "string"
-            },
-            "memory": {
-              "type": "string"
-            }
-          },
-          "type": "object"
-        }
-      },
+      "properties": {},
       "type": "object"
     },
     "revisionHistoryLimit": {
@@ -604,7 +559,7 @@
           "type": "object"
         },
         "name": {
-          "type": "null"
+          "type": "string"
         }
       },
       "type": "object"
