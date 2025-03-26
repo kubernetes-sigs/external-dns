@@ -191,12 +191,11 @@ func TestCreateDomainFilter(t *testing.T) {
 }
 
 func TestHandleSigterm(t *testing.T) {
-	// Create a channel to simulate the cancel function
 	cancelCalled := make(chan bool, 1)
 	cancel := func() {
 		cancelCalled <- true
 	}
-	// Set up a logger to capture log output
+
 	var logOutput bytes.Buffer
 	log.SetOutput(&logOutput)
 	defer log.SetOutput(os.Stderr)
