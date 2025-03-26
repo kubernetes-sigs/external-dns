@@ -181,17 +181,18 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	for _, addr := range node.Status.Addresses {
 		// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
-			if ns.exposeInternalIPV6 {
-				addresses[v1.NodeInternalIP] = append(addresses[v1.NodeInternalIP], addr.Address)
-				ipv6Addresses = append(ipv6Addresses, addr.Address)
-			}
+			addresses[v1.NodeInternalIP] = append(addresses[v1.NodeInternalIP], addr.Address)
+			ipv6Addresses = append(ipv6Addresses, addr.Address)
 		} else {
 			addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
 		}
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
-		return append(addresses[v1.NodeExternalIP], ipv6Addresses...), nil
+		if ns.exposeInternalIPV6 {
+			return append(addresses[v1.NodeExternalIP], ipv6Addresses...), nil
+		}
+		return addresses[v1.NodeExternalIP], nil
 	}
 
 	if len(addresses[v1.NodeInternalIP]) > 0 {

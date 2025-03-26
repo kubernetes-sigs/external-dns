@@ -223,6 +223,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::9"}},
 			},
 		},
 		{
@@ -437,12 +438,13 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		expectError        bool
 	}{
 		{
-			title:              "node with only internal IPs with expose internal IP as false shouldn't return AAAA endpoints with internal IPs",
+			title:              "node with only internal IPs should return internal IPvs irrespective of exposeInternalIPv6",
 			nodeName:           "node1",
 			exposeInternalIPv6: false,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::9"}},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::9"}},
 			},
 		},
 		{
@@ -456,6 +458,19 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+		},
+		{
+			title:              "node with both external and internal IPs should return internal IPv6 if exposeInternalIPv6 is true",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "1.2.3.5"},
+				{Type: v1.NodeInternalIP, Address: "2001:DB8::9"},
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::9"}},
 			},
 		},
 	} {
