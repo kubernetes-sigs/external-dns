@@ -179,13 +179,12 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	var internalIpv6Addresses []string
 
 	for _, addr := range node.Status.Addresses {
-		// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+		// IPv6 InternalIP addresses have special handling.
+		// Refer to https://github.com/kubernetes-sigs/external-dns/pull/5192 for more details.
 		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
-			addresses[v1.NodeInternalIP] = append(addresses[v1.NodeInternalIP], addr.Address)
 			internalIpv6Addresses = append(internalIpv6Addresses, addr.Address)
-		} else {
-			addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
 		}
+		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
