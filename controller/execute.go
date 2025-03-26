@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -371,7 +373,7 @@ func Execute() {
 		)
 	}
 
-	reg, err := selectRegistry(cfg, err, p)
+	reg, err := selectRegistry(cfg, p)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -412,9 +414,12 @@ func Execute() {
 	ctrl.Run(ctx)
 }
 
-// TODO: test
+// This function configures the logger format and level based on the provided configuration.
 func configureLogger(cfg *externaldns.Config) {
-	// TODO: validate valid log formats, text, json
+	logFormats := []string{"text", "json"}
+	if !slices.Contains(logFormats, cfg.LogFormat) {
+		log.Fatalf("unknown log format: '%s'. known formats: '%s'", cfg.LogFormat, strings.Join(logFormats, ","))
+	}
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
@@ -425,13 +430,12 @@ func configureLogger(cfg *externaldns.Config) {
 	log.SetLevel(ll)
 }
 
-// TODO: test
-
 // selectRegistry selects the appropriate registry implementation based on the configuration in cfg.
 // It initializes and returns a registry along with any error encountered during setup.
 // Supported registry types include: dynamodb, noop, txt, and aws-sd.
-func selectRegistry(cfg *externaldns.Config, err error, p provider.Provider) (registry.Registry, error) {
+func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
 	var r registry.Registry
+	var err error
 	switch cfg.Registry {
 	case "dynamodb":
 		var dynamodbOpts []func(*dynamodb.Options)
@@ -456,17 +460,16 @@ func selectRegistry(cfg *externaldns.Config, err error, p provider.Provider) (re
 }
 
 // RegexDomainFilter overrides DomainFilter
-// TODO: test
-// TODO: error out if regex and non regex filters specified
 func createDomainFilter(cfg *externaldns.Config) endpoint.DomainFilter {
-	if cfg.RegexDomainFilter.String() != "" {
+	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
 		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
 	} else {
 		return endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	}
 }
 
-// TODO: test
+// handleSigterm listens for a SIGTERM signal and triggers the provided cancel function
+// to gracefully terminate the application. It logs a message when the signal is received.
 func handleSigterm(cancel func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
@@ -475,7 +478,10 @@ func handleSigterm(cancel func()) {
 	cancel()
 }
 
-// TODO: test
+// serveMetrics starts an HTTP server that serves health and metrics endpoints.
+// The /healthz endpoint returns a 200 OK status to indicate the service is healthy.
+// The /metrics endpoint serves Prometheus metrics.
+// The server listens on the specified address and logs debug information about the endpoints.
 func serveMetrics(address string) {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
