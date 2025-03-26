@@ -196,7 +196,6 @@ func TestHandleSigterm(t *testing.T) {
 	cancel := func() {
 		cancelCalled <- true
 	}
-
 	// Set up a logger to capture log output
 	var logOutput bytes.Buffer
 	log.SetOutput(&logOutput)
@@ -205,13 +204,17 @@ func TestHandleSigterm(t *testing.T) {
 	go handleSigterm(cancel)
 
 	// Simulate sending a SIGTERM signal
-	signal.Notify(make(chan os.Signal, 1), syscall.SIGTERM)
-	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+	err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	assert.NoError(t, err)
 
 	// Wait for the cancel function to be called
 	select {
 	case <-cancelCalled:
 		assert.Contains(t, logOutput.String(), "Received SIGTERM. Terminating...")
+	case sig := <-sigChan:
+		assert.Equal(t, syscall.SIGTERM, sig)
 	case <-time.After(1 * time.Second):
 		t.Fatal("cancel function was not called")
 	}
