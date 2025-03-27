@@ -308,5 +308,5 @@ secretConfiguration:
   # -- `Secret` data.
   data: {}
 
-# -- No effect - reserved for use in sub-charting.
+# -- (bool) No effect - reserved for use in sub-charting.
 enabled: # @schema type: [boolean, null]; description: No effect - reserved for use in sub-charting

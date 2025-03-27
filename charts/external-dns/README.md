@@ -99,7 +99,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | dnsConfig | object | `nil` | [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used. |
 | dnsPolicy | string | `nil` | [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy) for the pod, if not set the default will be used. |
 | domainFilters | list | `[]` | Limit possible target zones by domain suffixes. |
-| enabled | string | `nil` | No effect - reserved for use in sub-charting. |
+| enabled | bool | `nil` | No effect - reserved for use in sub-charting. |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | list | `[]` | Extra arguments to provide to _ExternalDNS_. |
