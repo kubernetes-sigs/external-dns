@@ -33,7 +33,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -106,50 +105,8 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
-	labelSelector, _ := labels.Parse(cfg.LabelFilter)
-
 	// Create a source.Config from the flags passed by the user.
-	sourceCfg := &source.Config{
-		Namespace:                      cfg.Namespace,
-		AnnotationFilter:               cfg.AnnotationFilter,
-		LabelFilter:                    labelSelector,
-		IngressClassNames:              cfg.IngressClassNames,
-		FQDNTemplate:                   cfg.FQDNTemplate,
-		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
-		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
-		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
-		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
-		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
-		ListenEndpointEvents:           cfg.ListenEndpointEvents,
-		GatewayName:                    cfg.GatewayName,
-		GatewayNamespace:               cfg.GatewayNamespace,
-		GatewayLabelFilter:             cfg.GatewayLabelFilter,
-		Compatibility:                  cfg.Compatibility,
-		PodSourceDomain:                cfg.PodSourceDomain,
-		PublishInternal:                cfg.PublishInternal,
-		PublishHostIP:                  cfg.PublishHostIP,
-		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
-		ConnectorServer:                cfg.ConnectorSourceServer,
-		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
-		CRDSourceKind:                  cfg.CRDSourceKind,
-		KubeConfig:                     cfg.KubeConfig,
-		APIServerURL:                   cfg.APIServerURL,
-		ServiceTypeFilter:              cfg.ServiceTypeFilter,
-		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
-		CFUsername:                     cfg.CFUsername,
-		CFPassword:                     cfg.CFPassword,
-		GlooNamespaces:                 cfg.GlooNamespaces,
-		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
-		RequestTimeout:                 cfg.RequestTimeout,
-		DefaultTargets:                 cfg.DefaultTargets,
-		OCPRouterName:                  cfg.OCPRouterName,
-		UpdateEvents:                   cfg.UpdateEvents,
-		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
-		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
-		TraefikDisableNew:              cfg.TraefikDisableNew,
-		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
-	}
+	sourceCfg := source.NewConfig(cfg)
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
 	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
