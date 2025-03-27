@@ -1,0 +1,33 @@
+suite: Test json value schema validation
+templates:
+  - templates/*
+release:
+  name: notes
+  namespace: apps-notes
+tests:
+  - it: should not throw an error when legacy provider is a string
+    set:
+      provider: legacy
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not throw an error when provider is an object
+    set:
+      provider:
+        name: aws
+        webhook: {}
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not throw an error when 'enabled' value is provided
+    set:
+      enabled: true
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should throw an error when 'enabled' value is provided
+    set:
+      enabled: "abrakadabra"
+    asserts:
+      - failedTemplate:
+          errorPattern: "Invalid type. Expected: [boolean,null], given: string"
