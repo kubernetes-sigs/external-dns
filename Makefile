@@ -198,3 +198,7 @@ helm-test:
 #? helm-template: Run helm template
 helm-template:
 	scripts/helm-tools.sh --helm-template
+
+#? helm-docs: Run helm docs
+helm-docs:
+	scripts/helm-tools.sh --docs
