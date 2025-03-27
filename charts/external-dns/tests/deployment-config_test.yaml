@@ -19,8 +19,9 @@ tests:
       - equal:
           path: metadata.namespace
           value: default
-      - notExists:
+      - equal:
           path: spec.template.spec.automountServiceAccountToken
+          value: true
 
   - it: should provide expected defaults for securityContext
     asserts:
