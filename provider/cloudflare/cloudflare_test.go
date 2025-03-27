@@ -829,6 +829,25 @@ func TestCloudflareListZoneInternalErrors(t *testing.T) {
 	}
 }
 
+func TestCloudflareListZoneDetailsBadGatewayErrors(t *testing.T) {
+	// Create a mock client that returns a bad gateway error
+	client := NewMockCloudFlareClient()
+	client.listZonesContextError = &cloudflare.Error{
+		StatusCode: 502,
+		ErrorCodes: []int{20000},
+		Type:       cloudflare.ErrorTypeService,
+	}
+	p := &CloudFlareProvider{Client: client}
+
+	// Call the Zones function
+	_, err := p.Zones(context.Background())
+
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a bad gateway error")
+	}
+}
+
 func TestCloudflareRecords(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
