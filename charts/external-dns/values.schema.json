@@ -7,10 +7,7 @@
       "type": "object"
     },
     "automountServiceAccountToken": {
-      "type": [
-        "boolean",
-        "null"
-      ]
+      "type": "boolean"
     },
     "commonLabels": {
       "properties": {},
@@ -618,10 +615,7 @@
           "type": "object"
         },
         "automountServiceAccountToken": {
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": "boolean"
         },
         "create": {
           "type": "boolean"
