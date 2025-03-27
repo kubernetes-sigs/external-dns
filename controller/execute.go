@@ -148,6 +148,7 @@ func Execute() {
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
 		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
 		TraefikDisableNew:              cfg.TraefikDisableNew,
+		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
