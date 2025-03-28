@@ -33,6 +33,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
+
 type nodeSource struct {
 	client             kubernetes.Interface
 	annotationFilter   string
@@ -189,6 +191,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
 		if ns.exposeInternalIPV6 {
+			log.Warn(warningMsg)
 			return append(addresses[v1.NodeExternalIP], internalIpv6Addresses...), nil
 		}
 		return addresses[v1.NodeExternalIP], nil

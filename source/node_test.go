@@ -17,10 +17,12 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
 	"context"
+	"testing"
+
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/internal/testutils"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -501,11 +503,9 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		_, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
 		require.NoError(t, err)
 
+		var buf *bytes.Buffer
 		if tc.exposeInternalIPv6 {
-			buf := testutils.LogsToBuffer(log.WarnLevel, t)
-			warningMsg := "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
-			log.Warn(warningMsg)
-			assert.Contains(t, buf.String(), warningMsg)
+			buf = testutils.LogsToBuffer(log.WarnLevel, t)
 		}
 
 		// Create our object under test and get the endpoints.
@@ -524,6 +524,10 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
+
+			if tc.exposeInternalIPv6 && buf != nil {
+				assert.Contains(t, buf.String(), warningMsg)
+			}
 		}
 
 		// Validate returned endpoints against desired endpoints.
