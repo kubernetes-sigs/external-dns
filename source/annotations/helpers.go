@@ -56,7 +56,7 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 //
 // Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second
 // for the example).
-func parseTTL(s string) (ttlSeconds int64, err error) {
+func parseTTL(s string) (int64, error) {
 	ttlDuration, errDuration := time.ParseDuration(s)
 	if errDuration != nil {
 		ttlInt, err := strconv.ParseInt(s, 10, 64)
