@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	antns "sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
@@ -194,7 +194,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 }
 
 func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*routev1.Route, error) {
-	selector, err := antns.ParseFilter(ors.annotationFilter)
+	selector, err := annotations.ParseFilter(ors.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -207,11 +207,8 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*r
 	filteredList := []*routev1.Route{}
 
 	for _, ocpRoute := range ocpRoutes {
-		// convert the Route's annotations to an equivalent label selector
-		annotations := labels.Set(ocpRoute.Annotations)
-
 		// include ocpRoute if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ocpRoute.Annotations)) {
 			filteredList = append(filteredList, ocpRoute)
 		}
 	}

@@ -105,8 +105,8 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 }
 
 func getHostnamesFromAnnotations(annotations map[string]string) []string {
-	hostnameAnnotation, exists := annotations[hostnameAnnotationKey]
-	if !exists {
+	hostnameAnnotation, ok := annotations[hostnameAnnotationKey]
+	if !ok {
 		return nil
 	}
 	return splitHostnameAnnotation(hostnameAnnotation)
@@ -121,8 +121,8 @@ func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
 }
 
 func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
-	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
-	if !exists {
+	internalHostnameAnnotation, ok := annotations[internalHostnameAnnotationKey]
+	if !ok {
 		return nil
 	}
 	return splitHostnameAnnotation(internalHostnameAnnotation)
@@ -142,8 +142,8 @@ func getTargetsFromTargetAnnotation(input map[string]string) endpoint.Targets {
 	var targets endpoint.Targets
 
 	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, exists := input[targetAnnotationKey]
-	if exists && targetAnnotation != "" {
+	targetAnnotation, ok := input[targetAnnotationKey]
+	if ok && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {

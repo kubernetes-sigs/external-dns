@@ -26,15 +26,15 @@ import (
 )
 
 func hasAliasFromAnnotations(annotations map[string]string) bool {
-	aliasAnnotation, exists := annotations[AliasKey]
-	return exists && aliasAnnotation == "true"
+	aliasAnnotation, ok := annotations[AliasKey]
+	return ok && aliasAnnotation == "true"
 }
 
 // TTLFromAnnotations extracts the TTL from the annotations of the given resource.
 func TTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)
-	ttlAnnotation, exists := annotations[TtlKey]
-	if !exists {
+	ttlAnnotation, ok := annotations[TtlKey]
+	if !ok {
 		return ttlNotConfigured
 	}
 	ttlValue, err := parseTTL(ttlAnnotation)
@@ -85,10 +85,9 @@ func ParseFilter(annotationFilter string) (labels.Selector, error) {
 // Returns empty endpoints array if none are found.
 func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets {
 	var targets endpoint.Targets
-
 	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, exists := annotations[TargetKey]
-	if exists && targetAnnotation != "" {
+	targetAnnotation, ok := annotations[TargetKey]
+	if ok && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {

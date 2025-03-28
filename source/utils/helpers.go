@@ -14,7 +14,8 @@ limitations under the License.
 package utils
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 
@@ -83,8 +84,7 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 
 	services, err := svcInformer.Lister().Services(namespace).List(labels.Everything())
 	if err != nil {
-		log.Errorf("not able to list labels for services in namespace %s. %v", namespace, err)
-		return nil, err
+		return nil, fmt.Errorf("failed to list labels for services in namespace %q: %w", namespace, err)
 	}
 
 	for _, service := range services {

@@ -35,9 +35,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	antns "sigs.k8s.io/external-dns/source/annotations"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/utils"
 )
 
@@ -203,7 +202,7 @@ func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gateway) ([]*networkingv1alpha3.Gateway, error) {
-	selector, err := antns.ParseFilter(sc.annotationFilter)
+	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -216,11 +215,8 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 	var filteredList []*networkingv1alpha3.Gateway
 
 	for _, gw := range gateways {
-		// convert the annotations to an equivalent label selector
-		annotations := labels.Set(gw.Annotations)
-
 		// include if the annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(gw.Annotations)) {
 			filteredList = append(filteredList, gw)
 		}
 	}

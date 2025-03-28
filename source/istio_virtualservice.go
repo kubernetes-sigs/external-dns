@@ -36,11 +36,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	antns "sigs.k8s.io/external-dns/source/annotations"
-
-	"sigs.k8s.io/external-dns/source/utils"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/utils"
 )
 
 // IstioMeshGateway is the built in gateway for all sidecars
@@ -256,7 +254,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkingv1alpha3.VirtualService) ([]*networkingv1alpha3.VirtualService, error) {
-	selector, err := antns.ParseFilter(sc.annotationFilter)
+	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

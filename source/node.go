@@ -29,9 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	antns "sigs.k8s.io/external-dns/source/annotations"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type nodeSource struct {
@@ -198,7 +197,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 
 // filterByAnnotations filters a list of nodes by a given annotation selector.
 func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) {
-	selector, err := antns.ParseFilter(ns.annotationFilter)
+	selector, err := annotations.ParseFilter(ns.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -211,11 +210,8 @@ func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) 
 	filteredList := []*v1.Node{}
 
 	for _, node := range nodes {
-		// convert the node's annotations to an equivalent label selector
-		annotations := labels.Set(node.Annotations)
-
 		// include node if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(node.Annotations)) {
 			filteredList = append(filteredList, node)
 		}
 	}
