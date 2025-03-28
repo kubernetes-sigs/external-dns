@@ -814,7 +814,7 @@ func TestCloudflareListZoneInternalErrors(t *testing.T) {
 	client := NewMockCloudFlareClient()
 	client.listZonesContextError = &cloudflare.Error{
 		StatusCode: 500,
-		ErrorCodes: []int{20000},
+		ErrorCodes: []int{500},
 		Type:       cloudflare.ErrorTypeService,
 	}
 	p := &CloudFlareProvider{Client: client}
@@ -834,7 +834,7 @@ func TestCloudflareListZoneDetailsBadGatewayErrors(t *testing.T) {
 	client := NewMockCloudFlareClient()
 	client.listZonesContextError = &cloudflare.Error{
 		StatusCode: 502,
-		ErrorCodes: []int{20000},
+		ErrorCodes: []int{502},
 		Type:       cloudflare.ErrorTypeService,
 	}
 	p := &CloudFlareProvider{Client: client}
