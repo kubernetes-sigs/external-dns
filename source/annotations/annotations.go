@@ -28,15 +28,13 @@ const (
 	WebhookPrefix    = "external-dns.alpha.kubernetes.io/webhook-"
 	CloudflarePrefix = "external-dns.alpha.kubernetes.io/cloudflare-"
 
-	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
-	AliasKey         = "external-dns.alpha.kubernetes.io/alias"
-
-	TargetKey = "external-dns.alpha.kubernetes.io/target"
-
 	TtlKey     = "external-dns.alpha.kubernetes.io/ttl"
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
 
+	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
+	AliasKey         = "external-dns.alpha.kubernetes.io/alias"
+	TargetKey        = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for figuring out which controller is responsible
 	ControllerKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
