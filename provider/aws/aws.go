@@ -252,7 +252,7 @@ func (z zoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZo
 // append adds tags to the ZoneTags for a given zoneID.
 func (z zoneTags) append(id string, tags []route53types.Tag) {
 	zoneId := fmt.Sprintf("/hostedzone/%s", id)
-	if _, exists := z[zoneId]; !exists {
+	if _, ok := z[zoneId]; !ok {
 		z[zoneId] = make(map[string]string)
 	}
 	for _, tag := range tags {
