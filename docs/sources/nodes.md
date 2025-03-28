@@ -7,8 +7,9 @@ The node source adds an `A` record per each node `externalIP` (if not found, any
 It also adds an `AAAA` record per each node IPv6 `internalIP`. Refer to the [IPv6 Behavior](#ipv6-behavior) section for more details.
 The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
 
-Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded.
-This avoid exposing Unhealthy, NotReady or SchedulingDisabled (cordon) nodes.
+Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded by default.
+As such, no DNS records are created for Unhealthy, NotReady or SchedulingDisabled (cordon) nodes (and existing ones are removed).
+In case you want to override the default, for example if you manage per-host DNS records via ExternalDNS, you can specify `--no-exclude-unschedulable` to always expose nodes no matter their status.
 
 ## IPv6 Behavior
 
