@@ -30,7 +30,6 @@ func hasAliasFromAnnotations(annotations map[string]string) bool {
 	return exists && aliasAnnotation == "true"
 }
 
-// TTLFromAnnotations TODO: copied from source.go. Refactor to avoid duplication.
 // TTLFromAnnotations extracts the TTL from the annotations of the given resource.
 func TTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)
@@ -54,8 +53,7 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 // parseTTL supports both integers like "600" and durations based
 // on Go Duration like "10m", hence "600" and "10m" represent the same value.
 //
-// Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second
-// for the example).
+// Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second for the example).
 func parseTTL(s string) (int64, error) {
 	ttlDuration, errDuration := time.ParseDuration(s)
 	if errDuration != nil {
