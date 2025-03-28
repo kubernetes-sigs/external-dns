@@ -50,7 +50,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
-	"sigs.k8s.io/external-dns/provider/designate"
 	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/exoscale"
@@ -107,6 +106,8 @@ func main() {
 		defer klog.ClearLogger()
 		klog.SetLogger(logr.Discard())
 	}
+
+	log.Info(externaldns.Banner())
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -268,9 +269,9 @@ func main() {
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
+		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
 	case "linode":
-		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
+		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "coredns", "skydns":
@@ -287,8 +288,6 @@ func main() {
 		)
 	case "inmemory":
 		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
-	case "designate":
-		p, err = designate.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
 		p, err = pdns.NewPDNSProvider(
 			ctx,

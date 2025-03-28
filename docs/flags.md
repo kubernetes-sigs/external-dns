@@ -49,7 +49,7 @@
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
-| `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, designate, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
+| `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
@@ -107,6 +107,7 @@
 | `--inmemory-zone=` | Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional) |
 | `--ovh-endpoint="ovh-eu"` | When using the OVH provider, specify the endpoint (default: ovh-eu) |
 | `--ovh-api-rate-limit=20` | When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20) |
+| `--[no-]ovh-enable-cname-relative` | When using the OVH provider, specify if CNAME should be treated as relative on target without final dot (default: false) |
 | `--pdns-server="http://localhost:8081"` | When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns) |
 | `--pdns-server-id="localhost"` | When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost) |
 | `--pdns-api-key=""` | When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns) |

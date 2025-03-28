@@ -85,7 +85,7 @@ func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFi
 	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
-	client, err := godo.New(oauthClient, godo.SetUserAgent("ExternalDNS/"+externaldns.Version))
+	client, err := godo.New(oauthClient, godo.SetUserAgent(externaldns.UserAgent()))
 	if err != nil {
 		return nil, err
 	}
