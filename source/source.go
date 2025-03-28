@@ -38,27 +38,16 @@ import (
 )
 
 const (
-	// The annotation used for figuring out which controller is responsible
-	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
-	// The annotation used for defining the desired hostname
-	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
-	// The annotation used for specifying whether the public or private interface address is used
-	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
-	// The annotation used for specifying the type of endpoints to use for headless services
-	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
-	// The annotation used for defining the desired ingress/service target
-	targetAnnotationKey = annotations.TargetKey
-	// The annotation used for defining the desired DNS record TTL
-	ttlAnnotationKey = annotations.TtlKey
-	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
-	aliasAnnotationKey = annotations.AliasKey
-	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
-	// available hostname sources are used if not specified.
-	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
-	// The value of the controller annotation so that we feel responsible
-	controllerAnnotationValue = "dns-controller"
-	// The annotation used for defining the desired hostname
-	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+	controllerAnnotationKey       = annotations.ControllerKey
+	hostnameAnnotationKey         = annotations.HostnameKey
+	accessAnnotationKey           = annotations.AccessKey
+	endpointsTypeAnnotationKey    = annotations.EndpointsTypeKey
+	targetAnnotationKey           = annotations.TargetKey
+	ttlAnnotationKey              = annotations.TtlKey
+	aliasAnnotationKey            = annotations.AliasKey
+	ingressHostnameSourceKey      = annotations.IngressHostnameSourceKey
+	controllerAnnotationValue     = annotations.ControllerValue
+	internalHostnameAnnotationKey = annotations.InternalHostnameKey
 )
 
 const (

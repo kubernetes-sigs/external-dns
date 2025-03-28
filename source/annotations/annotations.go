@@ -36,4 +36,20 @@ const (
 	TtlKey     = "external-dns.alpha.kubernetes.io/ttl"
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
+
+	// The annotation used for figuring out which controller is responsible
+	ControllerKey = "external-dns.alpha.kubernetes.io/controller"
+	// The annotation used for defining the desired hostname
+	HostnameKey = "external-dns.alpha.kubernetes.io/hostname"
+	// The annotation used for specifying whether the public or private interface address is used
+	AccessKey = "external-dns.alpha.kubernetes.io/access"
+	// The annotation used for specifying the type of endpoints to use for headless services
+	EndpointsTypeKey = "external-dns.alpha.kubernetes.io/endpoints-type"
+	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
+	// available hostname sources are used if not specified.
+	IngressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
+	// The value of the controller annotation so that we feel responsible
+	ControllerValue = "dns-controller"
+	// The annotation used for defining the desired hostname
+	InternalHostnameKey = "external-dns.alpha.kubernetes.io/internal-hostname"
 )
