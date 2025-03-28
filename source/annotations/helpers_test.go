@@ -126,7 +126,7 @@ func TestTTLFromAnnotations(t *testing.T) {
 		{
 			name: "valid TTL annotation",
 			annotations: map[string]string{
-				TtlAnnotationKey: "600",
+				TtlKey: "600",
 			},
 			resource:    "test-resource",
 			expectedTTL: endpoint.TTL(600),
@@ -134,7 +134,7 @@ func TestTTLFromAnnotations(t *testing.T) {
 		{
 			name: "invalid TTL annotation",
 			annotations: map[string]string{
-				TtlAnnotationKey: "invalid",
+				TtlKey: "invalid",
 			},
 			resource:    "test-resource",
 			expectedTTL: endpoint.TTL(0),
@@ -142,7 +142,7 @@ func TestTTLFromAnnotations(t *testing.T) {
 		{
 			name: "TTL annotation out of range",
 			annotations: map[string]string{
-				TtlAnnotationKey: "999999",
+				TtlKey: "999999",
 			},
 			resource:    "test-resource",
 			expectedTTL: endpoint.TTL(999999),
@@ -165,12 +165,12 @@ func TestGetAliasFromAnnotations(t *testing.T) {
 	}{
 		{
 			name:        "alias annotation exists and is true",
-			annotations: map[string]string{AliasAnnotationKey: "true"},
+			annotations: map[string]string{AliasKey: "true"},
 			expected:    true,
 		},
 		{
 			name:        "alias annotation exists and is false",
-			annotations: map[string]string{AliasAnnotationKey: "false"},
+			annotations: map[string]string{AliasKey: "false"},
 			expected:    false,
 		},
 		{

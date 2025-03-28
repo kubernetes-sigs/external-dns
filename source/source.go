@@ -49,9 +49,9 @@ const (
 	// The annotation used for defining the desired ingress/service target
 	targetAnnotationKey = annotations.TargetKey
 	// The annotation used for defining the desired DNS record TTL
-	ttlAnnotationKey = annotations.TtlAnnotationKey
+	ttlAnnotationKey = annotations.TtlKey
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
-	aliasAnnotationKey = annotations.AliasAnnotationKey
+	aliasAnnotationKey = annotations.AliasKey
 	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"

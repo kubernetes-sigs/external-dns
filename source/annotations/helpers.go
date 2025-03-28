@@ -26,7 +26,7 @@ import (
 )
 
 func hasAliasFromAnnotations(annotations map[string]string) bool {
-	aliasAnnotation, exists := annotations[AliasAnnotationKey]
+	aliasAnnotation, exists := annotations[AliasKey]
 	return exists && aliasAnnotation == "true"
 }
 
@@ -34,7 +34,7 @@ func hasAliasFromAnnotations(annotations map[string]string) bool {
 // TTLFromAnnotations extracts the TTL from the annotations of the given resource.
 func TTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)
-	ttlAnnotation, exists := annotations[TtlAnnotationKey]
+	ttlAnnotation, exists := annotations[TtlKey]
 	if !exists {
 		return ttlNotConfigured
 	}

@@ -33,32 +33,32 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
 			setIdentifier = v
-		} else if strings.HasPrefix(k, AWSAnnotationPrefix) {
-			attr := strings.TrimPrefix(k, AWSAnnotationPrefix)
+		} else if strings.HasPrefix(k, AWSPrefix) {
+			attr := strings.TrimPrefix(k, AWSPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, SCWAnnotationPrefix) {
-			attr := strings.TrimPrefix(k, SCWAnnotationPrefix)
+		} else if strings.HasPrefix(k, SCWPrefix) {
+			attr := strings.TrimPrefix(k, SCWPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, IBMCloudAnnotationPrefix) {
-			attr := strings.TrimPrefix(k, IBMCloudAnnotationPrefix)
+		} else if strings.HasPrefix(k, IBMCloudPrefix) {
+			attr := strings.TrimPrefix(k, IBMCloudPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("ibmcloud-%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, WebhookAnnotationPrefix) {
+		} else if strings.HasPrefix(k, WebhookPrefix) {
 			// Support for wildcard annotations for webhook providers
-			attr := strings.TrimPrefix(k, WebhookAnnotationPrefix)
+			attr := strings.TrimPrefix(k, WebhookPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("webhook/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, CloudflareAnnotationPrefix) {
+		} else if strings.HasPrefix(k, CloudflarePrefix) {
 			if strings.Contains(k, CloudflareCustomHostnameKey) {
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 					Name:  CloudflareCustomHostnameKey,
