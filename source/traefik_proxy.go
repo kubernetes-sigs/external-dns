@@ -538,7 +538,7 @@ func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, er
 
 // filterIngressRouteByAnnotation filters a list of IngressRoute by a given annotation selector.
 func (ts *traefikSource) filterIngressRouteByAnnotation(ingressRoutes []*IngressRoute) ([]*IngressRoute, error) {
-	selector, err := antns.ParseAnnotationFilter(ts.annotationFilter)
+	selector, err := antns.ParseFilter(ts.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -565,7 +565,7 @@ func (ts *traefikSource) filterIngressRouteByAnnotation(ingressRoutes []*Ingress
 
 // filterIngressRouteTcpByAnnotations filters a list of IngressRouteTCP by a given annotation selector.
 func (ts *traefikSource) filterIngressRouteTcpByAnnotations(ingressRoutes []*IngressRouteTCP) ([]*IngressRouteTCP, error) {
-	selector, err := antns.ParseAnnotationFilter(ts.annotationFilter)
+	selector, err := antns.ParseFilter(ts.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -592,7 +592,7 @@ func (ts *traefikSource) filterIngressRouteTcpByAnnotations(ingressRoutes []*Ing
 
 // filterIngressRouteUdpByAnnotations filters a list of IngressRoute by a given annotation selector.
 func (ts *traefikSource) filterIngressRouteUdpByAnnotations(ingressRoutes []*IngressRouteUDP) ([]*IngressRouteUDP, error) {
-	selector, err := antns.ParseAnnotationFilter(ts.annotationFilter)
+	selector, err := antns.ParseFilter(ts.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

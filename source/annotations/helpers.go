@@ -69,9 +69,9 @@ func parseTTL(s string) (ttlSeconds int64, err error) {
 	return int64(ttlDuration.Seconds()), nil
 }
 
-// ParseAnnotationFilter parses an annotation filter string into a labels.Selector.
+// ParseFilter parses an annotation filter string into a labels.Selector.
 // Returns nil if the annotation filter is invalid.
-func ParseAnnotationFilter(annotationFilter string) (labels.Selector, error) {
+func ParseFilter(annotationFilter string) (labels.Selector, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets
 	var targets endpoint.Targets
 
 	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, exists := annotations[TargetAnnotationKey]
+	targetAnnotation, exists := annotations[TargetKey]
 	if exists && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")

@@ -203,7 +203,7 @@ func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gateway) ([]*networkingv1alpha3.Gateway, error) {
-	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
+	selector, err := antns.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

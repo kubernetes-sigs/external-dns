@@ -23,18 +23,6 @@ import (
 func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	if v, exists := annotations[CloudflareProxiedKey]; exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareProxiedKey,
-			Value: v,
-		})
-	}
-	if v, exists := annotations[CloudflareCustomHostnameKey]; exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareCustomHostnameKey,
-			Value: v,
-		})
-	}
 	if hasAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",
@@ -45,31 +33,43 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
 			setIdentifier = v
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/aws-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
+		} else if strings.HasPrefix(k, AWSAnnotationPrefix) {
+			attr := strings.TrimPrefix(k, AWSAnnotationPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
+		} else if strings.HasPrefix(k, SCWAnnotationPrefix) {
+			attr := strings.TrimPrefix(k, SCWAnnotationPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-")
+		} else if strings.HasPrefix(k, IBMCloudAnnotationPrefix) {
+			attr := strings.TrimPrefix(k, IBMCloudAnnotationPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("ibmcloud-%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/webhook-") {
+		} else if strings.HasPrefix(k, WebhookAnnotationPrefix) {
 			// Support for wildcard annotations for webhook providers
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/webhook-")
+			attr := strings.TrimPrefix(k, WebhookAnnotationPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("webhook/%s", attr),
 				Value: v,
 			})
+		} else if strings.HasPrefix(k, CloudflareAnnotationPrefix) {
+			if strings.Contains(k, CloudflareCustomHostnameKey) {
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  CloudflareCustomHostnameKey,
+					Value: v,
+				})
+			} else if strings.Contains(k, CloudflareProxiedKey) {
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  CloudflareProxiedKey,
+					Value: v,
+				})
+			}
 		}
 	}
 	return providerSpecificAnnotations, setIdentifier

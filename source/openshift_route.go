@@ -194,7 +194,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 }
 
 func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*routev1.Route, error) {
-	selector, err := antns.ParseAnnotationFilter(ors.annotationFilter)
+	selector, err := antns.ParseFilter(ors.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

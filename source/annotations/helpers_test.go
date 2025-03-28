@@ -50,7 +50,7 @@ func TestParseAnnotationFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			selector, err := ParseAnnotationFilter(tt.annotationFilter)
+			selector, err := ParseFilter(tt.annotationFilter)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -75,28 +75,28 @@ func TestTargetsFromTargetAnnotation(t *testing.T) {
 		{
 			name: "single target annotation",
 			annotations: map[string]string{
-				TargetAnnotationKey: "example.com",
+				TargetKey: "example.com",
 			},
 			expected: endpoint.Targets{"example.com"},
 		},
 		{
 			name: "multiple target annotations",
 			annotations: map[string]string{
-				TargetAnnotationKey: "example.com,example.org",
+				TargetKey: "example.com,example.org",
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},
 		{
 			name: "target annotation with trailing periods",
 			annotations: map[string]string{
-				TargetAnnotationKey: "example.com.,example.org.",
+				TargetKey: "example.com.,example.org.",
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},
 		{
 			name: "target annotation with spaces",
 			annotations: map[string]string{
-				TargetAnnotationKey: " example.com , example.org ",
+				TargetKey: " example.com , example.org ",
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},

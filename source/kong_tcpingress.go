@@ -164,7 +164,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 // filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
 func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
+	selector, err := antns.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

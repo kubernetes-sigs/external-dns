@@ -47,7 +47,7 @@ const (
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress/service target
-	targetAnnotationKey = annotations.TargetAnnotationKey
+	targetAnnotationKey = annotations.TargetKey
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = annotations.TtlAnnotationKey
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME

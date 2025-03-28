@@ -256,7 +256,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkingv1alpha3.VirtualService) ([]*networkingv1alpha3.VirtualService, error) {
-	selector, err := antns.ParseAnnotationFilter(sc.annotationFilter)
+	selector, err := antns.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

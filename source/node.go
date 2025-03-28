@@ -198,7 +198,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 
 // filterByAnnotations filters a list of nodes by a given annotation selector.
 func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) {
-	selector, err := antns.ParseAnnotationFilter(ns.annotationFilter)
+	selector, err := antns.ParseFilter(ns.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

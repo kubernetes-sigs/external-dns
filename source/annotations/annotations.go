@@ -22,10 +22,16 @@ const (
 	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 
+	AWSAnnotationPrefix        = "external-dns.alpha.kubernetes.io/aws-"
+	SCWAnnotationPrefix        = "external-dns.alpha.kubernetes.io/scw-"
+	IBMCloudAnnotationPrefix   = "external-dns.alpha.kubernetes.io/ibmcloud-"
+	WebhookAnnotationPrefix    = "external-dns.alpha.kubernetes.io/webhook-"
+	CloudflareAnnotationPrefix = "external-dns.alpha.kubernetes.io/cloudflare-"
+
 	SetIdentifierKey   = "external-dns.alpha.kubernetes.io/set-identifier"
 	AliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
 
-	TargetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
+	TargetKey = "external-dns.alpha.kubernetes.io/target"
 
 	TtlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
 	ttlMinimum       = 1
