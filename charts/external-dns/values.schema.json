@@ -428,8 +428,7 @@
       },
       "type": [
         "object",
-        "string",
-        "null"
+        "string"
       ]
     },
     "rbac": {
