@@ -106,7 +106,7 @@ func Execute() {
 	go handleSigterm(cancel)
 
 	// Create a source.Config from the flags passed by the user.
-	sourceCfg := source.NewConfig(cfg)
+	sourceCfg := source.NewSourceConfig(cfg)
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
 	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{

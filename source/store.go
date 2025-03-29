@@ -85,7 +85,7 @@ type Config struct {
 	ExposeInternalIPv6             bool
 }
 
-func NewConfig(cfg *externaldns.Config) *Config {
+func NewSourceConfig(cfg *externaldns.Config) *Config {
 	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
 	return &Config{
