@@ -44,3 +44,9 @@ tests:
       provider: {}
     asserts:
       - notFailedTemplate: {}
+
+  - it: should not fail when labelFilter has condition
+    set:
+      labelFilter: "mydomain.io/enable-dns-record in (true)"
+    asserts:
+      - notFailedTemplate: {}

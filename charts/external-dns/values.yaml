@@ -232,7 +232,7 @@ domainFilters: []
 excludeDomains: []
 
 # -- Filter resources queried for endpoints by label selector
-labelFilter:  # @schema pattern:^[a-zA-Z0-9._-]+=[a-zA-Z0-9._-]+$; type: [string,null];
+labelFilter:  # @schema type: [string,null]; default: null
 
 # -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true;
