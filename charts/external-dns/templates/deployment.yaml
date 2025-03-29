@@ -166,7 +166,7 @@ spec:
           ports:
             - name: http-webhook
               protocol: TCP
-              containerPort: 8080
+              containerPort: {{ .service.port }}
           livenessProbe:
             {{- toYaml .livenessProbe | nindent 12 }}
           readinessProbe:
