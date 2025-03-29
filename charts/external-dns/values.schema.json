@@ -47,6 +47,13 @@
     "domainFilters": {
       "type": "array"
     },
+    "enabled": {
+      "description": "No effect - reserved for use in sub-charting",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
     "env": {
       "type": "array"
     },
@@ -125,7 +132,6 @@
       "type": "string"
     },
     "labelFilter": {
-      "pattern": "^[a-zA-Z0-9._-]+=[a-zA-Z0-9._-]+$",
       "type": [
         "string",
         "null"
@@ -419,7 +425,10 @@
           "type": "object"
         }
       },
-      "type": "object"
+      "type": [
+        "object",
+        "string"
+      ]
     },
     "rbac": {
       "additionalProperties": true,
