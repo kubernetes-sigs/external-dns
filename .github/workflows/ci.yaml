@@ -33,17 +33,14 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    - name: Install additional CI for nektos/act
-      run: |
-            apt update
-            apt install -y make gcc libc-dev git
-      if: github.actor == 'nektos/act'
-
     - name: Test
       run: make test
 
-    - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
+    - name: Coveralls
+      # https://github.com/marketplace/actions/coveralls-github-action
+      uses: coverallsapp/github-action@v2
       with:
-        path-to-profile: profile.cov
-      if: github.actor != 'nektos/act'
+        file: profile.cov
+        format: golang
+        # https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
+        github-token: ${{ secrets.GITHUB_TOKEN }}
