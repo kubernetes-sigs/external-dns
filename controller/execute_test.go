@@ -261,16 +261,6 @@ func TestConfigureLogger(t *testing.T) {
 			wantJSON:  true,
 		},
 		{
-			name: "Unknown log format",
-			cfg: &externaldns.Config{
-				LogLevel:  "info",
-				LogFormat: "html",
-			},
-			wantLevel:  log.InfoLevel,
-			wantErr:    true,
-			wantErrMsg: "unknown log format",
-		},
-		{
 			name: "Invalid log level",
 			cfg: &externaldns.Config{
 				LogLevel:  "invalid",

@@ -22,8 +22,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"slices"
-	"strings"
 	"syscall"
 	"time"
 
@@ -375,10 +373,6 @@ func Execute() {
 
 // This function configures the logger format and level based on the provided configuration.
 func configureLogger(cfg *externaldns.Config) {
-	logFormats := []string{"text", "json"}
-	if !slices.Contains(logFormats, cfg.LogFormat) {
-		log.Fatalf("unknown log format: '%s'. known formats: '%s'", cfg.LogFormat, strings.Join(logFormats, ","))
-	}
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
