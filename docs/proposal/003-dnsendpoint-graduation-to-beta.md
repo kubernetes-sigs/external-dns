@@ -4,7 +4,7 @@ title: "Proposal: Defining a path to Beta for DNSEndpoint API"
 version: v1alpha1
 authors: @ivankatliarchuk, @raffo, @szuecs
 creation-date: 2025-02-09
-status: proposal
+status: approved
 ---
 ```
 
