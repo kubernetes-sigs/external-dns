@@ -214,6 +214,7 @@ type Config struct {
 	TraefikDisableLegacy                          bool
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
+	AWSDomainRoles                                map[string]string
 }
 
 var defaultConfig = &Config{
@@ -376,12 +377,14 @@ var defaultConfig = &Config{
 	TraefikDisableLegacy:                          false,
 	TraefikDisableNew:                             false,
 	NAT64Networks:                                 []string{},
+	AWSDomainRoles:                                map[string]string{},
 }
 
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
 		AWSSDCreateTag: map[string]string{},
+		AWSDomainRoles: map[string]string{},
 	}
 }
 
@@ -641,6 +644,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
 
 	app.Flag("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).").BoolVar(&cfg.WebhookServer)
+	app.Flag("aws-domain-roles", "When using the AWS provider, specify the domain roles to use for the hosted zone (optional)").StringMapVar(&cfg.AWSDomainRoles)
 
 	return app
 }

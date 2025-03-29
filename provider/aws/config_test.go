@@ -18,12 +18,24 @@ package aws
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type mockSTSClient struct {
+	AssumeRoleFunc func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
+func (m *mockSTSClient) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+	return m.AssumeRoleFunc(ctx, params, optFns...)
+}
 
 func Test_newV2Config(t *testing.T) {
 	t.Run("should use profile from credentials file", func(t *testing.T) {
@@ -35,9 +47,13 @@ func Test_newV2Config(t *testing.T) {
 		defer os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE")
 
 		// when
-		cfg, err := newV2Config(AWSSessionConfig{Profile: "profile2"})
+		cfgs, err := newV2Config(AWSSessionConfig{Profile: "profile2"}, nil)
 		require.NoError(t, err)
-		creds, err := cfg.Credentials.Retrieve(context.Background())
+
+		assert.GreaterOrEqual(t, len(cfgs), 1)
+		cfg := cfgs[0]
+
+		creds, err := cfg.Config.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)
@@ -53,14 +69,92 @@ func Test_newV2Config(t *testing.T) {
 		defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
 
 		// when
-		cfg, err := newV2Config(AWSSessionConfig{})
+		cfgs, err := newV2Config(AWSSessionConfig{}, nil)
 		require.NoError(t, err)
-		creds, err := cfg.Credentials.Retrieve(context.Background())
+		assert.GreaterOrEqual(t, len(cfgs), 1)
+		cfg := cfgs[0]
+
+		creds, err := cfg.Config.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)
 		assert.Equal(t, "AKIAIOSFODNN7EXAMPLE", creds.AccessKeyID)
 		assert.Equal(t, "topsecret", creds.SecretAccessKey)
+	})
+
+	t.Run("should use roles for different domains", func(t *testing.T) {
+		os.Setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+		os.Setenv("AWS_SECRET_ACCESS_KEY", "topsecret")
+		defer os.Unsetenv("AWS_ACCESS_KEY_ID")
+		defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+
+		roles := make([]string, 0)
+		mockClient := &mockSTSClient{
+			AssumeRoleFunc: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+				roles = append(roles, aws.ToString(params.RoleArn))
+				return &sts.AssumeRoleOutput{
+					Credentials: &types.Credentials{
+						AccessKeyId:     aws.String("AKIAIOSFODNN7EXAMPLE"),
+						SecretAccessKey: aws.String("topsecret"),
+						SessionToken:    aws.String("session-token"),
+						Expiration:      aws.Time(time.Now().Add(1 * time.Hour)),
+					},
+				}, nil
+			},
+		}
+
+		cfgs, err := newV2Config(AWSSessionConfig{
+			DomainRolesMap: map[string]string{
+				"example.com": "arn:aws:iam::123456789012:role/role1",
+				"example.org": "arn:aws:iam::123456789012:role/role2",
+			},
+		}, mockClient)
+
+		for _, cfg := range cfgs {
+			_, err := cfg.Config.Credentials.Retrieve(context.Background())
+			require.NoError(t, err)
+		}
+
+		require.NoError(t, err)
+		assert.Contains(t, roles, "arn:aws:iam::123456789012:role/role1")
+		assert.Contains(t, roles, "arn:aws:iam::123456789012:role/role2")
+		assert.NotNil(t, cfgs, "expected at least one config")
+	})
+
+	t.Run("should use assume role", func(t *testing.T) {
+		// setup
+		os.Setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+		os.Setenv("AWS_SECRET_ACCESS_KEY", "topsecret")
+		defer os.Unsetenv("AWS_ACCESS_KEY_ID")
+		defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+
+		roles := make([]string, 0)
+		mockClient := &mockSTSClient{
+			AssumeRoleFunc: func(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+				roles = append(roles, aws.ToString(params.RoleArn))
+				return &sts.AssumeRoleOutput{
+					Credentials: &types.Credentials{
+						AccessKeyId:     aws.String("AKIAIOSFODNN7EXAMPLE"),
+						SecretAccessKey: aws.String("topsecret"),
+						SessionToken:    aws.String("session-token"),
+						Expiration:      aws.Time(time.Now().Add(1 * time.Hour)),
+					},
+				}, nil
+			},
+		}
+
+		cfgs, err := newV2Config(AWSSessionConfig{
+			AssumeRole: "arn:aws:iam::123456789012:role/role1",
+		}, mockClient)
+
+		for _, cfg := range cfgs {
+			_, err := cfg.Config.Credentials.Retrieve(context.Background())
+			require.NoError(t, err)
+		}
+
+		require.NoError(t, err)
+		assert.Contains(t, roles, "arn:aws:iam::123456789012:role/role1")
+		assert.NotNil(t, cfgs, "expected at least one config")
 	})
 }
 
