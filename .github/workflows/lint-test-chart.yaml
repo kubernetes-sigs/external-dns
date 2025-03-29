@@ -78,7 +78,7 @@ jobs:
         run: ah lint --kind helm || exit 1
 
       - name: Install Python
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           token: ${{ github.token }}
           python-version: "3.x"
