@@ -36,6 +36,12 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+const (
+	contentTypeJSON = "application/json"
+	apiAuthPath     = "/api/auth"
+	apiConfigDNS    = "/api/config/dns"
+)
+
 // piholeClient implements the piholeAPI.
 type piholeClientV6 struct {
 	cfg        PiholeConfig
@@ -93,9 +99,8 @@ func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]st
 
 	// Parse JSON response
 	var apiResponse ApiRecordsResponse
-	err = json.Unmarshal(jRes, &apiResponse)
-	if err != nil {
-		log.Errorf("error reading response: %s", err)
+	if err := json.Unmarshal(jRes, &apiResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
 	}
 
 	// Pi-Hole does not allow for a record to have multiple targets.
@@ -120,33 +125,34 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		recs := strings.FieldsFunc(rec, func(r rune) bool {
 			return r == ' ' || r == ','
 		})
-		var DNSName string
-		var Target string
-		var Ttl endpoint.TTL
+		if len(recs) < 2 {
+			log.Warnf("skipping record %s: invalid format", rec)
+			continue
+		}
+		var DNSName, Target string
+		var Ttl endpoint.TTL = 0
 		// A/AAAA record format is target(IP) DNSName
-		DNSName = recs[1]
-		Target = recs[0]
+		DNSName, Target = recs[1], recs[0]
+
 		switch rtype {
 		case endpoint.RecordTypeA:
-			if strings.Contains(recs[0], ":") {
+			if strings.Contains(Target, ":") {
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
-			if strings.Contains(recs[0], ".") {
+			if strings.Contains(Target, ".") {
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
 			// CNAME format is DNSName,target
-			DNSName = recs[0]
-			Target = recs[1]
+			DNSName, Target = recs[0], recs[1]
 			if len(recs) == 3 { // TTL is present
 				// Parse string to int64 first
-				ttlInt, err := strconv.ParseInt(recs[2], 10, 64)
-				if err != nil {
-					// Handle parsing error or fail test
-					log.Warnf("failed to parse TTL value '%s': %v; using a TTL of 0", recs[2], err)
+				if ttlInt, err := strconv.ParseInt(recs[2], 10, 64); err == nil {
+					Ttl = endpoint.TTL(ttlInt)
+				} else {
+					log.Warnf("failed to parse TTL value '%s': %v; using a TTL of %d", recs[2], err, Ttl)
 				}
-				Ttl = endpoint.TTL(ttlInt)
 			}
 		}
 
@@ -169,11 +175,11 @@ func (p *piholeClientV6) deleteRecord(ctx context.Context, ep *endpoint.Endpoint
 }
 
 func (p *piholeClientV6) aRecordsScript() string {
-	return fmt.Sprintf("%s/api/config/dns/hosts", p.cfg.Server)
+	return fmt.Sprintf("%s"+apiConfigDNS+"/hosts", p.cfg.Server)
 }
 
 func (p *piholeClientV6) cnameRecordsScript() string {
-	return fmt.Sprintf("%s/api/config/dns/cnameRecords", p.cfg.Server)
+	return fmt.Sprintf("%s"+apiConfigDNS+"/cnameRecords", p.cfg.Server)
 }
 
 func (p *piholeClientV6) urlForRecordType(rtype string) (string, error) {
@@ -205,7 +211,7 @@ type ApiErrorResponse struct {
 	Error struct {
 		Key     string `json:"key"`
 		Message string `json:"message"`
-		Hint    string ` json:"hint"`
+		Hint    string `json:"hint"`
 	} `json:"error"`
 	Took float64 `json:"took"`
 }
@@ -221,14 +227,23 @@ type ApiRecordsResponse struct {
 	Took float64 `json:"took"`
 }
 
+func (p *piholeClientV6) generateApiUrl(baseUrl, params string) string {
+	return fmt.Sprintf("%s/%s", baseUrl, url.PathEscape(params))
+}
+
 func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
 	if !p.cfg.DomainFilter.Match(ep.DNSName) {
-		log.Debugf("Skipping %s %s that does not match domain filter", action, ep.DNSName)
+		log.Debugf("Skipping : %s %s that does not match domain filter", action, ep.DNSName)
 		return nil
 	}
 	apiUrl, err := p.urlForRecordType(ep.RecordType)
 	if err != nil {
-		log.Warnf("Skipping unsupported endpoint %s %s %v", ep.DNSName, ep.RecordType, ep.Targets)
+		log.Warnf("Skipping : unsupported endpoint %s %s %v", ep.DNSName, ep.RecordType, ep.Targets)
+		return nil
+	}
+
+	if ep.Targets == nil || len(ep.Targets) == 0 {
+		log.Infof("Skipping : missing targets  %s %s %s", action, ep.DNSName, ep.RecordType)
 		return nil
 	}
 
@@ -246,12 +261,12 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 
 	switch ep.RecordType {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s %s", ep.Targets, ep.DNSName)))
+		apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s %s", ep.Targets, ep.DNSName))
 	case endpoint.RecordTypeCNAME:
 		if ep.RecordTTL.IsConfigured() {
-			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL)))
+			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL))
 		} else {
-			apiUrl = fmt.Sprintf("%s/%s", apiUrl, url.PathEscape(fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets)))
+			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets))
 		}
 	}
 
@@ -273,7 +288,7 @@ func (p *piholeClientV6) retrieveNewToken(ctx context.Context) error {
 		return nil
 	}
 
-	apiUrl := fmt.Sprintf("%s/api/auth", p.cfg.Server)
+	apiUrl := fmt.Sprintf("%s"+apiAuthPath, p.cfg.Server)
 	log.Debugf("Fetching new token from %s", apiUrl)
 
 	// Define the JSON payload
@@ -291,9 +306,8 @@ func (p *piholeClientV6) retrieveNewToken(ctx context.Context) error {
 
 	// Parse JSON response
 	var apiResponse ApiAuthResponse
-	err = json.Unmarshal(jRes, &apiResponse)
-	if err != nil {
-		fmt.Println("Error reading response:", err)
+	if err := json.Unmarshal(jRes, &apiResponse); err != nil {
+		log.Errorf("Auth Query : failed to unmarshal error response: %v", err)
 	} else {
 		// Set the token
 		if apiResponse.Session.SID != "" {
@@ -308,7 +322,7 @@ func (p *piholeClientV6) checkTokenValidity(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	apiUrl := fmt.Sprintf("%s/api/auth", p.cfg.Server)
+	apiUrl := fmt.Sprintf("%s"+apiAuthPath, p.cfg.Server)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiUrl, nil)
 	if err != nil {
@@ -322,16 +336,14 @@ func (p *piholeClientV6) checkTokenValidity(ctx context.Context) (bool, error) {
 
 	// Parse JSON response
 	var apiResponse ApiAuthResponse
-	err = json.Unmarshal(jRes, &apiResponse)
-	if err != nil {
-		fmt.Println("Error reading response:", err)
-		return false, err
+	if err := json.Unmarshal(jRes, &apiResponse); err != nil {
+		return false, fmt.Errorf("failed to unmarshal error response: %w", err)
 	}
 	return apiResponse.Session.Valid, nil
 }
 
 func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
-	req.Header.Add("content-type", "application/json")
+	req.Header.Add("content-type", contentTypeJSON)
 	if p.token != "" {
 		req.Header.Add("X-FTL-SID", p.token)
 	}
@@ -351,24 +363,33 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		res.StatusCode != http.StatusNoContent {
 		// Parse JSON response
 		var apiError ApiErrorResponse
-		err := json.Unmarshal(jRes, &apiError)
-		if err != nil {
-			return nil, err
+		if err := json.Unmarshal(jRes, &apiError); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
 		}
 		log.Debugf("Error on request %s", req.Body)
 		if res.StatusCode == http.StatusUnauthorized && p.token != "" {
+			tryCount := 1
+			maxRetries := 3
 			// Try to fetch a new token and redo the request.
-			valid, err := p.checkTokenValidity(req.Context())
-			if err != nil {
-				return nil, err
-			}
-			if !valid {
-				log.Info("Pihole token has expired, fetching a new one")
-				if err := p.retrieveNewToken(req.Context()); err != nil {
+			for tryCount <= maxRetries {
+				valid, err := p.checkTokenValidity(req.Context())
+				if err != nil {
 					return nil, err
 				}
-				return p.do(req)
+				if !valid {
+					log.Debugf("Pihole token has expired, fetching a new one. Try (%d/%d)", tryCount, maxRetries)
+					if err := p.retrieveNewToken(req.Context()); err != nil {
+						return nil, err
+					}
+					tryCount++
+					continue
+				}
+				break
 			}
+			if tryCount > maxRetries {
+				return nil, errors.New("max tries reached for token renewal")
+			}
+			return p.do(req)
 		}
 		return nil, fmt.Errorf("received %s status code from request: [%s] %s (%s) - %fs", res.Status, apiError.Error.Key, apiError.Error.Message, apiError.Error.Hint, apiError.Took)
 	}
