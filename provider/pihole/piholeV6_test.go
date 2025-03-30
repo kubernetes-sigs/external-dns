@@ -18,6 +18,7 @@ package pihole
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -28,10 +29,20 @@ import (
 type testPiholeClientV6 struct {
 	endpoints []*endpoint.Endpoint
 	requests  *requestTrackerV6
+	trigger   string
 }
 
-func (t *testPiholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
+func (t *testPiholeClientV6) listRecords(_ context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	out := make([]*endpoint.Endpoint, 0)
+	if t.trigger == "AERROR" {
+		return nil, errors.New("AERROR")
+	}
+	if t.trigger == "AAAAERROR" {
+		return nil, errors.New("AAAAERROR")
+	}
+	if t.trigger == "CNAMEERROR" {
+		return nil, errors.New("CNAMEERROR")
+	}
 	for _, ep := range t.endpoints {
 		if ep.RecordType == rtype {
 			out = append(out, ep)
@@ -40,13 +51,13 @@ func (t *testPiholeClientV6) listRecords(ctx context.Context, rtype string) ([]*
 	return out, nil
 }
 
-func (t *testPiholeClientV6) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClientV6) createRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	t.endpoints = append(t.endpoints, ep)
 	t.requests.createRequests = append(t.requests.createRequests, ep)
 	return nil
 }
 
-func (t *testPiholeClientV6) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+func (t *testPiholeClientV6) deleteRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	newEPs := make([]*endpoint.Endpoint, 0)
 	for _, existing := range t.endpoints {
 		if existing.DNSName != ep.DNSName && existing.Targets[0] != ep.Targets[0] {
@@ -66,6 +77,32 @@ type requestTrackerV6 struct {
 func (r *requestTrackerV6) clear() {
 	r.createRequests = nil
 	r.deleteRequests = nil
+}
+
+func TestErrorHandling(t *testing.T) {
+	requests := requestTrackerV6{}
+	p := &PiholeProvider{
+		api: &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+	}
+
+	p.api.(*testPiholeClientV6).trigger = "AERROR"
+	_, err := p.Records(context.Background())
+	if err.Error() != "AERROR" {
+		t.Fatal(err)
+	}
+
+	p.api.(*testPiholeClientV6).trigger = "AAAAERROR"
+	_, err = p.Records(context.Background())
+	if err.Error() != "AAAAERROR" {
+		t.Fatal(err)
+	}
+
+	p.api.(*testPiholeClientV6).trigger = "CNAMEERROR"
+	_, err = p.Records(context.Background())
+	if err.Error() != "CNAMEERROR" {
+		t.Fatal(err)
+	}
+
 }
 
 func TestNewPiholeProviderV6(t *testing.T) {
