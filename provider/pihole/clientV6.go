@@ -242,7 +242,7 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 		return nil
 	}
 
-	if ep.Targets == nil || len(ep.Targets) == 0 {
+	if len(ep.Targets) == 0 {
 		log.Infof("Skipping : missing targets  %s %s %s", action, ep.DNSName, ep.RecordType)
 		return nil
 	}
