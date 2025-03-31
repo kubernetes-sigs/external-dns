@@ -156,6 +156,7 @@ func main() {
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
 		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
 		TraefikDisableNew:              cfg.TraefikDisableNew,
+		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
 	}
 

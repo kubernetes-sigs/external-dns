@@ -131,6 +131,7 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		ExcludeUnschedulable:                          true,
 	}
 
 	overriddenConfig = &Config{
@@ -245,6 +246,7 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		ExcludeUnschedulable:                          false,
 	}
 )
 
@@ -383,6 +385,7 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
+				"--no-exclude-unschedulable",
 				"--rfc2136-batch-change-size=100",
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
@@ -501,6 +504,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
+				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
