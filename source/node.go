@@ -33,16 +33,19 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
+
 type nodeSource struct {
-	client           kubernetes.Interface
-	annotationFilter string
-	fqdnTemplate     *template.Template
-	nodeInformer     coreinformers.NodeInformer
-	labelSelector    labels.Selector
+	client             kubernetes.Interface
+	annotationFilter   string
+	fqdnTemplate       *template.Template
+	nodeInformer       coreinformers.NodeInformer
+	labelSelector      labels.Selector
+	exposeInternalIPV6 bool
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector) (Source, error) {
+func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6 bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -70,11 +73,12 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	}
 
 	return &nodeSource{
-		client:           kubeClient,
-		annotationFilter: annotationFilter,
-		fqdnTemplate:     tmpl,
-		nodeInformer:     nodeInformer,
-		labelSelector:    labelSelector,
+		client:             kubeClient,
+		annotationFilter:   annotationFilter,
+		fqdnTemplate:       tmpl,
+		nodeInformer:       nodeInformer,
+		labelSelector:      labelSelector,
+		exposeInternalIPV6: exposeInternalIPv6,
 	}, nil
 }
 
@@ -174,18 +178,23 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 		v1.NodeExternalIP: {},
 		v1.NodeInternalIP: {},
 	}
-	var ipv6Addresses []string
+	var internalIpv6Addresses []string
 
 	for _, addr := range node.Status.Addresses {
-		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
-		// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+		// IPv6 InternalIP addresses have special handling.
+		// Refer to https://github.com/kubernetes-sigs/external-dns/pull/5192 for more details.
 		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
-			ipv6Addresses = append(ipv6Addresses, addr.Address)
+			internalIpv6Addresses = append(internalIpv6Addresses, addr.Address)
 		}
+		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
-		return append(addresses[v1.NodeExternalIP], ipv6Addresses...), nil
+		if ns.exposeInternalIPV6 {
+			log.Warn(warningMsg)
+			return append(addresses[v1.NodeExternalIP], internalIpv6Addresses...), nil
+		}
+		return addresses[v1.NodeExternalIP], nil
 	}
 
 	if len(addresses[v1.NodeInternalIP]) > 0 {
