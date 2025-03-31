@@ -791,7 +791,6 @@ func getEndpointCustomHostnames(endpoint *endpoint.Endpoint) []string {
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == source.CloudflareCustomHostnameKey {
 			customHostnames := strings.Split(v.Value, ",")
-			sort.Strings(customHostnames)
 			return customHostnames
 		}
 	}
