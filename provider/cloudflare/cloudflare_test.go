@@ -405,16 +405,6 @@ func getCustomHostnameIdxByID(chs []cloudflare.CustomHostname, customHostnameID 
 	return -1
 }
 
-func getCustomHostnameIDbyCustomHostnameAndOrigin(chs CustomHostnamesMap, customHostname string, origin string) (string, string) {
-	for _, ch := range chs {
-		if ch.Hostname == customHostname && ch.CustomOriginServer == origin {
-			return ch.ID, ch.Hostname
-
-		}
-	}
-	return "", ""
-}
-
 func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...interface{}) {
 	t.Helper()
 
@@ -1801,7 +1791,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			Name: "failing to list DNS record",
+			Name: "adding failing to list DNS record",
 			Endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "newerror-list-1.foo.bar.com",
@@ -1811,6 +1801,11 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 					Labels:     endpoint.Labels{},
 				},
 			},
+			shouldFail: false,
+		},
+		{
+			Name:       "causing to list failing to list DNS record",
+			Endpoints:  []*endpoint.Endpoint{},
 			shouldFail: true,
 		},
 		{
@@ -1860,28 +1855,29 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 	}
 
 	for _, tc := range testFailCases {
-		records, err := provider.Records(ctx)
-		if err != nil {
-			t.Errorf("should not fail, %s", err)
+		var tcErr error
+
+		if records, err := provider.Records(ctx); err != nil {
+			tcErr = err
+		} else {
+			if endpoints, err := provider.AdjustEndpoints(tc.Endpoints); err != nil {
+				tcErr = err
+			} else {
+				plan := &plan.Plan{
+					Current:        records,
+					Desired:        endpoints,
+					DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+					ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+				}
+
+				planned := plan.Calculate()
+				tcErr = provider.ApplyChanges(context.Background(), planned.Changes)
+			}
 		}
-
-		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
-
-		assert.NoError(t, err)
-		plan := &plan.Plan{
-			Current:        records,
-			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-		}
-
-		planned := plan.Calculate()
-
-		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err == nil && tc.shouldFail {
-			t.Errorf("should fail - %q, %v", tc.Name, err)
-		} else if err != nil && !tc.shouldFail {
-			t.Errorf("should not fail - %q, %v", tc.Name, err)
+		if tcErr == nil && tc.shouldFail {
+			t.Errorf("should fail - %q, %v", tc.Name, tcErr)
+		} else if tcErr != nil && !tc.shouldFail {
+			t.Errorf("should not fail - %q, %v", tc.Name, tcErr)
 		}
 	}
 }
@@ -1896,10 +1892,9 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 
 	testFailCases := []struct {
-		Name                    string
-		Endpoints               []*endpoint.Endpoint
-		ExpectedCustomHostnames map[string]string
-		shouldFail              bool
+		Name       string
+		Endpoints  []*endpoint.Endpoint
+		shouldFail bool
 	}{
 		{
 			Name: "failing to create custom hostname on record creation",
@@ -1921,7 +1916,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			Name: "custom hostname to the same origin",
+			Name: "same custom hostname to the same origin",
 			Endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "origin.foo.bar.com",
@@ -1936,12 +1931,6 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 						},
 					},
 				},
-			},
-			shouldFail: false,
-		},
-		{
-			Name: "same custom hostname to the another origin",
-			Endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "another-origin.foo.bar.com",
 					Targets:    endpoint.Targets{"3.4.5.6"},
@@ -2034,6 +2023,11 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					},
 				},
 			},
+			shouldFail: false,
+		},
+		{
+			Name:       "causing to list failing to list custom hostname",
+			Endpoints:  []*endpoint.Endpoint{},
 			shouldFail: true,
 		},
 		{
@@ -2148,9 +2142,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 				},
 			},
-			ExpectedCustomHostnames: map[string]string{
-				"nocustomhostname.foo.bar.com": "",
-			},
+			ExpectedCustomHostnames: map[string]string{},
 		},
 		{
 			Name: "add custom hostname",
@@ -2183,8 +2175,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 				},
 			},
 			ExpectedCustomHostnames: map[string]string{
-				"a.foo.bar.com":   "a.foo.fancybar.com",
-				"txt.foo.bar.com": "",
+				"a.foo.fancybar.com": "a.foo.bar.com",
 			},
 		},
 		{
@@ -2205,13 +2196,79 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 				},
 			},
 			ExpectedCustomHostnames: map[string]string{
-				"a.foo.bar.com": "a2.foo.fancybar.com",
+				"a2.foo.fancybar.com": "a.foo.bar.com",
 			},
 		},
 		{
-			Name: "delete custom hostname",
+			Name: "add another unsorted custom hostnames",
 			Endpoints: []*endpoint.Endpoint{
-
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a3.foo.fancybar.com,a4.foo.fancybar.com,a2.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			ExpectedCustomHostnames: map[string]string{
+				"a2.foo.fancybar.com": "a.foo.bar.com",
+				"a3.foo.fancybar.com": "a.foo.bar.com",
+				"a4.foo.fancybar.com": "a.foo.bar.com",
+			},
+		},
+		{
+			Name: "rename custom hostnames",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a3.foo.fancybar.com,a44.foo.fancybar.com,a22.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			ExpectedCustomHostnames: map[string]string{
+				"a22.foo.fancybar.com": "a.foo.bar.com",
+				"a3.foo.fancybar.com":  "a.foo.bar.com",
+				"a44.foo.fancybar.com": "a.foo.bar.com",
+			},
+		},
+		{
+			Name: "remove some custom hostnames",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a3.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			ExpectedCustomHostnames: map[string]string{
+				"a3.foo.fancybar.com": "a.foo.bar.com",
+			},
+		},
+		{
+			Name: "delete custom hostnames",
+			Endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
@@ -2220,35 +2277,33 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 				},
 			},
-			ExpectedCustomHostnames: map[string]string{
-				"a.foo.bar.com": "",
-			},
+			ExpectedCustomHostnames: map[string]string{},
 		},
 	}
 
 	for _, tc := range testFailCases {
-		records, err := provider.Records(ctx)
-		if err != nil {
-			t.Errorf("should not fail, %v", err)
+		var tcErr error
+
+		if records, err := provider.Records(ctx); err != nil {
+			tcErr = err
+		} else {
+			if endpoints, err := provider.AdjustEndpoints(tc.Endpoints); err != nil {
+				tcErr = err
+			} else {
+				plan := &plan.Plan{
+					Current:        records,
+					Desired:        endpoints,
+					DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+					ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
+				}
+				planned := plan.Calculate()
+				tcErr = provider.ApplyChanges(context.Background(), planned.Changes)
+			}
 		}
-
-		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
-
-		assert.NoError(t, err)
-		plan := &plan.Plan{
-			Current:        records,
-			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
-		}
-
-		planned := plan.Calculate()
-
-		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err == nil && tc.shouldFail {
-			t.Errorf("should fail - %q, %v", tc.Name, err)
-		} else if err != nil && !tc.shouldFail {
-			t.Errorf("should not fail - %q, %v", tc.Name, err)
+		if tcErr == nil && tc.shouldFail {
+			t.Errorf("should fail - %q, %v", tc.Name, tcErr)
+		} else if tcErr != nil && !tc.shouldFail {
+			t.Errorf("should not fail - %q, %v", tc.Name, tcErr)
 		}
 	}
 
@@ -2280,9 +2335,131 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 			t.Errorf("should not fail - %q, %v", tc.Name, chErr)
 		}
 
-		for expectedOrigin, expectedCustomHostname := range tc.ExpectedCustomHostnames {
-			_, ch := getCustomHostnameIDbyCustomHostnameAndOrigin(chs, expectedCustomHostname, expectedOrigin)
-			assert.Equal(t, expectedCustomHostname, ch)
+		actualCustomHostnames := map[string]string{}
+		for _, ch := range chs {
+			actualCustomHostnames[ch.Hostname] = ch.CustomOriginServer
+		}
+		assert.Equal(t, tc.ExpectedCustomHostnames, actualCustomHostnames, "custom hostnames should be the same")
+	}
+}
+
+func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client:                client,
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: false},
+	}
+	ctx := context.Background()
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
+
+	testCases := []struct {
+		Name        string
+		Endpoints   []*endpoint.Endpoint
+		testChanges bool
+	}{
+		{
+			Name: "add custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.11"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a.foo.fancybar.com",
+						},
+					},
+				},
+				{
+					DNSName:    "b.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.12"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+				},
+				{
+					DNSName:    "c.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.13"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c1.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			testChanges: false,
+		},
+		{
+			Name: "add custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.11"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+				},
+				{
+					DNSName:    "b.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.12"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "b.foo.fancybar.com",
+						},
+					},
+				},
+				{
+					DNSName:    "c.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.13"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c2.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			testChanges: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		records, err := provider.Records(ctx)
+		if err != nil {
+			t.Errorf("should not fail, %v", err)
+		}
+
+		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
+
+		assert.NoError(t, err)
+		plan := &plan.Plan{
+			Current:        records,
+			Desired:        endpoints,
+			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		}
+
+		planned := plan.Calculate()
+		err = provider.ApplyChanges(context.Background(), planned.Changes)
+		if err != nil {
+			t.Errorf("should not fail - %q, %v", tc.Name, err)
+		}
+		if tc.testChanges {
+			assert.Equal(t, planned.Changes.HasChanges(), false, "no new changes should be here")
 		}
 	}
 }
