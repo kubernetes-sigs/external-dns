@@ -348,16 +348,16 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	// if custom hostnames are enabled, deleting first allows to avoid conflicts with the new ones
 	if p.CustomHostnamesConfig.Enabled {
-		for _, endpoint := range changes.Delete {
-			for _, target := range endpoint.Targets {
-				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target, nil))
+		for _, e := range changes.Delete {
+			for _, target := range e.Targets {
+				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, e, target, nil))
 			}
 		}
 	}
 
-	for _, endpoint := range changes.Create {
-		for _, target := range endpoint.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target, nil))
+	for _, e := range changes.Create {
+		for _, target := range e.Targets {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, e, target, nil))
 		}
 	}
 
@@ -381,9 +381,9 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	// TODO: consider deleting before creating even if custom hostnames are not in use
 	if !p.CustomHostnamesConfig.Enabled {
-		for _, endpoint := range changes.Delete {
-			for _, target := range endpoint.Targets {
-				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target, nil))
+		for _, e := range changes.Delete {
+			for _, target := range e.Targets {
+				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, e, target, nil))
 			}
 		}
 	}
@@ -642,12 +642,12 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 	}
 }
 
-func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
+func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
 	ttl := defaultCloudFlareRecordTTL
-	proxied := shouldBeProxied(endpoint, p.proxiedByDefault)
+	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
-	if endpoint.RecordTTL.IsConfigured() {
-		ttl = int(endpoint.RecordTTL)
+	if ep.RecordTTL.IsConfigured() {
+		ttl = int(ep.RecordTTL)
 	}
 	dt := time.Now()
 
@@ -657,26 +657,26 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 		if current != nil {
 			prevCustomHostnames = getEndpointCustomHostnames(current)
 		}
-		for _, v := range getEndpointCustomHostnames(endpoint) {
-			newCustomHostnames[v] = p.newCustomHostname(v, endpoint.DNSName)
+		for _, v := range getEndpointCustomHostnames(ep) {
+			newCustomHostnames[v] = p.newCustomHostname(v, ep.DNSName)
 		}
 	}
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
-			Name: endpoint.DNSName,
+			Name: ep.DNSName,
 			TTL:  ttl,
 			// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 			// see: https://github.com/cloudflare/cloudflare-go/pull/595
 			Proxied: &proxied,
-			Type:    endpoint.RecordType,
+			Type:    ep.RecordType,
 			Content: target,
 			Meta: map[string]interface{}{
 				"region": p.RegionKey,
 			},
 		},
 		RegionalHostname: cloudflare.RegionalHostname{
-			Hostname:  endpoint.DNSName,
+			Hostname:  ep.DNSName,
 			RegionKey: p.RegionKey,
 			CreatedOn: &dt,
 		},
@@ -766,10 +766,10 @@ func getCustomHostnamesSSLOptions(customHostnamesConfig CustomHostnamesConfig) *
 	}
 }
 
-func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
+func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
-	for _, v := range endpoint.ProviderSpecific {
+	for _, v := range ep.ProviderSpecific {
 		if v.Name == source.CloudflareProxiedKey {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
@@ -781,14 +781,14 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		}
 	}
 
-	if recordTypeProxyNotSupported[endpoint.RecordType] {
+	if recordTypeProxyNotSupported[ep.RecordType] {
 		proxied = false
 	}
 	return proxied
 }
 
-func getEndpointCustomHostnames(endpoint *endpoint.Endpoint) []string {
-	for _, v := range endpoint.ProviderSpecific {
+func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
+	for _, v := range ep.ProviderSpecific {
 		if v.Name == source.CloudflareCustomHostnameKey {
 			customHostnames := strings.Split(v.Value, ",")
 			return customHostnames
@@ -832,7 +832,7 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		for i, record := range records {
 			targets[i] = record.Content
 		}
-		ep := endpoint.NewEndpointWithTTL(
+		e := endpoint.NewEndpointWithTTL(
 			records[0].Name,
 			records[0].Type,
 			endpoint.TTL(records[0].TTL),
@@ -841,17 +841,17 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		if records[0].Proxied != nil {
 			proxied = *records[0].Proxied
 		}
-		if ep == nil {
+		if e == nil {
 			continue
 		}
-		ep = ep.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e = e.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
 		// noop (customHostnames is empty) if custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
-			ep = ep.WithProviderSpecific(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+			e = e.WithProviderSpecific(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
 		}
 
-		endpoints = append(endpoints, ep)
+		endpoints = append(endpoints, e)
 	}
 
 	return endpoints
