@@ -19,9 +19,11 @@ package pihole
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -89,7 +91,7 @@ func TestNewPiholeClientV6(t *testing.T) {
 				"validity": 1800,
 				"message": "password correct"
 			},
-			"took": 0.23066902160644531
+			"took": 0.18
 		}`))
 		} else {
 			http.NotFound(w, r)
@@ -121,10 +123,8 @@ func TestListRecordsV6(t *testing.T) {
 	// Create a test server
 	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/config/dns/hosts" && r.Method == "GET" {
-			var requestData map[string]string
-			json.NewDecoder(r.Body).Decode(&requestData)
-			defer r.Body.Close()
 
+			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
 
 			// Return A records
@@ -143,12 +143,9 @@ func TestListRecordsV6(t *testing.T) {
 				},
 				"took": 5
 			}`))
-			w.WriteHeader(http.StatusOK)
 		} else if r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == "GET" {
-			var requestData map[string]string
-			json.NewDecoder(r.Body).Decode(&requestData)
-			defer r.Body.Close()
 
+			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
 
 			// Return A records
@@ -164,7 +161,6 @@ func TestListRecordsV6(t *testing.T) {
 				},
 				"took": 5
 			}`))
-			w.WriteHeader(http.StatusOK)
 		} else {
 			http.NotFound(w, r)
 		}
@@ -258,6 +254,394 @@ func TestListRecordsV6(t *testing.T) {
 
 	// Note: filtered tests are not needed since A/AAAA records are tested filtered already
 	// and cnameRecords have their own element
+
+	// unsupported type
+	_, err = cl.listRecords(context.Background(), endpoint.RecordTypeNAPTR)
+	if err == nil || err.Error() != fmt.Sprintf("unsupported record type: %s", endpoint.RecordTypeNAPTR) {
+		t.Fatal("Expected error for using unsupported record type")
+	}
+}
+func TestErrorsV6(t *testing.T) {
+	//Error test cases
+
+	// Create a client
+	cfgErrURL := PiholeConfig{
+		Server:     "not an url",
+		APIVersion: "6",
+	}
+	clErrURL, _ := newPiholeClientV6(cfgErrURL)
+
+	_, err := clErrURL.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	if err == nil {
+		t.Fatal("Expected error for using invalid URL")
+	}
+	_, err = clErrURL.listRecords(nil, endpoint.RecordTypeCNAME)
+	if err == nil {
+		t.Fatal("Expected error for nil context")
+	}
+	// Unmarshalling error
+	srvrErrJson := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+
+		// Return A records
+		w.Write([]byte(`I am not JSON`))
+	})
+	defer srvrErrJson.Close()
+	// Create a client
+	cfgErr := PiholeConfig{
+		Server:     srvrErrJson.URL,
+		APIVersion: "6",
+	}
+	clErr, _ := newPiholeClientV6(cfgErr)
+
+	resp, err := clErr.listRecords(context.Background(), endpoint.RecordTypeA)
+	if err == nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "failed to unmarshal error response:") {
+		t.Fatal("Expected unmarshalling error, got:", err)
+	}
+
+	// bad record format return by server
+	srvrErr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/config/dns/hosts" && r.Method == "GET" {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"hosts": [
+							"192.168.178.33"
+						]
+					}
+				},
+				"took": 5
+			}`))
+		} else if r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == "GET" {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"cnameRecords": [
+							"source1.example.com,target1.domain.com,100",
+							"source2.example.com,target2.domain.com,not_an_integer"
+						]
+					}
+				},
+				"took": 5
+			}`))
+		} else {
+			http.NotFound(w, r)
+		}
+	})
+	defer srvrErr.Close()
+
+	// Create a client
+	cfgErr = PiholeConfig{
+		Server:     srvrErr.URL,
+		APIVersion: "6",
+	}
+	clErr, _ = newPiholeClientV6(cfgErr)
+
+	resp, err = clErr.listRecords(context.Background(), endpoint.RecordTypeA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) != 0 {
+		t.Fatal("Expected no records returned, got:", len(resp))
+	}
+	resp, err = clErr.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) != 2 {
+		t.Fatal("Expected one records returned, got:", len(resp))
+	}
+	if resp[1].RecordTTL != 0 {
+		t.Fatal("Expected no TTL returned, got:", resp[0].RecordTTL)
+	}
+
+}
+
+func TestTokenValidity(t *testing.T) {
+	srvok := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/auth" && r.Method == "GET" {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "supersecret",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.17
+			}`))
+		}
+	})
+	// Create a client
+	cfgOK := PiholeConfig{
+		Server:     srvok.URL,
+		APIVersion: "6",
+	}
+	clOK, err := newPiholeClientV6(cfgOK)
+	clOK.(*piholeClientV6).token = "valid"
+	validity, err := clOK.(*piholeClientV6).checkTokenValidity(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !validity {
+		t.Fatal("Should be valid")
+	}
+
+	// Create a test server
+	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+
+		if r.URL.Path == "/api/auth" && r.Method == "GET" {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return bad content
+			w.Write([]byte(`Not a JSON`))
+		}
+	})
+	defer srvr.Close()
+	//
+	// Create a client
+	cfg := PiholeConfig{
+		Server:     srvr.URL,
+		APIVersion: "6",
+	}
+	cl, err := newPiholeClientV6(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	validity, err = cl.(*piholeClientV6).checkTokenValidity(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if validity {
+		t.Fatal("Should be invalid : no token")
+	}
+	// Test token validity
+	cl.(*piholeClientV6).token = "valid"
+
+	validity, err = cl.(*piholeClientV6).checkTokenValidity(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if validity {
+		t.Fatal("Should be invalid : nil context")
+	}
+
+	validity, err = cl.(*piholeClientV6).checkTokenValidity(context.Background())
+	if err == nil {
+		t.Fatal("Should be invalid : failed to unmarshal error")
+	}
+	if !strings.HasPrefix(err.Error(), "failed to unmarshal error response") {
+		t.Fatal("Expected unmarshalling error, got:", err)
+	}
+	if validity {
+		t.Fatal("Should be invalid : unmarshalling error")
+	}
+}
+
+func TestDo(t *testing.T) {
+
+	srvDo := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/auth/ok" && r.Method == "GET" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "supersecret",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.16
+			}`))
+		} else if r.URL.Path == "/api/auth" && r.Method == "POST" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": false,
+				"totp": false,
+				"sid": "",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.15
+			}`))
+		} else if r.URL.Path == "/api/auth" && r.Method == "GET" {
+			w.WriteHeader(http.StatusUnauthorized)
+			// Return bad content
+			w.Write([]byte(`{
+			"error": {
+				"key": "401",
+				"message": "Expired token",
+				"hint": "Expired token"
+			},
+			"took": 0.14
+			}`))
+		} else if r.URL.Path == "/api/auth/418" && r.Method == "GET" {
+			w.WriteHeader(http.StatusTeapot)
+			// Return bad content
+			w.Write([]byte(`{
+			"error": {
+				"key": "418",
+				"message": "I'm a teapot",
+				"hint": "It is a teapot"
+			},
+			"took": 0.13
+			}`))
+		} else if r.URL.Path == "/api/auth/nojson" && r.Method == "GET" {
+			// Return bad content
+			w.WriteHeader(http.StatusTeapot)
+			w.Write([]byte(`Not a JSON`))
+		} else if r.URL.Path == "/api/auth/401" && r.Method == "GET" {
+			w.WriteHeader(http.StatusUnauthorized)
+			// Return bad content
+			w.Write([]byte(`{
+			"error": {
+				"key": "401",
+				"message": "Expired token",
+				"hint": "Expired token"
+			},
+			"took": 0.10
+			}`))
+		}
+	})
+	defer srvDo.Close()
+
+	// Create a client
+	cfg := PiholeConfig{
+		Server:     srvDo.URL,
+		APIVersion: "6",
+	}
+	cl, err := newPiholeClientV6(cfg)
+	cl.(*piholeClientV6).token = "valid"
+
+	rq, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/ok", nil)
+	resp, err := cl.(*piholeClientV6).do(rq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) == 0 {
+		t.Fatal("Should have a response")
+	}
+	// Test not handled error code
+	rq, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/418", nil)
+	resp, err = cl.(*piholeClientV6).do(rq)
+	if resp != nil {
+		t.Fatal(err)
+	}
+	if err == nil {
+		t.Fatal("Should have an error")
+	}
+	if !strings.HasPrefix(err.Error(), "received 418 status code from request") {
+		t.Fatal("Expected error for unexpected status code, got:", err)
+	}
+	// Test error on non JSON response
+	rq, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/nojson", nil)
+	resp, err = cl.(*piholeClientV6).do(rq)
+	if resp != nil {
+		t.Fatal(err)
+	}
+	if err == nil {
+		t.Fatal("Should have an error")
+	}
+	if !strings.HasPrefix(err.Error(), "failed to unmarshal error response") {
+		t.Fatal("Expected error for unmarshal", err)
+	}
+	// Test Unauthorized retry failed
+	rq, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, srvDo.URL+"/api/auth/401", nil)
+	resp, err = cl.(*piholeClientV6).do(rq)
+	if resp != nil {
+		t.Fatal(err)
+	}
+	if err == nil {
+		t.Fatal("Should have an error")
+	}
+	if !strings.HasPrefix(err.Error(), "max tries reached for token renewal") {
+		t.Fatal("Expected error for max tries reached", err)
+	}
+}
+
+func TestDoRetryOne(t *testing.T) {
+	nbCall := 0
+	srvRetry := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/auth" && r.Method == "GET" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "123465468",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.24
+			}`))
+		} else if r.URL.Path == "/api/auth/401" && r.Method == "GET" {
+			if nbCall == 0 {
+				w.WriteHeader(http.StatusUnauthorized)
+				// Return bad content
+				w.Write([]byte(`{
+				"error": {
+					"key": "401",
+					"message": "Expired token",
+					"hint": "Expired token"
+				},
+				"took": 0.25
+				}`))
+			} else {
+				w.WriteHeader(http.StatusOK)
+				// Return bad content
+				w.Write([]byte(`Success`))
+			}
+			nbCall += 1
+		}
+	})
+	defer srvRetry.Close()
+	// Create a client
+	cfgRetryOK := PiholeConfig{
+		Server:     srvRetry.URL,
+		APIVersion: "6",
+	}
+	clRetryOK, err := newPiholeClientV6(cfgRetryOK)
+	clRetryOK.(*piholeClientV6).token = "valid"
+	// Test Unauthorized refresh OK
+	rq, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, srvRetry.URL+"/api/auth/401", nil)
+	resp, err := clRetryOK.(*piholeClientV6).do(rq)
+	if err != nil {
+		t.Fatal("Should succeed", err)
+	}
+	if string(resp) != "Success" {
+		t.Fatal("Should have a response")
+	}
+
 }
 
 func TestCreateRecordV6(t *testing.T) {
@@ -278,8 +662,9 @@ func TestCreateRecordV6(t *testing.T) {
 
 	// Create a client
 	cfg := PiholeConfig{
-		Server:     srvr.URL,
-		APIVersion: "6",
+		Server:       srvr.URL,
+		APIVersion:   "6",
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 	cl, err := newPiholeClientV6(cfg)
 	if err != nil {
@@ -335,6 +720,60 @@ func TestCreateRecordV6(t *testing.T) {
 	}
 	if err := cl.createRecord(context.Background(), ep); err == nil {
 		t.Fatal(err)
+	}
+
+	// Skip not matching domain
+	ep = &endpoint.Endpoint{
+		DNSName:    "foo.bar.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	err = cl.createRecord(context.Background(), ep)
+	if err != nil {
+		t.Fatal("Should not return error on non filtered domain")
+	}
+
+	// Not supported type
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: "not a type",
+	}
+	err = cl.createRecord(context.Background(), ep)
+	if err != nil {
+		t.Fatal("Should not return error on unsupported type")
+	}
+
+	// Create a client
+	cfgDr := PiholeConfig{
+		Server:       srvr.URL,
+		APIVersion:   "6",
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		DryRun:       true,
+	}
+	clDr, err := newPiholeClientV6(cfgDr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Skip Dry Run
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	err = clDr.createRecord(context.Background(), ep)
+	if err != nil {
+		t.Fatal("Should not return error on dry run")
+	}
+	// skip missing targets
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{},
+		RecordType: endpoint.RecordTypeA,
+	}
+	err = clDr.createRecord(context.Background(), ep)
+	if err != nil {
+		t.Fatal("Should not return error on missing targets")
 	}
 }
 

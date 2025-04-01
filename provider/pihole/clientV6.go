@@ -328,10 +328,19 @@ func (p *piholeClientV6) checkTokenValidity(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, nil
 	}
-
-	jRes, err := p.do(req)
+	req.Header.Add("content-type", contentTypeJSON)
+	if p.token != "" {
+		req.Header.Add("X-FTL-SID", p.token)
+	}
+	res, err := p.httpClient.Do(req)
 	if err != nil {
-		return false, nil
+		return false, err
+	}
+
+	jRes, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		return false, err
 	}
 
 	// Parse JSON response
@@ -391,7 +400,7 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 			}
 			return p.do(req)
 		}
-		return nil, fmt.Errorf("received %s status code from request: [%s] %s (%s) - %fs", res.Status, apiError.Error.Key, apiError.Error.Message, apiError.Error.Hint, apiError.Took)
+		return nil, fmt.Errorf("received %d status code from request: [%s] %s (%s) - %fs", res.StatusCode, apiError.Error.Key, apiError.Error.Message, apiError.Error.Hint, apiError.Took)
 	}
 	return jRes, nil
 }
