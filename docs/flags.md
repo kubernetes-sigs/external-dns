@@ -17,6 +17,10 @@
 | `--cf-password=""` | The password to log into the cloud foundry API |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
+| `--nomad-address=""` | Nomad endpoint address, if empty it defaults to NOMAD_ADDR or http://127.0.0.1:4646 |
+| `--nomad-region=""` | Nomad region to use. If not provided, the default agent region is used |
+| `--nomad-token=NOMAD-TOKEN` | Nomad per-request ACL token |
+| `--nomad-wait-time=0s` | WaitTime limits how long a Watch will block. If not provided, the agent default values will be used |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
 | `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting |
