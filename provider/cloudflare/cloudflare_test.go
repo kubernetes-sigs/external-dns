@@ -1762,6 +1762,17 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 	}
 }
 
+// check if the error is expected
+func checkFailed(name string, err error, shouldFail bool) error {
+	if errors.Is(err, nil) && shouldFail {
+		return fmt.Errorf("should fail - %q", name)
+	}
+	if !errors.Is(err, nil) && !shouldFail {
+		return fmt.Errorf("should not fail - %q, %v", name, err)
+	}
+	return nil
+}
+
 func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 	client := NewMockCloudFlareClient()
 	provider := &CloudFlareProvider{
@@ -1855,29 +1866,25 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 	}
 
 	for _, tc := range testFailCases {
-		var tcErr error
+		var err error
+		var records, endpoints []*endpoint.Endpoint
 
-		if records, err := provider.Records(ctx); err != nil {
-			tcErr = err
-		} else {
-			if endpoints, err := provider.AdjustEndpoints(tc.Endpoints); err != nil {
-				tcErr = err
-			} else {
-				plan := &plan.Plan{
-					Current:        records,
-					Desired:        endpoints,
-					DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-					ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-				}
-
-				planned := plan.Calculate()
-				tcErr = provider.ApplyChanges(context.Background(), planned.Changes)
-			}
+		records, err = provider.Records(ctx)
+		if errors.Is(err, nil) {
+			endpoints, err = provider.AdjustEndpoints(tc.Endpoints)
 		}
-		if tcErr == nil && tc.shouldFail {
-			t.Errorf("should fail - %q, %v", tc.Name, tcErr)
-		} else if tcErr != nil && !tc.shouldFail {
-			t.Errorf("should not fail - %q, %v", tc.Name, tcErr)
+		if errors.Is(err, nil) {
+			plan := &plan.Plan{
+				Current:        records,
+				Desired:        endpoints,
+				DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			}
+			planned := plan.Calculate()
+			err = provider.ApplyChanges(context.Background(), planned.Changes)
+		}
+		if e := checkFailed(tc.Name, err, tc.shouldFail); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 	}
 }
@@ -2282,28 +2289,26 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 	}
 
 	for _, tc := range testFailCases {
-		var tcErr error
+		var err error
+		var records, endpoints []*endpoint.Endpoint
 
-		if records, err := provider.Records(ctx); err != nil {
-			tcErr = err
-		} else {
-			if endpoints, err := provider.AdjustEndpoints(tc.Endpoints); err != nil {
-				tcErr = err
-			} else {
-				plan := &plan.Plan{
-					Current:        records,
-					Desired:        endpoints,
-					DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-					ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
-				}
-				planned := plan.Calculate()
-				tcErr = provider.ApplyChanges(context.Background(), planned.Changes)
-			}
+		records, err = provider.Records(ctx)
+		if errors.Is(err, nil) {
+			endpoints, err = provider.AdjustEndpoints(tc.Endpoints)
 		}
-		if tcErr == nil && tc.shouldFail {
-			t.Errorf("should fail - %q, %v", tc.Name, tcErr)
-		} else if tcErr != nil && !tc.shouldFail {
-			t.Errorf("should not fail - %q, %v", tc.Name, tcErr)
+		if errors.Is(err, nil) {
+			plan := &plan.Plan{
+				Current:        records,
+				Desired:        endpoints,
+				DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
+			}
+			planned := plan.Calculate()
+			err = provider.ApplyChanges(context.Background(), planned.Changes)
+
+		}
+		if e := checkFailed(tc.Name, err, tc.shouldFail); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 	}
 
@@ -2326,13 +2331,13 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		planned := plan.Calculate()
 
 		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err != nil {
-			t.Errorf("should not fail - %q, %v", tc.Name, err)
+		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 
 		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, "001")
-		if chErr != nil {
-			t.Errorf("should not fail - %q, %v", tc.Name, chErr)
+		if e := checkFailed(tc.Name, chErr, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 
 		actualCustomHostnames := map[string]string{}
@@ -2452,11 +2457,10 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
 			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
-
 		planned := plan.Calculate()
 		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err != nil {
-			t.Errorf("should not fail - %q, %v", tc.Name, err)
+		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 		if tc.testChanges {
 			assert.Equal(t, planned.Changes.HasChanges(), false, "no new changes should be here")
@@ -2558,11 +2562,11 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 		// manually corrupt custom hostname before the deletion step
 		// the purpose is to cause getCustomHostnameOrigin() to fail on change.Action == cloudFlareDelete
 		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, zoneID)
-		if chErr != nil {
-			t.Errorf("should not fail - %q, %v", tc.Name, chErr)
+		if e := checkFailed(tc.Name, chErr, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 		if tc.preApplyHook == "corrupt" {
-			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); err == nil {
+			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
 				chID := ch.ID
 				t.Logf("corrupting custom hostname %q", chID)
 				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
@@ -2575,7 +2579,6 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 				client.customHostnames[zoneID][oldIdx] = ch
 			}
 		} else if tc.preApplyHook == "duplicate" { // manually inject duplicating custom hostname with the same name and origin
-
 			ch := cloudflare.CustomHostname{
 				ID:                 "ID-random-123",
 				Hostname:           "a.foo.fancybar.com",
@@ -2584,8 +2587,8 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			client.customHostnames[zoneID] = append(client.customHostnames[zoneID], ch)
 		}
 		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err != nil {
-			t.Errorf("should not fail - %q, %v", tc.Name, err)
+		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 		assert.Contains(t, b.String(), tc.logOutput)
 	}
