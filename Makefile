@@ -198,3 +198,8 @@ helm-test:
 #? helm-template: Run helm template
 helm-template:
 	scripts/helm-tools.sh --helm-template
+
+#? helm-lint: Run helm linting (schema,docs)
+helm-lint:
+	scripts/helm-tools.sh --schema
+	scripts/helm-tools.sh --docs
