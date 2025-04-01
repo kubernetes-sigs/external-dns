@@ -73,6 +73,7 @@ The image to use
 
 {{/*
 Provider name, Keeps backward compatibility on provider
+TODO: line eq (typeOf .Values.provider) "string" to be removed in future releases
 */}}
 {{- define "external-dns.providerName" -}}
 {{- if eq (typeOf .Values.provider) "string" }}

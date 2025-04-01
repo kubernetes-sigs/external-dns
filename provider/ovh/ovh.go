@@ -129,7 +129,7 @@ func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, end
 		return nil, err
 	}
 
-	client.UserAgent = "ExternalDNS/" + externaldns.Version
+	client.UserAgent = externaldns.UserAgent()
 
 	return &OVHProvider{
 		client:                    client,

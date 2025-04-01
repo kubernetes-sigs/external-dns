@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package externaldns
 
 import (
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"testing"
 
-	"sigs.k8s.io/external-dns/controller"
+	"github.com/stretchr/testify/assert"
 )
 
-func main() {
-	controller.Execute()
+func TestBanner(t *testing.T) {
+	// Set variables to known values
+	Version = "1.0.0"
+	goVersion = "go1.17"
+	GitCommit = "49a0c57c7"
+
+	want := Banner()
+	assert.Contains(t, want, "GoVersion=go1.17")
+	assert.Contains(t, want, "GitCommitShort=49a0c57c7")
+	assert.Contains(t, want, "UserAgent=ExternalDNS/1.0.0")
 }

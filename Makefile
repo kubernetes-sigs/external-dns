@@ -88,8 +88,10 @@ IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
 IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
+GIT_COMMIT    ?= $(shell git rev-parse --short HEAD)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
+LDFLAGS       += -X sigs.k8s.io/external-dns/pkg/apis/externaldns.GitCommit=$(GIT_COMMIT)
 ARCH          ?= amd64
 SHELL          = /bin/bash
 IMG_PLATFORM  ?= linux/amd64,linux/arm64,linux/arm/v7
@@ -196,3 +198,8 @@ helm-test:
 #? helm-template: Run helm template
 helm-template:
 	scripts/helm-tools.sh --helm-template
+
+#? helm-lint: Run helm linting (schema,docs)
+helm-lint:
+	scripts/helm-tools.sh --schema
+	scripts/helm-tools.sh --docs

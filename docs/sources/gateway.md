@@ -1,6 +1,6 @@
 # Gateway sources
 
-The gateway-grcproute, gateway-httproute, gateway-tcproute, gateway-tlsroute, and gateway-udproute
+The gateway-grpcroute, gateway-httproute, gateway-tcproute, gateway-tlsroute, and gateway-udproute
 sources create DNS entries based on their respective `gateway.networking.k8s.io` resources.
 
 ## Filtering the Routes considered
