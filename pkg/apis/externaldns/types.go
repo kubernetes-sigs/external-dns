@@ -30,8 +30,6 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
-
-	"sigs.k8s.io/external-dns/source"
 )
 
 const (
@@ -58,6 +56,7 @@ type Config struct {
 	IgnoreIngressTLSSpec                          bool
 	IgnoreIngressRulesSpec                        bool
 	ListenEndpointEvents                          bool
+	ExposeInternalIPV6                            bool
 	GatewayName                                   string
 	GatewayNamespace                              string
 	GatewayLabelFilter                            string
@@ -238,6 +237,7 @@ var defaultConfig = &Config{
 	Compatibility:                          "",
 	PublishInternal:                        false,
 	PublishHostIP:                          false,
+	ExposeInternalIPV6:                     true,
 	ConnectorSourceServer:                  "localhost:8080",
 	Provider:                               "",
 	ProviderCacheTime:                      0,
@@ -446,7 +446,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)").Default("gloo-system").StringsVar(&cfg.GlooNamespaces)
 
 	// Flags related to Skipper RouteGroup
-	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
+	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(defaultConfig.SkipperRouteGroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing source
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy")
@@ -481,6 +481,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)
+	app.Flag("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional). Default is true.").BoolVar(&cfg.ExposeInternalIPV6)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
