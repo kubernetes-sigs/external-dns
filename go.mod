@@ -68,7 +68,7 @@ require (
 	golang.org/x/text v0.23.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.228.0
-	gopkg.in/ns1/ns1-go.v2 v2.13.0
+	gopkg.in/ns1/ns1-go.v2 v2.14.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v1.25.1
