@@ -277,6 +277,72 @@ func TestListRecords(t *testing.T) {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
 	}
+
+	// Test errors token
+	srvrErr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		pw := r.Form.Get("pw")
+		if pw != "" {
+			if pw != "correct" {
+				// Pihole actually server side renders the fact that you failed, normal 200
+				w.Write([]byte("Invalid"))
+				return
+			}
+		}
+		if strings.Contains(r.URL.Path, "admin/scripts/pi-hole/php/customcname.php") && r.Form.Get("token") == "correct" {
+			w.Write([]byte(`
+				{
+					"nodata": [
+						["nodata", "no"]
+					]
+				}
+				`))
+			return
+		}
+		if strings.Contains(r.URL.Path, "admin/index.php?login") {
+			w.Write([]byte(`
+			<!doctype html>
+			<html lang="en">
+				<body>
+					<div id="token" hidden>supersecret</div>
+				</body>
+			</html>
+			`))
+		}
+		// Token Expired
+		w.Write([]byte(`
+		{
+			"auth": "expired"
+		}
+		`))
+	})
+	defer srvrErr.Close()
+	cfgExpired := PiholeConfig{
+		Server: srvrErr.URL,
+	}
+	clExpired, err := newPiholeClient(cfgExpired)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//set clExpired.token to a valid token
+	clExpired.(*piholeClient).token = "expired"
+	clExpired.(*piholeClient).cfg.Password = "notcorrect"
+
+	cnamerecs, err = clExpired.listRecords(context.Background(), "notarealrecordtype")
+	if err == nil {
+		t.Fatal("Should return error, type is unknown ! ")
+	}
+	cnamerecs, err = clExpired.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	if err == nil {
+		t.Fatal("Should return error on failed auth ! ")
+	}
+	clExpired.(*piholeClient).token = "correct"
+	clExpired.(*piholeClient).cfg.Password = "correct"
+	cnamerecs, err = clExpired.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	if len(cnamerecs) != 0 {
+		t.Fatal("Should return empty on missing data in response ! ")
+	}
+
 }
 
 func TestCreateRecord(t *testing.T) {
@@ -317,7 +383,8 @@ func TestCreateRecord(t *testing.T) {
 
 	// Create a client
 	cfg := PiholeConfig{
-		Server: srvr.URL,
+		Server:       srvr.URL,
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 	cl, err := newPiholeClient(cfg)
 	if err != nil {
@@ -360,9 +427,51 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
+	cl.(*piholeClient).token = "correct"
 	if err := cl.createRecord(context.Background(), ep); err == nil {
 		t.Fatal(err)
 	}
+
+	// Skip not matching domain
+	ep = &endpoint.Endpoint{
+		DNSName:    "foo.bar.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal("Should not return error on non filtered domain")
+	}
+
+	// Not supported type
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: "not a type",
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal("Should not return error on unsupported type")
+	}
+
+	// Create a client
+	cfgDr := PiholeConfig{
+		Server:       srvr.URL,
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		DryRun:       true,
+	}
+	clDr, err := newPiholeClient(cfgDr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Skip Dry Run
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.1"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := clDr.createRecord(context.Background(), ep); err != nil {
+		t.Fatal("Should not return error on dry run")
+	}
+
 }
 
 func TestDeleteRecord(t *testing.T) {

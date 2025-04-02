@@ -301,6 +301,7 @@ func Execute() {
 				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
 				DomainFilter:          domainFilter,
 				DryRun:                cfg.DryRun,
+				APIVersion:            cfg.PiholeApiVersion,
 			},
 		)
 	case "ibmcloud":

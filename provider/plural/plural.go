@@ -48,7 +48,7 @@ func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 	endpoint := os.Getenv("PLURAL_ENDPOINT")
 
 	if token == "" {
-		return nil, fmt.Errorf("No plural access token provided, you must set the PLURAL_ACCESS_TOKEN env var")
+		return nil, fmt.Errorf("no plural access token provided, you must set the PLURAL_ACCESS_TOKEN env var")
 	}
 
 	config := &Config{

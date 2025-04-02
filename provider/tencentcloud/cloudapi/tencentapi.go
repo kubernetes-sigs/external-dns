@@ -238,13 +238,14 @@ func (api *defaultTencentAPIService) ModifyRecord(request *dnspod.ModifyRecordRe
 func dealWithError(action Action, request string, err error) bool {
 	log.Errorf("dealWithError %s/%s request: %s, error: %s.", action.Service, action.Name, request, err.Error())
 	if sdkError, ok := err.(*errors.TencentCloudSDKError); ok {
-		if sdkError.Code == "RequestLimitExceeded" {
+		switch sdkError.Code {
+		case "RequestLimitExceeded":
 			return true
-		} else if sdkError.Code == "InternalError" || sdkError.Code == "ClientError.HttpStatusCodeError" {
+		case "InternalError", "ClientError.HttpStatusCodeError":
 			return false
-		} else if sdkError.Code == "ClientError.NetworkError" {
+		case "ClientError.NetworkError":
 			return false
-		} else if sdkError.Code == "AuthFailure.UnauthorizedOperation" || sdkError.Code == "UnauthorizedOperation.CamNoAuth" {
+		case "AuthFailure.UnauthorizedOperation", "UnauthorizedOperation.CamNoAuth":
 			return false
 		}
 		return false

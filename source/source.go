@@ -127,7 +127,7 @@ func getInternalHostnamesFromAnnotations(annotations map[string]string) []string
 }
 
 func splitHostnameAnnotation(annotation string) []string {
-	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
+	return strings.Split(strings.ReplaceAll(annotation, " ", ""), ",")
 }
 
 func getProviderSpecificAnnotations(input map[string]string) (endpoint.ProviderSpecific, string) {

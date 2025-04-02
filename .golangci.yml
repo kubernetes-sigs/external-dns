@@ -1,69 +1,70 @@
-linters-settings:
-  exhaustive:
-    default-signifies-exhaustive: false
-  goimports:
-    local-prefixes: sigs.k8s.io/external-dns
-  misspell:
-    locale: US
-  revive:
-    ignore-generated-header: true
-    rules:
-      - name: confusing-naming
-        disabled: true
-
+version: "2"
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
-  disable-all: true
+  default: none
   enable:
     - dogsled
-    - gofmt
-    - goimports
     - goprintffuncname
     - govet
     - ineffassign
     - misspell
-    - rowserrcheck
-    - typecheck
-    - unconvert
-    - whitespace
     - revive
-    - unused
-    - gosimple
+    - rowserrcheck
     - staticcheck
-
-issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-files:
-    - endpoint/zz_generated.deepcopy.go
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - deadcode
-        - depguard
-        - dogsled
-        - gofmt
-        - goimports
-        - goprintffuncname
-        - gosimple
-        - govet
-        - ineffassign
-        - misspell
-        - nolintlint
-        - rowserrcheck
-        - staticcheck
-        - structcheck
-        - stylecheck
-        - typecheck
-        - unconvert
-        - unused
-        - varcheck
-        - whitespace
-    - path: source/ambassador_host.go
-      linters: [ typecheck ]
-    - path: source/contour_httpproxy.go
-      linters: [ typecheck ]
-    - path: source/f5_virtualserver.go
-      linters: [ typecheck ]
-    - path: source/kong_tcpingress.go
-      linters: [ typecheck ]
+    - unconvert
+    - unused
+    - whitespace
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: false
+    misspell:
+      locale: US
+    revive:
+      rules:
+        - name: confusing-naming
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - deadcode
+          - depguard
+          - dogsled
+          - goprintffuncname
+          - govet
+          - ineffassign
+          - misspell
+          - nolintlint
+          - rowserrcheck
+          - staticcheck
+          - structcheck
+          - unconvert
+          - unused
+          - varcheck
+          - whitespace
+        path: _test\.go
+    paths:
+      - endpoint/zz_generated.deepcopy.go
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - sigs.k8s.io/external-dns
+  exclusions:
+    generated: lax
+    paths:
+      - endpoint/zz_generated.deepcopy.go
+      - third_party$
+      - builtin$
+      - examples$
+      - _test\.go

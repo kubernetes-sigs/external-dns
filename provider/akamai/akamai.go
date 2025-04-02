@@ -321,11 +321,12 @@ func newAkamaiRecordset(dnsName, recordType string, ttl int, targets []string) d
 // cleanTargets preps recordset rdata if necessary for EdgeDNS
 func cleanTargets(rtype string, targets ...string) []string {
 	log.Debugf("Targets to clean: [%v]", targets)
-	if rtype == "CNAME" || rtype == "SRV" {
+	switch rtype {
+	case "CNAME", "SRV":
 		for idx, target := range targets {
 			targets[idx] = strings.TrimSuffix(target, ".")
 		}
-	} else if rtype == "TXT" {
+	case "TXT":
 		for idx, target := range targets {
 			log.Debugf("TXT data to clean: [%s]", target)
 			// need to embed text data in quotes. Make sure not piling on
@@ -359,7 +360,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 func ttlAsInt(src endpoint.TTL) int {
 	var temp interface{} = int64(src)
 	temp64 := temp.(int64)
-	var ttl int = edgeDNSRecordTTL
+	var ttl = edgeDNSRecordTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {
 		ttl = int(temp64)
 	}

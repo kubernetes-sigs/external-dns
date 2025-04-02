@@ -492,7 +492,7 @@ func (p *AlibabaCloudProvider) escapeTXTRecordValue(value string) string {
 
 func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 	if strings.HasPrefix(value, "heritage=") {
-		return fmt.Sprintf("\"%s\"", strings.Replace(value, ";", ",", -1))
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, ";", ","))
 	}
 	return value
 }
