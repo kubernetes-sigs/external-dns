@@ -80,25 +80,6 @@ func TestGetTTLFromAnnotations(t *testing.T) {
 	}
 }
 
-func TestSuitableType(t *testing.T) {
-	for _, tc := range []struct {
-		target, recordType, expected string
-	}{
-		{"8.8.8.8", "", "A"},
-		{"2001:db8::1", "", "AAAA"},
-		{"::ffff:c0a8:101", "", "AAAA"},
-		{"foo.example.org", "", "CNAME"},
-		{"bar.eu-central-1.elb.amazonaws.com", "", "CNAME"},
-	} {
-
-		recordType := suitableType(tc.target)
-
-		if recordType != tc.expected {
-			t.Errorf("expected %s, got %s", tc.expected, recordType)
-		}
-	}
-}
-
 func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 	for _, tc := range []struct {
 		title         string

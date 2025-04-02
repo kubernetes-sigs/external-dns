@@ -97,3 +97,21 @@ func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets
 	}
 	return targets
 }
+
+// getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
+// Returns empty endpoints array if none are found.
+func GetTargetsFromTargetAnnotation(input map[string]string) endpoint.Targets {
+	var targets endpoint.Targets
+
+	// Get the desired hostname of the ingress from the annotation.
+	targetAnnotation, ok := input[TargetKey]
+	if ok && targetAnnotation != "" {
+		// splits the hostname annotation and removes the trailing periods
+		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		for _, targetHostname := range targetsList {
+			targetHostname = strings.TrimSuffix(targetHostname, ".")
+			targets = append(targets, targetHostname)
+		}
+	}
+	return targets
+}

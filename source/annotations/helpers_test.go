@@ -187,3 +187,52 @@ func TestGetAliasFromAnnotations(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTargetsFromTargetAnnotation(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]string
+		expected endpoint.Targets
+	}{
+		{
+			name:     "no target annotation",
+			input:    map[string]string{},
+			expected: endpoint.Targets(nil),
+		},
+		{
+			name: "single target annotation",
+			input: map[string]string{
+				TargetKey: "example.com",
+			},
+			expected: endpoint.Targets{"example.com"},
+		},
+		{
+			name: "multiple target annotations",
+			input: map[string]string{
+				TargetKey: "example.com,example.org",
+			},
+			expected: endpoint.Targets{"example.com", "example.org"},
+		},
+		{
+			name: "target annotation with trailing periods",
+			input: map[string]string{
+				TargetKey: "example.com.,example.org.",
+			},
+			expected: endpoint.Targets{"example.com", "example.org"},
+		},
+		{
+			name: "target annotation with spaces",
+			input: map[string]string{
+				TargetKey: " example.com , example.org ",
+			},
+			expected: endpoint.Targets{"example.com", "example.org"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetTargetsFromTargetAnnotation(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

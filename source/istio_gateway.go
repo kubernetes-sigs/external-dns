@@ -37,7 +37,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/utils"
 )
 
 // IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
@@ -225,7 +224,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 }
 
 func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
-	namespace, name, err := utils.ParseIngress(ingressStr)
+	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}
@@ -259,7 +258,7 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 		return sc.targetsFromIngress(ctx, ingressStr, gateway)
 	}
 
-	targets, err := utils.EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	targets, err := EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
 
 	if err != nil {
 		return nil, err

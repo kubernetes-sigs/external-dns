@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/netip"
 	"reflect"
 	"strings"
 	"text/template"
@@ -34,7 +33,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/utils"
 )
 
 const (
@@ -139,36 +137,12 @@ func getProviderSpecificAnnotations(input map[string]string) (endpoint.ProviderS
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
 // Returns empty endpoints array if none are found.
 func getTargetsFromTargetAnnotation(input map[string]string) endpoint.Targets {
-	var targets endpoint.Targets
-
-	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, ok := input[targetAnnotationKey]
-	if ok && targetAnnotation != "" {
-		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
-		for _, targetHostname := range targetsList {
-			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			targets = append(targets, targetHostname)
-		}
-	}
-	return targets
-}
-
-// suitableType returns the DNS resource record type suitable for the target.
-// In this case type A/AAAA for IPs and type CNAME for everything else.
-func suitableType(target string) string {
-	netIP, err := netip.ParseAddr(target)
-	if err == nil && netIP.Is4() {
-		return endpoint.RecordTypeA
-	} else if err == nil && netIP.Is6() {
-		return endpoint.RecordTypeAAAA
-	}
-	return endpoint.RecordTypeCNAME
+	return annotations.GetTargetsFromTargetAnnotation(input)
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
 func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
-	return utils.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)
+	return EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)
 }
 
 func getLabelSelector(annotationFilter string) (labels.Selector, error) {
@@ -180,8 +154,7 @@ func getLabelSelector(annotationFilter string) (labels.Selector, error) {
 }
 
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
-	annotations := labels.Set(srcAnnotations)
-	return selector.Matches(annotations)
+	return selector.Matches(labels.Set(srcAnnotations))
 }
 
 type eventHandlerFunc func()
