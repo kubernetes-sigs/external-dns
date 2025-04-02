@@ -1762,6 +1762,33 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 	}
 }
 
+// TestCloudflareLongRecordsErrorLog checks if the error is logged when a record name exceeds 63 characters
+// it's not likely to happen in practice, as the Cloudflare API should reject having it
+func TestCloudflareLongRecordsErrorLog(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": {
+			{
+				ID:      "1234567890",
+				Name:    "very-very-very-very-very-very-very-long-name-more-than-63-bytes-long.bar.com",
+				Type:    endpoint.RecordTypeTXT,
+				TTL:     120,
+				Content: "some-content",
+			},
+		},
+	})
+	b := testutils.LogsToBuffer(log.InfoLevel, t)
+	p := &CloudFlareProvider{
+		Client:                client,
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+	}
+	ctx := context.Background()
+	_, err := p.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail - too long record, %s", err)
+	}
+	assert.Contains(t, b.String(), "is longer than 63 characters. Cannot create endpoint")
+}
+
 // check if the error is expected
 func checkFailed(name string, err error, shouldFail bool) error {
 	if errors.Is(err, nil) && shouldFail {
