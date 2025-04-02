@@ -103,7 +103,7 @@ func TestParseIngress(t *testing.T) {
 	}
 }
 
-func TestSelectorMatchesServiceSelector(t *testing.T) {
+func TestSelectorMatchesService(t *testing.T) {
 	tests := []struct {
 		name        string
 		selector    map[string]string
