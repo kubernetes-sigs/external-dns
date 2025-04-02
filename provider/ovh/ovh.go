@@ -588,7 +588,7 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 		toInsertTarget := []string{}
 
 		for _, target := range endpointsNew.Targets {
-			var toDelete int = -1
+			var toDelete = -1
 
 			for i, record := range oldRecords {
 				if target == record.Target {

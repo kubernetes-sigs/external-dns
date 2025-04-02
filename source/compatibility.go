@@ -89,7 +89,7 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 		return nil
 	}
 
-	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	hostnameList := strings.Split(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")
 
 	for _, hostname := range hostnameList {
 		// Create a corresponding endpoint for each configured external entrypoint.
@@ -145,9 +145,9 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 
 	var hostnameList []string
 	if isExternal {
-		hostnameList = strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+		hostnameList = strings.Split(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")
 	} else {
-		hostnameList = strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
+		hostnameList = strings.Split(strings.ReplaceAll(internalHostnameAnnotation, " ", ""), ",")
 	}
 
 	for _, hostname := range hostnameList {
@@ -186,10 +186,10 @@ func legacyEndpointsFromDNSControllerLoadBalancerService(svc *v1.Service) []*end
 
 	var hostnameList []string
 	if hasExternal {
-		hostnameList = append(hostnameList, strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")...)
+		hostnameList = append(hostnameList, strings.Split(strings.ReplaceAll(hostnameAnnotation, " ", ""), ",")...)
 	}
 	if hasInternal {
-		hostnameList = append(hostnameList, strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")...)
+		hostnameList = append(hostnameList, strings.Split(strings.ReplaceAll(internalHostnameAnnotation, " ", ""), ",")...)
 	}
 
 	for _, hostname := range hostnameList {

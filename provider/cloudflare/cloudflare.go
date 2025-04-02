@@ -673,7 +673,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 			records[newDNSRecordIndex(r)] = r
 		}
 		params.ResultInfo = resultInfo.Next()
-		if params.ResultInfo.Done() {
+		if params.Done() {
 			break
 		}
 	}

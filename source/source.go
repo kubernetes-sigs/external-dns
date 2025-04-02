@@ -179,7 +179,7 @@ func getInternalHostnamesFromAnnotations(annotations map[string]string) []string
 }
 
 func splitHostnameAnnotation(annotation string) []string {
-	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
+	return strings.Split(strings.ReplaceAll(annotation, " ", ""), ",")
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {
@@ -251,7 +251,7 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 	targetAnnotation, exists := annotations[targetAnnotationKey]
 	if exists && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		targetsList := strings.Split(strings.ReplaceAll(targetAnnotation, " ", ""), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
 			targets = append(targets, targetHostname)
