@@ -37,7 +37,7 @@ endif
 
 #? golangci-lint: Install golangci-lint tool
 golangci-lint:
-	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
+	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.0.2
 
 #? golangci-lint-verify: Verify golangci-lint configuration
 golangci-lint-verify: golangci-lint

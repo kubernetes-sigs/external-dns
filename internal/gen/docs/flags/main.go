@@ -55,7 +55,7 @@ func main() {
 	flags := computeFlags()
 	content, err := flags.generateMarkdownTable()
 	if err != nil {
-		_ = fmt.Errorf("failed to generate markdown file '%s': %v\n", path, err.Error())
+		_ = fmt.Errorf("failed to generate markdown file '%s': %v", path, err.Error())
 	}
 	content = content + "\n"
 	_ = utils.WriteToFile(path, content)

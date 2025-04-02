@@ -292,9 +292,10 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 
 	for zoneName, changes := range zoneChanges {
 		for _, change := range changes {
-			if change.ResourceRecordSetUltraDNS.RRType == "CNAME" {
+			switch change.ResourceRecordSetUltraDNS.RRType {
+			case "CNAME":
 				cnameownerName = change.ResourceRecordSetUltraDNS.OwnerName
-			} else if change.ResourceRecordSetUltraDNS.RRType == "TXT" {
+			case "TXT":
 				txtownerName = change.ResourceRecordSetUltraDNS.OwnerName
 			}
 
