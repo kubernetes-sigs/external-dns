@@ -137,7 +137,7 @@ func getProviderSpecificAnnotations(input map[string]string) (endpoint.ProviderS
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
 // Returns empty endpoints array if none are found.
 func getTargetsFromTargetAnnotation(input map[string]string) endpoint.Targets {
-	return annotations.GetTargetsFromTargetAnnotation(input)
+	return annotations.TargetsFromTargetAnnotation(input)
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
