@@ -89,7 +89,7 @@ func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets
 	targetAnnotation, ok := annotations[TargetKey]
 	if ok && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		targetsList := strings.Split(strings.ReplaceAll(targetAnnotation, " ", ""), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
 			targets = append(targets, targetHostname)
