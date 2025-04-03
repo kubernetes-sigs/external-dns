@@ -45,7 +45,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.88.0
+	github.com/oracle/oci-go-sdk/v65 v65.88.1
 	github.com/ovh/go-ovh v1.7.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -55,8 +55,8 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1134
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1134
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1137
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1136
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1132
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
@@ -68,7 +68,7 @@ require (
 	golang.org/x/text v0.23.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.228.0
-	gopkg.in/ns1/ns1-go.v2 v2.13.0
+	gopkg.in/ns1/ns1-go.v2 v2.14.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v1.25.1
@@ -186,6 +186,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.20 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.21 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.21 // indirect
 	go.mongodb.org/mongo-driver v1.17.2 // indirect
