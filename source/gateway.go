@@ -293,7 +293,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return nil, err
 	}
 	hostTargets := make(map[string]endpoint.Targets)
-
+	currentGeneration := rt.Metadata().Generation
 	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
@@ -316,8 +316,8 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
 			continue
 		}
-		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions) {
+		// Confirm the Gateway has accepted the Route, and that the generation matches.
+		if !gwRouteIsAccepted(rps.Conditions, currentGeneration) {
 			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
@@ -458,9 +458,9 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition) bool {
+func gwRouteIsAccepted(conds []metav1.Condition, currentGeneration int64) bool {
 	for _, c := range conds {
-		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
+		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted && c.ObservedGeneration == currentGeneration {
 			return c.Status == metav1.ConditionTrue
 		}
 	}
