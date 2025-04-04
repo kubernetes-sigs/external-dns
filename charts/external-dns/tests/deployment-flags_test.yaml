@@ -6,7 +6,6 @@ release:
 tests:
   - it: should provide expected default flags
     asserts:
-      # - matchSnapshot: {}
       - exists :
           path: spec.template.spec.containers[?(@.name == "external-dns")]
       - equal :
@@ -70,6 +69,16 @@ tests:
       - notContains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--txt-prefix=test-prefix"
+
+  - it: should not configure 'txtSuffix' when not empty without 'txtPrefix'
+    set:
+      txtSuffix: "custom-suffix"
+    asserts:
+      - exists :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - notContains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-suffix=test-prefix"
 
   - it: should be able configure multiple sources
     set:

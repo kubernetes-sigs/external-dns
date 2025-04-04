@@ -1,0 +1,37 @@
+suite: Test team namespace constraints
+templates:
+  - validation.tpl
+tests:
+  - it: should fail when txtPrefix and txtSuffix are set
+    templates:
+      - validation.tpl
+    set:
+        txtPrefix: "test-prefix"
+        txtSuffix: "test-suffix"
+        txtOwnerId: "testing"
+    asserts:
+      - failedTemplate:
+          errorMessage: "'txtPrefix' and 'txtSuffix' mutually exclusive"
+
+  - it: should not fail when txtPrefix is set
+    templates:
+      - validation.tpl
+    set:
+        txtPrefix: "test-prefix"
+        txtSuffix: ""
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when txtSuffix is set
+    templates:
+      - validation.tpl
+    set:
+        txtSuffix: "abrakadabra"
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail with default values
+    templates:
+      - validation.tpl
+    asserts:
+      - notFailedTemplate: {}
