@@ -30,7 +30,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -64,11 +63,10 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 			},
 		},
 	}
-	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
 
 	p := &piholeClientV6{
 		cfg:        cfg,
-		httpClient: cl,
+		httpClient: httpClient,
 	}
 
 	if cfg.Password != "" {
