@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -114,6 +115,30 @@ func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]st
 	return results, nil
 }
 
+func isValidIPv4(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	return parsedIP != nil && parsedIP.To4() != nil
+}
+
+func isValidIPv6(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	validIpv6 := strings.Contains(ip, ":") && parsedIP != nil && parsedIP.To16() != nil
+	if !validIpv6 {
+		lastColonIndex := strings.LastIndex(ip, ":")
+		if lastColonIndex != -1 {
+			parsedIPfirst := net.ParseIP(ip[:lastColonIndex])
+			firstPartIsIPv6 := parsedIPfirst != nil && parsedIPfirst.To16() != nil
+			if !firstPartIsIPv6 {
+				return firstPartIsIPv6
+			}
+			secondPartIsIPv4 := isValidIPv4(ip[lastColonIndex+1:])
+			return secondPartIsIPv4
+		}
+	}
+	return validIpv6
+
+}
+
 func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	out := make([]*endpoint.Endpoint, 0)
 	results, err := p.getConfigValue(ctx, rtype)
@@ -136,11 +161,13 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 
 		switch rtype {
 		case endpoint.RecordTypeA:
-			if strings.Contains(Target, ":") {
+			if !isValidIPv4(Target) {
+				log.Warnf("skipping A record %s: invalid format", rec)
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
-			if strings.Contains(Target, ".") {
+			if !isValidIPv6(Target) {
+				log.Warnf("skipping AAAA record %s: invalid format", rec)
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
@@ -375,7 +402,11 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		if err := json.Unmarshal(jRes, &apiError); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
 		}
-		log.Debugf("Error on request %s", req.Body)
+		log.Debugf("Error on request %s", req.URL)
+		if req.Body != nil {
+			log.Debugf("Body of the request %s", req.Body)
+		}
+
 		if res.StatusCode == http.StatusUnauthorized && p.token != "" {
 			tryCount := 1
 			maxRetries := 3
