@@ -70,7 +70,7 @@ tests:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--txt-prefix=test-prefix"
 
-  - it: should not configure 'txtSuffix' when not empty and 'txtPrefix' is not present
+  - it: should configure 'txtSuffix' when set and 'txtPrefix' is not present
     set:
       txtSuffix: "custom-suffix"
     asserts:
