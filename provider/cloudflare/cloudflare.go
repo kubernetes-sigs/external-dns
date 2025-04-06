@@ -575,6 +575,7 @@ func (p *CloudFlareProvider) submitDataLocalizationRegionalHostnameChanges(ctx c
 
 // dataLocalizationRegionalHostnamesChanges processes a slice of cloudFlare changes and consolidates them
 // into a list of data localization regional hostname changes.
+// returns nil if no changes are needed
 func dataLocalizationRegionalHostnamesChanges(changes []*cloudFlareChange) ([]DataLocalizationRegionalHostnameChange, error) {
 	regionalHostnameChanges := make(map[string]DataLocalizationRegionalHostnameChange)
 	for _, change := range changes {
@@ -597,10 +598,12 @@ func dataLocalizationRegionalHostnamesChanges(changes []*cloudFlareChange) ([]Da
 			if regionalHostname.RegionKey != change.RegionalHostname.RegionKey {
 				return nil, fmt.Errorf("conflicting region keys for regional hostname %q: %q and %q", change.RegionalHostname.Hostname, regionalHostname.RegionKey, change.RegionalHostname.RegionKey)
 			}
-			if change.Action == cloudFlareUpdate {
-				regionalHostname.Action = cloudFlareUpdate
-			} else if regionalHostname.Action == cloudFlareDelete {
-				regionalHostname.Action = cloudFlareUpdate
+			if (change.Action == cloudFlareUpdate && regionalHostname.Action != cloudFlareUpdate) ||
+				regionalHostname.Action == cloudFlareDelete {
+				regionalHostnameChanges[change.RegionalHostname.Hostname] = DataLocalizationRegionalHostnameChange{
+					Action:           cloudFlareUpdate,
+					RegionalHostname: change.RegionalHostname,
+				}
 			}
 		case cloudFlareDelete:
 			if !ok {
