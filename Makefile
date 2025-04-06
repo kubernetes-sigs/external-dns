@@ -40,13 +40,10 @@ controller-gen-install-v1:
 golangci-lint-install:
 	@scripts/install-tools.sh --golangci
 
-#? golangci-lint-verify: Verify golangci-lint configuration
-golangci-lint-verify: golangci-lint-install
-	@golangci-lint config verify
-
 #? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
 go-lint: golangci-lint-install
+	golangci-lint config verify
 	gofmt -l -s -w .
 	golangci-lint run --timeout=30m --fix ./...
 

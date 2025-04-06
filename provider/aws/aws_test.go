@@ -2164,7 +2164,6 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53types.Hoste
 		var hzExists *route53types.HostedZoneAlreadyExists
 		require.ErrorAs(t, err, &hzExists)
 	}
-	assert.False(t, true)
 }
 
 func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.ResourceRecordSet) {
