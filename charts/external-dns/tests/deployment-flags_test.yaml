@@ -76,9 +76,9 @@ tests:
     asserts:
       - exists :
           path: spec.template.spec.containers[?(@.name == "external-dns")]
-      - notContains:
+      - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
-          content: "--txt-suffix=test-prefix"
+          content: "--txt-suffix=custom-suffix"
 
   - it: should be able configure multiple sources
     set:
