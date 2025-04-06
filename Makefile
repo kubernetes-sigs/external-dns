@@ -72,7 +72,7 @@ lint: licensecheck go-lint oas-lint
 #? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd: controller-gen
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./apis/..." output:crd:stdout > docs/crd-manifest.yaml
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
@@ -203,3 +203,10 @@ helm-template:
 helm-lint:
 	scripts/helm-tools.sh --schema
 	scripts/helm-tools.sh --docs
+
+#? crd-v2: Generates CRD using controller-gen
+crd-v2:
+	${CONTROLLER_GEN} object:headerFile="scripts/api/boilerplate.go.txt" paths="./apis/..."
+
+crd-v3:
+	${CONTROLLER_GEN} object:headerFile="scripts/api/boilerplate.go.txt" paths="./endpoint/..."
