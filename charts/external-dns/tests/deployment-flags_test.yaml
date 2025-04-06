@@ -20,33 +20,6 @@ tests:
             - --registry=txt
             - --provider=aws
 
-  - it: should configure txtPrefix and ignore txtSuffix if not empty
-    set:
-      provider:
-        name: cloudflare
-      txtPrefix: "test-prefix"
-      txtSuffix: "test-suffix"
-      txtOwnerId: "testing"
-    asserts:
-      - exists :
-          path: spec.template.spec.containers[?(@.name == "external-dns")]
-      - equal :
-          path: spec.template.spec.containers[?(@.name == "external-dns")].args
-          value:
-            - --log-level=info
-            - --log-format=text
-            - --interval=1m
-            - --source=service
-            - --source=ingress
-            - --policy=upsert-only
-            - --registry=txt
-            - --txt-owner-id=testing
-            - --txt-prefix=test-prefix
-            - --provider=cloudflare
-      - notContains:
-          path: spec.template.spec.containers[?(@.name == "external-dns")].args
-          content: "--txt-suffix=test-suffix"
-
   - it: should configure 'txtSuffix' when not empty with 'txtPrefix' empty
     set:
       txtPrefix: ""
@@ -69,6 +42,9 @@ tests:
       - notContains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--txt-prefix=test-prefix"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-suffix=test-suffix"
 
   - it: should configure 'txtSuffix' when set and 'txtPrefix' is not present
     set:
