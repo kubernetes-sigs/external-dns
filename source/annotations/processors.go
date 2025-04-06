@@ -97,3 +97,23 @@ func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets
 	}
 	return targets
 }
+
+func HostnamesFromAnnotations(annotations map[string]string) []string {
+	hostnameAnnotation, ok := annotations[HostnameKey]
+	if !ok {
+		return nil
+	}
+	return SplitHostnameAnnotation(hostnameAnnotation)
+}
+
+func InternalHostnamesFromAnnotations(annotations map[string]string) []string {
+	internalHostnameAnnotation, ok := annotations[InternalHostnameKey]
+	if !ok {
+		return nil
+	}
+	return SplitHostnameAnnotation(internalHostnameAnnotation)
+}
+
+func SplitHostnameAnnotation(annotation string) []string {
+	return strings.Split(strings.TrimSpace(strings.ReplaceAll(annotation, " ", "")), ",")
+}

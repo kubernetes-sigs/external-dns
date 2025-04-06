@@ -102,32 +102,20 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
 
-func getHostnamesFromAnnotations(annotations map[string]string) []string {
-	hostnameAnnotation, ok := annotations[hostnameAnnotationKey]
-	if !ok {
-		return nil
-	}
-	return splitHostnameAnnotation(hostnameAnnotation)
+func getHostnamesFromAnnotations(input map[string]string) []string {
+	return annotations.HostnamesFromAnnotations(input)
 }
 
-func getAccessFromAnnotations(annotations map[string]string) string {
-	return annotations[accessAnnotationKey]
+func getAccessFromAnnotations(input map[string]string) string {
+	return input[accessAnnotationKey]
 }
 
-func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
-	return annotations[endpointsTypeAnnotationKey]
+func getEndpointsTypeFromAnnotations(input map[string]string) string {
+	return input[endpointsTypeAnnotationKey]
 }
 
-func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
-	internalHostnameAnnotation, ok := annotations[internalHostnameAnnotationKey]
-	if !ok {
-		return nil
-	}
-	return splitHostnameAnnotation(internalHostnameAnnotation)
-}
-
-func splitHostnameAnnotation(annotation string) []string {
-	return strings.Split(strings.ReplaceAll(annotation, " ", ""), ",")
+func getInternalHostnamesFromAnnotations(input map[string]string) []string {
+	return annotations.InternalHostnamesFromAnnotations(input)
 }
 
 func getProviderSpecificAnnotations(input map[string]string) (endpoint.ProviderSpecific, string) {
