@@ -103,7 +103,7 @@ spec:
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
             {{- end }}
-            {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
+            {{- if and (not (empty .Values.txtSuffix)) (empty .Values.txtPrefix) }}
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- if .Values.namespaced }}
