@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
@@ -2875,6 +2876,249 @@ func Test_getRegionKey(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getRegionKey(tt.args.endpoint, tt.args.defaultRegionKey); got != tt.want {
 				t.Errorf("getRegionKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
+	cmpDataLocalizationRegionalHostnameChange := func(i, j DataLocalizationRegionalHostnameChange) int {
+		if i.Action == j.Action {
+			return 0
+		}
+		if i.Hostname < j.Hostname {
+			return -1
+		}
+		return 1
+	}
+	type args struct {
+		changes []*cloudFlareChange
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []DataLocalizationRegionalHostnameChange
+		wantErr bool
+	}{
+		{
+			name: "empty input",
+			args: args{
+				changes: []*cloudFlareChange{},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "changes without RegionalHostname",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						ResourceRecord: cloudflare.DNSRecord{
+							Name: "example.com",
+						},
+						RegionalHostname: cloudflare.RegionalHostname{}, // Empty
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "change with empty RegionKey",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						ResourceRecord: cloudflare.DNSRecord{
+							Name: "example.com",
+						},
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "", // Empty region key
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "conflicting region keys",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "us", // Different region key for same hostname
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "update takes precedence over create & delete",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareUpdate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+				},
+			},
+			want: []DataLocalizationRegionalHostnameChange{
+				{
+					Action: cloudFlareUpdate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example.com",
+						RegionKey: "eu",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "create after delete becomes update",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+				},
+			},
+			want: []DataLocalizationRegionalHostnameChange{
+				{
+					Action: cloudFlareUpdate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example.com",
+						RegionKey: "eu",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "consolidate mixed actions for different hostnames",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example1.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareUpdate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example2.com",
+							RegionKey: "us",
+						},
+					},
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example3.com",
+							RegionKey: "ap",
+						},
+					},
+					// duplicated actions
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example1.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareUpdate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example2.com",
+							RegionKey: "us",
+						},
+					},
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example3.com",
+							RegionKey: "ap",
+						},
+					},
+				},
+			},
+			want: []DataLocalizationRegionalHostnameChange{
+				{
+					Action: cloudFlareCreate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example1.com",
+						RegionKey: "eu",
+					},
+				},
+				{
+					Action: cloudFlareUpdate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example2.com",
+						RegionKey: "us",
+					},
+				},
+				{
+					Action: cloudFlareDelete,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example3.com",
+						RegionKey: "ap",
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := dataLocalizationRegionalHostnamesChanges(tt.args.changes)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("dataLocalizationRegionalHostnamesChanges() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			slices.SortFunc(got, cmpDataLocalizationRegionalHostnameChange)
+			slices.SortFunc(tt.want, cmpDataLocalizationRegionalHostnameChange)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("dataLocalizationRegionalHostnamesChanges() = %v, want %v", got, tt.want)
 			}
 		})
 	}
