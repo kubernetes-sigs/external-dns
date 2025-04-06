@@ -113,11 +113,24 @@ func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]st
 	return results, nil
 }
 
+/**
+ * isValidIPv4 checks if the given IP address is a valid IPv4 address.
+ * It returns true if the IP address is valid, false otherwise.
+ * If the IP address is in IPv6 format, it will return false.
+ */
 func isValidIPv4(ip string) bool {
+	if strings.Contains(ip, ":") {
+		return false
+	}
 	parsedIP := net.ParseIP(ip)
 	return parsedIP != nil && parsedIP.To4() != nil
 }
 
+/**
+ * isValidIPv6 checks if the given IP address is a valid IPv6 address.
+ * It returns true if the IP address is valid, false otherwise.
+ * If the IP address is in IPv6 with dual format y:y:y:y:y:y:x.x.x.x. , it will return true.
+ */
 func isValidIPv6(ip string) bool {
 	parsedIP := net.ParseIP(ip)
 	validIpv6 := strings.Contains(ip, ":") && parsedIP != nil && parsedIP.To16() != nil
@@ -149,7 +162,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			return r == ' ' || r == ','
 		})
 		if len(recs) < 2 {
-			log.Warnf("skipping record %s: invalid format", rec)
+			log.Warnf("skipping record %s: invalid format received from PiHole", rec)
 			continue
 		}
 		var DNSName, Target string
@@ -160,12 +173,12 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		switch rtype {
 		case endpoint.RecordTypeA:
 			if !isValidIPv4(Target) {
-				log.Warnf("skipping A record %s: invalid format", rec)
+				log.Warnf("skipping A record %s: invalid format received from PiHole", rec)
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
 			if !isValidIPv6(Target) {
-				log.Warnf("skipping AAAA record %s: invalid format", rec)
+				log.Warnf("skipping AAAA record %s: invalid format received from PiHole", rec)
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
@@ -176,7 +189,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 				if ttlInt, err := strconv.ParseInt(recs[2], 10, 64); err == nil {
 					Ttl = endpoint.TTL(ttlInt)
 				} else {
-					log.Warnf("failed to parse TTL value '%s': %v; using a TTL of %d", recs[2], err, Ttl)
+					log.Warnf("failed to parse TTL value received from PiHole '%s': %v; using a TTL of %d", recs[2], err, Ttl)
 				}
 			}
 		}

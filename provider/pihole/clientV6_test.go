@@ -42,6 +42,7 @@ func TestIsValidIPv4(t *testing.T) {
 		{"192.168.0.1/22", false},
 		{"192.168.1", false},
 		{"abc.def.ghi.jkl", false},
+		{"::ffff:192.168.20.3", false},
 	}
 
 	for _, test := range tests {
@@ -192,7 +193,9 @@ func TestListRecordsV6(t *testing.T) {
 							"192.168.178.34 service3.example.com",
 							"fc00::1:192:168:1:1 service4.example.com",
 							"fc00::1:192:168:1:2 service5.example.com",
-							"fc00::1:192:168:1:3 service6.example.com"
+							"fc00::1:192:168:1:3 service6.example.com",
+							"::ffff:192.168.20.3 service7.example.com",
+							"192.168.20.3 service7.example.com"
 						]
 					}
 				},
@@ -232,20 +235,22 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Ensure A records were parsed correctly
+	expected := [][]string{
+		{"service1.example.com", "192.168.178.33"},
+		{"service2.example.com", "192.168.178.34"},
+		{"service3.example.com", "192.168.178.34"},
+		{"service7.example.com", "192.168.20.3"},
+	}
 	// Test retrieve A records unfiltered
 	arecs, err := cl.listRecords(context.Background(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(arecs) != 3 {
-		t.Fatal("Expected 3 A records returned, got:", len(arecs))
+	if len(arecs) != len(expected) {
+		t.Fatalf("Expected %d A records returned, got: %d", len(expected), len(arecs))
 	}
-	// Ensure records were parsed correctly
-	expected := [][]string{
-		{"service1.example.com", "192.168.178.33"},
-		{"service2.example.com", "192.168.178.34"},
-		{"service3.example.com", "192.168.178.34"},
-	}
+
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
@@ -255,20 +260,23 @@ func TestListRecordsV6(t *testing.T) {
 		}
 	}
 
+	// Ensure AAAA records were parsed correctly
+	expected = [][]string{
+		{"service4.example.com", "fc00::1:192:168:1:1"},
+		{"service5.example.com", "fc00::1:192:168:1:2"},
+		{"service6.example.com", "fc00::1:192:168:1:3"},
+		{"service7.example.com", "::ffff:192.168.20.3"},
+	}
 	// Test retrieve AAAA records unfiltered
 	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(arecs) != 3 {
-		t.Fatal("Expected 3 AAAA records returned, got:", len(arecs))
+
+	if len(arecs) != len(expected) {
+		t.Fatalf("Expected %d AAAA records returned, got: %d", len(expected), len(arecs))
 	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"service4.example.com", "fc00::1:192:168:1:1"},
-		{"service5.example.com", "fc00::1:192:168:1:2"},
-		{"service6.example.com", "fc00::1:192:168:1:3"},
-	}
+
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
@@ -276,6 +284,13 @@ func TestListRecordsV6(t *testing.T) {
 		if rec.Targets[0] != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
+	}
+
+	// Ensure CNAME records were parsed correctly
+	expected = [][]string{
+		{"source1.example.com", "target1.domain.com", "1000"},
+		{"source2.example.com", "target2.domain.com", "50"},
+		{"source3.example.com", "target3.domain.com"},
 	}
 
 	// Test retrieve CNAME records unfiltered
@@ -283,15 +298,10 @@ func TestListRecordsV6(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cnamerecs) != 3 {
-		t.Fatal("Expected 3 CAME records returned, got:", len(cnamerecs))
+	if len(cnamerecs) != len(expected) {
+		t.Fatalf("Expected %d CAME records returned, got: %d", len(expected), len(cnamerecs))
 	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"source1.example.com", "target1.domain.com", "1000"},
-		{"source2.example.com", "target2.domain.com", "50"},
-		{"source3.example.com", "target3.domain.com"},
-	}
+
 	for idx, rec := range cnamerecs {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
@@ -316,6 +326,7 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatal("Expected error for using unsupported record type")
 	}
 }
+
 func TestErrorsV6(t *testing.T) {
 	//Error test cases
 
