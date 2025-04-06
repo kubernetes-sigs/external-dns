@@ -98,22 +98,28 @@ func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets
 	return targets
 }
 
-func HostnamesFromAnnotations(annotations map[string]string) []string {
-	hostnameAnnotation, ok := annotations[HostnameKey]
+// HostnamesFromAnnotations extracts the hostnames from the given annotations map.
+// It returns a slice of hostnames if the HostnameKey annotation is present, otherwise it returns nil.
+func HostnamesFromAnnotations(input map[string]string) []string {
+	return extractHostnamesFromAnnotations(input, HostnameKey)
+}
+
+// InternalHostnamesFromAnnotations extracts the internal hostnames from the given annotations map.
+// It returns a slice of internal hostnames if the InternalHostnameKey annotation is present, otherwise it returns nil.
+func InternalHostnamesFromAnnotations(input map[string]string) []string {
+	return extractHostnamesFromAnnotations(input, InternalHostnameKey)
+}
+
+// SplitHostnameAnnotation splits a comma-separated hostname annotation string into a slice of hostnames.
+// It trims any leading or trailing whitespace and removes any spaces within the anno
+func SplitHostnameAnnotation(input string) []string {
+	return strings.Split(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), ",")
+}
+
+func extractHostnamesFromAnnotations(input map[string]string, key string) []string {
+	annotation, ok := input[key]
 	if !ok {
 		return nil
 	}
-	return SplitHostnameAnnotation(hostnameAnnotation)
-}
-
-func InternalHostnamesFromAnnotations(annotations map[string]string) []string {
-	internalHostnameAnnotation, ok := annotations[InternalHostnameKey]
-	if !ok {
-		return nil
-	}
-	return SplitHostnameAnnotation(internalHostnameAnnotation)
-}
-
-func SplitHostnameAnnotation(annotation string) []string {
-	return strings.Split(strings.TrimSpace(strings.ReplaceAll(annotation, " ", "")), ",")
+	return SplitHostnameAnnotation(annotation)
 }
