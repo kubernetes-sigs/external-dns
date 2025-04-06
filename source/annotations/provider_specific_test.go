@@ -72,7 +72,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			setIdentifier: "identifier",
 		},
 		{
-			name: "Multiple annotations",
+			name: "multiple annotations",
 			annotations: map[string]string{
 				CloudflareProxiedKey:                          "true",
 				"external-dns.alpha.kubernetes.io/aws-weight": "100",
