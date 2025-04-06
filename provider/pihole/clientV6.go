@@ -23,9 +23,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/linki/instrumented_http"
 	"io"
-	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -64,9 +65,11 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 		},
 	}
 
+	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
+
 	p := &piholeClientV6{
 		cfg:        cfg,
-		httpClient: httpClient,
+		httpClient: cl,
 	}
 
 	if cfg.Password != "" {
@@ -119,11 +122,11 @@ func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]st
  * If the IP address is in IPv6 format, it will return false.
  */
 func isValidIPv4(ip string) bool {
-	if strings.Contains(ip, ":") {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
 		return false
 	}
-	parsedIP := net.ParseIP(ip)
-	return parsedIP != nil && parsedIP.To4() != nil
+	return addr.Is4()
 }
 
 /**
@@ -132,22 +135,11 @@ func isValidIPv4(ip string) bool {
  * If the IP address is in IPv6 with dual format y:y:y:y:y:y:x.x.x.x. , it will return true.
  */
 func isValidIPv6(ip string) bool {
-	parsedIP := net.ParseIP(ip)
-	validIpv6 := strings.Contains(ip, ":") && parsedIP != nil && parsedIP.To16() != nil
-	if !validIpv6 {
-		lastColonIndex := strings.LastIndex(ip, ":")
-		if lastColonIndex != -1 {
-			parsedIPfirst := net.ParseIP(ip[:lastColonIndex])
-			firstPartIsIPv6 := parsedIPfirst != nil && parsedIPfirst.To16() != nil
-			if !firstPartIsIPv6 {
-				return firstPartIsIPv6
-			}
-			secondPartIsIPv4 := isValidIPv4(ip[lastColonIndex+1:])
-			return secondPartIsIPv4
-		}
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return false
 	}
-	return validIpv6
-
+	return addr.Is6()
 }
 
 func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
@@ -166,10 +158,9 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			continue
 		}
 		var DNSName, Target string
-		var Ttl endpoint.TTL = 0
+		var Ttl = endpoint.TTL(0)
 		// A/AAAA record format is target(IP) DNSName
 		DNSName, Target = recs[1], recs[0]
-
 		switch rtype {
 		case endpoint.RecordTypeA:
 			if !isValidIPv4(Target) {
@@ -194,12 +185,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			}
 		}
 
-		out = append(out, &endpoint.Endpoint{
-			DNSName:    DNSName,
-			Targets:    []string{Target},
-			RecordTTL:  Ttl,
-			RecordType: rtype,
-		})
+		out = append(out, endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target))
 	}
 	return out, nil
 }
@@ -413,9 +399,11 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		if err := json.Unmarshal(jRes, &apiError); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
 		}
-		log.Debugf("Error on request %s", req.URL)
-		if req.Body != nil {
-			log.Debugf("Body of the request %s", req.Body)
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debugf("Error on request %s", req.URL)
+			if req.Body != nil {
+				log.Debugf("Body of the request %s", req.Body)
+			}
 		}
 
 		if res.StatusCode == http.StatusUnauthorized && p.token != "" {
