@@ -34,6 +34,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	cache "k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
@@ -293,11 +294,32 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return nil, err
 	}
 	hostTargets := make(map[string]endpoint.Targets)
-	currentGeneration := rt.Metadata().Generation
+
+	routeParentRefs := getRouteParentRefs(rt)
+
+	if len(routeParentRefs) == 0 {
+		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
+		return hostTargets, nil
+	}
+
 	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
+		// Ensure that the parent reference is in the routeParentRefs list
+		found := false
+		for _, rpr := range routeParentRefs {
+			if string(rpr.Name) == string(ref.Name) && string(*rpr.Namespace) == string(*ref.Namespace) {
+				found = true
+				break
+			}
+		}
+		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+		if !found {
+			log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+
 		group := strVal((*string)(ref.Group), gatewayGroup)
 		kind := strVal((*string)(ref.Kind), gatewayKind)
 		if group != gatewayGroup || kind != gatewayKind {
@@ -305,7 +327,6 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 		// Lookup the Gateway and its Listeners.
-		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
 		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
 		if !ok {
 			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
@@ -316,8 +337,9 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Confirm the Gateway has accepted the Route, and that the generation matches.
-		if !gwRouteIsAccepted(rps.Conditions, currentGeneration) {
+		if !gwRouteIsAccepted(rps.Conditions) {
 			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
@@ -458,13 +480,28 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition, currentGeneration int64) bool {
+func gwRouteIsAccepted(conds []metav1.Condition) bool {
 	for _, c := range conds {
-		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted && c.ObservedGeneration == currentGeneration {
+		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
 			return c.Status == metav1.ConditionTrue
 		}
 	}
 	return false
+}
+func getRouteParentRefs(rt gatewayRoute) []v1.ParentReference {
+	routeParentRefs := make([]v1.ParentReference, 0)
+
+	switch rt.Object().(type) {
+	case *v1.HTTPRoute:
+		routeParentRefs = rt.Object().(*v1.HTTPRoute).Spec.ParentRefs
+	case *v1.GRPCRoute:
+		routeParentRefs = rt.Object().(*v1.GRPCRoute).Spec.ParentRefs
+	case *v1alpha2.UDPRoute:
+		routeParentRefs = rt.Object().(*v1alpha2.UDPRoute).Spec.ParentRefs
+	case *v1alpha2.TCPRoute:
+		routeParentRefs = rt.Object().(*v1alpha2.TCPRoute).Spec.ParentRefs
+	}
+	return routeParentRefs
 }
 
 func uniqueTargets(targets endpoint.Targets) endpoint.Targets {
