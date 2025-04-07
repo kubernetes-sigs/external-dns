@@ -102,3 +102,11 @@ tests:
             - --zone-id-filter=/hostedzone/Z00003
             - --zone-id-filter=/hostedzone/Z00004
             - --zone-id-filter=/hostedzone/Z00005
+
+  - it: should throw error when txtPrefix and txtSuffix are set
+    set:
+        txtPrefix: "test-prefix"
+        txtSuffix: "test-suffix"
+    asserts:
+     - failedTemplate:
+          errorMessage: "'txtPrefix' and 'txtSuffix' are mutually exclusive"
