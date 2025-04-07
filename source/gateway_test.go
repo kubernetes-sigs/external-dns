@@ -20,7 +20,6 @@ import (
 	"strings"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -242,78 +241,6 @@ func TestIsDNS1123Domain(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
 				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
-			}
-		})
-	}
-}
-
-func TestGwRouteIsAccepted(t *testing.T) {
-	tests := []struct {
-		desc              string
-		conditions        []metav1.Condition
-		currentGeneration int64
-		want              bool
-	}{
-		{
-			desc: "accepted condition with matching generation",
-			conditions: []metav1.Condition{
-				{
-					Type:               string(v1.RouteConditionAccepted),
-					Status:             metav1.ConditionTrue,
-					ObservedGeneration: 1,
-				},
-			},
-			currentGeneration: 1,
-			want:              true,
-		},
-		{
-			desc: "accepted condition with different generation",
-			conditions: []metav1.Condition{
-				{
-					Type:               string(v1.RouteConditionAccepted),
-					Status:             metav1.ConditionTrue,
-					ObservedGeneration: 1,
-				},
-			},
-			currentGeneration: 2,
-			want:              false,
-		},
-		{
-			desc: "accepted condition with false status",
-			conditions: []metav1.Condition{
-				{
-					Type:               string(v1.RouteConditionAccepted),
-					Status:             metav1.ConditionFalse,
-					ObservedGeneration: 1,
-				},
-			},
-			currentGeneration: 1,
-			want:              false,
-		},
-		{
-			desc: "no accepted condition",
-			conditions: []metav1.Condition{
-				{
-					Type:               "OtherCondition",
-					Status:             metav1.ConditionTrue,
-					ObservedGeneration: 1,
-				},
-			},
-			currentGeneration: 1,
-			want:              false,
-		},
-		{
-			desc:              "empty conditions",
-			conditions:        []metav1.Condition{},
-			currentGeneration: 1,
-			want:              false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			if got := gwRouteIsAccepted(tt.conditions, tt.currentGeneration); got != tt.want {
-				t.Errorf("gwRouteIsAccepted() = %v, want %v", got, tt.want)
 			}
 		})
 	}
