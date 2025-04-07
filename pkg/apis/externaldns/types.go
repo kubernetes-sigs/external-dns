@@ -213,6 +213,7 @@ type Config struct {
 	TraefikDisableLegacy                          bool
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
+	ExcludeUnschedulable                          bool
 }
 
 var defaultConfig = &Config{
@@ -376,6 +377,7 @@ var defaultConfig = &Config{
 	TraefikDisableLegacy:                          false,
 	TraefikDisableNew:                             false,
 	NAT64Networks:                                 []string{},
+	ExcludeUnschedulable:                          true,
 }
 
 // NewConfig returns new Config object
@@ -483,6 +485,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)
+	app.Flag("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)").Default(strconv.FormatBool(defaultConfig.ExcludeUnschedulable)).BoolVar(&cfg.ExcludeUnschedulable)
 	app.Flag("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional). Default is true.").BoolVar(&cfg.ExposeInternalIPV6)
 
 	// Flags related to providers
