@@ -107,7 +107,7 @@ spec:
             - --txt-prefix={{ .Values.txtPrefix }}
             {{- else if .Values.txtSuffix }}
             - --txt-suffix={{ .Values.txtSuffix }}
-            {{- end}}
+            {{- end }}
             {{- if .Values.namespaced }}
             - --namespace={{ .Release.Namespace }}
             {{- end }}
