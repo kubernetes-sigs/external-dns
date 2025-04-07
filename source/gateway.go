@@ -34,7 +34,6 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	cache "k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
@@ -55,6 +54,8 @@ type gatewayRoute interface {
 	Metadata() *metav1.ObjectMeta
 	// Hostnames returns the route's specified hostnames.
 	Hostnames() []v1.Hostname
+	// ParentRefs returns the route's parent references as defined in the route spec.
+	ParentRefs() []v1.ParentReference
 	// Protocol returns the route's protocol type.
 	Protocol() v1.ProtocolType
 	// RouteStatus returns the route's common status.
@@ -295,7 +296,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	}
 	hostTargets := make(map[string]endpoint.Targets)
 
-	routeParentRefs := getRouteParentRefs(rt)
+	routeParentRefs := rt.ParentRefs()
 
 	if len(routeParentRefs) == 0 {
 		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
@@ -487,23 +488,6 @@ func gwRouteIsAccepted(conds []metav1.Condition) bool {
 		}
 	}
 	return false
-}
-func getRouteParentRefs(rt gatewayRoute) []v1.ParentReference {
-	routeParentRefs := make([]v1.ParentReference, 0)
-
-	switch rt.Object().(type) {
-	case *v1.HTTPRoute:
-		routeParentRefs = rt.Object().(*v1.HTTPRoute).Spec.ParentRefs
-	case *v1.GRPCRoute:
-		routeParentRefs = rt.Object().(*v1.GRPCRoute).Spec.ParentRefs
-	case *v1alpha2.UDPRoute:
-		routeParentRefs = rt.Object().(*v1alpha2.UDPRoute).Spec.ParentRefs
-	case *v1alpha2.TCPRoute:
-		routeParentRefs = rt.Object().(*v1alpha2.TCPRoute).Spec.ParentRefs
-	case *v1alpha2.TLSRoute:
-		routeParentRefs = rt.Object().(*v1alpha2.TLSRoute).Spec.ParentRefs
-	}
-	return routeParentRefs
 }
 
 func uniqueTargets(targets endpoint.Targets) endpoint.Targets {
