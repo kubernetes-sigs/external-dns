@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Behavior when 'txtPrefix' and 'txtSuffix' both are set ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
+- Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided. ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
 - Add missing types in the schema for empty values ([#5228](https://github.com/kubernetes-sigs/external-dns/pull/5228)) _@ivankatliarchuk_
 - Add missing types in the schema for empty values ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
 
