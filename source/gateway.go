@@ -500,6 +500,8 @@ func getRouteParentRefs(rt gatewayRoute) []v1.ParentReference {
 		routeParentRefs = rt.Object().(*v1alpha2.UDPRoute).Spec.ParentRefs
 	case *v1alpha2.TCPRoute:
 		routeParentRefs = rt.Object().(*v1alpha2.TCPRoute).Spec.ParentRefs
+	case *v1alpha2.TLSRoute:
+		routeParentRefs = rt.Object().(*v1alpha2.TLSRoute).Spec.ParentRefs
 	}
 	return routeParentRefs
 }
