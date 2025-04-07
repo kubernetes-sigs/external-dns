@@ -339,7 +339,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 
-		// Confirm the Gateway has accepted the Route, and that the generation matches.
+		// Confirm the Gateway has accepted the Route.
 		if !gwRouteIsAccepted(rps.Conditions) {
 			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
