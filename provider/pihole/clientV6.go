@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/linki/instrumented_http"
 	"io"
 	"net/http"
 	"net/netip"
@@ -31,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
