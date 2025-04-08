@@ -918,53 +918,52 @@ func TestCloudflareProvider(t *testing.T) {
 	}
 
 	testCases := []struct {
-		Name       string
+		Name        string
 		Environment []EnvVar
-		ShouldFail bool
+		ShouldFail  bool
 	}{
 		{
 			Name: "use_api_token",
 			Environment: []EnvVar{
-			{Key: "CF_API_TOKEN", Value: "abc123def"},
+				{Key: "CF_API_TOKEN", Value: "abc123def"},
 			},
 			ShouldFail: false,
-	    },
+		},
 		{
 			Name: "use_api_token_file_contents",
 			Environment: []EnvVar{
-			{Key: "CF_API_TOKEN", Value: tokenFile},
+				{Key: "CF_API_TOKEN", Value: tokenFile},
 			},
 			ShouldFail: false,
-	    },
+		},
 		{
 			Name: "use_email_and_key",
 			Environment: []EnvVar{
-			{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
-			{Key: "CF_API_EMAIL", Value: "test@test.com"},
+				{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
+				{Key: "CF_API_EMAIL", Value: "test@test.com"},
 			},
 			ShouldFail: false,
-	    },
+		},
 		{
-			Name: "no_use_email_and_key",
+			Name:        "no_use_email_and_key",
 			Environment: []EnvVar{},
-			ShouldFail: true,
-	    },
+			ShouldFail:  true,
+		},
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key:  "CF_API_TOKEN", Value: "file://abc"},
+				{Key: "CF_API_TOKEN", Value: "file://abc"},
 			},
 			ShouldFail: true,
-	    },
+		},
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key:  "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
+				{Key: "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
 			},
 			ShouldFail: false,
-	    },
+		},
 	}
-
 
 	for idx, tc := range testCases {
 		// Unset previous env var
@@ -976,7 +975,7 @@ func TestCloudflareProvider(t *testing.T) {
 		}
 
 		for _, env := range tc.Environment {
-			_ = os.Setenv(env.Key,env.Value)
+			_ = os.Setenv(env.Key, env.Value)
 		}
 
 		_, err = NewCloudFlareProvider(
@@ -987,10 +986,10 @@ func TestCloudflareProvider(t *testing.T) {
 			5000,
 			"",
 			CustomHostnamesConfig{Enabled: false})
-		if (err != nil && !tc.ShouldFail) {
+		if err != nil && !tc.ShouldFail {
 			t.Errorf("should not fail, %s", err)
 		}
-		if (err == nil && tc.ShouldFail){
+		if err == nil && tc.ShouldFail {
 			t.Errorf("should fail, %s", err)
 		}
 	}
