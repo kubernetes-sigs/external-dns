@@ -905,90 +905,94 @@ func TestCloudflareRecords(t *testing.T) {
 }
 
 func TestCloudflareProvider(t *testing.T) {
-	_ = os.Setenv("CF_API_TOKEN", "abc123def")
-	_, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+	var err error
+
+	type EnvVar struct {
+		Key   string
+		Value string
 	}
 
-	_ = os.Unsetenv("CF_API_TOKEN")
 	tokenFile := "/tmp/cf_api_token"
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
 	}
-	_ = os.Setenv("CF_API_TOKEN", tokenFile)
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+
+	testCases := []struct {
+		Name       string
+		Environment []EnvVar
+		ShouldFail bool
+	}{
+		{
+			Name: "use_api_token",
+			Environment: []EnvVar{
+			{Key: "CF_API_TOKEN", Value: "abc123def"},
+			},
+			ShouldFail: false,
+	    },
+		{
+			Name: "use_api_token_file_contents",
+			Environment: []EnvVar{
+			{Key: "CF_API_TOKEN", Value: tokenFile},
+			},
+			ShouldFail: false,
+	    },
+		{
+			Name: "use_email_and_key",
+			Environment: []EnvVar{
+			{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
+			{Key: "CF_API_EMAIL", Value: "test@test.com"},
+			},
+			ShouldFail: false,
+	    },
+		{
+			Name: "no_use_email_and_key",
+			Environment: []EnvVar{},
+			ShouldFail: true,
+	    },
+		{
+			Name: "use_credentials_in_missing_file",
+			Environment: []EnvVar{
+				{Key:  "CF_API_TOKEN", Value: "file://abc"},
+			},
+			ShouldFail: true,
+	    },
+		{
+			Name: "use_credentials_in_missing_file",
+			Environment: []EnvVar{
+				{Key:  "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
+			},
+			ShouldFail: false,
+	    },
 	}
 
-	_ = os.Unsetenv("CF_API_TOKEN")
-	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
-	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
 
-	_ = os.Unsetenv("CF_API_KEY")
-	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
+	for idx, tc := range testCases {
+		// Unset previous env var
+		if idx > 0 {
+			prevTc := testCases[idx-1]
+			for _, env := range prevTc.Environment {
+				_ = os.Unsetenv(env.Key)
+			}
+		}
 
-	_ = os.Setenv("CF_API_TOKEN", "file://abc")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
+		for _, env := range tc.Environment {
+			_ = os.Setenv(env.Key,env.Value)
+		}
 
-	_ = os.Setenv("CF_API_TOKEN", "file:/tmp/cf_api_token")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+		_, err = NewCloudFlareProvider(
+			endpoint.NewDomainFilter([]string{"bar.com"}),
+			provider.NewZoneIDFilter([]string{""}),
+			false,
+			true,
+			5000,
+			"",
+			CustomHostnamesConfig{Enabled: false})
+		if (err != nil && !tc.ShouldFail) {
+			t.Errorf("should not fail, %s", err)
+		}
+		if (err == nil && tc.ShouldFail){
+			t.Errorf("should fail, %s", err)
+		}
 	}
 }
 
@@ -1064,6 +1068,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 func TestCloudflareDryRunApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
 	client := NewMockCloudFlareClient()
+
 	provider := &CloudFlareProvider{
 		Client: client,
 		DryRun: true,
@@ -1076,6 +1081,12 @@ func TestCloudflareDryRunApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+	ctx := context.Background()
+	records, err := provider.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	assert.Equal(t, 0, len(records), "should not have any records")
 }
 
 func TestCloudflareApplyChangesError(t *testing.T) {
