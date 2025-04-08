@@ -965,33 +965,28 @@ func TestCloudflareProvider(t *testing.T) {
 		},
 	}
 
-	for idx, tc := range testCases {
-		// Unset previous env var
-		if idx > 0 {
-			prevTc := testCases[idx-1]
-			for _, env := range prevTc.Environment {
-				_ = os.Unsetenv(env.Key)
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			for _, env := range tc.Environment {
+				t.Setenv(env.Key, env.Value)
 			}
-		}
 
-		for _, env := range tc.Environment {
-			_ = os.Setenv(env.Key, env.Value)
-		}
+			_, err = NewCloudFlareProvider(
+				endpoint.NewDomainFilter([]string{"bar.com"}),
+				provider.NewZoneIDFilter([]string{""}),
+				false,
+				true,
+				5000,
+				"",
+				CustomHostnamesConfig{Enabled: false})
+			if err != nil && !tc.ShouldFail {
+				t.Errorf("should not fail, %s", err)
+			}
+			if err == nil && tc.ShouldFail {
+				t.Errorf("should fail, %s", err)
+			}
+		})
 
-		_, err = NewCloudFlareProvider(
-			endpoint.NewDomainFilter([]string{"bar.com"}),
-			provider.NewZoneIDFilter([]string{""}),
-			false,
-			true,
-			5000,
-			"",
-			CustomHostnamesConfig{Enabled: false})
-		if err != nil && !tc.ShouldFail {
-			t.Errorf("should not fail, %s", err)
-		}
-		if err == nil && tc.ShouldFail {
-			t.Errorf("should fail, %s", err)
-		}
 	}
 }
 
