@@ -163,17 +163,18 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		DNSName, Target = recs[1], recs[0]
 		switch rtype {
 		case endpoint.RecordTypeA:
+			//PiHole return A and AAAA records. Filter to only keep the A records
 			if !isValidIPv4(Target) {
-				log.Warnf("skipping A record %s: invalid format received from PiHole", rec)
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
+			//PiHole return A and AAAA records. Filter to only keep the AAAA records
 			if !isValidIPv6(Target) {
-				log.Warnf("skipping AAAA record %s: invalid format received from PiHole", rec)
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
-			// CNAME format is DNSName,target
+			//PiHole return only CNAME records. 
+			// CNAME format is DNSName,target, ttl?
 			DNSName, Target = recs[0], recs[1]
 			if len(recs) == 3 { // TTL is present
 				// Parse string to int64 first
