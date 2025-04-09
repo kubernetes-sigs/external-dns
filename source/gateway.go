@@ -54,6 +54,8 @@ type gatewayRoute interface {
 	Metadata() *metav1.ObjectMeta
 	// Hostnames returns the route's specified hostnames.
 	Hostnames() []v1.Hostname
+	// ParentRefs returns the route's parent references as defined in the route spec.
+	ParentRefs() []v1.ParentReference
 	// Protocol returns the route's protocol type.
 	Protocol() v1.ProtocolType
 	// RouteStatus returns the route's common status.
@@ -294,10 +296,24 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	}
 	hostTargets := make(map[string]endpoint.Targets)
 
+	routeParentRefs := rt.ParentRefs()
+
+	if len(routeParentRefs) == 0 {
+		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
+		return hostTargets, nil
+	}
+
 	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
+		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+		// Ensure that the parent reference is in the routeParentRefs list
+		if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
+			log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+
 		group := strVal((*string)(ref.Group), gatewayGroup)
 		kind := strVal((*string)(ref.Kind), gatewayKind)
 		if group != gatewayGroup || kind != gatewayKind {
@@ -305,7 +321,6 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 		// Lookup the Gateway and its Listeners.
-		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
 		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
 		if !ok {
 			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
@@ -316,6 +331,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Confirm the Gateway has accepted the Route.
 		if !gwRouteIsAccepted(rps.Conditions) {
 			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
@@ -454,6 +470,26 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 		if gvk.Group == group && gvk.Kind == string(gk.Kind) {
 			return true
 		}
+	}
+	return false
+}
+
+func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
+	// Ensure that the parent reference is in the routeParentRefs list
+	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+	group := strVal((*string)(ref.Group), gatewayGroup)
+	kind := strVal((*string)(ref.Kind), gatewayKind)
+	for _, rpr := range routeParentRefs {
+		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
+		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
+		if rprGroup != group || rprKind != kind {
+			continue
+		}
+		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
+		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
+			continue
+		}
+		return true
 	}
 	return false
 }

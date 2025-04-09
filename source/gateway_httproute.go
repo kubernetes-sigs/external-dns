@@ -34,11 +34,12 @@ func NewGatewayHTTPRouteSource(clients ClientGenerator, config *Config) (Source,
 
 type gatewayHTTPRoute struct{ route v1.HTTPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayHTTPRoute) Object() kubeObject           { return &rt.route }
-func (rt *gatewayHTTPRoute) Metadata() *metav1.ObjectMeta { return &rt.route.ObjectMeta }
-func (rt *gatewayHTTPRoute) Hostnames() []v1.Hostname     { return rt.route.Spec.Hostnames }
-func (rt *gatewayHTTPRoute) Protocol() v1.ProtocolType    { return v1.HTTPProtocolType }
-func (rt *gatewayHTTPRoute) RouteStatus() v1.RouteStatus  { return rt.route.Status.RouteStatus }
+func (rt *gatewayHTTPRoute) Object() kubeObject               { return &rt.route }
+func (rt *gatewayHTTPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
+func (rt *gatewayHTTPRoute) Hostnames() []v1.Hostname         { return rt.route.Spec.Hostnames }
+func (rt *gatewayHTTPRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
+func (rt *gatewayHTTPRoute) Protocol() v1.ProtocolType        { return v1.HTTPProtocolType }
+func (rt *gatewayHTTPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
 
 type gatewayHTTPRouteInformer struct {
 	informers_v1beta1.HTTPRouteInformer
