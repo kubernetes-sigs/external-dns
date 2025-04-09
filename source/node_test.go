@@ -395,9 +395,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			var buf *bytes.Buffer
-			if len(tc.expectedLogs) == 0 && len(tc.expectedAbsentLogs) == 0 {
-				t.Parallel()
-			} else {
+			if len(tc.expectedLogs) != 0 || len(tc.expectedAbsentLogs) != 0 {
 				buf = testutils.LogsToBuffer(log.DebugLevel, t)
 			}
 
