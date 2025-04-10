@@ -1474,6 +1474,100 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"level=debug msg=\"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test\"",
 			},
 		},
+		{
+			title:      "MultipleGatewayOverlappingSplat",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("default", "internal"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname: hostnamePtr("*.internal"),
+							Protocol: v1.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+				{
+					ObjectMeta: objectMeta("default", "cluster-internal"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname: hostnamePtr("*.cluster.internal"),
+							Protocol: v1.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("2.3.4.5"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "internal"),
+							gwParentRef("default", "cluster-internal"),
+						},
+					},
+					Hostnames: hostnames("test.internal", "test.cluster.internal"),
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "internal"),
+					gwParentRef("default", "cluster-internal"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.cluster.internal", "A", "2.3.4.5"),
+			},
+		},
+		{
+			title:      "MultipleGatewayMatchingSplat",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("default", "internal"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname: hostnamePtr("*.internal"),
+							Protocol: v1.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+				{
+					ObjectMeta: objectMeta("default", "also-internal"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname: hostnamePtr("*.internal"),
+							Protocol: v1.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("2.3.4.5"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "internal"),
+							gwParentRef("default", "also-internal"),
+						},
+					},
+					Hostnames: hostnames("test.internal", "test2.internal"),
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "internal"),
+					gwParentRef("default", "also-internal"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.internal", "A", "1.2.3.4", "2.3.4.5"),
+				newTestEndpoint("test2.internal", "A", "1.2.3.4", "2.3.4.5"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
