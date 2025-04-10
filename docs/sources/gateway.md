@@ -109,7 +109,11 @@ The targets of the DNS entries created from a \*Route are sourced from the follo
 1. If a matching parent Gateway has an `external-dns.alpha.kubernetes.io/target` annotation, uses
    the values from that.
 
-2. Otherwise, iterates over that parent Gateway's `status.addresses`,
+2. If a route has multiple, overlapping hostnames is attached to multiple Gateways whose hostnames 
+   overlap with the routes hostnames then the routes hostname uses which ever gateway has the longest
+   match.
+
+3. Otherwise, iterates over that parent Gateway's `status.addresses`,
    adding each address's `value`.
 
 The targets from each parent Gateway matching the \*Route are then combined and de-duplicated.
