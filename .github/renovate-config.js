@@ -52,6 +52,14 @@ module.exports = {
       "depNameTemplate": "kubernetes-sigs/external-dns",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver"
-    }
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [".*"],
+      "matchStrings": [
+        "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?_VERSION=(?<currentValue>.*)\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}",
+    },
   ]
 };
