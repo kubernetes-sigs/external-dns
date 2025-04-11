@@ -2,7 +2,7 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.16.0
+version: 1.16.1
 appVersion: 0.16.1
 keywords:
   - kubernetes
@@ -20,13 +20,9 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
-    - kind: added
-      description: "Add helm testing framework `helm plugin unittest`."
-    - kind: added
-      description: "Add ability to generate schema with `helm plugin schema`."
-    - kind: added
-      description: "Add `docs/contributing/dev-guide.md#helm-values` guide."
     - kind: changed
-      description: "Regenerate JSON schema with `helm-values-schema-json' plugin."
-    - kind: changed
-      description: "Update _ExternalDNS_ OCI image version to [v0.16.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.16.1)."
+      description: "Set defaults for `automountServiceAccountToken` and `serviceAccount.automountServiceAccountToken` to `true` in Helm chart values."
+    - kind: fixed
+      description: "Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided."
+    - kind: fixed
+      description: "Add missing types in the schema for empty values."
