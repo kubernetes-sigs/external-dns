@@ -289,18 +289,23 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gatewa
 	}
 }
 
+type hostTargetMatch struct {
+	targets endpoint.Targets
+	matchLength int
+}
+
 func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
 	rtHosts, err := c.hosts(rt)
 	if err != nil {
 		return nil, err
 	}
-	hostTargets := make(map[string]endpoint.Targets)
+	hostTargets := make(map[string]hostTargetMatch)
 
 	routeParentRefs := rt.ParentRefs()
 
 	if len(routeParentRefs) == 0 {
 		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
-		return hostTargets, nil
+		return make(map[string]endpoint.Targets), nil
 	}
 
 	meta := rt.Metadata()
@@ -369,30 +374,47 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 					// For {TCP,UDP}Routes, this should always happen since neither specifies hostnames.
 					continue
 				}
-				host, ok := gwMatchingHost(gwHost, rtHost)
+				host, matchLength, ok := gwMatchingHost(gwHost, rtHost)
 				if !ok {
 					continue
 				}
+
+				match = true
 				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
-				hostTargets[host] = append(hostTargets[host], override...)
-				if len(override) == 0 {
-					for _, addr := range gw.gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
+				if len(override) > 0 {
+					hostTargets[host] = hostTargetMatch{override, 0}
+
+					continue
+				}
+
+				for _, addr := range gw.gateway.Status.Addresses {
+					_, ok := hostTargets[host]
+					switch {
+					case !ok:
+						hostTargets[host] = hostTargetMatch{endpoint.Targets{addr.Value}, matchLength}
+					case hostTargets[host].matchLength == matchLength:
+						hostTargets[host] = hostTargetMatch{append(hostTargets[host].targets, addr.Value), matchLength}
+					case matchLength < hostTargets[host].matchLength:
+						hostTargets[host] = hostTargetMatch{endpoint.Targets{addr.Value}, matchLength}
+					default:
 					}
 				}
-				match = true
 			}
 		}
 		if !match {
 			log.Debugf("Gateway %s/%s section %q does not match %s %s/%s hostnames %q", namespace, ref.Name, section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
 		}
 	}
+
+	onlyTargets := make(map[string]endpoint.Targets)
+
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
 	for host, targets := range hostTargets {
-		hostTargets[host] = uniqueTargets(targets)
+		onlyTargets[host] = uniqueTargets(targets.targets)
 	}
-	return hostTargets, nil
+
+	return onlyTargets, nil
 }
 
 func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
@@ -538,36 +560,47 @@ func gwProtocolMatches(a, b v1.ProtocolType) bool {
 	return a == b
 }
 
+
 // gwMatchingHost returns the most-specific overlapping host and a bool indicating if one was found.
 // Hostnames that are prefixed with a wildcard label (`*.`) are interpreted as a suffix match.
 // That means that "*.example.com" would match both "test.example.com" and "foo.test.example.com",
-// but not "example.com". An empty string matches anything.
-func gwMatchingHost(a, b string) (string, bool) {
+// but not "example.com". An empty string matches anything. It includes additional information that
+// indicates how much the gateway and route host overlap to be able to disambiguate which gateway
+// should be routed to based on hostname if a single route is attached to multiple gateways who have
+// overlapping hostname splats
+func gwMatchingHost(gatewayHost, routeHost string) (string, int, bool) {
 	var ok bool
-	if a, ok = gwHost(a); !ok {
-		return "", false
+	if gatewayHost, ok = cannonizeHost(gatewayHost); !ok {
+		return "", 0, false
 	}
-	if b, ok = gwHost(b); !ok {
-		return "", false
+	if routeHost, ok = cannonizeHost(routeHost); !ok {
+		return "", 0, false
 	}
 
-	if a == "" {
-		return b, true
+	if gatewayHost == "" {
+		return routeHost, 0, true
 	}
-	if b == "" || a == b {
-		return a, true
+	if routeHost == "" || gatewayHost == routeHost {
+		return gatewayHost, 0, true
 	}
-	if na, nb := len(a), len(b); nb < na || (na == nb && strings.HasPrefix(b, "*.")) {
-		a, b = b, a
+
+	// Wildcard matches equal length, i.e. single character
+	splatHost, nonSplatHost := gatewayHost, routeHost
+	gatewayHostLength, routeHostLength := len(gatewayHost), len(routeHost)
+	if routeHostLength < gatewayHostLength || (gatewayHostLength == routeHostLength && strings.HasPrefix(routeHost, "*.")) {
+		splatHost = routeHost
+		nonSplatHost = gatewayHost
 	}
-	if strings.HasPrefix(a, "*.") && strings.HasSuffix(b, a[1:]) {
-		return b, true
+
+	if strings.HasPrefix(splatHost, "*.") && strings.HasSuffix(nonSplatHost, splatHost[1:]) {
+		return nonSplatHost, len(strings.TrimSuffix(nonSplatHost, splatHost[1:])), true
 	}
-	return "", false
+
+	return "", 0, false
 }
 
-// gwHost returns the canonical host and a value indicating if it's valid.
-func gwHost(host string) (string, bool) {
+// cannonizeHost returns the canonical host and a value indicating if it's valid.
+func cannonizeHost(host string) (string, bool) {
 	if host == "" {
 		return "", true
 	}
