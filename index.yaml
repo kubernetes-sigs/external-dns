@@ -3,6 +3,39 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Set defaults for `automountServiceAccountToken` and `serviceAccount.automountServiceAccountToken` to `true` in Helm chart values."
+        - kind: fixed
+          description: "Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided."
+        - kind: fixed
+          description: "Add missing types in the schema for empty values."
+    apiVersion: v2
+    appVersion: 0.16.1
+    created: "2025-04-11T09:31:02.888801788Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 6e560d8f57e3eb68ff61fdd1312b9ad5d52fc455f1928ab7c75bb33d90fcd472
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.16.1/external-dns-1.16.1.tgz
+    version: 1.16.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Add helm testing framework `helm plugin unittest`."
         - kind: added
@@ -957,4 +990,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-03-21T08:30:53.628610978Z"
+generated: "2025-04-11T09:31:02.8890103Z"
