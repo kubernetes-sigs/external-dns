@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
@@ -1506,10 +1505,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
-			var b *bytes.Buffer
-			if len(tt.logExpectations) > 0 {
-				b = testutils.LogsToBuffer(log.DebugLevel, t)
-			}
+			b := testutils.LogsToBuffer(log.DebugLevel, t)
+
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
 			validateEndpoints(t, endpoints, tt.endpoints)

@@ -18,11 +18,9 @@ package testutils
 
 import (
 	"bytes"
-	"flag"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/klog/v2"
 )
 
 // LogsToBuffer redirects log(s) output to a buffer for testing purposes
@@ -38,12 +36,5 @@ func LogsToBuffer(level log.Level, t *testing.T) *bytes.Buffer {
 	buf := new(bytes.Buffer)
 	log.SetOutput(buf)
 	log.SetLevel(level)
-	klog.SetOutput(buf)
-	flags := &flag.FlagSet{}
-	klog.InitFlags(flags)
-	// make sure klog doesn't write to stderr by default in tests
-	_ = flags.Set("logtostderr", "false")
-	_ = flags.Set("alsologtostderr", "false")
-	_ = flags.Set("stderrthreshold", "4")
 	return buf
 }
