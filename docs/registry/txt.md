@@ -15,6 +15,7 @@ By default, the TXT registry creates records in both formats for backwards compa
 Note: The following record types always use only the new format regardless of this setting:
 
 - AAAA records
+- TXT records
 - Encrypted TXT records (when using `--txt-encrypt-enabled`)
 
 Example:

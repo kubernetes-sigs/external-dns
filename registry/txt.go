@@ -108,7 +108,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 }
 
 func getSupportedTypes() []string {
-	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}
+	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeTXT }
 }
 
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
@@ -196,7 +196,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		// Handle both new and old registry format with the preference for the new one
 		labels, labelsExist := labelMap[key]
-		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
+		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA && ep.RecordType != endpoint.RecordTypeTXT {
 			key.RecordType = ""
 			labels, labelsExist = labelMap[key]
 		}
@@ -237,7 +237,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	// Create legacy format record by default unless newFormatOnly is true
-	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
+	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeTXT {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
