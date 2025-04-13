@@ -204,7 +204,7 @@ type CloudFlareProvider struct {
 	RegionKey             string
 }
 
-// cloudFlareChange differentiates between ChangActions
+// cloudFlareChange differentiates between ChangeActions
 type cloudFlareChange struct {
 	Action              string
 	ResourceRecord      cloudflare.DNSRecord
@@ -220,13 +220,20 @@ type RecordParamsTypes interface {
 
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
-	return cloudflare.UpdateDNSRecordParams{
+	params := cloudflare.UpdateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
 		Content: cfc.ResourceRecord.Content,
 	}
+
+	// Set priority only for MX records
+	if cfc.ResourceRecord.Type == "MX" && cfc.ResourceRecord.Priority != nil {
+		params.Priority = cfc.ResourceRecord.Priority
+	}
+
+	return params
 }
 
 // createDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
@@ -247,13 +254,20 @@ func updateDataLocalizationRegionalHostnameParams(rhc DataLocalizationRegionalHo
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordParams {
-	return cloudflare.CreateDNSRecordParams{
+	params := cloudflare.CreateDNSRecordParams{
 		Name:    cfc.ResourceRecord.Name,
 		TTL:     cfc.ResourceRecord.TTL,
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
 		Content: cfc.ResourceRecord.Content,
 	}
+
+	// Set priority only for MX records
+	if cfc.ResourceRecord.Type == "MX" && cfc.ResourceRecord.Priority != nil {
+		params.Priority = cfc.ResourceRecord.Priority
+	}
+
+	return params
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
@@ -826,6 +840,18 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			RegionKey: regionKey,
 		}
 	}
+
+	priority := (*uint16)(nil)
+	if ep.RecordType == "MX" {
+		parsedPriority, mailHost, err := parseMXRecord(target)
+		if err != nil {
+			log.Errorf("Failed to parse MX record target %q: %v", target, err)
+		} else {
+			priority = &parsedPriority
+			target = mailHost
+		}
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
@@ -833,9 +859,13 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			TTL:  ttl,
 			// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 			// see: https://github.com/cloudflare/cloudflare-go/pull/595
-			Proxied: &proxied,
-			Type:    ep.RecordType,
-			Content: target,
+			Proxied:  &proxied,
+			Type:     ep.RecordType,
+			Content:  target,
+			Priority: priority,
+			Meta: map[string]interface{}{
+				"region": p.RegionKey,
+			},
 		},
 		RegionalHostname:    regionalHostname,
 		CustomHostnamesPrev: prevCustomHostnames,
@@ -975,7 +1005,7 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 	groups := map[string][]cloudflare.DNSRecord{}
 
 	for _, r := range records {
-		if !provider.SupportedRecordType(r.Type) {
+		if !SupportedRecordType(r.Type) {
 			continue
 		}
 
@@ -1001,7 +1031,11 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		}
 		targets := make([]string, len(records))
 		for i, record := range records {
-			targets[i] = record.Content
+			if records[i].Type == "MX" {
+				targets[i] = fmt.Sprintf("%v %v", *record.Priority, record.Content)
+			} else {
+				targets[i] = record.Content
+			}
 		}
 		e := endpoint.NewEndpointWithTTL(
 			records[0].Name,
@@ -1024,12 +1058,40 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 
 		endpoints = append(endpoints, e)
 	}
-
 	return endpoints
+}
+
+// parseMXRecord is used as a helper function.
+// It takes an target string in the RFC 1034 format.
+// e.g. "10 mailhost1.example.com" and returns the priority as an integer
+// and the content as a string. If parsing fails, it returns an error.
+func parseMXRecord(target string) (uint16, string, error) {
+	parts := strings.Fields(target)
+	if len(parts) != 2 {
+		return uint16(0), "", fmt.Errorf("expected exactly 2 parts (priority and content), got %d", len(parts))
+	}
+
+	priority, err := strconv.ParseUint(parts[0], 10, 16)
+	if err != nil {
+		return uint16(priority), "", fmt.Errorf("invalid priority value: %w", err)
+	}
+
+	mailHost := parts[1]
+	return uint16(priority), mailHost, nil
 }
 
 // boolPtr is used as a helper function to return a pointer to a boolean
 // Needed because some parameters require a pointer.
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+// SupportedRecordType returns true if the record type is supported by the provider
+func SupportedRecordType(recordType string) bool {
+	switch recordType {
+	case "MX":
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
 }
