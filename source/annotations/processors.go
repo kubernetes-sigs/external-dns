@@ -39,7 +39,7 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 	}
 	ttlValue, err := parseTTL(ttlAnnotation)
 	if err != nil {
-		log.Warnf("%s: \"%v\" is not a valid TTL value: %v", resource, ttlAnnotation, err)
+		log.Warnf("%s: %q is not a valid TTL value: %v", resource, ttlAnnotation, err)
 		return ttlNotConfigured
 	}
 	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
