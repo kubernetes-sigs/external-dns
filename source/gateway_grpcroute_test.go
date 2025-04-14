@@ -74,6 +74,11 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 		},
 		Spec: v1.GRPCRouteSpec{
 			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("default", "internal"),
+				},
+			},
 		},
 		Status: v1.GRPCRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
