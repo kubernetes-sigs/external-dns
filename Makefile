@@ -70,7 +70,7 @@ lint: licensecheck go-lint oas-lint
 #? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd: controller-gen-install
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/sources/crd/crd-manifest.yaml
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
