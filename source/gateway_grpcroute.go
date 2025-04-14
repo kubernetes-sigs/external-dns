@@ -33,11 +33,12 @@ func NewGatewayGRPCRouteSource(clients ClientGenerator, config *Config) (Source,
 
 type gatewayGRPCRoute struct{ route v1.GRPCRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayGRPCRoute) Object() kubeObject           { return &rt.route }
-func (rt *gatewayGRPCRoute) Metadata() *metav1.ObjectMeta { return &rt.route.ObjectMeta }
-func (rt *gatewayGRPCRoute) Hostnames() []v1.Hostname     { return rt.route.Spec.Hostnames }
-func (rt *gatewayGRPCRoute) Protocol() v1.ProtocolType    { return v1.HTTPSProtocolType }
-func (rt *gatewayGRPCRoute) RouteStatus() v1.RouteStatus  { return rt.route.Status.RouteStatus }
+func (rt *gatewayGRPCRoute) Object() kubeObject               { return &rt.route }
+func (rt *gatewayGRPCRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
+func (rt *gatewayGRPCRoute) Hostnames() []v1.Hostname         { return rt.route.Spec.Hostnames }
+func (rt *gatewayGRPCRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
+func (rt *gatewayGRPCRoute) Protocol() v1.ProtocolType        { return v1.HTTPSProtocolType }
+func (rt *gatewayGRPCRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
 
 type gatewayGRPCRouteInformer struct {
 	informers_v1.GRPCRouteInformer

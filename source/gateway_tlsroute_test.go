@@ -75,6 +75,11 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 		},
 		Spec: v1alpha2.TLSRouteSpec{
 			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("default", "internal"),
+				},
+			},
 		},
 		Status: v1alpha2.TLSRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),

@@ -18,14 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.16.1] - 2025-04-10
+
 ### Changed
 
-- Set defaults for `automountServiceAccountToken` and `serviceAccount.automountServiceAccountToken` to `true` in helm chart values ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
+- Set defaults for `automountServiceAccountToken` and `serviceAccount.automountServiceAccountToken` to `true` in Helm chart values. ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
 
 ### Fixed
 
-- Add missing types in the schema for empty values ([#5228](https://github.com/kubernetes-sigs/external-dns/pull/5228)) _@ivankatliarchuk_
-- Add missing types in the schema for empty values ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
+- Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided. ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
+- Add missing types in the schema for empty values. ([#5228](https://github.com/kubernetes-sigs/external-dns/pull/5228)) _@ivankatliarchuk_
+- Add missing types in the schema for empty values. ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
 
 ## [v1.16.0] - 2025-03-20
 
@@ -38,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Regenerate JSON schema with `helm-values-schema-json' plugin. ([#5075](https://github.com/kubernetes-sigs/external-dns/pull/5075)) _@ivankatliarchuk_
-- Update _ExternalDNS_ OCI image version to [v0.16.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.16.1). ([#xxxx](https://github.com/kubernetes-sigs/external-dns/pull/xxxx)) _@stevehipwell_
+- Update _ExternalDNS_ OCI image version to [v0.16.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.16.1). ([#5201](https://github.com/kubernetes-sigs/external-dns/pull/5201)) _@stevehipwell_
 
 ## [v1.15.2] - 2025-02-14
 
@@ -250,6 +253,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.16.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.1
 [v1.16.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.0
 [v1.15.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2
 [v1.15.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.1

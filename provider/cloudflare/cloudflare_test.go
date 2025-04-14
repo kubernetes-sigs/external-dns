@@ -21,16 +21,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/maxatome/go-testdeep/td"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -38,10 +38,11 @@ import (
 )
 
 type MockAction struct {
-	Name       string
-	ZoneId     string
-	RecordId   string
-	RecordData cloudflare.DNSRecord
+	Name             string
+	ZoneId           string
+	RecordId         string
+	RecordData       cloudflare.DNSRecord
+	RegionalHostname cloudflare.RegionalHostname
 }
 
 type mockCloudFlareClient struct {
@@ -225,6 +226,19 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
+func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "CreateDataLocalizationRegionalHostname",
+		ZoneId:   rc.Identifier,
+		RecordId: "",
+		RegionalHostname: cloudflare.RegionalHostname{
+			Hostname:  rp.Hostname,
+			RegionKey: rp.RegionKey,
+		},
+	})
+	return nil
+}
+
 func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "UpdateDataLocalizationRegionalHostname",
@@ -232,6 +246,18 @@ func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx contex
 		RecordId: "",
 		RecordData: cloudflare.DNSRecord{
 			Name: rp.Hostname,
+		},
+	})
+	return nil
+}
+
+func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "DeleteDataLocalizationRegionalHostname",
+		ZoneId:   rc.Identifier,
+		RecordId: "",
+		RecordData: cloudflare.DNSRecord{
+			Name: hostname,
 		},
 	})
 	return nil
@@ -743,6 +769,110 @@ func TestCloudflareSetProxied(t *testing.T) {
 			},
 		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
 	}
+}
+
+func TestCloudflareRegionalHostname(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+					Value: "eu",
+				},
+			},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{RegionKey: "us"}, endpoints, []MockAction{
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.2",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:   "CreateDataLocalizationRegionalHostname",
+			ZoneId: "001",
+			RegionalHostname: cloudflare.RegionalHostname{
+				Hostname:  "bar.com",
+				RegionKey: "eu",
+			},
+		},
+	},
+		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	)
+}
+
+func TestCloudflareRegionalHostnameDefaults(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{RegionKey: "us"}, endpoints, []MockAction{
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.2",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:   "CreateDataLocalizationRegionalHostname",
+			ZoneId: "001",
+			RegionalHostname: cloudflare.RegionalHostname{
+				Hostname:  "bar.com",
+				RegionKey: "us",
+			},
+		},
+	},
+		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	)
 }
 
 func TestCloudflareZones(t *testing.T) {
@@ -1575,24 +1705,6 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	}
 }
 
-func TestCloudFlareProvider_updateDataLocalizationRegionalHostnameParams(t *testing.T) {
-	change := &cloudFlareChange{
-		RegionalHostname: cloudflare.RegionalHostname{
-			Hostname:  "example.com",
-			RegionKey: "us",
-		},
-	}
-
-	params := updateDataLocalizationRegionalHostnameParams(*change)
-	if params.Hostname != "example.com" {
-		t.Errorf("expected hostname to be 'example.com', but got '%s'", params.Hostname)
-	}
-
-	if params.RegionKey != "us" {
-		t.Errorf("expected region key to be 'us', but got '%s'", params.RegionKey)
-	}
-}
-
 func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
@@ -1609,8 +1721,9 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	}
 
 	endpoint := &endpoint.Endpoint{
-		DNSName: "example.com",
-		Targets: []string{"192.0.2.1"},
+		DNSName:    "example.com",
+		RecordType: "A",
+		Targets:    []string{"192.0.2.1"},
 	}
 
 	change := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0], nil)
@@ -2678,4 +2791,335 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 		t.Errorf("should not fail - %v", chErr)
 	}
 	assert.Equal(t, len(chs), CustomHostnamesNumber)
+}
+
+func Test_getRegionKey(t *testing.T) {
+	type args struct {
+		endpoint         *endpoint.Endpoint
+		defaultRegionKey string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "no region key",
+			args: args{
+				endpoint: &endpoint.Endpoint{
+					RecordType: "A",
+				},
+				defaultRegionKey: "",
+			},
+			want: "",
+		},
+		{
+			name: "default region key",
+			args: args{
+				endpoint: &endpoint.Endpoint{
+					RecordType: "A",
+				},
+				defaultRegionKey: "us",
+			},
+			want: "us",
+		},
+		{
+			name: "endpoint with region key",
+			args: args{
+				endpoint: &endpoint.Endpoint{
+					RecordType: "A",
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Value: "eu",
+						},
+					},
+				},
+				defaultRegionKey: "us",
+			},
+			want: "eu",
+		},
+		{
+			name: "endpoint with empty region key",
+			args: args{
+				endpoint: &endpoint.Endpoint{
+					RecordType: "A",
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Value: "",
+						},
+					},
+				},
+				defaultRegionKey: "us",
+			},
+			want: "",
+		},
+		{
+			name: "unsupported record type",
+			args: args{
+				endpoint: &endpoint.Endpoint{
+					RecordType: "TXT",
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Value: "eu",
+						},
+					},
+				},
+				defaultRegionKey: "us",
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getRegionKey(tt.args.endpoint, tt.args.defaultRegionKey); got != tt.want {
+				t.Errorf("getRegionKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
+	cmpDataLocalizationRegionalHostnameChange := func(i, j DataLocalizationRegionalHostnameChange) int {
+		if i.Action == j.Action {
+			return 0
+		}
+		if i.Hostname < j.Hostname {
+			return -1
+		}
+		return 1
+	}
+	type args struct {
+		changes []*cloudFlareChange
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []DataLocalizationRegionalHostnameChange
+		wantErr bool
+	}{
+		{
+			name: "empty input",
+			args: args{
+				changes: []*cloudFlareChange{},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "changes without RegionalHostname",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						ResourceRecord: cloudflare.DNSRecord{
+							Name: "example.com",
+						},
+						RegionalHostname: cloudflare.RegionalHostname{}, // Empty
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "change with empty RegionKey",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						ResourceRecord: cloudflare.DNSRecord{
+							Name: "example.com",
+						},
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "", // Empty region key
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "conflicting region keys",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "us", // Different region key for same hostname
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "update takes precedence over create & delete",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareUpdate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+				},
+			},
+			want: []DataLocalizationRegionalHostnameChange{
+				{
+					Action: cloudFlareUpdate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example.com",
+						RegionKey: "eu",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "create after delete becomes update",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example.com",
+							RegionKey: "eu",
+						},
+					},
+				},
+			},
+			want: []DataLocalizationRegionalHostnameChange{
+				{
+					Action: cloudFlareUpdate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example.com",
+						RegionKey: "eu",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "consolidate mixed actions for different hostnames",
+			args: args{
+				changes: []*cloudFlareChange{
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example1.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareUpdate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example2.com",
+							RegionKey: "us",
+						},
+					},
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example3.com",
+							RegionKey: "ap",
+						},
+					},
+					// duplicated actions
+					{
+						Action: cloudFlareCreate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example1.com",
+							RegionKey: "eu",
+						},
+					},
+					{
+						Action: cloudFlareUpdate,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example2.com",
+							RegionKey: "us",
+						},
+					},
+					{
+						Action: cloudFlareDelete,
+						RegionalHostname: cloudflare.RegionalHostname{
+							Hostname:  "example3.com",
+							RegionKey: "ap",
+						},
+					},
+				},
+			},
+			want: []DataLocalizationRegionalHostnameChange{
+				{
+					Action: cloudFlareCreate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example1.com",
+						RegionKey: "eu",
+					},
+				},
+				{
+					Action: cloudFlareUpdate,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example2.com",
+						RegionKey: "us",
+					},
+				},
+				{
+					Action: cloudFlareDelete,
+					RegionalHostname: cloudflare.RegionalHostname{
+						Hostname:  "example3.com",
+						RegionKey: "ap",
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := dataLocalizationRegionalHostnamesChanges(tt.args.changes)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("dataLocalizationRegionalHostnamesChanges() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			slices.SortFunc(got, cmpDataLocalizationRegionalHostnameChange)
+			slices.SortFunc(tt.want, cmpDataLocalizationRegionalHostnameChange)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("dataLocalizationRegionalHostnamesChanges() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
