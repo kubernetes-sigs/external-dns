@@ -32,8 +32,8 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-#? controller-gen-install-v1: download controller-gen if necessary
-controller-gen-install-v1:
+#? controller-gen-install: download controller-gen if necessary
+controller-gen-install:
 	@scripts/install-tools.sh --generator
 
 #? golangci-lint-install: Install golangci-lint tool
