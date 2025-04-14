@@ -18,6 +18,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -29,10 +30,9 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
@@ -225,12 +225,15 @@ func TestServeMetrics(t *testing.T) {
 	_, port, _ := net.SplitHostPort(l.Addr().String())
 
 	go serveMetrics(fmt.Sprintf(":%s", port))
+	// Required to let serveMetrics go routine to open the network socket
+	time.Sleep(10 * time.Millisecond)
+
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%s", port) + "/healthz")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	resp, err = http.Get(fmt.Sprintf("http://localhost:%s", port) + "/metrics")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -308,7 +311,6 @@ func (m *MockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 func (p *MockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	return nil
 }
 
