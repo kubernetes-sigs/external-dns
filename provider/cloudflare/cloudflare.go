@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -951,7 +952,7 @@ func getRegionKey(endpoint *endpoint.Endpoint, defaultRegionKey string) string {
 	}
 
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == source.CloudflareRegionKey {
+		if v.Name == annotations.CloudflareRegionKey {
 			return v.Value
 		}
 	}
