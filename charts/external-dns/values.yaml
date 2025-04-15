@@ -264,11 +264,7 @@ provider:  # @schema type: [object, string];
     livenessProbe:
       httpGet:
         path: /healthz # @schema type:[string, null]; default: null
-        # @schema
-        # type: [string, integer]
-        # default: string
-        # @schema
-        port: http-webhook # 
+        port: http-webhook # @schema type:[int,string]; default: string
       initialDelaySeconds: 10 # @schema type:[int, null]; default: null
       periodSeconds: 10 # @schema type:[int, null]; default: null
       timeoutSeconds: 5 # @schema type:[int, null]; default: null
@@ -278,11 +274,7 @@ provider:  # @schema type: [object, string];
     readinessProbe:
       httpGet:
         path: /healthz # @schema type:[string, null]; default: null
-        # @schema
-        # type: [string, integer]
-        # default: string
-        # @schema
-        port: http-webhook 
+        port: http-webhook # @schema type:[int,string]; default: string
       initialDelaySeconds: 5 # @schema type:[int, null]; default: null
       periodSeconds: 10 # @schema type:[int, null]; default: null
       timeoutSeconds: 5 # @schema type:[int, null]; default: null
