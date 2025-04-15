@@ -301,6 +301,7 @@ func TestParseFlags(t *testing.T) {
 				"--cloudflare-custom-hostnames-min-tls-version=1.3",
 				"--cloudflare-custom-hostnames-certificate-authority=google",
 				"--cloudflare-dns-records-per-page=5000",
+				"--cloudflare-regiononal-hostnames",
 				"--cloudflare-region-key=us",
 				"--coredns-prefix=/coredns/",
 				"--akamai-serviceconsumerdomain=oooo-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
