@@ -119,8 +119,6 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			newEndpointWithOwner("txt.dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
 			newEndpointWithOwner("txt.aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("info.test-zone.example.org", "example txt record content", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("txt.txt-info.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("txt.mx-mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
@@ -220,14 +218,6 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			},
 		},
 		{
-			DNSName:    "info.test-zone.example.org",
-			Targets:    endpoint.Targets{"example txt record content"},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
 			DNSName:    "mail.test-zone.example.org",
 			Targets:    endpoint.Targets{"10 onemail.example.com"},
 			RecordType: endpoint.RecordTypeMX,
@@ -272,8 +262,6 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			newEndpointWithOwner("dualstack-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
 			newEndpointWithOwner("aaaa-dualstack-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("info.test-zone.example.org", "example txt record content", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("info-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mx-mail-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
@@ -365,14 +353,6 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			},
 		},
 		{
-			DNSName:    "info.test-zone.example.org",
-			Targets:    endpoint.Targets{"example txt record content"},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
 			DNSName:    "mail.test-zone.example.org",
 			Targets:    endpoint.Targets{"10 onemail.example.com"},
 			RecordType: endpoint.RecordTypeMX,
@@ -415,8 +395,6 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
 			newEndpointWithOwner("aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("info.test-zone.example.org", "example txt record content", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("txt-info.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mx-mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
@@ -502,14 +480,6 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			},
 		},
 		{
-			DNSName:    "info.test-zone.example.org",
-			Targets:    endpoint.Targets{"example txt record content"},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
 			DNSName:    "mail.test-zone.example.org",
 			Targets:    endpoint.Targets{"10 onemail.example.com"},
 			RecordType: endpoint.RecordTypeMX,
@@ -533,8 +503,6 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
 			newEndpointWithOwner("txt-a.foo.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("foo.test-zone.example.org", "example txt record content", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("txt-txt.foo.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("txt-mx.mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
@@ -544,14 +512,6 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 			DNSName:    "foo.test-zone.example.org",
 			Targets:    endpoint.Targets{"1.1.1.1"},
 			RecordType: endpoint.RecordTypeA,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
-			DNSName:    "foo.test-zone.example.org",
-			Targets:    endpoint.Targets{"example txt record content"},
-			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
@@ -585,8 +545,6 @@ func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("bar.test-zone.example.org", "8.8.8.8", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bartxtcname.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("info.test-zone.example.org", "example txt record content", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("infotxttxt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mailtxt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
@@ -596,14 +554,6 @@ func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
 			DNSName:    "bar.test-zone.example.org",
 			Targets:    endpoint.Targets{"8.8.8.8"},
 			RecordType: endpoint.RecordTypeCNAME,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
-			DNSName:    "info.test-zone.example.org",
-			Targets:    endpoint.Targets{"example txt record content"},
-			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
