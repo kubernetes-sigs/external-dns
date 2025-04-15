@@ -17,6 +17,7 @@ limitations under the License.
 package azure
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -26,7 +27,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 // config represents common config items for Azure DNS and Azure Private DNS
@@ -50,9 +50,8 @@ func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityCl
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
 	cfg := &config{}
-	err = yaml.Unmarshal(contents, &cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+	if err := json.Unmarshal(contents, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse Azure config file '%s': %v", configFile, err)
 	}
 	// If a subscription ID was given, override what was present in the config file
 	if subscriptionID != "" {
