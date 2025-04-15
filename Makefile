@@ -24,28 +24,26 @@ cover-html: cover
 	@go tool cover -html=cover.out
 
 #? controller-gen: download controller-gen if necessary
-controller-gen:
+controller-gen-install:
+	@scripts/install-tools.sh --generator
 ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0 ;\
-	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-#? golangci-lint: Install golangci-lint tool
-golangci-lint:
-	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.0.2
+#? controller-gen-install: download controller-gen if necessary
+controller-gen-install:
+	@scripts/install-tools.sh --generator
 
-#? golangci-lint-verify: Verify golangci-lint configuration
-golangci-lint-verify: golangci-lint
-	@golangci-lint config verify
+#? golangci-lint-install: Install golangci-lint tool
+golangci-lint-install:
+	@scripts/install-tools.sh --golangci
 
 #? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
-go-lint: golangci-lint
+go-lint: golangci-lint-install
+	golangci-lint config verify
 	gofmt -l -s -w .
 	golangci-lint run --timeout=30m --fix ./...
 
@@ -71,7 +69,7 @@ lint: licensecheck go-lint oas-lint
 
 #? crd: Generates CRD using controller-gen
 .PHONY: crd
-crd: controller-gen
+crd: controller-gen-install
 	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
