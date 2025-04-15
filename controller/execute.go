@@ -199,7 +199,10 @@ func Execute() {
 			zoneIDFilter,
 			cfg.CloudflareProxied,
 			cfg.DryRun,
-			cfg.CloudflareRegionKey,
+			cloudflare.RegionalServicesConfig{
+				Enabled:   cfg.CloudflareRegionalServices || cfg.CloudflareRegionKey != "",
+				RegionKey: cfg.CloudflareRegionKey,
+			},
 			cloudflare.CustomHostnamesConfig{
 				Enabled:              cfg.CloudflareCustomHostnames,
 				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,

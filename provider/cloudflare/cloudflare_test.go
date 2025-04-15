@@ -56,6 +56,7 @@ type mockCloudFlareClient struct {
 	listZonesContextError error
 	dnsRecordsError       error
 	customHostnames       map[string][]cloudflare.CustomHostname
+	regionalHostnames     map[string][]cloudflare.RegionalHostname
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -97,7 +98,8 @@ func NewMockCloudFlareClient() *mockCloudFlareClient {
 			"001": {},
 			"002": {},
 		},
-		customHostnames: map[string][]cloudflare.CustomHostname{},
+		customHostnames:   map[string][]cloudflare.CustomHostname{},
+		regionalHostnames: map[string][]cloudflare.RegionalHostname{},
 	}
 }
 
@@ -226,43 +228,6 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 			zone[rp.ID] = recordData
 		}
 	}
-	return nil
-}
-
-func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
-	m.Actions = append(m.Actions, MockAction{
-		Name:     "CreateDataLocalizationRegionalHostname",
-		ZoneId:   rc.Identifier,
-		RecordId: "",
-		RegionalHostname: cloudflare.RegionalHostname{
-			Hostname:  rp.Hostname,
-			RegionKey: rp.RegionKey,
-		},
-	})
-	return nil
-}
-
-func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
-	m.Actions = append(m.Actions, MockAction{
-		Name:     "UpdateDataLocalizationRegionalHostname",
-		ZoneId:   rc.Identifier,
-		RecordId: "",
-		RecordData: cloudflare.DNSRecord{
-			Name: rp.Hostname,
-		},
-	})
-	return nil
-}
-
-func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error {
-	m.Actions = append(m.Actions, MockAction{
-		Name:     "DeleteDataLocalizationRegionalHostname",
-		ZoneId:   rc.Identifier,
-		RecordId: "",
-		RecordData: cloudflare.DNSRecord{
-			Name: hostname,
-		},
-	})
 	return nil
 }
 
@@ -779,110 +744,6 @@ func TestCloudflareSetProxied(t *testing.T) {
 	}
 }
 
-func TestCloudflareRegionalHostname(t *testing.T) {
-	endpoints := []*endpoint.Endpoint{
-		{
-			RecordType: "A",
-			DNSName:    "bar.com",
-			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
-			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
-					Value: "eu",
-				},
-			},
-		},
-	}
-
-	AssertActions(t, &CloudFlareProvider{RegionKey: "us"}, endpoints, []MockAction{
-		{
-			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
-			RecordData: cloudflare.DNSRecord{
-				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
-				Type:    "A",
-				Name:    "bar.com",
-				Content: "127.0.0.1",
-				TTL:     1,
-				Proxied: proxyDisabled,
-			},
-		},
-		{
-			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
-			RecordData: cloudflare.DNSRecord{
-				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
-				Type:    "A",
-				Name:    "bar.com",
-				Content: "127.0.0.2",
-				TTL:     1,
-				Proxied: proxyDisabled,
-			},
-		},
-		{
-			Name:   "CreateDataLocalizationRegionalHostname",
-			ZoneId: "001",
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname:  "bar.com",
-				RegionKey: "eu",
-			},
-		},
-	},
-		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-	)
-}
-
-func TestCloudflareRegionalHostnameDefaults(t *testing.T) {
-	endpoints := []*endpoint.Endpoint{
-		{
-			RecordType: "A",
-			DNSName:    "bar.com",
-			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
-		},
-	}
-
-	AssertActions(t, &CloudFlareProvider{RegionKey: "us"}, endpoints, []MockAction{
-		{
-			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
-			RecordData: cloudflare.DNSRecord{
-				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
-				Type:    "A",
-				Name:    "bar.com",
-				Content: "127.0.0.1",
-				TTL:     1,
-				Proxied: proxyDisabled,
-			},
-		},
-		{
-			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
-			RecordData: cloudflare.DNSRecord{
-				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
-				Type:    "A",
-				Name:    "bar.com",
-				Content: "127.0.0.2",
-				TTL:     1,
-				Proxied: proxyDisabled,
-			},
-		},
-		{
-			Name:   "CreateDataLocalizationRegionalHostname",
-			ZoneId: "001",
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname:  "bar.com",
-				RegionKey: "us",
-			},
-		},
-	},
-		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-	)
-}
-
 func TestCloudflareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       NewMockCloudFlareClient(),
@@ -1099,7 +960,7 @@ func TestCloudflareProvider(t *testing.T) {
 				provider.NewZoneIDFilter([]string{""}),
 				false,
 				true,
-				"",
+				RegionalServicesConfig{Enabled: false},
 				CustomHostnamesConfig{Enabled: false},
 				DNSRecordsConfig{PerPage: 5000, Comment: ""},
 			)
@@ -1768,7 +1629,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		"us",
+		RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 		CustomHostnamesConfig{Enabled: false},
 		DNSRecordsConfig{PerPage: 50, Comment: ""},
 	)
@@ -1776,8 +1637,8 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if provider.RegionKey != "us" {
-		t.Errorf("expected region key to be 'us', but got '%s'", provider.RegionKey)
+	if provider.RegionalServicesConfig.RegionKey != "us" {
+		t.Errorf("expected region key to be 'us', but got '%s'", provider.RegionalServicesConfig.RegionKey)
 	}
 }
 
@@ -1790,7 +1651,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		"us",
+		RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 		CustomHostnamesConfig{Enabled: false},
 		DNSRecordsConfig{PerPage: 50},
 	)
@@ -1833,7 +1694,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		"us",
+		RegionalServicesConfig{Enabled: true, RegionKey: "us"},
 		CustomHostnamesConfig{Enabled: false},
 		DNSRecordsConfig{PerPage: 50, Comment: paidValidCommentBuilder.String()},
 	)
