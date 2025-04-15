@@ -37,6 +37,18 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
+// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
+var proxyEnabled *bool = boolPtr(true)
+
+// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
+var proxyDisabled *bool = boolPtr(false)
+
+// boolPtr is used as a helper function to return a pointer to a boolean
+// Needed because some parameters require a pointer.
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 type MockAction struct {
 	Name             string
 	ZoneId           string
@@ -1745,7 +1757,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		Targets:    []string{"192.0.2.1"},
 	}
 
-	change := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
+	change, _ := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
 	if change.RegionalHostname.RegionKey != "us" {
 		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.RegionKey)
 	}
@@ -1857,7 +1869,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 
 	for _, test := range commentTestCases {
 		t.Run(test.name, func(t *testing.T) {
-			change := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
+			change, _ := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
 			if len(change.ResourceRecord.Comment) != test.expected {
 				t.Errorf("expected comment to be %d characters long, but got %d", test.expected, len(change.ResourceRecord.Comment))
 			}

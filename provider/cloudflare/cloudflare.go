@@ -65,16 +65,6 @@ func (action changeAction) String() string {
 	return changeActionNames[action]
 }
 
-// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
-// see: https://github.com/cloudflare/cloudflare-go/pull/595
-
-var (
-	// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
-	proxyEnabled *bool = boolPtr(true)
-	// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
-	proxyDisabled *bool = boolPtr(false)
-)
-
 type DNSRecordIndex struct {
 	Name    string
 	Type    string
@@ -251,7 +241,7 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 	}
 
 	// Set priority only for MX records
-	if cfc.ResourceRecord.Type == "MX" && cfc.ResourceRecord.Priority != nil {
+	if cfc.ResourceRecord.Type == "MX" {
 		params.Priority = cfc.ResourceRecord.Priority
 	}
 
@@ -269,7 +259,7 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 	}
 
 	// Set priority only for MX records
-	if cfc.ResourceRecord.Type == "MX" && cfc.ResourceRecord.Priority != nil {
+	if cfc.ResourceRecord.Type == "MX" {
 		params.Priority = cfc.ResourceRecord.Priority
 	}
 
@@ -426,14 +416,24 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	if p.CustomHostnamesConfig.Enabled {
 		for _, e := range changes.Delete {
 			for _, target := range e.Targets {
-				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, e, target, nil))
+				change, err := p.newCloudFlareChange(cloudFlareDelete, e, target, nil)
+				if err != nil {
+					log.Errorf("failed to create cloudflare change: %v", err)
+					continue
+				}
+				cloudflareChanges = append(cloudflareChanges, change)
 			}
 		}
 	}
 
 	for _, e := range changes.Create {
 		for _, target := range e.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, e, target, nil))
+			change, err := p.newCloudFlareChange(cloudFlareCreate, e, target, nil)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 	}
 
@@ -443,15 +443,30 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
 		for _, a := range remove {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a, current))
+			change, err := p.newCloudFlareChange(cloudFlareDelete, current, a, current)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 
 		for _, a := range add {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a, current))
+			change, err := p.newCloudFlareChange(cloudFlareCreate, desired, a, current)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 
 		for _, a := range leave {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareUpdate, desired, a, current))
+			change, err := p.newCloudFlareChange(cloudFlareUpdate, desired, a, current)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 	}
 
@@ -459,7 +474,12 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	if !p.CustomHostnamesConfig.Enabled {
 		for _, e := range changes.Delete {
 			for _, target := range e.Targets {
-				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, e, target, nil))
+				change, err := p.newCloudFlareChange(cloudFlareDelete, e, target, nil)
+				if err != nil {
+					log.Errorf("failed to create cloudflare change: %v", err)
+					continue
+				}
+				cloudflareChanges = append(cloudflareChanges, change)
 			}
 		}
 	}
@@ -737,7 +757,7 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 	}
 }
 
-func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
+func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) (*cloudFlareChange, error) {
 	ttl := defaultTTL
 	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
@@ -769,12 +789,13 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	priority := (*uint16)(nil)
 	if ep.RecordType == "MX" {
-		parsedPriority, mailHost, err := parseMXRecord(target)
+		mxTarget := endpoint.Targets{target}
+		mxRecords, err := mxTarget.ParseMXRecord()
 		if err != nil {
 			log.Errorf("Failed to parse MX record target %q: %v", target, err)
 		} else {
-			priority = &parsedPriority
-			target = mailHost
+			priority = &mxRecords[0].Priority
+			target = mxRecords[0].Host
 		}
 	}
 
@@ -790,14 +811,11 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			Content:  target,
 			Comment:  comment,
 			Priority: priority,
-			Meta: map[string]interface{}{
-				"region": p.RegionKey,
-			},
 		},
 		RegionalHostname:    p.regionalHostname(ep),
 		CustomHostnamesPrev: prevCustomHostnames,
 		CustomHostnames:     newCustomHostnames,
-	}
+	}, nil
 }
 
 func newDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
@@ -971,31 +989,6 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		endpoints = append(endpoints, e)
 	}
 	return endpoints
-}
-
-// parseMXRecord is used as a helper function.
-// It takes an target string in the RFC 1034 format.
-// e.g. "10 mailhost1.example.com" and returns the priority as an integer
-// and the content as a string. If parsing fails, it returns an error.
-func parseMXRecord(target string) (uint16, string, error) {
-	parts := strings.Fields(target)
-	if len(parts) != 2 {
-		return uint16(0), "", fmt.Errorf("expected exactly 2 parts (priority and content), got %d", len(parts))
-	}
-
-	priority, err := strconv.ParseUint(parts[0], 10, 16)
-	if err != nil {
-		return uint16(priority), "", fmt.Errorf("invalid priority value: %w", err)
-	}
-
-	mailHost := parts[1]
-	return uint16(priority), mailHost, nil
-}
-
-// boolPtr is used as a helper function to return a pointer to a boolean
-// Needed because some parameters require a pointer.
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider
