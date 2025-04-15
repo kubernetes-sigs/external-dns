@@ -173,7 +173,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
-			//PiHole return only CNAME records. 
+			//PiHole return only CNAME records.
 			// CNAME format is DNSName,target, ttl?
 			DNSName, Target = recs[0], recs[1]
 			if len(recs) == 3 { // TTL is present
