@@ -219,20 +219,33 @@ func TestHandleSigterm(t *testing.T) {
 	}
 }
 
-func TestServeMetrics(t *testing.T) {
-	l, _ := net.Listen("tcp", ":0")
-	_ = l.Close()
-	_, port, _ := net.SplitHostPort(l.Addr().String())
+func getRandomPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
 
-	go serveMetrics(fmt.Sprintf(":%s", port))
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func TestServeMetrics(t *testing.T) {
+	port, err := getRandomPort()
+	require.NoError(t, err)
+
+	go serveMetrics(fmt.Sprintf(":%d", port))
 	// Required to let serveMetrics go routine to open the network socket
 	time.Sleep(10 * time.Millisecond)
 
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%s", port) + "/healthz")
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port) + "/healthz")
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, err = http.Get(fmt.Sprintf("http://localhost:%s", port) + "/metrics")
+	resp, err = http.Get(fmt.Sprintf("http://localhost:%d", port) + "/metrics")
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
