@@ -71,6 +71,18 @@ func (ttl TTL) IsConfigured() bool {
 // Targets is a representation of a list of targets for an endpoint.
 type Targets []string
 
+type MXTarget struct {
+	Priority uint16
+	Host     string
+}
+
+type SRVTarget struct {
+	Priority uint16
+	Weight   uint16
+	Port     uint16
+	Host     string
+}
+
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings
 func NewTargets(target ...string) Targets {
 	t := make(Targets, 0, len(target))
@@ -387,49 +399,83 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
-		return e.Targets.ValidateMXRecord()
+		_, err := e.Targets.ParseMXRecord()
+		return err == nil
 	case RecordTypeSRV:
-		return e.Targets.ValidateSRVRecord()
+		_, err := e.Targets.ParseSRVRecord()
+		return err == nil
 	}
 	return true
 }
 
-func (t Targets) ValidateMXRecord() bool {
+func (t Targets) ParseMXRecord() ([]MXTarget, error) {
+	var mxTargets []MXTarget
+
 	for _, target := range t {
+		var mxTarget MXTarget
 		// MX records must have a preference value to indicate priority, e.g. "10 example.com"
 		// as per https://www.rfc-editor.org/rfc/rfc974.txt
 		targetParts := strings.Fields(strings.TrimSpace(target))
 		if len(targetParts) != 2 {
-			log.Debugf("Invalid MX record target: %s. MX records must have a preference value to indicate priority, e.g. '10 example.com'", target)
-			return false
+			err := fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+			log.Error(err)
+			return []MXTarget{}, err
 		}
-		preferenceRaw := targetParts[0]
-		_, err := strconv.ParseUint(preferenceRaw, 10, 16)
+
+		parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
 		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
-			return false
+			err := fmt.Errorf("invalid integer value in target: %s", target)
+			log.Error(err)
+			return []MXTarget{}, err
 		}
+
+		mxTarget.Priority = uint16(parsedPriority)
+		mxTarget.Host = targetParts[1]
+		mxTargets = append(mxTargets, mxTarget)
 	}
-	return true
+
+	return mxTargets, nil
 }
 
-func (t Targets) ValidateSRVRecord() bool {
+func (t Targets) ParseSRVRecord() ([]SRVTarget, error) {
+	var srvTarget SRVTarget
+
 	for _, target := range t {
 		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
 		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
 		targetParts := strings.Fields(strings.TrimSpace(target))
 		if len(targetParts) != 4 {
-			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
-			return false
+			err := fmt.Errorf("invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
+			log.Error(err)
+			return nil, err
 		}
 
-		for _, part := range targetParts[:3] {
-			_, err := strconv.ParseUint(part, 10, 16)
-			if err != nil {
-				log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
-				return false
-			}
+		parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
+		if err != nil {
+			err := fmt.Errorf("invalid SRV record target: %s. Invalid priority value in target", target)
+			log.Error(err)
+			return nil, err
 		}
+
+		parsedWeight, err := strconv.ParseUint(targetParts[1], 10, 16)
+		if err != nil {
+			err := fmt.Errorf("invalid SRV record target: %s. Invalid weight value in target", target)
+			log.Error(err)
+			return nil, err
+		}
+
+		parsedPort, err := strconv.ParseUint(targetParts[2], 10, 16)
+		if err != nil {
+			err := fmt.Errorf("invalid SRV record target: %s. Invalid port value in target", target)
+			log.Error(err)
+			return nil, err
+		}
+
+		srvTarget.Priority = uint16(parsedPriority)
+		srvTarget.Weight = uint16(parsedWeight)
+		srvTarget.Port = uint16(parsedPort)
+		srvTarget.Host = targetParts[3]
 	}
-	return true
+
+	return []SRVTarget{srvTarget}, nil
 }
