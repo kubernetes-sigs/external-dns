@@ -121,6 +121,7 @@ type cloudFlareDNS interface {
 	CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error
+	ListDataLocalizationRegionalHostnames(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDataLocalizationRegionalHostnamesParams) ([]cloudflare.RegionalHostname, error)
 	CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error
 	UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error
 	DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error
@@ -226,13 +227,13 @@ type CloudFlareProvider struct {
 	provider.BaseProvider
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter          endpoint.DomainFilter
-	zoneIDFilter          provider.ZoneIDFilter
-	proxiedByDefault      bool
-	DryRun                bool
-	CustomHostnamesConfig CustomHostnamesConfig
-	DNSRecordsConfig      DNSRecordsConfig
-	RegionKey             string
+	domainFilter           endpoint.DomainFilter
+	zoneIDFilter           provider.ZoneIDFilter
+	proxiedByDefault       bool
+	DryRun                 bool
+	CustomHostnamesConfig  CustomHostnamesConfig
+	DNSRecordsConfig       DNSRecordsConfig
+	RegionalServicesConfig RegionalServicesConfig
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -289,7 +290,15 @@ func convertCloudflareError(err error) error {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, regionKey string, customHostnamesConfig CustomHostnamesConfig, dnsRecordsConfig DNSRecordsConfig) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(
+	domainFilter endpoint.DomainFilter,
+	zoneIDFilter provider.ZoneIDFilter,
+	proxiedByDefault bool,
+	dryRun bool,
+	regionalServicesConfig RegionalServicesConfig,
+	customHostnamesConfig CustomHostnamesConfig,
+	dnsRecordsConfig DNSRecordsConfig,
+) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -312,15 +321,19 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
 
+	if regionalServicesConfig.RegionKey != "" {
+		regionalServicesConfig.Enabled = true
+	}
+
 	return &CloudFlareProvider{
-		Client:                zoneService{config},
-		domainFilter:          domainFilter,
-		zoneIDFilter:          zoneIDFilter,
-		proxiedByDefault:      proxiedByDefault,
-		CustomHostnamesConfig: customHostnamesConfig,
-		DryRun:                dryRun,
-		RegionKey:             regionKey,
-		DNSRecordsConfig:      dnsRecordsConfig,
+		Client:                 zoneService{config},
+		domainFilter:           domainFilter,
+		zoneIDFilter:           zoneIDFilter,
+		proxiedByDefault:       proxiedByDefault,
+		CustomHostnamesConfig:  customHostnamesConfig,
+		DryRun:                 dryRun,
+		RegionalServicesConfig: regionalServicesConfig,
+		DNSRecordsConfig:       dnsRecordsConfig,
 	}, nil
 }
 
@@ -389,7 +402,13 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
 		// and record to allow the planner to calculate the correct plan. See #992.
-		endpoints = append(endpoints, groupByNameAndTypeWithCustomHostnames(records, chs)...)
+		zoneEndpoints := groupByNameAndTypeWithCustomHostnames(records, chs)
+
+		if err := p.addEnpointsProviderSpecificRegionKeyProperty(ctx, zone.ID, zoneEndpoints); err != nil {
+			return nil, err
+		}
+
+		endpoints = append(endpoints, zoneEndpoints...)
 	}
 
 	return endpoints, nil
@@ -605,16 +624,21 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			}
 		}
 
-		if regionalHostnamesChanges, err := dataLocalizationRegionalHostnamesChanges(zoneChanges); err == nil {
-			if !p.submitDataLocalizationRegionalHostnameChanges(ctx, regionalHostnamesChanges, resourceContainer) {
-				failedChange = true
+		if p.RegionalServicesConfig.Enabled {
+			desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
+			if err != nil {
+				return fmt.Errorf("failed to build desired regional hostnames: %w", err)
 			}
-		} else {
-			logFields := log.Fields{
-				"zone": zoneID,
+			if len(desiredRegionalHostnames) > 0 {
+				regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, resourceContainer)
+				if err != nil {
+					return fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
+				}
+				regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
+				if !p.submitRegionalHostnameChanges(ctx, regionalHostnamesChanges, resourceContainer) {
+					failedChange = true
+				}
 			}
-			log.WithFields(logFields).Errorf("failed to build data localization regional hostname changes: %v", err)
-			failedChange = true
 		}
 
 		if failedChange {
@@ -648,6 +672,13 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		} else {
 			// ignore custom hostnames annotations if not enabled
 			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+		}
+
+		if p.RegionalServicesConfig.Enabled {
+			// Add default region key if not set
+			if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareRegionKey); !ok {
+				e.SetProviderSpecificProperty(annotations.CloudflareRegionKey, p.RegionalServicesConfig.RegionKey)
+			}
 		}
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
