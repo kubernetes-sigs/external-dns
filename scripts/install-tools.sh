@@ -68,7 +68,7 @@ install_golangci() {
       install=true
   fi
   if [[ "$install" == true ]]; then
-      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
+      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANG_CI_LINTER_VERSION}/install.sh \
         | sh -s -- -b $(go env GOPATH)/bin "${GOLANG_CI_LINTER_VERSION}"
   fi
 }
