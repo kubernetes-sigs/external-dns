@@ -23,12 +23,12 @@ import (
 	"strings"
 	"time"
 
+	yaml "github.com/goccy/go-yaml"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
 	"github.com/oracle/oci-go-sdk/v65/dns"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
