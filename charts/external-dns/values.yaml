@@ -263,24 +263,31 @@ provider:  # @schema type: [object, string];
     # @default -- See _values.yaml_
     livenessProbe:
       httpGet:
-        path: /healthz
-        port: http-webhook
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 2
-      successThreshold: 1
+        path: /healthz # @schema type:[string, null]; default: null
+        # @schema
+        # type: [string, integer]
+        # default: string
+        # @schema
+        port: http-webhook # 
+      initialDelaySeconds: 10 # @schema type:[int, null]; default: null
+      periodSeconds: 10 # @schema type:[int, null]; default: null
+      timeoutSeconds: 5 # @schema type:[int, null]; default: null
+      failureThreshold: 2 # @schema type:[int, null]; default: null
+      successThreshold: 1 # @schema type:[int, null]; default: null
     # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.
-    # @default -- See _values.yaml_
     readinessProbe:
       httpGet:
-        path: /healthz
-        port: http-webhook
-      initialDelaySeconds: 5
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 6
-      successThreshold: 1
+        path: /healthz # @schema type:[string, null]; default: null
+        # @schema
+        # type: [string, integer]
+        # default: string
+        # @schema
+        port: http-webhook 
+      initialDelaySeconds: 5 # @schema type:[int, null]; default: null
+      periodSeconds: 10 # @schema type:[int, null]; default: null
+      timeoutSeconds: 5 # @schema type:[int, null]; default: null
+      failureThreshold: 6 # @schema type:[int, null]; default: null
+      successThreshold: 1 # @schema type:[int, null]; default: null
     service:
       # -- Webhook exposed HTTP port for the service.
       port: 8080
