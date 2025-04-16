@@ -438,9 +438,10 @@ func (t Targets) ParseMXRecord() ([]MXTarget, error) {
 }
 
 func (t Targets) ParseSRVRecord() ([]SRVTarget, error) {
-	var srvTarget SRVTarget
+	var srvTargets []SRVTarget
 
 	for _, target := range t {
+		var srvTarget SRVTarget
 		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
 		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
 		targetParts := strings.Fields(strings.TrimSpace(target))
@@ -475,7 +476,9 @@ func (t Targets) ParseSRVRecord() ([]SRVTarget, error) {
 		srvTarget.Weight = uint16(parsedWeight)
 		srvTarget.Port = uint16(parsedPort)
 		srvTarget.Host = targetParts[3]
+
+		srvTargets = append(srvTargets, srvTarget)
 	}
 
-	return []SRVTarget{srvTarget}, nil
+	return srvTargets, nil
 }
