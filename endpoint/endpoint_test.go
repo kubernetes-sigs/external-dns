@@ -815,3 +815,189 @@ func TestPDNScheckEndpoint(t *testing.T) {
 		assert.Equal(t, tt.expected, actual)
 	}
 }
+
+func TestParseMXRecord(t *testing.T) {
+	tests := []struct {
+		description string
+		targets     Targets
+		expected    []MXTarget
+		expectError bool
+	}{
+		{
+			description: "Valid MX record",
+			targets:     Targets{"10 example.com"},
+			expected: []MXTarget{
+				{Priority: 10, Host: "example.com"},
+			},
+			expectError: false,
+		},
+		{
+			description: "Valid MX record with multiple targets",
+			targets:     Targets{"10 example.com", "20 backup.example.com"},
+			expected: []MXTarget{
+				{Priority: 10, Host: "example.com"},
+				{Priority: 20, Host: "backup.example.com"},
+			},
+			expectError: false,
+		},
+		{
+			description: "Invalid MX record with missing priority",
+			targets:     Targets{"example.com"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			description: "Invalid MX record with non-integer priority",
+			targets:     Targets{"abc example.com"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			description: "Invalid MX record with too many parts",
+			targets:     Targets{"10 example.com extra"},
+			expected:    nil,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := tt.targets.ParseMXRecord()
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestParseSRVRecord(t *testing.T) {
+	tests := []struct {
+		description string
+		targets     Targets
+		expected    []SRVTarget
+		expectError bool
+	}{
+		{
+			description: "Valid SRV record",
+			targets:     Targets{"10 5 5060 example.com"},
+			expected: []SRVTarget{
+				{Priority: 10, Weight: 5, Port: 5060, Host: "example.com"},
+			},
+			expectError: false,
+		},
+		{
+			description: "Valid SRV record with multiple targets",
+			targets:     Targets{"10 5 5060 example.com", "20 10 8080 backup.example.com"},
+			expected: []SRVTarget{
+				{Priority: 10, Weight: 5, Port: 5060, Host: "example.com"},
+				{Priority: 20, Weight: 10, Port: 8080, Host: "backup.example.com"},
+			},
+			expectError: false,
+		},
+		{
+			description: "Invalid SRV record with missing part",
+			targets:     Targets{"10 5 5060"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer priority",
+			targets:     Targets{"abc 5 5060 example.com"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer weight",
+			targets:     Targets{"10 abc 5060 example.com"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer port",
+			targets:     Targets{"10 5 abc example.com"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with too many parts",
+			targets:     Targets{"10 5 5060 example.com extra"},
+			expected:    nil,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := tt.targets.ParseSRVRecord()
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, actual)
+			}
+		})
+	}
+}
+func TestCheckEndpoint(t *testing.T) {
+	tests := []struct {
+		description string
+		endpoint    Endpoint
+		expected    bool
+	}{
+		{
+			description: "Valid MX record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid MX record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid SRV record target",
+			endpoint: Endpoint{
+				DNSName:    "_service._tcp.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 5 5060 example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid SRV record target",
+			endpoint: Endpoint{
+				DNSName:    "_service._tcp.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 5 example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Non-MX/SRV record type",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{"192.168.1.1"},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual := tt.endpoint.CheckEndpoint()
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
