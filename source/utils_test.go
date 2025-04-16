@@ -144,7 +144,7 @@ func TestSelectorMatchesService(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := SelectorMatchesServiceSelector(tt.selector, tt.svcSelector)
+			result := MatchesServiceSelector(tt.selector, tt.svcSelector)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

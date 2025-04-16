@@ -176,15 +176,15 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 
-	ttl := getTTLFromAnnotations(ocpRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ocpRoute.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
 	if len(targets) == 0 {
 		targetsFromRoute, _ := ors.getTargetsFromRouteStatus(ocpRoute.Status)
 		targets = targetsFromRoute
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -222,16 +222,16 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 
 	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 
-	ttl := getTTLFromAnnotations(ocpRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ocpRoute.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
 	targetsFromRoute, host := ors.getTargetsFromRouteStatus(ocpRoute.Status)
 
 	if len(targets) == 0 {
 		targets = targetsFromRoute
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	if host != "" {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
@@ -239,7 +239,7 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 
 	// Skip endpoints if we do not want entries from annotations
 	if !ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ocpRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ocpRoute.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}

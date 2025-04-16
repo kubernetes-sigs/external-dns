@@ -23,11 +23,13 @@ import (
 )
 
 func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
 
-	var aTargets endpoint.Targets
-	var aaaaTargets endpoint.Targets
-	var cnameTargets endpoint.Targets
+	var (
+		endpoints    []*endpoint.Endpoint
+		aTargets     endpoint.Targets
+		aaaaTargets  endpoint.Targets
+		cnameTargets endpoint.Targets
+	)
 
 	for _, t := range targets {
 		switch suitableType(t) {
@@ -88,7 +90,7 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 	}
 
 	for _, service := range services {
-		if !SelectorMatchesServiceSelector(selector, service.Spec.Selector) {
+		if !MatchesServiceSelector(selector, service.Spec.Selector) {
 			continue
 		}
 

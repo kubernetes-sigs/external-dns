@@ -94,7 +94,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 
-		targets := getTargetsFromTargetAnnotation(pod.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 
 		if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)

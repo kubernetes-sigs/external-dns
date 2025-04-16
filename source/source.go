@@ -69,10 +69,6 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
-func getTTLFromAnnotations(input map[string]string, resource string) endpoint.TTL {
-	return annotations.TTLFromAnnotations(input, resource)
-}
-
 type kubeObject interface {
 	runtime.Object
 	metav1.Object
@@ -102,30 +98,12 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
 
-func getHostnamesFromAnnotations(input map[string]string) []string {
-	return annotations.HostnamesFromAnnotations(input)
-}
-
 func getAccessFromAnnotations(input map[string]string) string {
 	return input[accessAnnotationKey]
 }
 
 func getEndpointsTypeFromAnnotations(input map[string]string) string {
 	return input[endpointsTypeAnnotationKey]
-}
-
-func getInternalHostnamesFromAnnotations(input map[string]string) []string {
-	return annotations.InternalHostnamesFromAnnotations(input)
-}
-
-func getProviderSpecificAnnotations(input map[string]string) (endpoint.ProviderSpecific, string) {
-	return annotations.ProviderSpecificAnnotations(input)
-}
-
-// getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
-// Returns empty endpoints array if none are found.
-func getTargetsFromTargetAnnotation(input map[string]string) endpoint.Targets {
-	return annotations.TargetsFromTargetAnnotation(input)
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.

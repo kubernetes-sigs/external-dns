@@ -25,12 +25,17 @@ import (
 // In this case type A/AAAA for IPs and type CNAME for everything else.
 func suitableType(target string) string {
 	netIP, err := netip.ParseAddr(target)
-	if err == nil && netIP.Is4() {
-		return endpoint.RecordTypeA
-	} else if err == nil && netIP.Is6() {
-		return endpoint.RecordTypeAAAA
+	if err != nil {
+		return endpoint.RecordTypeCNAME
 	}
-	return endpoint.RecordTypeCNAME
+	switch {
+	case netIP.Is4():
+		return endpoint.RecordTypeA
+	case netIP.Is6():
+		return endpoint.RecordTypeAAAA
+	default:
+		return endpoint.RecordTypeCNAME
+	}
 }
 
 // ParseIngress parses an ingress string in the format "namespace/name" or "name".
@@ -49,10 +54,10 @@ func ParseIngress(ingress string) (namespace, name string, err error) {
 	return
 }
 
-// SelectorMatchesServiceSelector checks if all key-value pairs in the selector map
+// MatchesServiceSelector checks if all key-value pairs in the selector map
 // are present and match the corresponding key-value pairs in the svcSelector map.
 // It returns true if all pairs match, otherwise it returns false.
-func SelectorMatchesServiceSelector(selector, svcSelector map[string]string) bool {
+func MatchesServiceSelector(selector, svcSelector map[string]string) bool {
 	for k, v := range selector {
 		if lbl, ok := svcSelector[k]; !ok || lbl != v {
 			return false

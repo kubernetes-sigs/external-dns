@@ -248,7 +248,7 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 }
 
 func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {
-	targets := getTargetsFromTargetAnnotation(gateway.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
 	}
@@ -274,10 +274,9 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 
 	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 
-	annotations := gateway.Annotations
-	ttl := getTTLFromAnnotations(annotations, resource)
+	ttl := annotations.TTLFromAnnotations(gateway.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(annotations)
+	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromGateway(ctx, gateway)
 		if err != nil {
@@ -285,7 +284,7 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(gateway.Annotations)
 
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
@@ -317,7 +316,7 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1alpha3.Gatewa
 	}
 
 	if !sc.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(gateway.Annotations)...)
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(gateway.Annotations)...)
 	}
 
 	return hostnames, nil

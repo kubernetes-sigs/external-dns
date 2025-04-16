@@ -115,7 +115,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		log.Debugf("creating endpoint for node %s", node.Name)
 
-		ttl := getTTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
+		ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
 
 		// create new endpoint with the information we already have
 		ep := &endpoint.Endpoint{
@@ -138,7 +138,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addrs := getTargetsFromTargetAnnotation(node.Annotations)
+		addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
 		if len(addrs) == 0 {
 			addrs, err = ns.nodeAddresses(node)
 			if err != nil {

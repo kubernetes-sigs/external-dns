@@ -127,7 +127,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		targets := getTargetsFromTargetAnnotation(tcpIngress.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)
 		if len(targets) == 0 {
 			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
 				if lb.IP != "" {
@@ -194,12 +194,12 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 
 	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(tcpIngress.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(tcpIngress.Annotations)
 
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(tcpIngress.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
