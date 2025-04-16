@@ -30,11 +30,15 @@ func TestZoneIDName(t *testing.T) {
 	z.Add("123456", "qux.baz")
 	z.Add("654321", "foo.qux.baz")
 	z.Add("987654", "エイミー.みんな")
+	z.Add("123123", "_metadata.example.com")
+	z.Add("456456", "_metadata.エイミー.みんな")
 
 	assert.Equal(t, ZoneIDName{
 		"123456": "qux.baz",
 		"654321": "foo.qux.baz",
 		"987654": "エイミー.みんな",
+		"123123": "_metadata.example.com",
+		"456456": "_metadata.エイミー.みんな",
 	}, z)
 
 	// simple entry in a domain
@@ -73,6 +77,6 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "987654", zoneID)
 
 	b := testutils.LogsToBuffer(log.WarnLevel, t)
-	zoneID, zoneName = z.FindZone("???")
-	assert.Contains(t, b.String(), "level=warning msg=\"Failed to convert hostname '???' to its Unicode form: idna: disallowed rune U+003F\"")
+	_, _ = z.FindZone("???")
+	assert.Contains(t, b.String(), "level=warning msg=\"Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F\"")
 }
