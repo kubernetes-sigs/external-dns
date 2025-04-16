@@ -47,3 +47,4 @@ jobs:
       with:
         path-to-profile: profile.cov
       if: github.actor != 'nektos/act'
+      continue-on-error: true

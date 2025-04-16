@@ -37,6 +37,7 @@ require (
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.7.0
 	github.com/go-logr/logr v1.4.2
+	github.com/goccy/go-yaml v1.17.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/linki/instrumented_http v0.3.0
@@ -69,9 +70,7 @@ require (
 	golang.org/x/text v0.24.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.228.0
-	gopkg.in/ns1/ns1-go.v2 v2.14.1
-	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/ns1/ns1-go.v2 v2.14.2
 	istio.io/api v1.25.1
 	istio.io/client-go v1.25.1
 	k8s.io/api v0.32.3
@@ -212,6 +211,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
 	moul.io/http2curl v1.0.0 // indirect

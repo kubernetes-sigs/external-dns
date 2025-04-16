@@ -29,7 +29,7 @@ import (
 	"github.com/IBM/networking-go-sdk/dnsrecordsv1"
 	"github.com/IBM/networking-go-sdk/dnssvcsv1"
 	"github.com/IBM/networking-go-sdk/zonesv1"
-	"gopkg.in/yaml.v2"
+	yaml "github.com/goccy/go-yaml"
 
 	log "github.com/sirupsen/logrus"
 
