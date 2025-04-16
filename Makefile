@@ -32,10 +32,6 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-#? controller-gen-install: download controller-gen if necessary
-controller-gen-install:
-	@scripts/install-tools.sh --generator
-
 #? golangci-lint-install: Install golangci-lint tool
 golangci-lint-install:
 	@scripts/install-tools.sh --golangci
@@ -70,7 +66,7 @@ lint: licensecheck go-lint oas-lint
 #? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd: controller-gen-install
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/sources/crd/crd-manifest.yaml
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > charts/external-dns/crds/dnsendpoint.yaml
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
