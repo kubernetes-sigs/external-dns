@@ -271,6 +271,7 @@ provider:  # @schema type: [object, string];
       failureThreshold: 2  # @schema type:[integer, null]; default: null
       successThreshold: 1  # @schema type:[integer, null]; default: null
     # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.
+    # @default -- See _values.yaml_
     readinessProbe:
       httpGet:
         path: /healthz  # @schema type:[string, null]; default: null

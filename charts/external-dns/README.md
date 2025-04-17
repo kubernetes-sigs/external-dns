@@ -137,7 +137,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | provider.webhook.image.repository | string | `nil` | Image repository for the `webhook` container. |
 | provider.webhook.image.tag | string | `nil` | Image tag for the `webhook` container. |
 | provider.webhook.livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
-| provider.webhook.readinessProbe | object | `{"failureThreshold":6,"httpGet":{"path":"/healthz","port":"http-webhook"},"initialDelaySeconds":5,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":5}` | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
+| provider.webhook.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
 | provider.webhook.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container. |
 | provider.webhook.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container. |
 | provider.webhook.service.port | int | `8080` | Webhook exposed HTTP port for the service. |
