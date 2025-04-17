@@ -1149,7 +1149,6 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 }
 
 func TestCloudflareGetRecordID(t *testing.T) {
-	p := &CloudFlareProvider{}
 	recordsMap := DNSRecordsMap{
 		{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
 			Name:    "foo.com",
@@ -1170,29 +1169,29 @@ func TestCloudflareGetRecordID(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeA,
 		Content: "foobar",
 	}))
 
-	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "fizfuz",
 	}))
 
-	assert.Equal(t, "1", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "1", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "foobar",
 	}))
-	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "2.3.4.5",
 	}))
-	assert.Equal(t, "2", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "2", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "1.2.3.4",
@@ -2706,7 +2705,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			t.Error(e)
 		}
 		if tc.preApplyHook == "corrupt" {
-			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
+			if ch, err := chs.Get("newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
 				chID := ch.ID
 				t.Logf("corrupting custom hostname %q", chID)
 				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
