@@ -37,6 +37,18 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
+var proxyEnabled *bool = boolPtr(true)
+
+// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
+var proxyDisabled *bool = boolPtr(false)
+
+// boolPtr is used as a helper function to return a pointer to a boolean
+// Needed because some parameters require a pointer.
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 type MockAction struct {
 	Name             string
 	ZoneId           string
@@ -115,7 +127,7 @@ func NewMockCloudFlareClientWithRecords(records map[string][]cloudflare.DNSRecor
 func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 	switch params := rp.(type) {
 	case cloudflare.CreateDNSRecordParams:
-		return cloudflare.DNSRecord{
+		record := cloudflare.DNSRecord{
 			ID:      params.ID,
 			Name:    params.Name,
 			TTL:     params.TTL,
@@ -123,8 +135,12 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 			Type:    params.Type,
 			Content: params.Content,
 		}
+		if params.Type == "MX" {
+			record.Priority = params.Priority
+		}
+		return record
 	case cloudflare.UpdateDNSRecordParams:
-		return cloudflare.DNSRecord{
+		record := cloudflare.DNSRecord{
 			ID:      params.ID,
 			Name:    params.Name,
 			TTL:     params.TTL,
@@ -132,6 +148,10 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 			Type:    params.Type,
 			Content: params.Content,
 		}
+		if params.Type == "MX" {
+			record.Priority = params.Priority
+		}
+		return record
 	default:
 		return cloudflare.DNSRecord{}
 	}
@@ -464,7 +484,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 
 	// Records other than A, CNAME and NS are not supported by planner, just create them
 	for _, endpoint := range endpoints {
-		if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" && endpoint.RecordType != "NS" {
+		if !slices.Contains(managedRecords, endpoint.RecordType) {
 			changes.Create = append(changes.Create, endpoint)
 		}
 	}
@@ -556,6 +576,77 @@ func TestCloudflareCname(t *testing.T) {
 		},
 	},
 		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	)
+}
+
+func TestCloudflareMx(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "MX",
+			DNSName:    "mx.bar.com",
+			Targets:    endpoint.Targets{"10 google.com", "20 facebook.com"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("MX", "mx.bar.com", "google.com"),
+			RecordData: cloudflare.DNSRecord{
+				ID:       generateDNSRecordID("MX", "mx.bar.com", "google.com"),
+				Type:     "MX",
+				Name:     "mx.bar.com",
+				Content:  "google.com",
+				Priority: cloudflare.Uint16Ptr(10),
+				TTL:      1,
+				Proxied:  proxyDisabled,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("MX", "mx.bar.com", "facebook.com"),
+			RecordData: cloudflare.DNSRecord{
+				ID:       generateDNSRecordID("MX", "mx.bar.com", "facebook.com"),
+				Type:     "MX",
+				Name:     "mx.bar.com",
+				Content:  "facebook.com",
+				Priority: cloudflare.Uint16Ptr(20),
+				TTL:      1,
+				Proxied:  proxyDisabled,
+			},
+		},
+	},
+		[]string{endpoint.RecordTypeMX},
+	)
+}
+
+func TestCloudflareTxt(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "TXT",
+			DNSName:    "txt.bar.com",
+			Targets:    endpoint.Targets{"v=spf1 include:_spf.google.com ~all"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("TXT", "txt.bar.com", "v=spf1 include:_spf.google.com ~all"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("TXT", "txt.bar.com", "v=spf1 include:_spf.google.com ~all"),
+				Type:    "TXT",
+				Name:    "txt.bar.com",
+				Content: "v=spf1 include:_spf.google.com ~all",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+	},
+		[]string{endpoint.RecordTypeTXT},
 	)
 }
 
@@ -738,12 +829,24 @@ func TestCloudflareSetProxied(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		target := "127.0.0.1"
+		var targets endpoint.Targets
+		var content string
+		var priority *uint16
+
+		if testCase.recordType == "MX" {
+			targets = endpoint.Targets{"10 mx.example.com"}
+			content = "mx.example.com"
+			priority = cloudflare.Uint16Ptr(10)
+		} else {
+			targets = endpoint.Targets{"127.0.0.1"}
+			content = "127.0.0.1"
+		}
+
 		endpoints := []*endpoint.Endpoint{
 			{
 				RecordType: testCase.recordType,
 				DNSName:    testCase.domain,
-				Targets:    endpoint.Targets{target},
+				Targets:    endpoint.Targets{targets[0]},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
 						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
@@ -752,22 +855,26 @@ func TestCloudflareSetProxied(t *testing.T) {
 				},
 			},
 		}
-		expectedID := fmt.Sprintf("%s-%s-%s", testCase.domain, testCase.recordType, target)
+		expectedID := fmt.Sprintf("%s-%s-%s", testCase.domain, testCase.recordType, content)
+		recordData := cloudflare.DNSRecord{
+			ID:      expectedID,
+			Type:    testCase.recordType,
+			Name:    testCase.domain,
+			Content: content,
+			TTL:     1,
+			Proxied: testCase.proxiable,
+		}
+		if testCase.recordType == "MX" {
+			recordData.Priority = priority
+		}
 		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 			{
-				Name:     "Create",
-				ZoneId:   "001",
-				RecordId: expectedID,
-				RecordData: cloudflare.DNSRecord{
-					ID:      expectedID,
-					Type:    testCase.recordType,
-					Name:    testCase.domain,
-					Content: "127.0.0.1",
-					TTL:     1,
-					Proxied: testCase.proxiable,
-				},
+				Name:       "Create",
+				ZoneId:     "001",
+				RecordId:   expectedID,
+				RecordData: recordData,
 			},
-		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
+		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeMX}, testCase.recordType+" record on "+testCase.domain)
 	}
 }
 
@@ -1726,7 +1833,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		Targets:    []string{"192.0.2.1"},
 	}
 
-	change := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0], nil)
+	change, _ := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0], nil)
 	if change.RegionalHostname.RegionKey != "us" {
 		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.RegionKey)
 	}
