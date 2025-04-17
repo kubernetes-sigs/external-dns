@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -63,6 +64,7 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 			},
 		},
 	}
+
 	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
 
 	p := &piholeClientV6{
@@ -114,6 +116,32 @@ func (p *piholeClientV6) getConfigValue(ctx context.Context, rtype string) ([]st
 	return results, nil
 }
 
+/**
+ * isValidIPv4 checks if the given IP address is a valid IPv4 address.
+ * It returns true if the IP address is valid, false otherwise.
+ * If the IP address is in IPv6 format, it will return false.
+ */
+func isValidIPv4(ip string) bool {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return false
+	}
+	return addr.Is4()
+}
+
+/**
+ * isValidIPv6 checks if the given IP address is a valid IPv6 address.
+ * It returns true if the IP address is valid, false otherwise.
+ * If the IP address is in IPv6 with dual format y:y:y:y:y:y:x.x.x.x. , it will return true.
+ */
+func isValidIPv6(ip string) bool {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return false
+	}
+	return addr.Is6()
+}
+
 func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	out := make([]*endpoint.Endpoint, 0)
 	results, err := p.getConfigValue(ctx, rtype)
@@ -126,42 +154,39 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			return r == ' ' || r == ','
 		})
 		if len(recs) < 2 {
-			log.Warnf("skipping record %s: invalid format", rec)
+			log.Warnf("skipping record %s: invalid format received from PiHole", rec)
 			continue
 		}
 		var DNSName, Target string
-		var Ttl endpoint.TTL = 0
+		var Ttl = endpoint.TTL(0)
 		// A/AAAA record format is target(IP) DNSName
 		DNSName, Target = recs[1], recs[0]
-
 		switch rtype {
 		case endpoint.RecordTypeA:
-			if strings.Contains(Target, ":") {
+			//PiHole return A and AAAA records. Filter to only keep the A records
+			if !isValidIPv4(Target) {
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
-			if strings.Contains(Target, ".") {
+			//PiHole return A and AAAA records. Filter to only keep the AAAA records
+			if !isValidIPv6(Target) {
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
-			// CNAME format is DNSName,target
+			//PiHole return only CNAME records.
+			// CNAME format is DNSName,target, ttl?
 			DNSName, Target = recs[0], recs[1]
 			if len(recs) == 3 { // TTL is present
 				// Parse string to int64 first
 				if ttlInt, err := strconv.ParseInt(recs[2], 10, 64); err == nil {
 					Ttl = endpoint.TTL(ttlInt)
 				} else {
-					log.Warnf("failed to parse TTL value '%s': %v; using a TTL of %d", recs[2], err, Ttl)
+					log.Warnf("failed to parse TTL value received from PiHole '%s': %v; using a TTL of %d", recs[2], err, Ttl)
 				}
 			}
 		}
 
-		out = append(out, &endpoint.Endpoint{
-			DNSName:    DNSName,
-			Targets:    []string{Target},
-			RecordTTL:  Ttl,
-			RecordType: rtype,
-		})
+		out = append(out, endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target))
 	}
 	return out, nil
 }
@@ -375,7 +400,13 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		if err := json.Unmarshal(jRes, &apiError); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
 		}
-		log.Debugf("Error on request %s", req.Body)
+		if log.IsLevelEnabled(log.DebugLevel) {
+			log.Debugf("Error on request %s", req.URL)
+			if req.Body != nil {
+				log.Debugf("Body of the request %s", req.Body)
+			}
+		}
+
 		if res.StatusCode == http.StatusUnauthorized && p.token != "" {
 			tryCount := 1
 			maxRetries := 3
