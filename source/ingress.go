@@ -32,6 +32,7 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -184,14 +185,14 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
-	ttl := getTTLFromAnnotations(ing.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(ing.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -272,15 +273,15 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
-	ttl := getTTLFromAnnotations(ing.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(ing.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
 
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
 	// Gather endpoints defined on hosts sections of the ingress
 	var definedHostsEndpoints []*endpoint.Endpoint
@@ -309,7 +310,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	// Gather endpoints defined on annotations in the ingress
 	var annotationEndpoints []*endpoint.Endpoint
 	if !ignoreHostnameAnnotation {
-		for _, hostname := range getHostnamesFromAnnotations(ing.Annotations) {
+		for _, hostname := range annotations.HostnamesFromAnnotations(ing.Annotations) {
 			annotationEndpoints = append(annotationEndpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}

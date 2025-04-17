@@ -312,7 +312,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 	}
 	mesh := sets.New[endpoint.EndpointKey]()
 	for _, newEndpoint := range changes.Create {
-		if _, exists := curZone[newEndpoint.Key()]; exists {
+		if _, ok := curZone[newEndpoint.Key()]; ok {
 			return ErrRecordAlreadyExists
 		}
 		if err := c.updateMesh(mesh, newEndpoint); err != nil {
@@ -320,7 +320,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 		}
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		if _, exists := curZone[updateEndpoint.Key()]; !exists {
+		if _, ok := curZone[updateEndpoint.Key()]; !ok {
 			return ErrRecordNotFound
 		}
 		if err := c.updateMesh(mesh, updateEndpoint); err != nil {
@@ -328,12 +328,12 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 		}
 	}
 	for _, updateOldEndpoint := range changes.UpdateOld {
-		if rec, exists := curZone[updateOldEndpoint.Key()]; !exists || rec.Targets[0] != updateOldEndpoint.Targets[0] {
+		if rec, ok := curZone[updateOldEndpoint.Key()]; !ok || rec.Targets[0] != updateOldEndpoint.Targets[0] {
 			return ErrRecordNotFound
 		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
-		if rec, exists := curZone[deleteEndpoint.Key()]; !exists || rec.Targets[0] != deleteEndpoint.Targets[0] {
+		if rec, ok := curZone[deleteEndpoint.Key()]; !ok || rec.Targets[0] != deleteEndpoint.Targets[0] {
 			return ErrRecordNotFound
 		}
 		if err := c.updateMesh(mesh, deleteEndpoint); err != nil {
