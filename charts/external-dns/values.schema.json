@@ -61,14 +61,21 @@
       "type": "array"
     },
     "extraArgs": {
-      "items": {
-        "type": "string"
-      },
-      "type": [
-        "array",
-        "null"
-      ],
-      "uniqueItems": true
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ],
+          "uniqueItems": true
+        },
+        {
+          "type": "object"
+        }
+      ]
     },
     "extraContainers": {
       "properties": {},
