@@ -85,7 +85,7 @@ Here is an example [CRD manifest](https://github.com/kubernetes-sigs/external-dn
 Apply this to register the CRD
 
 ```sh
-$ kubectl apply --server-side=true -f "https://raw.githubusercontent.com/kubernetes-sigs/external-dns/master/charts/external-dns/crds/dnsendpoint.yaml"
+$ kubectl apply --server-side=true -f "https://raw.githubusercontent.com/kubernetes-sigs/external-dns/master/config/crd/standard/dnsendpoint.yaml"
 customresourcedefinition.apiextensions.k8s.io "dnsendpoints.externaldns.k8s.io" created
 ```
 

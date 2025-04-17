@@ -63,10 +63,11 @@ oas-lint:
 .PHONY: lint
 lint: licensecheck go-lint oas-lint
 
-#? crd: Generates CRD using controller-gen
+#? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
 crd: controller-gen-install
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > charts/external-dns/crds/dnsendpoint.yaml
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > config/crd/standard/dnsendpoint.yaml
+	cp -f config/crd/standard/dnsendpoint.yaml charts/external-dns/crds/dnsendpoint.yaml
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
