@@ -50,3 +50,15 @@ tests:
       labelFilter: "mydomain.io/enable-dns-record in (true)"
     asserts:
       - notFailedTemplate: {}
+
+  - it: should not fail when livenessProbe is null
+    set:
+      livenessProbe: null
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when readinessProbe is null
+    set:
+      readinessProbe: null
+    asserts:
+      - notFailedTemplate: {}
