@@ -309,7 +309,7 @@
               "properties": {
                 "failureThreshold": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
@@ -323,7 +323,7 @@
                     },
                     "port": {
                       "type": [
-                        "int",
+                        "integer",
                         "string"
                       ]
                     }
@@ -332,25 +332,25 @@
                 },
                 "initialDelaySeconds": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
                 "periodSeconds": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
                 "successThreshold": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
                 "timeoutSeconds": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 }
@@ -361,7 +361,7 @@
               "properties": {
                 "failureThreshold": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
@@ -375,7 +375,7 @@
                     },
                     "port": {
                       "type": [
-                        "int",
+                        "integer",
                         "string"
                       ]
                     }
@@ -384,25 +384,25 @@
                 },
                 "initialDelaySeconds": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
                 "periodSeconds": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
                 "successThreshold": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 },
                 "timeoutSeconds": {
                   "type": [
-                    "int",
+                    "integer",
                     "null"
                   ]
                 }
