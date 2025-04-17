@@ -264,22 +264,22 @@ provider:  # @schema type: [object, string];
     livenessProbe:
       httpGet:
         path: /healthz # @schema type:[string, null]; default: null
-        port: http-webhook # @schema type:[int,string]; default: string
-      initialDelaySeconds: 10 # @schema type:[int, null]; default: null
-      periodSeconds: 10 # @schema type:[int, null]; default: null
-      timeoutSeconds: 5 # @schema type:[int, null]; default: null
-      failureThreshold: 2 # @schema type:[int, null]; default: null
-      successThreshold: 1 # @schema type:[int, null]; default: null
+        port: http-webhook # @schema type:[integer,string]; default: string
+      initialDelaySeconds: 10 # @schema type:[integer, null]; default: null
+      periodSeconds: 10 # @schema type:[integer, null]; default: null
+      timeoutSeconds: 5 # @schema type:[integer, null]; default: null
+      failureThreshold: 2 # @schema type:[integer, null]; default: null
+      successThreshold: 1 # @schema type:[integer, null]; default: null
     # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.
     readinessProbe:
       httpGet:
         path: /healthz # @schema type:[string, null]; default: null
-        port: http-webhook # @schema type:[int,string]; default: string
-      initialDelaySeconds: 5 # @schema type:[int, null]; default: null
-      periodSeconds: 10 # @schema type:[int, null]; default: null
-      timeoutSeconds: 5 # @schema type:[int, null]; default: null
-      failureThreshold: 6 # @schema type:[int, null]; default: null
-      successThreshold: 1 # @schema type:[int, null]; default: null
+        port: http-webhook # @schema type:[integer,string]; default: string
+      initialDelaySeconds: 5 # @schema type:[integer, null]; default: null
+      periodSeconds: 10 # @schema type:[integer, null]; default: null
+      timeoutSeconds: 5 # @schema type:[integer, null]; default: null
+      failureThreshold: 6 # @schema type:[integer, null]; default: null
+      successThreshold: 1 # @schema type:[integer, null]; default: null
     service:
       # -- Webhook exposed HTTP port for the service.
       port: 8080
