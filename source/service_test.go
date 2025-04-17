@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type ServiceSuite struct {
@@ -1264,8 +1265,8 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			map[string]string{},
 			"",
 			map[string]map[string]string{
-				"1.2.3.5":  {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "a"},
-				"10.1.1.3": {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "b"},
+				"1.2.3.5":  {hostnameAnnotationKey: "foo.example.org", annotations.SetIdentifierKey: "a"},
+				"10.1.1.3": {hostnameAnnotationKey: "foo.example.org", annotations.SetIdentifierKey: "b"},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{

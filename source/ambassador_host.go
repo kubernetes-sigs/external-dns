@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // ambHostAnnotation is the annotation in the Host that maps to a Service
@@ -119,7 +120,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	// Get a list of Ambassador Host resources
-	ambassadorHosts := []*ambassador.Host{}
+	var ambassadorHosts []*ambassador.Host
 	for _, hostObj := range hosts {
 		unstructuredHost, ok := hostObj.(*unstructured.Unstructured)
 		if !ok {
@@ -140,7 +141,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		return nil, errors.Wrap(err, "failed to filter Ambassador Hosts by annotation")
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, host := range ambassadorHosts {
 		fullname := fmt.Sprintf("%s/%s", host.Namespace, host.Name)
@@ -152,7 +153,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		targets := getTargetsFromTargetAnnotation(host.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(host.Annotations)
 		if len(targets) == 0 {
 			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 			if err != nil {
@@ -185,11 +186,10 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 // endpointsFromHost extracts the endpoints from a Host object
 func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
-	annotations := host.Annotations
 
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
-	ttl := getTTLFromAnnotations(annotations, resource)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(host.Annotations)
+	ttl := annotations.TTLFromAnnotations(host.Annotations, resource)
 
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname

@@ -33,6 +33,7 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const defaultAmbassadorNamespace = "ambassador"
@@ -246,8 +247,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:    hostAnnotation,
-						CloudflareProxiedKey: "true",
+						ambHostAnnotation:                hostAnnotation,
+						annotations.CloudflareProxiedKey: "true",
 					},
 				},
 				Spec: &ambassador.HostSpec{
