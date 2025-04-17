@@ -20,8 +20,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	nomad "github.com/hashicorp/nomad/api"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -44,6 +46,7 @@ type MockClientGenerator struct {
 	cloudFoundryClient      *cfclient.Client
 	dynamicKubernetesClient dynamic.Interface
 	openshiftClient         openshift.Interface
+	nomadClient             *nomad.Client
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
@@ -96,6 +99,15 @@ func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	if args.Error(1) == nil {
 		m.openshiftClient = args.Get(0).(openshift.Interface)
 		return m.openshiftClient, nil
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockClientGenerator) NomadClient(address string, region string, token string, waitTime time.Duration) (*nomad.Client, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		m.nomadClient = args.Get(0).(*nomad.Client)
+		return m.nomadClient, nil
 	}
 	return nil, args.Error(1)
 }

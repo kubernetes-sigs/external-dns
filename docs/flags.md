@@ -17,7 +17,11 @@
 | `--cf-password=""` | The password to log into the cloud foundry API |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
-| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
+| `--nomad-address=""` | Nomad endpoint address, if empty it defaults to NOMAD_ADDR or http://127.0.0.1:4646 |
+| `--nomad-region=""` | Nomad region to use. If not provided, the default agent region is used |
+| `--nomad-token=NOMAD-TOKEN` | Nomad per-request ACL token |
+| `--nomad-wait-time=0s` | WaitTime limits how long a Watch will block. If not provided, the agent default values will be used |
+| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy, nomad-service) |
 | `--openshift-router-name=OPENSHIFT-ROUTER-NAME` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
 | `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
