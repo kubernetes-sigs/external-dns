@@ -51,6 +51,7 @@ type mockCloudFlareClient struct {
 	Records               map[string]map[string]cloudflare.DNSRecord
 	Actions               []MockAction
 	listZonesError        error
+	zoneDetailsError      error
 	listZonesContextError error
 	dnsRecordsError       error
 	customHostnames       map[string][]cloudflare.CustomHostname
@@ -410,6 +411,10 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 }
 
 func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (cloudflare.Zone, error) {
+	if m.zoneDetailsError != nil {
+		return cloudflare.Zone{}, m.zoneDetailsError
+	}
+
 	for id, zoneName := range m.Zones {
 		if zoneID == id {
 			return cloudflare.Zone{
@@ -891,6 +896,24 @@ func TestCloudflareZones(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
+// test failures on zone lookup
+func TestCloudflareZonesFailed(t *testing.T) {
+
+	client := NewMockCloudFlareClient()
+	client.zoneDetailsError = errors.New("zone lookup failed")
+
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
+	}
+
+	_, err := provider.Zones(context.Background())
+	if err == nil {
+		t.Errorf("should fail, %s", err)
+	}
+}
+
 func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	client := NewMockCloudFlareClient()
 	client.listZonesError = errors.New("shouldn't need to list zones when ZoneIDFilter in use")
@@ -1002,64 +1025,88 @@ func TestCloudflareRecords(t *testing.T) {
 }
 
 func TestCloudflareProvider(t *testing.T) {
-	_ = os.Setenv("CF_API_TOKEN", "abc123def")
-	_, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+	var err error
+
+	type EnvVar struct {
+		Key   string
+		Value string
 	}
 
-	_ = os.Unsetenv("CF_API_TOKEN")
 	tokenFile := "/tmp/cf_api_token"
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
 	}
-	_ = os.Setenv("CF_API_TOKEN", tokenFile)
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+
+	testCases := []struct {
+		Name        string
+		Environment []EnvVar
+		ShouldFail  bool
+	}{
+		{
+			Name: "use_api_token",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: "abc123def"},
+			},
+			ShouldFail: false,
+		},
+		{
+			Name: "use_api_token_file_contents",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: tokenFile},
+			},
+			ShouldFail: false,
+		},
+		{
+			Name: "use_email_and_key",
+			Environment: []EnvVar{
+				{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
+				{Key: "CF_API_EMAIL", Value: "test@test.com"},
+			},
+			ShouldFail: false,
+		},
+		{
+			Name:        "no_use_email_and_key",
+			Environment: []EnvVar{},
+			ShouldFail:  true,
+		},
+		{
+			Name: "use_credentials_in_missing_file",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: "file://abc"},
+			},
+			ShouldFail: true,
+		},
+		{
+			Name: "use_credentials_in_missing_file",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
+			},
+			ShouldFail: false,
+		},
 	}
 
-	_ = os.Unsetenv("CF_API_TOKEN")
-	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
-	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			for _, env := range tc.Environment {
+				t.Setenv(env.Key, env.Value)
+			}
 
-	_ = os.Unsetenv("CF_API_KEY")
-	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err == nil {
-		t.Errorf("expected to fail")
+			_, err = NewCloudFlareProvider(
+				endpoint.NewDomainFilter([]string{"bar.com"}),
+				provider.NewZoneIDFilter([]string{""}),
+				false,
+				true,
+				5000,
+				"",
+				CustomHostnamesConfig{Enabled: false})
+			if err != nil && !tc.ShouldFail {
+				t.Errorf("should not fail, %s", err)
+			}
+			if err == nil && tc.ShouldFail {
+				t.Errorf("should fail, %s", err)
+			}
+		})
+
 	}
 }
 
@@ -1130,6 +1177,30 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+}
+
+func TestCloudflareDryRunApplyChanges(t *testing.T) {
+	changes := &plan.Changes{}
+	client := NewMockCloudFlareClient()
+
+	provider := &CloudFlareProvider{
+		Client: client,
+		DryRun: true,
+	}
+	changes.Create = []*endpoint.Endpoint{{
+		DNSName: "new.bar.com",
+		Targets: endpoint.Targets{"target"},
+	}}
+	err := provider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	ctx := context.Background()
+	records, err := provider.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	assert.Equal(t, 0, len(records), "should not have any records")
 }
 
 func TestCloudflareApplyChangesError(t *testing.T) {
