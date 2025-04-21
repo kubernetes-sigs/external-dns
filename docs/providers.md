@@ -14,7 +14,7 @@ Provider supported configurations
 | CoreDNS       | n/a        | yes     | n/a                   |
 | DigitalOcean  | n/a        | yes     | 300                   |
 | DNSSimple     | n/a        | yes     | 3600                  |
-| Exoscale      | n/a        | yes     | -1                    |
+| Exoscale      | n/a        | yes     | n/a                   |
 | Gandi         | n/a        | no      | 600                   |
 | GoDaddy       | n/a        | yes     | 600                   |
 | Google GCP    | n/a        | yes     | 300                   |
