@@ -310,10 +310,10 @@ func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[strin
 
 func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 	findMatch := func(template *endpoint.Endpoint) *endpoint.Endpoint {
-		for _, new := range updateNew {
-			if template.DNSName == new.DNSName &&
-				template.RecordType == new.RecordType {
-				return new
+		for _, update := range updateNew {
+			if template.DNSName == update.DNSName &&
+				template.RecordType == update.RecordType {
+				return update
 			}
 		}
 		return nil

@@ -50,7 +50,7 @@ func TestGetCloudConfiguration(t *testing.T) {
 
 func TestOverrideConfiguration(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
-	configFile := path.Join(path.Dir(filename), "config_test.json")
+	configFile := path.Join(path.Dir(filename), "fixtures/config_test.json")
 	cfg, err := getConfig(configFile, "subscription-override", "rg-override", "", "aad-endpoint-override")
 	if err != nil {
 		t.Errorf("got unexpected err %v", err)

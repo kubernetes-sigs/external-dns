@@ -96,12 +96,11 @@ func NewLinodeProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Linode
 	linodeClient := linodego.NewClient(oauth2Client)
 	linodeClient.SetUserAgent(fmt.Sprintf("%s linodego/%s", externaldns.UserAgent(), linodego.Version))
 
-	provider := &LinodeProvider{
+	return &LinodeProvider{
 		Client:       &linodeClient,
 		domainFilter: domainFilter,
 		DryRun:       dryRun,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Zones returns the list of hosted zones.

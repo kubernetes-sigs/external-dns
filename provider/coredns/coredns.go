@@ -92,7 +92,7 @@ type etcdClient struct {
 
 var _ coreDNSClient = etcdClient{}
 
-// GetService return all Service records stored in etcd stored anywhere under the given key (recursively)
+// GetServices return all Service records stored in etcd stored anywhere under the given key (recursively)
 func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
 	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
 	defer cancel()

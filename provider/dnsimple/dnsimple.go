@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const dnsimpleRecordTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+const defaultTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
 
 type dnsimpleIdentityService struct {
 	service *dnsimple.IdentityService
@@ -231,7 +231,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 
 // newDnsimpleChange initializes a new change to dns records
 func newDnsimpleChange(action string, e *endpoint.Endpoint) *dnsimpleChange {
-	ttl := dnsimpleRecordTTL
+	ttl := defaultTTL
 	if e.RecordTTL.IsConfigured() {
 		ttl = int(e.RecordTTL)
 	}

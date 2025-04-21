@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	googleRecordTTL = 300
+	defaultTTL = 300
 )
 
 type managedZonesCreateCallInterface interface {
@@ -452,7 +452,7 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 	}
 
 	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
-	var ttl int64 = googleRecordTTL
+	var ttl int64 = defaultTTL
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)
 	}

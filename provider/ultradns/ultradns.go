@@ -44,17 +44,16 @@ var sbPoolRunProbes = true
 
 var (
 	sbPoolActOnProbes = true
-	ultradnsPoolType  = "rdpool"
+	poolType          = "rdpool"
 	accountName       string
+	// Setting custom headers for ultradns api calls
+	customHeader = []udnssdk.CustomHeader{
+		{
+			Key:   "UltraClient",
+			Value: "kube-client",
+		},
+	}
 )
-
-// Setting custom headers for ultradns api calls
-var customHeader = []udnssdk.CustomHeader{
-	{
-		Key:   "UltraClient",
-		Value: "kube-client",
-	},
-}
 
 // UltraDNSProvider struct
 type UltraDNSProvider struct {
@@ -120,7 +119,7 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 		if (poolValue != "sbpool") && (poolValue != "rdpool") {
 			return nil, fmt.Errorf(" please set proper ULTRADNS_POOL_TYPE, supported types are sbpool or rdpool")
 		}
-		ultradnsPoolType = poolValue
+		poolType = poolValue
 	}
 
 	client, err := udnssdk.NewClient(username, string(password), baseURL)
@@ -128,13 +127,11 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 		return nil, fmt.Errorf("connection cannot be established")
 	}
 
-	provider := &UltraDNSProvider{
+	return &UltraDNSProvider{
 		client:       *client,
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
-	}
-
-	return provider, nil
+	}, nil
 }
 
 // Zones returns list of hosted zones
@@ -216,7 +213,7 @@ func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey)
 	maxerrs := 5
 	waittime := 5 * time.Second
 
-	rrsets := []udnssdk.RRSet{}
+	var rrsets []udnssdk.RRSet
 	errcnt := 0
 	offset := 0
 	limit := 1000
@@ -250,7 +247,7 @@ func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.Zone
 	maxerrs := 5
 	waittime := 5 * time.Second
 
-	zones := []udnssdk.Zone{}
+	var zones []udnssdk.Zone
 
 	errcnt := 0
 
@@ -324,7 +321,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 			}
 			record := udnssdk.RRSet{}
 			if (change.ResourceRecordSetUltraDNS.RRType == "A" || change.ResourceRecordSetUltraDNS.RRType == "AAAA") && (len(change.ResourceRecordSetUltraDNS.RData) >= 2) {
-				if ultradnsPoolType == "sbpool" && change.ResourceRecordSetUltraDNS.RRType == "A" {
+				if poolType == "sbpool" && change.ResourceRecordSetUltraDNS.RRType == "A" {
 					sbPoolObject, _ := p.newSBPoolObjectCreation(ctx, change)
 					record = udnssdk.RRSet{
 						RRType:    change.ResourceRecordSetUltraDNS.RRType,
@@ -333,7 +330,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 						TTL:       change.ResourceRecordSetUltraDNS.TTL,
 						Profile:   sbPoolObject.RawProfile(),
 					}
-				} else if ultradnsPoolType == "rdpool" {
+				} else if poolType == "rdpool" {
 					rdPoolObject, _ := p.newRDPoolObjectCreation(ctx, change)
 					record = udnssdk.RRSet{
 						RRType:    change.ResourceRecordSetUltraDNS.RRType,

@@ -39,7 +39,7 @@ import (
 
 const (
 	defaultAWSProfile = "default"
-	recordTTL         = 300
+	defaultTTL        = 300
 	// From the experiments, it seems that the default MaxItems applied is 100,
 	// and that, on the server side, there is a hard limit of 300 elements per page.
 	// After a discussion with AWS representatives, clients should accept
@@ -232,7 +232,7 @@ type profiledZone struct {
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {
-	ret := []route53types.Change{}
+	var ret []route53types.Change
 	for _, c := range cs {
 		ret = append(ret, c.Change)
 	}
@@ -510,7 +510,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				if r.AliasTarget != nil {
 					// Alias records don't have TTLs so provide the default to match the TXT generation
 					if ttl == 0 {
-						ttl = recordTTL
+						ttl = defaultTTL
 					}
 					ep := endpoint.
 						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
@@ -804,8 +804,8 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 
 		if alias {
 			if ep.RecordTTL.IsConfigured() {
-				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, recordTTL)
-				ep.RecordTTL = recordTTL
+				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
+				ep.RecordTTL = defaultTTL
 			}
 			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 				if prop != "true" && prop != "false" {
@@ -866,7 +866,7 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues += 1
 	} else {
 		if !ep.RecordTTL.IsConfigured() {
-			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+			change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
 		}

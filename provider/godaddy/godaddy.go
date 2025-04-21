@@ -19,7 +19,6 @@ package godaddy
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -32,10 +31,12 @@ import (
 )
 
 const (
-	gdMinimalTTL = 600
-	gdCreate     = 0
-	gdReplace    = 1
-	gdDelete     = 2
+	defaultTTL = 600
+	gdCreate   = 0
+	gdReplace  = 1
+	gdDelete   = 2
+
+	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
 )
 
 var actionNames = []string{
@@ -43,11 +44,6 @@ var actionNames = []string{
 	"replace",
 	"delete",
 }
-
-const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
-
-// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
-var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
 
 type gdClient interface {
 	Patch(string, interface{}, interface{}) error
@@ -147,7 +143,7 @@ func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 	return &GDProvider{
 		client:       client,
 		domainFilter: domainFilter,
-		ttl:          maxOf(gdMinimalTTL, ttl),
+		ttl:          maxOf(defaultTTL, ttl),
 		DryRun:       dryRun,
 	}, nil
 }
@@ -356,7 +352,7 @@ func (p *GDProvider) changeAllRecords(endpoints []gdEndpoint, zoneRecords []*gdR
 				dnsName = "@"
 			}
 
-			e.endpoint.RecordTTL = endpoint.TTL(maxOf(gdMinimalTTL, int64(e.endpoint.RecordTTL)))
+			e.endpoint.RecordTTL = endpoint.TTL(maxOf(defaultTTL, int64(e.endpoint.RecordTTL)))
 
 			if err := zoneRecord.applyEndpoint(e.action, p.client, *e.endpoint, dnsName, p.DryRun); err != nil {
 				log.Errorf("Unable to apply change %s on record %s type %s, %v", actionNames[e.action], dnsName, e.endpoint.RecordType, err)

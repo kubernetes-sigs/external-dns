@@ -224,17 +224,17 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 		VPCID: "vpc-xxxxxx",
 	}
 	//
-	//dnsClient, _ := alidns.NewClientWithAccessKey(
+	// dnsClient, _ := alidns.NewClientWithAccessKey(
 	//	cfg.RegionID,
 	//	cfg.AccessKeyID,
 	//	cfg.AccessKeySecret,
-	//)
+	// )
 	//
-	//pvtzClient, _ := pvtz.NewClientWithAccessKey(
+	// pvtzClient, _ := pvtz.NewClientWithAccessKey(
 	//	"cn-hangzhou",
 	//	cfg.AccessKeyID,
 	//	cfg.AccessKeySecret,
-	//)
+	// )
 	domainFilterTest := endpoint.NewDomainFilter([]string{"container-service.top.", "example.org"})
 
 	return &AlibabaCloudProvider{
@@ -282,7 +282,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	defaultTtlPlan := &endpoint.Endpoint{
 		DNSName:    "ttl.container-service.top",
 		RecordType: "A",
-		RecordTTL:  defaultAlibabaCloudRecordTTL,
+		RecordTTL:  defaultTTL,
 		Targets:    endpoint.NewTargets("4.3.2.1"),
 	}
 	changes := plan.Changes{

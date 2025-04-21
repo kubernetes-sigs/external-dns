@@ -1217,7 +1217,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1226,7 +1226,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1244,14 +1244,14 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1260,7 +1260,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1278,28 +1278,28 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1308,7 +1308,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1321,7 +1321,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "bar.de",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1339,21 +1339,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1362,7 +1362,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1375,7 +1375,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "bar.de",
 					Targets:    endpoint.Targets{"10.10.10.1"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1393,21 +1393,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    "NOT SUPPORTED",
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1416,7 +1416,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1568,7 +1568,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			DNSName:    "foobar.bar.com",
 			Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
 			RecordType: endpoint.RecordTypeA,
-			RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+			RecordTTL:  endpoint.TTL(defaultTTL),
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
@@ -1935,7 +1935,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 					DNSName:    "newerror.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -1948,7 +1948,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 					DNSName:    "newerror-list-1.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -1966,7 +1966,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 					DNSName:    "newerror-update-1.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -2050,7 +2050,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "create.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2069,7 +2069,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "origin.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2082,7 +2082,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "another-origin.foo.bar.com",
 					Targets:    endpoint.Targets{"3.4.5.6"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2101,7 +2101,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "c.foo.bar.com",
 					Targets:    endpoint.Targets{"c.cname.foo.bar.com"},
 					RecordType: endpoint.RecordTypeCNAME,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2122,7 +2122,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 						"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
 					},
 					RecordType: endpoint.RecordTypeTXT,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2141,7 +2141,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "fail.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2160,7 +2160,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "fail.list.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2184,7 +2184,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2203,7 +2203,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2222,7 +2222,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2241,7 +2241,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -2254,7 +2254,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2285,7 +2285,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "nocustomhostname.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -2298,7 +2298,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2311,7 +2311,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "txt.foo.bar.com",
 					Targets:    endpoint.Targets{"value"},
 					RecordType: endpoint.RecordTypeTXT,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2332,7 +2332,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2353,7 +2353,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2376,7 +2376,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2399,7 +2399,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2420,7 +2420,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -2509,7 +2509,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.11"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2522,14 +2522,14 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.12"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 				{
 					DNSName:    "c.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.13"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2548,14 +2548,14 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.11"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 				{
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.12"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2568,7 +2568,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					DNSName:    "c.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.13"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2632,7 +2632,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					DNSName:    "create.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2664,7 +2664,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2751,7 +2751,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 				DNSName:    fmt.Sprintf("host-%d.foo.bar.com", i),
 				Targets:    endpoint.Targets{fmt.Sprintf("cname-%d.foo.bar.com", i)},
 				RecordType: endpoint.RecordTypeCNAME,
-				RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+				RecordTTL:  endpoint.TTL(defaultTTL),
 				Labels:     endpoint.Labels{},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{

@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	defaultAlibabaCloudRecordTTL            = 600
+	defaultTTL                              = 600
 	defaultAlibabaCloudPrivateZoneRecordTTL = 60
 	defaultAlibabaCloudPageSize             = 50
 	nullHostAlibabaCloud                    = "@"
@@ -606,12 +606,12 @@ func (p *AlibabaCloudProvider) deleteRecords(recordMap map[string][]alidns.Recor
 
 func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.Endpoint) bool {
 	ttl1 := record.TTL
-	if ttl1 == defaultAlibabaCloudRecordTTL {
+	if ttl1 == defaultTTL {
 		ttl1 = 0
 	}
 
 	ttl2 := int64(endpoint.RecordTTL)
-	if ttl2 == defaultAlibabaCloudRecordTTL {
+	if ttl2 == defaultTTL {
 		ttl2 = 0
 	}
 

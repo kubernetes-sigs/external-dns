@@ -32,8 +32,6 @@ import (
 
 func NewMockTencentCloudProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneType string) *TencentCloudProvider {
 	cfg := tencentCloudConfig{
-		// SecretId:  "",
-		// SecretKey: "",
 		RegionId: "ap-shanghai",
 		VPCId:    "vpc-abcdefg",
 	}

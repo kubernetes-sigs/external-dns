@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	azureRecordTTL = 300
+	defaultTTL = 300
 )
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -337,7 +337,7 @@ func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.End
 }
 
 func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
-	var ttl int64 = azureRecordTTL
+	var ttl int64 = defaultTTL
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int64(endpoint.RecordTTL)
 	}
