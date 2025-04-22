@@ -214,6 +214,7 @@ type Config struct {
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
+	ForceDefaultTargets                           bool
 }
 
 var defaultConfig = &Config{
@@ -378,6 +379,7 @@ var defaultConfig = &Config{
 	TraefikDisableNew:                             false,
 	NAT64Networks:                                 []string{},
 	ExcludeUnschedulable:                          true,
+	ForceDefaultTargets:                           false,
 }
 
 // NewConfig returns new Config object
@@ -482,6 +484,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
+	app.Flag("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to legacy behavior, default is false)").Default(strconv.FormatBool(defaultConfig.ForceDefaultTargets)).BoolVar(&cfg.ForceDefaultTargets)
 	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 	app.Flag("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.NAT64Networks)

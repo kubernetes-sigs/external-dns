@@ -46,6 +46,7 @@
 | `--default-targets=DEFAULT-TARGETS` | Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional) |
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
+| `--[no-]force-default-targets` | Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to legacy behavior, default is false) |
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |

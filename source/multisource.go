@@ -18,34 +18,54 @@ package source
 
 import (
 	"context"
+	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
 type multiSource struct {
-	children       []Source
-	defaultTargets []string
+	children            []Source
+	defaultTargets      []string
+	forceDefaultTargets bool
 }
 
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
 func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	result := []*endpoint.Endpoint{}
+	hasDefaultTargets := len(ms.defaultTargets) > 0
 
 	for _, s := range ms.children {
 		endpoints, err := s.Endpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if len(ms.defaultTargets) > 0 {
+
+		if hasDefaultTargets {
 			for i := range endpoints {
-				eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier, "")
-				for _, ep := range eps {
-					ep.Labels = endpoints[i].Labels
+				hasSourceTargets := len(endpoints[i].Targets) > 0
+
+				if !ms.forceDefaultTargets && hasSourceTargets {
+					// New behavior (default): Source targets exist, use them and ignore defaults.
+					// Log a warning every time this happens if defaults are configured.
+					log.Warnf("Source provided targets for %q (%s), ignoring default targets [%s] due to new behavior. Use --force-default-targets to revert to old behavior.", endpoints[i].DNSName, endpoints[i].RecordType, strings.Join(ms.defaultTargets, ", "))
+					result = append(result, endpoints[i])
+					continue
+				} else if ms.forceDefaultTargets || !hasSourceTargets {
+					// Old behavior (forced via flag) OR New behavior (source targets are empty): Apply default targets.
+					eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier, "")
+					for _, ep := range eps {
+						ep.Labels = endpoints[i].Labels
+					}
+					result = append(result, eps...)
+				} else {
+					// This case should logically not be reached given the conditions above, but handles completeness.
+					result = append(result, endpoints[i])
 				}
-				result = append(result, eps...)
 			}
 		} else {
+			// No default targets configured, just append source endpoints.
 			result = append(result, endpoints...)
 		}
 	}
@@ -60,6 +80,6 @@ func (ms *multiSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // NewMultiSource creates a new multiSource.
-func NewMultiSource(children []Source, defaultTargets []string) Source {
-	return &multiSource{children: children, defaultTargets: defaultTargets}
+func NewMultiSource(children []Source, defaultTargets []string, forceDefaultTargets bool) Source {
+	return &multiSource{children: children, defaultTargets: defaultTargets, forceDefaultTargets: forceDefaultTargets}
 }
