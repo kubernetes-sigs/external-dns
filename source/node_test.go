@@ -17,8 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
 	"context"
-	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -394,7 +394,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
-			var buf *strings.Builder
+			var buf *bytes.Buffer
 			if len(tc.expectedLogs) > 0 {
 				buf = testutils.LogsToBuffer(log.DebugLevel, t)
 			}
@@ -512,7 +512,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			},
 		},
 	} {
-		var buf *strings.Builder
+		var buf *bytes.Buffer
 		if tc.exposeInternalIPv6 {
 			buf = testutils.LogsToBuffer(log.WarnLevel, t)
 		}

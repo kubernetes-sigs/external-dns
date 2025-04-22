@@ -17,7 +17,7 @@ limitations under the License.
 package testutils
 
 import (
-	"strings"
+	"bytes"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -31,9 +31,9 @@ import (
 //	buf := LogsToBuffer(log.DebugLevel, t)
 //	... do something that logs ...
 //	assert.Contains(t, buf.String(), "expected debug log message")
-func LogsToBuffer(level log.Level, t *testing.T) *strings.Builder {
+func LogsToBuffer(level log.Level, t *testing.T) *bytes.Buffer {
 	t.Helper()
-	buf := new(strings.Builder)
+	buf := new(bytes.Buffer)
 	log.SetOutput(buf)
 	log.SetLevel(level)
 	return buf
