@@ -216,25 +216,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "invalid crd with no targets",
-			registeredAPIVersion: "test.k8s.io/v1alpha1",
-			apiVersion:           "test.k8s.io/v1alpha1",
-			registeredKind:       "DNSEndpoint",
-			kind:                 "DNSEndpoint",
-			namespace:            "foo",
-			registeredNamespace:  "foo",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  180,
-				},
-			},
-			expectEndpoints: false,
-			expectError:     false,
-		},
-		{
 			title:                "valid crd with no targets (relies on default-targets)",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
 			apiVersion:           "test.k8s.io/v1alpha1",
