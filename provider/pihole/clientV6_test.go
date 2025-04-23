@@ -29,6 +29,62 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+func TestIsValidIPv4(t *testing.T) {
+	tests := []struct {
+		ip       string
+		expected bool
+	}{
+		{"192.168.1.1", true},
+		{"255.255.255.255", true},
+		{"0.0.0.0", true},
+		{"", false},
+		{"256.256.256.256", false},
+		{"192.168.0.1/22", false},
+		{"192.168.1", false},
+		{"abc.def.ghi.jkl", false},
+		{"::ffff:192.168.20.3", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.ip, func(t *testing.T) {
+			if got := isValidIPv4(test.ip); got != test.expected {
+				t.Errorf("isValidIPv4(%s) = %v; want %v", test.ip, got, test.expected)
+			}
+		})
+	}
+}
+
+func TestIsValidIPv6(t *testing.T) {
+	tests := []struct {
+		ip       string
+		expected bool
+	}{
+		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
+		{"2001:db8:85a3::8a2e:370:7334", true},
+		//IPV6 dual, the format is y:y:y:y:y:y:x.x.x.x.
+		{"::ffff:192.168.20.3", true},
+		{"::1", true},
+		{"::", true},
+		{"2001:db8::", true},
+		{"", false},
+		{":", false},
+		{"::ffff:", false},
+		{"192.168.20.3", false},
+		{"2001:db8:85a3:0:0:8a2e:370:7334:1234", false},
+		{"2001:db8:85a3::8a2e:370g:7334", false},
+		{"2001:db8:85a3::8a2e:370:7334::", false},
+		{"2001:db8:85a3::8a2e:370:7334::1", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.ip, func(t *testing.T) {
+			if got := isValidIPv6(test.ip); got != test.expected {
+				t.Errorf("isValidIPv6(%s) = %v; want %v", test.ip, got, test.expected)
+			}
+		})
+	}
+}
+
 func newTestServerV6(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	svr := httptest.NewServer(hdlr)
@@ -137,7 +193,9 @@ func TestListRecordsV6(t *testing.T) {
 							"192.168.178.34 service3.example.com",
 							"fc00::1:192:168:1:1 service4.example.com",
 							"fc00::1:192:168:1:2 service5.example.com",
-							"fc00::1:192:168:1:3 service6.example.com"
+							"fc00::1:192:168:1:3 service6.example.com",
+							"::ffff:192.168.20.3 service7.example.com",
+							"192.168.20.3 service7.example.com"
 						]
 					}
 				},
@@ -177,20 +235,22 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Ensure A records were parsed correctly
+	expected := [][]string{
+		{"service1.example.com", "192.168.178.33"},
+		{"service2.example.com", "192.168.178.34"},
+		{"service3.example.com", "192.168.178.34"},
+		{"service7.example.com", "192.168.20.3"},
+	}
 	// Test retrieve A records unfiltered
 	arecs, err := cl.listRecords(context.Background(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(arecs) != 3 {
-		t.Fatal("Expected 3 A records returned, got:", len(arecs))
+	if len(arecs) != len(expected) {
+		t.Fatalf("Expected %d A records returned, got: %d", len(expected), len(arecs))
 	}
-	// Ensure records were parsed correctly
-	expected := [][]string{
-		{"service1.example.com", "192.168.178.33"},
-		{"service2.example.com", "192.168.178.34"},
-		{"service3.example.com", "192.168.178.34"},
-	}
+
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
@@ -200,20 +260,23 @@ func TestListRecordsV6(t *testing.T) {
 		}
 	}
 
+	// Ensure AAAA records were parsed correctly
+	expected = [][]string{
+		{"service4.example.com", "fc00::1:192:168:1:1"},
+		{"service5.example.com", "fc00::1:192:168:1:2"},
+		{"service6.example.com", "fc00::1:192:168:1:3"},
+		{"service7.example.com", "::ffff:192.168.20.3"},
+	}
 	// Test retrieve AAAA records unfiltered
 	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(arecs) != 3 {
-		t.Fatal("Expected 3 AAAA records returned, got:", len(arecs))
+
+	if len(arecs) != len(expected) {
+		t.Fatalf("Expected %d AAAA records returned, got: %d", len(expected), len(arecs))
 	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"service4.example.com", "fc00::1:192:168:1:1"},
-		{"service5.example.com", "fc00::1:192:168:1:2"},
-		{"service6.example.com", "fc00::1:192:168:1:3"},
-	}
+
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
@@ -221,6 +284,13 @@ func TestListRecordsV6(t *testing.T) {
 		if rec.Targets[0] != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
+	}
+
+	// Ensure CNAME records were parsed correctly
+	expected = [][]string{
+		{"source1.example.com", "target1.domain.com", "1000"},
+		{"source2.example.com", "target2.domain.com", "50"},
+		{"source3.example.com", "target3.domain.com"},
 	}
 
 	// Test retrieve CNAME records unfiltered
@@ -228,15 +298,10 @@ func TestListRecordsV6(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cnamerecs) != 3 {
-		t.Fatal("Expected 3 CAME records returned, got:", len(cnamerecs))
+	if len(cnamerecs) != len(expected) {
+		t.Fatalf("Expected %d CAME records returned, got: %d", len(expected), len(cnamerecs))
 	}
-	// Ensure records were parsed correctly
-	expected = [][]string{
-		{"source1.example.com", "target1.domain.com", "1000"},
-		{"source2.example.com", "target2.domain.com", "50"},
-		{"source3.example.com", "target3.domain.com"},
-	}
+
 	for idx, rec := range cnamerecs {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
@@ -261,6 +326,7 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatal("Expected error for using unsupported record type")
 	}
 }
+
 func TestErrorsV6(t *testing.T) {
 	//Error test cases
 
