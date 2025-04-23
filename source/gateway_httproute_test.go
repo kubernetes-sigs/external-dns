@@ -1363,6 +1363,144 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "RouteAnnotationOverride",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "4.3.2.1",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "test"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "4.3.2.1"),
+			},
+		},
+		{
+			title: "RouteAnnotationGatewayOverride",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "overriden-gateway",
+						Namespace: "gateway-namespace",
+						Annotations: map[string]string{
+							targetAnnotationKey: "4.3.2.1",
+						},
+					},
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "2.3.4.5",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "overriden-gateway"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "overriden-gateway"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "2.3.4.5"),
+			},
+		},
+		{
+			title: "RouteAnnotationGatewayOverrideEmpty",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "overriden-gateway",
+						Namespace: "gateway-namespace",
+						Annotations: map[string]string{
+							targetAnnotationKey: "4.3.2.1",
+						},
+					},
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "overriden-gateway"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "overriden-gateway"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
 			title: "MutlipleGatewaysOneAnnotationOverride",
 			config: Config{
 				GatewayNamespace: "gateway-namespace",
