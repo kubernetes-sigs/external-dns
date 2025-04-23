@@ -136,13 +136,12 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 
 	apiClient := api.NewClient(client, clientArgs...)
 
-	provider := &NS1Provider{
+	return &NS1Provider{
 		client:        NS1DomainService{apiClient},
 		domainFilter:  config.DomainFilter,
 		zoneIDFilter:  config.ZoneIDFilter,
 		minTTLSeconds: config.MinTTLSeconds,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Records returns the endpoints this provider knows about
@@ -257,7 +256,7 @@ func (p *NS1Provider) zonesFiltered() ([]*dns.Zone, error) {
 		return nil, err
 	}
 
-	toReturn := []*dns.Zone{}
+	var toReturn []*dns.Zone
 
 	for _, z := range zones {
 		if p.domainFilter.Match(z.Zone) && p.zoneIDFilter.Match(z.ID) {
@@ -292,10 +291,10 @@ func (p *NS1Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 func newNS1Changes(action string, endpoints []*endpoint.Endpoint) []*ns1Change {
 	changes := make([]*ns1Change, 0, len(endpoints))
 
-	for _, endpoint := range endpoints {
+	for _, ep := range endpoints {
 		changes = append(changes, &ns1Change{
 			Action:   action,
-			Endpoint: endpoint,
+			Endpoint: ep,
 		},
 		)
 	}

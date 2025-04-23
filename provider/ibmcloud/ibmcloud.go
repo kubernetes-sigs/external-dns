@@ -322,7 +322,7 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		return nil, err
 	}
 
-	provider := &IBMCloudProvider{
+	return &IBMCloudProvider{
 		Client:           client,
 		source:           source,
 		domainFilter:     domainFilter,
@@ -331,8 +331,7 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		privateZone:      isPrivate,
 		proxiedByDefault: proxiedByDefault,
 		DryRun:           dryRun,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Records gets the current records.
@@ -680,8 +679,8 @@ func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endp
 		return nil, err
 	}
 	// Filter VPC annoation for private zone active
-	for _, source := range sources {
-		vpc = checkVPCAnnotation(source)
+	for _, src := range sources {
+		vpc = checkVPCAnnotation(src)
 		if len(vpc) > 0 {
 			log.Debugf("VPC found: %s", vpc)
 			break
@@ -984,7 +983,7 @@ func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == vpcFilter {
 			vpcCrn, err := crn.Parse(v.Value)
-			if vpcCrn.ResourceType != "vpc" || err != nil {
+			if err != nil || vpcCrn.ResourceType != "vpc" {
 				log.Errorf("Failed to parse vpc [%s]: %v", v.Value, err)
 			} else {
 				vpc = v.Value
@@ -1002,6 +1001,7 @@ func isNil(i interface{}) bool {
 	switch reflect.TypeOf(i).Kind() {
 	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
 		return reflect.ValueOf(i).IsNil()
+	default:
+		return false
 	}
-	return false
 }
