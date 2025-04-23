@@ -19,8 +19,8 @@ package godaddy
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -45,9 +45,6 @@ var actionNames = []string{
 }
 
 const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
-
-// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
-var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
 
 type gdClient interface {
 	Patch(string, interface{}, interface{}) error
@@ -294,14 +291,14 @@ func (p *GDProvider) groupByNameAndType(zoneRecords []gdRecords) []*endpoint.End
 				recordName = strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, zoneName), ".")
 			}
 
-			endpoint := endpoint.NewEndpointWithTTL(
+			ep := endpoint.NewEndpointWithTTL(
 				recordName,
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...,
 			)
 
-			endpoints = append(endpoints, endpoint)
+			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -584,8 +581,8 @@ func countTargets(p *plan.Changes) int {
 	count := 0
 
 	for _, endpoints := range changes {
-		for _, endpoint := range endpoints {
-			count += len(endpoint.Targets)
+		for _, ep := range endpoints {
+			count += len(ep.Targets)
 		}
 	}
 
@@ -593,15 +590,7 @@ func countTargets(p *plan.Changes) int {
 }
 
 func maxOf(vars ...int64) int64 {
-	max := vars[0]
-
-	for _, i := range vars {
-		if max < i {
-			max = i
-		}
-	}
-
-	return max
+	return slices.Max(vars)
 }
 
 func toString(obj interface{}) string {

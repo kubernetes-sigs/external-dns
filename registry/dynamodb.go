@@ -300,12 +300,12 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 				if err != nil {
 					return err
 				}
-				for i, endpoint := range filteredChanges.Create {
-					if endpoint.Key() == key {
-						log.Infof("Skipping endpoint %v because owner does not match", endpoint)
+				for i, ep := range filteredChanges.Create {
+					if ep.Key() == key {
+						log.Infof("Skipping endpoint %v because owner does not match", ep)
 						filteredChanges.Create = append(filteredChanges.Create[:i], filteredChanges.Create[i+1:]...)
 						// The dynamodb insertion failed; remove from our cache.
-						im.removeFromCache(endpoint)
+						im.removeFromCache(ep)
 						delete(im.labels, key)
 						return nil
 					}
@@ -466,7 +466,7 @@ func toDynamoLabels(labels endpoint.Labels) dynamodbtypes.AttributeValue {
 	return &dynamodbtypes.AttributeValueMemberM{Value: labelMap}
 }
 
-func (im *DynamoDBRegistry) appendInsert(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey, new endpoint.Labels) []dynamodbtypes.BatchStatementRequest {
+func (im *DynamoDBRegistry) appendInsert(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey, newL endpoint.Labels) []dynamodbtypes.BatchStatementRequest {
 	return append(statements, dynamodbtypes.BatchStatementRequest{
 		Statement:      aws.String(fmt.Sprintf("INSERT INTO %q VALUE {'k':?, 'o':?, 'l':?}", im.table)),
 		ConsistentRead: aws.Bool(true),
@@ -475,16 +475,16 @@ func (im *DynamoDBRegistry) appendInsert(statements []dynamodbtypes.BatchStateme
 			&dynamodbtypes.AttributeValueMemberS{
 				Value: im.ownerID,
 			},
-			toDynamoLabels(new),
+			toDynamoLabels(newL),
 		},
 	})
 }
 
-func (im *DynamoDBRegistry) appendUpdate(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey, old endpoint.Labels, new endpoint.Labels) []dynamodbtypes.BatchStatementRequest {
-	if len(old) == len(new) {
+func (im *DynamoDBRegistry) appendUpdate(statements []dynamodbtypes.BatchStatementRequest, key endpoint.EndpointKey, old endpoint.Labels, newE endpoint.Labels) []dynamodbtypes.BatchStatementRequest {
+	if len(old) == len(newE) {
 		equal := true
 		for k, v := range old {
-			if newV, exists := new[k]; !exists || v != newV {
+			if newV, exists := newE[k]; !exists || v != newV {
 				equal = false
 				break
 			}
@@ -497,7 +497,7 @@ func (im *DynamoDBRegistry) appendUpdate(statements []dynamodbtypes.BatchStateme
 	return append(statements, dynamodbtypes.BatchStatementRequest{
 		Statement: aws.String(fmt.Sprintf("UPDATE %q SET \"l\"=? WHERE \"k\"=?", im.table)),
 		Parameters: []dynamodbtypes.AttributeValue{
-			toDynamoLabels(new),
+			toDynamoLabels(newE),
 			toDynamoKey(key),
 		},
 	})
