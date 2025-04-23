@@ -109,7 +109,7 @@ The targets of the DNS entries created from a \*Route are sourced from the follo
 1. If the route has the `external-dns.alpha.kubernetes.io/target` annotation
    with a non-empty value, uses the value from that.
 
-2. If the route has the route has the `external-dns.alpha.kubernetes.io/target: ""` it
+2. If the route has the `external-dns.alpha.kubernetes.io/target: ""` it
    will disable the `external-dns.alpha.kubernetes.io/target` on the matching parent
    Gateway(s) and continue the regular flow from step 4.
 
