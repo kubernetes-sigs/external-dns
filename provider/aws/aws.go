@@ -313,7 +313,7 @@ type AWSConfig struct {
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSProvider, error) {
-	provider := &AWSProvider{
+	pr := &AWSProvider{
 		clients:               clients,
 		domainFilter:          awsConfig.DomainFilter,
 		zoneIDFilter:          awsConfig.ZoneIDFilter,
@@ -331,7 +331,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
-	return provider, nil
+	return pr, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -561,33 +561,33 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 }
 
 // Identify if old and new endpoints require DELETE/CREATE instead of UPDATE.
-func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint.Endpoint) bool {
-	// a change of record type
-	if old.RecordType != new.RecordType {
+func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, newE *endpoint.Endpoint) bool {
+	// a change of a record type
+	if old.RecordType != newE.RecordType {
 		return true
 	}
 
 	// an ALIAS record change to/from an A
 	if old.RecordType == endpoint.RecordTypeA {
 		oldAlias, _ := old.GetProviderSpecificProperty(providerSpecificAlias)
-		newAlias, _ := new.GetProviderSpecificProperty(providerSpecificAlias)
+		newAlias, _ := newE.GetProviderSpecificProperty(providerSpecificAlias)
 		if oldAlias != newAlias {
 			return true
 		}
 	}
 
 	// a set identifier change
-	if old.SetIdentifier != new.SetIdentifier {
+	if old.SetIdentifier != newE.SetIdentifier {
 		return true
 	}
 
 	// a change of routing policy
-	// default to true for geolocation properties if any geolocation property exists in old/new but not the other
+	// defaults to true for geolocation properties if any geolocation property exists in old/new but not the other
 	for _, propType := range [7]string{providerSpecificWeight, providerSpecificRegion, providerSpecificFailover,
 		providerSpecificFailover, providerSpecificGeolocationContinentCode, providerSpecificGeolocationCountryCode,
 		providerSpecificGeolocationSubdivisionCode} {
 		_, oldPolicy := old.GetProviderSpecificProperty(propType)
-		_, newPolicy := new.GetProviderSpecificProperty(propType)
+		_, newPolicy := newE.GetProviderSpecificProperty(propType)
 		if oldPolicy != newPolicy {
 			return true
 		}
@@ -601,14 +601,14 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 	var creates []*endpoint.Endpoint
 	var updates []*endpoint.Endpoint
 
-	for i, new := range newEndpoints {
-		old := oldEndpoints[i]
-		if p.requiresDeleteCreate(old, new) {
-			deletes = append(deletes, old)
-			creates = append(creates, new)
+	for i, newE := range newEndpoints {
+		oldE := oldEndpoints[i]
+		if p.requiresDeleteCreate(oldE, newE) {
+			deletes = append(deletes, oldE)
+			creates = append(creates, newE)
 		} else {
 			// Safe to perform an UPSERT.
-			updates = append(updates, new)
+			updates = append(updates, newE)
 		}
 	}
 
@@ -760,8 +760,8 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*endpoint.Endpoint) Route53Changes {
 	changes := make(Route53Changes, 0, len(endpoints))
 
-	for _, endpoint := range endpoints {
-		change := p.newChange(action, endpoint)
+	for _, ep := range endpoints {
+		change := p.newChange(action, ep)
 		changes = append(changes, change)
 	}
 

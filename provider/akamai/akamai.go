@@ -98,7 +98,7 @@ func NewAkamaiProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (
 		edgeGridConfig, err = edgegrid.Init(akamaiConfig.EdgercPath, akamaiConfig.EdgercSection) // use default .edgerc location and section
 		if err != nil {
 			log.Errorf("Edgegrid Init Failed")
-			return &AkamaiProvider{}, err // return empty provider for backward compatibility
+			return &AkamaiProvider{}, err // return an empty provider for backward compatibility
 		}
 		edgeGridConfig.HeaderToSign = append(edgeGridConfig.HeaderToSign, "X-External-DNS")
 	} else {

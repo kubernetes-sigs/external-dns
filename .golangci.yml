@@ -1,7 +1,8 @@
+# https://golangci-lint.run/usage/configuration/
 version: "2"
 linters:
   default: none
-  enable:
+  enable: # golangci-lint help linters
     - dogsled
     - goprintffuncname
     - govet
@@ -13,6 +14,9 @@ linters:
     - unconvert
     - unused
     - whitespace
+    - predeclared # Find code that shadows one of Go's predeclared identifiers
+    - sloglint # Ensure consistent code style when using log/slog
+    - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
   settings:
     exhaustive:
       default-signifies-exhaustive: false

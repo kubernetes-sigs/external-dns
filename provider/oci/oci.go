@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
 	"github.com/oracle/oci-go-sdk/v65/dns"
@@ -153,7 +153,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	}
 	zones := make(map[string]dns.ZoneSummary)
 	scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
-	// If zone scope is empty, list all zones types.
+	// If the zone scope is empty, list all zones types.
 	if p.zoneScope == "" {
 		scopes = dns.GetGetZoneScopeEnumValues()
 	}
@@ -261,7 +261,7 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 		return nil, provider.NewSoftError(fmt.Errorf("getting zones: %w", err))
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		var page *string
 		for {

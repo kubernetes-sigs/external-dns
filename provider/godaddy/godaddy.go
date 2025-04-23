@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -290,14 +291,14 @@ func (p *GDProvider) groupByNameAndType(zoneRecords []gdRecords) []*endpoint.End
 				recordName = strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, zoneName), ".")
 			}
 
-			endpoint := endpoint.NewEndpointWithTTL(
+			ep := endpoint.NewEndpointWithTTL(
 				recordName,
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...,
 			)
 
-			endpoints = append(endpoints, endpoint)
+			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -580,8 +581,8 @@ func countTargets(p *plan.Changes) int {
 	count := 0
 
 	for _, endpoints := range changes {
-		for _, endpoint := range endpoints {
-			count += len(endpoint.Targets)
+		for _, ep := range endpoints {
+			count += len(ep.Targets)
 		}
 	}
 
@@ -589,15 +590,7 @@ func countTargets(p *plan.Changes) int {
 }
 
 func maxOf(vars ...int64) int64 {
-	max := vars[0]
-
-	for _, i := range vars {
-		if max < i {
-			max = i
-		}
-	}
-
-	return max
+	return slices.Max(vars)
 }
 
 func toString(obj interface{}) string {
