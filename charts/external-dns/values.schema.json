@@ -64,9 +64,11 @@
       "items": {
         "type": "string"
       },
+      "properties": {},
       "type": [
         "array",
-        "null"
+        "null",
+        "object"
       ],
       "uniqueItems": true
     },

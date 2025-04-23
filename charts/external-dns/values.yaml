@@ -296,7 +296,8 @@ provider:  # @schema type: [object, string];
       relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
-extraArgs: []  # @schema type: [array, null]; item: string; uniqueItems: true;
+# An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
+extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true;
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
