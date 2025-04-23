@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
 	"github.com/oracle/oci-go-sdk/v65/dns"
@@ -153,7 +153,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	}
 	zones := make(map[string]dns.ZoneSummary)
 	scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
-	// If zone scope is empty, list all zones types.
+	// If the zone scope is empty, list all zones types.
 	if p.zoneScope == "" {
 		scopes = dns.GetGetZoneScopeEnumValues()
 	}
@@ -232,7 +232,7 @@ func (p *OCIProvider) addPaginatedZones(ctx context.Context, zones map[string]dn
 }
 
 func (p *OCIProvider) newFilteredRecordOperations(endpoints []*endpoint.Endpoint, opType dns.RecordOperationOperationEnum) []dns.RecordOperation {
-	ops := []dns.RecordOperation{}
+	var ops []dns.RecordOperation
 	for _, ep := range endpoints {
 		if ep == nil {
 			continue
@@ -261,7 +261,7 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 		return nil, provider.NewSoftError(fmt.Errorf("getting zones: %w", err))
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		var page *string
 		for {
@@ -303,7 +303,7 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("Processing changes: %+v", changes)
 
-	ops := []dns.RecordOperation{}
+	var ops []dns.RecordOperation
 	ops = append(ops, p.newFilteredRecordOperations(changes.Create, dns.RecordOperationOperationAdd)...)
 
 	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateNew, dns.RecordOperationOperationAdd)...)
@@ -349,7 +349,7 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	adjustedEndpoints := []*endpoint.Endpoint{}
+	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		// OCI DNS does not support the set-identifier attribute, so we remove it to avoid plan failure
 		if e.SetIdentifier != "" {

@@ -25,7 +25,7 @@ import (
 )
 
 // ConflictResolver is used to make a decision in case of two or more different kubernetes resources
-// are trying to acquire same DNS name
+// are trying to acquire the same DNS name
 type ConflictResolver interface {
 	ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint
 	ResolveUpdate(current *endpoint.Endpoint, candidates []*endpoint.Endpoint) *endpoint.Endpoint
@@ -38,13 +38,13 @@ type PerResource struct{}
 // ResolveCreate is invoked when dns name is not owned by any resource
 // ResolveCreate takes "minimal" (string comparison of Target) endpoint to acquire the DNS record
 func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint {
-	var min *endpoint.Endpoint
+	var minE *endpoint.Endpoint
 	for _, ep := range candidates {
-		if min == nil || s.less(ep, min) {
-			min = ep
+		if minE == nil || s.less(ep, minE) {
+			minE = ep
 		}
 	}
-	return min
+	return minE
 }
 
 // ResolveUpdate is invoked when dns name is already owned by "current" endpoint

@@ -148,7 +148,7 @@ func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
 				AddFunc: func(obj interface{}) {
 					handler()
 				},
-				UpdateFunc: func(old interface{}, new interface{}) {
+				UpdateFunc: func(old interface{}, newI interface{}) {
 					handler()
 				},
 				DeleteFunc: func(obj interface{}) {
