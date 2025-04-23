@@ -106,7 +106,7 @@ Iterates over all listeners for the parent's `parentRef.sectionName`:
 
 The targets of the DNS entries created from a \*Route are sourced from the following places:
 
-1. If the route has the route has the `external-dns.alpha.kubernetes.io/target` annotation
+1. If the route has the `external-dns.alpha.kubernetes.io/target` annotation
    with a non-empty value, uses the value from that.
 
 2. If the route has the route has the `external-dns.alpha.kubernetes.io/target: ""` it
