@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Changed
+
+- Allow extraArgs to also be a map enabling overrides of individual values ([#5293](https://github.com/kubernetes-sigs/external-dns/pull/5293)) _@frittentheke
+
 ### Fixed
 
 - Fixed wrong type definitions for webhook probes. ([#5297](https://github.com/kubernetes-sigs/external-dns/pull/5297)) _@semnell_
