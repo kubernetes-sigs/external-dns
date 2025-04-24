@@ -301,12 +301,11 @@ func makeDomainEditRequest(domain, name, recordType, data string, ttl int) *godo
 	}
 
 	if recordType == endpoint.RecordTypeMX {
-		targets := endpoint.Targets([]string{data})
-		mxRecords, err := targets.ParseMXRecord()
+		mxRecord, err := endpoint.ParseMXRecord(data)
 
 		if err == nil {
-			priority := mxRecords[0].Priority
-			host := mxRecords[0].Host
+			priority := mxRecord.Priority
+			host := mxRecord.Host
 			request.Priority = int(priority)
 			request.Data = provider.EnsureTrailingDot(host)
 		} else {
