@@ -133,7 +133,7 @@
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
 | `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
-| `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times.) |
+| `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times) |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |
 | `--[no-]rfc2136-insecure` | When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires --rfc2136-tsig-keyname and rfc2136-tsig-secret) |
 | `--rfc2136-tsig-keyname=""` | When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false) |
