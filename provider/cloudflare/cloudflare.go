@@ -233,16 +233,12 @@ type RecordParamsTypes interface {
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
 	params := cloudflare.UpdateDNSRecordParams{
-		Name:    cfc.ResourceRecord.Name,
-		TTL:     cfc.ResourceRecord.TTL,
-		Proxied: cfc.ResourceRecord.Proxied,
-		Type:    cfc.ResourceRecord.Type,
-		Content: cfc.ResourceRecord.Content,
-	}
-
-	// Set priority only for MX records
-	if cfc.ResourceRecord.Type == "MX" {
-		params.Priority = cfc.ResourceRecord.Priority
+		Name:     cfc.ResourceRecord.Name,
+		TTL:      cfc.ResourceRecord.TTL,
+		Proxied:  cfc.ResourceRecord.Proxied,
+		Type:     cfc.ResourceRecord.Type,
+		Content:  cfc.ResourceRecord.Content,
+		Priority: cfc.ResourceRecord.Priority,
 	}
 
 	return params
@@ -251,16 +247,12 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordParams {
 	params := cloudflare.CreateDNSRecordParams{
-		Name:    cfc.ResourceRecord.Name,
-		TTL:     cfc.ResourceRecord.TTL,
-		Proxied: cfc.ResourceRecord.Proxied,
-		Type:    cfc.ResourceRecord.Type,
-		Content: cfc.ResourceRecord.Content,
-	}
-
-	// Set priority only for MX records
-	if cfc.ResourceRecord.Type == "MX" {
-		params.Priority = cfc.ResourceRecord.Priority
+		Name:     cfc.ResourceRecord.Name,
+		TTL:      cfc.ResourceRecord.TTL,
+		Proxied:  cfc.ResourceRecord.Proxied,
+		Type:     cfc.ResourceRecord.Type,
+		Content:  cfc.ResourceRecord.Content,
+		Priority: cfc.ResourceRecord.Priority,
 	}
 
 	return params
@@ -789,13 +781,12 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	priority := (*uint16)(nil)
 	if ep.RecordType == "MX" {
-		mxTarget := endpoint.Targets{target}
-		mxRecords, err := mxTarget.ParseMXRecord()
+		mxRecord, err := endpoint.ParseMXRecord(target)
 		if err != nil {
 			log.Errorf("Failed to parse MX record target %q: %v", target, err)
 		} else {
-			priority = &mxRecords[0].Priority
-			target = mxRecords[0].Host
+			priority = &mxRecord.Priority
+			target = mxRecord.Host
 		}
 	}
 

@@ -399,86 +399,66 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:
-		_, err := e.Targets.ParseMXRecord()
-		return err == nil
+		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
-		_, err := e.Targets.ParseSRVRecord()
-		return err == nil
+		return e.Targets.ValidateSRVRecord()
 	}
 	return true
 }
 
-func (t Targets) ParseMXRecord() ([]MXTarget, error) {
-	var mxTargets []MXTarget
-
+func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
-		var mxTarget MXTarget
-		// MX records must have a preference value to indicate priority, e.g. "10 example.com"
-		// as per https://www.rfc-editor.org/rfc/rfc974.txt
-		targetParts := strings.Fields(strings.TrimSpace(target))
-		if len(targetParts) != 2 {
-			err := fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
-			log.Error(err)
-			return []MXTarget{}, err
-		}
-
-		parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
+		_, err := ParseMXRecord(target)
 		if err != nil {
-			err := fmt.Errorf("invalid integer value in target: %s", target)
-			log.Error(err)
-			return []MXTarget{}, err
+			log.Debugf("Invalid MX record target: %s. %v", target, err)
+			return false
 		}
-
-		mxTarget.Priority = uint16(parsedPriority)
-		mxTarget.Host = targetParts[1]
-		mxTargets = append(mxTargets, mxTarget)
 	}
 
-	return mxTargets, nil
+	return true
 }
 
-func (t Targets) ParseSRVRecord() ([]SRVTarget, error) {
-	var srvTargets []SRVTarget
+func ParseMXRecord(target string) (MXTarget, error) {
+	var mxTarget MXTarget
+	// MX records must have a preference value to indicate priority, e.g. "10 example.com"
+	// as per https://www.rfc-editor.org/rfc/rfc974.txt
+	targetParts := strings.Fields(strings.TrimSpace(target))
+	if len(targetParts) != 2 {
+		err := fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+		log.Debug(err)
+		return MXTarget{}, err
+	}
 
+	parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
+	if err != nil {
+		err := fmt.Errorf("invalid integer value in target: %s", target)
+		log.Debug(err)
+		return MXTarget{}, err
+	}
+
+	mxTarget.Priority = uint16(parsedPriority)
+	mxTarget.Host = targetParts[1]
+
+	return mxTarget, nil
+}
+
+func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
-		var srvTarget SRVTarget
 		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
 		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
 		targetParts := strings.Fields(strings.TrimSpace(target))
 		if len(targetParts) != 4 {
-			err := fmt.Errorf("invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
-			log.Error(err)
-			return nil, err
+			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
+			return false
 		}
 
-		parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
-		if err != nil {
-			err := fmt.Errorf("invalid SRV record target: %s. Invalid priority value in target", target)
-			log.Error(err)
-			return nil, err
+		for _, part := range targetParts[:3] {
+			_, err := strconv.ParseUint(part, 10, 16)
+			if err != nil {
+				log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
+				return false
+			}
 		}
-
-		parsedWeight, err := strconv.ParseUint(targetParts[1], 10, 16)
-		if err != nil {
-			err := fmt.Errorf("invalid SRV record target: %s. Invalid weight value in target", target)
-			log.Error(err)
-			return nil, err
-		}
-
-		parsedPort, err := strconv.ParseUint(targetParts[2], 10, 16)
-		if err != nil {
-			err := fmt.Errorf("invalid SRV record target: %s. Invalid port value in target", target)
-			log.Error(err)
-			return nil, err
-		}
-
-		srvTarget.Priority = uint16(parsedPriority)
-		srvTarget.Weight = uint16(parsedWeight)
-		srvTarget.Port = uint16(parsedPort)
-		srvTarget.Host = targetParts[3]
-
-		srvTargets = append(srvTargets, srvTarget)
 	}
-
-	return srvTargets, nil
+	return true
 }
