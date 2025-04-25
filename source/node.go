@@ -23,7 +23,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -31,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
@@ -115,7 +115,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		log.Debugf("creating endpoint for node %s", node.Name)
 
-		ttl := getTTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
+		ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
 
 		// create new endpoint with the information we already have
 		ep := &endpoint.Endpoint{
@@ -138,7 +138,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addrs := getTargetsFromTargetAnnotation(node.Annotations)
+		addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
 		if len(addrs) == 0 {
 			addrs, err = ns.nodeAddresses(node)
 			if err != nil {
@@ -208,11 +208,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 
 // filterByAnnotations filters a list of nodes by a given annotation selector.
 func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ns.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(ns.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -222,14 +218,11 @@ func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) 
 		return nodes, nil
 	}
 
-	filteredList := []*v1.Node{}
+	var filteredList []*v1.Node
 
 	for _, node := range nodes {
-		// convert the node's annotations to an equivalent label selector
-		annotations := labels.Set(node.Annotations)
-
 		// include node if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(node.Annotations)) {
 			filteredList = append(filteredList, node)
 		}
 	}
