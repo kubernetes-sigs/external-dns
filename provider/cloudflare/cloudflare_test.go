@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go"
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -2864,97 +2864,9 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 	assert.Equal(t, len(chs), CustomHostnamesNumber)
 }
 
-func Test_getRegionKey(t *testing.T) {
-	type args struct {
-		endpoint         *endpoint.Endpoint
-		defaultRegionKey string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "no region key",
-			args: args{
-				endpoint: &endpoint.Endpoint{
-					RecordType: "A",
-				},
-				defaultRegionKey: "",
-			},
-			want: "",
-		},
-		{
-			name: "default region key",
-			args: args{
-				endpoint: &endpoint.Endpoint{
-					RecordType: "A",
-				},
-				defaultRegionKey: "us",
-			},
-			want: "us",
-		},
-		{
-			name: "endpoint with region key",
-			args: args{
-				endpoint: &endpoint.Endpoint{
-					RecordType: "A",
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
-							Value: "eu",
-						},
-					},
-				},
-				defaultRegionKey: "us",
-			},
-			want: "eu",
-		},
-		{
-			name: "endpoint with empty region key",
-			args: args{
-				endpoint: &endpoint.Endpoint{
-					RecordType: "A",
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
-							Value: "",
-						},
-					},
-				},
-				defaultRegionKey: "us",
-			},
-			want: "",
-		},
-		{
-			name: "unsupported record type",
-			args: args{
-				endpoint: &endpoint.Endpoint{
-					RecordType: "TXT",
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
-							Value: "eu",
-						},
-					},
-				},
-				defaultRegionKey: "us",
-			},
-			want: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getRegionKey(tt.args.endpoint, tt.args.defaultRegionKey); got != tt.want {
-				t.Errorf("getRegionKey() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
-	cmpDataLocalizationRegionalHostnameChange := func(i, j DataLocalizationRegionalHostnameChange) int {
-		if i.Action == j.Action {
+	cmpDataLocalizationRegionalHostnameChange := func(i, j regionalHostnameChange) int {
+		if i.action == j.action {
 			return 0
 		}
 		if i.Hostname < j.Hostname {
@@ -2968,7 +2880,7 @@ func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []DataLocalizationRegionalHostnameChange
+		want    []regionalHostnameChange
 		wantErr bool
 	}{
 		{
@@ -3062,9 +2974,9 @@ func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
 					},
 				},
 			},
-			want: []DataLocalizationRegionalHostnameChange{
+			want: []regionalHostnameChange{
 				{
-					Action: cloudFlareUpdate,
+					action: cloudFlareUpdate,
 					RegionalHostname: cloudflare.RegionalHostname{
 						Hostname:  "example.com",
 						RegionKey: "eu",
@@ -3093,9 +3005,9 @@ func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
 					},
 				},
 			},
-			want: []DataLocalizationRegionalHostnameChange{
+			want: []regionalHostnameChange{
 				{
-					Action: cloudFlareUpdate,
+					action: cloudFlareUpdate,
 					RegionalHostname: cloudflare.RegionalHostname{
 						Hostname:  "example.com",
 						RegionKey: "eu",
@@ -3153,23 +3065,23 @@ func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
 					},
 				},
 			},
-			want: []DataLocalizationRegionalHostnameChange{
+			want: []regionalHostnameChange{
 				{
-					Action: cloudFlareCreate,
+					action: cloudFlareCreate,
 					RegionalHostname: cloudflare.RegionalHostname{
 						Hostname:  "example1.com",
 						RegionKey: "eu",
 					},
 				},
 				{
-					Action: cloudFlareUpdate,
+					action: cloudFlareUpdate,
 					RegionalHostname: cloudflare.RegionalHostname{
 						Hostname:  "example2.com",
 						RegionKey: "us",
 					},
 				},
 				{
-					Action: cloudFlareDelete,
+					action: cloudFlareDelete,
 					RegionalHostname: cloudflare.RegionalHostname{
 						Hostname:  "example3.com",
 						RegionKey: "ap",
