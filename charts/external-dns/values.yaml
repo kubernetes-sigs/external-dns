@@ -299,6 +299,29 @@ provider:  # @schema type: [object, string];
 # An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
 extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true;
 
+# -- Array of extra K8s manifests to deploy
+## Note: Supports use of custom Helm templates
+extraObjects: []
+# - apiVersion: secrets.hashicorp.com/v1beta1
+#   kind: VaultStaticSecret
+#   metadata:
+#     name: vault-ss-cloudflare-creds
+#     namespace: external-dns
+#     annotations:
+#       "helm.sh/hook": pre-install,pre-upgrade,pre-rollback
+#       "helm.sh/hook-weight": "-10"
+#   spec:
+#     type: kv-v2
+#     mount: kv-rke2-tools-dev
+#     path: databases/cloud-flare/api-key
+#     refreshAfter: 60s
+#     destination:
+#       create: true
+#       name: cloudflare-api-key
+#       type: Opaque
+#       transformation:
+#         excludeRaw: true
+
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
   enabled: false
