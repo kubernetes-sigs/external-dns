@@ -145,32 +145,41 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			endpoints = append(endpoints, record)
 			continue
 		}
-		// We simply assume that TXT records for the registry will always have only one target.
 		// If there are no targets (e.g for routing policy based records in google), direct targets will be empty
 		if len(record.Targets) == 0 {
 			log.Errorf("TXT record has no targets %s", record.DNSName)
 			continue
 		}
-		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
-		if errors.Is(err, endpoint.ErrInvalidHeritage) {
-			// if no heritage is found or it is invalid
-			// case when value of txt record cannot be identified
-			// record will not be removed as it will have empty owner
-			endpoints = append(endpoints, record)
-			continue
-		}
-		if err != nil {
-			return nil, err
+
+		// Some of the targets in the TXT records may be heritage labels
+		// filter them out and add them to the txtRecordsMap
+		txtTargets := record.Targets
+		record.Targets = endpoint.Targets{}
+		for _, target := range txtTargets {
+			labels, err := endpoint.NewLabelsFromString(target, im.txtEncryptAESKey)
+			if errors.Is(err, endpoint.ErrInvalidHeritage) {
+				// add target back into record.Targets as
+				// this is not a heritage/label entry
+				record.Targets = append(record.Targets, target)
+				continue
+			}
+			if err != nil {
+				return nil, err
+			}
+
+			endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
+			key := endpoint.EndpointKey{
+				DNSName:       endpointName,
+				RecordType:    recordType,
+				SetIdentifier: record.SetIdentifier,
+			}
+			labelMap[key] = labels
+			txtRecordsMap[record.DNSName] = struct{}{}
 		}
 
-		endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
-		key := endpoint.EndpointKey{
-			DNSName:       endpointName,
-			RecordType:    recordType,
-			SetIdentifier: record.SetIdentifier,
+		if len(record.Targets) != 0 {
+			endpoints = append(endpoints, record)
 		}
-		labelMap[key] = labels
-		txtRecordsMap[record.DNSName] = struct{}{}
 	}
 
 	for _, ep := range endpoints {
