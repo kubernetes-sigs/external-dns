@@ -186,13 +186,13 @@ func mergeEndpointsMultiTargets(endpoints []*endpoint.Endpoint) []*endpoint.Endp
 
 	// Otherwise, create a new list of endpoints with the consolidated targets.
 	var mergedEndpoints []*endpoint.Endpoint
-	for _, endpoints := range endpointsByNameType {
-		dnsName := endpoints[0].DNSName
-		recordType := endpoints[0].RecordType
-		recordTTL := endpoints[0].RecordTTL
+	for _, ep := range endpointsByNameType {
+		dnsName := ep[0].DNSName
+		recordType := ep[0].RecordType
+		recordTTL := ep[0].RecordTTL
 
-		targets := make([]string, len(endpoints))
-		for i, e := range endpoints {
+		targets := make([]string, len(ep))
+		for i, e := range ep {
 			targets[i] = e.Targets[0]
 		}
 

@@ -36,6 +36,8 @@ const (
 	gdCreate     = 0
 	gdReplace    = 1
 	gdDelete     = 2
+
+	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
 )
 
 var actionNames = []string{
@@ -43,8 +45,6 @@ var actionNames = []string{
 	"replace",
 	"delete",
 }
-
-const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
 
 type gdClient interface {
 	Patch(string, interface{}, interface{}) error
