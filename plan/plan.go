@@ -262,10 +262,12 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	plan := &Plan{
-		Current:        p.Current,
-		Desired:        p.Desired,
-		Changes:        changes,
-		ManagedRecords: p.ManagedRecords,
+		Current: p.Current,
+		Desired: p.Desired,
+		Changes: changes,
+		// The default for ExternalDNS is to always only consider A/AAAA and CNAMEs.
+		// Everything else is an add on or something to be considered.
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	}
 
 	return plan
