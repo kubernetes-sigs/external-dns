@@ -14,7 +14,6 @@ We have full documentation on how to get started contributing here:
 
 This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. The explicit commit history is used, among other things, to provide a readable changelog in release notes.
 
-
 ## Mentorship
 
 - [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!
