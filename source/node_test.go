@@ -97,8 +97,6 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 
 // testNodeSourceEndpoints tests that various node generate the correct endpoints.
 func testNodeSourceEndpoints(t *testing.T) {
-	t.Parallel()
-
 	for _, tc := range []struct {
 		title                string
 		annotationFilter     string
@@ -392,7 +390,6 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 	} {
-		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			buf := testutils.LogsToBuffer(log.DebugLevel, t)
 
