@@ -18,10 +18,10 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -82,7 +82,7 @@ func NewF5TransportServerSource(
 
 	uc, err := newTSUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup unstructured converter")
+		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
 	return &f5TransportServerSource{
@@ -120,7 +120,7 @@ func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.E
 
 	transportServers, err = ts.filterByAnnotations(transportServers)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter TransportServers")
+		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
 
 	endpoints, err := ts.endpointsFromTransportServers(transportServers)

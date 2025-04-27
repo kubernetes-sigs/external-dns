@@ -32,7 +32,6 @@ import (
 	"github.com/bodgit/tsig/gss"
 	"github.com/miekg/dns"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -116,7 +115,7 @@ type rfc2136Actions interface {
 func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR bool, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
-		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
+		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
 	// Set zone to root if no set

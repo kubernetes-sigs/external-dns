@@ -18,11 +18,11 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -83,7 +83,7 @@ func NewF5VirtualServerSource(
 
 	uc, err := newVSUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup unstructured converter")
+		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
 	return &f5VirtualServerSource{
@@ -121,7 +121,7 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 
 	virtualServers, err = vs.filterByAnnotations(virtualServers)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter VirtualServers")
+		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
 
 	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)

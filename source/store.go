@@ -18,6 +18,8 @@ package source
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -27,7 +29,6 @@ import (
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	"k8s.io/apimachinery/pkg/labels"
@@ -509,7 +510,7 @@ func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Client
 
 	ic, err := istioclient.NewForConfig(restCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create istio client")
+		return nil, fmt.Errorf("failed to create istio client: %w", err)
 	}
 
 	return ic, nil
