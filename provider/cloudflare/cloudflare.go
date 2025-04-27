@@ -44,8 +44,8 @@ const (
 	cloudFlareDelete = "DELETE"
 	// cloudFlareUpdate is a ChangeAction enum value
 	cloudFlareUpdate = "UPDATE"
-	// defaultCloudFlareRecordTTL 1 = automatic
-	defaultCloudFlareRecordTTL = 1
+	// defaultTTL 1 = automatic
+	defaultTTL = 1
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -58,7 +58,6 @@ var (
 	proxyDisabled *bool = boolPtr(false)
 )
 
-// for faster getRecordID() lookup
 type DNSRecordIndex struct {
 	Name    string
 	Type    string
@@ -802,7 +801,7 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 }
 
 func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
-	ttl := defaultCloudFlareRecordTTL
+	ttl := defaultTTL
 	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
 	if ep.RecordTTL.IsConfigured() {

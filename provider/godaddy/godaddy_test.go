@@ -138,13 +138,13 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "NS",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 	}, nil).Once()
@@ -164,13 +164,13 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 				{
 					Name: "godaddy",
 					Type: "NS",
-					TTL:  gdMinimalTTL,
+					TTL:  defaultTTL,
 					Data: "203.0.113.42",
 				},
 				{
 					Name: "godaddy",
 					Type: "A",
-					TTL:  gdMinimalTTL,
+					TTL:  defaultTTL,
 					Data: "203.0.113.42",
 				},
 			},
@@ -240,13 +240,13 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			Name: "@",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 		{
 			Name: "www",
 			Type: "CNAME",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "example.org",
 		},
 	}, nil).Once()
@@ -255,13 +255,13 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.43",
 		},
 	}, nil).Once()
@@ -278,7 +278,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			DNSName:    "godaddy.example.net",
 			RecordType: "A",
-			RecordTTL:  gdMinimalTTL,
+			RecordTTL:  defaultTTL,
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"203.0.113.42",
@@ -288,7 +288,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			DNSName:    "example.org",
 			RecordType: "A",
-			RecordTTL:  gdMinimalTTL,
+			RecordTTL:  defaultTTL,
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"203.0.113.42",
@@ -297,7 +297,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			DNSName:    "www.example.org",
 			RecordType: "CNAME",
-			RecordTTL:  gdMinimalTTL,
+			RecordTTL:  defaultTTL,
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"example.org",
@@ -327,7 +327,7 @@ func TestGoDaddyChange(t *testing.T) {
 			{
 				DNSName:    ".example.net",
 				RecordType: "A",
-				RecordTTL:  gdMinimalTTL,
+				RecordTTL:  defaultTTL,
 				Targets: []string{
 					"203.0.113.42",
 				},
@@ -356,7 +356,7 @@ func TestGoDaddyChange(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.43",
 		},
 	}, nil).Once()
@@ -366,7 +366,7 @@ func TestGoDaddyChange(t *testing.T) {
 		{
 			Name: "@",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 	}).Return(nil, nil).Once()
@@ -398,7 +398,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 			{
 				DNSName:    ".example.net",
 				RecordType: "A",
-				RecordTTL:  gdMinimalTTL,
+				RecordTTL:  defaultTTL,
 				Targets: []string{
 					"203.0.113.42",
 				},
@@ -427,7 +427,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.43",
 		},
 	}, nil).Once()
