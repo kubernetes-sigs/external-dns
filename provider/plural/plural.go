@@ -56,13 +56,13 @@ func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 		Provider: provider,
 	}
 
-	client, err := NewClient(config)
+	cl, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
 	return &PluralProvider{
-		Client: client,
+		Client: cl,
 	}, nil
 }
 
@@ -85,8 +85,8 @@ func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*end
 
 func (p *PluralProvider) ApplyChanges(_ context.Context, diffs *plan.Changes) error {
 	var changes []*RecordChange
-	for _, et := range diffs.Create {
-		changes = append(changes, makeChange(CreateAction, et.Targets, et))
+	for _, ep := range diffs.Create {
+		changes = append(changes, makeChange(CreateAction, ep.Targets, ep))
 	}
 
 	for _, desired := range diffs.UpdateNew {

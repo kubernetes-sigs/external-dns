@@ -33,7 +33,13 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const defaultTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+const (
+	dnsimpleCreate = "CREATE"
+	dnsimpleDelete = "DELETE"
+	dnsimpleUpdate = "UPDATE"
+
+	defaultTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+)
 
 type dnsimpleIdentityService struct {
 	service *dnsimple.IdentityService
@@ -91,12 +97,6 @@ type dnsimpleChange struct {
 	ResourceRecordSet dnsimple.ZoneRecord
 }
 
-const (
-	dnsimpleCreate = "CREATE"
-	dnsimpleDelete = "DELETE"
-	dnsimpleUpdate = "UPDATE"
-)
-
 // NewDnsimpleProvider initializes a new Dnsimple based provider
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
@@ -149,7 +149,7 @@ func ZonesFromZoneString(zonestring string) map[string]dnsimple.Zone {
 	return zones
 }
 
-// Returns a list of filtered Zones
+// Zones Return a list of filtered Zones
 func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone, error) {
 	zones := make(map[string]dnsimple.Zone)
 

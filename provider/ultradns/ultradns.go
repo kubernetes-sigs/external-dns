@@ -39,13 +39,11 @@ const (
 	rdPoolOrder    = "ROUND_ROBIN"
 )
 
-// global variables
-var sbPoolRunProbes = true
-
 var (
 	sbPoolActOnProbes = true
-	poolType          = "rdpool"
+	ultradnsPoolType  = "rdpool"
 	accountName       string
+	sbPoolRunProbes   = true
 	// Setting custom headers for ultradns api calls
 	customHeader = []udnssdk.CustomHeader{
 		{
@@ -119,7 +117,7 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 		if (poolValue != "sbpool") && (poolValue != "rdpool") {
 			return nil, fmt.Errorf(" please set proper ULTRADNS_POOL_TYPE, supported types are sbpool or rdpool")
 		}
-		poolType = poolValue
+		ultradnsPoolType = poolValue
 	}
 
 	client, err := udnssdk.NewClient(username, string(password), baseURL)
@@ -247,7 +245,7 @@ func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.Zone
 	maxerrs := 5
 	waittime := 5 * time.Second
 
-	var zones []udnssdk.Zone
+	zones := []udnssdk.Zone{}
 
 	errcnt := 0
 
@@ -321,7 +319,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 			}
 			record := udnssdk.RRSet{}
 			if (change.ResourceRecordSetUltraDNS.RRType == "A" || change.ResourceRecordSetUltraDNS.RRType == "AAAA") && (len(change.ResourceRecordSetUltraDNS.RData) >= 2) {
-				if poolType == "sbpool" && change.ResourceRecordSetUltraDNS.RRType == "A" {
+				if ultradnsPoolType == "sbpool" && change.ResourceRecordSetUltraDNS.RRType == "A" {
 					sbPoolObject, _ := p.newSBPoolObjectCreation(ctx, change)
 					record = udnssdk.RRSet{
 						RRType:    change.ResourceRecordSetUltraDNS.RRType,
@@ -330,7 +328,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 						TTL:       change.ResourceRecordSetUltraDNS.TTL,
 						Profile:   sbPoolObject.RawProfile(),
 					}
-				} else if poolType == "rdpool" {
+				} else if ultradnsPoolType == "rdpool" {
 					rdPoolObject, _ := p.newRDPoolObjectCreation(ctx, change)
 					record = udnssdk.RRSet{
 						RRType:    change.ResourceRecordSetUltraDNS.RRType,

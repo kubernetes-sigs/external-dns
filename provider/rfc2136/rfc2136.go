@@ -383,10 +383,10 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
-			_ = r.AddRecord(m[zone], ep)
+			r.AddRecord(m[zone], ep)
 
 			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				_ = r.AddReverseRecord(ep.Targets[0], ep.DNSName)
+				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}
 
@@ -422,10 +422,10 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
-			_ = r.UpdateRecord(m[zone], changes.UpdateOld[i], ep)
+			r.UpdateRecord(m[zone], changes.UpdateOld[i], ep)
 			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				_ = r.RemoveReverseRecord(changes.UpdateOld[i].Targets[0], ep.DNSName)
-				_ = r.AddReverseRecord(ep.Targets[0], ep.DNSName)
+				r.RemoveReverseRecord(changes.UpdateOld[i].Targets[0], ep.DNSName)
+				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}
 
@@ -460,9 +460,9 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
-			_ = r.RemoveRecord(m[zone], ep)
+			r.RemoveRecord(m[zone], ep)
 			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				_ = r.RemoveReverseRecord(ep.Targets[0], ep.DNSName)
+				r.RemoveReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}
 
@@ -479,7 +479,7 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("RFC2136 had errs in one or more of its batches: %v", errs)
+		return fmt.Errorf("RFC2136 had errors in one or more of its batches: %v", errs)
 	}
 
 	return nil

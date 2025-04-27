@@ -279,8 +279,8 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
-	provider := &CloudFlareProvider{
-		// Client: config,
+
+	return &CloudFlareProvider{
 		Client:                zoneService{config},
 		domainFilter:          domainFilter,
 		zoneIDFilter:          zoneIDFilter,
@@ -289,8 +289,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		DryRun:                dryRun,
 		DNSRecordsPerPage:     dnsRecordsPerPage,
 		RegionKey:             regionKey,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -425,7 +424,7 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 	failedChange := false
 	// return early if disabled
 	if !p.CustomHostnamesConfig.Enabled {
-		return !failedChange
+		return true
 	}
 
 	switch change.Action {
@@ -730,7 +729,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	adjustedEndpoints := []*endpoint.Endpoint{}
+	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
 		if proxied {
@@ -969,7 +968,7 @@ func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 }
 
 func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	// group supported records by name and type
 	groups := map[string][]cloudflare.DNSRecord{}
@@ -994,7 +993,7 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		customHostnames[c.CustomOriginServer] = append(customHostnames[c.CustomOriginServer], c.Hostname)
 	}
 
-	// create single endpoint with all the targets for each name/type
+	// create a single endpoint with all the targets for each name/type
 	for _, records := range groups {
 		if len(records) == 0 {
 			return endpoints
@@ -1016,7 +1015,7 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 			continue
 		}
 		e = e.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
-		// noop (customHostnames is empty) if custom hostnames feature is not in use
+		// noop (customHostnames is empty) if the custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
 			e = e.WithProviderSpecific(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))

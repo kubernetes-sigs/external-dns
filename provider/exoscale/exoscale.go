@@ -181,7 +181,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 
 	for _, epoint := range changes.UpdateOld {
-		// Since Exoscale "Patches", we ignore UpdateOld
+		// Since Exoscale "Patches", we've ignored UpdateOld
 		// We leave this logging here for information
 		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
 	}
@@ -310,7 +310,6 @@ func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[strin
 
 func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 	findMatch := func(template *endpoint.Endpoint) *endpoint.Endpoint {
-
 		for _, record := range updateNew {
 			if template.DNSName == record.DNSName &&
 				template.RecordType == record.RecordType {

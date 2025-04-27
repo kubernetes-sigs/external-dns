@@ -679,8 +679,8 @@ func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endp
 		return nil, err
 	}
 	// Filter VPC annoation for private zone active
-	for _, source := range sources {
-		vpc = checkVPCAnnotation(source)
+	for _, src := range sources {
+		vpc = checkVPCAnnotation(src)
 		if len(vpc) > 0 {
 			log.Debugf("VPC found: %s", vpc)
 			break
@@ -983,7 +983,7 @@ func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == vpcFilter {
 			vpcCrn, err := crn.Parse(v.Value)
-			if vpcCrn.ResourceType != "vpc" || err != nil {
+			if err != nil || vpcCrn.ResourceType != "vpc" {
 				log.Errorf("Failed to parse vpc [%s]: %v", v.Value, err)
 			} else {
 				vpc = v.Value
