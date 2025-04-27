@@ -272,7 +272,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	defaultTtlPlan := &endpoint.Endpoint{
 		DNSName:    "ttl.container-service.top",
 		RecordType: "A",
-		RecordTTL:  defaultAlibabaCloudRecordTTL,
+		RecordTTL:  defaultTTL,
 		Targets:    endpoint.NewTargets("4.3.2.1"),
 	}
 	changes := plan.Changes{

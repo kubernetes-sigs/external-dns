@@ -344,7 +344,7 @@ func (p *AzurePrivateDNSProvider) recordSetNameForZone(zone string, endpoint *en
 }
 
 func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (privatedns.RecordSet, error) {
-	var ttl int64 = azureRecordTTL
+	var ttl int64 = defaultTTL
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int64(endpoint.RecordTTL)
 	}

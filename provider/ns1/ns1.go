@@ -40,8 +40,8 @@ const (
 	ns1Delete = "DELETE"
 	// ns1Update is a ChangeAction enum value
 	ns1Update = "UPDATE"
-	// ns1DefaultTTL is the default ttl for ttls that are not set
-	ns1DefaultTTL = 10
+	// defaultTTL is the default ttl for ttls that are not set
+	defaultTTL = 10
 )
 
 // NS1DomainClient is a subset of the NS1 API the the provider uses, to ease testing
@@ -183,7 +183,7 @@ func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Re
 		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
 	}
 	// set default ttl, but respect minTTLSeconds
-	ttl := ns1DefaultTTL
+	ttl := defaultTTL
 	if p.minTTLSeconds > ttl {
 		ttl = p.minTTLSeconds
 	}

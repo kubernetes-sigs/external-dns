@@ -33,7 +33,7 @@ const (
 	gandiCreate          = "CREATE"
 	gandiDelete          = "DELETE"
 	gandiUpdate          = "UPDATE"
-	gandiTTL             = 600
+	defaultTTL           = 600
 	gandiLiveDNSProvider = "livedns"
 )
 
@@ -255,7 +255,7 @@ func (p *GandiProvider) submitChanges(ctx context.Context, changes []*GandiChang
 
 func (p *GandiProvider) newGandiChanges(action string, endpoints []*endpoint.Endpoint) []*GandiChanges {
 	changes := make([]*GandiChanges, 0, len(endpoints))
-	ttl := gandiTTL
+	ttl := defaultTTL
 	for _, e := range endpoints {
 		if e.RecordTTL.IsConfigured() {
 			ttl = int(e.RecordTTL)

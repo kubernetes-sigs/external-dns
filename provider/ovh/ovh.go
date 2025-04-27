@@ -41,8 +41,8 @@ import (
 )
 
 const (
-	ovhDefaultTTL = 0
-	ovhCreate     = iota
+	defaultTTL = 0
+	ovhCreate  = iota
 	ovhDelete
 	ovhUpdate
 )
@@ -506,7 +506,7 @@ func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.
 						FieldType: e.RecordType,
 						ovhRecordFieldUpdate: ovhRecordFieldUpdate{
 							SubDomain: convertDNSNameIntoSubDomain(e.DNSName, zone),
-							TTL:       ovhDefaultTTL,
+							TTL:       defaultTTL,
 							Target:    target,
 						},
 					},
@@ -617,7 +617,7 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 			if endpointsNew.RecordTTL.IsConfigured() {
 				record.TTL = int64(endpointsNew.RecordTTL)
 			} else {
-				record.TTL = ovhDefaultTTL
+				record.TTL = defaultTTL
 			}
 
 			change := ovhChange{
@@ -634,7 +634,7 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 
 		if len(toInsertTarget) > 0 {
 			for _, target := range toInsertTarget {
-				recordTTL := int64(ovhDefaultTTL)
+				recordTTL := int64(defaultTTL)
 				if endpointsNew.RecordTTL.IsConfigured() {
 					recordTTL = int64(endpointsNew.RecordTTL)
 				}
@@ -680,6 +680,8 @@ func (c *ovhChange) String() string {
 		action = "update"
 	case ovhDelete:
 		action = "delete"
+	default:
+		action = "unknown"
 	}
 
 	if c.ID != 0 {

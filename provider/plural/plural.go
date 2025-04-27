@@ -45,7 +45,6 @@ type RecordChange struct {
 
 func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 	token := os.Getenv("PLURAL_ACCESS_TOKEN")
-
 	if token == "" {
 		return nil, fmt.Errorf("no plural access token provided, you must set the PLURAL_ACCESS_TOKEN env var")
 	}

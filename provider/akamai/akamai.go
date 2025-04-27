@@ -34,9 +34,9 @@ import (
 
 const (
 	// Default Record TTL
-	edgeDNSRecordTTL = 600
-	maxUint          = ^uint(0)
-	maxInt           = int(maxUint >> 1)
+	defaultTTL = 600
+	maxUint    = ^uint(0)
+	maxInt     = int(maxUint >> 1)
 )
 
 // edgeDNSClient is a proxy interface of the Akamai edgegrid configdns-v2 package that can be stubbed for testing.
@@ -352,7 +352,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 func ttlAsInt(src endpoint.TTL) int {
 	var temp interface{} = int64(src)
 	temp64 := temp.(int64)
-	var ttl = edgeDNSRecordTTL
+	var ttl = defaultTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {
 		ttl = int(temp64)
 	}

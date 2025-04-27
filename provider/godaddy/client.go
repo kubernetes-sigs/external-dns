@@ -34,15 +34,16 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
+const (
+	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
+
+	// DefaultTimeout api requests after
+	DefaultTimeout = 180 * time.Second
+)
+
 // Errors
 var (
 	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
-)
-
-const (
-	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
-	// DefaultTimeout api requests after 180s
-	DefaultTimeout = 180 * time.Second
 )
 
 // APIError error
