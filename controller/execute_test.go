@@ -234,18 +234,29 @@ func getRandomPort() (int, error) {
 }
 
 func TestServeMetrics(t *testing.T) {
+	t.Parallel()
+
 	port, err := getRandomPort()
 	require.NoError(t, err)
+	addresse := fmt.Sprintf("localhost:%d", port)
 
 	go serveMetrics(fmt.Sprintf(":%d", port))
-	// Required to let serveMetrics go routine to open the network socket
-	time.Sleep(10 * time.Millisecond)
 
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port) + "/healthz")
+	// Wait for the TCP socket to be ready
+	require.Eventually(t, func() bool {
+		conn, err := net.Dial("tcp", addresse)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	}, 1*time.Second, 5*time.Millisecond, "server not ready with port open in time")
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", addresse))
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, err = http.Get(fmt.Sprintf("http://localhost:%d", port) + "/metrics")
+	resp, err = http.Get(fmt.Sprintf("http://%s/metrics", addresse))
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
