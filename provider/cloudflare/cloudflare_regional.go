@@ -30,7 +30,7 @@ var recordTypeRegionalHostnameSupported = map[string]bool{
 }
 
 type regionalHostnameChange struct {
-	action string
+	action changeAction
 	cloudflare.RegionalHostname
 }
 

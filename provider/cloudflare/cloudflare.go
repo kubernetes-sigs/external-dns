@@ -37,16 +37,28 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
+type changeAction int
+
 const (
 	// cloudFlareCreate is a ChangeAction enum value
-	cloudFlareCreate = "CREATE"
+	cloudFlareCreate changeAction = iota
 	// cloudFlareDelete is a ChangeAction enum value
-	cloudFlareDelete = "DELETE"
+	cloudFlareDelete
 	// cloudFlareUpdate is a ChangeAction enum value
-	cloudFlareUpdate = "UPDATE"
+	cloudFlareUpdate
 	// defaultTTL 1 = automatic
 	defaultTTL = 1
 )
+
+var changeActionNames = map[changeAction]string{
+	cloudFlareCreate: "CREATE",
+	cloudFlareDelete: "DELETE",
+	cloudFlareUpdate: "UPDATE",
+}
+
+func (action changeAction) String() string {
+	return changeActionNames[action]
+}
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 // see: https://github.com/cloudflare/cloudflare-go/pull/595
@@ -195,7 +207,7 @@ type CloudFlareProvider struct {
 
 // cloudFlareChange differentiates between ChangActions
 type cloudFlareChange struct {
-	Action              string
+	Action              changeAction
 	ResourceRecord      cloudflare.DNSRecord
 	RegionalHostname    cloudflare.RegionalHostname
 	CustomHostnames     map[string]cloudflare.CustomHostname
@@ -773,7 +785,7 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 	}
 }
 
-func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
+func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
 	ttl := defaultTTL
 	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
