@@ -38,6 +38,7 @@ import (
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -150,9 +151,9 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 
 		resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
 
-		ttl := getTTLFromAnnotations(transportServer.Annotations, resource)
+		ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
 
-		targets := getTargetsFromTargetAnnotation(transportServer.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
 		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
 			targets = append(targets, transportServer.Spec.VirtualServerAddress)
 		}
