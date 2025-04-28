@@ -33,6 +33,9 @@ import (
 const (
 	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
 	ContentTypeHeader         = "Content-Type"
+	UrlAdjustEndpoints        = "/adjustendpoints"
+	UrlApplyChanges           = "/applychanges"
+	UrlRecords                = "/records"
 )
 
 type WebhookServer struct {
@@ -121,8 +124,8 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 
 	m := http.NewServeMux()
 	m.HandleFunc("/", p.NegotiateHandler)
-	m.HandleFunc("/records", p.RecordsHandler)
-	m.HandleFunc("/adjustendpoints", p.AdjustEndpointsHandler)
+	m.HandleFunc(UrlRecords, p.RecordsHandler)
+	m.HandleFunc(UrlAdjustEndpoints, p.AdjustEndpointsHandler)
 
 	s := &http.Server{
 		Addr:         providerPort,

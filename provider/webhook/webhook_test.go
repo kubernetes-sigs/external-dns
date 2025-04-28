@@ -22,14 +22,66 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
+
+func TestNewWebhookProvider_InvalidURL(t *testing.T) {
+	_, err := NewWebhookProvider("://invalid-url")
+	require.Error(t, err)
+}
+
+func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
+	_, err := NewWebhookProvider("http://nonexistent.url")
+	require.Error(t, err)
+}
+
+func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("invalid-json")) // Invalid JSON
+	}))
+	defer svr.Close()
+
+	_, err := NewWebhookProvider(svr.URL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
+}
+
+func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer svr.Close()
+
+	_, err := NewWebhookProvider(svr.URL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "status code < 500")
+}
+
+func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion+"wrong")
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+	}))
+	defer svr.Close()
+
+	_, err := NewWebhookProvider(svr.URL)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "wrong content type returned from server")
+}
 
 func TestInvalidDomainFilter(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +160,68 @@ func TestRecordsWithErrors(t *testing.T) {
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
+func TestRecords_HTTPRequestErrorMissingHost0(t *testing.T) {
+	wpr := WebhookProvider{
+		remoteServerURL: &url.URL{Scheme: "http", Host: "example\\x00.com", Path: "\\x00"},
+		client:          &http.Client{},
+	}
+
+	_, err := wpr.Records(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid URL escape")
+}
+
+func TestRecords_HTTPRequestErrorMissingHost(t *testing.T) {
+	wpr := WebhookProvider{
+		remoteServerURL: &url.URL{Host: "example.com", Path: "\\x00"},
+		client:          &http.Client{},
+	}
+
+	_, err := wpr.Records(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unsupported protocol scheme")
+}
+
+func TestRecords_DecodeError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == webhookapi.UrlRecords {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("invalid-json")) // Simulate invalid JSON response
+			return
+		}
+	}))
+	defer svr.Close()
+
+	parsedURL, _ := url.Parse(svr.URL)
+	p := WebhookProvider{
+		remoteServerURL: parsedURL,
+		client:          &http.Client{},
+	}
+
+	_, err := p.Records(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
+}
+
+func TestRecords_NonOKStatusCode(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
+		return
+	}))
+	defer svr.Close()
+
+	parsedURL, _ := url.Parse(svr.URL)
+
+	p := WebhookProvider{
+		remoteServerURL: &url.URL{Scheme: parsedURL.Scheme, Host: parsedURL.Host},
+		client:          &http.Client{},
+	}
+
+	_, err := p.Records(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get records with code 511")
+}
+
 func TestApplyChanges(t *testing.T) {
 	successfulApplyChanges := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -137,6 +251,49 @@ func TestApplyChanges(t *testing.T) {
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
+func TestApplyChanges_HTTPNewRequestErrorWrongHost(t *testing.T) {
+	wpr := WebhookProvider{
+		remoteServerURL: &url.URL{Host: "exa\\x00mple.com"},
+		client:          &http.Client{},
+	}
+
+	err := wpr.ApplyChanges(context.Background(), nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid URL escape")
+}
+
+func TestApplyChanges_GetFailed(t *testing.T) {
+	p := WebhookProvider{
+		remoteServerURL: &url.URL{Host: "localhost"},
+		client:          &http.Client{},
+	}
+
+	err := p.ApplyChanges(context.TODO(), &plan.Changes{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported protocol scheme")
+}
+
+func TestApplyChanges_StatusCodeError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
+		require.Equal(t, webhookapi.UrlRecords, r.URL.Path)
+		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
+	}))
+	defer svr.Close()
+
+	p, err := NewWebhookProvider(svr.URL)
+	require.NoError(t, err)
+
+	err = p.ApplyChanges(context.TODO(), nil)
+	require.NotNil(t, err)
+	require.NotErrorIs(t, err, provider.SoftError)
+	assert.Contains(t, err.Error(), "failed to apply changes with code 511")
+}
+
 func TestAdjustEndpoints(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
@@ -144,7 +301,7 @@ func TestAdjustEndpoints(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/adjustendpoints", r.URL.Path)
+		require.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 
 		var endpoints []*endpoint.Endpoint
 		defer r.Body.Close()
@@ -162,7 +319,6 @@ func TestAdjustEndpoints(t *testing.T) {
 		}
 		j, _ := json.Marshal(endpoints)
 		w.Write(j)
-
 	}))
 	defer svr.Close()
 
@@ -197,7 +353,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/adjustendpoints", r.URL.Path)
+		require.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer svr.Close()
@@ -268,4 +424,109 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+}
+
+func TestAdjustEndpoints_JoinPathError(t *testing.T) {
+	wpr := WebhookProvider{
+		remoteServerURL: &url.URL{Scheme: "http", Host: "example\\x00.com"},
+	}
+
+	_, err := wpr.AdjustEndpoints(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid URL escape")
+}
+
+func TestAdjustEndpoints_HTTPRequestErrorMissingHost(t *testing.T) {
+	wpr := WebhookProvider{
+		remoteServerURL: &url.URL{Host: "example.com", Path: "\\x00"},
+		client:          &http.Client{},
+	}
+
+	_, err := wpr.AdjustEndpoints(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unsupported protocol scheme") // Ensure the "BINGO" log is triggered
+}
+
+func TestAdjustEndpoints_NonOKStatusCode(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
+		return
+	}))
+	defer svr.Close()
+
+	parsedURL, _ := url.Parse(svr.URL)
+
+	p := WebhookProvider{
+		remoteServerURL: &url.URL{Scheme: parsedURL.Scheme, Host: parsedURL.Host},
+		client:          &http.Client{},
+	}
+
+	endpoints := []*endpoint.Endpoint{
+		{
+			DNSName:    "test.example.com",
+			RecordTTL:  10,
+			RecordType: "A",
+			Targets:    endpoint.Targets{""},
+		},
+	}
+
+	_, err := p.AdjustEndpoints(endpoints)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to AdjustEndpoints with code  511")
+}
+
+func TestAdjustEndpoints_DecodeError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == webhookapi.UrlAdjustEndpoints {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("invalid-json")) // Simulate invalid JSON response
+			return
+		}
+	}))
+	defer svr.Close()
+
+	parsedURL, _ := url.Parse(svr.URL)
+	p := WebhookProvider{
+		remoteServerURL: parsedURL,
+		client:          &http.Client{},
+	}
+
+	var endpoints []*endpoint.Endpoint
+
+	_, err := p.AdjustEndpoints(endpoints)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
+}
+
+func TestRequestWithRetry_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "ok")
+	}))
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestRequestWithRetry_NonRetriableStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req)
+	require.Error(t, err)
+	require.Nil(t, resp)
 }
