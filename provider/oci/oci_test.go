@@ -18,6 +18,8 @@ package oci
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -25,7 +27,6 @@ import (
 
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/dns"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -621,7 +622,7 @@ func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request 
 		case dns.RecordOperationOperationRemove:
 			delete(records, k)
 		default:
-			err = errors.Errorf("unsupported operation %q", op.Operation)
+			err = fmt.Errorf("unsupported operation %q", op.Operation)
 			return
 		}
 	}

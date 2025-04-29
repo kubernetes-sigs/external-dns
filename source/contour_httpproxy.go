@@ -18,11 +18,11 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"text/template"
 
-	"github.com/pkg/errors"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,7 +87,7 @@ func NewContourHTTPProxySource(
 
 	uc, err := NewUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &httpProxySource{
@@ -121,14 +121,14 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		hpConverted := &projectcontour.HTTPProxy{}
 		err := sc.unstructuredConverter.scheme.Convert(unstructuredHP, hpConverted, nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert to HTTPProxy")
+			return nil, fmt.Errorf("failed to convert to HTTPProxy: %w", err)
 		}
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
 	httpProxies, err = sc.filterByAnnotations(httpProxies)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter HTTPProxies")
+		return nil, fmt.Errorf("failed to filter HTTPProxies: %w", err)
 	}
 
 	endpoints := []*endpoint.Endpoint{}
@@ -144,14 +144,14 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 
 		hpEndpoints, err := sc.endpointsFromHTTPProxy(hp)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get endpoints from HTTPProxy")
+			return nil, fmt.Errorf("failed to get endpoints from HTTPProxy: %w", err)
 		}
 
 		// apply template if fqdn is missing on HTTPProxy
 		if (sc.combineFQDNAnnotation || len(hpEndpoints) == 0) && sc.fqdnTemplate != nil {
 			tmplEndpoints, err := sc.endpointsFromTemplate(hp)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to get endpoints from template")
+				return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
 			}
 
 			if sc.combineFQDNAnnotation {

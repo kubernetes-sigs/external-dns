@@ -18,12 +18,12 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -151,7 +151,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 
 	uc, err := newTraefikUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &traefikSource{
@@ -249,7 +249,7 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 
 	ingressRoutes, err = ts.filterIngressRouteByAnnotation(ingressRoutes)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRoute")
+		return nil, fmt.Errorf("failed to filter IngressRoute: %w", err)
 	}
 
 	for _, ingressRoute := range ingressRoutes {
@@ -301,7 +301,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 
 	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteTCP")
+		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
 	}
 
 	for _, ingressRouteTCP := range ingressRouteTCPs {
@@ -353,7 +353,7 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 
 	ingressRouteUDPs, err = ts.filterIngressRouteUdpByAnnotations(ingressRouteUDPs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteUDP")
+		return nil, fmt.Errorf("failed to filter IngressRouteUDP: %w", err)
 	}
 
 	for _, ingressRouteUDP := range ingressRouteUDPs {
@@ -405,7 +405,7 @@ func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error
 
 	ingressRoutes, err = ts.filterIngressRouteByAnnotation(ingressRoutes)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRoute")
+		return nil, fmt.Errorf("failed to filter IngressRoute: %w", err)
 	}
 
 	for _, ingressRoute := range ingressRoutes {
@@ -457,7 +457,7 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, er
 
 	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteTCP")
+		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
 	}
 
 	for _, ingressRouteTCP := range ingressRouteTCPs {
@@ -509,7 +509,7 @@ func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, er
 
 	ingressRouteUDPs, err = ts.filterIngressRouteUdpByAnnotations(ingressRouteUDPs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRouteUDP")
+		return nil, fmt.Errorf("failed to filter IngressRouteUDP: %w", err)
 	}
 
 	for _, ingressRouteUDP := range ingressRouteUDPs {

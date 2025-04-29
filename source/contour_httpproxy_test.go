@@ -18,11 +18,11 @@ package source
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
-	"github.com/pkg/errors"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

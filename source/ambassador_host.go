@@ -18,12 +18,12 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -96,7 +96,7 @@ func NewAmbassadorHostSource(
 
 	uc, err := newUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &ambassadorHostSource{
@@ -137,10 +137,10 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	// Filter Ambassador Hosts
 	ambassadorHosts, err = sc.filterByAnnotations(ambassadorHosts)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter Ambassador Hosts by annotation")
+		return nil, fmt.Errorf("failed to filter Ambassador Hosts by annotation: %w", err)
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, host := range ambassadorHosts {
 		fullname := fmt.Sprintf("%s/%s", host.Namespace, host.Name)
@@ -260,7 +260,7 @@ func parseAmbLoadBalancerService(service string) (namespace, name string, err er
 	}
 
 	// If we got here, this string is simply ill-formatted. Return an error.
-	return "", "", errors.New(fmt.Sprintf("invalid external-dns service: %s", service))
+	return "", "", fmt.Errorf("invalid external-dns service: %s", service)
 }
 
 func (sc *ambassadorHostSource) AddEventHandler(ctx context.Context, handler func()) {

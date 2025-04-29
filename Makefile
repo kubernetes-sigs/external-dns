@@ -201,3 +201,7 @@ helm-template:
 helm-lint:
 	scripts/helm-tools.sh --schema
 	scripts/helm-tools.sh --docs
+
+.PHONY: go-dependency
+go-dependency: ## Dependency maintanance
+	go mod tidy
