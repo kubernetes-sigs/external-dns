@@ -145,7 +145,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 }
 
 func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
-	resp, err := backoff.Retry(context.TODO(), func() (*http.Response, error) {
+	resp, err := backoff.Retry(context.Background(), func() (*http.Response, error) {
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Debugf("Failed to connect to webhook: %v", err)
