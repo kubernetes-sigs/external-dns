@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -120,36 +120,21 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	client := &http.Client{}
-	var resp *http.Response
-	err = backoff.Retry(func() error {
-		resp, err = client.Do(req)
-		if err != nil {
-			log.Debugf("Failed to connect to webhook: %v", err)
-			return err
-		}
-		// we currently only use 200 as success, but considering okay all 2XX for future usage
-		if resp.StatusCode >= http.StatusMultipleChoices && resp.StatusCode < http.StatusInternalServerError {
-			return backoff.Permanent(fmt.Errorf("status code < %d", http.StatusInternalServerError))
-		}
-		return nil
-	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries))
 
+	resp, err := requestWithRetry(client, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to webhook: %v", err)
 	}
-
-	contentType := resp.Header.Get(webhookapi.ContentTypeHeader)
-
 	// read the serialized DomainFilter from the response body and set it in the webhook provider struct
 	defer resp.Body.Close()
+
+	if ct := resp.Header.Get(webhookapi.ContentTypeHeader); ct != webhookapi.MediaTypeFormatAndVersion {
+		return nil, fmt.Errorf("wrong content type returned from server: %s", ct)
+	}
 
 	df := endpoint.DomainFilter{}
 	if err := json.NewDecoder(resp.Body).Decode(&df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
-	}
-
-	if contentType != webhookapi.MediaTypeFormatAndVersion {
-		return nil, fmt.Errorf("wrong content type returned from server: %s", contentType)
 	}
 
 	return &WebhookProvider{
@@ -157,6 +142,22 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		remoteServerURL: parsedURL,
 		DomainFilter:    df,
 	}, nil
+}
+
+func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
+	resp, err := backoff.Retry(context.Background(), func() (*http.Response, error) {
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Debugf("Failed to connect to webhook: %v", err)
+			return nil, err
+		}
+		// we currently only use 200 as success, but considering okay all 2XX for future usage
+		if resp.StatusCode >= http.StatusMultipleChoices && resp.StatusCode < http.StatusInternalServerError {
+			return nil, backoff.Permanent(fmt.Errorf("status code < %d", http.StatusInternalServerError))
+		}
+		return resp, nil
+	}, backoff.WithMaxTries(maxRetries))
+	return resp, err
 }
 
 // Records will make a GET call to remoteServerURL/records and return the results
