@@ -248,6 +248,8 @@ provider:  # @schema type: [object, string];
       tag:  # @schema type:[string, null]; default: null
       # -- Image pull policy for the `webhook` container.
       pullPolicy: IfNotPresent
+    # -- Enable the `webhook` container.
+    enabled: true
     # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
     env: []
     # -- Extra arguments to provide for the `webhook` container.
