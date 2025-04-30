@@ -12,7 +12,7 @@ We have full documentation on how to get started contributing here:
 - [Kubernetes Contributor Guide](https://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](https://git.k8s.io/community/contributors/guide#contributing)
 - [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet) - Common resources for existing developers
 
-This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. The explicit commit history is used, among other things, to provide a readable changelog in release notes.
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification on PR title. The explicit commit history is used, among other things, to provide a readable changelog in release notes.
 
 ## Mentorship
 
