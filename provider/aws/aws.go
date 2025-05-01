@@ -53,16 +53,20 @@ const (
 	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
 	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
 	// has a `providerSpecificAlias` value of `true`.
-	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
-	providerSpecificWeight                     = "aws/weight"
-	providerSpecificRegion                     = "aws/region"
-	providerSpecificFailover                   = "aws/failover"
-	providerSpecificGeolocationContinentCode   = "aws/geolocation-continent-code"
-	providerSpecificGeolocationCountryCode     = "aws/geolocation-country-code"
-	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
-	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
-	providerSpecificHealthCheckID              = "aws/health-check-id"
-	sameZoneAlias                              = "same-zone"
+	providerSpecificEvaluateTargetHealth               = "aws/evaluate-target-health"
+	providerSpecificWeight                             = "aws/weight"
+	providerSpecificRegion                             = "aws/region"
+	providerSpecificFailover                           = "aws/failover"
+	providerSpecificGeolocationContinentCode           = "aws/geolocation-continent-code"
+	providerSpecificGeolocationCountryCode             = "aws/geolocation-country-code"
+	providerSpecificGeolocationSubdivisionCode         = "aws/geolocation-subdivision-code"
+	providerSpecificGeoProximityLocationAWSRegion      = "aws/geoproximitylocation-aws-region"
+	providerSpecificGeoProximityLocationBias           = "aws/geoproximitylocation-bias"
+	providerSpecificGeoProximityLocationCoordinates    = "aws/geoproximitylocation-coordinates"
+	providerSpecificGeoProximityLocationLocalZoneGroup = "aws/geoproximitylocation-local-zone-group"
+	providerSpecificMultiValueAnswer                   = "aws/multi-value-answer"
+	providerSpecificHealthCheckID                      = "aws/health-check-id"
+	sameZoneAlias                                      = "same-zone"
 	// Currently supported up to 10 health checks or hosted zones.
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
 	batchSize = 10
@@ -542,6 +546,20 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 									ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, *r.GeoLocation.SubdivisionCode)
 								}
 							}
+						case r.GeoProximityLocation != nil:
+							if r.GeoProximityLocation.AWSRegion != nil {
+								ep.WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, aws.ToString(r.GeoProximityLocation.AWSRegion))
+							}
+							if r.GeoProximityLocation.Bias != nil {
+								ep.WithProviderSpecific(providerSpecificGeoProximityLocationBias, fmt.Sprintf("%d", aws.ToInt32(r.GeoProximityLocation.Bias)))
+							}
+							if r.GeoProximityLocation.Coordinates != nil {
+								coordinates := fmt.Sprintf("%s,%s", aws.ToString(r.GeoProximityLocation.Coordinates.Latitude), aws.ToString(r.GeoProximityLocation.Coordinates.Longitude))
+								ep.WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, coordinates)
+							}
+							if r.GeoProximityLocation.LocalZoneGroup != nil {
+								ep.WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, aws.ToString(r.GeoProximityLocation.LocalZoneGroup))
+							}
 						default:
 							// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
 						}
@@ -832,6 +850,23 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
+
+		// Add provider specific properties to the endpoint if record has set identifier
+		if ep.SetIdentifier != "" {
+
+			// check if ep has any of the geoproximity properties
+			_, ok1 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion)
+			_, ok2 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup)
+			_, ok3 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates)
+
+			if ok1 || ok2 || ok3 {
+				// check if ep has bias property
+				if _, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); !ok {
+					// if not, set it to 0
+					ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationBias, "0")
+				}
+			}
+		}
 	}
 
 	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
@@ -925,6 +960,39 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		}
 		if useGeolocation {
 			change.ResourceRecordSet.GeoLocation = geolocation
+		}
+
+		geoproximity := &route53types.GeoProximityLocation{}
+		useGeoproximity := false
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion); ok {
+			geoproximity.AWSRegion = aws.String(prop)
+			useGeoproximity = true
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); ok {
+			bias, _ := strconv.ParseInt(prop, 10, 32)
+			geoproximity.Bias = aws.Int32(int32(bias))
+			useGeoproximity = true
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates); ok {
+			coordinates := strings.Split(prop, ",")
+			if len(coordinates) == 2 {
+				latitude := coordinates[0]
+				longitude := coordinates[1]
+				geoproximity.Coordinates = &route53types.Coordinates{
+					Latitude:  aws.String(latitude),
+					Longitude: aws.String(longitude),
+				}
+				useGeoproximity = true
+			} else {
+				log.Errorf("Invalid coordinates format for %s: %s; expected format 'latitude,longitude'", providerSpecificGeoProximityLocationCoordinates, prop)
+			}
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup); ok {
+			geoproximity.LocalZoneGroup = aws.String(prop)
+			useGeoproximity = true
+		}
+		if useGeoproximity {
+			change.ResourceRecordSet.GeoProximityLocation = geoproximity
 		}
 	}
 
