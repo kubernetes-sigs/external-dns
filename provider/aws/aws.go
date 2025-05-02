@@ -865,9 +865,7 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 // if the endpoint is using geoproximity, set the bias to 0 if not set
 // this is needed to avoid unnecessary Upserts if the desired endpoint doesn't specify a bias
 func adjustGeoProximityLocationEndpoint(ep *endpoint.Endpoint) {
-
 	if ep.SetIdentifier != "" {
-
 		_, ok1 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion)
 		_, ok2 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup)
 		_, ok3 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates)
