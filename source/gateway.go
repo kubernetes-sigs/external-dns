@@ -309,7 +309,9 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		ref := rps.ParentRef
 
 		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-		if rps.Conditions[0].ObservedGeneration != meta.Generation {
+
+		// Ensure that the parent reference is for the current generation
+		if len(rps.Conditions) > 0 && rps.Conditions[0].ObservedGeneration != meta.Generation {
 			log.Debugf("Ignoring parent %s/%s of %s/%s as generation %d does not match current generation %d", namespace, ref.Name, meta.Namespace, meta.Name, rps.Conditions[0].ObservedGeneration, meta.Generation)
 			continue
 		}

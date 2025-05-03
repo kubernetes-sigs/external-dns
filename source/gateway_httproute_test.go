@@ -70,6 +70,23 @@ func gwRouteStatus(refs ...v1.ParentReference) v1.RouteStatus {
 	return v
 }
 
+func omWithGeneration(meta metav1.ObjectMeta, generation int64) metav1.ObjectMeta {
+	meta.Generation = generation
+	return meta
+}
+
+func rsWithGeneration(routeStatus v1.HTTPRouteStatus, generation ...int64) v1.HTTPRouteStatus {
+	for i, parent := range routeStatus.Parents {
+		if len(generation) <= i {
+			break
+		}
+
+		parent.Conditions[0].ObservedGeneration = generation[i]
+	}
+
+	return routeStatus
+}
+
 func gwParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
 	group := v1.Group("gateway.networking.k8s.io")
 	kind := v1.Kind("Gateway")
@@ -190,6 +207,46 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 			logExpectations: []string{
 				"level=debug msg=\"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test\"",
+			},
+		},
+		{
+			title: "GatewayNameOldGeneration",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached to a different gateway
+					gwParentRef("gateway-namespace", "gateway-name"),
+					gwParentRef("gateway-namespace", "gateway-name"),
+				), 5, 4),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"level=debug msg=\"Ignoring parent gateway-namespace/gateway-name of route-namespace/old-test as generation 4 does not match current generation 5\"",
 			},
 		},
 		{
