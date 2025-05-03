@@ -308,7 +308,6 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
 		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-
 		// Ensure that the parent reference is in the routeParentRefs list
 		if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
 			log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
