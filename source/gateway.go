@@ -307,14 +307,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
-
 		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-
-		// Ensure that the parent reference is for the current generation
-		if len(rps.Conditions) > 0 && rps.Conditions[0].ObservedGeneration != meta.Generation {
-			log.Debugf("Ignoring parent %s/%s of %s/%s as generation %d does not match current generation %d", namespace, ref.Name, meta.Namespace, meta.Name, rps.Conditions[0].ObservedGeneration, meta.Generation)
-			continue
-		}
 
 		// Ensure that the parent reference is in the routeParentRefs list
 		if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
@@ -341,10 +334,11 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		}
 
 		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions) {
-			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		if !gwRouteIsAccepted(rps.Conditions, meta) {
+			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Match the Route to all possible Listeners.
 		match := false
 		section := sectionVal(ref.SectionName, "")
@@ -502,10 +496,10 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition) bool {
+func gwRouteIsAccepted(conds []metav1.Condition, meta *metav1.ObjectMeta) bool {
 	for _, c := range conds {
 		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
-			return c.Status == metav1.ConditionTrue
+			return c.Status == metav1.ConditionTrue && c.ObservedGeneration == meta.Generation
 		}
 	}
 	return false

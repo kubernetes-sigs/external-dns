@@ -246,7 +246,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Ignoring parent gateway-namespace/gateway-name of route-namespace/old-test as generation 4 does not match current generation 5\"",
+				"level=debug msg=\"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test\"",
 			},
 		},
 		{
