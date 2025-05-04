@@ -216,7 +216,7 @@ policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
 registry: txt  # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
-# -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
+# -- (string) Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`.
 txtOwnerId:  # @schema type:[string, null]; default: null
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtSuffix`.
