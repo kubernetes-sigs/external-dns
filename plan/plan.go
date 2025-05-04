@@ -54,13 +54,13 @@ type Plan struct {
 // Changes holds lists of actions to be executed by dns providers
 type Changes struct {
 	// Records that need to be created
-	Create []*endpoint.Endpoint
+	Create []*endpoint.Endpoint `json:"create,,omitempty"`
 	// Records that need to be updated (current data)
-	UpdateOld []*endpoint.Endpoint
+	UpdateOld []*endpoint.Endpoint `json:"updateOld,omitempty"`
 	// Records that need to be updated (desired data)
-	UpdateNew []*endpoint.Endpoint
+	UpdateNew []*endpoint.Endpoint `json:"updateNew,omitempty"`
 	// Records that need to be deleted
-	Delete []*endpoint.Endpoint
+	Delete []*endpoint.Endpoint `json:"delete,omitempty"`
 }
 
 // planKey is a key for a row in `planTable`.
