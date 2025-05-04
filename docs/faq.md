@@ -50,10 +50,6 @@ There are three sources of information for ExternalDNS to decide on DNS name. Ex
 
 3. If `--fqdn-template` flag is specified, e.g. `--fqdn-template={{.Name}}.my-org.com`, ExternalDNS will use service/ingress specifications for the provided template to generate DNS name.
 
-## Can I specify multiple global FQDN templates?
-
-Yes, you can. Pass in a comma separated list to `--fqdn-template`. Beaware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
-
 ## Which Service and Ingress controllers are supported?
 
 Regarding Services, we'll support the OSI Layer 4 load balancers that Kubernetes creates on AWS and Google Kubernetes Engine, and possibly other clusters running on Google Compute Engine.

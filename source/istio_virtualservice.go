@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 // IstioMeshGateway is the built in gateway for all sidecars
@@ -69,7 +70,7 @@ func NewIstioVirtualServiceSource(
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
