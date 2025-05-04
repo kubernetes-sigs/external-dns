@@ -87,6 +87,19 @@ func rsWithGeneration(routeStatus v1.HTTPRouteStatus, generation ...int64) v1.HT
 	return routeStatus
 }
 
+func rsWithoutAccepted(routeStatus v1.HTTPRouteStatus) v1.HTTPRouteStatus {
+	for _, parent := range routeStatus.Parents {
+		for j := range parent.Conditions {
+			cond := &parent.Conditions[j]
+			if cond.Type == string(v1.RouteConditionAccepted) {
+				cond.Type = "NotAccepted" // fake type to test for having no accepted condition
+			}
+		}
+	}
+
+	return routeStatus
+}
+
 func gwParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
 	group := v1.Group("gateway.networking.k8s.io")
 	kind := v1.Kind("Gateway")
@@ -237,7 +250,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						},
 					},
 				},
-				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached to a different gateway
+				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
 					gwParentRef("gateway-namespace", "gateway-name"),
 					gwParentRef("gateway-namespace", "gateway-name"),
 				), 5, 4),
@@ -245,6 +258,41 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
 			},
+			logExpectations: []string{
+				"level=debug msg=\"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test\"",
+			},
+		},
+		{
+			title: "GatewayNameNoneAccepted",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithoutAccepted(httpRouteStatus(gwParentRef("gateway-namespace", "gateway-name"))),
+			}},
+			endpoints: []*endpoint.Endpoint{},
 			logExpectations: []string{
 				"level=debug msg=\"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test\"",
 			},
