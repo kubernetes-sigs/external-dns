@@ -65,6 +65,8 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		TTL:     120,
 		Content: "1.2.3.4",
 		Proxied: proxyDisabled,
+		Comment: "needed for example",
+		Tags:    []string{"example"},
 	},
 	{
 		ID:      "2345678901",
@@ -123,6 +125,8 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 			Proxied: params.Proxied,
 			Type:    params.Type,
 			Content: params.Content,
+			Comment: params.Comment,
+			Tags:    params.Tags,
 		}
 	case cloudflare.UpdateDNSRecordParams:
 		return cloudflare.DNSRecord{
@@ -132,6 +136,8 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 			Proxied: params.Proxied,
 			Type:    params.Type,
 			Content: params.Content,
+			Comment: *params.Comment,
+			Tags:    params.Tags,
 		}
 	default:
 		return cloudflare.DNSRecord{}
@@ -1098,7 +1104,10 @@ func TestCloudflareProvider(t *testing.T) {
 				true,
 				5000,
 				"",
-				CustomHostnamesConfig{Enabled: false})
+				CustomHostnamesConfig{Enabled: false},
+				"tests",
+				[]string{"external-dns-test"},
+			)
 			if err != nil && !tc.ShouldFail {
 				t.Errorf("should not fail, %s", err)
 			}
@@ -1766,7 +1775,10 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		false,
 		50,
 		"us",
-		CustomHostnamesConfig{Enabled: false})
+		CustomHostnamesConfig{Enabled: false},
+		"tests",
+		[]string{"external-dns-test"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1786,7 +1798,10 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		false,
 		50,
 		"us",
-		CustomHostnamesConfig{Enabled: false})
+		CustomHostnamesConfig{Enabled: false},
+		"tests",
+		[]string{"external-dns-test"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -73,6 +73,8 @@ const (
 	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 	CloudflareRegionKey         = "external-dns.alpha.kubernetes.io/cloudflare-region-key"
+	CloudflareRecordCommentKey  = "external-dns.alpha.kubernetes.io/cloudflare-record-comment"
+	CloudflareRecordTagsKey     = "external-dns.alpha.kubernetes.io/cloudflare-record-tags"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
@@ -209,6 +211,19 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 			Value: v,
 		})
 	}
+	if v, exists := annotations[CloudflareRecordCommentKey]; exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareRecordCommentKey,
+			Value: v,
+		})
+	}
+	if v, exists := annotations[CloudflareRecordTagsKey]; exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareRecordTagsKey,
+			Value: v,
+		})
+	}
+
 	if getAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",

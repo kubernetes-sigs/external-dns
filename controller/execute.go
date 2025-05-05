@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -205,7 +206,10 @@ func Execute() {
 				Enabled:              cfg.CloudflareCustomHostnames,
 				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
 				CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
-			})
+			},
+			cfg.CloudflareRecordComment,
+			strings.Split(cfg.CloudflareRecordTags, ","),
+		)
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "digitalocean":

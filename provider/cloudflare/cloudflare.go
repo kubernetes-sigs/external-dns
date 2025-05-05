@@ -202,6 +202,8 @@ type CloudFlareProvider struct {
 	DryRun                bool
 	DNSRecordsPerPage     int
 	RegionKey             string
+	RecordComment         string
+	RecordTags            []string
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -226,6 +228,8 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
 		Content: cfc.ResourceRecord.Content,
+		Comment: &cfc.ResourceRecord.Comment,
+		Tags:    cfc.ResourceRecord.Tags,
 	}
 }
 
@@ -253,11 +257,13 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
 		Content: cfc.ResourceRecord.Content,
+		Comment: cfc.ResourceRecord.Comment,
+		Tags:    cfc.ResourceRecord.Tags,
 	}
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int, regionKey string, customHostnamesConfig CustomHostnamesConfig) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int, regionKey string, customHostnamesConfig CustomHostnamesConfig, recordComment string, recordTags []string) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -289,6 +295,8 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		DryRun:                dryRun,
 		DNSRecordsPerPage:     dnsRecordsPerPage,
 		RegionKey:             regionKey,
+		RecordComment:         recordComment,
+		RecordTags:            recordTags,
 	}, nil
 }
 
@@ -825,6 +833,18 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			RegionKey: regionKey,
 		}
 	}
+
+	comment := p.RecordComment
+	tags := p.RecordTags
+	for i := range ep.ProviderSpecific {
+		if ep.ProviderSpecific[i].Name == source.CloudflareRecordCommentKey {
+			comment = ep.ProviderSpecific[i].Value
+		}
+		if ep.ProviderSpecific[i].Name == source.CloudflareRecordTagsKey {
+			tags = strings.Split(ep.ProviderSpecific[i].Value, ",")
+		}
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
@@ -835,6 +855,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			Proxied: &proxied,
 			Type:    ep.RecordType,
 			Content: target,
+			Comment: comment,
+			Tags:    tags,
 		},
 		RegionalHostname:    regionalHostname,
 		CustomHostnamesPrev: prevCustomHostnames,
