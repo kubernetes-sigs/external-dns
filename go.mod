@@ -69,7 +69,7 @@ require (
 	golang.org/x/text v0.24.0
 	golang.org/x/time v0.11.0
 	google.golang.org/api v0.231.0
-	gopkg.in/ns1/ns1-go.v2 v2.14.2
+	gopkg.in/ns1/ns1-go.v2 v2.14.3
 	istio.io/api v1.25.2
 	istio.io/client-go v1.25.2
 	k8s.io/api v0.33.0
