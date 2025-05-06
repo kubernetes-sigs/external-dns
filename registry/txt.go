@@ -348,6 +348,10 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
+
+		if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		}
 	}
 
 	// make sure TXT records are consistently updated as well
@@ -358,6 +362,10 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
+		}
+
+		if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 		}
 	}
 
