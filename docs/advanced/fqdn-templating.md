@@ -212,7 +212,7 @@ This helps automate DNS record migration while maintaining service continuity.
 You can also support regional variants or multi-tenant architectures, where the same service is deployed to different regions or environments:
 
 ```yaml
---fqdn-template='{{ .Name }}.{{ .Labels.env }}.{{ .Region }}.example.com, {{ if eq .Labels.env "prod" }}{{ .Name }}.my-company.tld{{ end }}'
+--fqdn-template='{{ .Name }}.{{ .Labels.env }}.{{ .Labels.region }}.example.com, {{ if eq .Labels.env "prod" }}{{ .Name }}.my-company.tld{{ end }}'
 ```
 
 With additional context (e.g., annotations), this can produce FQDNs like:
