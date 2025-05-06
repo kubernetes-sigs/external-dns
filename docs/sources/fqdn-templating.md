@@ -15,7 +15,7 @@ This is useful for:
 
 ## How It Works
 
-ExternalDNS introduces a flag: `--fqdn-template`, which defines a Go template for rendering the desired DNS names.
+ExternalDNS has a flag: `--fqdn-template`, which defines a Go template for rendering the desired DNS names.
 
 The template uses the following data from the source object (e.g., a `Service` or `Ingress`):
 
@@ -35,30 +35,30 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 | Source                 | Description                                                     | FQDN Supported |
 |:-----------------------|:----------------------------------------------------------------|:--------------:|
-| `service`              | Queries Kubernetes Service resources for endpoints.             |       ✅        |
-| `ingress`              | Queries Kubernetes Ingress resources for endpoints.             |       ✅        |
-| `node`                 | Queries Kubernetes Node resources for endpoints.                |       ✅        |
-| `pod`                  | Queries Kubernetes Pod resources for endpoints.                 |       ❌        |
-| `fake`                 | Uses a fake source for testing purposes.                        |       ❌        |
-| `connector`            | Queries a custom connector source for endpoints.                |       ❌        |
-| `gateway-httproute`    | Queries HTTPRoute resources from the Gateway API.               |       ✅        |
-| `gateway-grpcroute`    | Queries GRPCRoute resources from the Gateway API.               |       ✅        |
-| `gateway-tlsroute`     | Queries TLSRoute resources from the Gateway API.                |       ❌        |
-| `gateway-tcproute`     | Queries TCPRoute resources from the Gateway API.                |       ✅        |
-| `gateway-udproute`     | Queries UDPRoute resources from the Gateway API.                |       ❌        |
-| `istio-gateway`        | Queries Istio Gateway resources for endpoints.                  |       ✅        |
-| `istio-virtualservice` | Queries Istio VirtualService resources for endpoints.           |       ✅        |
+| `ambassador-host`      | Queries Ambassador Host resources for endpoints.                |       ❌        |
 | `cloudfoundry`         | Queries Cloud Foundry resources for endpoints.                  |       ❌        |
+| `connector`            | Queries a custom connector source for endpoints.                |       ❌        |
 | `contour-httpproxy`    | Queries Contour HTTPProxy resources for endpoints.              |       ✅        |
-| `gloo-proxy`           | Queries Gloo Proxy resources for endpoints.                     |       ❌        |
 | `crd`                  | Queries Custom Resource Definitions (CRDs) for endpoints.       |       ❌        |
 | `empty`                | Uses an empty source, typically for testing or no-op scenarios. |       ❌        |
-| `skipper-routegroup`   | Queries Skipper RouteGroup resources for endpoints.             |       ✅        |
-| `openshift-route`      | Queries OpenShift Route resources for endpoints.                |       ✅        |
-| `ambassador-host`      | Queries Ambassador Host resources for endpoints.                |       ❌        |
-| `kong-tcpingress`      | Queries Kong TCPIngress resources for endpoints.                |       ❌        |
-| `f5-virtualserver`     | Queries F5 VirtualServer resources for endpoints.               |       ❌        |
 | `f5-transportserver`   | Queries F5 TransportServer resources for endpoints.             |       ❌        |
+| `f5-virtualserver`     | Queries F5 VirtualServer resources for endpoints.               |       ❌        |
+| `fake`                 | Uses a fake source for testing purposes.                        |       ❌        |
+| `gateway-grpcroute`    | Queries GRPCRoute resources from the Gateway API.               |       ✅        |
+| `gateway-httproute`    | Queries HTTPRoute resources from the Gateway API.               |       ✅        |
+| `gateway-tcproute`     | Queries TCPRoute resources from the Gateway API.                |       ✅        |
+| `gateway-tlsroute`     | Queries TLSRoute resources from the Gateway API.                |       ❌        |
+| `gateway-udproute`     | Queries UDPRoute resources from the Gateway API.                |       ❌        |
+| `gloo-proxy`           | Queries Gloo Proxy resources for endpoints.                     |       ❌        |
+| `ingress`              | Queries Kubernetes Ingress resources for endpoints.             |       ✅        |
+| `istio-gateway`        | Queries Istio Gateway resources for endpoints.                  |       ✅        |
+| `istio-virtualservice` | Queries Istio VirtualService resources for endpoints.           |       ✅        |
+| `kong-tcpingress`      | Queries Kong TCPIngress resources for endpoints.                |       ❌        |
+| `node`                 | Queries Kubernetes Node resources for endpoints.                |       ✅        |
+| `openshift-route`      | Queries OpenShift Route resources for endpoints.                |       ✅        |
+| `pod`                  | Queries Kubernetes Pod resources for endpoints.                 |       ❌        |
+| `service`              | Queries Kubernetes Service resources for endpoints.             |       ✅        |
+| `skipper-routegroup`   | Queries Skipper RouteGroup resources for endpoints.             |       ✅        |
 | `traefik-proxy`        | Queries Traefik Proxy resources for endpoints.                  |       ❌        |
 
 ## Custom Functions
@@ -212,7 +212,7 @@ This is helpful in scenarios such as:
 
 ### Can I specify multiple global FQDN templates?
 
-No, you can. Pass in a comma separated list to --fqdn-template. Beaware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
+Yes, you can. Pass in a comma separated list to --fqdn-template. Beware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
 
 ### Where to find template syntax
 
@@ -242,7 +242,7 @@ In [Issue #1872](https://github.com/kubernetes-sigs/external-dns/issues/1872), i
 The expectation was that the template would still apply, generating entries like `foo.bar.example.com.`
 This highlights a limitation to be aware of when designing FQDN templates.
 
-> This currently not supported!!! Would expect external-dns to generate a dns record according to the fqdnTemplate
+> :warning: This is currently not supported ! User would expect external-dns to generate a dns record according to the fqdnTemplate
 > e.g. if the ingress name: foo and host: foo is created while fqdnTemplate={{.Name}}.bar.example.com then a dns record foo.bar.example.com should be created
 
 ```yml
