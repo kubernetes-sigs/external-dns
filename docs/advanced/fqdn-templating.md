@@ -65,9 +65,9 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 <!-- TODO: generate from code -->
 
-| Function     | Description                                                                           |
-|:-------------|:--------------------------------------------------------------------------------------|
-| `trimPrefix` | Function from the `strings` package. Returns `s` without the provided leading prefix. |
+| Function     | Description                                                                              |
+|:-------------|:-----------------------------------------------------------------------------------------|
+| `trimPrefix`  | Function from the `strings` package. Returns `string` without the provided leading prefix. |
 
 ---
 
@@ -78,6 +78,14 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 ### Basic Usage
 
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: my-namespace
+```
+
 ```sh
 external-dns \
   --provider=aws \
@@ -86,10 +94,25 @@ external-dns \
 
 # This will result in DNS entries like
 >route53> my-service.example.com
->route53> another-service.example.com
+>route53> my-service.my-namespace.example.tld
 ```
 
 ### With Namespace
+
+```yml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: other-service
+  namespace: kube-system
+```
 
 ```yml
 args:
@@ -105,14 +128,17 @@ args:
 You can also utilize labels in your FQDN templates to create more dynamic DNS entries. Assuming your service has:
 
 ```yml
+apiVersion: v1
+kind: Service
 metadata:
+  name: my-service
   labels:
     environment: staging
 ```
 
 ```yml
 args:
-  --fqdn-template="{{.Labels.environment}}.example.com"
+  --fqdn-template="{{ .Labels.environment }}.{{ .Name }}.example.com"
 
 # This will result in DNS entries like
 # route53> staging.my-service.example.com
@@ -140,7 +166,7 @@ args:
   - --exclude-domains=invalid.example.com
 ```
 
-### Using Annotations for FQDN Templating]
+### Using Annotations for FQDN Templating
 
 This example demonstrates how to use annotations in Kubernetes objects to dynamically generate Fully Qualified Domain Names (FQDNs) using the --fqdn-template flag in ExternalDNS.
 
@@ -164,7 +190,7 @@ The --fqdn-template flag is configured to use the annotation value (dns.company.
 ```yml
 args:
   --source=service
-  --fqdn-template='{{index .ObjectMeta.Annotations "dns.company.com/label"}}.{{ .Namespace }}.company.local'
+  --fqdn-template='{{ index .ObjectMeta.Annotations "dns.company.com/label" }}.{{ .Namespace }}.company.local'
 
 # For the given Service object, the resulting FQDN will be:
 # route53> my-org-tld-v2.my-namespace.company.local
@@ -186,13 +212,13 @@ This helps automate DNS record migration while maintaining service continuity.
 You can also support regional variants or multi-tenant architectures, where the same service is deployed to different regions or environments:
 
 ```yaml
---fqdn-template='{{ .Name }}.{{ .Environment }}.{{.Region}}.example.com, {{ if eq .Environment "prod" }}{{ .Name }}.my-company.tld{{ end }}'
+--fqdn-template='{{ .Name }}.{{ .Labels.env }}.{{ .Region }}.example.com, {{ if eq .Labels.env "prod" }}{{ .Name }}.my-company.tld{{ end }}'
 ```
 
 With additional context (e.g., annotations), this can produce FQDNs like:
 
 ```yml
-api.dev.us-east-1.example.com
+api.prod.us-east-1.example.com
 api.my-company.tld
 ```
 
@@ -228,12 +254,12 @@ extraArgs:
   - --fqdn-template={{name}}.uat.example.com
 ```
 
-The correct syntax should include a dot prefix: `{{.Name}}`.
+The correct syntax should include a dot prefix: `{{ .Name }}`.
 Additionally, when using Helm's `tpl` function, it's necessary to escape the braces to prevent premature evaluation:
 
 ```yml
 extraArgs:
-  - --fqdn-template={{ `{{.Name}}.uat.example.com` }}
+  - --fqdn-template={{ `{{ .Name }}.uat.example.com` }}
 ```
 
 ### Handling Subdomain-Only Hostnames
