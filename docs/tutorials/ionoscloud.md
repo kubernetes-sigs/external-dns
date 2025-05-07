@@ -1,6 +1,8 @@
 # IONOS Cloud
 
 This tutorial describes how to set up ExternalDNS for use within a Kubernetes cluster using IONOS Cloud DNS.
+For more details, visit the [IONOS external-dns webhook repository](https://github.com/ionos-cloud/external-dns-ionos-webhook).
+You can also find the [external-dns-ionos-webhook container image](https://github.com/ionos-cloud/external-dns-ionos-webhook/pkgs/container/external-dns-ionos-webhook) required for this setup.
 
 ## Creating a DNS Zone with IONOS Cloud DNS
 
@@ -114,7 +116,7 @@ spec:
         - containerPort: 80
 ```
 
-Deployment manifest can be saved in `echoserver_deployment.yaml` file.
+Deployment manifest can be saved in `echoserver-deployment.yaml` file.
 
 Next, we will apply the deployment:
 
@@ -244,7 +246,7 @@ The API response should include the `A` and `TXT` records for the subdomain you 
 Once you have verified the setup, you can clean up the resources created during this tutorial:
 
 ```bash
-kubectl delete -f echoserver_deployment.yaml
+kubectl delete -f echoserver-deployment.yaml
 kubectl delete -f echoserver-service.yaml
 kubectl delete -f echoserver-ingress.yaml
 ```
