@@ -2028,3 +2028,65 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 		}
 	}
 }
+
+func TestTXTRecordMigration(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			// records on cluster using A record for ingress address
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "foo"),
+		},
+	})
+
+	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", time.Hour, "", []string{}, []string{}, false, nil, false, false, "")
+	createdRecords, _ := p.Records(ctx)
+	// Safe to use index here
+	txtRecords := r.generateTXTRecord(createdRecords[0])
+
+	expectedTXTRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "a-bar.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foo\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "bar.test-zone.example.org",
+			},
+		},
+	}
+
+	assert.Equal(t, expectedTXTRecords, txtRecords)
+
+	p.ApplyChanges(ctx, &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{
+			// records on cluster using A record for ingress address
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "foobar"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			// records on cluster using A record for ingress address
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "foo"),
+		},
+	})
+
+	updatedRecords, _ := p.Records(ctx)
+
+	r, _ = NewTXTRegistry(p, "%{record_type}-", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, false, true, "foo")
+
+	migratedTXTRecords := r.generateTXTRecord(updatedRecords[0])
+
+	expectedFinalTXT := []*endpoint.Endpoint{
+		{
+			DNSName:    "a-bar.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foobar\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "bar.test-zone.example.org",
+			},
+		},
+	}
+
+	assert.Len(t, migratedTXTRecords, 1)
+	assert.Equal(t, migratedTXTRecords, expectedFinalTXT)
+
+}
