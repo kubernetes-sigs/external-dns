@@ -41,7 +41,7 @@ kubectl create secret generic ionos-credentials --from-literal=api-key='<IONOS_A
 
 Replace `<IONOS_API_TOKEN>` with your actual IONOS API token.
 
-### Step 2: Configure ExternalDNS 
+### Step 2: Configure ExternalDNS
 
 Create a Helm values file for the ExternalDNS Helm chart that includes the webhook configuration. In this example, the values file is called `external-dns-ionos-values.yaml` .
 
@@ -89,7 +89,7 @@ helm upgrade --install external-dns external-dns/external-dns -f external-dns-io
 
 ### Step 1: Create a Deployment
 
-In this step we will create `echoserver` application manifest with the following content: 
+In this step we will create `echoserver` application manifest with the following content:
 
 ```yaml
 apiVersion: apps/v1
@@ -128,8 +128,6 @@ In this step, we will create a `Service` manifest to expose the `echoserver` app
 
 Save the following content in a file named `echoserver-service.yaml`:
 
-
-
 ```yaml
 apiVersion: v1
 kind: Service
@@ -144,8 +142,8 @@ spec:
   selector:
     app: echoserver
 ```
- **Note:** Replace `app.example.com` with a subdomain of your DNS zone configured in IONOS Cloud DNS. For example, if your DNS zone is `example.com`, you can use a subdomain like `app.example.com`.
 
+ **Note:** Replace `app.example.com` with a subdomain of your DNS zone configured in IONOS Cloud DNS. For example, if your DNS zone is `example.com`, you can use a subdomain like `app.example.com`.
 
 Next, apply the service:
 
@@ -203,6 +201,7 @@ Use the following `curl` command to verify that the application is accessible:
 ```bash
 curl -I http://app.example.com
 ```
+
 Replace app.example.com with the subdomain you configured in your DNS zone.
 
  **Note:** Ensure that your DNS changes have propagated and that the hostname resolves to the correct IP address before running the command.
@@ -215,10 +214,10 @@ You should see an HTTP response header indicating that the application is runnin
 HTTP/1.1 200 OK
 ```
 
-> **Troubleshooting:** 
+> **Troubleshooting:**
 >
 >If you encounter any issues, verify the following:
-> 
+>
 > - The DNS record for `app.example.com` (replace with your own subdomain configured in IONOS Cloud DNS) has been created in IONOS Cloud DNS.
 > - The ingress controller is running and properly configured in your Kubernetes cluster.
 > - The `echoserver` application is running and accessible within the cluster.
@@ -252,4 +251,6 @@ kubectl delete -f echoserver-ingress.yaml
 
 ## Summary
 
-In this tutorial, you successfully deployed ExternalDNS webhook with IONOS Cloud DNS as the provider. You created a Kubernetes deployment, service, and ingress, and verified that DNS records were created and the application was accessible. You also learned how to clean up the resources when they are no longer needed.
+In this tutorial, you successfully deployed ExternalDNS webhook with IONOS Cloud DNS as the provider.
+You created a Kubernetes deployment, service, and ingress, and verified that DNS records were created and the application was accessible.
+You also learned how to clean up the resources when they are no longer needed.
