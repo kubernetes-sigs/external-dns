@@ -1,3 +1,19 @@
+/*
+Copyright 2025 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package registry
 
 import (
@@ -76,8 +92,8 @@ func (dr DNSRecord) IsEndpoint(e *endpoint.Endpoint) bool {
 func (dr DNSRecord) EndpointLabels() endpoint.Labels {
 	labels := endpoint.Labels{}
 
-	labels[endpoint.OwnerLabelKey] = dr.ObjectMeta.Labels[RecordOwnerLabel]
-	labels[endpoint.ResourceLabelKey] = dr.ObjectMeta.Labels[RecordResourceLabel]
+	labels[endpoint.OwnerLabelKey] = dr.Labels[RecordOwnerLabel]
+	labels[endpoint.ResourceLabelKey] = dr.Labels[RecordResourceLabel]
 	return labels
 }
 
@@ -158,7 +174,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	)
 	metav1.AddToGroupVersion(scheme, groupVersion)
 
-	config.ContentConfig.GroupVersion = &groupVersion
+	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
 	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
@@ -459,32 +475,32 @@ func (r *crdrequest) Body(obj interface{}) CRDRequest {
 }
 
 func (r *crdrequest) Do(ctx context.Context) CRDResult {
-	var real *rest.Request
+	var req *rest.Request
 	switch r.method {
 	case "POST":
-		real = r.client.Interface.Post()
+		req = r.client.Interface.Post()
 	case "PUT":
-		real = r.client.Interface.Put()
+		req = r.client.Interface.Put()
 	case "DELETE":
-		real = r.client.Interface.Delete()
+		req = r.client.Interface.Delete()
 	default:
-		real = r.client.Interface.Get()
+		req = r.client.Interface.Get()
 	}
 
-	real = real.Namespace(r.namespace).Resource(r.resource.Name)
+	req = req.Namespace(r.namespace).Resource(r.resource.Name)
 	if r.name != "" {
-		real = real.Name(r.name)
+		req = req.Name(r.name)
 	}
 
 	if r.params != nil {
-		real = real.VersionedParams(r.params, r.client.codec)
+		req = req.VersionedParams(r.params, r.client.codec)
 	}
 
 	if r.body != nil {
-		real = real.Body(r.body)
+		req = req.Body(r.body)
 	}
 
-	result := real.Do(ctx)
+	result := req.Do(ctx)
 	return &crdresult{result}
 }
 
