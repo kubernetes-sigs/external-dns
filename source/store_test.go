@@ -195,17 +195,16 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
 
-	_, err := ByNames(context.TODO(), mockClientGenerator, []string{"service"}, &Config{})
-	suite.Error(err, "should return an error if kubernetes client cannot be created")
+	sourcesDependentOnKubeClient := []string{
+		"node", "service", "ingress", "pod", "istio-gateway", "istio-virtualservice",
+		"ambassador-host", "gloo-proxy", "traefik-proxy", "crd", "kong-tcpingress",
+		"f5-virtualserver", "f5-transportserver",
+	}
 
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"ingress"}, &Config{})
-	suite.Error(err, "should return an error if kubernetes client cannot be created")
-
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"istio-gateway"}, &Config{})
-	suite.Error(err, "should return an error if kubernetes client cannot be created")
-
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"kong-tcpingress"}, &Config{})
-	suite.Error(err, "should return an error if kubernetes client cannot be created")
+	for _, source := range sourcesDependentOnKubeClient {
+		_, err := ByNames(context.TODO(), mockClientGenerator, []string{source}, &Config{})
+		suite.Error(err, source+" should return an error if kubernetes client cannot be created")
+	}
 }
 
 func (suite *ByNamesTestSuite) TestIstioClientFails() {
