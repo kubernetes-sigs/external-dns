@@ -101,7 +101,8 @@ func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 	ctx := context.Background()
 	_, err := provider.Zones(ctx)
 	assert.NoError(t, err)
-	b := testutils.LogsToBuffer(log.DebugLevel, t)
+	hook := testutils.LogsUnderTestWithLogLeve(log.DebugLevel, t)
 	_, _ = provider.Zones(ctx)
-	assert.Contains(t, b.String(), "level=debug msg=\"Using cached zones list\"")
+
+	testutils.TestHelperLogContainsWithLogLevel("Using cached zones list", log.DebugLevel, hook, t)
 }

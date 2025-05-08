@@ -189,7 +189,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test\"",
+				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
 			},
 		},
 		{
@@ -1404,8 +1404,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]\"",
-				"level=debug msg=\"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]\"",
+				"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]",
+				"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]",
 			},
 		},
 		{
@@ -1435,7 +1435,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{},
 			logExpectations: []string{
-				"level=debug msg=\"No parent references found for HTTPRoute route-namespace/test\"",
+				"No parent references found for HTTPRoute route-namespace/test",
 			},
 		},
 		{
@@ -1470,7 +1470,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{},
 			logExpectations: []string{
-				"level=debug msg=\"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test\"",
+				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
 	}
@@ -1505,14 +1505,14 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
-			b := testutils.LogsToBuffer(log.DebugLevel, t)
+			hook := testutils.LogsUnderTestWithLogLeve(log.DebugLevel, t)
 
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
 			validateEndpoints(t, endpoints, tt.endpoints)
 
 			for _, msg := range tt.logExpectations {
-				require.Contains(t, b.String(), msg)
+				testutils.TestHelperLogContains(msg, hook, t)
 			}
 		})
 	}
