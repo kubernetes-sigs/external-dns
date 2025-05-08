@@ -410,9 +410,13 @@ func configureLogger(cfg *externaldns.Config) {
 // It initializes and returns a registry along with any error encountered during setup.
 // Supported registry types include: dynamodb, noop, txt, and aws-sd.
 func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	var r registry.Registry
+	var reg registry.Registry
 	var err error
 	switch cfg.Registry {
+	case "aws-sd":
+		reg, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
+	case "crd":
+		reg, err = registry.NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDAPIVersion, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout, cfg.TXTCacheInterval)
 	case "dynamodb":
 		var dynamodbOpts []func(*dynamodb.Options)
 		if cfg.AWSDynamoDBRegion != "" {
@@ -422,17 +426,15 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 				},
 			}
 		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+		reg, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
 	case "noop":
-		r, err = registry.NewNoopRegistry(p)
+		reg, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
-	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
+		reg, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTNewFormatOnly)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}
-	return r, err
+	return reg, err
 }
 
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.

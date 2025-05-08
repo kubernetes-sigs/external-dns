@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source"
 )
 
 const (
@@ -202,7 +203,10 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 }
 
 // NewCRDRegistry returns new CRDRegistry object
-func NewCRDRegistry(provider provider.Provider, crdClient CRDClient, ownerID string, cacheInterval time.Duration, namespace string) (*CRDRegistry, error) {
+func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, apiVersion, namespace, ownerID string, cacheInterval, apiServerTimeOut time.Duration) (*CRDRegistry, error) {
+	var err error
+	var k8sClient kubernetes.Interface
+
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -210,6 +214,27 @@ func NewCRDRegistry(provider provider.Provider, crdClient CRDClient, ownerID str
 	if namespace == "" {
 		log.Info("Registry: namespace not specified, using `default`")
 		namespace = "default"
+	}
+
+	// new Singleton because the user may want to store this registry on a
+	// remote (and shared) cluster between multiple external-dns instances
+	clientGenerator := &source.SingletonClientGenerator{
+		KubeConfig:   kubeConfig,
+		APIServerURL: apiServerURL,
+		// If update events are enabled, disable timeout.
+		RequestTimeout: func() time.Duration {
+			return apiServerTimeOut
+		}(),
+	}
+
+	k8sClient, err = clientGenerator.KubeClient()
+	if err != nil {
+		return nil, fmt.Errorf("unable to create kubeclient: %s", err)
+	}
+
+	crdClient, err := NewCRDClientForAPIVersionKind(k8sClient, kubeConfig, apiServerURL, apiVersion)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create crdclient: %s", err)
 	}
 
 	return &CRDRegistry{
