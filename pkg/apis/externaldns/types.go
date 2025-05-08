@@ -158,8 +158,8 @@ type Config struct {
 	ExoscaleAPISecret                             string `secure:"yes"`
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
-	CRDSourceAPIVersion                           string
-	CRDSourceKind                                 string
+	CRDAPIVersion                                 string
+	CRDKind                                       string
 	ServiceTypeFilter                             []string
 	CFAPIEndpoint                                 string
 	CFUsername                                    string
@@ -261,8 +261,8 @@ var defaultConfig = &Config{
 	Compatibility:                "",
 	ConnectorSourceServer:        "localhost:8080",
 	CoreDNSPrefix:                "/skydns/",
-	CRDSourceAPIVersion:          "externaldns.k8s.io/v1alpha1",
-	CRDSourceKind:                "DNSEndpoint",
+	CRDAPIVersion:                "externaldns.k8s.io/v1alpha1",
+	CRDKind:                      "DNSEndpoint",
 	DefaultTargets:               []string{},
 	DigitalOceanAPIPageSize:      50,
 	DomainFilter:                 []string{},
@@ -459,8 +459,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
-	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
-	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
+	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDAPIVersion).StringVar(&cfg.CRDAPIVersion)
+	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDKind).StringVar(&cfg.CRDKind)
 	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 	app.Flag("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)").Default().StringsVar(&cfg.ExcludeDNSRecordTypes)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
