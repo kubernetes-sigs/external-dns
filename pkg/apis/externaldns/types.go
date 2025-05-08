@@ -784,7 +784,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "sync", "upsert-only", "create-only")
 
 	// Flags related to the registry
-	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)", defaultConfig.Registry, &cfg.Registry, "txt", "noop", "dynamodb", "aws-sd")
+	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: aws-sd, crd, dynamodb, noop, txt)", defaultConfig.Registry, &cfg.Registry, "aws-sd", "crd", "dynamodb", "noop", "txt")
 	b.StringVar("txt-owner-id", "When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default)", defaultConfig.TXTOwnerID, &cfg.TXTOwnerID)
 	b.StringVar("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!", defaultConfig.TXTPrefix, &cfg.TXTPrefix)
 	b.StringVar("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!", defaultConfig.TXTSuffix, &cfg.TXTSuffix)
