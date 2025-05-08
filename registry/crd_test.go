@@ -67,15 +67,14 @@ func testCRDSourceImplementsSource(t *testing.T) {
 }
 
 func testConstructor(t *testing.T) {
-	_, err := NewCRDRegistry(nil, nil, "", time.Second, "default")
-	if err == nil {
-		t.Error("Expected a new registry to return an error when no ownerID are specified")
-	}
+	_, err := NewCRDRegistry(nil, "", "", "v1", "", "", time.Second, time.Second)
+	assert.Error(t, err, "Expected a new registry to return an error when no ownerID are specified")
 
-	_, err = NewCRDRegistry(nil, nil, "ownerID", time.Second, "namespace")
-	if err != nil {
-		t.Error("Expected registry to be initialized without error when providing an owner id and a namespace", err)
-	}
+	_, err = NewCRDRegistry(nil, "/dev/null", "", "v1", "default", "ownerID", time.Second, time.Second)
+	assert.Error(t, err, err.Error()+"Expected a new registry to return an error when there is no kubeconfig")
+
+	_, err = NewCRDRegistry(nil, "", "####", "v1", "default", "ownerID", time.Second, time.Second)
+	assert.Error(t, err, err.Error()+"Expected a new registry to return an error when there is an invalid url")
 }
 
 func testRecords(t *testing.T) {
