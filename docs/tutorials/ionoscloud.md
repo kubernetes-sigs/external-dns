@@ -166,8 +166,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: echoserver
-  annotations:
-    kubernetes.io/ingress.class: nginx
 spec:
   rules:
   - host: app.example.com
