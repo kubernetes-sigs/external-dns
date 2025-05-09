@@ -268,13 +268,10 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkin
 
 	var filteredList []*networkingv1alpha3.VirtualService
 
-	for _, virtualservice := range virtualservices {
-		// convert the annotations to an equivalent label selector
-		annotations := labels.Set(virtualservice.Annotations)
-
+	for _, vs := range virtualservices {
 		// include if the annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, virtualservice)
+		if selector.Matches(labels.Set(vs.Annotations)) {
+			filteredList = append(filteredList, vs)
 		}
 	}
 

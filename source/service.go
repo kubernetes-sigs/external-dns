@@ -434,14 +434,11 @@ func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Serv
 		return services, nil
 	}
 
-	filteredList := []*v1.Service{}
+	var filteredList []*v1.Service
 
 	for _, service := range services {
-		// convert the service's annotations to an equivalent label selector
-		annotations := labels.Set(service.Annotations)
-
 		// include service if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(service.Annotations)) {
 			filteredList = append(filteredList, service)
 		}
 	}
@@ -504,9 +501,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			targets = extractServiceExternalName(svc)
 		}
 
-		for _, endpoint := range endpoints {
-			endpoint.ProviderSpecific = providerSpecific
-			endpoint.SetIdentifier = setIdentifier
+		for _, en := range endpoints {
+			en.ProviderSpecific = providerSpecific
+			en.SetIdentifier = setIdentifier
 		}
 	}
 
