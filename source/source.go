@@ -65,6 +65,7 @@ const (
 const (
 	EndpointsTypeNodeExternalIP = "NodeExternalIP"
 	EndpointsTypeHostIP         = "HostIP"
+	EndpointsTypePodIP          = "PodIP"
 )
 
 // Provider-specific annotations

@@ -724,7 +724,76 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
-	} {
+		{
+			"PodSourceDomain respects external-dns.alpha.kubernetes.io/endpoints-type annotation",
+			"",
+			"",
+			false,
+			"example.org",
+			[]*endpoint.Endpoint{
+				{DNSName: "my-pod1.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "my-pod2.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node1",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node2",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+						},
+					},
+				},
+			},
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							endpointsTypeAnnotationKey: EndpointsTypeNodeExternalIP,
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "192.168.1.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod2",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							endpointsTypeAnnotationKey: EndpointsTypeNodeExternalIP,
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "192.168.1.2",
+					},
+				},
+			},
+		}} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
