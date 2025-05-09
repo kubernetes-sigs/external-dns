@@ -259,6 +259,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
+		if im.isMigrationEnabled && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		}
+
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
@@ -322,10 +326,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
-	if im.isMigrationEnabled {
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.UpdateOld)...)
-		filteredChanges.Delete = append(filteredChanges.Delete, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.Delete)...)
-	}
+
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
@@ -348,10 +349,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
-
-		if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
-			r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		}
 	}
 
 	// make sure TXT records are consistently updated as well
@@ -364,9 +361,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			im.removeFromCache(r)
 		}
 
-		if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
-			r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		}
 	}
 
 	// make sure TXT records are consistently updated as well
