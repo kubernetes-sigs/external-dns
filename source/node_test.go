@@ -391,7 +391,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			hook := testutils.LogsUnderTestWithLogLeve(log.DebugLevel, t)
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
@@ -534,7 +534,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 
 		var hook *test.Hook
 		if tc.exposeInternalIPv6 {
-			hook = testutils.LogsUnderTestWithLogLeve(log.WarnLevel, t)
+			hook = testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 		}
 
 		// Create our object under test and get the endpoints.

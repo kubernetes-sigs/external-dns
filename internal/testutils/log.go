@@ -26,24 +26,22 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
-// LogsUnderTestWithLogLeve redirects log(s) output to a buffer for testing purposes
+// LogsUnderTestWithLogLevel redirects log(s) output to a buffer for testing purposes
 //
-// Usage: LogsUnderTestWithLogLeve(t)
+// Usage: LogsUnderTestWithLogLevel(t)
 // Example:
 //
-//	hook := testutils.LogsUnderTestWithLogLeve(log.DebugLevel, t)
+//	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 //	... do something that logs ...
 //
 // testutils.TestHelperLogContains("expected debug log message", hook, t)
-func LogsUnderTestWithLogLeve(level log.Level, t *testing.T) *test.Hook {
+func LogsUnderTestWithLogLevel(level log.Level, t *testing.T) *test.Hook {
 	t.Helper()
 	logger, hook := test.NewNullLogger()
 
 	log.AddHook(hook)
 	log.SetOutput(logger.Out)
 	log.SetLevel(level)
-
-	defer hook.Reset()
 	return hook
 }
 

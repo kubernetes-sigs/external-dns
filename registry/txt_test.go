@@ -1821,7 +1821,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	})
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
-	hook := testutils.LogsUnderTestWithLogLeve(log.ErrorLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
 

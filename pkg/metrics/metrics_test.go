@@ -84,7 +84,7 @@ func TestMustRegister(t *testing.T) {
 }
 
 func TestUnsupportedMetricWarning(t *testing.T) {
-	hook := testutils.LogsUnderTestWithLogLeve(log.WarnLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	registry := NewMetricsRegister()
 	mockUnsupported := &MockMetric{FQDN: "unsupported_metric"}
 	registry.MustRegister(mockUnsupported)

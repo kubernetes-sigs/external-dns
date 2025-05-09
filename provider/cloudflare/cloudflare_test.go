@@ -1960,7 +1960,7 @@ func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 			},
 		},
 	})
-	hook := testutils.LogsUnderTestWithLogLeve(log.InfoLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
 	p := &CloudFlareProvider{
 		Client:                client,
 		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
@@ -2751,7 +2751,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		hook := testutils.LogsUnderTestWithLogLeve(log.InfoLevel, t)
+		hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
 
 		records, err := provider.Records(ctx)
 		if err != nil {

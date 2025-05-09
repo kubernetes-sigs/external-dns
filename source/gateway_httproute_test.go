@@ -1505,7 +1505,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
-			hook := testutils.LogsUnderTestWithLogLeve(log.DebugLevel, t)
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
