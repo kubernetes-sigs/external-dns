@@ -17,6 +17,7 @@ limitations under the License.
 package fqdn
 
 import (
+	"net/netip"
 	"strings"
 	"text/template"
 )
@@ -27,6 +28,34 @@ func ParseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 	}
 	funcs := template.FuncMap{
 		"trimPrefix": strings.TrimPrefix,
+		"replace":    replace,
+		"isIPv6":     isIPv6String,
+		"isIPvv":     isIPv4String,
 	}
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
+}
+
+// replace all instances of old with new in src string.
+// adheres to syntax from https://masterminds.github.io/sprig/strings.html.
+func replace(old, new, src string) string {
+	return strings.Replace(src, old, new, -1)
+}
+
+// isIPv6String reports whether the target string is an IPv6 address,
+// including IPv4-mapped IPv6 addresses.
+func isIPv6String(target string) bool {
+	netIP, err := netip.ParseAddr(target)
+	if err != nil {
+		return false
+	}
+	return netIP.Is6()
+}
+
+// isIPv4String reports whether the target string is an IPv4 address.
+func isIPv4String(target string) bool {
+	netIP, err := netip.ParseAddr(target)
+	if err != nil {
+		return false
+	}
+	return netIP.Is4()
 }
