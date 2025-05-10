@@ -836,12 +836,12 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 
 	comment := p.RecordComment
 	tags := p.RecordTags
-	for i := range ep.ProviderSpecific {
-		if ep.ProviderSpecific[i].Name == source.CloudflareRecordCommentKey {
-			comment = ep.ProviderSpecific[i].Value
+	for _, providerSpecific := range ep.ProviderSpecific {
+		if providerSpecific.Name == source.CloudflareRecordCommentKey {
+			comment = providerSpecific.Value
 		}
-		if ep.ProviderSpecific[i].Name == source.CloudflareRecordTagsKey {
-			tags = strings.Split(ep.ProviderSpecific[i].Value, ",")
+		if providerSpecific.Name == source.CloudflareRecordTagsKey {
+			tags = strings.Split(providerSpecific.Value, ",")
 		}
 	}
 
