@@ -68,10 +68,9 @@ The template uses the following data from the source object (e.g., a `Service` o
 | Function     | Description                                                                              |
 |:-------------|:-----------------------------------------------------------------------------------------|
 | `trimPrefix`  | Function from the `strings` package. Returns `string` without the provided leading prefix. |
-| `replace`     | Function that performs a simple replacement of all `old` string with `new` in the source string.  | 
+| `replace`     | Function that performs a simple replacement of all `old` string with `new` in the source string. |
 | `isIPv4`      | Function that checks if a string is a valid IPv4 address. |
 | `isIPv6`      | Function that checks if a string is a valid IPv6 address (including IPv4-mapped IPv6). |
-
 
 ---
 
