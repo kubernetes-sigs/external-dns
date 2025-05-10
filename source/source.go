@@ -23,6 +23,7 @@ import (
 	"math"
 	"net/netip"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -383,4 +384,52 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 		}
 	}
 	return nil
+}
+
+func mergeAndSortEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	// this sorting is required to make merging work.
+	// after we merge endpoints that have same DNS, we want to ensure that we end up with the same service being an "owner"
+	// of all those records, as otherwise each time we update, we will end up with a different service that gets data merged in
+	// and that will cause external-dns to recreate dns record due to different service owner in TXT record.
+	// if new service is added or old one removed, that might cause existing record to get re-created due to potentially new
+	// owner being selected. Which is fine, since it shouldn't happen often and shouldn't cause any disruption.
+	if len(endpoints) > 1 {
+		sort.Slice(endpoints, func(i, j int) bool {
+			return endpoints[i].Labels[endpoint.ResourceLabelKey] < endpoints[j].Labels[endpoint.ResourceLabelKey]
+		})
+		// Use stable sort to not disrupt the order of services
+		sort.SliceStable(endpoints, func(i, j int) bool {
+			if endpoints[i].DNSName != endpoints[j].DNSName {
+				return endpoints[i].DNSName < endpoints[j].DNSName
+			}
+			return endpoints[i].RecordType < endpoints[j].RecordType
+		})
+		mergedEndpoints := []*endpoint.Endpoint{}
+		mergedEndpoints = append(mergedEndpoints, endpoints[0])
+		for i := 1; i < len(endpoints); i++ {
+			lastMergedEndpoint := len(mergedEndpoints) - 1
+			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
+				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
+				mergedEndpoints[lastMergedEndpoint].RecordType != endpoint.RecordTypeCNAME && // It is against RFC-1034 for CNAME records to have multiple targets, so skip merging
+				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
+				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
+				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
+			} else {
+				mergedEndpoints = append(mergedEndpoints, endpoints[i])
+			}
+
+			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
+				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
+				mergedEndpoints[lastMergedEndpoint].RecordType == endpoint.RecordTypeCNAME {
+				log.Debugf("CNAME %s with multiple targets found", endpoints[i].DNSName)
+			}
+		}
+		endpoints = mergedEndpoints
+	}
+
+	for _, ep := range endpoints {
+		sort.Sort(ep.Targets)
+	}
+
+	return endpoints
 }
