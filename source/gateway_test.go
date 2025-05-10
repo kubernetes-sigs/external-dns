@@ -28,6 +28,7 @@ func TestGatewayMatchingHost(t *testing.T) {
 		desc string
 		a, b string
 		host string
+		matchedCharacters int
 		ok   bool
 	}{
 		{
@@ -62,6 +63,7 @@ func TestGatewayMatchingHost(t *testing.T) {
 			a:    "*.example.net",
 			b:    "test.example.net",
 			host: "test.example.net",
+			matchedCharacters: 4,
 			ok:   true,
 		},
 		{
@@ -69,6 +71,7 @@ func TestGatewayMatchingHost(t *testing.T) {
 			a:    "*.example.net",
 			b:    "a.example.net",
 			host: "a.example.net",
+			matchedCharacters: 1,
 			ok:   true,
 		},
 		{
@@ -76,6 +79,7 @@ func TestGatewayMatchingHost(t *testing.T) {
 			a:    "*.example.net",
 			b:    "foo.bar.test.example.net",
 			host: "foo.bar.test.example.net",
+			matchedCharacters: 12,
 			ok:   true,
 		},
 		{
@@ -94,10 +98,10 @@ func TestGatewayMatchingHost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			for i := 0; i < 2; i++ {
-				if host, ok := gwMatchingHost(tt.a, tt.b); host != tt.host || ok != tt.ok {
+				if host, matchedCharacters, ok := gwMatchingHost(tt.a, tt.b); host != tt.host || matchedCharacters != tt.matchedCharacters || ok != tt.ok {
 					t.Errorf(
-						"gwMatchingHost(%q, %q); got: %q, %v; want: %q, %v",
-						tt.a, tt.b, host, ok, tt.host, tt.ok,
+						"gwMatchingHost(%q, %q); got: %q, %d, %v; want: %q, %d, %v",
+						tt.a, tt.b, host, matchedCharacters, ok, tt.host, tt.matchedCharacters, tt.ok,
 					)
 				}
 				tt.a, tt.b = tt.b, tt.a
