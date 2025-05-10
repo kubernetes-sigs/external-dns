@@ -29,9 +29,10 @@ nav:
     - Leader Election: docs/proposal/001-leader-election.md
     - Monitoring: docs/monitoring/*
     - MultiTarget: docs/proposal/multi-target.md
-    - NAT64: docs/nat64.md
-    - Rate Limits: docs/rate-limits.md
-    - TTL: docs/ttl.md
+    - NAT64: docs/advanced/nat64.md
+    - Rate Limits: docs/advanced/rate-limits.md
+    - TTL: docs/advanced/ttl.md
+    - FQDN Templating: docs/advanced/fqdn-templating.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.

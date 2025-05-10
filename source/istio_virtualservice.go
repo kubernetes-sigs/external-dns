@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 // IstioMeshGateway is the built in gateway for all sidecars
@@ -69,7 +70,7 @@ func NewIstioVirtualServiceSource(
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -268,13 +269,10 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkin
 
 	var filteredList []*networkingv1alpha3.VirtualService
 
-	for _, virtualservice := range virtualservices {
-		// convert the annotations to an equivalent label selector
-		annotations := labels.Set(virtualservice.Annotations)
-
+	for _, vs := range virtualservices {
 		// include if the annotations match the selector
-		if selector.Matches(annotations) {
-			filteredList = append(filteredList, virtualservice)
+		if selector.Matches(labels.Set(vs.Annotations)) {
+			filteredList = append(filteredList, vs)
 		}
 	}
 

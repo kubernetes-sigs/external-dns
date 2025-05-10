@@ -26,7 +26,7 @@ jobs:
         files: '.'
         config_file: ".markdownlint.json"
 
-    - name: Set up Go 1.x
+    - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
@@ -44,11 +44,11 @@ jobs:
 
     # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
-      uses: golangci/golangci-lint-action@v7
+      uses: golangci/golangci-lint-action@v8
       with:
         verify: true
         args: --timeout=30m
-        version: v2.0
+        version: v2.1
 
       # Run Spectral
     - name: Lint OpenAPI spec

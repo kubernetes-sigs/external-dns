@@ -84,8 +84,8 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	// Get the desired hostname of the service from the annotation.
-	hostnameAnnotation, exists := svc.Annotations[moleculeAnnotationKey]
-	if !exists {
+	hostnameAnnotation, ok := svc.Annotations[moleculeAnnotationKey]
+	if !ok {
 		return nil
 	}
 
