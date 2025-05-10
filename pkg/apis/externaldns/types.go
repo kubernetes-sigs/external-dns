@@ -138,6 +138,8 @@ type Config struct {
 	Policy                                        string
 	Registry                                      string
 	TXTOwnerID                                    string
+	TXTOwnerOld                                   string
+	TXTOwnerMigrate                               bool
 	TXTPrefix                                     string
 	TXTSuffix                                     string
 	TXTEncryptEnabled                             bool
@@ -370,6 +372,8 @@ var defaultConfig = &Config{
 	TXTEncryptEnabled:            false,
 	TXTNewFormatOnly:             false,
 	TXTOwnerID:                   "default",
+	TXTOwnerOld:                  "default",
+	TXTOwnerMigrate:              false,
 	TXTPrefix:                    "",
 	TXTSuffix:                    "",
 	TXTWildcardReplacement:       "",
@@ -619,6 +623,8 @@ func App(cfg *Config) *kingpin.Application {
 	// Flags related to the registry
 	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "dynamodb", "aws-sd")
 	app.Flag("txt-owner-id", "When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
+	app.Flag("from-txt-owner", "Old txt-owner-id that needs to be overwritten (default: default)").StringVar(&cfg.TXTOwnerOld)
+	app.Flag("migrate-txt-owner", "When enabled, modify the previous txt-owner to the current txt-owner (default: disabled)").BoolVar(&cfg.TXTOwnerMigrate)
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)

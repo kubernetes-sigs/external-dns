@@ -59,6 +59,10 @@ type TXTRegistry struct {
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 
+	//Handle Owner ID migration
+	isMigrationEnabled bool
+	oldOwnerID         string
+
 	newFormatOnly bool
 }
 
@@ -69,7 +73,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte,
-	newFormatOnly bool) (*TXTRegistry, error) {
+	newFormatOnly bool, isMigrationEnabled bool, oldOwnerID string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -104,6 +108,8 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		newFormatOnly:       newFormatOnly,
+		isMigrationEnabled:  isMigrationEnabled,
+		oldOwnerID:          oldOwnerID,
 	}, nil
 }
 
@@ -206,6 +212,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
+		if im.isMigrationEnabled && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		}
+
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
@@ -273,6 +283,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
+
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
@@ -306,6 +317,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
+
 	}
 
 	// make sure TXT records are consistently updated as well
