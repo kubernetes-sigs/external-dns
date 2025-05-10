@@ -208,11 +208,8 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 	filteredList := []*f5.VirtualServer{}
 
 	for _, vs := range virtualServers {
-		// convert the VirtualServer's annotations to an equivalent label selector
-		annotations := labels.Set(vs.Annotations)
-
 		// include VirtualServer if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(vs.Annotations)) {
 			filteredList = append(filteredList, vs)
 		}
 	}

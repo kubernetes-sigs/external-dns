@@ -119,7 +119,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	// Get a list of Ambassador Host resources
-	ambassadorHosts := []*ambassador.Host{}
+	var ambassadorHosts []*ambassador.Host
 	for _, hostObj := range hosts {
 		unstructuredHost, ok := hostObj.(*unstructured.Unstructured)
 		if !ok {
@@ -185,11 +185,10 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 // endpointsFromHost extracts the endpoints from a Host object
 func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
-	annotations := host.Annotations
 
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
-	ttl := getTTLFromAnnotations(annotations, resource)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(host.Annotations)
+	ttl := getTTLFromAnnotations(host.Annotations, resource)
 
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname
@@ -311,9 +310,8 @@ func (sc *ambassadorHostSource) filterByAnnotations(ambassadorHosts []*ambassado
 	// Return a filtered list of Ambassador Hosts
 	filteredList := []*ambassador.Host{}
 	for _, host := range ambassadorHosts {
-		annotations := labels.Set(host.Annotations)
 		// include Ambassador Host if its annotations match the annotation filter
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(host.Annotations)) {
 			filteredList = append(filteredList, host)
 		}
 	}

@@ -223,14 +223,11 @@ func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) 
 		return nodes, nil
 	}
 
-	filteredList := []*v1.Node{}
+	var filteredList []*v1.Node
 
 	for _, node := range nodes {
-		// convert the node's annotations to an equivalent label selector
-		annotations := labels.Set(node.Annotations)
-
 		// include node if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(node.Annotations)) {
 			filteredList = append(filteredList, node)
 		}
 	}

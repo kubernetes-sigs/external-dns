@@ -219,11 +219,8 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 	var filteredList []*networkingv1alpha3.Gateway
 
 	for _, gw := range gateways {
-		// convert the annotations to an equivalent label selector
-		annotations := labels.Set(gw.Annotations)
-
 		// include if the annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(gw.Annotations)) {
 			filteredList = append(filteredList, gw)
 		}
 	}
@@ -315,10 +312,9 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 
 	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 
-	annotations := gateway.Annotations
-	ttl := getTTLFromAnnotations(annotations, resource)
+	ttl := getTTLFromAnnotations(gateway.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(annotations)
+	targets := getTargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromGateway(ctx, gateway)
 		if err != nil {
@@ -326,7 +322,7 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(gateway.Annotations)
 
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
