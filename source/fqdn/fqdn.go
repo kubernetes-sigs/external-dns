@@ -30,7 +30,7 @@ func ParseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 		"trimPrefix": strings.TrimPrefix,
 		"replace":    replace,
 		"isIPv6":     isIPv6String,
-		"isIPvv":     isIPv4String,
+		"isIPv4":     isIPv4String,
 	}
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
