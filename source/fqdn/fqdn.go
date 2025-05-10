@@ -38,8 +38,7 @@ func ParseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 // replace all instances of oldValue with newValue in target string.
 // adheres to syntax from https://masterminds.github.io/sprig/strings.html.
 func replace(oldValue, newValue, target string) string {
-	//lint:ignore QF1004 Using strings.Replace due to argument order requirements
-	return strings.Replace(target, oldValue, newValue, -1)
+	return strings.ReplaceAll(target, oldValue, newValue)
 }
 
 // isIPv6String reports whether the target string is an IPv6 address,
