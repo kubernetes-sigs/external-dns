@@ -375,7 +375,15 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
+				var override endpoint.Targets
+				targetAnnotation, exists := meta.Annotations[targetAnnotationKey]
+				if exists && targetAnnotation != "" {
+					override = getTargetsFromTargetAnnotation(meta.Annotations)
+					hostTargets[host] = append(hostTargets[host], override...)
+				} else if !exists {
+					override = getTargetsFromTargetAnnotation(gw.gateway.Annotations)
+					hostTargets[host] = append(hostTargets[host], override...)
+				}
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
