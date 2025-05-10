@@ -22,11 +22,25 @@ To use the AWS Cloud Map API, a user must have permissions to create the DNS nam
     {
       "Effect": "Allow",
       "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceVpc": ["vpc-00000000"]
+        },
+        "ForAllValues:StringLike": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": "*example.com"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "route53:GetHostedZone",
         "route53:ListHostedZonesByName",
-        "route53:CreateHostedZone",
-        "route53:DeleteHostedZone",
-        "route53:ChangeResourceRecordSets",
         "route53:CreateHealthCheck",
         "route53:GetHealthCheck",
         "route53:DeleteHealthCheck",
