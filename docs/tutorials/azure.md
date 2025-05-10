@@ -493,6 +493,7 @@ NOTE: make sure the pod is restarted whenever you make a configuration change.
 ## Throttling
 
 When the ExternalDNS managed zones list doesn't change frequently, one can set `--azure-zones-cache-duration` (zones list cache time-to-live). The zones list cache is disabled by default, with a value of 0s.
+Also, one can leverage the built-in retry policies of the Azure SDK with a tunable maxRetries value. Environment variable AZURE_SDK_MAX_RETRIES can be specified in the manifest yaml to configure behavior. The defualt value of Azure SDK retry is 3.
 
 ## Ingress used with ExternalDNS
 
@@ -534,6 +535,9 @@ spec:
       containers:
       - name: external-dns
         image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        env:
+          - name: AZURE_SDK_MAX_RETRIES # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
+            value: "1"
         args:
         - --source=service
         - --source=ingress
@@ -602,6 +606,9 @@ spec:
       containers:
         - name: external-dns
           image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          env:
+            - name: AZURE_SDK_MAX_RETRIES # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
+              value: "1"
           args:
             - --source=service
             - --source=ingress
@@ -674,6 +681,9 @@ spec:
       containers:
         - name: external-dns
           image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          env:
+            - name: AZURE_SDK_MAX_RETRIES # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
+              value: "1"
           args:
             - --source=service
             - --source=ingress
