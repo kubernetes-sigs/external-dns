@@ -40,6 +40,7 @@ import (
 	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 const (
@@ -117,7 +118,7 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if err != nil {
 		return nil, err
 	}
-	tmpl, err := parseTemplate(config.FQDNTemplate)
+	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}

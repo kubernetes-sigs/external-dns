@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/fqdn"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -60,7 +62,7 @@ func NewContourHTTPProxySource(
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}

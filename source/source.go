@@ -145,16 +145,6 @@ func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, 
 	return hostnames, nil
 }
 
-func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
-	if fqdnTemplate == "" {
-		return nil, nil
-	}
-	funcs := template.FuncMap{
-		"trimPrefix": strings.TrimPrefix,
-	}
-	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
-}
-
 func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	hostnameAnnotation, exists := annotations[hostnameAnnotationKey]
 	if !exists {
