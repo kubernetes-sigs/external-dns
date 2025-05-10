@@ -68,6 +68,9 @@ The template uses the following data from the source object (e.g., a `Service` o
 | Function     | Description                                                                              |
 |:-------------|:-----------------------------------------------------------------------------------------|
 | `trimPrefix`  | Function from the `strings` package. Returns `string` without the provided leading prefix. |
+| `replace`     | Function that performs a simple replacement of all `old` string with `new` in the source string. |
+| `isIPv4`      | Function that checks if a string is a valid IPv4 address. |
+| `isIPv6`      | Function that checks if a string is a valid IPv6 address (including IPv4-mapped IPv6). |
 
 ---
 
@@ -304,3 +307,12 @@ args:
 ```
 
 By setting the hostname annotation in the ingress resource, ExternalDNS constructs the FQDN accordingly. This approach allows for dynamic DNS entries without hardcoding hostnames.
+
+### Using a Node's Addresses for FQDNs
+
+```yml
+args:
+  - --fqdn-template="{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.example.com
+```
+
+This is a complex template that iternates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.

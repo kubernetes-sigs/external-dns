@@ -60,6 +60,31 @@ func TestParseTemplate(t *testing.T) {
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
+		{
+			name:         "replace template function",
+			expectError:  false,
+			fqdnTemplate: "{{\"hello.world\" | replace \".\" \"-\"}}.ext-dns.test.com",
+		},
+		{
+			name:         "isIPv4 template function with valid IPv4",
+			expectError:  false,
+			fqdnTemplate: "{{if isIPv4 \"192.168.1.1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+		},
+		{
+			name:         "isIPv4 template function with invalid IPv4",
+			expectError:  false,
+			fqdnTemplate: "{{if isIPv4 \"not.an.ip.addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+		},
+		{
+			name:         "isIPv6 template function with valid IPv6",
+			expectError:  false,
+			fqdnTemplate: "{{if isIPv6 \"2001:db8::1\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+		},
+		{
+			name:         "isIPv6 template function with invalid IPv6",
+			expectError:  false,
+			fqdnTemplate: "{{if isIPv6 \"not:ipv6:addr\"}}valid{{else}}invalid{{end}}.ext-dns.test.com",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ParseTemplate(tt.fqdnTemplate)
