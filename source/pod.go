@@ -154,7 +154,28 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		if ps.podSourceDomain != "" {
 			domain := pod.Name + "." + ps.podSourceDomain
 			if len(targets) == 0 {
-				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+				ept := EndpointsTypePodIP
+				if tmp, ok := pod.Annotations[endpointsTypeAnnotationKey]; ok {
+					ept = tmp
+				}
+
+				switch ept {
+				case EndpointsTypeNodeExternalIP:
+					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
+					for _, address := range node.Status.Addresses {
+						recordType := suitableType(address.Address)
+						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+							addToEndpointMap(endpointMap, domain, recordType, address.Address)
+						}
+					}
+				case EndpointsTypePodIP:
+					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+				case EndpointsTypeHostIP:
+					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.HostIP), pod.Status.PodIP)
+				default:
+					log.Debugf("skipping pod %s. unknown endpoint type %s", pod.Name, ept)
+				}
 			}
 			for _, target := range targets {
 				addToEndpointMap(endpointMap, domain, suitableType(target), target)

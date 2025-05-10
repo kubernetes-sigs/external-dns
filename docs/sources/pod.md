@@ -10,6 +10,11 @@ By default, the pod source will not consider the pods that aren't running with h
 
 By default, the pod source will look into the pod annotations to find the FQDN associated with a pod. You can also use the option `--pod-source-domain=example.org` to build the FQDN of the pods. The pod named "test-pod" will then be registered as "test-pod.example.org".
 
+Pod annotation `external-dns.alpha.kubernetes.io/endpoints-type` is supported by the pod source. It allows you to specify which type of addresses to use as a target for the DNS entry. The following values are supported:
+- `PodIP`: Use the Pod's `Status.PodIP` as the target. This is a default value if pod annotation is not set.
+- `HostIP`: Use the Pod's `Status.HostIP` as the target.
+- `NodeExternalIP`: Use the Pod's `Node`'s address of type `ExternalIP` plus each IPv6 address of type `InternalIP`.
+
 ## Configuration for registering all pods with their associated PTR record
 
 A use case where combining these options can be pertinent is when you are running on-premise Kubernetes clusters without SNAT enabled for the pod network.
