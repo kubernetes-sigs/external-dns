@@ -111,6 +111,7 @@ type Config struct {
 	CloudflareCustomHostnamesMinTLSVersion        string
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareDNSRecordsPerPage                   int
+	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
@@ -255,6 +256,7 @@ var defaultConfig = &Config{
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
 	CloudflareDNSRecordsPerPage:                   100,
 	CloudflareProxied:                             false,
+	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
 
 	CombineFQDNAndAnnotation:     false,
@@ -535,7 +537,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-custom-hostnames-min-tls-version", "When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)").Default("1.0").EnumVar(&cfg.CloudflareCustomHostnamesMinTLSVersion, "1.0", "1.1", "1.2", "1.3")
 	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt)").Default("google").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt")
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
-	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
+	app.Flag("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)").Default(strconv.FormatBool(defaultConfig.CloudflareRegionalServices)).BoolVar(&cfg.CloudflareRegionalServices)
+	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services (optional)").StringVar(&cfg.CloudflareRegionKey)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)
