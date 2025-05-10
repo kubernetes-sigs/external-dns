@@ -48,6 +48,36 @@ make generate-metrics-documentation
 We require all changes to be covered by acceptance tests and/or unit tests, depending on the situation.
 In the context of the `external-dns`, acceptance tests are tests of interactions with providers, such as creating, reading information about, and destroying DNS resources. In contrast, unit tests test functionality wholly within the codebase itself, such as function tests.
 
+### Log Unit Testing
+
+Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [build-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
+
+This practice enables:
+
+- Early detection of logging issues
+- Verification of Important Information
+- Ensuring Correct Severity Levels
+- Improving Observability and Monitoring
+- Driving Better Logging Practices
+
+To illustrate how to unit test log output within functions, consider the following example:
+
+```go
+import (
+	"testing"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
+)
+
+func TestMe(t *testing.T) {
+  hook := testutils.LogsUnderTestWithLogLeve(log.WarnLevel, t)
+  ... function under tests ...
+  testutils.TestHelperLogContains("example warning message", hook, t)
+  // provide negative assertion
+  testuitls.TestHelperLogNotContains("this message should not be shown", hook, t)
+}
+```
+
 ### Continuous Integration
 
 When submitting a pull request, you'll notice that we run several automated processes on your proposed change. Some of these processes are tests to ensure your contribution aligns with our standards. While we strive for accuracy, some users may find these tests confusing.
