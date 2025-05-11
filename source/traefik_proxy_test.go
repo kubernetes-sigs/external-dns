@@ -21,7 +21,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1730,4 +1732,81 @@ func TestTraefikAPIGroupDisableFlags(t *testing.T) {
 			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
+}
+
+func TestAddEventHandler_AllBranches(t *testing.T) {
+	ctx := context.Background()
+	handlerCalled := false
+	handler := func() { handlerCalled = true }
+
+	inf := testInformer{}
+	fakeInformer := new(FakeInformer)
+	fakeInformer.On("Informer").Return(&inf)
+
+	cases := []struct {
+		name string
+		ts   *traefikSource
+		want int
+	}{
+		{"all nil", &traefikSource{}, 0},
+		{"all set", &traefikSource{
+			ingressRouteInformer:       fakeInformer,
+			oldIngressRouteInformer:    fakeInformer,
+			ingressRouteTcpInformer:    fakeInformer,
+			oldIngressRouteTcpInformer: fakeInformer,
+			ingressRouteUdpInformer:    fakeInformer,
+			oldIngressRouteUdpInformer: fakeInformer,
+		}, 6},
+		{"some set", &traefikSource{
+			ingressRouteInformer:       fakeInformer,
+			oldIngressRouteInformer:    fakeInformer,
+			ingressRouteTcpInformer:    nil,
+			oldIngressRouteTcpInformer: fakeInformer,
+			ingressRouteUdpInformer:    nil,
+			oldIngressRouteUdpInformer: nil,
+		}, 3},
+	}
+
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			test.ts.AddEventHandler(ctx, handler)
+			assert.Equal(t, test.want, inf.times)
+			assert.False(t, handlerCalled)
+
+			if test.want > 0 {
+				fakeInformer.AssertExpectations(t)
+				fakeInformer.AssertCalled(t, "Informer")
+			} else {
+				fakeInformer.AssertNotCalled(t, "Informer")
+			}
+			// reset the call count
+			inf.times = 0
+		})
+	}
+}
+
+type FakeInformer struct {
+	mock.Mock
+	informer cache.SharedIndexInformer
+	lister   cache.GenericLister
+}
+
+func (f *FakeInformer) Informer() cache.SharedIndexInformer {
+	args := f.Called()
+	return args.Get(0).(cache.SharedIndexInformer)
+}
+
+func (f *FakeInformer) Lister() cache.GenericLister {
+	return f.lister
+}
+
+type testInformer struct {
+	cache.SharedIndexInformer
+
+	times int
+}
+
+func (t *testInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	t.times += 1
+	return nil, nil
 }
