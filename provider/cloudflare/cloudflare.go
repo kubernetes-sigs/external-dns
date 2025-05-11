@@ -93,6 +93,12 @@ type CustomHostnamesConfig struct {
 	CertificateAuthority string
 }
 
+type DNSRecordsConfig struct {
+	PerPage int
+	Comment string
+	Tags    []string
+}
+
 var recordTypeCustomHostnameSupported = map[string]bool{
 	"A":     true,
 	"CNAME": true,
@@ -200,10 +206,8 @@ type CloudFlareProvider struct {
 	proxiedByDefault      bool
 	DryRun                bool
 	CustomHostnamesConfig CustomHostnamesConfig
-	DNSRecordsPerPage     int
+	DNSRecordsConfig      DNSRecordsConfig
 	RegionKey             string
-	RecordComment         string
-	RecordTags            []string
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -263,7 +267,7 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int, regionKey string, customHostnamesConfig CustomHostnamesConfig, recordComment string, recordTags []string) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, regionKey string, customHostnamesConfig CustomHostnamesConfig, dnsRecordsConfig DNSRecordsConfig) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -293,10 +297,8 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		proxiedByDefault:      proxiedByDefault,
 		CustomHostnamesConfig: customHostnamesConfig,
 		DryRun:                dryRun,
-		DNSRecordsPerPage:     dnsRecordsPerPage,
 		RegionKey:             regionKey,
-		RecordComment:         recordComment,
-		RecordTags:            recordTags,
+		DNSRecordsConfig:      dnsRecordsConfig,
 	}, nil
 }
 
@@ -854,8 +856,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 		}
 	}
 
-	comment := p.RecordComment
-	tags := p.RecordTags
+	comment := p.DNSRecordsConfig.Comment
+	tags := p.DNSRecordsConfig.Tags
 	for _, providerSpecific := range ep.ProviderSpecific {
 		if providerSpecific.Name == source.CloudflareRecordCommentKey {
 			comment = providerSpecific.Value
@@ -898,7 +900,7 @@ func newDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
 func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
 	records := make(DNSRecordsMap)
-	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
+	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsConfig.PerPage, Page: 1}
 	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
 	for {
 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)

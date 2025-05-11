@@ -1009,8 +1009,8 @@ func TestCloudflareRecords(t *testing.T) {
 
 	// Set DNSRecordsPerPage to 1 test the pagination behaviour
 	p := &CloudFlareProvider{
-		Client:            client,
-		DNSRecordsPerPage: 1,
+		Client:           client,
+		DNSRecordsConfig: DNSRecordsConfig{PerPage: 1},
 	}
 	ctx := context.Background()
 
@@ -1126,11 +1126,13 @@ func TestCloudflareProvider(t *testing.T) {
 				provider.NewZoneIDFilter([]string{""}),
 				false,
 				true,
-				5000,
 				"",
 				CustomHostnamesConfig{Enabled: false},
-				"tests",
-				[]string{"external-dns-test"},
+				DNSRecordsConfig{
+					PerPage: 5000,
+					Comment: "tests",
+					Tags:    []string{"external-dns-test"},
+				},
 			)
 			if err != nil && !tc.ShouldFail {
 				t.Errorf("should not fail, %s", err)
@@ -1797,11 +1799,13 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		50,
 		"us",
 		CustomHostnamesConfig{Enabled: false},
-		"tests",
-		[]string{"external-dns-test"},
+		DNSRecordsConfig{
+			PerPage: 1,
+			Comment: "tests",
+			Tags:    []string{"external-dns-test"},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -1820,11 +1824,13 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		50,
 		"us",
 		CustomHostnamesConfig{Enabled: false},
-		"tests",
-		[]string{"external-dns-test"},
+		DNSRecordsConfig{
+			PerPage: 50,
+			Comment: "tests",
+			Tags:    []string{"external-dns-test"},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
