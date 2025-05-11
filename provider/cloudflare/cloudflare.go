@@ -198,8 +198,8 @@ type CloudFlareProvider struct {
 	domainFilter          endpoint.DomainFilter
 	zoneIDFilter          provider.ZoneIDFilter
 	proxiedByDefault      bool
-	CustomHostnamesConfig CustomHostnamesConfig
 	DryRun                bool
+	CustomHostnamesConfig CustomHostnamesConfig
 	DNSRecordsPerPage     int
 	RegionKey             string
 	RecordComment         string
@@ -347,6 +347,26 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	}
 
 	return result, nil
+}
+
+// ZoneHasPaidPlan returns wether a zone has a paid plan or not
+func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) (bool, error) {
+	parts := strings.Split(hostname, ".")
+	zoneParts := parts[len(parts)-2:]
+	zone := strings.Join(zoneParts, ".")
+	zoneID, err := p.Client.ZoneIDByName(zone)
+	if err != nil {
+		log.Errorf("Failed to get zone %s by name %v", zone, err)
+		return false, err
+	}
+
+	zoneDetails, err := p.Client.ZoneDetails(context.Background(), zoneID)
+	if err != nil {
+		log.Errorf("Failed to get zone %s details %v", zone, err)
+		return false, err
+	}
+
+	return zoneDetails.Plan.IsSubscribed, nil
 }
 
 // Records returns the list of records.
@@ -843,6 +863,12 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 		if providerSpecific.Name == source.CloudflareRecordTagsKey {
 			tags = strings.Split(providerSpecific.Value, ",")
 		}
+	}
+
+	zoneHasPaidPlan, err := p.ZoneHasPaidPlan(ep.DNSName)
+	if (tags != nil && !zoneHasPaidPlan) || err != nil {
+		tags = nil
+		log.Warnf("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
 	}
 
 	return &cloudFlareChange{
