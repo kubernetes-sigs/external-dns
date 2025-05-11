@@ -26,11 +26,12 @@ Hosted Zone IDs.
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
       ],
-      // optional improvement to further restrict which hosted zones the external-dns should have access to
       "Condition": {
+        // optional condition to further restrict from which vpc the role can be used
         "StringEquals": {
           "aws:SourceVpc": ["vpc-00000000"]
         },
+        // optional condition to further restrict which hosted zones the external-dns should have access to
         "ForAllValues:StringLike": {
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": "*example.com"
         }
