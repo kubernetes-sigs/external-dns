@@ -17,6 +17,9 @@ limitations under the License.
 package plan
 
 import (
+	"bytes"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -243,6 +246,48 @@ func (suite *PlanTestSuite) SetupTest() {
 		Targets:    endpoint.Targets{"1.1.1.1"},
 		RecordType: "A",
 	}
+}
+
+func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
+	ch := &Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName: "foo",
+			},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName: "bar",
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName: "baz",
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName: "qux",
+			},
+		},
+	}
+	jsonBytes, err := json.Marshal(ch)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"delete":[{"dnsName":"qux"}]}`,
+		string(jsonBytes))
+	var changes Changes
+	err = json.NewDecoder(bytes.NewBuffer(jsonBytes)).Decode(&changes)
+	assert.NoError(t, err)
+	assert.Equal(t, ch, &changes)
+}
+
+func TestPlan_ChangesJson_DecodeMixedCase(t *testing.T) {
+	input := `{"Create":[{"dnsName":"foo"}],"UpdateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux"}]}`
+	var changes Changes
+	err := json.NewDecoder(strings.NewReader(input)).Decode(&changes)
+	assert.NoError(t, err)
+	assert.Len(t, changes.Create, 1)
 }
 
 func (suite *PlanTestSuite) TestSyncFirstRound() {

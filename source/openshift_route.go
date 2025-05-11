@@ -24,7 +24,7 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
-	versioned "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/openshift/client-go/route/clientset/versioned"
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 	log "github.com/sirupsen/logrus"
@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
@@ -65,7 +66,7 @@ func NewOcpRouteSource(
 	labelSelector labels.Selector,
 	ocpRouterName string,
 ) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -208,14 +209,11 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*r
 		return ocpRoutes, nil
 	}
 
-	filteredList := []*routev1.Route{}
+	var filteredList []*routev1.Route
 
 	for _, ocpRoute := range ocpRoutes {
-		// convert the Route's annotations to an equivalent label selector
-		annotations := labels.Set(ocpRoute.Annotations)
-
 		// include ocpRoute if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ocpRoute.Annotations)) {
 			filteredList = append(filteredList, ocpRoute)
 		}
 	}

@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/fqdn"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -60,7 +62,7 @@ func NewContourHTTPProxySource(
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -224,14 +226,11 @@ func (sc *httpProxySource) filterByAnnotations(httpProxies []*projectcontour.HTT
 		return httpProxies, nil
 	}
 
-	filteredList := []*projectcontour.HTTPProxy{}
+	var filteredList []*projectcontour.HTTPProxy
 
 	for _, httpProxy := range httpProxies {
-		// convert the HTTPProxy's annotations to an equivalent label selector
-		annotations := labels.Set(httpProxy.Annotations)
-
 		// include HTTPProxy if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(httpProxy.Annotations)) {
 			filteredList = append(filteredList, httpProxy)
 		}
 	}

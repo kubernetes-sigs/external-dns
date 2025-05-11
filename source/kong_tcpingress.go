@@ -179,11 +179,8 @@ func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) 
 	filteredList := []*TCPIngress{}
 
 	for _, tcpIngress := range tcpIngresses {
-		// convert the TCPIngress's annotations to an equivalent label selector
-		annotations := labels.Set(tcpIngress.Annotations)
-
 		// include TCPIngress if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(tcpIngress.Annotations)) {
 			filteredList = append(filteredList, tcpIngress)
 		}
 	}

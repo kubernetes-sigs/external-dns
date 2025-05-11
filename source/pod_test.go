@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
+
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 // testPodSource tests that various services generate the correct endpoints.
@@ -53,30 +54,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -125,30 +103,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -197,28 +152,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv6(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -267,28 +201,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv6(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -337,30 +250,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -483,30 +373,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -555,30 +422,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -669,30 +513,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "my-pod2.example.org", Targets: endpoint.Targets{"192.168.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
-			[]*corev1.Node{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node1",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-node2",
-					},
-					Status: corev1.NodeStatus{
-						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
-							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
-						},
-					},
-				},
-			},
+			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -724,13 +545,65 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"create records based on pod's target annotation with pod source domain",
+			"",
+			"",
+			true,
+			"example.org",
+			[]*endpoint.Endpoint{
+				{DNSName: "my-pod1.example.org", Targets: endpoint.Targets{"208.1.2.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "my-pod2.example.org", Targets: endpoint.Targets{"208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+							targetAnnotationKey:           "208.1.2.1",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod2",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+							targetAnnotationKey:           "208.1.2.2",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.2",
+					},
+				},
+			},
+		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
-			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 			ctx := context.Background()
 
 			// Create the nodes
@@ -757,10 +630,60 @@ func TestPodSource(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
 		})
+	}
+}
 
+func nodesFixturesIPv6() []*corev1.Node {
+	return []*corev1.Node{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-node1",
+			},
+			Status: corev1.NodeStatus{
+				Addresses: []corev1.NodeAddress{
+					{Type: corev1.NodeInternalIP, Address: "2001:DB8::1"},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-node2",
+			},
+			Status: corev1.NodeStatus{
+				Addresses: []corev1.NodeAddress{
+					{Type: corev1.NodeInternalIP, Address: "2001:DB8::2"},
+				},
+			},
+		},
+	}
+}
+
+func nodesFixturesIPv4() []*corev1.Node {
+	return []*corev1.Node{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-node1",
+			},
+			Status: corev1.NodeStatus{
+				Addresses: []corev1.NodeAddress{
+					{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
+					{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-node2",
+			},
+			Status: corev1.NodeStatus{
+				Addresses: []corev1.NodeAddress{
+					{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
+					{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+				},
+			},
+		},
 	}
 }
