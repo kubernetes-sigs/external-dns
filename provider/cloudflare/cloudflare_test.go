@@ -912,17 +912,8 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
-	fooZoneHasPaidPlan, err := provider.ZoneHasPaidPlan("subdomain.foo.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, false, fooZoneHasPaidPlan)
-
-	barZoneHasPaidPlan, err := provider.ZoneHasPaidPlan("subdomain.bar.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, true, barZoneHasPaidPlan)
+	assert.Equal(t, false, provider.ZoneHasPaidPlan("subdomain.foo.com"))
+	assert.Equal(t, true, provider.ZoneHasPaidPlan("subdomain.bar.com"))
 
 }
 

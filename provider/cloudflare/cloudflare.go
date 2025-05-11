@@ -30,6 +30,7 @@ import (
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/publicsuffix"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -352,23 +353,25 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 }
 
 // ZoneHasPaidPlan returns wether a zone has a paid plan or not
-func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) (bool, error) {
-	parts := strings.Split(hostname, ".")
-	zoneParts := parts[len(parts)-2:]
-	zone := strings.Join(zoneParts, ".")
+func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
+	zone, err := publicsuffix.EffectiveTLDPlusOne(hostname)
+	if err != nil {
+		log.Errorf("Failed to get effective TLD+1 for hostname %s %v", hostname, err)
+		return false
+	}
 	zoneID, err := p.Client.ZoneIDByName(zone)
 	if err != nil {
 		log.Errorf("Failed to get zone %s by name %v", zone, err)
-		return false, err
+		return false
 	}
 
 	zoneDetails, err := p.Client.ZoneDetails(context.Background(), zoneID)
 	if err != nil {
 		log.Errorf("Failed to get zone %s details %v", zone, err)
-		return false, err
+		return false
 	}
 
-	return zoneDetails.Plan.IsSubscribed, nil
+	return zoneDetails.Plan.IsSubscribed
 }
 
 // Records returns the list of records.
@@ -867,8 +870,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 		}
 	}
 
-	zoneHasPaidPlan, err := p.ZoneHasPaidPlan(ep.DNSName)
-	if (tags != nil && !zoneHasPaidPlan) || err != nil {
+	zoneHasPaidPlan := p.ZoneHasPaidPlan(ep.DNSName)
+	if tags != nil && !zoneHasPaidPlan {
 		tags = nil
 		log.Warnf("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
 	}
