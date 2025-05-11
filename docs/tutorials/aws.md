@@ -26,6 +26,7 @@ Hosted Zone IDs.
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
       ],
+      // optional improvement to further restrict which hosted zones the external-dns should have access to
       "Condition": {
         "StringEquals": {
           "aws:SourceVpc": ["vpc-00000000"]

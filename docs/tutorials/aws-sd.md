@@ -15,6 +15,8 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
+> Please be aware that this IAM role grants broad permissions across Route 53, and Service Discovery. For enhanced security, it's strongly recommended to review and restrict the actions and resources to the absolute minimum required for its intended purpose, following the principle of least privilege
+
 ```json
 {
   "Version": "2012-10-17",
@@ -22,25 +24,11 @@ To use the AWS Cloud Map API, a user must have permissions to create the DNS nam
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
-      ],
-      "Resource": [
-        "arn:aws:route53:::hostedzone/*"
-      ],
-      "Condition": {
-        "StringEquals": {
-          "aws:SourceVpc": ["vpc-00000000"]
-        },
-        "ForAllValues:StringLike": {
-          "route53:ChangeResourceRecordSetsNormalizedRecordNames": "*example.com"
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "route53:GetHostedZone",
         "route53:ListHostedZonesByName",
+        "route53:CreateHostedZone",
+        "route53:DeleteHostedZone",
+        "route53:ChangeResourceRecordSets",
         "route53:CreateHealthCheck",
         "route53:GetHealthCheck",
         "route53:DeleteHealthCheck",
@@ -74,6 +62,23 @@ Using tags, your `servicediscovery` policy can become:
 {
   "Version": "2012-10-17",
   "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceVpc": ["vpc-00000000"]
+        },
+        "ForAllValues:StringLike": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": "*example.com"
+        }
+      }
+    },
     {
       "Effect": "Allow",
       "Action": [
