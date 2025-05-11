@@ -426,6 +426,9 @@ func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (
 			return cloudflare.Zone{
 				ID:   zoneID,
 				Name: zoneName,
+				Plan: cloudflare.ZonePlan{
+					IsSubscribed: strings.HasSuffix(zoneName, "bar.com"),
+				},
 			}, nil
 		}
 	}
@@ -900,6 +903,27 @@ func TestCloudflareZones(t *testing.T) {
 
 	assert.Equal(t, 1, len(zones))
 	assert.Equal(t, "bar.com", zones[0].Name)
+}
+
+func TestZoneHasPaidPlan(t *testing.T) {
+	provider := &CloudFlareProvider{
+		Client:       NewMockCloudFlareClient(),
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	fooZoneHasPaidPlan, err := provider.ZoneHasPaidPlan("subdomain.foo.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, false, fooZoneHasPaidPlan)
+
+	barZoneHasPaidPlan, err := provider.ZoneHasPaidPlan("subdomain.bar.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, true, barZoneHasPaidPlan)
+
 }
 
 // test failures on zone lookup
