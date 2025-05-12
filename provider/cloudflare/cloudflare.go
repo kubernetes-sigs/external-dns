@@ -876,14 +876,15 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			tags = strings.Split(providerSpecific.Value, ",")
 		}
 	}
-	// Free account checks
-	if !p.ZoneHasPaidPlan(ep.DNSName) {
-		if tags != nil {
+
+	// Free account checks https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
+	if tags != nil || len(comment) > 100 {
+		freeAccount := !p.ZoneHasPaidPlan(ep.DNSName)
+		if freeAccount && tags != nil {
 			log.Warnf("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
 			tags = nil
 		}
-
-		if len(comment) > 100 {
+		if freeAccount && len(comment) > 100 {
 			log.Warnf("DNS record comment is limited to 100 chars for free zones, trimming comment of %s", ep.DNSName)
 			comment = comment[:99]
 		}
