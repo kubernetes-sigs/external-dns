@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
@@ -65,7 +66,7 @@ func NewOcpRouteSource(
 	labelSelector labels.Selector,
 	ocpRouterName string,
 ) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +205,7 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*r
 		return ocpRoutes, nil
 	}
 
-	filteredList := []*routev1.Route{}
+	var filteredList []*routev1.Route
 
 	for _, ocpRoute := range ocpRoutes {
 		// include ocpRoute if its annotations match the selector

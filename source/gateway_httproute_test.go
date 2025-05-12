@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
@@ -70,6 +69,36 @@ func gwRouteStatus(refs ...v1.ParentReference) v1.RouteStatus {
 		})
 	}
 	return v
+}
+
+func omWithGeneration(meta metav1.ObjectMeta, generation int64) metav1.ObjectMeta {
+	meta.Generation = generation
+	return meta
+}
+
+func rsWithGeneration(routeStatus v1.HTTPRouteStatus, generation ...int64) v1.HTTPRouteStatus {
+	for i, parent := range routeStatus.Parents {
+		if len(generation) <= i {
+			break
+		}
+
+		parent.Conditions[0].ObservedGeneration = generation[i]
+	}
+
+	return routeStatus
+}
+
+func rsWithoutAccepted(routeStatus v1.HTTPRouteStatus) v1.HTTPRouteStatus {
+	for _, parent := range routeStatus.Parents {
+		for j := range parent.Conditions {
+			cond := &parent.Conditions[j]
+			if cond.Type == string(v1.RouteConditionAccepted) {
+				cond.Type = "NotAccepted" // fake type to test for having no accepted condition
+			}
+		}
+	}
+
+	return routeStatus
 }
 
 func gwParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
@@ -191,7 +220,82 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test\"",
+				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
+			},
+		},
+		{
+			title: "GatewayNameOldGeneration",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
+					gwParentRef("gateway-namespace", "gateway-name"),
+					gwParentRef("gateway-namespace", "gateway-name"),
+				), 5, 4),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test",
+			},
+		},
+		{
+			title: "GatewayNameNoneAccepted",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithoutAccepted(httpRouteStatus(gwParentRef("gateway-namespace", "gateway-name"))),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+			logExpectations: []string{
+				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test",
 			},
 		},
 		{
@@ -1406,8 +1510,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]\"",
-				"level=debug msg=\"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]\"",
+				"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]",
+				"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]",
 			},
 		},
 		{
@@ -1437,7 +1541,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{},
 			logExpectations: []string{
-				"level=debug msg=\"No parent references found for HTTPRoute route-namespace/test\"",
+				"No parent references found for HTTPRoute route-namespace/test",
 			},
 		},
 		{
@@ -1472,7 +1576,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{},
 			logExpectations: []string{
-				"level=debug msg=\"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test\"",
+				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
 	}
@@ -1507,16 +1611,14 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
-			var b *bytes.Buffer
-			if len(tt.logExpectations) > 0 {
-				b = testutils.LogsToBuffer(log.DebugLevel, t)
-			}
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
 			validateEndpoints(t, endpoints, tt.endpoints)
 
 			for _, msg := range tt.logExpectations {
-				require.Contains(t, b.String(), msg)
+				testutils.TestHelperLogContains(msg, hook, t)
 			}
 		})
 	}

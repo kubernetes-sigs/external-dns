@@ -77,27 +77,12 @@ func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, 
 	return hostnames, nil
 }
 
-func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
-	if fqdnTemplate == "" {
-		return nil, nil
-	}
-	funcs := template.FuncMap{
-		"trimPrefix": strings.TrimPrefix,
-	}
-	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
-}
-
 func getAccessFromAnnotations(input map[string]string) string {
 	return input[accessAnnotationKey]
 }
 
-func getEndpointsTypeFromAnnotations(input map[string]string) string {
-	return input[endpointsTypeAnnotationKey]
-}
-
-// endpointsForHostname returns the endpoint objects for each host-target combination.
-func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
-	return EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)
+func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
+	return annotations[endpointsTypeAnnotationKey]
 }
 
 func getLabelSelector(annotationFilter string) (labels.Selector, error) {

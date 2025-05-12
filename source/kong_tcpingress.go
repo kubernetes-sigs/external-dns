@@ -18,10 +18,10 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +83,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 
 	uc, err := newKongUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &kongTCPIngressSource{
@@ -122,7 +122,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	tcpIngresses, err = sc.filterByAnnotations(tcpIngresses)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter TCPIngresses")
+		return nil, fmt.Errorf("failed to filter TCPIngresses: %w", err)
 	}
 
 	var endpoints []*endpoint.Endpoint

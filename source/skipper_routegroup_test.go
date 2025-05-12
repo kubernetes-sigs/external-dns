@@ -18,10 +18,11 @@ package source
 
 import (
 	"context"
+	"errors"
 	"testing"
 
-	"github.com/pkg/errors"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
@@ -787,7 +788,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fqdnTemplate != "" {
-				tmpl, err := parseTemplate(tt.fqdnTemplate)
+				tmpl, err := fqdn.ParseTemplate(tt.fqdnTemplate)
 				if err != nil {
 					t.Fatalf("Failed to parse template: %v", err)
 				}

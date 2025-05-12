@@ -22,6 +22,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -223,18 +224,7 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 	cfg := alibabaCloudConfig{
 		VPCID: "vpc-xxxxxx",
 	}
-	//
-	//dnsClient, _ := alidns.NewClientWithAccessKey(
-	//	cfg.RegionID,
-	//	cfg.AccessKeyID,
-	//	cfg.AccessKeySecret,
-	//)
-	//
-	//pvtzClient, _ := pvtz.NewClientWithAccessKey(
-	//	"cn-hangzhou",
-	//	cfg.AccessKeyID,
-	//	cfg.AccessKeySecret,
-	//)
+
 	domainFilterTest := endpoint.NewDomainFilter([]string{"container-service.top.", "example.org"})
 
 	return &AlibabaCloudProvider{
@@ -256,8 +246,8 @@ func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 		if len(endpoints) != 2 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
-		for _, endpoint := range endpoints {
-			t.Logf("Endpoint for %++v", *endpoint)
+		for _, ep := range endpoints {
+			t.Logf("Endpoint for %++v", *ep)
 		}
 	}
 }
@@ -271,8 +261,8 @@ func TestAlibabaCloudProvider_Records(t *testing.T) {
 		if len(endpoints) != 2 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
-		for _, endpoint := range endpoints {
-			t.Logf("Endpoint for %++v", *endpoint)
+		for _, ep := range endpoints {
+			t.Logf("Endpoint for %++v", *ep)
 		}
 	}
 }
@@ -282,7 +272,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	defaultTtlPlan := &endpoint.Endpoint{
 		DNSName:    "ttl.container-service.top",
 		RecordType: "A",
-		RecordTTL:  defaultAlibabaCloudRecordTTL,
+		RecordTTL:  defaultTTL,
 		Targets:    endpoint.NewTargets("4.3.2.1"),
 	}
 	changes := plan.Changes{
@@ -313,7 +303,8 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	p.ApplyChanges(ctx, &changes)
+	err := p.ApplyChanges(ctx, &changes)
+	assert.NoError(t, err)
 	endpoints, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
@@ -321,8 +312,8 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 		if len(endpoints) != 3 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
-		for _, endpoint := range endpoints {
-			t.Logf("Endpoint for %++v", *endpoint)
+		for _, ep := range endpoints {
+			t.Logf("Endpoint for %++v", *ep)
 		}
 	}
 	for _, ep := range endpoints {
@@ -343,8 +334,8 @@ func TestAlibabaCloudProvider_Records_PrivateZone(t *testing.T) {
 		if len(endpoints) != 2 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
-		for _, endpoint := range endpoints {
-			t.Logf("Endpoint for %++v", *endpoint)
+		for _, ep := range endpoints {
+			t.Logf("Endpoint for %++v", *ep)
 		}
 	}
 }
@@ -378,7 +369,8 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	p.ApplyChanges(ctx, &changes)
+	err := p.ApplyChanges(ctx, &changes)
+	assert.NoError(t, err)
 	endpoints, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
@@ -386,8 +378,8 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 		if len(endpoints) != 2 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
-		for _, endpoint := range endpoints {
-			t.Logf("Endpoint for %++v", *endpoint)
+		for _, ep := range endpoints {
+			t.Logf("Endpoint for %++v", *ep)
 		}
 	}
 }

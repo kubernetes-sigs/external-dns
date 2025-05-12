@@ -216,7 +216,7 @@ policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
 registry: txt  # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
-# -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
+# -- (string) Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`.
 txtOwnerId:  # @schema type:[string, null]; default: null
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtSuffix`.
@@ -263,24 +263,24 @@ provider:  # @schema type: [object, string];
     # @default -- See _values.yaml_
     livenessProbe:
       httpGet:
-        path: /healthz
-        port: http-webhook
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 2
-      successThreshold: 1
+        path: /healthz  # @schema type:[string, null]; default: null
+        port: http-webhook  # @schema type:[integer,string]; default: string
+      initialDelaySeconds: 10  # @schema type:[integer, null]; default: null
+      periodSeconds: 10  # @schema type:[integer, null]; default: null
+      timeoutSeconds: 5  # @schema type:[integer, null]; default: null
+      failureThreshold: 2  # @schema type:[integer, null]; default: null
+      successThreshold: 1  # @schema type:[integer, null]; default: null
     # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.
     # @default -- See _values.yaml_
     readinessProbe:
       httpGet:
-        path: /healthz
-        port: http-webhook
-      initialDelaySeconds: 5
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 6
-      successThreshold: 1
+        path: /healthz  # @schema type:[string, null]; default: null
+        port: http-webhook  # @schema type:[integer,string]; default: string
+      initialDelaySeconds: 5  # @schema type:[integer, null]; default: null
+      periodSeconds: 10  # @schema type:[integer, null]; default: null
+      timeoutSeconds: 5  # @schema type:[integer, null]; default: null
+      failureThreshold: 6  # @schema type:[integer, null]; default: null
+      successThreshold: 1  # @schema type:[integer, null]; default: null
     service:
       # -- Webhook exposed HTTP port for the service.
       port: 8080
@@ -296,7 +296,8 @@ provider:  # @schema type: [object, string];
       relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
-extraArgs: []  # @schema type: [array, null]; item: string; uniqueItems: true;
+# An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
+extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true;
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).

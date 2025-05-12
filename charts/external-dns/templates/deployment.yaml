@@ -124,9 +124,26 @@ spec:
             - --managed-record-types={{ . }}
             {{- end }}
             - --provider={{ $providerName }}
-          {{- range .Values.extraArgs }}
+            {{- if kindIs "map" .Values.extraArgs }}
+            {{- range $key, $value := .Values.extraArgs }}
+            {{- if not (kindIs "invalid" $value) }}
+            {{- if kindIs "slice" $value }}
+            {{- range $value }}
+            - --{{ $key }}={{ tpl (. | toString) $ }}
+            {{- end }}
+            {{- else }}
+            - --{{ $key }}={{ tpl ($value | toString) $ }}
+            {{- end }}
+            {{- else }}
+            - --{{ $key }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if kindIs "slice" .Values.extraArgs }}
+            {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
-          {{- end }}
+            {{- end }}
+            {{- end }}
           ports:
             - name: http
               protocol: TCP

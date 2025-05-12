@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	googleRecordTTL = 300
+	defaultTTL = 300
 )
 
 type managedZonesCreateCallInterface interface {
@@ -154,7 +154,7 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 
 	zoneTypeFilter := provider.NewZoneTypeFilter(zoneVisibility)
 
-	provider := &GoogleProvider{
+	return &GoogleProvider{
 		project:                  project,
 		dryRun:                   dryRun,
 		batchChangeSize:          batchChangeSize,
@@ -166,9 +166,7 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
 		ctx:                      ctx,
-	}
-
-	return provider, nil
+	}, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -261,11 +259,11 @@ func (p *GoogleProvider) SupportedRecordType(recordType string) bool {
 
 // newFilteredRecords returns a collection of RecordSets based on the given endpoints and domainFilter.
 func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
-	records := []*dns.ResourceRecordSet{}
+	var records []*dns.ResourceRecordSet
 
-	for _, endpoint := range endpoints {
-		if p.domainFilter.Match(endpoint.DNSName) {
-			records = append(records, newRecord(endpoint))
+	for _, ep := range endpoints {
+		if p.domainFilter.Match(ep.DNSName) {
+			records = append(records, newRecord(ep))
 		}
 	}
 
@@ -314,7 +312,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 
 // batchChange separates a zone in multiple transaction.
 func batchChange(change *dns.Change, batchSize int) []*dns.Change {
-	changes := []*dns.Change{}
+	var changes []*dns.Change
 
 	if batchSize == 0 {
 		return append(changes, change)
@@ -452,7 +450,7 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 	}
 
 	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
-	var ttl int64 = googleRecordTTL
+	var ttl int64 = defaultTTL
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)
 	}

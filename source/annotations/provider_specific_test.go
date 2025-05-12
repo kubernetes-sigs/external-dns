@@ -132,6 +132,41 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 		expectedValue string
 	}{
 		{
+			title:         "Cloudflare region key annotation is set correctly",
+			annotations:   map[string]string{CloudflareRegionKey: "us"},
+			expectedKey:   CloudflareRegionKey,
+			expectedValue: "us",
+		},
+		{
+			title: "Cloudflare region key annotation among another annotations is set correctly",
+			annotations: map[string]string{
+				"random annotation 1": "random value 1",
+				CloudflareRegionKey:   "us",
+				"random annotation 2": "random value 2",
+			},
+			expectedKey:   CloudflareRegionKey,
+			expectedValue: "us",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
+			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
+				if providerSpecificAnnotation.Name == tc.expectedKey {
+					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
+					return
+				}
+			}
+			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
+		})
+	}
+
+	for _, tc := range []struct {
+		title         string
+		annotations   map[string]string
+		expectedKey   string
+		expectedValue string
+	}{
+		{
 			title:         "Cloudflare custom hostname annotation is set correctly",
 			annotations:   map[string]string{CloudflareCustomHostnameKey: "a.foo.fancybar.com"},
 			expectedKey:   CloudflareCustomHostnameKey,

@@ -15,9 +15,9 @@
 # limitations under the License.
 
 # renovate: datasource=github-releases depName=kubernetes-sigs/controller-tools
-CONTROLLER_TOOLS_GENERATOR_VERSION=v0.15.0
+CONTROLLER_TOOLS_GENERATOR_VERSION=v0.17.2
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANG_CI_LINTER_VERSION=v2.0.2
+GOLANG_CI_LINTER_VERSION=v2.1.6
 
 # Execute
 # scripts/install-tools.sh

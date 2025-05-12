@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -68,7 +69,7 @@ type serviceSource struct {
 
 // NewServiceSource creates a new serviceSource with the given config.
 func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -503,9 +504,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			targets = extractServiceExternalName(svc)
 		}
 
-		for _, endpoint := range endpoints {
-			endpoint.ProviderSpecific = providerSpecific
-			endpoint.SetIdentifier = setIdentifier
+		for _, en := range endpoints {
+			en.ProviderSpecific = providerSpecific
+			en.SetIdentifier = setIdentifier
 		}
 	}
 

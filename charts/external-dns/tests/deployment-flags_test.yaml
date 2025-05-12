@@ -103,6 +103,60 @@ tests:
             - --zone-id-filter=/hostedzone/Z00004
             - --zone-id-filter=/hostedzone/Z00005
 
+
+  - it: should allow 'extraArgs' to be a slice
+    set:
+      extraArgs:
+       - --extraArgA=valueA
+       - --extraArgB=valueB
+       - --extraArgC=valueC-1
+       - --extraArgC=valueC-2
+
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --extraArgA=valueA
+            - --extraArgB=valueB
+            - --extraArgC=valueC-1
+            - --extraArgC=valueC-2
+
+
+  - it: should allow 'extraArgs' to be a map with its entries potentially being slices (lists) themselves
+    set:
+      extraArgs:
+        extraArgA: valueA
+        extraArgB: valueB
+        extraArgC:
+          - valueC-1
+          - valueC-2
+
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --extraArgA=valueA
+            - --extraArgB=valueB
+            - --extraArgC=valueC-1
+            - --extraArgC=valueC-2
+
+
   - it: should throw error when txtPrefix and txtSuffix are set
     set:
         txtPrefix: "test-prefix"

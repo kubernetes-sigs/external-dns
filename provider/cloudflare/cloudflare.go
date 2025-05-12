@@ -44,20 +44,20 @@ const (
 	cloudFlareDelete = "DELETE"
 	// cloudFlareUpdate is a ChangeAction enum value
 	cloudFlareUpdate = "UPDATE"
-	// defaultCloudFlareRecordTTL 1 = automatic
-	defaultCloudFlareRecordTTL = 1
+	// defaultTTL 1 = automatic
+	defaultTTL = 1
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 // see: https://github.com/cloudflare/cloudflare-go/pull/595
 
-// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
-var proxyEnabled *bool = boolPtr(true)
+var (
+	// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
+	proxyEnabled *bool = boolPtr(true)
+	// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
+	proxyDisabled *bool = boolPtr(false)
+)
 
-// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
-var proxyDisabled *bool = boolPtr(false)
-
-// for faster getRecordID() lookup
 type DNSRecordIndex struct {
 	Name    string
 	Type    string
@@ -279,8 +279,8 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
-	provider := &CloudFlareProvider{
-		// Client: config,
+
+	return &CloudFlareProvider{
 		Client:                zoneService{config},
 		domainFilter:          domainFilter,
 		zoneIDFilter:          zoneIDFilter,
@@ -289,13 +289,12 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		DryRun:                dryRun,
 		DNSRecordsPerPage:     dnsRecordsPerPage,
 		RegionKey:             regionKey,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Zones returns the list of hosted zones.
 func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, error) {
-	result := []cloudflare.Zone{}
+	var result []cloudflare.Zone
 
 	// if there is a zoneIDfilter configured
 	// && if the filter isn't just a blank string (used in tests)
@@ -349,7 +348,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		records, err := p.listDNSRecordsWithAutoPagination(ctx, zone.ID)
 		if err != nil {
@@ -373,7 +372,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	cloudflareChanges := []*cloudFlareChange{}
+	var cloudflareChanges []*cloudFlareChange
 
 	// if custom hostnames are enabled, deleting first allows to avoid conflicts with the new ones
 	if p.CustomHostnamesConfig.Enabled {
@@ -425,7 +424,7 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 	failedChange := false
 	// return early if disabled
 	if !p.CustomHostnamesConfig.Enabled {
-		return !failedChange
+		return true
 	}
 
 	switch change.Action {
@@ -730,7 +729,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	adjustedEndpoints := []*endpoint.Endpoint{}
+	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
 		if proxied {
@@ -802,7 +801,7 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 }
 
 func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
-	ttl := defaultCloudFlareRecordTTL
+	ttl := defaultTTL
 	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
 	if ep.RecordTTL.IsConfigured() {
@@ -969,7 +968,7 @@ func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 }
 
 func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	// group supported records by name and type
 	groups := map[string][]cloudflare.DNSRecord{}
@@ -994,7 +993,7 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		customHostnames[c.CustomOriginServer] = append(customHostnames[c.CustomOriginServer], c.Hostname)
 	}
 
-	// create single endpoint with all the targets for each name/type
+	// create a single endpoint with all the targets for each name/type
 	for _, records := range groups {
 		if len(records) == 0 {
 			return endpoints

@@ -177,7 +177,7 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 }
 
 func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHost proxyVirtualHost) (map[string]string, error) {
-	annotations := map[string]string{}
+	ants := map[string]string{}
 	for _, src := range virtualHost.Metadata.Source {
 		kind := sourceKind(src.Kind)
 		if kind != nil {
@@ -186,7 +186,7 @@ func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHos
 				return nil, err
 			}
 			for key, value := range source.GetAnnotations() {
-				annotations[key] = value
+				ants[key] = value
 			}
 		}
 	}
@@ -198,11 +198,11 @@ func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHos
 				return nil, err
 			}
 			for key, value := range source.GetAnnotations() {
-				annotations[key] = value
+				ants[key] = value
 			}
 		}
 	}
-	return annotations, nil
+	return ants, nil
 }
 
 func (gs *glooSource) proxyTargets(ctx context.Context, name string, namespace string) (endpoint.Targets, error) {

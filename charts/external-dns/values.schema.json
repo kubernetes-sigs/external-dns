@@ -64,9 +64,11 @@
       "items": {
         "type": "string"
       },
+      "properties": {},
       "type": [
         "array",
-        "null"
+        "null",
+        "object"
       ],
       "uniqueItems": true
     },
@@ -308,30 +310,51 @@
             "livenessProbe": {
               "properties": {
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "httpGet": {
                   "properties": {
                     "path": {
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "port": {
-                      "type": "string"
+                      "type": [
+                        "integer",
+                        "string"
+                      ]
                     }
                   },
                   "type": "object"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 }
               },
               "type": "object"
@@ -339,30 +362,51 @@
             "readinessProbe": {
               "properties": {
                 "failureThreshold": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "httpGet": {
                   "properties": {
                     "path": {
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "port": {
-                      "type": "string"
+                      "type": [
+                        "integer",
+                        "string"
+                      ]
                     }
                   },
                   "type": "object"
                 },
                 "initialDelaySeconds": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "periodSeconds": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "successThreshold": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 },
                 "timeoutSeconds": {
-                  "type": "integer"
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
                 }
               },
               "type": "object"

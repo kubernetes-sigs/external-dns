@@ -148,7 +148,7 @@ func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
 				AddFunc: func(obj interface{}) {
 					handler()
 				},
-				UpdateFunc: func(old interface{}, new interface{}) {
+				UpdateFunc: func(old interface{}, newI interface{}) {
 					handler()
 				},
 				DeleteFunc: func(obj interface{}) {
@@ -287,11 +287,8 @@ func (cs *crdSource) filterByAnnotations(dnsendpoints *endpoint.DNSEndpointList)
 	filteredList := endpoint.DNSEndpointList{}
 
 	for _, dnsendpoint := range dnsendpoints.Items {
-		// convert the dnsendpoint' annotations to an equivalent label selector
-		annotations := labels.Set(dnsendpoint.Annotations)
-
 		// include dnsendpoint if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(dnsendpoint.Annotations)) {
 			filteredList.Items = append(filteredList.Items, dnsendpoint)
 		}
 	}

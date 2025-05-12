@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	sdDefaultRecordTTL = 300
+	defaultTTL = 300
 
 	sdNamespaceTypePublic  = "public"
 	sdNamespaceTypePrivate = "private"
@@ -407,7 +407,7 @@ func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, 
 	srvType := p.serviceTypeFromEndpoint(ep)
 	routingPolicy := p.routingPolicyFromEndpoint(ep)
 
-	ttl := int64(sdDefaultRecordTTL)
+	ttl := int64(defaultTTL)
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)
 	}
@@ -443,7 +443,7 @@ func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Serv
 
 	srvType := p.serviceTypeFromEndpoint(ep)
 
-	ttl := int64(sdDefaultRecordTTL)
+	ttl := int64(defaultTTL)
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)
 	}

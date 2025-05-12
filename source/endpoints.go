@@ -22,7 +22,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func EndpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
+// endpointsForHostname returns the endpoint objects for each host-target combination.
+func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
 	var (
 		endpoints    []*endpoint.Endpoint
 		aTargets     endpoint.Targets
