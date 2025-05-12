@@ -97,7 +97,14 @@ type CustomHostnamesConfig struct {
 type DNSRecordsConfig struct {
 	PerPage int
 	Comment string
-	Tags    []string
+	Tags    string
+}
+
+func (c *DNSRecordsConfig) GetTags() []string {
+	if c.Tags == "" {
+		return nil
+	}
+	return strings.Split(c.Tags, ",")
 }
 
 var recordTypeCustomHostnameSupported = map[string]bool{
@@ -860,7 +867,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 	}
 
 	comment := p.DNSRecordsConfig.Comment
-	tags := p.DNSRecordsConfig.Tags
+	tags := p.DNSRecordsConfig.GetTags()
 	for _, providerSpecific := range ep.ProviderSpecific {
 		if providerSpecific.Name == source.CloudflareRecordCommentKey {
 			comment = providerSpecific.Value
@@ -869,11 +876,17 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			tags = strings.Split(providerSpecific.Value, ",")
 		}
 	}
+	// Free account checks
+	if !p.ZoneHasPaidPlan(ep.DNSName) {
+		if tags != nil {
+			log.Warnf("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
+			tags = nil
+		}
 
-	zoneHasPaidPlan := p.ZoneHasPaidPlan(ep.DNSName)
-	if tags != nil && !zoneHasPaidPlan {
-		tags = nil
-		log.Warnf("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
+		if len(comment) > 100 {
+			log.Warnf("DNS record comment is limited to 100 chars for free zones, trimming comment of %s", ep.DNSName)
+			comment = comment[:99]
+		}
 	}
 
 	return &cloudFlareChange{

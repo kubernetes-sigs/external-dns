@@ -1122,7 +1122,7 @@ func TestCloudflareProvider(t *testing.T) {
 				DNSRecordsConfig{
 					PerPage: 5000,
 					Comment: "tests",
-					Tags:    []string{"external-dns-test"},
+					Tags:    "external-dns-test,external-dns-test2",
 				},
 			)
 			if err != nil && !tc.ShouldFail {
@@ -1795,7 +1795,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		DNSRecordsConfig{
 			PerPage: 1,
 			Comment: "tests",
-			Tags:    []string{"external-dns-test"},
+			Tags:    "external-dns-test,external-dns-test2",
 		},
 	)
 	if err != nil {
@@ -1820,7 +1820,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		DNSRecordsConfig{
 			PerPage: 50,
 			Comment: "tests",
-			Tags:    []string{"external-dns-test"},
+			Tags:    "external-dns-test,external-dns-test2",
 		},
 	)
 	if err != nil {

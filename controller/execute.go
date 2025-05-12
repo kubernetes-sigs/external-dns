@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -209,7 +208,7 @@ func Execute() {
 			cloudflare.DNSRecordsConfig{
 				PerPage: cfg.CloudflareDNSRecordsPerPage,
 				Comment: cfg.CloudflareRecordComment,
-				Tags:    strings.Split(cfg.CloudflareRecordTags, ","),
+				Tags:    cfg.CloudflareRecordTags,
 			},
 		)
 	case "google":
