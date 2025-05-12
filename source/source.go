@@ -183,32 +183,32 @@ func getAliasFromAnnotations(ants map[string]string) bool {
 func getProviderSpecificAnnotations(ants map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	if v, exists := ants[CloudflareProxiedKey]; exists {
+	if v, ok := ants[CloudflareProxiedKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareProxiedKey,
 			Value: v,
 		})
 	}
-	if v, exists := ants[CloudflareCustomHostnameKey]; exists {
+	if v, ok := ants[CloudflareCustomHostnameKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareCustomHostnameKey,
 			Value: v,
 		})
 	}
-	if v, exists := ants[CloudflareRegionKey]; exists {
+	if v, ok := ants[CloudflareRegionKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareRegionKey,
 			Value: v,
 		})
 	}
 
-	if v, exists := ants[CloudflareRecordCommentKey]; exists {
+	if v, ok := ants[CloudflareRecordCommentKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareRecordCommentKey,
 			Value: v,
 		})
 	}
-	if v, exists := ants[CloudflareRecordTagsKey]; exists {
+	if v, ok := ants[CloudflareRecordTagsKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareRecordTagsKey,
 			Value: v,
