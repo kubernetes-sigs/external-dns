@@ -42,6 +42,9 @@ const (
 
 	EndpointsTypeNodeExternalIP = "NodeExternalIP"
 	EndpointsTypeHostIP         = "HostIP"
+
+	ServicePodEndpointsPodName      = "pod-name"
+	ServicePodEndpointsFqdnTemplate = "fqdn-template"
 )
 
 // Source defines the interface Endpoint sources should implement.
