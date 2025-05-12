@@ -110,7 +110,8 @@ func (c *DNSRecordsConfig) GetTags() []string {
 	if c.Tags == "" {
 		return nil
 	}
-	return strings.Split(c.Tags, ",")
+	tags := strings.Split(c.Tags, ",")
+	return tags
 }
 
 var recordTypeCustomHostnameSupported = map[string]bool{
@@ -882,6 +883,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			tags = strings.Split(providerSpecific.Value, ",")
 		}
 	}
+	sort.Strings(tags)
 
 	// Free account checks
 	if tags != nil || len(comment) > freeZoneCommentMaxLength {
@@ -1096,6 +1098,16 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
 			e = e.WithProviderSpecific(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+		}
+
+		if records[0].Comment != "" {
+			e = e.WithProviderSpecific(source.CloudflareRecordCommentKey, records[0].Comment)
+		}
+
+		if len(records[0].Tags) > 0 {
+			tags := records[0].Tags
+			sort.Strings(tags)
+			e = e.WithProviderSpecific(source.CloudflareRecordTagsKey, strings.Join(tags, ","))
 		}
 
 		endpoints = append(endpoints, e)
