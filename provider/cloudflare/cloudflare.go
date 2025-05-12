@@ -47,6 +47,12 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultTTL 1 = automatic
 	defaultTTL = 1
+
+	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
+	// freeZoneCommentMaxLength is the maximum length of a DNS record comment on free zones
+	freeZoneCommentMaxLength = 100
+	// paidZoneCommentMaxLength is the maximum length of a DNS record comment on paid zones
+	paidZoneCommentMaxLength = 500
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -877,16 +883,20 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 		}
 	}
 
-	// Free account checks https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
-	if tags != nil || len(comment) > 100 {
+	// Free account checks
+	if tags != nil || len(comment) > freeZoneCommentMaxLength {
 		freeAccount := !p.ZoneHasPaidPlan(ep.DNSName)
 		if freeAccount && tags != nil {
-			log.Warnf("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
+			log.Infof("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
 			tags = nil
 		}
-		if freeAccount && len(comment) > 100 {
-			log.Warnf("DNS record comment is limited to 100 chars for free zones, trimming comment of %s", ep.DNSName)
-			comment = comment[:99]
+		if freeAccount && len(comment) > freeZoneCommentMaxLength {
+			log.Infof("DNS record comment is limited to %d chars for free zones, trimming comment of %s", freeZoneCommentMaxLength, ep.DNSName)
+			comment = comment[:freeZoneCommentMaxLength-1]
+		}
+		if len(comment) > paidZoneCommentMaxLength {
+			log.Infof("DNS record comment is limited to %d chars, trimming comment of %s", paidZoneCommentMaxLength, ep.DNSName)
+			comment = comment[:paidZoneCommentMaxLength-1]
 		}
 	}
 
