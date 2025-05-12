@@ -1960,7 +1960,7 @@ func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 			},
 		},
 	})
-	b := testutils.LogsToBuffer(log.InfoLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
 	p := &CloudFlareProvider{
 		Client:                client,
 		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
@@ -1970,7 +1970,7 @@ func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail - too long record, %s", err)
 	}
-	assert.Contains(t, b.String(), "is longer than 63 characters. Cannot create endpoint")
+	testutils.TestHelperLogContains("s longer than 63 characters. Cannot create endpoint", hook, t)
 }
 
 // check if the error is expected
@@ -2720,7 +2720,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			Name:         "remove DNS record with unexpectedly missing custom hostname",
 			Endpoints:    []*endpoint.Endpoint{},
 			preApplyHook: "corrupt",
-			logOutput:    "level=warning msg=\"failed to delete custom hostname \\\"newerror-getCustomHostnameOrigin.foo.fancybar.com\\\": failed to get custom hostname: \\\"newerror-getCustomHostnameOrigin.foo.fancybar.com\\\" not found\" action=DELETE record=create.foo.bar.com",
+			logOutput:    "failed to delete custom hostname \"newerror-getCustomHostnameOrigin.foo.fancybar.com\": failed to get custom hostname: \"newerror-getCustomHostnameOrigin.foo.fancybar.com\" not found",
 		},
 		{
 			Name:         "duplicate custom hostname",
@@ -2746,12 +2746,12 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 				},
 			},
 			preApplyHook: "",
-			logOutput:    "custom hostname \\\"a.foo.fancybar.com\\\" already exists with the same origin \\\"a.foo.bar.com\\\", continue",
+			logOutput:    "custom hostname \"a.foo.fancybar.com\" already exists with the same origin \"a.foo.bar.com\", continue",
 		},
 	}
 
 	for _, tc := range testCases {
-		b := testutils.LogsToBuffer(log.InfoLevel, t)
+		hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
 
 		records, err := provider.Records(ctx)
 		if err != nil {
@@ -2801,7 +2801,8 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
 			t.Error(e)
 		}
-		assert.Contains(t, b.String(), tc.logOutput)
+
+		testutils.TestHelperLogContains(tc.logOutput, hook, t)
 	}
 }
 

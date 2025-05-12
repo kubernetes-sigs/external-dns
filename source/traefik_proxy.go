@@ -554,11 +554,8 @@ func (ts *traefikSource) filterIngressRouteByAnnotation(ingressRoutes []*Ingress
 	filteredList := []*IngressRoute{}
 
 	for _, ingressRoute := range ingressRoutes {
-		// convert the IngressRoute's annotations to an equivalent label selector
-		annotations := labels.Set(ingressRoute.Annotations)
-
 		// include IngressRoute if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ingressRoute.Annotations)) {
 			filteredList = append(filteredList, ingressRoute)
 		}
 	}
@@ -582,14 +579,11 @@ func (ts *traefikSource) filterIngressRouteTcpByAnnotations(ingressRoutes []*Ing
 		return ingressRoutes, nil
 	}
 
-	filteredList := []*IngressRouteTCP{}
+	var filteredList []*IngressRouteTCP
 
 	for _, ingressRoute := range ingressRoutes {
-		// convert the IngressRoute's annotations to an equivalent label selector
-		annotations := labels.Set(ingressRoute.Annotations)
-
 		// include IngressRoute if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ingressRoute.Annotations)) {
 			filteredList = append(filteredList, ingressRoute)
 		}
 	}
@@ -613,14 +607,11 @@ func (ts *traefikSource) filterIngressRouteUdpByAnnotations(ingressRoutes []*Ing
 		return ingressRoutes, nil
 	}
 
-	filteredList := []*IngressRouteUDP{}
+	var filteredList []*IngressRouteUDP
 
 	for _, ingressRoute := range ingressRoutes {
-		// convert the IngressRoute's annotations to an equivalent label selector
-		annotations := labels.Set(ingressRoute.Annotations)
-
 		// include IngressRoute if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ingressRoute.Annotations)) {
 			filteredList = append(filteredList, ingressRoute)
 		}
 	}

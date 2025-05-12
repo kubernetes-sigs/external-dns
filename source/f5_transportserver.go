@@ -201,11 +201,8 @@ func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.Tr
 	filteredList := []*f5.TransportServer{}
 
 	for _, ts := range transportServers {
-		// convert the TransportServer's annotations to an equivalent label selector
-		annotations := labels.Set(ts.Annotations)
-
 		// include TransportServer if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ts.Annotations)) {
 			filteredList = append(filteredList, ts)
 		}
 	}

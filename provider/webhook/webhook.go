@@ -200,7 +200,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
-func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 
