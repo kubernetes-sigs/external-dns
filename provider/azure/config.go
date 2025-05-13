@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
+
+	//"strconv"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -47,6 +48,7 @@ type config struct {
 	UseWorkloadIdentityExtension bool   `json:"useWorkloadIdentityExtension" yaml:"useWorkloadIdentityExtension"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
 	ActiveDirectoryAuthorityHost string `json:"activeDirectoryAuthorityHost" yaml:"activeDirectoryAuthorityHost"`
+	MaxRetriesCount              int    `json:"maxRetries" yaml:"maxRetries"`
 }
 
 func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string) (*config, error) {
@@ -100,30 +102,17 @@ func (p *customHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
 }
 func CustomHeaderPolicynew() policy.Policy { return &customHeaderPolicy{} }
 
-// function to read env variable for max retries
-func GetMaxRetries() int {
-	maxRetries := 3
-	if val := os.Getenv("AZURE_SDK_MAX_RETRIES"); val != "" {
-		if parsed, err := strconv.Atoi(val); err == nil {
-			maxRetries = parsed // Let SDK handle 0 or negative appropriately
-		} else {
-			log.Warnf("Invalid AZURE_SDK_MAX_RETRIES: %s, using default: %d", val, maxRetries)
-		}
-	}
-	log.Infof("Configured Azure SDK max retries: %d", maxRetries)
-	return maxRetries
-}
-
 // getCredentials retrieves Azure API credentials.
 func getCredentials(cfg config) (azcore.TokenCredential, *arm.ClientOptions, error) {
 	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get cloud configuration: %w", err)
 	}
+	log.Infof("Configuring Azure client with maxRetries: %d", cfg.MaxRetriesCount)
 	clientOpts := azcore.ClientOptions{
 		Cloud: cloudCfg,
 		Retry: policy.RetryOptions{
-			MaxRetries: int32(GetMaxRetries()),
+			MaxRetries: int32(cfg.MaxRetriesCount),
 		},
 		Logging: policy.LogOptions{
 			AllowedHeaders: []string{
@@ -134,6 +123,7 @@ func getCredentials(cfg config) (azcore.TokenCredential, *arm.ClientOptions, err
 			CustomHeaderPolicynew(),
 		},
 	}
+	log.Infof("final configured Azure client with maxRetries: %d", clientOpts.Retry.MaxRetries)
 	armClientOpts := &arm.ClientOptions{
 		ClientOptions: clientOpts,
 	}

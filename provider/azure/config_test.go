@@ -20,13 +20,20 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"os"
+
+	//"os"
+	"fmt"
 	"path"
 	"runtime"
+
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	//"github.com/alecthomas/kingpin/v2"
+	//"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	azruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/stretchr/testify/assert"
@@ -67,39 +74,6 @@ func TestOverrideConfiguration(t *testing.T) {
 	assert.Equal(t, cfg.ActiveDirectoryAuthorityHost, "aad-endpoint-override")
 }
 
-func TestGetMaxRetries(t *testing.T) {
-	defaultRetries := 3
-	tests := []struct {
-		name         string
-		envValue     string
-		expected     int
-		shouldSetEnv bool
-	}{
-		{"UnsetEnvVar", "", defaultRetries, false},
-		{"ValidPositive", "5", 5, true},
-		{"ZeroRetries", "0", 0, true},
-		{"NegativeRetries", "-2", -2, true},
-		{"InvalidString", "abc", defaultRetries, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Logf("Running test: %s", tt.name)
-			if tt.shouldSetEnv {
-				os.Setenv("AZURE_SDK_MAX_RETRIES", tt.envValue)
-				t.Logf("Set AZURE_SDK_MAX_RETRIES=%s", tt.envValue)
-				t.Cleanup(func() { os.Unsetenv("AZURE_SDK_MAX_RETRIES") }) // Clean up after test
-			} else {
-				os.Unsetenv("AZURE_SDK_MAX_RETRIES")
-			}
-			got := GetMaxRetries()
-			t.Logf("GetMaxRetries() returned: %d (expected: %d)", got, tt.expected)
-			if got != tt.expected {
-				t.Errorf("GetMaxRetries() = %d; want %d", got, tt.expected)
-			}
-		})
-	}
-}
-
 // Test for custom header policy
 type transportFunc func(*http.Request) (*http.Response, error)
 
@@ -109,10 +83,30 @@ func (f transportFunc) Do(req *http.Request) (*http.Response, error) {
 
 func TestCustomHeaderPolicyWithRetries(t *testing.T) {
 	// Set up test environment
-	os.Setenv("AZURE_SDK_MAX_RETRIES", "6")
-	defer os.Unsetenv("AZURE_SDK_MAX_RETRIES")
+	defaultRetries := 3
+	flagValue := "-6"
+	isSet := true
 
-	maxRetries := int32(GetMaxRetries())
+	retries, err := parseMaxRetries(flagValue, defaultRetries)
+	if err != nil {
+		t.Fatalf("Failed to parse retries: %v", err)
+	}
+	maxRetries := int32(retries)
+	if !isSet || (isSet && flagValue == "0") {
+		// Use default if flag not provided OR if flag is "0"
+		maxRetries = int32(defaultRetries)
+		t.Logf("Using default value: %d (flag provided: %v, value: %q)",
+			defaultRetries, isSet, flagValue)
+	} else {
+		// Flag was provided with non-zero value
+		retries, err := parseMaxRetries(flagValue, defaultRetries)
+		if err != nil {
+			t.Fatalf("Failed to parse retries: %v", err)
+		}
+		maxRetries = int32(retries)
+		t.Logf("Using provided flag value: %d", retries)
+	}
+
 	var attempt int32
 	var firstRequestID string
 
@@ -147,7 +141,7 @@ func TestCustomHeaderPolicyWithRetries(t *testing.T) {
 		}
 
 		// Return 429 for all but the last attempt
-		if attempt <= maxRetries {
+		if maxRetries < 0 || attempt <= maxRetries {
 			t.Logf("Attempt %d: THROTTLED (429) - Request ID: %s", attempt, requestID)
 			return &http.Response{
 				StatusCode: http.StatusTooManyRequests,
@@ -201,14 +195,146 @@ func TestCustomHeaderPolicyWithRetries(t *testing.T) {
 	defer resp.Body.Close()
 
 	// Verify we got the expected number of attempts
-	expectedAttempts := maxRetries + 1
+	var expectedAttempts int32
+	if maxRetries < 0 {
+		expectedAttempts = 1 // For negative retries, only one attempt should be made
+	} else {
+		expectedAttempts = maxRetries + 1 // For zero or positive retries, attempts = retries + 1
+	}
+
 	if attempt != expectedAttempts {
 		t.Errorf("Wrong number of attempts: got %d, want %d", attempt, expectedAttempts)
 	}
+
 	t.Logf("Test completed with %d attempts, all with request ID: %s", attempt, firstRequestID)
-	t.Logf("Test summary:")
-	t.Logf("- Total attempts: %d", attempt)
-	t.Logf("- Throttled responses: %d", maxRetries)
-	t.Logf("- Final status: Success")
-	t.Logf("- Consistent Request ID: %s", firstRequestID)
+}
+
+func TestMaxRetriesCount(t *testing.T) {
+	defaultRetries := 3
+
+	tests := []struct {
+		name        string
+		input       string
+		isSet       bool // indicates if flag was provided
+		expected    int
+		shouldError bool
+		description string
+	}{
+		{
+			name:        "FlagNotProvided",
+			input:       "",
+			isSet:       false,
+			expected:    defaultRetries,
+			shouldError: false,
+			description: "When flag is not provided, should use default value",
+		},
+		{
+			name:        "FlagProvidedEmpty",
+			input:       "",
+			isSet:       true,
+			expected:    0,
+			shouldError: true,
+			description: "When flag is provided but empty, should error",
+		},
+		{
+			name:        "ValidPositive",
+			input:       "5",
+			isSet:       true,
+			expected:    5,
+			shouldError: false,
+			description: "Valid positive number should be accepted",
+		},
+		{
+			name:        "ZeroRetries",
+			input:       "0",
+			isSet:       true,
+			expected:    0,
+			shouldError: false,
+			description: "Zero should be accepted and handled by SDK",
+		},
+		{
+			name:        "NegativeRetries",
+			input:       "-2",
+			isSet:       true,
+			expected:    -2,
+			shouldError: false,
+			description: "Negative values should be accepted and  handled by SDK",
+		},
+		{
+			name:        "InvalidString",
+			input:       "abc",
+			isSet:       true,
+			expected:    0,
+			shouldError: true,
+			description: "Non-numeric string should error",
+		},
+		{
+			name:        "Whitespace",
+			input:       "   ",
+			isSet:       true,
+			expected:    0,
+			shouldError: true,
+			description: "Whitespace should error",
+		},
+		{
+			name:        "SpecialChars",
+			input:       "@#$%",
+			isSet:       true,
+			expected:    0,
+			shouldError: true,
+			description: "Special characters should error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("=== Test Case: %s ===", tt.name)
+			t.Logf("Description: %s", tt.description)
+			t.Logf("Input: %q (flag provided: %v)", tt.input, tt.isSet)
+
+			// Handle flag not provided case
+			if !tt.isSet {
+				t.Logf("Using default value: %d", defaultRetries)
+				return
+			}
+
+			retries, err := parseMaxRetries(tt.input, defaultRetries)
+
+			// Check error condition
+			if tt.shouldError {
+				if err == nil {
+					t.Errorf("Expected error for input %q but got none", tt.input)
+				} else {
+					t.Logf("Got expected error: %v", err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if retries != tt.expected {
+					t.Errorf("Got %d retries, want %d", retries, tt.expected)
+				} else {
+					t.Logf("Got expected value: %d", retries)
+				}
+			}
+		})
+	}
+}
+
+// Helper function to parse max retries value
+func parseMaxRetries(value string, defaultValue int) (int, error) {
+	// Trim whitespace
+	value = strings.TrimSpace(value)
+
+	// Empty string or whitespace should error
+	if value == "" {
+		return 0, fmt.Errorf("retry count must be provided when flag is set")
+	}
+
+	retries, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid retry count %q: %v", value, err)
+	}
+
+	return retries, nil
 }

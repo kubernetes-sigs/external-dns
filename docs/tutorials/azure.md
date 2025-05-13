@@ -535,15 +535,13 @@ spec:
       containers:
       - name: external-dns
         image: registry.k8s.io/external-dns/external-dns:v0.16.1
-        env:
-          - name: AZURE_SDK_MAX_RETRIES # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
-            value: "1"
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=azure
         - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
+        - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes
@@ -606,9 +604,6 @@ spec:
       containers:
         - name: external-dns
           image: registry.k8s.io/external-dns/external-dns:v0.16.1
-          env:
-            - name: AZURE_SDK_MAX_RETRIES # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
-              value: "1"
           args:
             - --source=service
             - --source=ingress
@@ -616,6 +611,7 @@ spec:
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
             - --txt-prefix=externaldns-
+            - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes
@@ -681,15 +677,13 @@ spec:
       containers:
         - name: external-dns
           image: registry.k8s.io/external-dns/external-dns:v0.16.1
-          env:
-            - name: AZURE_SDK_MAX_RETRIES # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
-              value: "1"
           args:
             - --source=service
             - --source=ingress
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
+            - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes
