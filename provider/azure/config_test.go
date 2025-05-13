@@ -18,22 +18,16 @@ package azure
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
-
-	//"os"
-	"fmt"
 	"path"
 	"runtime"
-
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	//"github.com/alecthomas/kingpin/v2"
-	//"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	azruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/stretchr/testify/assert"

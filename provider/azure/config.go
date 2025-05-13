@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
-	//"strconv"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
