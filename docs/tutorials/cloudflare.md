@@ -128,6 +128,7 @@ spec:
             - --provider=cloudflare
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+            - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
          env:
             - name: CF_API_KEY
@@ -204,6 +205,7 @@ spec:
             - --provider=cloudflare
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+            - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
           env:
             - name: CF_API_KEY
@@ -303,10 +305,17 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotati
 
 ## Setting cloudflare-region-key to configure regional services
 
-Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic. A list of available options can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
-Currently, requires SuperAdmin or Admin role.
+Automatic configuration of Cloudflare Regional Services is enabled by the --cloudflare-regional-services flag.
+Regional Services restrict which data centers can decrypt and serve HTTPS traffic.
+A default region can be defined using the --cloudflare-region-key flag.
 
-If not set the value will default to `global`.
+A list of available regions can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
+
+Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can specify the region for that record.
+
+An empty string will result in no regional hostname configured.
+
+Currently, requires SuperAdmin or Admin role.
 
 ## Setting cloudflare-custom-hostname
 
