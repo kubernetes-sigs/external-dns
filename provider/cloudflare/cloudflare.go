@@ -875,30 +875,35 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 
 	comment := p.DNSRecordsConfig.Comment
 	tags := p.DNSRecordsConfig.GetTags()
-	for _, providerSpecific := range ep.ProviderSpecific {
-		if providerSpecific.Name == source.CloudflareRecordCommentKey {
-			comment = providerSpecific.Value
-		}
-		if providerSpecific.Name == source.CloudflareRecordTagsKey {
-			tags = strings.Split(providerSpecific.Value, ",")
-		}
+	antComment, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordCommentKey)
+	if ok {
+		comment = antComment
 	}
-	sort.Strings(tags)
+
+	if len(comment) > paidZoneCommentMaxLength {
+		log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d for free zones and less than %d for paid zones.", ep.DNSName, freeZoneCommentMaxLength, paidZoneCommentMaxLength)
+		comment = comment[:paidZoneCommentMaxLength-1]
+	}
+
+	antTags, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordTagsKey)
+	if ok {
+		tags = strings.Split(antTags, ",")
+	}
 
 	// Free account checks
 	if tags != nil || len(comment) > freeZoneCommentMaxLength {
-		freeAccount := !p.ZoneHasPaidPlan(ep.DNSName)
-		if freeAccount && tags != nil {
-			log.Infof("DNS tags are only available for paid accounts, skipping for %s", ep.DNSName)
+		free := !p.ZoneHasPaidPlan(ep.DNSName)
+		if free && tags != nil {
+			log.Warnf("DNS tags are only available for paid accounts, skipping for %s. Please remove it from the config to avoid endless syncs.", ep.DNSName)
 			tags = nil
 		}
-		if freeAccount && len(comment) > freeZoneCommentMaxLength {
-			log.Infof("DNS record comment is limited to %d chars for free zones, trimming comment of %s", freeZoneCommentMaxLength, ep.DNSName)
+		if free && len(comment) > freeZoneCommentMaxLength {
+			log.Warnf("DNS record comment is limited to %d chars for free zones, trimming comment of %s. Please set it to less than %d characters to avoid endless syncs.", freeZoneCommentMaxLength, ep.DNSName, freeZoneCommentMaxLength)
 			comment = comment[:freeZoneCommentMaxLength-1]
 		}
-		if len(comment) > paidZoneCommentMaxLength {
-			log.Infof("DNS record comment is limited to %d chars, trimming comment of %s", paidZoneCommentMaxLength, ep.DNSName)
-			comment = comment[:paidZoneCommentMaxLength-1]
+
+		if len(tags) > 1 {
+			sort.Strings(tags)
 		}
 	}
 
@@ -1106,7 +1111,6 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 
 		if len(records[0].Tags) > 0 {
 			tags := records[0].Tags
-			sort.Strings(tags)
 			e = e.WithProviderSpecific(source.CloudflareRecordTagsKey, strings.Join(tags, ","))
 		}
 
