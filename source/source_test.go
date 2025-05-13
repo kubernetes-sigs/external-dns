@@ -209,6 +209,57 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
 		})
 	}
+
+	for _, tc := range []struct {
+		title         string
+		annotations   map[string]string
+		expectedKey   string
+		expectedValue string
+	}{
+		{
+			title:         "Cloudflare comment is set",
+			annotations:   map[string]string{CloudflareRecordCommentKey: "test"},
+			expectedKey:   CloudflareRecordCommentKey,
+			expectedValue: "test",
+		},
+		{
+			title: "Cloudflare comment is set among other annotations",
+			annotations: map[string]string{
+				"random annotation 1":      "random value 1",
+				CloudflareRecordCommentKey: "test",
+				"random annotation 2":      "random value 2",
+			},
+			expectedKey:   CloudflareRecordCommentKey,
+			expectedValue: "test",
+		},
+		{
+			title:         "Cloudflare tags are set",
+			annotations:   map[string]string{CloudflareRecordTagsKey: "test1,test2"},
+			expectedKey:   CloudflareRecordTagsKey,
+			expectedValue: "test1,test2",
+		},
+		{
+			title: "Cloudflare tags are set among other annotations",
+			annotations: map[string]string{
+				"random annotation 1":   "random value 1",
+				CloudflareRecordTagsKey: "test1,test2",
+				"random annotation 2":   "random value 2",
+			},
+			expectedKey:   CloudflareRecordTagsKey,
+			expectedValue: "test1,test2",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			providerSpecificAnnotations, _ := getProviderSpecificAnnotations(tc.annotations)
+			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
+				if providerSpecificAnnotation.Name == tc.expectedKey {
+					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
+					return
+				}
+			}
+			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
+		})
+	}
 }
 
 func TestGetProviderSpecificAliasAnnotations(t *testing.T) {

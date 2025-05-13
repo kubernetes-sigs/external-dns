@@ -73,6 +73,8 @@ const (
 	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 	CloudflareRegionKey         = "external-dns.alpha.kubernetes.io/cloudflare-region-key"
+	CloudflareRecordCommentKey  = "external-dns.alpha.kubernetes.io/cloudflare-record-comment"
+	CloudflareRecordTagsKey     = "external-dns.alpha.kubernetes.io/cloudflare-record-tags"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
@@ -181,24 +183,38 @@ func getAliasFromAnnotations(ants map[string]string) bool {
 func getProviderSpecificAnnotations(ants map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	if v, exists := ants[CloudflareProxiedKey]; exists {
+	if v, ok := ants[CloudflareProxiedKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareProxiedKey,
 			Value: v,
 		})
 	}
-	if v, exists := ants[CloudflareCustomHostnameKey]; exists {
+	if v, ok := ants[CloudflareCustomHostnameKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareCustomHostnameKey,
 			Value: v,
 		})
 	}
-	if v, exists := ants[CloudflareRegionKey]; exists {
+	if v, ok := ants[CloudflareRegionKey]; ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareRegionKey,
 			Value: v,
 		})
 	}
+
+	if v, ok := ants[CloudflareRecordCommentKey]; ok {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareRecordCommentKey,
+			Value: v,
+		})
+	}
+	if v, ok := ants[CloudflareRecordTagsKey]; ok {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareRecordTagsKey,
+			Value: v,
+		})
+	}
+
 	if getAliasFromAnnotations(ants) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",

@@ -30,6 +30,7 @@ import (
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/publicsuffix"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -46,6 +47,12 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultTTL 1 = automatic
 	defaultTTL = 1
+
+	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
+	// freeZoneCommentMaxLength is the maximum length of a DNS record comment on free zones
+	freeZoneCommentMaxLength = 100
+	// paidZoneCommentMaxLength is the maximum length of a DNS record comment on paid zones
+	paidZoneCommentMaxLength = 500
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -91,6 +98,20 @@ type CustomHostnamesConfig struct {
 	Enabled              bool
 	MinTLSVersion        string
 	CertificateAuthority string
+}
+
+type DNSRecordsConfig struct {
+	PerPage int
+	Comment string
+	Tags    string
+}
+
+func (c *DNSRecordsConfig) GetTags() []string {
+	if c.Tags == "" {
+		return nil
+	}
+	tags := strings.Split(c.Tags, ",")
+	return tags
 }
 
 var recordTypeCustomHostnameSupported = map[string]bool{
@@ -198,9 +219,9 @@ type CloudFlareProvider struct {
 	domainFilter          endpoint.DomainFilter
 	zoneIDFilter          provider.ZoneIDFilter
 	proxiedByDefault      bool
-	CustomHostnamesConfig CustomHostnamesConfig
 	DryRun                bool
-	DNSRecordsPerPage     int
+	CustomHostnamesConfig CustomHostnamesConfig
+	DNSRecordsConfig      DNSRecordsConfig
 	RegionKey             string
 }
 
@@ -226,6 +247,8 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
 		Content: cfc.ResourceRecord.Content,
+		Comment: &cfc.ResourceRecord.Comment,
+		Tags:    cfc.ResourceRecord.Tags,
 	}
 }
 
@@ -253,11 +276,13 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 		Proxied: cfc.ResourceRecord.Proxied,
 		Type:    cfc.ResourceRecord.Type,
 		Content: cfc.ResourceRecord.Content,
+		Comment: cfc.ResourceRecord.Comment,
+		Tags:    cfc.ResourceRecord.Tags,
 	}
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int, regionKey string, customHostnamesConfig CustomHostnamesConfig) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, regionKey string, customHostnamesConfig CustomHostnamesConfig, dnsRecordsConfig DNSRecordsConfig) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -287,8 +312,8 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		proxiedByDefault:      proxiedByDefault,
 		CustomHostnamesConfig: customHostnamesConfig,
 		DryRun:                dryRun,
-		DNSRecordsPerPage:     dnsRecordsPerPage,
 		RegionKey:             regionKey,
+		DNSRecordsConfig:      dnsRecordsConfig,
 	}, nil
 }
 
@@ -339,6 +364,28 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	}
 
 	return result, nil
+}
+
+// ZoneHasPaidPlan returns wether a zone has a paid plan or not
+func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
+	zone, err := publicsuffix.EffectiveTLDPlusOne(hostname)
+	if err != nil {
+		log.Errorf("Failed to get effective TLD+1 for hostname %s %v", hostname, err)
+		return false
+	}
+	zoneID, err := p.Client.ZoneIDByName(zone)
+	if err != nil {
+		log.Errorf("Failed to get zone %s by name %v", zone, err)
+		return false
+	}
+
+	zoneDetails, err := p.Client.ZoneDetails(context.Background(), zoneID)
+	if err != nil {
+		log.Errorf("Failed to get zone %s details %v", zone, err)
+		return false
+	}
+
+	return zoneDetails.Plan.IsSubscribed
 }
 
 // Records returns the list of records.
@@ -825,6 +872,39 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			RegionKey: regionKey,
 		}
 	}
+
+	comment := p.DNSRecordsConfig.Comment
+	if val, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordCommentKey); ok {
+		comment = val
+	}
+
+	if len(comment) > paidZoneCommentMaxLength {
+		log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d chars for free zones and less than %d chars for paid zones.", ep.DNSName, freeZoneCommentMaxLength, paidZoneCommentMaxLength)
+		comment = comment[:paidZoneCommentMaxLength-1]
+	}
+
+	tags := p.DNSRecordsConfig.GetTags()
+	if val, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordTagsKey); ok {
+		tags = strings.Split(val, ",")
+	}
+
+	// Free account checks
+	if tags != nil || len(comment) > freeZoneCommentMaxLength {
+		free := !p.ZoneHasPaidPlan(ep.DNSName)
+		if free && tags != nil {
+			log.Infof("DNS tags are only available for paid accounts, skipping for %s.", ep.DNSName)
+			tags = nil
+		}
+		if free && len(comment) > freeZoneCommentMaxLength {
+			log.Warnf("DNS record comment is limited to %d chars for free zones, trimming comment of %s. Please set it to less than %d characters to avoid endless syncs.", freeZoneCommentMaxLength, ep.DNSName, freeZoneCommentMaxLength)
+			comment = comment[:freeZoneCommentMaxLength-1]
+		}
+
+		if len(tags) > 1 {
+			sort.Strings(tags)
+		}
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
@@ -835,6 +915,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			Proxied: &proxied,
 			Type:    ep.RecordType,
 			Content: target,
+			Comment: comment,
+			Tags:    tags,
 		},
 		RegionalHostname:    regionalHostname,
 		CustomHostnamesPrev: prevCustomHostnames,
@@ -850,7 +932,7 @@ func newDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
 func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
 	records := make(DNSRecordsMap)
-	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
+	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsConfig.PerPage, Page: 1}
 	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
 	for {
 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
@@ -1019,6 +1101,15 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
 			e = e.WithProviderSpecific(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+		}
+
+		if records[0].Comment != "" {
+			e = e.WithProviderSpecific(source.CloudflareRecordCommentKey, records[0].Comment)
+		}
+
+		if len(records[0].Tags) > 0 {
+			tags := records[0].Tags
+			e = e.WithProviderSpecific(source.CloudflareRecordTagsKey, strings.Join(tags, ","))
 		}
 
 		endpoints = append(endpoints, e)

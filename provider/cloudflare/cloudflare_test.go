@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source"
 )
 
 type MockAction struct {
@@ -65,6 +66,8 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		TTL:     120,
 		Content: "1.2.3.4",
 		Proxied: proxyDisabled,
+		Comment: "needed for example",
+		Tags:    []string{"example"},
 	},
 	{
 		ID:      "2345678901",
@@ -123,6 +126,8 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 			Proxied: params.Proxied,
 			Type:    params.Type,
 			Content: params.Content,
+			Comment: params.Comment,
+			Tags:    params.Tags,
 		}
 	case cloudflare.UpdateDNSRecordParams:
 		return cloudflare.DNSRecord{
@@ -132,6 +137,8 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 			Proxied: params.Proxied,
 			Type:    params.Type,
 			Content: params.Content,
+			Comment: *params.Comment,
+			Tags:    params.Tags,
 		}
 	default:
 		return cloudflare.DNSRecord{}
@@ -420,6 +427,9 @@ func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (
 			return cloudflare.Zone{
 				ID:   zoneID,
 				Name: zoneName,
+				Plan: cloudflare.ZonePlan{
+					IsSubscribed: strings.HasSuffix(zoneName, "bar.com"),
+				},
 			}, nil
 		}
 	}
@@ -979,8 +989,8 @@ func TestCloudflareRecords(t *testing.T) {
 
 	// Set DNSRecordsPerPage to 1 test the pagination behaviour
 	p := &CloudFlareProvider{
-		Client:            client,
-		DNSRecordsPerPage: 1,
+		Client:           client,
+		DNSRecordsConfig: DNSRecordsConfig{PerPage: 1},
 	}
 	ctx := context.Background()
 
@@ -1096,9 +1106,14 @@ func TestCloudflareProvider(t *testing.T) {
 				provider.NewZoneIDFilter([]string{""}),
 				false,
 				true,
-				5000,
 				"",
-				CustomHostnamesConfig{Enabled: false})
+				CustomHostnamesConfig{Enabled: false},
+				DNSRecordsConfig{
+					PerPage: 5000,
+					Comment: "tests",
+					Tags:    "external-dns-test,external-dns-test2",
+				},
+			)
 			if err != nil && !tc.ShouldFail {
 				t.Errorf("should not fail, %s", err)
 			}
@@ -1764,9 +1779,14 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		50,
 		"us",
-		CustomHostnamesConfig{Enabled: false})
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{
+			PerPage: 1,
+			Comment: "tests",
+			Tags:    "external-dns-test,external-dns-test2",
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1780,27 +1800,76 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
 	provider, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"example.com"}),
+		endpoint.NewDomainFilter([]string{"example.com", "bar.com"}),
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		50,
 		"us",
-		CustomHostnamesConfig{Enabled: false})
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{
+			PerPage: 50,
+			Comment: "tests",
+			Tags:    "external-dns-test,external-dns-test2",
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	endpoint := &endpoint.Endpoint{
+	endpointFreeZone := &endpoint.Endpoint{
 		DNSName:    "example.com",
 		RecordType: "A",
 		Targets:    []string{"192.0.2.1"},
 	}
-
-	change := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0], nil)
-	if change.RegionalHostname.RegionKey != "us" {
-		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.RegionKey)
+	var freeCommentBuilder strings.Builder
+	for range freeZoneCommentMaxLength + 1 {
+		freeCommentBuilder.WriteString("x")
 	}
+	endpointFreeZone = endpointFreeZone.WithProviderSpecific(source.CloudflareRecordTagsKey, "non-supported-tag")
+	freeComment := freeCommentBuilder.String()
+	endpointFreeZone = endpointFreeZone.WithProviderSpecific(source.CloudflareRecordCommentKey, freeComment)
+	changeFreeZone := provider.newCloudFlareChange(cloudFlareCreate, endpointFreeZone, endpointFreeZone.Targets[0], nil)
+	if changeFreeZone.RegionalHostname.RegionKey != "us" {
+		t.Errorf("expected region key to be 'us', but got '%s'", changeFreeZone.RegionalHostname.RegionKey)
+	}
+
+	endpointPaidZone := &endpoint.Endpoint{
+		DNSName:    "bar.com",
+		RecordType: "A",
+		Targets:    []string{"192.0.2.1"},
+	}
+	var paidCommentBuilder strings.Builder
+	for range paidZoneCommentMaxLength + 1 {
+		paidCommentBuilder.WriteString("x")
+	}
+	endpointPaidZone = endpointPaidZone.WithProviderSpecific(source.CloudflareRecordTagsKey, "kubernetes,external-dns")
+	paidComment := paidCommentBuilder.String()
+	endpointPaidZone = endpointPaidZone.WithProviderSpecific(source.CloudflareRecordCommentKey, paidComment)
+	changePaidZone := provider.newCloudFlareChange(cloudFlareCreate, endpointPaidZone, endpointPaidZone.Targets[0], nil)
+	if changePaidZone.RegionalHostname.RegionKey != "us" {
+		t.Errorf("expected region key to be 'us', but got '%s'", changePaidZone.RegionalHostname.RegionKey)
+	}
+}
+
+func TestZoneHasPaidPlan(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	cfprovider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	assert.Equal(t, false, cfprovider.ZoneHasPaidPlan("subdomain.foo.com"))
+	assert.Equal(t, true, cfprovider.ZoneHasPaidPlan("subdomain.bar.com"))
+	assert.Equal(t, false, cfprovider.ZoneHasPaidPlan("invaliddomain"))
+
+	client.zoneDetailsError = errors.New("zone lookup failed")
+	cfproviderWithZoneError := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+	assert.Equal(t, false, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }
 
 func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {

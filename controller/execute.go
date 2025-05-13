@@ -199,13 +199,18 @@ func Execute() {
 			zoneIDFilter,
 			cfg.CloudflareProxied,
 			cfg.DryRun,
-			cfg.CloudflareDNSRecordsPerPage,
 			cfg.CloudflareRegionKey,
 			cloudflare.CustomHostnamesConfig{
 				Enabled:              cfg.CloudflareCustomHostnames,
 				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
 				CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
-			})
+			},
+			cloudflare.DNSRecordsConfig{
+				PerPage: cfg.CloudflareDNSRecordsPerPage,
+				Comment: cfg.CloudflareRecordComment,
+				Tags:    cfg.CloudflareRecordTags,
+			},
+		)
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "digitalocean":
