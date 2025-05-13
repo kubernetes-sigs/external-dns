@@ -874,27 +874,25 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 	}
 
 	comment := p.DNSRecordsConfig.Comment
-	tags := p.DNSRecordsConfig.GetTags()
-	antComment, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordCommentKey)
-	if ok {
-		comment = antComment
+	if val, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordCommentKey); ok {
+		comment = val
 	}
 
 	if len(comment) > paidZoneCommentMaxLength {
-		log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d for free zones and less than %d for paid zones.", ep.DNSName, freeZoneCommentMaxLength, paidZoneCommentMaxLength)
+		log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d chars for free zones and less than %d chars for paid zones.", ep.DNSName, freeZoneCommentMaxLength, paidZoneCommentMaxLength)
 		comment = comment[:paidZoneCommentMaxLength-1]
 	}
 
-	antTags, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordTagsKey)
-	if ok {
-		tags = strings.Split(antTags, ",")
+	tags := p.DNSRecordsConfig.GetTags()
+	if val, ok := ep.GetProviderSpecificProperty(source.CloudflareRecordTagsKey); ok {
+		tags = strings.Split(val, ",")
 	}
 
 	// Free account checks
 	if tags != nil || len(comment) > freeZoneCommentMaxLength {
 		free := !p.ZoneHasPaidPlan(ep.DNSName)
 		if free && tags != nil {
-			log.Warnf("DNS tags are only available for paid accounts, skipping for %s. Please remove it from the config to avoid endless syncs.", ep.DNSName)
+			log.Infof("DNS tags are only available for paid accounts, skipping for %s.", ep.DNSName)
 			tags = nil
 		}
 		if free && len(comment) > freeZoneCommentMaxLength {
