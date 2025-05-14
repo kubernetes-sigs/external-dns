@@ -328,7 +328,8 @@ func TestOvhComputeChanges(t *testing.T) {
 	}
 
 	provider := &OVHProvider{client: nil, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
-	ovhChanges := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+	ovhChanges, err := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+	td.CmpNoError(t, err)
 	td.Cmp(t, ovhChanges, []ovhChange{
 		{
 			Action: ovhCreate,
