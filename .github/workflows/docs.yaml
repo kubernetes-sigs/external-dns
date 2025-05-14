@@ -42,5 +42,5 @@ jobs:
           if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
             VERSION="latest"
           fi
-          mike deploy $VERSION latest --push --update-aliases
+          mike deploy $VERSION --push --update-aliases
           mike set-default --push latest
