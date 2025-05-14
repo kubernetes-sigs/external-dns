@@ -97,6 +97,42 @@ func TestParseTemplate(t *testing.T) {
 	}
 }
 
+func TestFqdnTemplate(t *testing.T) {
+	tests := []struct {
+		name          string
+		fqdnTemplate  string
+		expectedError bool
+	}{
+		{
+			name:          "empty template",
+			fqdnTemplate:  "",
+			expectedError: false,
+		},
+		{
+			name:          "valid template",
+			fqdnTemplate:  "{{ .Name }}.example.com",
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpl, err := ParseTemplate(tt.fqdnTemplate)
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Nil(t, tmpl)
+			} else {
+				assert.NoError(t, err)
+				if tt.fqdnTemplate == "" {
+					assert.Nil(t, tmpl)
+				} else {
+					assert.NotNil(t, tmpl)
+				}
+			}
+		})
+	}
+}
+
 func TestReplace(t *testing.T) {
 	for _, tt := range []struct {
 		name     string

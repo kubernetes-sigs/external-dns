@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -735,17 +735,17 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if proxied {
 			e.RecordTTL = 0
 		}
-		e.SetProviderSpecificProperty(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e.SetProviderSpecificProperty(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
 
 		if p.CustomHostnamesConfig.Enabled {
 			// sort custom hostnames in annotation to properly detect changes
 			if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 1 {
 				sort.Strings(customHostnames)
-				e.SetProviderSpecificProperty(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
 			}
 		} else {
 			// ignore custom hostnames annotations if not enabled
-			e.DeleteProviderSpecificProperty(source.CloudflareCustomHostnameKey)
+			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
 		}
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
@@ -927,10 +927,10 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == source.CloudflareProxiedKey {
+		if v.Name == annotations.CloudflareProxiedKey {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%q]: %v", source.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedKey, err)
 			} else {
 				proxied = b
 			}
@@ -950,7 +950,7 @@ func getRegionKey(endpoint *endpoint.Endpoint, defaultRegionKey string) string {
 	}
 
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == source.CloudflareRegionKey {
+		if v.Name == annotations.CloudflareRegionKey {
 			return v.Value
 		}
 	}
@@ -959,7 +959,7 @@ func getRegionKey(endpoint *endpoint.Endpoint, defaultRegionKey string) string {
 
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == source.CloudflareCustomHostnameKey {
+		if v.Name == annotations.CloudflareCustomHostnameKey {
 			customHostnames := strings.Split(v.Value, ",")
 			return customHostnames
 		}
@@ -1014,11 +1014,11 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		if e == nil {
 			continue
 		}
-		e = e.WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
-		// noop (customHostnames is empty) if the custom hostnames feature is not in use
+		e = e.WithProviderSpecific(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		// noop (customHostnames is empty) if custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
-			e = e.WithProviderSpecific(source.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
 		}
 
 		endpoints = append(endpoints, e)

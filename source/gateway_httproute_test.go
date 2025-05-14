@@ -28,6 +28,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
@@ -1138,8 +1139,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Name:      "provider-annotations",
 					Namespace: "default",
 					Annotations: map[string]string{
-						SetIdentifierKey:   "test-set-identifier",
-						aliasAnnotationKey: "true",
+						annotations.SetIdentifierKey: "test-set-identifier",
+						aliasAnnotationKey:           "true",
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
