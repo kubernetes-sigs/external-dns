@@ -54,7 +54,7 @@ type AWSZoneConfig struct {
 	Route53Config  Route53API
 }
 
-func CreateDefaultV2Config(cfg *externaldns.Config) *AWSZoneConfig {
+func CreateDefaultV2Config(cfg *externaldns.Config) []*AWSZoneConfig {
 	result, err := newV2Config(
 		AWSSessionConfig{
 			AssumeRole:           cfg.AWSAssumeRole,
@@ -71,7 +71,7 @@ func CreateDefaultV2Config(cfg *externaldns.Config) *AWSZoneConfig {
 		logrus.Fatal("No AWS credentials found")
 	}
 
-	return result[0]
+	return result
 }
 
 func CreateV2Configs(cfg *externaldns.Config) map[string][]*AWSZoneConfig {
@@ -79,7 +79,7 @@ func CreateV2Configs(cfg *externaldns.Config) map[string][]*AWSZoneConfig {
 	if len(cfg.AWSProfiles) == 0 || (len(cfg.AWSProfiles) == 1 && cfg.AWSProfiles[0] == "") {
 		cfg := CreateDefaultV2Config(cfg)
 		result[defaultAWSProfile] = make([]*AWSZoneConfig, 0)
-		result[defaultAWSProfile] = append(result[defaultAWSProfile], cfg)
+		result[defaultAWSProfile] = append(result[defaultAWSProfile], cfg...)
 	} else {
 		for _, profile := range cfg.AWSProfiles {
 			configs, err := newV2Config(
@@ -98,6 +98,7 @@ func CreateV2Configs(cfg *externaldns.Config) map[string][]*AWSZoneConfig {
 			result[profile] = configs
 		}
 	}
+
 	return result
 }
 

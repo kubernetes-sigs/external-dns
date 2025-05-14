@@ -359,12 +359,15 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 	zones := make(map[string]*profiledZone)
 
 	for profile, hostedZoneClients := range p.clients {
-		var err error
 		for _, client := range hostedZoneClients {
-			zones, err = p.fetchFilteredZonesForClient(ctx, client, profile)
+			zonesLocal, err := p.fetchFilteredZonesForClient(ctx, client, profile)
 
 			if err != nil {
 				return nil, provider.NewSoftErrorf("failed to list zones tags: %w", err)
+			}
+
+			for id, zone := range zonesLocal {
+				zones[id] = zone
 			}
 		}
 	}
