@@ -144,7 +144,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.16
+        image: registry.k8s.io/external-dns/external-dns:v0.16.1
         args:
         - --source=service
         - --source=ingress
