@@ -36,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
@@ -304,15 +305,15 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
 
 	// error handled in endpointsFromRouteGroup(), otherwise duplicate log
-	ttl := getTTLFromAnnotations(rg.Metadata.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(rg.Metadata.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(rg.Metadata.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(rg.Metadata.Annotations)
 
 	if len(targets) == 0 {
 		targets = targetsFromRouteGroupStatus(rg.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(rg.Metadata.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -330,9 +331,9 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 
 	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
 
-	ttl := getTTLFromAnnotations(rg.Metadata.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(rg.Metadata.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(rg.Metadata.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(rg.Metadata.Annotations)
 	if len(targets) == 0 {
 		for _, lb := range rg.Status.LoadBalancer.RouteGroup {
 			if lb.IP != "" {
@@ -344,7 +345,7 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(rg.Metadata.Annotations)
 
 	for _, src := range rg.Spec.Hosts {
 		if src == "" {
@@ -355,7 +356,7 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(rg.Metadata.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(rg.Metadata.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}

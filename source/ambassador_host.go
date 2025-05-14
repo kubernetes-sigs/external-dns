@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // ambHostAnnotation is the annotation in the Host that maps to a Service
@@ -152,7 +153,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		targets := getTargetsFromTargetAnnotation(host.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(host.Annotations)
 		if len(targets) == 0 {
 			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 			if err != nil {
@@ -187,8 +188,8 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(host.Annotations)
-	ttl := getTTLFromAnnotations(host.Annotations, resource)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(host.Annotations)
+	ttl := annotations.TTLFromAnnotations(host.Annotations, resource)
 
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname

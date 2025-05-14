@@ -55,8 +55,8 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
-	hostname, exists := svc.Annotations[mateAnnotationKey]
-	if !exists {
+	hostname, ok := svc.Annotations[mateAnnotationKey]
+	if !ok {
 		return nil
 	}
 

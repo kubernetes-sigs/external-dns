@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var (
@@ -134,7 +135,7 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			}
 			log.Debugf("Gloo: Find %s proxy", proxy.Metadata.Name)
 
-			proxyTargets := getTargetsFromTargetAnnotation(proxy.Metadata.Annotations)
+			proxyTargets := annotations.TargetsFromTargetAnnotation(proxy.Metadata.Annotations)
 			if len(proxyTargets) == 0 {
 				proxyTargets, err = gs.proxyTargets(ctx, proxy.Metadata.Name, ns)
 				if err != nil {
@@ -165,8 +166,8 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 			if err != nil {
 				return nil, err
 			}
-			ttl := getTTLFromAnnotations(ants, resource)
-			providerSpecific, setIdentifier := getProviderSpecificAnnotations(ants)
+			ttl := annotations.TTLFromAnnotations(ants, resource)
+			providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ants)
 			for _, domain := range virtualHost.Domains {
 				endpoints = append(endpoints, endpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
 			}

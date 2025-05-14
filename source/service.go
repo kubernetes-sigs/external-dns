@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/annotations"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
@@ -308,7 +310,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 
 			for _, headlessDomain := range headlessDomains {
-				targets := getTargetsFromTargetAnnotation(pod.Annotations)
+				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
 						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
@@ -387,7 +389,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, err
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -402,16 +404,16 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
 		var hostnameList []string
 		var internalHostnameList []string
 
-		hostnameList = getHostnamesFromAnnotations(svc.Annotations)
+		hostnameList = annotations.HostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
 		}
 
-		internalHostnameList = getInternalHostnamesFromAnnotations(svc.Annotations)
+		internalHostnameList = annotations.InternalHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range internalHostnameList {
 			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
 		}
@@ -471,9 +473,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
 
-	ttl := getTTLFromAnnotations(svc.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(svc.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(svc.Annotations)
 
 	if len(targets) == 0 {
 		switch svc.Spec.Type {

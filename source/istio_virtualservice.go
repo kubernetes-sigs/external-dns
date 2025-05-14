@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
@@ -236,9 +237,9 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
 
-	ttl := getTTLFromAnnotations(virtualService.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(virtualService.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(virtualService.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -253,11 +254,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkingv1alpha3.VirtualService) ([]*networkingv1alpha3.VirtualService, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -322,11 +319,11 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 
 	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
 
-	ttl := getTTLFromAnnotations(virtualservice.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(virtualservice.Annotations, resource)
 
-	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
+	targetsFromAnnotation := annotations.TargetsFromTargetAnnotation(virtualservice.Annotations)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualservice.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(virtualservice.Annotations)
 
 	for _, host := range virtualservice.Spec.Hosts {
 		if host == "" || host == "*" {
@@ -354,7 +351,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(virtualservice.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(virtualservice.Annotations)
 		for _, hostname := range hostnameList {
 			targets := targetsFromAnnotation
 			if len(targets) == 0 {
@@ -433,7 +430,7 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 }
 
 func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
-	namespace, name, err := parseIngress(ingressStr)
+	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}
@@ -457,7 +454,7 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 }
 
 func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
-	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
+	targets = annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return
 	}

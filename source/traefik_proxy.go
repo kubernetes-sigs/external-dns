@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var (
@@ -241,16 +242,51 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 
 // ingressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
 func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
-	return extractEndpoints[IngressRouteTCP](
-		ts.ingressRouteTcpInformer.Lister(),
-		ts.namespace,
-		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
-			typed := &IngressRouteTCP{}
-			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
-		},
-		ts.filterIngressRouteTcpByAnnotations,
-		ts.endpointsFromIngressRouteTCP,
-	)
+	var endpoints []*endpoint.Endpoint
+
+	irs, err := ts.ingressRouteTcpInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	var ingressRouteTCPs []*IngressRouteTCP
+	for _, ingressRouteTCPObj := range irs {
+		unstructuredHost, ok := ingressRouteTCPObj.(*unstructured.Unstructured)
+		if !ok {
+			return nil, errors.New("could not convert IngressRouteTCP object to unstructured")
+		}
+
+		ingressRouteTCP := &IngressRouteTCP{}
+		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRouteTCP, nil)
+		if err != nil {
+			return nil, err
+		}
+		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
+	}
+
+	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
+	}
+
+	for _, ingressRouteTCP := range ingressRouteTCPs {
+		var targets endpoint.Targets
+
+		targets = append(targets, annotations.TargetsFromTargetAnnotation(ingressRouteTCP.Annotations)...)
+
+		fullname := fmt.Sprintf("%s/%s", ingressRouteTCP.Namespace, ingressRouteTCP.Name)
+
+		ingressEndpoints := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
+		if len(ingressEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from Host %s", fullname)
+			continue
+		}
+
+		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
+		endpoints = append(endpoints, ingressEndpoints...)
+	}
+
+	return endpoints, nil
 }
 
 // ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
@@ -338,12 +374,12 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 
 	resource := fmt.Sprintf("ingressroute/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -371,12 +407,12 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 
 	resource := fmt.Sprintf("ingressroutetcp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -404,12 +440,12 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 
 	resource := fmt.Sprintf("ingressrouteudp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -840,7 +876,7 @@ func extractEndpoints[T any](
 	}
 
 	for _, item := range typedObjs {
-		targets := getTargetsFromTargetAnnotation(getAnnotations(item))
+		targets := annotations.TargetsFromTargetAnnotation(getAnnotations(item))
 
 		name := getObjectFullName(item)
 		ingressEndpoints := generateEndpoints(item, targets)
