@@ -1,0 +1,81 @@
+suite: Deployment configuration
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should provide expected defaults
+    asserts:
+      - isKind:
+            of: Deployment
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: metadata.namespace
+          value: default
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: true
+
+  - it: should provide expected defaults for securityContext
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+          content:
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              privileged: false
+              readOnlyRootFilesystem: true
+              runAsGroup: 65532
+              runAsNonRoot: true
+              runAsUser: 65532
+
+  - it: should provide expected defaults for liveness and readiness
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+          content:
+            readinessProbe:
+              failureThreshold: 6
+              httpGet:
+                path: /healthz
+                port: http
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+            livenessProbe:
+              failureThreshold: 2
+              httpGet:
+                path: /healthz
+                port: http
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+
+  - it: should have service account set
+    release:
+      name: test
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: test-external-dns
+
+  - it: should have not be able to change replicas when specified via values
+    set:
+      deployment:
+        replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1

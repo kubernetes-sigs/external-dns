@@ -1,0 +1,29 @@
+suite: All resources contains metadata
+templates:
+  - "*.yaml"
+release:
+  name: external-dns
+chart:
+  version: "1.15.0"
+  appVersion: "0.15.0"
+tests:
+  - it: "should contain labels metadata in each template"
+    set:
+      secretConfiguration:
+        enabled: true
+        mountPath: "/etc/kubernetes/"
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - exists:
+          path: metadata.labels
+      - isNotEmpty:
+          path: metadata.labels
+      - equal:
+          path: metadata.labels
+          value:
+            helm.sh/chart: external-dns-1.15.0
+            app.kubernetes.io/name: external-dns
+            app.kubernetes.io/instance: external-dns
+            app.kubernetes.io/version: "0.15.0"
+            app.kubernetes.io/managed-by: Helm
