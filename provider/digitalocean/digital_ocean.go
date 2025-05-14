@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	// digitalOceanRecordTTL is the default TTL value
-	digitalOceanRecordTTL = 300
+	// defaultTTL is the default TTL value
+	defaultTTL = 300
 )
 
 // DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
@@ -85,7 +85,7 @@ func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFi
 	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
-	client, err := godo.New(oauthClient, godo.SetUserAgent("ExternalDNS/"+externaldns.Version))
+	client, err := godo.New(oauthClient, godo.SetUserAgent(externaldns.UserAgent()))
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func getTTLFromEndpoint(ep *endpoint.Endpoint) int {
 	if ep.RecordTTL.IsConfigured() {
 		return int(ep.RecordTTL)
 	}
-	return digitalOceanRecordTTL
+	return defaultTTL
 }
 
 func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {

@@ -152,7 +152,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 
 		if ps.podSourceDomain != "" {
-			domain := pod.ObjectMeta.Name + "." + ps.podSourceDomain
+			domain := pod.Name + "." + ps.podSourceDomain
 			if len(targets) == 0 {
 				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
 			}
@@ -161,7 +161,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 	}
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
 		endpoints = append(endpoints, endpoint.NewEndpoint(key.DNSName, key.RecordType, targets...))
 	}

@@ -17,6 +17,9 @@ limitations under the License.
 package plan
 
 import (
+	"bytes"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -245,6 +248,48 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 }
 
+func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
+	ch := &Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName: "foo",
+			},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName: "bar",
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName: "baz",
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName: "qux",
+			},
+		},
+	}
+	jsonBytes, err := json.Marshal(ch)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"delete":[{"dnsName":"qux"}]}`,
+		string(jsonBytes))
+	var changes Changes
+	err = json.NewDecoder(bytes.NewBuffer(jsonBytes)).Decode(&changes)
+	assert.NoError(t, err)
+	assert.Equal(t, ch, &changes)
+}
+
+func TestPlan_ChangesJson_DecodeMixedCase(t *testing.T) {
+	input := `{"Create":[{"dnsName":"foo"}],"UpdateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux"}]}`
+	var changes Changes
+	err := json.NewDecoder(strings.NewReader(input)).Decode(&changes)
+	assert.NoError(t, err)
+	assert.Len(t, changes.Create, 1)
+}
+
 func (suite *PlanTestSuite) TestSyncFirstRound() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
@@ -367,9 +412,22 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
 	}
 
 	changes := p.Calculate().Changes
-	if changes.HasChanges() {
-		suite.T().Fatal("test should not have changes")
+	suite.Assert().False(changes.HasChanges())
+}
+
+func (suite *PlanTestSuite) TestHasChanges() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
+
+	changes := p.Calculate().Changes
+	suite.Assert().True(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {

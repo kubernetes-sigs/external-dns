@@ -2,8 +2,8 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.15.2
-appVersion: 0.15.1
+version: 1.16.1
+appVersion: 0.16.1
 keywords:
   - kubernetes
   - externaldns
@@ -20,9 +20,9 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
-    - kind: added
-      description: "Added `transportservers` resource to ClusterRole when specifying `f5-transportserver` or `f5-virtualserver` as a source."
+    - kind: changed
+      description: "Set defaults for `automountServiceAccountToken` and `serviceAccount.automountServiceAccountToken` to `true` in Helm chart values."
     - kind: fixed
-      description: "Fixed handling of non-string types in `serviceAccount.metadata.annotations` field."
+      description: "Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided."
     - kind: fixed
-      description: "Fixed regression where `affinity.nodeAffinity` was being ignored."
+      description: "Add missing types in the schema for empty values."

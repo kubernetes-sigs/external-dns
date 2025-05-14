@@ -29,8 +29,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/denverdino/aliyungo/metadata"
+	yaml "github.com/goccy/go-yaml"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	defaultAlibabaCloudRecordTTL            = 600
+	defaultTTL                              = 600
 	defaultAlibabaCloudPrivateZoneRecordTTL = 60
 	defaultAlibabaCloudPageSize             = 50
 	nullHostAlibabaCloud                    = "@"
@@ -492,7 +492,7 @@ func (p *AlibabaCloudProvider) escapeTXTRecordValue(value string) string {
 
 func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 	if strings.HasPrefix(value, "heritage=") {
-		return fmt.Sprintf("\"%s\"", strings.Replace(value, ";", ",", -1))
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, ";", ","))
 	}
 	return value
 }
@@ -606,12 +606,12 @@ func (p *AlibabaCloudProvider) deleteRecords(recordMap map[string][]alidns.Recor
 
 func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.Endpoint) bool {
 	ttl1 := record.TTL
-	if ttl1 == defaultAlibabaCloudRecordTTL {
+	if ttl1 == defaultTTL {
 		ttl1 = 0
 	}
 
 	ttl2 := int64(endpoint.RecordTTL)
-	if ttl2 == defaultAlibabaCloudRecordTTL {
+	if ttl2 == defaultTTL {
 		ttl2 = 0
 	}
 

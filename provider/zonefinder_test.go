@@ -19,7 +19,9 @@ package provider
 import (
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 func TestZoneIDName(t *testing.T) {
@@ -27,10 +29,16 @@ func TestZoneIDName(t *testing.T) {
 	z.Add("123456", "foo.bar")
 	z.Add("123456", "qux.baz")
 	z.Add("654321", "foo.qux.baz")
+	z.Add("987654", "エイミー.みんな")
+	z.Add("123123", "_metadata.example.com")
+	z.Add("456456", "_metadata.エイミー.みんな")
 
 	assert.Equal(t, ZoneIDName{
 		"123456": "qux.baz",
 		"654321": "foo.qux.baz",
+		"987654": "エイミー.みんな",
+		"123123": "_metadata.example.com",
+		"456456": "_metadata.エイミー.みんな",
 	}, z)
 
 	// simple entry in a domain
@@ -62,4 +70,14 @@ func TestZoneIDName(t *testing.T) {
 	zoneID, zoneName = z.FindZone("foo.qux.baz")
 	assert.Equal(t, "foo.qux.baz", zoneName)
 	assert.Equal(t, "654321", zoneID)
+
+	// entry gets normalized before finding
+	zoneID, zoneName = z.FindZone("xn--eckh0ome.xn--q9jyb4c")
+	assert.Equal(t, "エイミー.みんな", zoneName)
+	assert.Equal(t, "987654", zoneID)
+
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	_, _ = z.FindZone("???")
+
+	testutils.TestHelperLogContains("Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F", hook, t)
 }

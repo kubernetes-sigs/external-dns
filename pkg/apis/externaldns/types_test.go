@@ -128,10 +128,12 @@ var (
 		IBMCloudConfigFile:                            "/etc/kubernetes/ibmcloud.json",
 		TencentCloudConfigFile:                        "/etc/kubernetes/tencent-cloud.json",
 		TencentCloudZoneType:                          "",
+		PiholeApiVersion:                              "5",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		AWSDomainRoles:                                map[string]string{},
+		ExcludeUnschedulable:                          true,
 	}
 
 	overriddenConfig = &Config{
@@ -243,10 +245,12 @@ var (
 		IBMCloudConfigFile:                            "ibmcloud.json",
 		TencentCloudConfigFile:                        "tencent-cloud.json",
 		TencentCloudZoneType:                          "private",
+		PiholeApiVersion:                              "6",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		AWSDomainRoles:                                map[string]string{"example.com": "arn:aws:iam::123456789012:role/role1", "example.org": "arn:aws:iam::123456789012:role/role2"},
+		ExcludeUnschedulable:                          false,
 	}
 )
 
@@ -356,6 +360,7 @@ func TestParseFlags(t *testing.T) {
 				"--aws-domain-roles=example.com=arn:aws:iam::123456789012:role/role1",
 				"--aws-domain-roles=example.org=arn:aws:iam::123456789012:role/role2",
 				"--no-aws-evaluate-target-health",
+				"--pihole-api-version=6",
 				"--policy=upsert-only",
 				"--registry=noop",
 				"--txt-owner-id=owner-1",
@@ -387,6 +392,7 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
+				"--no-exclude-unschedulable",
 				"--rfc2136-batch-change-size=100",
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
@@ -478,6 +484,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AWS_SD_SERVICE_CLEANUP":                            "true",
 				"EXTERNAL_DNS_AWS_SD_CREATE_TAG":                                 "key1=value1\nkey2=value2",
 				"EXTERNAL_DNS_DYNAMODB_TABLE":                                    "custom-table",
+				"EXTERNAL_DNS_PIHOLE_API_VERSION":                                "6",
 				"EXTERNAL_DNS_POLICY":                                            "upsert-only",
 				"EXTERNAL_DNS_REGISTRY":                                          "noop",
 				"EXTERNAL_DNS_TXT_OWNER_ID":                                      "owner-1",
@@ -505,6 +512,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
+				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",

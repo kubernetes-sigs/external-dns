@@ -34,11 +34,12 @@ func NewGatewayUDPRouteSource(clients ClientGenerator, config *Config) (Source, 
 
 type gatewayUDPRoute struct{ route v1alpha2.UDPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayUDPRoute) Object() kubeObject           { return &rt.route }
-func (rt *gatewayUDPRoute) Metadata() *metav1.ObjectMeta { return &rt.route.ObjectMeta }
-func (rt *gatewayUDPRoute) Hostnames() []v1.Hostname     { return nil }
-func (rt *gatewayUDPRoute) Protocol() v1.ProtocolType    { return v1.UDPProtocolType }
-func (rt *gatewayUDPRoute) RouteStatus() v1.RouteStatus  { return rt.route.Status.RouteStatus }
+func (rt *gatewayUDPRoute) Object() kubeObject               { return &rt.route }
+func (rt *gatewayUDPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
+func (rt *gatewayUDPRoute) Hostnames() []v1.Hostname         { return nil }
+func (rt *gatewayUDPRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
+func (rt *gatewayUDPRoute) Protocol() v1.ProtocolType        { return v1.UDPProtocolType }
+func (rt *gatewayUDPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
 
 type gatewayUDPRouteInformer struct {
 	informers_v1a2.UDPRouteInformer

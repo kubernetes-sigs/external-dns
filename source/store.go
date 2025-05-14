@@ -18,6 +18,8 @@ package source
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -27,7 +29,6 @@ import (
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,6 +37,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 // ErrSourceNotFound is returned when a requested source doesn't exist.
@@ -80,6 +83,54 @@ type Config struct {
 	ResolveLoadBalancerHostname    bool
 	TraefikDisableLegacy           bool
 	TraefikDisableNew              bool
+	ExcludeUnschedulable           bool
+	ExposeInternalIPv6             bool
+}
+
+func NewSourceConfig(cfg *externaldns.Config) *Config {
+	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
+	labelSelector, _ := labels.Parse(cfg.LabelFilter)
+	return &Config{
+		Namespace:                      cfg.Namespace,
+		AnnotationFilter:               cfg.AnnotationFilter,
+		LabelFilter:                    labelSelector,
+		IngressClassNames:              cfg.IngressClassNames,
+		FQDNTemplate:                   cfg.FQDNTemplate,
+		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
+		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
+		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
+		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
+		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
+		ListenEndpointEvents:           cfg.ListenEndpointEvents,
+		GatewayName:                    cfg.GatewayName,
+		GatewayNamespace:               cfg.GatewayNamespace,
+		GatewayLabelFilter:             cfg.GatewayLabelFilter,
+		Compatibility:                  cfg.Compatibility,
+		PodSourceDomain:                cfg.PodSourceDomain,
+		PublishInternal:                cfg.PublishInternal,
+		PublishHostIP:                  cfg.PublishHostIP,
+		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
+		ConnectorServer:                cfg.ConnectorSourceServer,
+		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
+		CRDSourceKind:                  cfg.CRDSourceKind,
+		KubeConfig:                     cfg.KubeConfig,
+		APIServerURL:                   cfg.APIServerURL,
+		ServiceTypeFilter:              cfg.ServiceTypeFilter,
+		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
+		CFUsername:                     cfg.CFUsername,
+		CFPassword:                     cfg.CFPassword,
+		GlooNamespaces:                 cfg.GlooNamespaces,
+		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
+		RequestTimeout:                 cfg.RequestTimeout,
+		DefaultTargets:                 cfg.DefaultTargets,
+		OCPRouterName:                  cfg.OCPRouterName,
+		UpdateEvents:                   cfg.UpdateEvents,
+		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
+		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
+		TraefikDisableNew:              cfg.TraefikDisableNew,
+		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
+		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
+	}
 }
 
 // ClientGenerator provides clients
@@ -216,7 +267,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter)
+		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {
@@ -459,7 +510,7 @@ func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Client
 
 	ic, err := istioclient.NewForConfig(restCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create istio client")
+		return nil, fmt.Errorf("failed to create istio client: %w", err)
 	}
 
 	return ic, nil

@@ -33,6 +33,9 @@ import (
 const (
 	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
 	ContentTypeHeader         = "Content-Type"
+	UrlAdjustEndpoints        = "/adjustendpoints"
+	UrlApplyChanges           = "/applychanges"
+	UrlRecords                = "/records"
 )
 
 type WebhookServer struct {
@@ -82,7 +85,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 
-	pve := []*endpoint.Endpoint{}
+	var pve []*endpoint.Endpoint
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -101,7 +104,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 }
 
-func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, req *http.Request) {
+func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 	json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
 }
@@ -121,8 +124,8 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 
 	m := http.NewServeMux()
 	m.HandleFunc("/", p.NegotiateHandler)
-	m.HandleFunc("/records", p.RecordsHandler)
-	m.HandleFunc("/adjustendpoints", p.AdjustEndpointsHandler)
+	m.HandleFunc(UrlRecords, p.RecordsHandler)
+	m.HandleFunc(UrlAdjustEndpoints, p.AdjustEndpointsHandler)
 
 	s := &http.Server{
 		Addr:         providerPort,

@@ -36,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 const (
@@ -192,7 +193,7 @@ func (cli *routeGroupClient) do(req *http.Request) (*http.Response, error) {
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +316,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
+	hostnameList := strings.Split(strings.ReplaceAll(hostnames, " ", ""), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)

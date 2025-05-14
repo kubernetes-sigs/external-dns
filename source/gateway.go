@@ -40,6 +40,7 @@ import (
 	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 const (
@@ -54,6 +55,8 @@ type gatewayRoute interface {
 	Metadata() *metav1.ObjectMeta
 	// Hostnames returns the route's specified hostnames.
 	Hostnames() []v1.Hostname
+	// ParentRefs returns the route's parent references as defined in the route spec.
+	ParentRefs() []v1.ParentReference
 	// Protocol returns the route's protocol type.
 	Protocol() v1.ProtocolType
 	// RouteStatus returns the route's common status.
@@ -115,7 +118,7 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if err != nil {
 		return nil, err
 	}
-	tmpl, err := parseTemplate(config.FQDNTemplate)
+	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -294,10 +297,24 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	}
 	hostTargets := make(map[string]endpoint.Targets)
 
+	routeParentRefs := rt.ParentRefs()
+
+	if len(routeParentRefs) == 0 {
+		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
+		return hostTargets, nil
+	}
+
 	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
+		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+		// Ensure that the parent reference is in the routeParentRefs list
+		if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
+			log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+
 		group := strVal((*string)(ref.Group), gatewayGroup)
 		kind := strVal((*string)(ref.Kind), gatewayKind)
 		if group != gatewayGroup || kind != gatewayKind {
@@ -305,7 +322,6 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			continue
 		}
 		// Lookup the Gateway and its Listeners.
-		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
 		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
 		if !ok {
 			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
@@ -316,11 +332,13 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions) {
-			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		if !gwRouteIsAccepted(rps.Conditions, meta) {
+			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Match the Route to all possible Listeners.
 		match := false
 		section := sectionVal(ref.SectionName, "")
@@ -458,10 +476,30 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition) bool {
+func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
+	// Ensure that the parent reference is in the routeParentRefs list
+	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+	group := strVal((*string)(ref.Group), gatewayGroup)
+	kind := strVal((*string)(ref.Kind), gatewayKind)
+	for _, rpr := range routeParentRefs {
+		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
+		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
+		if rprGroup != group || rprKind != kind {
+			continue
+		}
+		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
+		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func gwRouteIsAccepted(conds []metav1.Condition, meta *metav1.ObjectMeta) bool {
 	for _, c := range conds {
 		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
-			return c.Status == metav1.ConditionTrue
+			return c.Status == metav1.ConditionTrue && c.ObservedGeneration == meta.Generation
 		}
 	}
 	return false

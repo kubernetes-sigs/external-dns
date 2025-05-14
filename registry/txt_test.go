@@ -1821,7 +1821,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	})
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
-	b := testutils.LogsToBuffer(log.ErrorLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
 
@@ -1835,5 +1835,6 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	}
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
-	assert.Contains(t, b.String(), "TXT record has no targets empty-targets.test-zone.example.org")
+
+	testutils.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
 }

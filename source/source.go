@@ -72,6 +72,7 @@ const (
 	// The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
+	CloudflareRegionKey         = "external-dns.alpha.kubernetes.io/cloudflare-region-key"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
@@ -88,10 +89,10 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
-func getTTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
+func getTTLFromAnnotations(ants map[string]string, resource string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)
-	ttlAnnotation, exists := annotations[ttlAnnotationKey]
-	if !exists {
+	ttlAnnotation, ok := ants[ttlAnnotationKey]
+	if !ok {
 		return ttlNotConfigured
 	}
 	ttlValue, err := parseTTL(ttlAnnotation)
@@ -144,16 +145,6 @@ func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, 
 	return hostnames, nil
 }
 
-func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
-	if fqdnTemplate == "" {
-		return nil, nil
-	}
-	funcs := template.FuncMap{
-		"trimPrefix": strings.TrimPrefix,
-	}
-	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
-}
-
 func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	hostnameAnnotation, exists := annotations[hostnameAnnotationKey]
 	if !exists {
@@ -170,46 +161,52 @@ func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
 	return annotations[endpointsTypeAnnotationKey]
 }
 
-func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
-	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
-	if !exists {
+func getInternalHostnamesFromAnnotations(ants map[string]string) []string {
+	internalHostnameAnnotation, ok := ants[internalHostnameAnnotationKey]
+	if !ok {
 		return nil
 	}
 	return splitHostnameAnnotation(internalHostnameAnnotation)
 }
 
 func splitHostnameAnnotation(annotation string) []string {
-	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
+	return strings.Split(strings.ReplaceAll(annotation, " ", ""), ",")
 }
 
-func getAliasFromAnnotations(annotations map[string]string) bool {
-	aliasAnnotation, exists := annotations[aliasAnnotationKey]
+func getAliasFromAnnotations(ants map[string]string) bool {
+	aliasAnnotation, exists := ants[aliasAnnotationKey]
 	return exists && aliasAnnotation == "true"
 }
 
-func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
+func getProviderSpecificAnnotations(ants map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	if v, exists := annotations[CloudflareProxiedKey]; exists {
+	if v, exists := ants[CloudflareProxiedKey]; exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareProxiedKey,
 			Value: v,
 		})
 	}
-	if v, exists := annotations[CloudflareCustomHostnameKey]; exists {
+	if v, exists := ants[CloudflareCustomHostnameKey]; exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  CloudflareCustomHostnameKey,
 			Value: v,
 		})
 	}
-	if getAliasFromAnnotations(annotations) {
+	if v, exists := ants[CloudflareRegionKey]; exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareRegionKey,
+			Value: v,
+		})
+	}
+	if getAliasFromAnnotations(ants) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",
 			Value: "true",
 		})
 	}
 	setIdentifier := ""
-	for k, v := range annotations {
+	for k, v := range ants {
 		if k == SetIdentifierKey {
 			setIdentifier = v
 		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/aws-") {
@@ -251,7 +248,7 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 	targetAnnotation, exists := annotations[targetAnnotationKey]
 	if exists && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		targetsList := strings.Split(strings.ReplaceAll(targetAnnotation, " ", ""), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
 			targets = append(targets, targetHostname)
@@ -339,8 +336,7 @@ func getLabelSelector(annotationFilter string) (labels.Selector, error) {
 }
 
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
-	annotations := labels.Set(srcAnnotations)
-	return selector.Matches(annotations)
+	return selector.Matches(labels.Set(srcAnnotations))
 }
 
 type eventHandlerFunc func()

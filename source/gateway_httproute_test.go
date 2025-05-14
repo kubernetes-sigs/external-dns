@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
@@ -69,6 +68,36 @@ func gwRouteStatus(refs ...v1.ParentReference) v1.RouteStatus {
 		})
 	}
 	return v
+}
+
+func omWithGeneration(meta metav1.ObjectMeta, generation int64) metav1.ObjectMeta {
+	meta.Generation = generation
+	return meta
+}
+
+func rsWithGeneration(routeStatus v1.HTTPRouteStatus, generation ...int64) v1.HTTPRouteStatus {
+	for i, parent := range routeStatus.Parents {
+		if len(generation) <= i {
+			break
+		}
+
+		parent.Conditions[0].ObservedGeneration = generation[i]
+	}
+
+	return routeStatus
+}
+
+func rsWithoutAccepted(routeStatus v1.HTTPRouteStatus) v1.HTTPRouteStatus {
+	for _, parent := range routeStatus.Parents {
+		for j := range parent.Conditions {
+			cond := &parent.Conditions[j]
+			if cond.Type == string(v1.RouteConditionAccepted) {
+				cond.Type = "NotAccepted" // fake type to test for having no accepted condition
+			}
+		}
+	}
+
+	return routeStatus
 }
 
 func gwParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
@@ -174,6 +203,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("route-namespace", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+							gwParentRef("gateway-namespace", "not-gateway-name"),
+						},
+					},
 				},
 				Status: httpRouteStatus( // The route is attached to both gateways.
 					gwParentRef("gateway-namespace", "gateway-name"),
@@ -184,7 +219,82 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test\"",
+				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
+			},
+		},
+		{
+			title: "GatewayNameOldGeneration",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
+					gwParentRef("gateway-namespace", "gateway-name"),
+					gwParentRef("gateway-namespace", "gateway-name"),
+				), 5, 4),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test",
+			},
+		},
+		{
+			title: "GatewayNameNoneAccepted",
+			config: Config{
+				GatewayName: "gateway-name",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithoutAccepted(httpRouteStatus(gwParentRef("gateway-namespace", "gateway-name"))),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+			logExpectations: []string{
+				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test",
 			},
 		},
 		{
@@ -216,6 +326,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("route-namespace", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "test"),
+							gwParentRef("not-gateway-namespace", "test"),
+						},
+					},
 				},
 				Status: httpRouteStatus( // The route is attached to both gateways.
 					gwParentRef("gateway-namespace", "test"),
@@ -247,6 +363,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("route-namespace", "test"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("route-namespace.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
 				},
@@ -296,6 +417,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "labels-match"),
+							gwParentRef("default", "labels-dont-match"),
+						},
+					},
 				},
 				Status: httpRouteStatus( // The route is attached to both gateways.
 					gwParentRef("default", "labels-match"),
@@ -328,6 +455,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("labels-match.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -339,6 +471,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("labels-dont-match.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -369,6 +506,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("annotations-match.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -380,6 +522,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("annotations-dont-match.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -408,6 +555,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: hostnames("api.example.internal"),
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -438,6 +590,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "one"),
+							gwParentRef("default", "two"),
+						},
+					},
 				},
 				Status: httpRouteStatus(
 					gwParentRef("default", "one"),
@@ -474,6 +632,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "one"),
+						},
+					},
 				},
 				Status: httpRouteStatus(
 					gwParentRef("default", "one"),
@@ -510,6 +673,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("foo")),
+						},
+					},
 				},
 				Status: httpRouteStatus(
 					gwParentRef("default", "test", withSectionName("foo")),
@@ -554,6 +722,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withPortNumber(80)),
+						},
+					},
 				},
 				Status: httpRouteStatus(
 					gwParentRef("default", "test", withPortNumber(80)),
@@ -581,6 +754,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "no-hostname"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: []v1.Hostname{
 						"foo.example.internal",
 					},
@@ -608,6 +786,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "no-hostname"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: []v1.Hostname{
 						"*.example.internal",
 					},
@@ -635,6 +818,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "no-hostname"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: []v1.Hostname{
 						"*.example.internal",
 					},
@@ -662,6 +850,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "no-hostname"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: nil,
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -679,6 +872,9 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{},
+					},
 				},
 				Status: httpRouteStatus(),
 			}},
@@ -698,6 +894,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "no-hostname"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: nil,
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -725,6 +926,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						},
 					},
 					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 						Hostnames: nil,
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -738,6 +944,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						},
 					},
 					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 						Hostnames: hostnames("with-hostname.internal"),
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -772,6 +983,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("with-hostname.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
 			}},
@@ -797,12 +1013,22 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("default", "fqdn-with-hostnames"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("fqdn-with-hostnames.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
 				{
 					ObjectMeta: objectMeta("default", "fqdn-without-hostnames"),
 					Spec: v1.HTTPRouteSpec{
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 						Hostnames: nil,
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -832,6 +1058,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "fqdn-with-hostnames"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: hostnames("fqdn-with-hostnames.internal"),
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -861,6 +1092,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("valid-ttl.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -872,6 +1108,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("invalid-ttl.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -902,6 +1143,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: hostnames("provider-annotations.com"),
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -941,6 +1187,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "one"),
+							gwParentRef("default", "two"),
+						},
+					},
 					Hostnames: hostnames("test.one.internal", "test.two.internal"),
 				},
 				Status: httpRouteStatus(
@@ -976,6 +1228,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("same-namespace", "test"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("same-namespace.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("same-namespace", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("same-namespace", "test")),
 				},
@@ -983,6 +1240,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("other-namespace", "test"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("other-namespace.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("same-namespace", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("same-namespace", "test")),
 				},
@@ -1035,6 +1297,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("foo", "test"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("foo.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -1042,6 +1309,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("bar", "test"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("bar.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "test"),
+							},
+						},
 					},
 					Status: httpRouteStatus(gwParentRef("default", "test")),
 				},
@@ -1075,6 +1347,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			routes: []*v1beta1.HTTPRoute{{
 				ObjectMeta: objectMeta("default", "test"),
 				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
 					Hostnames: hostnames("example.internal"),
 				},
 				Status: httpRouteStatus(gwParentRef("default", "test")),
@@ -1109,6 +1386,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("route-namespace", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "overriden-gateway"),
+						},
+					},
 				},
 				Status: httpRouteStatus( // The route is attached to both gateways.
 					gwParentRef("gateway-namespace", "overriden-gateway"),
@@ -1156,8 +1438,14 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: objectMeta("route-namespace", "test"),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "overriden-gateway"),
+							gwParentRef("gateway-namespace", "test"),
+						},
+					},
 				},
-				Status: httpRouteStatus( // The route is attached to both gateways.
+				Status: httpRouteStatus(
 					gwParentRef("gateway-namespace", "overriden-gateway"),
 					gwParentRef("gateway-namespace", "test"),
 				),
@@ -1191,6 +1479,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("default", "one"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("test.one.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "one"),
+							},
+						},
 					},
 					Status: httpRouteStatus(
 						gwParentRef("default", "one"),
@@ -1200,6 +1493,11 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("default", "two"),
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("test.two.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("default", "two"),
+							},
+						},
 					},
 					Status: httpRouteStatus(
 						gwParentRef("default", "two"),
@@ -1211,8 +1509,73 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
 			},
 			logExpectations: []string{
-				"level=debug msg=\"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]\"",
-				"level=debug msg=\"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]\"",
+				"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]",
+				"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]",
+			},
+		},
+		{
+			title: "NoParentRefs",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("route-namespace", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+				},
+				Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+			logExpectations: []string{
+				"No parent references found for HTTPRoute route-namespace/test",
+			},
+		},
+		{
+			title: "ParentRefsMismatch",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: objectMeta("route-namespace", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "default-gateway"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("gateway-namespace", "other-gateway")),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+			logExpectations: []string{
+				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
 	}
@@ -1247,16 +1610,14 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
-			var b *bytes.Buffer
-			if len(tt.logExpectations) > 0 {
-				b = testutils.LogsToBuffer(log.DebugLevel, t)
-			}
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")
 			validateEndpoints(t, endpoints, tt.endpoints)
 
 			for _, msg := range tt.logExpectations {
-				require.Contains(t, b.String(), msg)
+				testutils.TestHelperLogContains(msg, hook, t)
 			}
 		})
 	}

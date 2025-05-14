@@ -60,10 +60,8 @@ func newPiholeClient(cfg PiholeConfig) (piholeAPI, error) {
 	}
 
 	// Setup a persistent cookiejar for storing PHP session information
-	jar, err := cookiejar.New(&cookiejar.Options{})
-	if err != nil {
-		return nil, err
-	}
+	// This call will never return an error
+	jar, _ := cookiejar.New(&cookiejar.Options{})
 	// Setup an HTTP client using the cookiejar
 	httpClient := &http.Client{
 		Jar: jar,

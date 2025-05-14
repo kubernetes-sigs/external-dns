@@ -34,7 +34,7 @@ import (
 const (
 	// 60 seconds is the current minimal TTL for TransIP and will replace unconfigured
 	// TTL's for Endpoints
-	transipMinimalValidTTL = 60
+	defaultTTL = 60
 )
 
 // TransIPProvider is an implementation of Provider for TransIP.
@@ -336,11 +336,11 @@ func recordNameForEndpoint(ep *endpoint.Endpoint, zoneName string) string {
 }
 
 // getMinimalValidTTL returns max between given Endpoint's RecordTTL and
-// transipMinimalValidTTL
+// defaultTTL
 func getMinimalValidTTL(ep *endpoint.Endpoint) int {
-	// TTL cannot be lower than transipMinimalValidTTL
-	if ep.RecordTTL < transipMinimalValidTTL {
-		return transipMinimalValidTTL
+	// TTL cannot be lower than defaultTTL
+	if ep.RecordTTL < defaultTTL {
+		return defaultTTL
 	}
 
 	return int(ep.RecordTTL)

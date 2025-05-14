@@ -39,7 +39,7 @@ import (
 
 const (
 	defaultAWSProfile = "default"
-	recordTTL         = 300
+	defaultTTL        = 300
 	// From the experiments, it seems that the default MaxItems applied is 100,
 	// and that, on the server side, there is a hard limit of 300 elements per page.
 	// After a discussion with AWS representatives, clients should accept
@@ -87,6 +87,7 @@ var canonicalHostedZones = map[string]string{
 	"ap-southeast-3.elb.amazonaws.com":    "Z08888821HLRG5A9ZRTER",
 	"ap-southeast-4.elb.amazonaws.com":    "Z09517862IB2WZLPXG76F",
 	"ap-southeast-5.elb.amazonaws.com":    "Z06010284QMVVW7WO5J",
+	"ap-southeast-7.elb.amazonaws.com":    "Z0390008CMBRTHFGWBCB",
 	"ap-northeast-1.elb.amazonaws.com":    "Z14GRHDCWA56QT",
 	"eu-central-1.elb.amazonaws.com":      "Z215JYRZR1TBD5",
 	"eu-central-2.elb.amazonaws.com":      "Z06391101F2ZOEP8P5EB3",
@@ -123,6 +124,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ap-southeast-3.amazonaws.com":    "Z01971771FYVNCOVWJU1G",
 	"elb.ap-southeast-4.amazonaws.com":    "Z01156963G8MIIL7X90IV",
 	"elb.ap-southeast-5.amazonaws.com":    "Z026317210H9ACVTRO6FB",
+	"elb.ap-southeast-7.amazonaws.com":    "Z054363131YWATEMWRG5L",
 	"elb.ap-northeast-1.amazonaws.com":    "Z31USIVHYNEOWT",
 	"elb.eu-central-1.amazonaws.com":      "Z3F0SRJ5LGBH90",
 	"elb.eu-central-2.amazonaws.com":      "Z02239872DOALSIDCX66S",
@@ -232,7 +234,7 @@ type profiledZone struct {
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {
-	ret := []route53types.Change{}
+	var ret []route53types.Change
 	for _, c := range cs {
 		ret = append(ret, c.Change)
 	}
@@ -254,7 +256,7 @@ func (z zoneTags) filterZonesByTags(p *AWSProvider, zones map[string]*profiledZo
 // append adds tags to the ZoneTags for a given zoneID.
 func (z zoneTags) append(id string, tags []route53types.Tag) {
 	zoneId := fmt.Sprintf("/hostedzone/%s", id)
-	if _, exists := z[zoneId]; !exists {
+	if _, ok := z[zoneId]; !ok {
 		z[zoneId] = make(map[string]string)
 	}
 	for _, tag := range tags {
@@ -313,7 +315,7 @@ type AWSConfig struct {
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(awsConfig AWSConfig, clients map[string][]*AWSZoneConfig) (*AWSProvider, error) {
-	provider := &AWSProvider{
+	pr := &AWSProvider{
 		clients:               clients,
 		domainFilter:          awsConfig.DomainFilter,
 		zoneIDFilter:          awsConfig.ZoneIDFilter,
@@ -331,7 +333,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string][]*AWSZoneConfig) (*
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
-	return provider, nil
+	return pr, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -529,7 +531,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				if r.AliasTarget != nil {
 					// Alias records don't have TTLs so provide the default to match the TXT generation
 					if ttl == 0 {
-						ttl = recordTTL
+						ttl = defaultTTL
 					}
 					ep := endpoint.
 						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
@@ -580,33 +582,33 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 }
 
 // Identify if old and new endpoints require DELETE/CREATE instead of UPDATE.
-func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint.Endpoint) bool {
-	// a change of record type
-	if old.RecordType != new.RecordType {
+func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, newE *endpoint.Endpoint) bool {
+	// a change of a record type
+	if old.RecordType != newE.RecordType {
 		return true
 	}
 
 	// an ALIAS record change to/from an A
 	if old.RecordType == endpoint.RecordTypeA {
 		oldAlias, _ := old.GetProviderSpecificProperty(providerSpecificAlias)
-		newAlias, _ := new.GetProviderSpecificProperty(providerSpecificAlias)
+		newAlias, _ := newE.GetProviderSpecificProperty(providerSpecificAlias)
 		if oldAlias != newAlias {
 			return true
 		}
 	}
 
 	// a set identifier change
-	if old.SetIdentifier != new.SetIdentifier {
+	if old.SetIdentifier != newE.SetIdentifier {
 		return true
 	}
 
 	// a change of routing policy
-	// default to true for geolocation properties if any geolocation property exists in old/new but not the other
+	// defaults to true for geolocation properties if any geolocation property exists in old/new but not the other
 	for _, propType := range [7]string{providerSpecificWeight, providerSpecificRegion, providerSpecificFailover,
 		providerSpecificFailover, providerSpecificGeolocationContinentCode, providerSpecificGeolocationCountryCode,
 		providerSpecificGeolocationSubdivisionCode} {
 		_, oldPolicy := old.GetProviderSpecificProperty(propType)
-		_, newPolicy := new.GetProviderSpecificProperty(propType)
+		_, newPolicy := newE.GetProviderSpecificProperty(propType)
 		if oldPolicy != newPolicy {
 			return true
 		}
@@ -620,14 +622,14 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 	var creates []*endpoint.Endpoint
 	var updates []*endpoint.Endpoint
 
-	for i, new := range newEndpoints {
-		old := oldEndpoints[i]
-		if p.requiresDeleteCreate(old, new) {
-			deletes = append(deletes, old)
-			creates = append(creates, new)
+	for i, newE := range newEndpoints {
+		oldE := oldEndpoints[i]
+		if p.requiresDeleteCreate(oldE, newE) {
+			deletes = append(deletes, oldE)
+			creates = append(creates, newE)
 		} else {
 			// Safe to perform an UPSERT.
-			updates = append(updates, new)
+			updates = append(updates, newE)
 		}
 	}
 
@@ -779,8 +781,8 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*endpoint.Endpoint) Route53Changes {
 	changes := make(Route53Changes, 0, len(endpoints))
 
-	for _, endpoint := range endpoints {
-		change := p.newChange(action, endpoint)
+	for _, ep := range endpoints {
+		change := p.newChange(action, ep)
 		changes = append(changes, change)
 	}
 
@@ -823,8 +825,8 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 
 		if alias {
 			if ep.RecordTTL.IsConfigured() {
-				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, recordTTL)
-				ep.RecordTTL = recordTTL
+				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
+				ep.RecordTTL = defaultTTL
 			}
 			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 				if prop != "true" && prop != "false" {
@@ -885,7 +887,7 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues += 1
 	} else {
 		if !ep.RecordTTL.IsConfigured() {
-			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+			change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
 		}

@@ -30,7 +30,7 @@ import (
 // SoftError is an error, that provider will only log as error instead
 // of fatal. It is meant for error propagation from providers to tell
 // that this is a transient error.
-var SoftError error = errors.New("soft error")
+var SoftError error = errors.New("soft error") //nolint:staticcheck
 
 // NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
 func NewSoftErrorf(format string, a ...any) error {

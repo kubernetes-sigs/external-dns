@@ -33,7 +33,7 @@ const (
 	gandiCreate          = "CREATE"
 	gandiDelete          = "DELETE"
 	gandiUpdate          = "UPDATE"
-	gandiTTL             = 600
+	defaultTTL           = 600
 	gandiLiveDNSProvider = "livedns"
 )
 
@@ -54,7 +54,7 @@ type GandiProvider struct {
 func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
 	key, ok_key := os.LookupEnv("GANDI_KEY")
 	pat, ok_pat := os.LookupEnv("GANDI_PAT")
-	if !(ok_key || ok_pat) {
+	if !ok_key && !ok_pat {
 		return nil, errors.New("no environment variable GANDI_KEY or GANDI_PAT provided")
 	}
 	if ok_key {
@@ -255,7 +255,7 @@ func (p *GandiProvider) submitChanges(ctx context.Context, changes []*GandiChang
 
 func (p *GandiProvider) newGandiChanges(action string, endpoints []*endpoint.Endpoint) []*GandiChanges {
 	changes := make([]*GandiChanges, 0, len(endpoints))
-	ttl := gandiTTL
+	ttl := defaultTTL
 	for _, e := range endpoints {
 		if e.RecordTTL.IsConfigured() {
 			ttl = int(e.RecordTTL)
