@@ -63,18 +63,18 @@ type AzureProvider struct {
 	zonesClient                  ZonesClient
 	zonesCache                   *zonesCache[dns.Zone]
 	recordSetsClient             RecordSetsClient
-	MaxRetriesCount              int
+	maxRetriesCount              int
 }
 
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, MaxRetriesCount int, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzureProvider, error) {
 	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cfg.MaxRetriesCount = MaxRetriesCount
+	cfg.MaxRetriesCount = maxRetriesCount
 	cred, clientOpts, err := getCredentials(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
@@ -99,7 +99,7 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 		zonesClient:                  zonesClient,
 		zonesCache:                   &zonesCache[dns.Zone]{duration: zonesCacheDuration},
 		recordSetsClient:             recordSetsClient,
-		MaxRetriesCount:              MaxRetriesCount,
+		maxRetriesCount:              maxRetriesCount,
 	}, nil
 }
 
