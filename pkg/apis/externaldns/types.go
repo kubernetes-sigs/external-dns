@@ -456,7 +456,7 @@ func App(cfg *Config) *kingpin.Application {
 	// Flags related to processing source
 	app.Flag("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)").BoolVar(&cfg.AlwaysPublishNotReadyAddresses)
 	app.Flag("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
-	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
+	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
