@@ -1,0 +1,792 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": true,
+  "properties": {
+    "affinity": {
+      "properties": {},
+      "type": "object"
+    },
+    "automountServiceAccountToken": {
+      "type": "boolean"
+    },
+    "commonLabels": {
+      "properties": {},
+      "type": "object"
+    },
+    "deploymentAnnotations": {
+      "properties": {},
+      "type": "object"
+    },
+    "deploymentStrategy": {
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "enum": [
+            "Recreate",
+            "RollingUpdate"
+          ],
+          "type": [
+            "string"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "dnsConfig": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "dnsPolicy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "domainFilters": {
+      "type": "array"
+    },
+    "enabled": {
+      "description": "No effect - reserved for use in sub-charting",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "env": {
+      "type": "array"
+    },
+    "excludeDomains": {
+      "type": "array"
+    },
+    "extraArgs": {
+      "items": {
+        "type": "string"
+      },
+      "properties": {},
+      "type": [
+        "array",
+        "null",
+        "object"
+      ],
+      "uniqueItems": true
+    },
+    "extraContainers": {
+      "properties": {},
+      "type": "object"
+    },
+    "extraVolumeMounts": {
+      "type": "array"
+    },
+    "extraVolumes": {
+      "type": "array"
+    },
+    "fullnameOverride": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "global": {
+      "properties": {
+        "imagePullSecrets": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "image": {
+      "additionalProperties": false,
+      "properties": {
+        "pullPolicy": {
+          "enum": [
+            "IfNotPresent",
+            "Always"
+          ],
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "imagePullSecrets": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "initContainers": {
+      "type": "array"
+    },
+    "interval": {
+      "type": "string"
+    },
+    "labelFilter": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "livenessProbe": {
+      "properties": {
+        "failureThreshold": {
+          "type": "integer"
+        },
+        "httpGet": {
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "port": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "initialDelaySeconds": {
+          "type": "integer"
+        },
+        "periodSeconds": {
+          "type": "integer"
+        },
+        "successThreshold": {
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "logFormat": {
+      "default": "text",
+      "enum": [
+        "text",
+        "json"
+      ],
+      "type": [
+        "string"
+      ]
+    },
+    "logLevel": {
+      "default": "info",
+      "enum": [
+        "panic",
+        "debug",
+        "info",
+        "warning",
+        "error",
+        "fatal"
+      ],
+      "type": [
+        "string"
+      ]
+    },
+    "managedRecordTypes": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ],
+      "uniqueItems": true
+    },
+    "nameOverride": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "namespaced": {
+      "type": "boolean"
+    },
+    "nodeSelector": {
+      "properties": {},
+      "type": "object"
+    },
+    "podAnnotations": {
+      "properties": {},
+      "type": "object"
+    },
+    "podLabels": {
+      "properties": {},
+      "type": "object"
+    },
+    "podSecurityContext": {
+      "properties": {
+        "fsGroup": {
+          "type": "integer"
+        },
+        "runAsNonRoot": {
+          "type": "boolean"
+        },
+        "seccompProfile": {
+          "properties": {
+            "type": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "policy": {
+      "default": "upsert-only",
+      "enum": [
+        "sync",
+        "upsert-only"
+      ],
+      "type": [
+        "string"
+      ]
+    },
+    "priorityClassName": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "provider": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "webhook": {
+          "properties": {
+            "args": {
+              "type": "array"
+            },
+            "env": {
+              "type": "array"
+            },
+            "extraVolumeMounts": {
+              "type": "array"
+            },
+            "image": {
+              "properties": {
+                "pullPolicy": {
+                  "type": "string"
+                },
+                "repository": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "tag": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "limits": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "livenessProbe": {
+              "properties": {
+                "failureThreshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "httpGet": {
+                  "properties": {
+                    "path": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "port": {
+                      "type": [
+                        "integer",
+                        "string"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "initialDelaySeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "periodSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "successThreshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "timeoutSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "readinessProbe": {
+              "properties": {
+                "failureThreshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "httpGet": {
+                  "properties": {
+                    "path": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "port": {
+                      "type": [
+                        "integer",
+                        "string"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "initialDelaySeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "periodSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "successThreshold": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "timeoutSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "requests": {
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "resources": {
+              "properties": {},
+              "type": "object"
+            },
+            "securityContext": {
+              "properties": {},
+              "type": "object"
+            },
+            "service": {
+              "properties": {
+                "port": {
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "serviceMonitor": {
+              "properties": {
+                "bearerTokenFile": {
+                  "type": "null"
+                },
+                "interval": {
+                  "type": "null"
+                },
+                "metricRelabelings": {
+                  "type": "array"
+                },
+                "relabelings": {
+                  "type": "array"
+                },
+                "scheme": {
+                  "type": "null"
+                },
+                "scrapeTimeout": {
+                  "type": "null"
+                },
+                "tlsConfig": {
+                  "properties": {},
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "rbac": {
+      "additionalProperties": true,
+      "properties": {
+        "additionalPermissions": {
+          "type": "array"
+        },
+        "create": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "readinessProbe": {
+      "properties": {
+        "failureThreshold": {
+          "type": "integer"
+        },
+        "httpGet": {
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "port": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "initialDelaySeconds": {
+          "type": "integer"
+        },
+        "periodSeconds": {
+          "type": "integer"
+        },
+        "successThreshold": {
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "registry": {
+      "default": "txt",
+      "enum": [
+        "txt",
+        "aws-sd",
+        "dynamodb",
+        "noop"
+      ],
+      "type": "string"
+    },
+    "resources": {
+      "properties": {
+        "limits": {
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "requests": {
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "revisionHistoryLimit": {
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "secretConfiguration": {
+      "properties": {
+        "data": {
+          "properties": {},
+          "type": "object"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "mountPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "securityContext": {
+      "properties": {
+        "allowPrivilegeEscalation": {
+          "type": "boolean"
+        },
+        "capabilities": {
+          "properties": {
+            "drop": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "privileged": {
+          "type": "boolean"
+        },
+        "readOnlyRootFilesystem": {
+          "type": "boolean"
+        },
+        "runAsGroup": {
+          "type": "integer"
+        },
+        "runAsNonRoot": {
+          "type": "boolean"
+        },
+        "runAsUser": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "service": {
+      "properties": {
+        "annotations": {
+          "properties": {},
+          "type": "object"
+        },
+        "ipFamilies": {
+          "items": {
+            "enum": [
+              "IPv4",
+              "IPv6"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 0,
+          "type": [
+            "array",
+            "null"
+          ],
+          "uniqueItems": true
+        },
+        "ipFamilyPolicy": {
+          "enum": [
+            "SingleStack",
+            "PreferDualStack",
+            "RequireDualStack",
+            null
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "port": {
+          "default": 7979,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "serviceAccount": {
+      "properties": {
+        "annotations": {
+          "properties": {},
+          "type": "object"
+        },
+        "automountServiceAccountToken": {
+          "type": "boolean"
+        },
+        "create": {
+          "type": "boolean"
+        },
+        "labels": {
+          "properties": {},
+          "type": "object"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "serviceMonitor": {
+      "properties": {
+        "additionalLabels": {
+          "properties": {},
+          "type": "object"
+        },
+        "annotations": {
+          "properties": {},
+          "type": "object"
+        },
+        "bearerTokenFile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metricRelabelings": {
+          "type": "array"
+        },
+        "namespace": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "relabelings": {
+          "type": "array"
+        },
+        "scheme": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scrapeTimeout": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "targetLabels": {
+          "type": "array"
+        },
+        "tlsConfig": {
+          "properties": {},
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "shareProcessNamespace": {
+      "type": "boolean"
+    },
+    "sources": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "terminationGracePeriodSeconds": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "tolerations": {
+      "type": "array"
+    },
+    "topologySpreadConstraints": {
+      "type": "array"
+    },
+    "triggerLoopOnEvent": {
+      "type": "boolean"
+    },
+    "txtOwnerId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "txtPrefix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "txtSuffix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "type": "object"
+}
