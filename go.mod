@@ -3,15 +3,15 @@ module sigs.k8s.io/external-dns
 go 1.24.2
 
 require (
-	cloud.google.com/go/compute/metadata v0.6.0
+	cloud.google.com/go/compute/metadata v0.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.19.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.7.2
 	github.com/IBM/go-sdk-core/v5 v5.19.1
-	github.com/IBM/networking-go-sdk v0.51.4
+	github.com/IBM/networking-go-sdk v0.51.5
 	github.com/Yamashou/gqlgenc v0.32.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
@@ -26,12 +26,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/civo/civogo v0.4.1
+	github.com/civo/civogo v0.5.0
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.146.0
+	github.com/digitalocean/godo v1.148.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -47,7 +47,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.90.0
+	github.com/oracle/oci-go-sdk/v65 v65.91.0
 	github.com/ovh/go-ovh v1.7.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
@@ -56,8 +56,8 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1162
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1136
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1165
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1165
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1145
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
@@ -68,7 +68,7 @@ require (
 	golang.org/x/sync v0.14.0
 	golang.org/x/text v0.25.0
 	golang.org/x/time v0.11.0
-	google.golang.org/api v0.232.0
+	google.golang.org/api v0.233.0
 	gopkg.in/ns1/ns1-go.v2 v2.14.3
 	istio.io/api v1.26.0
 	istio.io/client-go v1.26.0
@@ -201,7 +201,7 @@ require (
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/grpc v1.72.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
