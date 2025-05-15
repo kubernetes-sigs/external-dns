@@ -230,7 +230,7 @@ func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string,
 }
 
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, virtualService)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, virtualService)
 	if err != nil {
 		return nil, err
 	}

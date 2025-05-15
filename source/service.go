@@ -384,7 +384,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 }
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, svc)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, svc)
 	if err != nil {
 		return nil, err
 	}

@@ -65,12 +65,16 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 <!-- TODO: generate from code -->
 
-| Function     | Description                                                                              |
-|:-------------|:-----------------------------------------------------------------------------------------|
-| `trimPrefix`  | Function from the `strings` package. Returns `string` without the provided leading prefix. |
-| `replace`     | Function that performs a simple replacement of all `old` string with `new` in the source string. |
-| `isIPv4`      | Function that checks if a string is a valid IPv4 address. |
-| `isIPv6`      | Function that checks if a string is a valid IPv6 address (including IPv4-mapped IPv6). |
+| Function     | Description                                                                                      |
+|:-------------|:-------------------------------------------------------------------------------------------------|
+| `contains`   | Function reports whether `substr` is within `strings`.                                           |
+| `toLower`    | Function returns `string` with all Unicode letters mapped to their lower case.                   |
+| `trim`       | Function returns `string` with all leading and trailing white space removed.                     |
+| `trimPrefix` | Function returns a `string` without the provided leading `prefix`.                               |
+| `trimSuffix` | Function returns a `string` without the provided leading `suffix`                                |
+| `replace`    | Function that performs a simple replacement of all `old` string with `new` in the source string. |
+| `isIPv4`     | Function that checks if a string is a valid IPv4 address.                                        |
+| `isIPv6`     | Function that checks if a string is a valid IPv6 address (including IPv4-mapped IPv6).           |
 
 ---
 
