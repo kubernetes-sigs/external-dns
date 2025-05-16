@@ -46,7 +46,6 @@ type config struct {
 	UseWorkloadIdentityExtension bool   `json:"useWorkloadIdentityExtension" yaml:"useWorkloadIdentityExtension"`
 	UserAssignedIdentityID       string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
 	ActiveDirectoryAuthorityHost string `json:"activeDirectoryAuthorityHost" yaml:"activeDirectoryAuthorityHost"`
-	MaxRetriesCount              int    `json:"maxRetries" yaml:"maxRetries"`
 }
 
 func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string) (*config, error) {
@@ -82,17 +81,22 @@ func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityCl
 type ctxKey string
 
 const (
+	// Context key for request ID
 	clientRequestIDKey ctxKey = "client-request-id"
+	// Azure API Headers
+	msRequestIDHeader          = "x-ms-request-id"
+	msCorrelationRequestHeader = "x-ms-correlation-request-id"
+	msClientRequestIDHeader    = "x-ms-client-request-id"
 )
 
 // customHeaderPolicy adds UUID to request headers
 type customHeaderPolicy struct{}
 
 func (p *customHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
-	id := req.Raw().Header.Get("x-ms-client-request-id")
+	id := req.Raw().Header.Get(msClientRequestIDHeader)
 	if id == "" {
 		id = uuid.New().String()
-		req.Raw().Header.Set("x-ms-client-request-id", id)
+		req.Raw().Header.Set(msClientRequestIDHeader, id)
 		newCtx := context.WithValue(req.Raw().Context(), clientRequestIDKey, id)
 		*req.Raw() = *req.Raw().WithContext(newCtx)
 	}
@@ -101,27 +105,28 @@ func (p *customHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
 func CustomHeaderPolicynew() policy.Policy { return &customHeaderPolicy{} }
 
 // getCredentials retrieves Azure API credentials.
-func getCredentials(cfg config) (azcore.TokenCredential, *arm.ClientOptions, error) {
+func getCredentials(cfg config, maxRetries int) (azcore.TokenCredential, *arm.ClientOptions, error) {
 	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get cloud configuration: %w", err)
 	}
-	log.Infof("Configuring Azure client with maxRetries: %d", cfg.MaxRetriesCount)
 	clientOpts := azcore.ClientOptions{
 		Cloud: cloudCfg,
 		Retry: policy.RetryOptions{
-			MaxRetries: int32(cfg.MaxRetriesCount),
+			MaxRetries: int32(maxRetries),
 		},
 		Logging: policy.LogOptions{
 			AllowedHeaders: []string{
-				"x-ms-request-id", "x-ms-correlation-request-id", "x-ms-client-request-id",
+				msRequestIDHeader,
+				msCorrelationRequestHeader,
+				msClientRequestIDHeader,
 			},
 		},
 		PerCallPolicies: []policy.Policy{
 			CustomHeaderPolicynew(),
 		},
 	}
-	log.Infof("final configured Azure client with maxRetries: %d", clientOpts.Retry.MaxRetries)
+	log.Debugf("Configured Azure client with maxRetries: %d", clientOpts.Retry.MaxRetries)
 	armClientOpts := &arm.ClientOptions{
 		ClientOptions: clientOpts,
 	}

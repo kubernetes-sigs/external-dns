@@ -69,8 +69,8 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cfg.MaxRetriesCount = maxRetriesCount
-	cred, clientOpts, err := getCredentials(*cfg)
+
+	cred, clientOpts, err := getCredentials(*cfg, maxRetriesCount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
