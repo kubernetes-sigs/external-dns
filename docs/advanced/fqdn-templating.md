@@ -74,7 +74,7 @@ The template uses the following data from the source object (e.g., a `Service` o
 | `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "fix" "suffix" }} → suf`                                      |
 | `replace`    | Replace `old` with `new`                              | `{{ replace "hello" "l" "w" }} → hewwo`                                      |
 | `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                          |
-| `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true` `{{ isIPv6 "::FFFF:192.168.1.1" }}→true` |
+| `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) |`{{ isIPv6 "2001:db8::1" }} → true`<br/>`{{ isIPv6 "::FFFF:192.168.1.1" }}→true` |
 
 ---
 
