@@ -108,10 +108,12 @@ type Config struct {
 	AzureZonesCacheDuration                       time.Duration
 	CloudflareProxied                             bool
 	CloudflareCustomHostnames                     bool
+	CloudflareDNSRecordsPerPage                   int
+	CloudflareDNSRecordsComment                   string
 	CloudflareCustomHostnamesMinTLSVersion        string
 	CloudflareCustomHostnamesCertificateAuthority string
-	CloudflareDNSRecordsPerPage                   int
 	CloudflareRegionKey                           string
+	CloudflareRecordComment                       string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
 	AkamaiClientToken                             string
@@ -536,6 +538,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt)").Default("google").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt")
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
+	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
+
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)

@@ -78,6 +78,7 @@ var (
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
 		CloudflareCustomHostnamesCertificateAuthority: "google",
 		CloudflareDNSRecordsPerPage:                   100,
+		CloudflareDNSRecordsComment:                   "",
 		CloudflareRegionKey:                           "",
 		CoreDNSPrefix:                                 "/skydns/",
 		AkamaiServiceConsumerDomain:                   "",

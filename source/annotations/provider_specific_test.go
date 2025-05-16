@@ -147,6 +147,14 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 			expectedKey:   CloudflareRegionKey,
 			expectedValue: "us",
 		},
+		{
+			title: "Cloudflare DNS record comment annotation is set correctly",
+			annotations: map[string]string{
+				CloudflareRecordCommentKey: "comment",
+			},
+			expectedKey:   CloudflareRecordCommentKey,
+			expectedValue: "comment",
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)

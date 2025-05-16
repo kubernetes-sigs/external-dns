@@ -94,6 +94,7 @@
 | `--cloudflare-custom-hostnames-certificate-authority=google` | When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
 | `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth) |
+| `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-token=""` | When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified) |
