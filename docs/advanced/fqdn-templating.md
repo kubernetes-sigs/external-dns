@@ -65,16 +65,16 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 <!-- TODO: generate from code -->
 
-| Function     | Description                                                                                      |
-|:-------------|:-------------------------------------------------------------------------------------------------|
-| `contains`   | Function reports whether `substr` is within `strings`.                                           |
-| `toLower`    | Function returns `string` with all Unicode letters mapped to their lower case.                   |
-| `trim`       | Function returns `string` with all leading and trailing white space removed.                     |
-| `trimPrefix` | Function returns a `string` without the provided leading `prefix`.                               |
-| `trimSuffix` | Function returns a `string` without the provided leading `suffix`                                |
-| `replace`    | Function that performs a simple replacement of all `old` string with `new` in the source string. |
-| `isIPv4`     | Function that checks if a string is a valid IPv4 address.                                        |
-| `isIPv6`     | Function that checks if a string is a valid IPv6 address (including IPv4-mapped IPv6).           |
+| Function     | Description                                           | Example                                                                      |
+|:-------------|:------------------------------------------------------|:-----------------------------------------------------------------------------|
+| `contains`   | Check if `substr` is in `string`                      | `{{ contains "hello" "ell" }} → true`                                        |
+| `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                              |
+| `trim`       | Remove leading and trailing spaces                    | `{{ trim "  hello  " }} → hello`                                             |
+| `trimPrefix` | Remove the leading `prefix`                           | `{{ trimPrefix "pre" "prefix" }} → fix`                                      |
+| `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "fix" "suffix" }} → suf`                                      |
+| `replace`    | Replace `old` with `new`                              | `{{ replace "hello" "l" "w" }} → hewwo`                                      |
+| `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                          |
+| `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true` `{{ isIPv6 "::FFFF:192.168.1.1" }}→true` |
 
 ---
 
