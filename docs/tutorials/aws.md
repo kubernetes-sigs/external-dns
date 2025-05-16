@@ -25,15 +25,44 @@ Hosted Zone IDs.
       ],
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+```
+
+### IAM Permissions with ABAC
+
+You can use Attribute-based access control(ABAC) for advanced deployments.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
       ],
       "Condition": {
-        // optional condition to further restrict from which vpc the role can be used
-        "StringEquals": {
-          "aws:SourceVpc": ["vpc-00000000"]
-        },
-        // optional condition to further restrict which hosted zones the external-dns should have access to
         "ForAllValues:StringLike": {
-          "route53:ChangeResourceRecordSetsNormalizedRecordNames": "*example.com"
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
+          "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX"]
         }
       }
     },
@@ -51,6 +80,13 @@ Hosted Zone IDs.
   ]
 }
 ```
+
+Additional resources:
+
+- AWS IAM actions [documentation](https://www.awsiamactions.io/?o=route53%3A)
+- AWS IAM [fine grained controll](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-conditions-route53.html#route53_rrsetConditionKeys)
+
+## Create Role with AWS CLI
 
 If you are using the AWS CLI, you can run the following to install the above policy (saved as `policy.json`).  This can be use in subsequent steps to allow ExternalDNS to access Route53 zones.
 

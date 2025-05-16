@@ -71,13 +71,10 @@ Using tags, your `servicediscovery` policy can become:
         "arn:aws:route53:::hostedzone/*"
       ],
       "Condition": {
-        // optional condition to further restrict from which vpc the role can be used
-        "StringEquals": {
-          "aws:SourceVpc": ["vpc-00000000"]
-        },
-        // optional condition to further restrict which hosted zones the external-dns should have access to
         "ForAllValues:StringLike": {
-          "route53:ChangeResourceRecordSetsNormalizedRecordNames": "*example.com"
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
+          "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX"]
         }
       }
     },
@@ -140,6 +137,10 @@ Using tags, your `servicediscovery` policy can become:
   ]
 }
 ```
+
+Additional resources:
+
+* AWS IAM actions [documentation](https://www.awsiamactions.io/?o=servicediscovery%3A)
 
 ## Set up a namespace
 
