@@ -12,8 +12,6 @@ it whatever you prefer).
 If you prefer, you may fine-tune the policy to permit updates only to explicit
 Hosted Zone IDs.
 
-- [Actions and condition keys for Amazon Route 53](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonroute53.html)
-
 ```json
 {
   "Version": "2012-10-17",
@@ -85,6 +83,7 @@ Additional resources:
 
 - AWS IAM actions [documentation](https://www.awsiamactions.io/?o=route53%3A)
 - AWS IAM [fine grained controll](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-conditions-route53.html#route53_rrsetConditionKeys)
+- [Actions and condition keys for Amazon Route 53](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonroute53.html)
 
 ## Create Role with AWS CLI
 
