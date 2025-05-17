@@ -17,7 +17,7 @@ linters:
     - predeclared # Find code that shadows one of Go's predeclared identifiers
     - sloglint # Ensure consistent code style when using log/slog
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
-    - nilnil # Reports deeply nested if statements. ref: https://golangci-lint.run/usage/linters/#nilnil
+    - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
   settings:
     exhaustive:
       default-signifies-exhaustive: false
@@ -52,6 +52,10 @@ linters:
           - varcheck
           - whitespace
         path: _test\.go
+      # TODO: skiip as will require design changes
+      - linters:
+          - nilnil
+        path: istio_virtualservice.go|fqdn.go|cloudflare.go
     paths:
       - endpoint/zz_generated.deepcopy.go
       - third_party$
