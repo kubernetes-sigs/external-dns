@@ -27,7 +27,7 @@ This README is a part of the complete documentation, available [here](https://ku
 
 Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers.
 Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records.
-*Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
+_Unlike_ KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
 
 In a broader sense, ExternalDNS allows you to control DNS records dynamically via Kubernetes resources in a DNS provider-agnostic way.
 
@@ -77,7 +77,7 @@ Note that all flags can be replaced with environment variables; for instance,
 
 ## New providers
 
-No new provider will be added to ExternalDNS *in-tree*.
+No new provider will be added to ExternalDNS _in-tree_.
 
 ExternalDNS has introduced a webhook system, which can be used to add a new provider.
 See PR #3063 for all the discussions about it.
@@ -116,7 +116,7 @@ ExternalDNS supports multiple DNS providers which have been implemented by the [
 Maintaining all of those in a central repository is a challenge, which introduces lots of toil and potential risks.
 
 This mean that `external-dns` has begun the process to move providers out of tree. See #4347 for more details.
-Those who are interested can create a webhook provider based on an *in-tree* provider and after submit a PR to reference it here.
+Those who are interested can create a webhook provider based on an _in-tree_ provider and after submit a PR to reference it here.
 
 We define the following stability levels for providers:
 
@@ -126,34 +126,34 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers |
-| -------- | ------ | ----------- |
-| Google Cloud DNS | Stable | |
-| AWS Route 53 | Stable | |
-| AWS Cloud Map | Beta | |
-| Akamai Edge DNS | Beta | |
-| AzureDNS | Stable | |
-| Civo | Alpha | @alejandrojnm |
-| CloudFlare | Beta | |
-| DigitalOcean | Alpha | |
-| DNSimple | Alpha | |
-| PowerDNS | Alpha | |
-| CoreDNS | Alpha | |
-| Exoscale | Alpha | |
-| Oracle Cloud Infrastructure DNS | Alpha | |
-| Linode DNS | Alpha | |
-| RFC2136 | Alpha | |
-| NS1 | Alpha | |
-| TransIP | Alpha | |
-| OVHcloud | Beta | @rbeuque74 |
-| Scaleway DNS | Alpha | @Sh4d1 |
-| UltraDNS | Alpha | |
-| GoDaddy | Alpha | |
-| Gandi | Alpha | @packi |
-| IBMCloud | Alpha | @hughhuangzh |
-| TencentCloud | Alpha | @Hyzhou |
-| Plural | Alpha | @michaeljguarino |
-| Pi-hole | Alpha | @tinyzimmer |
+| Provider                        | Status | Maintainers      |
+| ------------------------------- | ------ | ---------------- |
+| Google Cloud DNS                | Stable |                  |
+| AWS Route 53                    | Stable |                  |
+| AWS Cloud Map                   | Beta   |                  |
+| Akamai Edge DNS                 | Beta   |                  |
+| AzureDNS                        | Stable |                  |
+| Civo                            | Alpha  | @alejandrojnm    |
+| CloudFlare                      | Beta   |                  |
+| DigitalOcean                    | Alpha  |                  |
+| DNSimple                        | Alpha  |                  |
+| PowerDNS                        | Alpha  |                  |
+| CoreDNS                         | Alpha  |                  |
+| Exoscale                        | Alpha  |                  |
+| Oracle Cloud Infrastructure DNS | Alpha  |                  |
+| Linode DNS                      | Alpha  |                  |
+| RFC2136                         | Alpha  |                  |
+| NS1                             | Alpha  |                  |
+| TransIP                         | Alpha  |                  |
+| OVHcloud                        | Beta   | @rbeuque74       |
+| Scaleway DNS                    | Alpha  | @Sh4d1           |
+| UltraDNS                        | Alpha  |                  |
+| GoDaddy                         | Alpha  |                  |
+| Gandi                           | Alpha  | @packi           |
+| IBMCloud                        | Alpha  | @hughhuangzh     |
+| TencentCloud                    | Alpha  | @Hyzhou          |
+| Plural                          | Alpha  | @michaeljguarino |
+| Pi-hole                         | Alpha  | @tinyzimmer      |
 
 ## Kubernetes version compatibility
 
@@ -220,7 +220,7 @@ The following tutorials are provided:
 
 ### Running Locally
 
-See the [contributor guide](docs/contributing/getting-started.md) for details on compiling
+See the [contributor guide](docs/contributing/dev-guide.md) for details on compiling
 from source.
 
 #### Setup Steps
@@ -244,7 +244,7 @@ Optionally, you can customize the TTL value of the resulting DNS record by using
 kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
-For more details on configuring TTL, see [here](docs/ttl.md).
+For more details on configuring TTL, see [here](docs/advanced/ttl.md).
 
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
@@ -289,7 +289,7 @@ The **tutorials** section contains examples, including Ingress resources, and sh
 
 # Note
 
-If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
+If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts. Changing `--txt-prefix` will result in lost ownership over previously created records.
 
 If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
 It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).

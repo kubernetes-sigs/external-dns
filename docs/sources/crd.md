@@ -1,6 +1,6 @@
 # CRD Source
 
-CRD source provides a generic mechanism to manage DNS records in your favourite DNS provider supported by external-dns.
+CRD source provides a generic mechanism to manage DNS records in your favorite DNS provider supported by external-dns.
 
 ## Details
 
