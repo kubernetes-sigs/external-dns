@@ -105,3 +105,14 @@ plugins:
   - git-revision-date-localized:
       type: date
       fallback_to_build_date: true
+  # https://mkdocs-macros-plugin.readthedocs.io/en/latest/
+  - macros:
+      include_dir: docs/snippets
+      # required, as default jinja markers are {{ and }}
+      # ref: https://mkdocs-macros-plugin.readthedocs.io/en/latest/rendering/#solution-5-altering-the-syntax-of-jinja2-for-mkdocs-macros
+      j2_block_start_string: '[[%'
+      j2_block_end_string: '%]]'
+      j2_variable_start_string: '[['
+      j2_variable_end_string: ']]'
+      j2_comment_start_string: '[#'
+      j2_comment_end_string: '#]'

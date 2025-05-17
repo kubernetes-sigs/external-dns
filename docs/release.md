@@ -1,5 +1,7 @@
 # Release
 
+{{ macros_info() }}
+
 ## Release cycle
 
 Currently we don't release regularly. Whenever we think it makes sense to release a new version we do it.

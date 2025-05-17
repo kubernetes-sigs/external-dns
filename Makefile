@@ -200,5 +200,12 @@ helm-lint:
 	scripts/helm-tools.sh --docs
 
 .PHONY: go-dependency
-go-dependency: ## Dependency maintanance
+#? go-dependency: Dependency maintanance
+go-dependency:
 	go mod tidy
+
+.PHONY: mkdocs-serve
+#? mkdocs-serve: Run the builtin development server for mkdocs
+mkdocs-serve:
+	@$(info "contribute to documentation docs/contributing/dev-guide.md")
+	@mkdocs serve

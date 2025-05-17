@@ -21,36 +21,7 @@ Deploying external DNS for Exoscale is actually nearly identical to deploying
 it for other providers. This is what a sample `deployment.yaml` looks like:
 
 ```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: external-dns
-spec:
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: external-dns
-  template:
-    metadata:
-      labels:
-        app: external-dns
-    spec:
-      # Only use if you're also using RBAC
-      # serviceAccountName: external-dns
-      containers:
-      - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
-        args:
-        - --source=ingress # or service or both
-        - --provider=exoscale
-        - --domain-filter={{ my-domain }}
-        - --policy=sync # if you want DNS entries to get deleted as well
-        - --txt-owner-id={{ owner-id-for-this-external-dns }}
-        - --exoscale-apikey={{ api-key}}
-        - --exoscale-apisecret={{ api-secret }}
-        # - --exoscale-apizone={{ api-zone }}
-        # - --exoscale-apienv={{ api-env }}
+[[% include 'exoscale/extdns.yaml' %]]
 ```
 
 Optional arguments `--exoscale-apizone` and `--exoscale-apienv` define [Exoscale API Zone](https://community.exoscale.com/documentation/platform/exoscale-datacenter-zones/)
@@ -61,43 +32,7 @@ Optional arguments `--exoscale-apizone` and `--exoscale-apienv` define [Exoscale
 If your cluster is RBAC enabled, you also need to setup the following, before you can run external-dns:
 
 ```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: external-dns
-  namespace: default
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: external-dns
-rules:
-- apiGroups: [""]
-  resources: ["services","endpoints","pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["list"]
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: external-dns-viewer
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: external-dns
-subjects:
-- kind: ServiceAccount
-  name: external-dns
-  namespace: default
+[[% include 'exoscale/rbac.yaml' %]]
 ```
 
 ## Testing and Verification
@@ -107,59 +42,7 @@ subjects:
 Spin up a simple nginx HTTP server with the following spec (`kubectl apply -f`):
 
 ```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: nginx
-  annotations:
-    external-dns.alpha.kubernetes.io/target: {{ Elastic-IP-address }}
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: via-ingress.example.com
-    http:
-      paths:
-      - backend:
-          service:
-            name: "nginx"
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx
-spec:
-  ports:
-  - port: 80
-    targetPort: 80
-  selector:
-    app: nginx
-
----
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx
-spec:
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - image: nginx
-        name: nginx
-        ports:
-        - containerPort: 80
+[[% include 'exoscale/how-to-test.yaml' %]]
 ```
 
 **Important!**: Don't run dig, nslookup or similar immediately (until you've
