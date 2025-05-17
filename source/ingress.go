@@ -179,7 +179,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, ing)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, ing)
 	if err != nil {
 		return nil, err
 	}

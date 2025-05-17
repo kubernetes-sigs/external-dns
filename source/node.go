@@ -124,7 +124,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		if ns.fqdnTemplate != nil {
-			hostnames, err := execTemplate(ns.fqdnTemplate, node)
+			hostnames, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
 			if err != nil {
 				return nil, err
 			}

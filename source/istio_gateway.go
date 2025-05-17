@@ -156,7 +156,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// apply template if host is missing on gateway
 		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := execTemplate(sc.fqdnTemplate, gateway)
+			iHostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
 			if err != nil {
 				return nil, err
 			}

@@ -181,7 +181,7 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, httpProxy)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, httpProxy)
 	if err != nil {
 		return nil, err
 	}

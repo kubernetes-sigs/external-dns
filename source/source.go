@@ -17,14 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
-	"text/template"
 	"time"
-	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -61,20 +57,6 @@ type Source interface {
 type kubeObject interface {
 	runtime.Object
 	metav1.Object
-}
-
-func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, err error) {
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, obj); err != nil {
-		kind := obj.GetObjectKind().GroupVersionKind().Kind
-		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
-	}
-	for _, name := range strings.Split(buf.String(), ",") {
-		name = strings.TrimFunc(name, unicode.IsSpace)
-		name = strings.TrimSuffix(name, ".")
-		hostnames = append(hostnames, name)
-	}
-	return hostnames, nil
 }
 
 func getAccessFromAnnotations(input map[string]string) string {

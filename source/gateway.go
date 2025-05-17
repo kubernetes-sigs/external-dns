@@ -410,7 +410,7 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
-		hosts, err := execTemplate(c.src.fqdnTemplate, rt.Object())
+		hosts, err := fqdn.ExecTemplate(c.src.fqdnTemplate, rt.Object())
 		if err != nil {
 			return nil, err
 		}
