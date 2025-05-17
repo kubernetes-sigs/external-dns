@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -1806,7 +1807,7 @@ type testInformer struct {
 	times int
 }
 
-func (t *testInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+func (t *testInformer) AddEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	t.times += 1
-	return nil, nil
+	return nil, fmt.Errorf("not implemented")
 }

@@ -35,14 +35,10 @@ func CreateTLSConfig(prefix string) (*tls.Config, error) {
 	serverName := os.Getenv(fmt.Sprintf("%s_TLS_SERVER_NAME", prefix))
 	isInsecureStr := strings.ToLower(os.Getenv(fmt.Sprintf("%s_TLS_INSECURE", prefix)))
 	isInsecure := isInsecureStr == "true" || isInsecureStr == "yes" || isInsecureStr == "1"
-	tlsConfig, err := NewTLSConfig(certFile, keyFile, caFile, serverName, isInsecure, defaultMinVersion)
-	if err != nil {
-		return nil, err
-	}
-	return tlsConfig, nil
+	return NewTLSConfig(certFile, keyFile, caFile, serverName, isInsecure, defaultMinVersion)
 }
 
-// NewTLSConfig creates a tls.Config instance from directly-passed parameters, loading the ca, cert, and key from disk
+// NewTLSConfig creates a tls.Config instance from directly passed parameters, loading the ca, cert, and key from disk
 func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, minVersion uint16) (*tls.Config, error) {
 	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
 		return nil, errors.New("either both cert and key or none must be provided")
@@ -55,15 +51,21 @@ func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, m
 		}
 		certificates = append(certificates, cert)
 	}
-	roots, err := loadRoots(caPath)
-	if err != nil {
-		return nil, err
+	// If rootCAs is nil, TLS uses the host's root CA set.
+	var rootCAs *x509.CertPool
+	var err error
+
+	if caPath != "" {
+		rootCAs, err = loadRoots(caPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &tls.Config{
 		MinVersion:         minVersion,
 		Certificates:       certificates,
-		RootCAs:            roots,
+		RootCAs:            rootCAs,
 		InsecureSkipVerify: insecure,
 		ServerName:         serverName,
 	}, nil
@@ -71,10 +73,6 @@ func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, m
 
 // loads CA cert
 func loadRoots(caPath string) (*x509.CertPool, error) {
-	if caPath == "" {
-		return nil, nil
-	}
-
 	roots := x509.NewCertPool()
 	pem, err := os.ReadFile(caPath)
 	if err != nil {

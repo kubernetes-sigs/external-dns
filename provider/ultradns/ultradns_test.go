@@ -65,11 +65,11 @@ type mockUltraDNSRecord struct {
 	client *udnssdk.Client
 }
 
-func (m *mockUltraDNSRecord) Create(k udnssdk.RRSetKey, rrset udnssdk.RRSet) (*http.Response, error) {
-	return nil, nil
+func (m *mockUltraDNSRecord) Create(_ udnssdk.RRSetKey, _ udnssdk.RRSet) (*http.Response, error) {
+	return &http.Response{}, nil
 }
 
-func (m *mockUltraDNSRecord) Select(k udnssdk.RRSetKey) ([]udnssdk.RRSet, error) {
+func (m *mockUltraDNSRecord) Select(_ udnssdk.RRSetKey) ([]udnssdk.RRSet, error) {
 	return []udnssdk.RRSet{{
 		OwnerName: "test-ultradns-provider.com.",
 		RRType:    endpoint.RecordTypeA,
@@ -83,11 +83,11 @@ func (m *mockUltraDNSRecord) SelectWithOffset(k udnssdk.RRSetKey, offset int) ([
 }
 
 func (m *mockUltraDNSRecord) Update(udnssdk.RRSetKey, udnssdk.RRSet) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *mockUltraDNSRecord) Delete(k udnssdk.RRSetKey) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *mockUltraDNSRecord) SelectWithOffsetWithLimit(k udnssdk.RRSetKey, offset int, limit int) (rrsets []udnssdk.RRSet, ResultInfo udnssdk.ResultInfo, resp *http.Response, err error) {

@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"

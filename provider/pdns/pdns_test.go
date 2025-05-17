@@ -690,7 +690,7 @@ func (c *PDNSAPIClientStub) ListZone(zoneID string) (pgo.Zone, *http.Response, e
 }
 
 func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 /******************************************************************************/
@@ -721,7 +721,7 @@ func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.R
 
 func (c *PDNSAPIClientStubEmptyZones) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
 	c.patchedZones = append(c.patchedZones, zoneStruct)
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 /******************************************************************************/
