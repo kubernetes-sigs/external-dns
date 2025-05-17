@@ -61,7 +61,7 @@ func TestIsValidIPv6(t *testing.T) {
 	}{
 		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
 		{"2001:db8:85a3::8a2e:370:7334", true},
-		//IPV6 dual, the format is y:y:y:y:y:y:x.x.x.x.
+		//IPv6 dual, the format is y:y:y:y:y:y:x.x.x.x.
 		{"::ffff:192.168.20.3", true},
 		{"::1", true},
 		{"::", true},

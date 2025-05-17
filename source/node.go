@@ -43,7 +43,7 @@ type nodeSource struct {
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector
 	excludeUnschedulable bool
-	exposeInternalIPV6   bool
+	exposeInternalIPv6   bool
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
@@ -81,7 +81,7 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 		nodeInformer:         nodeInformer,
 		labelSelector:        labelSelector,
 		excludeUnschedulable: excludeUnschedulable,
-		exposeInternalIPV6:   exposeInternalIPv6,
+		exposeInternalIPv6:   exposeInternalIPv6,
 	}, nil
 }
 
@@ -193,7 +193,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
-		if ns.exposeInternalIPV6 {
+		if ns.exposeInternalIPv6 {
 			log.Warn(warningMsg)
 			return append(addresses[v1.NodeExternalIP], internalIpv6Addresses...), nil
 		}
