@@ -304,3 +304,20 @@ Install required dependencies. In order to not to break system packages, we are 
 $$ ...
 $$ Serving on http://127.0.0.1:8000/
 ```
+
+### How to add an example snippet
+
+Let's say we are improving tutorial location in `docs/tutorials/aws.md`.
+
+1. Add a snippet to `docs/snippets/aws/<snippet-name>.<snippet-extension>`
+2. Add snippet to a markdown file `docs/tutorials/aws.md`
+
+[[% raw %]]
+
+````md
+  ```extension
+    [[% include 'snippets/aws/<snippet-name>.<snippet-extension>' %]]
+  ```
+````
+
+[[% endraw %]]
