@@ -106,6 +106,7 @@ type Config struct {
 	AzureUserAssignedIdentityClientID             string
 	AzureActiveDirectoryAuthorityHost             string
 	AzureZonesCacheDuration                       time.Duration
+	AzureMaxRetriesCount                          int
 	CloudflareProxied                             bool
 	CloudflareCustomHostnames                     bool
 	CloudflareCustomHostnamesMinTLSVersion        string
@@ -247,6 +248,7 @@ var defaultConfig = &Config{
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
 	AzureZonesCacheDuration:     0 * time.Second,
+	AzureMaxRetriesCount:        3,
 	CFAPIEndpoint:               "",
 	CFPassword:                  "",
 	CFUsername:                  "",
@@ -527,6 +529,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("azure-subscription-id", "When using the Azure provider, override the Azure subscription to use (optional)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
 	app.Flag("azure-zones-cache-duration", "When using the Azure provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AzureZonesCacheDuration.String()).DurationVar(&cfg.AzureZonesCacheDuration)
+	app.Flag("azure-maxretries-count", "When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional)").Default(strconv.Itoa(defaultConfig.AzureMaxRetriesCount)).IntVar(&cfg.AzureMaxRetriesCount)
 	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
 	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
 

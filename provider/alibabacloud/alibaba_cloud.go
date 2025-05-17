@@ -85,13 +85,13 @@ type AlibabaCloudProvider struct {
 }
 
 type alibabaCloudConfig struct {
-	RegionID        string    `json:"regionId" yaml:"regionId"`
-	AccessKeyID     string    `json:"accessKeyId" yaml:"accessKeyId"`
+	RegionID        string    `json:"regionId"        yaml:"regionId"`
+	AccessKeyID     string    `json:"accessKeyId"     yaml:"accessKeyId"`
 	AccessKeySecret string    `json:"accessKeySecret" yaml:"accessKeySecret"`
-	VPCID           string    `json:"vpcId" yaml:"vpcId"`
-	RoleName        string    `json:"-" yaml:"-"` // For ECS RAM role only
-	StsToken        string    `json:"-" yaml:"-"`
-	ExpireTime      time.Time `json:"-" yaml:"-"`
+	VPCID           string    `json:"vpcId"           yaml:"vpcId"`
+	RoleName        string    `json:"-"               yaml:"-"` // For ECS RAM role only
+	StsToken        string    `json:"-"               yaml:"-"`
+	ExpireTime      time.Time `json:"-"               yaml:"-"`
 }
 
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.

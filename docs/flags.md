@@ -86,6 +86,7 @@
 | `--azure-subscription-id=""` | When using the Azure provider, override the Azure subscription to use (optional) |
 | `--azure-user-assigned-identity-client-id=""` | When using the Azure provider, override the client id of user assigned identity in config file (optional) |
 | `--azure-zones-cache-duration=0s` | When using the Azure provider, set the zones list cache TTL (0s to disable). |
+| `--azure-maxretries-count=3` | When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional) |
 | `--tencent-cloud-config-file="/etc/kubernetes/tencent-cloud.json"` | When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud) |
 | `--tencent-cloud-zone-type=` | When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private) |
 | `--[no-]cloudflare-proxied` | When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled) |
