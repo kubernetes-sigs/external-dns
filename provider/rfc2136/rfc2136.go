@@ -82,9 +82,6 @@ type rfc2136Provider struct {
 	// Random number generator for random load balancing
 	randGen *rand.Rand
 
-	// Store TSIG credentials for each nameserver
-	credentials map[string]*gss.Client
-
 	// Last error encountered
 	lastErr error
 }
@@ -152,7 +149,6 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 		tlsConfig:             tlsConfig,
 		loadBalancingStrategy: loadBalancingStrategy,
 		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-		credentials:           make(map[string]*gss.Client),
 		counter:               0,
 		lastErr:               nil,
 	}
@@ -174,11 +170,6 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 
 // KeyData will return TKEY name and TSIG handle to use for followon actions with a secure connection
 func (r *rfc2136Provider) KeyData(nameserver string) (keyName string, handle *gss.Client, err error) {
-	// Check if we already have credentials for this nameserver
-	if existingHandle, ok := r.credentials[nameserver]; ok {
-		return nameserver, existingHandle, nil
-	}
-
 	handle, err = gss.NewClient(new(dns.Client))
 	if err != nil {
 		return keyName, handle, err
@@ -188,9 +179,6 @@ func (r *rfc2136Provider) KeyData(nameserver string) (keyName string, handle *gs
 	if err != nil {
 		return keyName, handle, err
 	}
-
-	// Store the credentials for this nameserver
-	r.credentials[nameserver] = handle
 
 	return keyName, handle, nil
 }
@@ -380,7 +368,6 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
 			r.AddRecord(m[zone], ep)
@@ -419,7 +406,6 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
 			r.UpdateRecord(m[zone], changes.UpdateOld[i], ep)
@@ -457,7 +443,6 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
 
 			r.RemoveRecord(m[zone], ep)

@@ -886,10 +886,25 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 	return false
 }
 
+// TestCreateRfc2136StubProviderWithHosts validates the stub provider initializes with multiple nameservers.
+func TestCreateRfc2136StubProviderWithHosts(t *testing.T) {
+	stub := newStub()
+	provider, err := createRfc2136StubProviderWithHosts(stub)
+	assert.NoError(t, err)
+
+	rawProvider, ok := provider.(*rfc2136Provider)
+	assert.True(t, ok, "expected provider to be of type *rfc2136Provider")
+
+	assert.Equal(t, 3, len(rawProvider.nameservers))
+	assert.Equal(t, "rfc2136-host1:0", rawProvider.nameservers[0])
+	assert.Equal(t, "rfc2136-host2:0", rawProvider.nameservers[1])
+	assert.Equal(t, "rfc2136-host3:0", rawProvider.nameservers[2])
+}
+
 // TestRoundRobinLoadBalancing tests the round-robin load balancing strategy.
 func TestRoundRobinLoadBalancing(t *testing.T) {
 	stub := newStubLB("round-robin", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
-	_, err := createRfc2136StubProviderWithHosts(stub)
+	_, err := createRfc2136StubProviderWithStrategy(stub, "round-robin")
 	assert.NoError(t, err)
 
 	m := new(dns.Msg)
@@ -908,7 +923,7 @@ func TestRoundRobinLoadBalancing(t *testing.T) {
 // TestRandomLoadBalancing tests the random load balancing strategy.
 func TestRandomLoadBalancing(t *testing.T) {
 	stub := newStubLB("random", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
-	_, err := createRfc2136StubProvider(stub)
+	_, err := createRfc2136StubProviderWithStrategy(stub, "random")
 	assert.NoError(t, err)
 
 	m := new(dns.Msg)
