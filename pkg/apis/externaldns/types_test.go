@@ -133,6 +133,7 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		AWSDomainRoles:                                map[string]string{},
 		ExcludeUnschedulable:                          true,
 	}
 
@@ -250,6 +251,7 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		AWSDomainRoles:                                map[string]string{"example.com": "arn:aws:iam::123456789012:role/role1", "example.org": "arn:aws:iam::123456789012:role/role2"},
 		ExcludeUnschedulable:                          false,
 	}
 )
@@ -358,6 +360,8 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-service-cleanup",
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
+				"--aws-domain-roles=example.com=arn:aws:iam::123456789012:role/role1",
+				"--aws-domain-roles=example.org=arn:aws:iam::123456789012:role/role2",
 				"--no-aws-evaluate-target-health",
 				"--pihole-api-version=6",
 				"--policy=upsert-only",
@@ -520,6 +524,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":                              "ibmcloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":                         "tencent-cloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":                           "private",
+				"EXTERNAL_DNS_AWS_DOMAIN_ROLES":                                  "example.com=arn:aws:iam::123456789012:role/role1\nexample.org=arn:aws:iam::123456789012:role/role2",
 			},
 			expected: overriddenConfig,
 		},
