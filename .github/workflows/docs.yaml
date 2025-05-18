@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "v*"
+  # See https://docs.github.com/fr/webhooks/webhook-events-and-payloads#workflow_dispatch
+  # Can be used to update doc with latest tag
+  workflow_dispatch:
 
 permissions: {}
 
@@ -19,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -35,5 +38,9 @@ jobs:
 
       - name: build and push
         run: |
-          mike deploy ${{ github.ref_name }} latest --push --update-aliases
+          VERSION="${{ github.ref_name }}"
+          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
+            VERSION="latest"
+          fi
+          mike deploy $VERSION --push --update-aliases
           mike set-default --push latest

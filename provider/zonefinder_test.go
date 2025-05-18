@@ -76,7 +76,8 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "エイミー.みんな", zoneName)
 	assert.Equal(t, "987654", zoneID)
 
-	b := testutils.LogsToBuffer(log.WarnLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	_, _ = z.FindZone("???")
-	assert.Contains(t, b.String(), "level=warning msg=\"Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F\"")
+
+	testutils.TestHelperLogContains("Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F", hook, t)
 }

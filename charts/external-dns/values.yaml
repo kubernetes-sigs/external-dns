@@ -216,7 +216,7 @@ policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.
 registry: txt  # @schema enum:[txt, aws-sd, dynamodb, noop]; default: "txt"
-# -- (string) Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`.
+# -- (string) Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`.
 txtOwnerId:  # @schema type:[string, null]; default: null
 # -- (string) Specify a prefix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtSuffix`.
@@ -296,7 +296,8 @@ provider:  # @schema type: [object, string];
       relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
-extraArgs: []  # @schema type: [array, null]; item: string; uniqueItems: true;
+# An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
+extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true;
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).

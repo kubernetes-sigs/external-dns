@@ -18,10 +18,10 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,6 +38,7 @@ import (
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -82,7 +83,7 @@ func NewF5TransportServerSource(
 
 	uc, err := newTSUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup unstructured converter")
+		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
 	return &f5TransportServerSource{
@@ -120,7 +121,7 @@ func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.E
 
 	transportServers, err = ts.filterByAnnotations(transportServers)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter TransportServers")
+		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
 
 	endpoints, err := ts.endpointsFromTransportServers(transportServers)
@@ -150,9 +151,9 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 
 		resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
 
-		ttl := getTTLFromAnnotations(transportServer.Annotations, resource)
+		ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
 
-		targets := getTargetsFromTargetAnnotation(transportServer.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
 		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
 			targets = append(targets, transportServer.Spec.VirtualServerAddress)
 		}
@@ -201,11 +202,8 @@ func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.Tr
 	filteredList := []*f5.TransportServer{}
 
 	for _, ts := range transportServers {
-		// convert the TransportServer's annotations to an equivalent label selector
-		annotations := labels.Set(ts.Annotations)
-
 		// include TransportServer if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(ts.Annotations)) {
 			filteredList = append(filteredList, ts)
 		}
 	}

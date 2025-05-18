@@ -40,6 +40,8 @@ import (
 	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 const (
@@ -117,7 +119,7 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if err != nil {
 		return nil, err
 	}
-	tmpl, err := parseTemplate(config.FQDNTemplate)
+	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -236,8 +238,8 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		// Create endpoints from hostnames and targets.
 		var routeEndpoints []*endpoint.Endpoint
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
-		ttl := getTTLFromAnnotations(annots, resource)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
+		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
 			routeEndpoints = append(routeEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -333,10 +335,11 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		}
 
 		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions) {
-			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		if !gwRouteIsAccepted(rps.Conditions, meta) {
+			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Match the Route to all possible Listeners.
 		match := false
 		section := sectionVal(ref.SectionName, "")
@@ -373,7 +376,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
+				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
@@ -403,7 +406,7 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
 	// but other sources don't check if fqdn-template is set. Which should it be?
 	if !c.src.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
@@ -494,10 +497,10 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition) bool {
+func gwRouteIsAccepted(conds []metav1.Condition, meta *metav1.ObjectMeta) bool {
 	for _, c := range conds {
 		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
-			return c.Status == metav1.ConditionTrue
+			return c.Status == metav1.ConditionTrue && c.ObservedGeneration == meta.Generation
 		}
 	}
 	return false

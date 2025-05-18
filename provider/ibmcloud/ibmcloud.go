@@ -61,8 +61,8 @@ const (
 	recordDelete = "DELETE"
 	// recordUpdate is a ChangeAction enum value
 	recordUpdate = "UPDATE"
-	// defaultPublicRecordTTL 1 = automatic
-	defaultPublicRecordTTL = 1
+	// defaultTTL 1 = automatic
+	defaultTTL = 1
 
 	proxyFilter             = "ibmcloud-proxied"
 	vpcFilter               = "ibmcloud-vpc"
@@ -244,7 +244,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud public zones client: %v", err)
 		}
 		if c.Endpoint != "" {
-			service.publicZonesService.SetServiceURL(c.Endpoint)
+			_ = service.publicZonesService.SetServiceURL(c.Endpoint)
 		}
 
 		zonesResp, _, err := service.publicZonesService.ListZones(&zonesv1.ListZonesOptions{})
@@ -277,7 +277,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud public records client: %v", err)
 		}
 		if c.Endpoint != "" {
-			service.publicRecordsService.SetServiceURL(c.Endpoint)
+			_ = service.publicRecordsService.SetServiceURL(c.Endpoint)
 		}
 	case strings.Contains(crn.ServiceName, "dns-svcs"):
 		isPrivate = true
@@ -289,7 +289,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud private records client: %v", err)
 		}
 		if c.Endpoint != "" {
-			service.privateDNSService.SetServiceURL(c.Endpoint)
+			_ = service.privateDNSService.SetServiceURL(c.Endpoint)
 		}
 	default:
 		return service, isPrivate, fmt.Errorf("IBM Cloud instance crn is not provided or invalid dns crn : %s", c.CRN)
@@ -322,7 +322,7 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		return nil, err
 	}
 
-	provider := &IBMCloudProvider{
+	return &IBMCloudProvider{
 		Client:           client,
 		source:           source,
 		domainFilter:     domainFilter,
@@ -331,8 +331,7 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		privateZone:      isPrivate,
 		proxiedByDefault: proxiedByDefault,
 		DryRun:           dryRun,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Records gets the current records.
@@ -351,9 +350,9 @@ func (p *IBMCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugln("applying change...")
 	ibmcloudChanges := []*ibmcloudChange{}
-	for _, endpoint := range changes.Create {
-		for _, target := range endpoint.Targets {
-			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, endpoint, target))
+	for _, et := range changes.Create {
+		for _, target := range et.Targets {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, et, target))
 		}
 	}
 
@@ -376,9 +375,9 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 		}
 	}
 
-	for _, endpoint := range changes.Delete {
-		for _, target := range endpoint.Targets {
-			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, endpoint, target))
+	for _, et := range changes.Delete {
+		for _, target := range et.Targets {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, et, target))
 		}
 	}
 
@@ -680,15 +679,15 @@ func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endp
 		return nil, err
 	}
 	// Filter VPC annoation for private zone active
-	for _, source := range sources {
-		vpc = checkVPCAnnotation(source)
+	for _, src := range sources {
+		vpc = checkVPCAnnotation(src)
 		if len(vpc) > 0 {
 			log.Debugf("VPC found: %s", vpc)
 			break
 		}
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		if len(vpc) > 0 && *zone.State == zoneStatePendingNetwork {
 			log.Debugf("active zone: %s", *zone.ID)
@@ -730,7 +729,7 @@ GETRECORDS:
 }
 
 func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.ResourceRecord) []*endpoint.Endpoint {
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	// group supported records by name and type
 	groups := map[string][]dnssvcsv1.ResourceRecord{}
 	for _, r := range records {
@@ -806,7 +805,7 @@ func (p *IBMCloudProvider) getPrivateRecordID(records []dnssvcsv1.ResourceRecord
 }
 
 func (p *IBMCloudProvider) newIBMCloudChange(action string, endpoint *endpoint.Endpoint, target string) *ibmcloudChange {
-	ttl := defaultPublicRecordTTL
+	ttl := defaultTTL
 	proxied := shouldBeProxied(endpoint, p.proxiedByDefault)
 
 	if endpoint.RecordTTL.IsConfigured() {
@@ -984,7 +983,7 @@ func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == vpcFilter {
 			vpcCrn, err := crn.Parse(v.Value)
-			if vpcCrn.ResourceType != "vpc" || err != nil {
+			if err != nil || vpcCrn.ResourceType != "vpc" {
 				log.Errorf("Failed to parse vpc [%s]: %v", v.Value, err)
 			} else {
 				vpc = v.Value
@@ -995,6 +994,7 @@ func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
 	return vpc
 }
 
+// TODO: could be shared function
 func isNil(i interface{}) bool {
 	if i == nil {
 		return true
@@ -1002,6 +1002,7 @@ func isNil(i interface{}) bool {
 	switch reflect.TypeOf(i).Kind() {
 	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
 		return reflect.ValueOf(i).IsNil()
+	default:
+		return false
 	}
-	return false
 }

@@ -39,22 +39,19 @@ const (
 	rdPoolOrder    = "ROUND_ROBIN"
 )
 
-// global variables
-var sbPoolRunProbes = true
-
 var (
 	sbPoolActOnProbes = true
 	ultradnsPoolType  = "rdpool"
 	accountName       string
+	sbPoolRunProbes   = true
+	// Setting custom headers for ultradns api calls
+	customHeader = []udnssdk.CustomHeader{
+		{
+			Key:   "UltraClient",
+			Value: "kube-client",
+		},
+	}
 )
-
-// Setting custom headers for ultradns api calls
-var customHeader = []udnssdk.CustomHeader{
-	{
-		Key:   "UltraClient",
-		Value: "kube-client",
-	},
-}
 
 // UltraDNSProvider struct
 type UltraDNSProvider struct {
@@ -128,13 +125,11 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 		return nil, fmt.Errorf("connection cannot be established")
 	}
 
-	provider := &UltraDNSProvider{
+	return &UltraDNSProvider{
 		client:       *client,
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
-	}
-
-	return provider, nil
+	}, nil
 }
 
 // Zones returns list of hosted zones
@@ -216,7 +211,7 @@ func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey)
 	maxerrs := 5
 	waittime := 5 * time.Second
 
-	rrsets := []udnssdk.RRSet{}
+	var rrsets []udnssdk.RRSet
 	errcnt := 0
 	offset := 0
 	limit := 1000

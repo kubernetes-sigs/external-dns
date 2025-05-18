@@ -1248,7 +1248,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 
 			var key string
 			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
-			if code, exists := r.stubConfig.ExpectInsertError[key]; exists {
+			if code, ok := r.stubConfig.ExpectInsertError[key]; ok {
 				delete(r.stubConfig.ExpectInsertError, key)
 				responses = append(responses, dynamodbtypes.BatchStatementResponse{
 					Error: &dynamodbtypes.BatchStatementError{

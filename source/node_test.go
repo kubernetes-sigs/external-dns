@@ -17,11 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
@@ -67,6 +67,11 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
+			title:        "complex template",
+			expectError:  false,
+			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
+		},
+		{
 			title:            "non-empty annotation filter label",
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
@@ -97,8 +102,6 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 
 // testNodeSourceEndpoints tests that various node generate the correct endpoints.
 func testNodeSourceEndpoints(t *testing.T) {
-	t.Parallel()
-
 	for _, tc := range []struct {
 		title                string
 		annotationFilter     string
@@ -392,9 +395,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 	} {
-		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
-			buf := testutils.LogsToBuffer(log.DebugLevel, t)
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
@@ -446,11 +448,10 @@ func testNodeSourceEndpoints(t *testing.T) {
 			validateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
-				assert.Contains(t, buf.String(), entry)
+				testutils.TestHelperLogContains(entry, hook, t)
 			}
-
 			for _, entry := range tc.expectedAbsentLogs {
-				assert.NotContains(t, buf.String(), entry)
+				testutils.TestHelperLogNotContains(entry, hook, t)
 			}
 		})
 	}
@@ -536,9 +537,9 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		_, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		var buf *bytes.Buffer
+		var hook *test.Hook
 		if tc.exposeInternalIPv6 {
-			buf = testutils.LogsToBuffer(log.WarnLevel, t)
+			hook = testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 		}
 
 		// Create our object under test and get the endpoints.
@@ -559,8 +560,8 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 
-			if tc.exposeInternalIPv6 && buf != nil {
-				assert.Contains(t, buf.String(), warningMsg)
+			if tc.exposeInternalIPv6 && hook != nil {
+				testutils.TestHelperLogContainsWithLogLevel(warningMsg, log.WarnLevel, hook, t)
 			}
 		}
 

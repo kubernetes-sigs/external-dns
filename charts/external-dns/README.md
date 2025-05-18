@@ -104,7 +104,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | enabled | bool | `nil` | No effect - reserved for use in sub-charting. |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
-| extraArgs | list | `[]` | Extra arguments to provide to _ExternalDNS_. |
+| extraArgs | object | `{}` | Extra arguments to provide to _ExternalDNS_. An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times. |
 | extraContainers | object | `{}` | Extra containers to add to the `Deployment`. |
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
@@ -180,7 +180,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | tolerations | list | `[]` | Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). |
 | topologySpreadConstraints | list | `[]` | Topology spread constraints for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided one will be created from the pod selector labels. |
 | triggerLoopOnEvent | bool | `false` | If `true`, triggers run loop on create/update/delete events in addition of regular interval. |
-| txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`. |
+| txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
 

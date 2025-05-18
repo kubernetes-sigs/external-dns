@@ -33,7 +33,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/annotations"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -62,11 +65,12 @@ type serviceSource struct {
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              map[string]struct{}
 	labelSelector                  labels.Selector
+	exposeInternalIPv6             bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool) (Source, error) {
-	tmpl, err := parseTemplate(fqdnTemplate)
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool, exposeInternalIPv6 bool) (Source, error) {
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +142,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		labelSelector:                  labelSelector,
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
+		exposeInternalIPv6:             exposeInternalIPv6,
 	}, nil
 }
 
@@ -307,7 +312,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 
 			for _, headlessDomain := range headlessDomains {
-				targets := getTargetsFromTargetAnnotation(pod.Annotations)
+				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
 						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
@@ -316,7 +321,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 							return endpoints
 						}
 						for _, address := range node.Status.Addresses {
-							if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+							if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
 								targets = append(targets, address.Address)
 								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 							}
@@ -386,7 +391,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, err
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -401,16 +406,16 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
 		var hostnameList []string
 		var internalHostnameList []string
 
-		hostnameList = getHostnamesFromAnnotations(svc.Annotations)
+		hostnameList = annotations.HostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
 		}
 
-		internalHostnameList = getInternalHostnamesFromAnnotations(svc.Annotations)
+		internalHostnameList = annotations.InternalHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range internalHostnameList {
 			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
 		}
@@ -434,14 +439,11 @@ func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Serv
 		return services, nil
 	}
 
-	filteredList := []*v1.Service{}
+	var filteredList []*v1.Service
 
 	for _, service := range services {
-		// convert the service's annotations to an equivalent label selector
-		annotations := labels.Set(service.Annotations)
-
 		// include service if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(service.Annotations)) {
 			filteredList = append(filteredList, service)
 		}
 	}
@@ -473,9 +475,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
 
-	ttl := getTTLFromAnnotations(svc.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(svc.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(svc.Annotations)
 
 	if len(targets) == 0 {
 		switch svc.Spec.Type {
@@ -504,9 +506,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			targets = extractServiceExternalName(svc)
 		}
 
-		for _, endpoint := range endpoints {
-			endpoint.ProviderSpecific = providerSpecific
-			endpoint.SetIdentifier = setIdentifier
+		for _, en := range endpoints {
+			en.ProviderSpecific = providerSpecific
+			en.SetIdentifier = setIdentifier
 		}
 	}
 

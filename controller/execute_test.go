@@ -18,6 +18,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -29,10 +30,9 @@ import (
 	"testing"
 	"time"
 
-	"context"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
@@ -219,18 +219,45 @@ func TestHandleSigterm(t *testing.T) {
 	}
 }
 
-func TestServeMetrics(t *testing.T) {
-	l, _ := net.Listen("tcp", ":0")
-	_ = l.Close()
-	_, port, _ := net.SplitHostPort(l.Addr().String())
+func getRandomPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
 
-	go serveMetrics(fmt.Sprintf(":%s", port))
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%s", port) + "/healthz")
-	assert.NoError(t, err)
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func TestServeMetrics(t *testing.T) {
+	t.Parallel()
+
+	port, err := getRandomPort()
+	require.NoError(t, err)
+	addresse := fmt.Sprintf("localhost:%d", port)
+
+	go serveMetrics(fmt.Sprintf(":%d", port))
+
+	// Wait for the TCP socket to be ready
+	require.Eventually(t, func() bool {
+		conn, err := net.Dial("tcp", addresse)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	}, 1*time.Second, 5*time.Millisecond, "server not ready with port open in time")
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", addresse))
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, err = http.Get(fmt.Sprintf("http://localhost:%s", port) + "/metrics")
-	assert.NoError(t, err)
+	resp, err = http.Get(fmt.Sprintf("http://%s/metrics", addresse))
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -308,7 +335,6 @@ func (m *MockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 func (p *MockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	return nil
 }
 

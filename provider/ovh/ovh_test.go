@@ -328,7 +328,8 @@ func TestOvhComputeChanges(t *testing.T) {
 	}
 
 	provider := &OVHProvider{client: nil, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
-	ovhChanges := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+	ovhChanges, err := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+	td.CmpNoError(t, err)
 	td.Cmp(t, ovhChanges, []ovhChange{
 		{
 			Action: ovhCreate,
@@ -371,8 +372,8 @@ func TestOvhNewChange(t *testing.T) {
 	changes, _ := provider.newOvhChangeCreateDelete(ovhCreate, endpoints, "example.net", []ovhRecord{})
 	td.Cmp(t, changes, []ovhChange{
 		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "", TTL: 10, Target: "203.0.113.42"}}}},
-		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: ovhDefaultTTL, Target: "203.0.113.43"}}}},
-		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "CNAME", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh2", TTL: ovhDefaultTTL, Target: "ovh.example.net."}}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.43"}}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "CNAME", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh2", TTL: defaultTTL, Target: "ovh.example.net."}}}},
 	})
 
 	// Delete change
@@ -386,9 +387,9 @@ func TestOvhNewChange(t *testing.T) {
 	}
 	changes, _ = provider.newOvhChangeCreateDelete(ovhDelete, endpoints, "example.net", records)
 	td.Cmp(t, changes, []ovhChange{
-		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: ovhDefaultTTL, Target: "203.0.113.42"}}}},
-		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: ovhDefaultTTL, Target: "203.0.113.42"}}}},
-		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: ovhDefaultTTL, Target: "203.0.113.42"}}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
 	})
 
 	// Create change with CNAME relative
@@ -403,8 +404,8 @@ func TestOvhNewChange(t *testing.T) {
 	changes, _ = provider.newOvhChangeCreateDelete(ovhCreate, endpoints, "example.net", []ovhRecord{})
 	td.Cmp(t, changes, []ovhChange{
 		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "", TTL: 10, Target: "203.0.113.42"}}}},
-		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: ovhDefaultTTL, Target: "203.0.113.43"}}}},
-		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "CNAME", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh2", TTL: ovhDefaultTTL, Target: "ovh"}}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.43"}}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "CNAME", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh2", TTL: defaultTTL, Target: "ovh"}}}},
 	})
 
 	// Test with CNAME when target has already final dot
@@ -419,8 +420,8 @@ func TestOvhNewChange(t *testing.T) {
 	changes, _ = provider.newOvhChangeCreateDelete(ovhCreate, endpoints, "example.net", []ovhRecord{})
 	td.Cmp(t, changes, []ovhChange{
 		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "", TTL: 10, Target: "203.0.113.42"}}}},
-		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: ovhDefaultTTL, Target: "203.0.113.43"}}}},
-		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "CNAME", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh2", TTL: ovhDefaultTTL, Target: "ovh.example.com."}}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.43"}}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "CNAME", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh2", TTL: defaultTTL, Target: "ovh.example.com."}}}},
 	})
 }
 

@@ -17,41 +17,41 @@
 | `--cf-password=""` | The password to log into the cloud foundry API |
 | `--gloo-namespace=gloo-system` | The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system) |
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
-| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
-| `--openshift-router-name=OPENSHIFT-ROUTER-NAME` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
-| `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
-| `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
-| `--label-filter=""` | Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host |
-| `--ingress-class=INGRESS-CLASS` | Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class) |
-| `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
-| `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting |
-| `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
-| `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
-| `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
-| `--gateway-name=GATEWAY-NAME` | Limit Gateways of Route endpoints to a specific name (default: all names) |
-| `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
-| `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
-| `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
-| `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
-| `--pod-source-domain=""` | Domain to use for pods records (optional) |
-| `--[no-]publish-internal-services` | Allow external-dns to publish DNS records for ClusterIP services (optional) |
-| `--[no-]publish-host-ip` | Allow external-dns to publish host-ip for headless services (optional) |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
+| `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
+| `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
+| `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--connector-source-server="localhost:8080"` | The server to connect for connector source, valid only when using connector source |
 | `--crd-source-apiversion="externaldns.k8s.io/v1alpha1"` | API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source |
 | `--crd-source-kind="DNSEndpoint"` | Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion |
-| `--service-type-filter=SERVICE-TYPE-FILTER` | The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName) |
-| `--managed-record-types=A...` | Record types to manage; specify multiple times to include many; (default: A, AAAA, CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT) |
-| `--exclude-record-types=EXCLUDE-RECORD-TYPES` | Record types to exclude from management; specify multiple times to exclude many; (optional) |
 | `--default-targets=DEFAULT-TARGETS` | Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional) |
-| `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
+| `--exclude-record-types=EXCLUDE-RECORD-TYPES` | Record types to exclude from management; specify multiple times to exclude many; (optional) |
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
+| `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
+| `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional). Default is true. |
+| `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
+| `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
+| `--gateway-name=GATEWAY-NAME` | Limit Gateways of Route endpoints to a specific name (default: all names) |
+| `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
+| `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
+| `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
+| `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
+| `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
+| `--ingress-class=INGRESS-CLASS` | Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class) |
+| `--label-filter=""` | Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host |
+| `--managed-record-types=A...` | Record types to manage; specify multiple times to include many; (default: A,AAAA,CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT) |
+| `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
+| `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
+| `--openshift-router-name=OPENSHIFT-ROUTER-NAME` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
+| `--pod-source-domain=""` | Domain to use for pods records (optional) |
+| `--[no-]publish-host-ip` | Allow external-dns to publish host-ip for headless services (optional) |
+| `--[no-]publish-internal-services` | Allow external-dns to publish DNS records for ClusterIP services (optional) |
+| `--service-type-filter=SERVICE-TYPE-FILTER` | The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName) |
+| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
+| `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--[no-]force-default-targets` | Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to legacy behavior, default is false) |
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
-| `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
-| `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
-| `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional). Default is true. |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
@@ -87,6 +87,7 @@
 | `--azure-subscription-id=""` | When using the Azure provider, override the Azure subscription to use (optional) |
 | `--azure-user-assigned-identity-client-id=""` | When using the Azure provider, override the client id of user assigned identity in config file (optional) |
 | `--azure-zones-cache-duration=0s` | When using the Azure provider, set the zones list cache TTL (0s to disable). |
+| `--azure-maxretries-count=3` | When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional) |
 | `--tencent-cloud-config-file="/etc/kubernetes/tencent-cloud.json"` | When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud) |
 | `--tencent-cloud-zone-type=` | When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private) |
 | `--[no-]cloudflare-proxied` | When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled) |
@@ -134,7 +135,7 @@
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
 | `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
-| `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entries of the DNS server to use |
+| `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times) |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |
 | `--[no-]rfc2136-insecure` | When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires --rfc2136-tsig-keyname and rfc2136-tsig-secret) |
 | `--rfc2136-tsig-keyname=""` | When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false) |

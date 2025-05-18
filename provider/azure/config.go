@@ -17,15 +17,19 @@ limitations under the License.
 package azure
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -72,15 +76,57 @@ func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityCl
 	return cfg, nil
 }
 
+// ctxKey is a type for context keys
+// This is used to avoid collisions with other packages that may use the same key in the context.
+type ctxKey string
+
+const (
+	// Context key for request ID
+	clientRequestIDKey ctxKey = "client-request-id"
+	// Azure API Headers
+	msRequestIDHeader          = "x-ms-request-id"
+	msCorrelationRequestHeader = "x-ms-correlation-request-id"
+	msClientRequestIDHeader    = "x-ms-client-request-id"
+)
+
+// customHeaderPolicy adds UUID to request headers
+type customHeaderPolicy struct{}
+
+func (p *customHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
+	id := req.Raw().Header.Get(msClientRequestIDHeader)
+	if id == "" {
+		id = uuid.New().String()
+		req.Raw().Header.Set(msClientRequestIDHeader, id)
+		newCtx := context.WithValue(req.Raw().Context(), clientRequestIDKey, id)
+		*req.Raw() = *req.Raw().WithContext(newCtx)
+	}
+	return req.Next()
+}
+func CustomHeaderPolicynew() policy.Policy { return &customHeaderPolicy{} }
+
 // getCredentials retrieves Azure API credentials.
-func getCredentials(cfg config) (azcore.TokenCredential, *arm.ClientOptions, error) {
+func getCredentials(cfg config, maxRetries int) (azcore.TokenCredential, *arm.ClientOptions, error) {
 	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get cloud configuration: %w", err)
 	}
 	clientOpts := azcore.ClientOptions{
 		Cloud: cloudCfg,
+		Retry: policy.RetryOptions{
+			MaxRetries: int32(maxRetries),
+		},
+		Logging: policy.LogOptions{
+			AllowedHeaders: []string{
+				msRequestIDHeader,
+				msCorrelationRequestHeader,
+				msClientRequestIDHeader,
+			},
+		},
+		PerCallPolicies: []policy.Policy{
+			CustomHeaderPolicynew(),
+		},
 	}
+	log.Debugf("Configured Azure client with maxRetries: %d", clientOpts.Retry.MaxRetries)
 	armClientOpts := &arm.ClientOptions{
 		ClientOptions: clientOpts,
 	}

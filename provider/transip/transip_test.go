@@ -94,15 +94,15 @@ func TestTransIPDnsEntriesAreEqual(t *testing.T) {
 func TestTransIPGetMinimalValidTTL(t *testing.T) {
 	// test with 'unconfigured' TTL
 	ep := &endpoint.Endpoint{}
-	assert.EqualValues(t, transipMinimalValidTTL, getMinimalValidTTL(ep))
+	assert.EqualValues(t, defaultTTL, getMinimalValidTTL(ep))
 
 	// test with lower than minimal ttl
-	ep.RecordTTL = (transipMinimalValidTTL - 1)
-	assert.EqualValues(t, transipMinimalValidTTL, getMinimalValidTTL(ep))
+	ep.RecordTTL = (defaultTTL - 1)
+	assert.EqualValues(t, defaultTTL, getMinimalValidTTL(ep))
 
 	// test with higher than minimal ttl
-	ep.RecordTTL = (transipMinimalValidTTL + 1)
-	assert.EqualValues(t, transipMinimalValidTTL+1, getMinimalValidTTL(ep))
+	ep.RecordTTL = (defaultTTL + 1)
+	assert.EqualValues(t, defaultTTL+1, getMinimalValidTTL(ep))
 }
 
 func TestTransIPRecordNameForEndpoint(t *testing.T) {

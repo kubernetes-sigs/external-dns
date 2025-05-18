@@ -28,6 +28,8 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type podSource struct {
@@ -93,10 +95,10 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 
-		targets := getTargetsFromTargetAnnotation(pod.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 
 		if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
-			domainList := splitHostnameAnnotation(domainAnnotation)
+			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
 				if len(targets) == 0 {
 					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
@@ -109,7 +111,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 
 		if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
-			domainList := splitHostnameAnnotation(domainAnnotation)
+			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
 				if len(targets) == 0 {
 					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
@@ -130,14 +132,14 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		if ps.compatibility == "kops-dns-controller" {
 			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
-				domainList := splitHostnameAnnotation(domainAnnotation)
+				domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 				for _, domain := range domainList {
 					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
 				}
 			}
 
 			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
-				domainList := splitHostnameAnnotation(domainAnnotation)
+				domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 				for _, domain := range domainList {
 					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 					for _, address := range node.Status.Addresses {
@@ -161,7 +163,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 	}
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
 		endpoints = append(endpoints, endpoint.NewEndpoint(key.DNSName, key.RecordType, targets...))
 	}
