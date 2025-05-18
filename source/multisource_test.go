@@ -135,7 +135,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		defaultTargets = append(defaultTargets, defaultTargetsAAAA...)
 		labels := endpoint.Labels{"foo": "bar"}
 
-		// Endpoints FROM SOURCE have NO targets
+		// Endpoints FROM SOURCE has NO targets
 		sourceEndpoints := []*endpoint.Endpoint{
 			{DNSName: "foo", Targets: endpoint.Targets{}, Labels: labels},
 			{DNSName: "bar", Targets: endpoint.Targets{}, Labels: labels},
@@ -169,7 +169,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		defaultTargets := []string{"127.0.0.1"} // Default target
 		labels := endpoint.Labels{"foo": "bar"}
 
-		// Endpoints FROM SOURCE HAVE targets
+		// Endpoints FROM SOURCE HAS targets
 		sourceEndpoints := []*endpoint.Endpoint{
 			{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}, Labels: labels},
 			{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
@@ -203,7 +203,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		defaultTargets = append(defaultTargets, defaultTargetsAAAA...)
 		labels := endpoint.Labels{"foo": "bar"}
 
-		// Endpoints FROM SOURCE HAVE targets
+		// Endpoints FROM SOURCE HAS targets
 		sourceEndpoints := []*endpoint.Endpoint{
 			{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}, Labels: labels},
 			{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
@@ -223,6 +223,41 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=true (legacy behavior)
+		source := NewMultiSource([]Source{src}, defaultTargets, true)
+
+		endpoints, err := source.Endpoints(context.Background())
+		require.NoError(t, err)
+
+		validateEndpoints(t, endpoints, expectedEndpoints)
+
+		src.AssertExpectations(t)
+	})
+
+	t.Run("Defaults applied when source targets are empty and flag is set", func(t *testing.T) {
+		defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
+		defaultTargetsAAAA := []string{"2001:db8::1"}
+		defaultTargetsCName := []string{"foo.example.org"}
+		defaultTargets := append(defaultTargetsA, defaultTargetsAAAA...)
+		defaultTargets = append(defaultTargets, defaultTargetsCName...)
+
+		labels := endpoint.Labels{"foo": "bar"}
+
+		// Endpoints FROM SOURCE has NO targets
+		sourceEndpoints := []*endpoint.Endpoint{
+			{DNSName: "empty-target-test", Targets: endpoint.Targets{}, Labels: labels},
+		}
+
+		// Expected endpoints SHOULD HAVE the default targets applied
+		expectedEndpoints := []*endpoint.Endpoint{
+			{DNSName: "empty-target-test", Targets: defaultTargetsA, RecordType: "A", Labels: labels},
+			{DNSName: "empty-target-test", Targets: defaultTargetsAAAA, RecordType: "AAAA", Labels: labels},
+			{DNSName: "empty-target-test", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
+		}
+
+		src := new(testutils.MockSource)
+		src.On("Endpoints").Return(sourceEndpoints, nil)
+
+		// Test with forceDefaultTargets=true
 		source := NewMultiSource([]Source{src}, defaultTargets, true)
 
 		endpoints, err := source.Endpoints(context.Background())
