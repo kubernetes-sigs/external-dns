@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -35,6 +36,39 @@ func TestNewEndpoint(t *testing.T) {
 	w := NewEndpoint("example.org.", "", "load-balancer.com.")
 	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
+	}
+}
+
+func TestNewTargets(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    []string
+		expected Targets
+	}{
+		{
+			name:     "no targets",
+			input:    []string{},
+			expected: Targets{},
+		},
+		{
+			name:     "single target",
+			input:    []string{"1.2.3.4"},
+			expected: Targets{"1.2.3.4"},
+		},
+		{
+			name:     "multiple targets",
+			input:    []string{"example.com", "8.8.8.8", "::0001"},
+			expected: Targets{"example.com", "8.8.8.8", "::0001"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			Targets := NewTargets(c.input...)
+			changedTarget := Targets.String()
+			assert.Equal(t, c.expected.String(), changedTarget)
+
+		})
 	}
 }
 
@@ -152,6 +186,249 @@ func TestIsLess(t *testing.T) {
 		if d.IsLess(testsB[i]) != expected[i] {
 			t.Errorf("%v < %v is expected to be %v", d, testsB[i], expected[i])
 		}
+	}
+}
+
+func TestGetProviderSpecificProperty(t *testing.T) {
+	e := &Endpoint{
+		ProviderSpecific: []ProviderSpecificProperty{
+			ProviderSpecificProperty{
+				Name:  "name",
+				Value: "value",
+			},
+		},
+	}
+
+	t.Run("key is not present in provider specific", func(t *testing.T) {
+		val, ok := e.GetProviderSpecificProperty("hello")
+		assert.Equal(t, false, ok)
+		assert.Empty(t, val)
+	})
+
+	t.Run("key is present in provider specific", func(t *testing.T) {
+		val, ok := e.GetProviderSpecificProperty("name")
+		assert.Equal(t, true, ok)
+		assert.NotEmpty(t, val)
+
+	})
+}
+
+func TestSetProviderSpecficProperty(t *testing.T) {
+	cases := []struct {
+		name               string
+		endpoint           Endpoint
+		key                string
+		value              string
+		expectedIdentifier string
+		expected           []ProviderSpecificProperty
+	}{
+		{
+			name:     "endpoint is empty",
+			endpoint: Endpoint{},
+			key:      "key1",
+			value:    "value1",
+			expected: []ProviderSpecificProperty{
+				ProviderSpecificProperty{
+					Name:  "key1",
+					Value: "value1",
+				},
+			},
+		},
+		{
+			name: "name and key are not matching",
+			endpoint: Endpoint{
+				DNSName:       "example.org",
+				RecordTTL:     TTL(0),
+				RecordType:    RecordTypeA,
+				SetIdentifier: "newIdentifier",
+				Targets: Targets{
+					"example.org", "example.com", "1.2.4.5",
+				},
+				ProviderSpecific: []ProviderSpecificProperty{
+					ProviderSpecificProperty{
+						Name:  "name1",
+						Value: "value1",
+					},
+				},
+			},
+			expectedIdentifier: "newIdentifier",
+			key:                "name2",
+			value:              "value2",
+
+			expected: []ProviderSpecificProperty{
+				ProviderSpecificProperty{
+					Name:  "name1",
+					Value: "value1",
+				},
+				ProviderSpecificProperty{
+					Name:  "name2",
+					Value: "value2",
+				},
+			},
+		},
+		{
+			name: "some keys are matching and some are not matching ",
+			endpoint: Endpoint{
+				DNSName:       "example.org",
+				RecordTTL:     TTL(0),
+				RecordType:    RecordTypeA,
+				SetIdentifier: "newIdentifier",
+				Targets: Targets{
+					"example.org", "example.com", "1.2.4.5",
+				},
+				ProviderSpecific: []ProviderSpecificProperty{
+					ProviderSpecificProperty{
+						Name:  "name1",
+						Value: "value1",
+					},
+					ProviderSpecificProperty{
+						Name:  "name2",
+						Value: "value2",
+					},
+					ProviderSpecificProperty{
+						Name:  "name3",
+						Value: "value3",
+					},
+				},
+			},
+			key:                "name2",
+			value:              "value2",
+			expectedIdentifier: "newIdentifier",
+			expected: []ProviderSpecificProperty{
+				ProviderSpecificProperty{
+					Name:  "name1",
+					Value: "value1",
+				},
+				ProviderSpecificProperty{
+					Name:  "name2",
+					Value: "value2",
+				},
+				ProviderSpecificProperty{
+					Name:  "name3",
+					Value: "value3",
+				},
+			},
+		},
+		{
+			name: "name and key are not matching",
+			endpoint: Endpoint{
+				DNSName:       "example.org",
+				RecordTTL:     TTL(0),
+				RecordType:    RecordTypeA,
+				SetIdentifier: "identifier",
+				Targets: Targets{
+					"example.org", "example.com", "1.2.4.5",
+				},
+				ProviderSpecific: []ProviderSpecificProperty{
+					ProviderSpecificProperty{
+						Name:  "name1",
+						Value: "value1",
+					},
+				},
+			},
+			key:                "name1",
+			value:              "value2",
+			expectedIdentifier: "identifier",
+			expected: []ProviderSpecificProperty{
+				ProviderSpecificProperty{
+					Name:  "name1",
+					Value: "value2",
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			c.endpoint.WithProviderSpecific(c.key, c.value)
+			expectedString := fmt.Sprintf("%s %d IN %s %s %s %s", c.endpoint.DNSName, c.endpoint.RecordTTL, c.endpoint.RecordType, c.endpoint.SetIdentifier, c.endpoint.Targets, c.endpoint.ProviderSpecific)
+			identifier := c.endpoint.WithSetIdentifier(c.endpoint.SetIdentifier)
+			assert.Equal(t, c.expectedIdentifier, identifier.SetIdentifier)
+			assert.Equal(t, expectedString, c.endpoint.String())
+			if !reflect.DeepEqual([]ProviderSpecificProperty(c.endpoint.ProviderSpecific), c.expected) {
+				t.Errorf("unexpected ProviderSpecific:\nGot:      %#v\nExpected: %#v", c.endpoint.ProviderSpecific, c.expected)
+			}
+		})
+	}
+}
+
+func TestDeleteProviderSpecificProperty(t *testing.T) {
+	cases := []struct {
+		name     string
+		endpoint Endpoint
+		key      string
+		expected []ProviderSpecificProperty
+	}{
+		{
+			name: "name and key are not matching",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					ProviderSpecificProperty{
+						Name:  "name1",
+						Value: "value1",
+					},
+				},
+			},
+			key: "name2",
+			expected: []ProviderSpecificProperty{
+				ProviderSpecificProperty{
+					Name:  "name1",
+					Value: "value1",
+				},
+			},
+		},
+		{
+			name: "some keys are matching and some keys are not matching",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					ProviderSpecificProperty{
+						Name:  "name1",
+						Value: "value1",
+					},
+					ProviderSpecificProperty{
+						Name:  "name2",
+						Value: "value2",
+					},
+					ProviderSpecificProperty{
+						Name:  "name3",
+						Value: "value3",
+					},
+				},
+			},
+			key: "name2",
+			expected: []ProviderSpecificProperty{
+				ProviderSpecificProperty{
+					Name:  "name1",
+					Value: "value1",
+				},
+				ProviderSpecificProperty{
+					Name:  "name3",
+					Value: "value3",
+				},
+			},
+		},
+		{
+			name: "name and key are matching",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					ProviderSpecificProperty{
+						Name:  "name1",
+						Value: "value1",
+					},
+				},
+			},
+			key:      "name1",
+			expected: []ProviderSpecificProperty{},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			c.endpoint.DeleteProviderSpecificProperty(c.key)
+			if !reflect.DeepEqual([]ProviderSpecificProperty(c.endpoint.ProviderSpecific), c.expected) {
+				t.Errorf("unexpected ProviderSpecific:\nGot:      %#v\nExpected: %#v", c.endpoint.ProviderSpecific, c.expected)
+			}
+		})
 	}
 }
 
