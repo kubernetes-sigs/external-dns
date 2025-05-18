@@ -75,10 +75,10 @@ type TencentCloudProvider struct {
 }
 
 type tencentCloudConfig struct {
-	RegionId         string `json:"regionId" yaml:"regionId"`
-	SecretId         string `json:"secretId" yaml:"secretId"`
-	SecretKey        string `json:"secretKey" yaml:"secretKey"`
-	VPCId            string `json:"vpcId" yaml:"vpcId"`
+	RegionId         string `json:"regionId"         yaml:"regionId"`
+	SecretId         string `json:"secretId"         yaml:"secretId"`
+	SecretKey        string `json:"secretKey"        yaml:"secretKey"`
+	VPCId            string `json:"vpcId"            yaml:"vpcId"`
 	InternetEndpoint bool   `json:"internetEndpoint" yaml:"internetEndpoint"`
 }
 

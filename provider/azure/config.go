@@ -35,16 +35,16 @@ import (
 
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
-	Cloud                        string `json:"cloud" yaml:"cloud"`
-	TenantID                     string `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID               string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup                string `json:"resourceGroup" yaml:"resourceGroup"`
-	Location                     string `json:"location" yaml:"location"`
-	ClientID                     string `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret                 string `json:"aadClientSecret" yaml:"aadClientSecret"`
-	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
+	Cloud                        string `json:"cloud"                        yaml:"cloud"`
+	TenantID                     string `json:"tenantId"                     yaml:"tenantId"`
+	SubscriptionID               string `json:"subscriptionId"               yaml:"subscriptionId"`
+	ResourceGroup                string `json:"resourceGroup"                yaml:"resourceGroup"`
+	Location                     string `json:"location"                     yaml:"location"`
+	ClientID                     string `json:"aadClientId"                  yaml:"aadClientId"`
+	ClientSecret                 string `json:"aadClientSecret"              yaml:"aadClientSecret"`
+	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"  yaml:"useManagedIdentityExtension"`
 	UseWorkloadIdentityExtension bool   `json:"useWorkloadIdentityExtension" yaml:"useWorkloadIdentityExtension"`
-	UserAssignedIdentityID       string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
+	UserAssignedIdentityID       string `json:"userAssignedIdentityID"       yaml:"userAssignedIdentityID"`
 	ActiveDirectoryAuthorityHost string `json:"activeDirectoryAuthorityHost" yaml:"activeDirectoryAuthorityHost"`
 }
 
