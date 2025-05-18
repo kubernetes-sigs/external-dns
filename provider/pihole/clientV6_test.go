@@ -716,7 +716,8 @@ func TestCreateRecordV6(t *testing.T) {
 		if r.Method == "PUT" && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
 			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
 			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
-			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
+			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source3.example.com,target3.domain.com") {
 
 			// Return A records
 			w.WriteHeader(http.StatusCreated)
@@ -747,10 +748,30 @@ func TestCreateRecordV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Test create A record with multiple targets present and ensure only the first is added
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.1", "192.168.1.2"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
 	// Test create AAAA record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
 		Targets:    []string{"fc00::1:192:168:1:1"},
+		RecordType: endpoint.RecordTypeAAAA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create AAAA record with multiple targets present and ensure only the first is added
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"fc00::1:192:168:1:1", "fc00::1:192:168:1:2"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
@@ -772,6 +793,16 @@ func TestCreateRecordV6(t *testing.T) {
 		DNSName:    "source2.example.com",
 		Targets:    []string{"target2.domain.com"},
 		RecordTTL:  endpoint.TTL(500),
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record with multiple targets present and ensure only the first is added
+	ep = &endpoint.Endpoint{
+		DNSName:    "source3.example.com",
+		Targets:    []string{"target3.domain.com", "target4.domain.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {

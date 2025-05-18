@@ -286,12 +286,12 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 
 	switch ep.RecordType {
 	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s %s", ep.Targets, ep.DNSName))
+		apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s %s", ep.Targets[0], ep.DNSName))
 	case endpoint.RecordTypeCNAME:
 		if ep.RecordTTL.IsConfigured() {
-			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL))
+			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets[0], ep.RecordTTL))
 		} else {
-			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets))
+			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets[0]))
 		}
 	}
 
