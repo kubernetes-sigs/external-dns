@@ -23,12 +23,12 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/denverdino/aliyungo/metadata"
 	yaml "github.com/goccy/go-yaml"
 	log "github.com/sirupsen/logrus"
 
@@ -81,17 +81,13 @@ type AlibabaCloudProvider struct {
 	pvtzClient           AlibabaCloudPrivateZoneAPI
 	privateZone          bool
 	clientLock           sync.RWMutex
-	nextExpire           time.Time
 }
 
 type alibabaCloudConfig struct {
-	RegionID        string    `json:"regionId" yaml:"regionId"`
-	AccessKeyID     string    `json:"accessKeyId" yaml:"accessKeyId"`
-	AccessKeySecret string    `json:"accessKeySecret" yaml:"accessKeySecret"`
-	VPCID           string    `json:"vpcId" yaml:"vpcId"`
-	RoleName        string    `json:"-" yaml:"-"` // For ECS RAM role only
-	StsToken        string    `json:"-" yaml:"-"`
-	ExpireTime      time.Time `json:"-" yaml:"-"`
+	RegionID        string `json:"regionId" yaml:"regionId"`
+	AccessKeyID     string `json:"accessKeyId" yaml:"accessKeyId"`
+	AccessKeySecret string `json:"accessKeySecret" yaml:"accessKeySecret"`
+	VPCID           string `json:"vpcId" yaml:"vpcId"`
 }
 
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
@@ -110,9 +106,9 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 		}
 	} else {
 		var tmpError error
-		cfg, tmpError = getCloudConfigFromStsToken()
+		cfg, tmpError = getCloudConfigFromMetadata()
 		if tmpError != nil {
-			return nil, fmt.Errorf("failed to getCloudConfigFromStsToken: %v", tmpError)
+			return nil, fmt.Errorf("failed to getCloudConfigFromMetadata: %v", tmpError)
 		}
 	}
 
@@ -120,18 +116,18 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 	var dnsClient AlibabaCloudDNSAPI
 	var err error
 
-	if cfg.RoleName == "" {
+	if cfg.AccessKeyID != "" {
 		dnsClient, err = alidns.NewClientWithAccessKey(
 			cfg.RegionID,
 			cfg.AccessKeyID,
 			cfg.AccessKeySecret,
 		)
 	} else {
-		dnsClient, err = alidns.NewClientWithStsToken(
+		sdkcfg := sdk.NewConfig()
+		dnsClient, err = alidns.NewClientWithOptions(
 			cfg.RegionID,
-			cfg.AccessKeyID,
-			cfg.AccessKeySecret,
-			cfg.StsToken,
+			sdkcfg,
+			nil,
 		)
 	}
 
@@ -141,18 +137,18 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 
 	// Private DNS service
 	var pvtzClient AlibabaCloudPrivateZoneAPI
-	if cfg.RoleName == "" {
+	if cfg.AccessKeyID != "" {
 		pvtzClient, err = pvtz.NewClientWithAccessKey(
 			"cn-hangzhou", // The Private Zone location is fixed
 			cfg.AccessKeyID,
 			cfg.AccessKeySecret,
 		)
 	} else {
-		pvtzClient, err = pvtz.NewClientWithStsToken(
+		sdkcfg := sdk.NewConfig()
+		pvtzClient, err = pvtz.NewClientWithOptions(
 			cfg.RegionID,
-			cfg.AccessKeyID,
-			cfg.AccessKeySecret,
-			cfg.StsToken,
+			sdkcfg,
+			nil,
 		)
 	}
 
@@ -170,41 +166,24 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 		privateZone:  zoneType == "private",
 	}
 
-	if cfg.RoleName != "" {
-		provider.setNextExpire(cfg.ExpireTime)
-		go provider.refreshStsToken(1 * time.Second)
-	}
 	return provider, nil
 }
 
-func getCloudConfigFromStsToken() (alibabaCloudConfig, error) {
+func getCloudConfigFromMetadata() (alibabaCloudConfig, error) {
 	cfg := alibabaCloudConfig{}
+	ctx := context.Background()
 	// Load config from Metadata Service
-	m := metadata.NewMetaData(nil)
-	roleName := ""
-	var err error
-	if roleName, err = m.RoleName(); err != nil {
-		return cfg, fmt.Errorf("failed to get role name from Metadata Service: %v", err)
-	}
-	vpcID, err := m.VpcID()
+	m := ecsmetadata.DefaultClient
+	vpcID, err := m.GetVpcId(ctx)
 	if err != nil {
 		return cfg, fmt.Errorf("failed to get VPC ID from Metadata Service: %v", err)
 	}
-	regionID, err := m.Region()
+	regionID, err := m.GetRegionId(ctx)
 	if err != nil {
 		return cfg, fmt.Errorf("failed to get Region ID from Metadata Service: %v", err)
 	}
-	role, err := m.RamRoleToken(roleName)
-	if err != nil {
-		return cfg, fmt.Errorf("failed to get STS Token from Metadata Service: %v", err)
-	}
 	cfg.RegionID = regionID
-	cfg.RoleName = roleName
 	cfg.VPCID = vpcID
-	cfg.AccessKeyID = role.AccessKeyId
-	cfg.AccessKeySecret = role.AccessKeySecret
-	cfg.StsToken = role.SecurityToken
-	cfg.ExpireTime = role.Expiration
 	return cfg, nil
 }
 
@@ -218,67 +197,6 @@ func (p *AlibabaCloudProvider) getPvtzClient() AlibabaCloudPrivateZoneAPI {
 	p.clientLock.RLock()
 	defer p.clientLock.RUnlock()
 	return p.pvtzClient
-}
-
-func (p *AlibabaCloudProvider) setNextExpire(expireTime time.Time) {
-	p.clientLock.Lock()
-	defer p.clientLock.Unlock()
-	p.nextExpire = expireTime
-}
-
-func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
-	for {
-		time.Sleep(sleepTime)
-		now := time.Now()
-		utcLocation, err := time.LoadLocation("")
-		if err != nil {
-			log.Errorf("Get utc time error %v", err)
-			continue
-		}
-		nowTime := now.In(utcLocation)
-		p.clientLock.RLock()
-		sleepTime = p.nextExpire.Sub(nowTime)
-		p.clientLock.RUnlock()
-		log.Infof("Distance expiration time %v", sleepTime)
-		if sleepTime < 10*time.Minute {
-			sleepTime = time.Second * 1
-		} else {
-			sleepTime = 9 * time.Minute
-			log.Info("Next fetch sts sleep interval : ", sleepTime.String())
-			continue
-		}
-		cfg, err := getCloudConfigFromStsToken()
-		if err != nil {
-			log.Errorf("Failed to getCloudConfigFromStsToken: %v", err)
-			continue
-		}
-		dnsClient, err := alidns.NewClientWithStsToken(
-			cfg.RegionID,
-			cfg.AccessKeyID,
-			cfg.AccessKeySecret,
-			cfg.StsToken,
-		)
-		if err != nil {
-			log.Errorf("Failed to new client with sts token %v", err)
-			continue
-		}
-		pvtzClient, err := pvtz.NewClientWithStsToken(
-			cfg.RegionID,
-			cfg.AccessKeyID,
-			cfg.AccessKeySecret,
-			cfg.StsToken,
-		)
-		if err != nil {
-			log.Errorf("Failed to new client with sts token %v", err)
-			continue
-		}
-		log.Infof("Refresh client from sts token, next expire time %v", cfg.ExpireTime)
-		p.clientLock.Lock()
-		p.dnsClient = dnsClient
-		p.pvtzClient = pvtzClient
-		p.nextExpire = cfg.ExpireTime
-		p.clientLock.Unlock()
-	}
 }
 
 // Records gets the current records.

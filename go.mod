@@ -4,6 +4,7 @@ go 1.24.2
 
 require (
 	cloud.google.com/go/compute/metadata v0.6.0
+	github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata v0.0.7
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
@@ -30,7 +31,6 @@ require (
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
-	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/digitalocean/godo v1.146.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
