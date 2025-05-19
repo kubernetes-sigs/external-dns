@@ -186,11 +186,11 @@ type IBMCloudProvider struct {
 }
 
 type ibmcloudConfig struct {
-	Endpoint   string `json:"endpoint" yaml:"endpoint"`
-	APIKey     string `json:"apiKey" yaml:"apiKey"`
+	Endpoint   string `json:"endpoint"    yaml:"endpoint"`
+	APIKey     string `json:"apiKey"      yaml:"apiKey"`
 	CRN        string `json:"instanceCrn" yaml:"instanceCrn"`
-	IAMURL     string `json:"iamUrl" yaml:"iamUrl"`
-	InstanceID string `json:"-" yaml:"-"`
+	IAMURL     string `json:"iamUrl"      yaml:"iamUrl"`
+	InstanceID string `json:"-"           yaml:"-"`
 }
 
 // ibmcloudChange differentiates between ChangActions
