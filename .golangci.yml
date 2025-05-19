@@ -3,6 +3,7 @@ version: "2"
 linters:
   default: none
   enable: # golangci-lint help linters
+    - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/usage/linters/#copyloopvar
     - dogsled
     - goprintffuncname
     - govet
