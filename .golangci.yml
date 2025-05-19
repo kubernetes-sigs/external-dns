@@ -20,6 +20,7 @@ linters:
     - sloglint # Ensure consistent code style when using log/slog
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
     - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
+    - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
   settings:
     exhaustive:
       default-signifies-exhaustive: false
@@ -29,6 +30,8 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
+    cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
+      max-complexity: 52
   exclusions:
     generated: lax
     presets:
