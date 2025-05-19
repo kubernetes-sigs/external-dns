@@ -35,7 +35,7 @@ nav:
     - FQDN Templating: docs/advanced/fqdn-templating.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
-      - Release: docs/release.
+      - Release: docs/release.md
       - Deprecation Policy: docs/deprecation.md
       - docs/contributing/*
 

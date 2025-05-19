@@ -2,16 +2,15 @@
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Move ExternalDNS out of Kubernetes incubator]((#move-externaldns-out-of-kubernetes-incubator))
-  - [Summary](#summary)
-  - [Motivation](#motivation)
-    - [Goals](#goals)
-  - [Proposal](#proposal)
-  - [Details](#details)
-    - [Graduation Criteria](#graduation-criteria)
-      - [Maintainers](#maintainers)
-    - [Release process, artifacts](#release-process-artifacts)
-    - [Risks and Mitigations](#risks-and-mitigations)
+- [Summary](#summary)
+- [Motivation](#motivation)
+  - [Goals](#goals)
+- [Proposal](#proposal)
+- [Details](#details)
+  - [Graduation Criteria](#graduation-criteria)
+    - [Maintainers](#maintainers)
+  - [Release process, artifacts](#release-process-artifacts)
+  - [Risks and Mitigations](#risks-and-mitigations)
 
 <!-- /TOC -->
 
@@ -150,9 +149,11 @@ The following are risks that were identified:
 We think that the following actions will constitute appropriate mitigations:
 
 - Decoupling the providers via an API will allow us to resolve the problem of the providers. Being the project already more than 2 years old and given that there are 18 providers implemented, we possess enough information to define an API that we can be stable in a short timeframe.
+
   - Once this is stable, the problem of testing the providers can be deferred to be a provider's responsibility. This will also reduce the scope of External DNS core code, which means that there will be no need for a further increase of the maintaining team.
 
 - We added integration testing for the main cloud providers to the roadmap for the 1.0 release to make sure that we cover the mostly used ones.
+
   - We believe that this item should be tackled independently from the decoupling of providers as it would be capable of generating value independently from the result of the decoupling efforts.
 
 - With the move to the Kubernetes incubation, we hope that we will be able to access the testing resources of the Kubernetes project.
