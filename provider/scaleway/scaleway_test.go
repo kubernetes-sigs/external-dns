@@ -106,8 +106,8 @@ func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRe
 	}, nil
 }
 
-func (m *mockScalewayDomain) UpdateDNSZoneRecords(req *domain.UpdateDNSZoneRecordsRequest, opts ...scw.RequestOption) (*domain.UpdateDNSZoneRecordsResponse, error) {
-	return nil, nil
+func (m *mockScalewayDomain) UpdateDNSZoneRecords(_ *domain.UpdateDNSZoneRecordsRequest, _ ...scw.RequestOption) (*domain.UpdateDNSZoneRecordsResponse, error) {
+	return &domain.UpdateDNSZoneRecordsResponse{}, nil
 }
 
 func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
