@@ -106,6 +106,7 @@ Known providers using webhooks:
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
 | RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
 | Yandex Cloud          | https://github.com/ismailbaskin/external-dns-yandex-webhook/         |
