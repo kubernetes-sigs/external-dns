@@ -56,9 +56,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1166
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1165
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1145
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1169
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1169
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1169
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.6.0
