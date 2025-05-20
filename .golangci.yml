@@ -4,7 +4,8 @@ linters:
   default: none
   enable: # golangci-lint help linters
     - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/usage/linters/#copyloopvar
-    - dogsled
+    - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/usage/linters/#dogsled
+    - dupword # Duplicate word. https://golangci-lint.run/usage/linters/#dupword
     - goprintffuncname
     - govet
     - ineffassign
