@@ -498,7 +498,21 @@ func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 }
 
 func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target string, hostedZoneDomains []string) error {
+
+	if len(hostedZoneDomains) == 0 {
+		log.Errorf("Failed to create %s record named '%s' to '%s' for Alibaba Cloud DNS: not found any zone,please add the DNS zone first",
+			endpoint.RecordType, endpoint.DNSName, target)
+		return fmt.Errorf("no found any zone,please add the DNS zone first")
+	}
+
 	rr, domain := p.splitDNSName(endpoint.DNSName, hostedZoneDomains)
+
+	if domain == "" {
+		log.Errorf("Failed to create %s record named '%s' to '%s' for Alibaba Cloud DNS: no coorsponing DNS zone found for this domain '%s',please add the DNS zone first",
+			endpoint.RecordType, endpoint.DNSName, target, endpoint.DNSName)
+		return fmt.Errorf("no corresponding DNS zone found for this domain. Please add the DNS zone first")
+	}
+
 	request := alidns.CreateAddDomainRecordRequest()
 	request.DomainName = domain
 	request.Type = endpoint.RecordType
