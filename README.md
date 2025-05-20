@@ -67,6 +67,8 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
+- [Alibaba Cloud Public DNS](https://www.alibabacloud.com/help/en/dns/alibaba-cloud-dns)
+- [Alibaba Cloud DNS PrivateZone](https://www.alibabacloud.com/help/en/dns/introduction-to-intranet-analysis)
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.
 We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster.
@@ -127,7 +129,7 @@ We define the following stability levels for providers:
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
 | Provider                        | Status | Maintainers      |
-| ------------------------------- | ------ | ---------------- |
+|---------------------------------| ------ |------------------|
 | Google Cloud DNS                | Stable |                  |
 | AWS Route 53                    | Stable |                  |
 | AWS Cloud Map                   | Beta   |                  |
@@ -154,6 +156,7 @@ The following table clarifies the current status of the providers according to t
 | TencentCloud                    | Alpha  | @Hyzhou          |
 | Plural                          | Alpha  | @michaeljguarino |
 | Pi-hole                         | Alpha  | @tinyzimmer      |
+| Alibaba Cloud DNS               | Alpha  |                  |
 
 ## Kubernetes version compatibility
 
