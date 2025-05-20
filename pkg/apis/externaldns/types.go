@@ -587,7 +587,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to RFC2136 provider
-	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy)").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
+	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
 	app.Flag("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server").Default(strconv.Itoa(defaultConfig.RFC2136Port)).IntVar(&cfg.RFC2136Port)
 	app.Flag("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)").StringsVar(&cfg.RFC2136Zone)
 	app.Flag("rfc2136-create-ptr", "When using the RFC2136 provider, enable PTR management").Default(strconv.FormatBool(defaultConfig.RFC2136CreatePTR)).BoolVar(&cfg.RFC2136CreatePTR)

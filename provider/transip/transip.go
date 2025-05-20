@@ -97,7 +97,7 @@ func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	// refresh zone mapping
 	zoneMap := provider.ZoneIDName{}
 	for _, zone := range zones {
-		// TransIP API doesn't expose a unique identifier for zones, other than than
+		// TransIP API doesn't expose a unique identifier for zones, other than
 		// the domain name itself
 		zoneMap.Add(zone.Name, zone.Name)
 	}
