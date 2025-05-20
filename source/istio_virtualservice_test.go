@@ -184,7 +184,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/gateway.class=nginx",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -693,7 +693,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1945,7 +1945,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 

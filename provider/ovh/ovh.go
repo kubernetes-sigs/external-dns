@@ -223,7 +223,6 @@ func (p *OVHProvider) handleSingleZoneUpdate(ctx context.Context, zoneName strin
 
 	eg, ctxErrGroup := errgroup.WithContext(ctx)
 	for _, change := range allChanges {
-		change := change
 		eg.Go(func() error {
 			return p.change(ctxErrGroup, change)
 		})
@@ -350,7 +349,6 @@ func (p *OVHProvider) zonesRecords(ctx context.Context) ([]string, []ovhRecord, 
 	chRecords := make(chan []ovhRecord, len(zones))
 	eg, ctx := errgroup.WithContext(ctx)
 	for _, zone := range zones {
-		zone := zone
 		eg.Go(func() error { return p.records(ctx, &zone, chRecords) })
 	}
 	if err := eg.Wait(); err != nil {
@@ -430,7 +428,6 @@ func (p *OVHProvider) records(ctx context.Context, zone *string, records chan<- 
 	}
 	chRecords := make(chan ovhRecord, len(recordsIds))
 	for _, id := range recordsIds {
-		id := id
 		eg.Go(func() error { return p.record(ctxErrGroup, zone, id, chRecords) })
 	}
 	if err := eg.Wait(); err != nil {

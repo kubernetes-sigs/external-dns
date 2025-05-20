@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -342,7 +343,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
