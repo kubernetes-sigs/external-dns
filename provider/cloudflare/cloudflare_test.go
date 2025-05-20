@@ -31,6 +31,7 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -2100,7 +2101,7 @@ func checkFailed(name string, err error, shouldFail bool) error {
 		return fmt.Errorf("should fail - %q", name)
 	}
 	if !errors.Is(err, nil) && !shouldFail {
-		return fmt.Errorf("should not fail - %q, %v", name, err)
+		return fmt.Errorf("should not fail - %q, %w", name, err)
 	}
 	return nil
 }

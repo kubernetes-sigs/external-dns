@@ -18,6 +18,7 @@ package cloudapi
 
 import (
 	"encoding/json"
+	errs "errors"
 	"fmt"
 	"net"
 	"time"
@@ -43,9 +44,9 @@ func NewTencentAPIService(region string, rate int, secretId string, secretKey st
 	return tencentAPIService
 }
 
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 // PrivateDns API
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 
 func (api *defaultTencentAPIService) CreatePrivateZoneRecord(request *privatedns.CreatePrivateZoneRecordRequest) (response *privatedns.CreatePrivateZoneRecordResponse, err error) {
 	apiAction := CreatePrivateZoneRecord
@@ -137,9 +138,9 @@ func (api *defaultTencentAPIService) DescribePrivateZoneRecordList(request *priv
 	return response, nil
 }
 
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 // DnsPod API
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 
 func (api *defaultTencentAPIService) DescribeDomainList(request *dnspod.DescribeDomainListRequest) (response *dnspod.DescribeDomainListResponse, err error) {
 	apiAction := DescribeDomainList
@@ -231,13 +232,14 @@ func (api *defaultTencentAPIService) ModifyRecord(request *dnspod.ModifyRecordRe
 	return response, nil
 }
 
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 // API Error Report
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 
 func dealWithError(action Action, request string, err error) bool {
 	log.Errorf("dealWithError %s/%s request: %s, error: %s.", action.Service, action.Name, request, err.Error())
-	if sdkError, ok := err.(*errors.TencentCloudSDKError); ok {
+	sdkError := &errors.TencentCloudSDKError{}
+	if errs.As(err, &sdkError) {
 		switch sdkError.Code {
 		case "RequestLimitExceeded":
 			return true
@@ -251,11 +253,7 @@ func dealWithError(action Action, request string, err error) bool {
 		return false
 	}
 
-	if _, ok := err.(net.Error); ok {
-		return true
-	}
-
-	return false
+	return errs.As(err, new(net.Error))
 }
 
 func APIErrorRecord(apiAction Action, request string, response string, err error) {

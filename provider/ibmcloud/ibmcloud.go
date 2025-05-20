@@ -203,12 +203,12 @@ type ibmcloudChange struct {
 func getConfig(configFile string) (*ibmcloudConfig, error) {
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read IBM Cloud config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read IBM Cloud config file '%s': %w", configFile, err)
 	}
 	cfg := &ibmcloudConfig{}
 	err = yaml.Unmarshal(contents, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read IBM Cloud config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read IBM Cloud config file '%s': %w", configFile, err)
 	}
 
 	return cfg, nil
@@ -241,7 +241,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 			Crn:           core.StringPtr(c.CRN),
 		})
 		if err != nil {
-			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud public zones client: %v", err)
+			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud public zones client: %w", err)
 		}
 		if c.Endpoint != "" {
 			_ = service.publicZonesService.SetServiceURL(c.Endpoint)
@@ -249,7 +249,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 
 		zonesResp, _, err := service.publicZonesService.ListZones(&zonesv1.ListZonesOptions{})
 		if err != nil {
-			return service, isPrivate, fmt.Errorf("failed to list ibmcloud public zones: %v", err)
+			return service, isPrivate, fmt.Errorf("failed to list ibmcloud public zones: %w", err)
 		}
 		for _, zone := range zonesResp.Result {
 			log.Debugf("zoneName: %s, zoneID: %s", *zone.Name, *zone.ID)
@@ -274,7 +274,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 			ZoneIdentifier: core.StringPtr(zoneID),
 		})
 		if err != nil {
-			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud public records client: %v", err)
+			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud public records client: %w", err)
 		}
 		if c.Endpoint != "" {
 			_ = service.publicRecordsService.SetServiceURL(c.Endpoint)
@@ -286,7 +286,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 			Authenticator: authenticator,
 		})
 		if err != nil {
-			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud private records client: %v", err)
+			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud private records client: %w", err)
 		}
 		if c.Endpoint != "" {
 			_ = service.privateDNSService.SetServiceURL(c.Endpoint)

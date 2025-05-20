@@ -297,7 +297,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, rg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on routegroup %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, err)
+		return nil, fmt.Errorf("failed to apply template on routegroup %s/%s: %w", rg.Metadata.Namespace, rg.Metadata.Name, err)
 	}
 
 	hostnames := buf.String()
