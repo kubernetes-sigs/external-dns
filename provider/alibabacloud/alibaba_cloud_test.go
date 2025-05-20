@@ -504,6 +504,10 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 	if rr != "@" || domain != "" {
 		t.Errorf("Failed to splitDNSName with emptyZoneDomains for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
 	}
+	rr, domain = p.splitDNSName(endpoint.DNSName, []string{"example.com"})
+	if rr != "@" || domain != "" {
+		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
+	}
 }
 
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
