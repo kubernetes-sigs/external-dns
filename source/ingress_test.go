@@ -138,7 +138,7 @@ func TestNewIngressSource(t *testing.T) {
 			annotationFilter:  "kubernetes.io/ingress.class=nginx",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1424,7 +1424,7 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 

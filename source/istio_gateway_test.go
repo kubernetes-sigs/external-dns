@@ -160,7 +160,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			annotationFilter: "kubernetes.io/gateway.class=nginx",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -492,7 +492,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1473,7 +1473,7 @@ func testGatewayEndpoints(t *testing.T) {
 			expectError: true,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
