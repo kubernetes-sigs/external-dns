@@ -192,7 +192,7 @@ func TestIsLess(t *testing.T) {
 func TestGetProviderSpecificProperty(t *testing.T) {
 	e := &Endpoint{
 		ProviderSpecific: []ProviderSpecificProperty{
-			ProviderSpecificProperty{
+			{
 				Name:  "name",
 				Value: "value",
 			},
@@ -228,7 +228,7 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 			key:      "key1",
 			value:    "value1",
 			expected: []ProviderSpecificProperty{
-				ProviderSpecificProperty{
+				{
 					Name:  "key1",
 					Value: "value1",
 				},
@@ -245,7 +245,7 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 					"example.org", "example.com", "1.2.4.5",
 				},
 				ProviderSpecific: []ProviderSpecificProperty{
-					ProviderSpecificProperty{
+					{
 						Name:  "name1",
 						Value: "value1",
 					},
@@ -256,11 +256,11 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 			value:              "value2",
 
 			expected: []ProviderSpecificProperty{
-				ProviderSpecificProperty{
+				{
 					Name:  "name1",
 					Value: "value1",
 				},
-				ProviderSpecificProperty{
+				{
 					Name:  "name2",
 					Value: "value2",
 				},
@@ -277,15 +277,15 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 					"example.org", "example.com", "1.2.4.5",
 				},
 				ProviderSpecific: []ProviderSpecificProperty{
-					ProviderSpecificProperty{
+					{
 						Name:  "name1",
 						Value: "value1",
 					},
-					ProviderSpecificProperty{
+					{
 						Name:  "name2",
 						Value: "value2",
 					},
-					ProviderSpecificProperty{
+					{
 						Name:  "name3",
 						Value: "value3",
 					},
@@ -295,15 +295,15 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 			value:              "value2",
 			expectedIdentifier: "newIdentifier",
 			expected: []ProviderSpecificProperty{
-				ProviderSpecificProperty{
+				{
 					Name:  "name1",
 					Value: "value1",
 				},
-				ProviderSpecificProperty{
+				{
 					Name:  "name2",
 					Value: "value2",
 				},
-				ProviderSpecificProperty{
+				{
 					Name:  "name3",
 					Value: "value3",
 				},
@@ -320,7 +320,7 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 					"example.org", "example.com", "1.2.4.5",
 				},
 				ProviderSpecific: []ProviderSpecificProperty{
-					ProviderSpecificProperty{
+					{
 						Name:  "name1",
 						Value: "value1",
 					},
@@ -330,7 +330,7 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 			value:              "value2",
 			expectedIdentifier: "identifier",
 			expected: []ProviderSpecificProperty{
-				ProviderSpecificProperty{
+				{
 					Name:  "name1",
 					Value: "value2",
 				},
@@ -363,7 +363,7 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			name: "name and key are not matching",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					ProviderSpecificProperty{
+					{
 						Name:  "name1",
 						Value: "value1",
 					},
@@ -371,7 +371,7 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			},
 			key: "name2",
 			expected: []ProviderSpecificProperty{
-				ProviderSpecificProperty{
+				{
 					Name:  "name1",
 					Value: "value1",
 				},
@@ -381,15 +381,15 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			name: "some keys are matching and some keys are not matching",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					ProviderSpecificProperty{
+					{
 						Name:  "name1",
 						Value: "value1",
 					},
-					ProviderSpecificProperty{
+					{
 						Name:  "name2",
 						Value: "value2",
 					},
-					ProviderSpecificProperty{
+					{
 						Name:  "name3",
 						Value: "value3",
 					},
@@ -397,11 +397,11 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			},
 			key: "name2",
 			expected: []ProviderSpecificProperty{
-				ProviderSpecificProperty{
+				{
 					Name:  "name1",
 					Value: "value1",
 				},
-				ProviderSpecificProperty{
+				{
 					Name:  "name3",
 					Value: "value3",
 				},
@@ -411,7 +411,7 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			name: "name and key are matching",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					ProviderSpecificProperty{
+					{
 						Name:  "name1",
 						Value: "value1",
 					},
