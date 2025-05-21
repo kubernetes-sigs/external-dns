@@ -69,7 +69,7 @@ func TestGenerateNonceSuccess(t *testing.T) {
 	// Test nonce length
 	decodedNonce, err := base64.StdEncoding.DecodeString(string(nonce))
 	require.NoError(t, err)
-	require.Equal(t, standardGcmNonceSize, len(decodedNonce))
+	require.Len(t, decodedNonce, standardGcmNonceSize)
 }
 
 func TestGenerateNonceError(t *testing.T) {

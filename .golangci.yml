@@ -24,6 +24,9 @@ linters:
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
     - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
+
+    # tests
+    - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint
   settings:
     exhaustive:
       default-signifies-exhaustive: false
@@ -35,6 +38,17 @@ linters:
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 52
+    testifylint:
+      # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
+      # Default: false
+      enable-all: true
+      # Disable checkers by name
+      # (in addition to default
+      #   suite-thelper
+      # ).
+      # TODO: enable in follow-up
+      disable:
+        - require-error
   exclusions:
     generated: lax
     presets:

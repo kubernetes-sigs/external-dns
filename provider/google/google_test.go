@@ -552,7 +552,7 @@ func TestGoogleBatchChangeSet(t *testing.T) {
 
 	batchCs := batchChange(cs, googleDefaultBatchChangeSize)
 
-	require.Equal(t, 1, len(batchCs))
+	require.Len(t, batchCs, 1)
 
 	sortChangesByName(cs)
 	validateChange(t, batchCs[0], cs)
@@ -577,7 +577,7 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 
 	batchCs := batchChange(cs, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 
 	dnsChange := &dns.Change{}
 	for _, c := range batchCs {
@@ -585,8 +585,8 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 		dnsChange.Deletions = append(dnsChange.Deletions, c.Deletions...)
 	}
 
-	require.Equal(t, len(cs.Additions), len(dnsChange.Additions))
-	require.Equal(t, len(cs.Deletions), len(dnsChange.Deletions))
+	require.Len(t, dnsChange.Additions, len(cs.Additions))
+	require.Len(t, dnsChange.Deletions, len(cs.Deletions))
 
 	sortChangesByName(cs)
 	sortChangesByName(dnsChange)
@@ -609,7 +609,7 @@ func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
 
 	batchCs := batchChange(cs, testLimit)
 
-	require.Equal(t, 0, len(batchCs))
+	require.Empty(t, batchCs)
 }
 
 func TestSoftErrListZonesConflict(t *testing.T) {

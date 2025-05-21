@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -145,7 +146,7 @@ func TestCivoProviderWithoutRecords(t *testing.T) {
 	records, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(records), 0)
+	assert.Empty(t, records)
 }
 
 func TestCivoProcessCreateActions(t *testing.T) {
@@ -182,9 +183,9 @@ func TestCivoProcessCreateActions(t *testing.T) {
 	err := processCreateActions(zoneByID, recordsByZoneID, createsByZone, &changes)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(changes.Creates))
-	assert.Equal(t, 0, len(changes.Updates))
-	assert.Equal(t, 0, len(changes.Deletes))
+	assert.Len(t, changes.Creates, 2)
+	assert.Empty(t, changes.Updates)
+	assert.Empty(t, changes.Deletes)
 
 	expectedCreates := []*CivoChangeCreate{
 		{
@@ -306,9 +307,9 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 	err := processUpdateActions(zoneByID, recordsByZoneID, updatesByZone, &changes)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(changes.Creates))
-	assert.Equal(t, 0, len(changes.Updates))
-	assert.Equal(t, 2, len(changes.Deletes))
+	assert.Len(t, changes.Creates, 2)
+	assert.Empty(t, changes.Updates)
+	assert.Len(t, changes.Deletes, 2)
 
 	expectedUpdate := []*CivoChangeCreate{
 		{
@@ -435,9 +436,9 @@ func TestCivoProcessDeleteAction(t *testing.T) {
 	err := processDeleteActions(zoneByID, recordsByZoneID, deleteByDomain, &changes)
 	require.NoError(t, err)
 
-	assert.Equal(t, 0, len(changes.Creates))
-	assert.Equal(t, 0, len(changes.Updates))
-	assert.Equal(t, 2, len(changes.Deletes))
+	assert.Empty(t, changes.Creates)
+	assert.Empty(t, changes.Updates)
+	assert.Len(t, changes.Deletes, 2)
 
 	expectedDelete := []*CivoChangeDelete{
 		{
@@ -598,7 +599,7 @@ func TestCivoProviderFetchRecordsWithError(t *testing.T) {
 }
 
 func TestCivo_getStrippedRecordName(t *testing.T) {
-	assert.Equal(t, "", getStrippedRecordName(civogo.DNSDomain{
+	assert.Empty(t, getStrippedRecordName(civogo.DNSDomain{
 		Name: "foo.com",
 	}, endpoint.Endpoint{
 		DNSName: "foo.com",

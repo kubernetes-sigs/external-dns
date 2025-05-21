@@ -63,9 +63,9 @@ func TestOverrideConfiguration(t *testing.T) {
 	if err != nil {
 		t.Errorf("got unexpected err %v", err)
 	}
-	assert.Equal(t, cfg.SubscriptionID, "subscription-override")
-	assert.Equal(t, cfg.ResourceGroup, "rg-override")
-	assert.Equal(t, cfg.ActiveDirectoryAuthorityHost, "aad-endpoint-override")
+	assert.Equal(t, "subscription-override", cfg.SubscriptionID)
+	assert.Equal(t, "rg-override", cfg.ResourceGroup)
+	assert.Equal(t, "aad-endpoint-override", cfg.ActiveDirectoryAuthorityHost)
 }
 
 // Test for custom header policy

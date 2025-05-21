@@ -201,13 +201,13 @@ func TestGetProviderSpecificProperty(t *testing.T) {
 
 	t.Run("key is not present in provider specific", func(t *testing.T) {
 		val, ok := e.GetProviderSpecificProperty("hello")
-		assert.Equal(t, false, ok)
+		assert.False(t, ok)
 		assert.Empty(t, val)
 	})
 
 	t.Run("key is present in provider specific", func(t *testing.T) {
 		val, ok := e.GetProviderSpecificProperty("name")
-		assert.Equal(t, true, ok)
+		assert.True(t, ok)
 		assert.NotEmpty(t, val)
 
 	})
