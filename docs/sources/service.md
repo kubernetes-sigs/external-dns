@@ -33,6 +33,10 @@ a Pod that has a non-empty `spec.hostname` field, additional DNS entries are cre
 For each domain name created for the Service, the additional DNS entry for the Pod has that domain name prefixed with
 the value of the Pod's `spec.hostname` field and a `.`.
 
+Another way to create per-pod DNS entries is to annotate headless service with
+`external-dns.alpha.kubernetes.io/service-pod-endpoints: true`,  this will prefix service domain name with pod name.
+
+
 ## Targets
 
 If the Service has an `external-dns.alpha.kubernetes.io/target` annotation, uses

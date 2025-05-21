@@ -55,4 +55,6 @@ const (
 	ControllerValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
+	// When set on a service, per-pod DNS entries will be created.
+	ServicePodEndpoints = AnnotationKeyPrefix + "service-pod-endpoints"
 )

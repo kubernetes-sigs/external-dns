@@ -3037,6 +3037,62 @@ func TestHeadlessServices(t *testing.T) {
 			false,
 		},
 		{
+			"annotated Headless services create DNS name for each pod",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			true,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				servicePodEndpointsKey:     "true",
+				hostnameAnnotationKey:      "service.example.org",
+				endpointsTypeAnnotationKey: EndpointsTypeNodeExternalIP,
+			},
+			map[string]string{},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+			[]string{"", "", ""},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo1", "foo2", "foo3"},
+			[]string{"", "", ""},
+			[]bool{true, true, true},
+			false,
+			[]v1.Node{
+				{
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{
+							{
+								Type:    v1.NodeExternalIP,
+								Address: "1.2.3.4",
+							},
+							{
+								Type:    v1.NodeInternalIP,
+								Address: "2001:db8::4",
+							},
+						},
+					},
+				},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
+				{DNSName: "foo1.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo1.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
+				{DNSName: "foo2.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo2.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
+				{DNSName: "foo3.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo3.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
+			},
+			false,
+		},
+		{
 			"annotated Headless services return dual-stack targets from node external IP if endpoints-type annotation is set and exposeInternalIPv6 flag set",
 			"",
 			"testing",

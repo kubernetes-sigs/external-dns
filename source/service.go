@@ -323,6 +323,8 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
+	_, perPodDNS := svc.Annotations[servicePodEndpointsKey]
+
 	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
 	for _, endpointSlice := range endpointSlices {
 		for _, ep := range endpointSlice.Endpoints {
@@ -357,6 +359,10 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			headlessDomains := []string{hostname}
 			if pod.Spec.Hostname != "" {
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
+			}
+
+			if perPodDNS {
+				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Name, hostname))
 			}
 
 			for _, headlessDomain := range headlessDomains {
