@@ -17,6 +17,7 @@ limitations under the License.
 package google
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -790,7 +791,8 @@ func createZone(t *testing.T, p *GoogleProvider, zone *dns.ManagedZone) {
 	zone.Description = "Testing zone for kubernetes.io/external-dns"
 
 	if _, err := p.managedZonesClient.Create("zalando-external-dns-test", zone).Do(); err != nil {
-		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusConflict {
+		var errs *googleapi.Error
+		if !errors.As(err, &errs) || errs.Code != http.StatusConflict {
 			require.NoError(t, err)
 		}
 	}

@@ -2101,7 +2101,7 @@ func checkFailed(name string, err error, shouldFail bool) error {
 		return fmt.Errorf("should fail - %q", name)
 	}
 	if !errors.Is(err, nil) && !shouldFail {
-		return fmt.Errorf("should not fail - %q, %v", name, err)
+		return fmt.Errorf("should not fail - %q, %w", name, err)
 	}
 	return nil
 }

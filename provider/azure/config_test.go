@@ -327,7 +327,7 @@ func parseMaxRetries(value string, defaultValue int) (int, error) {
 
 	retries, err := strconv.Atoi(value)
 	if err != nil {
-		return 0, fmt.Errorf("invalid retry count %q: %v", value, err)
+		return 0, fmt.Errorf("invalid retry count %q: %w", value, err)
 	}
 
 	return retries, nil

@@ -11,7 +11,8 @@ linters:
     - ineffassign
     - misspell
     - revive
-    - rowserrcheck
+    - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
+    - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/usage/linters/#errcheck
     - staticcheck
     - unconvert
     - unused

@@ -493,7 +493,7 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 
 		rr, err := dns.NewRR(newRR)
 		if err != nil {
-			return fmt.Errorf("failed to build RR: %v", err)
+			return fmt.Errorf("failed to build RR: %w", err)
 		}
 
 		m.Insert([]dns.RR{rr})
@@ -510,7 +510,7 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 
 		rr, err := dns.NewRR(newRR)
 		if err != nil {
-			return fmt.Errorf("failed to build RR: %v", err)
+			return fmt.Errorf("failed to build RR: %w", err)
 		}
 
 		m.Remove([]dns.RR{rr})

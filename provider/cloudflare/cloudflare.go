@@ -702,7 +702,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			}
 			chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
 			if chErr != nil {
-				return fmt.Errorf("could not fetch custom hostnames from zone, %v", chErr)
+				return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
 			}
 			if change.Action == cloudFlareUpdate {
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
