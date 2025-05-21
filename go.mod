@@ -26,7 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/civo/civogo v0.5.1
+	github.com/civo/civogo v0.5.2
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
@@ -47,7 +47,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.91.0
+	github.com/oracle/oci-go-sdk/v65 v65.91.1
 	github.com/ovh/go-ovh v1.7.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
@@ -56,9 +56,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1166
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1165
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1145
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1170
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.1170
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.1170
 	github.com/transip/gotransip/v6 v6.26.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	go.etcd.io/etcd/client/v3 v3.6.0
