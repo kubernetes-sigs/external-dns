@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/internal/gen/docs/utils"
 )
@@ -99,7 +100,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"",
 			"server-name",
 			func(actual *tls.Config, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "server-name", actual.ServerName)
 				assert.NotNil(t, actual.Certificates[0])
 				assert.False(t, actual.InsecureSkipVerify)

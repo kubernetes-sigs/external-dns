@@ -27,29 +27,29 @@ import (
 
 func TestValidateFlags(t *testing.T) {
 	cfg := newValidConfig(t)
-	assert.NoError(t, ValidateConfig(cfg))
+	require.NoError(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = "test"
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = ""
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	for _, format := range []string{"text", "json"} {
 		cfg = newValidConfig(t)
 		cfg.LogFormat = format
-		assert.NoError(t, ValidateConfig(cfg))
+		require.NoError(t, ValidateConfig(cfg))
 	}
 
 	cfg = newValidConfig(t)
 	cfg.Sources = []string{}
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.Provider = ""
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 }
 
 func newValidConfig(t *testing.T) *externaldns.Config {

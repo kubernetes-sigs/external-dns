@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// Compile time check for interface conformance
+// Compile time checks for interface conformance
 var _ AWSSDClient = &AWSSDClientStub{}
 
 var (
@@ -803,12 +803,12 @@ func TestAWSSDProvider_DeleteService(t *testing.T) {
 
 	// delete first service
 	err := provider.DeleteService(context.Background(), services["private"]["srv1"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 2)
 
 	// delete third service
 	err1 := provider.DeleteService(context.Background(), services["private"]["srv3"])
-	assert.NoError(t, err1)
+	require.NoError(t, err1)
 	assert.Len(t, api.services["private"], 1)
 
 	expectedServices := map[string]*sdtypes.Service{

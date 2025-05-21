@@ -1234,7 +1234,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 			assert.True(r.t, r.changesApplied, "unexpected delete before provider changes")
 
 			var key string
-			assert.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
+			require.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
 			assert.True(r.t, r.stubConfig.ExpectDelete.Has(key), "unexpected delete for key %q", key)
 			r.stubConfig.ExpectDelete.Delete(key)
 
@@ -1265,7 +1265,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 			delete(r.stubConfig.ExpectInsert, key)
 
 			var testOwner string
-			assert.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[1], &testOwner))
+			require.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[1], &testOwner))
 			assert.Equal(r.t, "test-owner", testOwner)
 
 			var labels map[string]string

@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	udnssdk "github.com/ultradns/ultradns-sdk-go"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -132,9 +133,9 @@ func TestUltraDNSProvider_Zones(t *testing.T) {
 	}
 
 	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	zones, err := provider.Zones(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, reflect.DeepEqual(expected, zones))
 }
 
@@ -152,7 +153,7 @@ func TestUltraDNSProvider_Records(t *testing.T) {
 	rrsetKey := udnssdk.RRSetKey{}
 	expected, _, _, err := provider.client.RRSets.SelectWithOffsetWithLimit(rrsetKey, 0, 1000)
 	records, err := provider.Records(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	for _, v := range records {
 		assert.Equal(t, fmt.Sprintf("%s.", v.DNSName), expected[0].OwnerName)
 		assert.Equal(t, v.RecordType, expected[0].RRType)
@@ -244,7 +245,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 		}
 
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		rrsetKey := udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -270,7 +271,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100},
 		}
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		rrsetKey = udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -297,7 +298,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 		}
 
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		resp, _ := providerUltradns.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/AAAA/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, "404 Not Found", resp.Status)
@@ -337,7 +338,7 @@ func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T)
 		changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2", "192.168.0.24", "1.2.3.4"}, RecordType: "A", RecordTTL: 100}}
 
 		err = provider.ApplyChanges(context.Background(), changes)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		rrsetKey = udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -462,7 +463,7 @@ func TestUltraDNSProvider_MultipleTargetAAAARDPool(t *testing.T) {
 			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100},
 		}
 		err := provider.ApplyChanges(context.Background(), changes)
-		assert.NoErrorf(t, err, " multiple AAAA targets are allowed when pool is RDPool %s", "formatted")
+		require.NoErrorf(t, err, " multiple AAAA targets are allowed when pool is RDPool %s", "formatted")
 
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/AAAA/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, "200 OK", resp.Status)
@@ -471,12 +472,10 @@ func TestUltraDNSProvider_MultipleTargetAAAARDPool(t *testing.T) {
 		changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA"}}
 
 		err = provider.ApplyChanges(context.Background(), changes)
-
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, "404 Not Found", resp.Status)
-
 	}
 }
 

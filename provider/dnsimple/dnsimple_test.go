@@ -223,7 +223,7 @@ func testDnsimpleSuitableZone(t *testing.T) {
 	ctx := context.Background()
 	mockProvider.accountID = "1"
 	zones, err := mockProvider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	zone := dnsimpleSuitableZone("example-beta.example.com", zones)
 	assert.Equal(t, "example.com", zone.Name)
@@ -231,12 +231,12 @@ func testDnsimpleSuitableZone(t *testing.T) {
 	os.Setenv("DNSIMPLE_ZONES", "environment-example.com,example.environment-example.com")
 	mockProvider.accountID = "3"
 	zones, err = mockProvider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	zone = dnsimpleSuitableZone("hello.example.environment-example.com", zones)
 	assert.Equal(t, "example.environment-example.com", zone.Name)
 
-	os.Unsetenv("DNSIMPLE_ZONES")
+	_ = os.Unsetenv("DNSIMPLE_ZONES")
 	mockProvider.accountID = "1"
 }
 
@@ -247,7 +247,7 @@ func TestNewDnsimpleProvider(t *testing.T) {
 		t.Errorf("Expected to fail new provider on bad token")
 	}
 
-	os.Unsetenv("DNSIMPLE_OAUTH")
+	_ = os.Unsetenv("DNSIMPLE_OAUTH")
 	_, err = NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on empty token")

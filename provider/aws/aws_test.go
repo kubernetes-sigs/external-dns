@@ -673,7 +673,7 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 	}
 
 	records, err := provider.AdjustEndpoints(records)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("a-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),

@@ -125,7 +125,7 @@ func TestRecords(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/records", r.URL.Path)
+		assert.Equal(t, "/records", r.URL.Path)
 		w.Write([]byte(`[{
 			"dnsName" : "test.example.com"
 		}]`))
@@ -149,7 +149,7 @@ func TestRecordsWithErrors(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/records", r.URL.Path)
+		assert.Equal(t, "/records", r.URL.Path)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer svr.Close()
@@ -231,7 +231,7 @@ func TestApplyChanges(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/records", r.URL.Path)
+		assert.Equal(t, "/records", r.URL.Path)
 		if successfulApplyChanges {
 			w.WriteHeader(http.StatusNoContent)
 		} else {
@@ -281,7 +281,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, webhookapi.UrlRecords, r.URL.Path)
+		assert.Equal(t, webhookapi.UrlRecords, r.URL.Path)
 		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
 	}))
 	defer svr.Close()
@@ -302,7 +302,7 @@ func TestAdjustEndpoints(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
+		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 
 		var endpoints []*endpoint.Endpoint
 		defer r.Body.Close()
@@ -354,7 +354,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
+		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer svr.Close()
@@ -386,17 +386,17 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		}
 		if r.URL.Path == "/records" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-			// assert that the request contains the provider specific property
+			// assert that the request contains the provider-specific property
 			var changes plan.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			err = json.Unmarshal(b, &changes)
-			require.NoError(t, err)
-			require.Len(t, changes.Create, 1)
-			require.Len(t, changes.Create[0].ProviderSpecific, 1)
-			require.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
-			require.Equal(t, "value1", changes.Create[0].ProviderSpecific[0].Value)
+			assert.NoError(t, err)
+			assert.Len(t, changes.Create, 1)
+			assert.Len(t, changes.Create[0].ProviderSpecific, 1)
+			assert.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
+			assert.Equal(t, "value1", changes.Create[0].ProviderSpecific[0].Value)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

@@ -32,6 +32,7 @@ import (
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -301,7 +302,7 @@ func TestRfc2136TLSConfig(t *testing.T) {
 	stub := newStub()
 
 	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
 		`-----BEGIN CERTIFICATE-----
@@ -323,12 +324,12 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	}
 
 	provider, err := createRfc2136TLSStubProvider(stub, tlsConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rawProvider := provider.(*rfc2136Provider)
 
 	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
 	assert.False(t, client.TLSConfig.InsecureSkipVerify)
@@ -890,7 +891,7 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 func TestCreateRfc2136StubProviderWithHosts(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithHosts(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rawProvider, ok := provider.(*rfc2136Provider)
 	assert.True(t, ok, "expected provider to be of type *rfc2136Provider")
@@ -905,7 +906,7 @@ func TestCreateRfc2136StubProviderWithHosts(t *testing.T) {
 func TestRoundRobinLoadBalancing(t *testing.T) {
 	stub := newStubLB("round-robin", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
 	_, err := createRfc2136StubProviderWithStrategy(stub, "round-robin")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	m := new(dns.Msg)
 	m.SetUpdate("foo.com.")
@@ -924,7 +925,7 @@ func TestRoundRobinLoadBalancing(t *testing.T) {
 func TestRandomLoadBalancing(t *testing.T) {
 	stub := newStubLB("random", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
 	_, err := createRfc2136StubProviderWithStrategy(stub, "random")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	m := new(dns.Msg)
 	m.SetUpdate("foo.com.")

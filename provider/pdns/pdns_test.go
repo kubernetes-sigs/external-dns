@@ -885,7 +885,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	   - We correctly create corresponding endpoints
 	*/
 	eps, err := p.convertRRSetToEndpoints(RRSetMultipleRecords)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal(endpointsMultipleRecords, eps)
 
 	/* Given an RRSet with two records, one of which is disabled, we test:
@@ -893,7 +893,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	   - We correctly discard/ignore the disabled record.
 	*/
 	eps, err = p.convertRRSetToEndpoints(RRSetDisabledRecord)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal(endpointsDisabledRecord, eps)
 }
 
@@ -910,7 +910,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	/* We test that endpoints are returned correctly for a Zone when Records() is called
 	 */
 	eps, err := p.Records(ctx)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal(endpointsMixedRecords, eps)
 
 	// Test failures are handled correctly
@@ -1015,12 +1015,12 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZ
 
 	// Check inserting endpoints from a single zone which is specified in DomainFilter
 	zlist, err := p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check deleting endpoints from a single zone which is specified in DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsDelete)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
 
 	// Check endpoints from multiple zones # which one is specified in DomainFilter and one is not

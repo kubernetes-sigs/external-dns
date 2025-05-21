@@ -26,6 +26,7 @@ import (
 
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/networking-go-sdk/dnsrecordsv1"
+	"github.com/stretchr/testify/require"
 
 	"github.com/IBM/networking-go-sdk/dnssvcsv1"
 
@@ -303,7 +304,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 			Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	endpointsUpdate, err := p.AdjustEndpoints([]*endpoint.Endpoint{
 		{
@@ -313,7 +314,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 			Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	changes := plan.Changes{
 		Create: endpointsCreate,
