@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -61,8 +62,8 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
 
-	dnsEndpointList := endpoint.DNSEndpointList{}
-	dnsEndpoint := &endpoint.DNSEndpoint{
+	dnsEndpointList := apiv1alpha1.DNSEndpointList{}
+	dnsEndpoint := &apiv1alpha1.DNSEndpoint{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: apiVersion,
 			Kind:       kind,
@@ -74,7 +75,7 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 			Labels:      labels,
 			Generation:  1,
 		},
-		Spec: endpoint.DNSEndpointSpec{
+		Spec: apiv1alpha1.DNSEndpointSpec{
 			Endpoints: endpoints,
 		},
 	}
@@ -101,7 +102,7 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 			case p == "/apis/"+apiVersion+"/namespaces/"+namespace+"/"+strings.ToLower(kind)+"s/"+name+"/status" && m == http.MethodPut:
 				decoder := json.NewDecoder(req.Body)
 
-				var body endpoint.DNSEndpoint
+				var body apiv1alpha1.DNSEndpoint
 				decoder.Decode(&body)
 				dnsEndpoint.Status.ObservedGeneration = body.Status.ObservedGeneration
 				return &http.Response{StatusCode: http.StatusOK, Header: defaultHeader(), Body: objBody(codec, dnsEndpoint)}, nil
@@ -468,7 +469,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 	} {
-
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
