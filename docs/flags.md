@@ -133,7 +133,7 @@
 | `--exoscale-apizone="ch-gva-2"` | When using Exoscale provider, specify the API Zone (optional) |
 | `--exoscale-apikey=""` | Provide your API Key for the Exoscale provider |
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
-| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
+| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
 | `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times) |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |

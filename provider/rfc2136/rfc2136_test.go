@@ -600,7 +600,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 }
 
 // These tests all use the foo.com and foobar.com zones with no filters
-// createMsgs and updateMsgs need sorted when are are used
+// createMsgs and updateMsgs need sorted when are used
 func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithZones(stub)
@@ -664,7 +664,7 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 }
 
 // These tests use the foo.com and foobar.com zones and with filters set to both zones
-// createMsgs and updateMsgs need sorted when are are used
+// createMsgs and updateMsgs need sorted when are used
 func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithZonesFilters(stub)

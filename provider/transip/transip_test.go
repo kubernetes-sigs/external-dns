@@ -238,7 +238,7 @@ func TestProviderRecords(t *testing.T) {
 		switch {
 		case req.Endpoint == "/domains":
 			// return list of some domain names
-			// names only, other fields are not used
+			// only, other fields are not used
 			data = []byte(`{"domains":[{"name":"example.org"}, {"name":"example.com"}]}`)
 		case strings.HasSuffix(req.Endpoint, "/dns"):
 			// return list of DNS entries
