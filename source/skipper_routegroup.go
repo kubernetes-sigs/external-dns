@@ -164,7 +164,7 @@ func (cli *routeGroupClient) getRouteGroupList(url string) (*routeGroupList, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get routegroup list from %s, got: %s", url, resp.Status)
 	}
 
@@ -178,7 +178,7 @@ func (cli *routeGroupClient) getRouteGroupList(url string) (*routeGroupList, err
 }
 
 func (cli *routeGroupClient) get(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

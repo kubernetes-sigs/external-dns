@@ -15,6 +15,7 @@ linters:
     - staticcheck
     - unconvert
     - unused
+    - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. https://golangci-lint.run/usage/linters/#usestdlibvars
     - whitespace
     - decorder # Check declaration order and count of types, constants, variables and functions. https://golangci-lint.run/usage/linters/#decorder
     - tagalign # Check that struct tags are well aligned. https://golangci-lint.run/usage/linters/#tagalign
