@@ -18,13 +18,13 @@ package cloudapi
 
 import (
 	"encoding/json"
-	errs "errors"
+	"errors"
 	"fmt"
 	"net"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
+	tclouderrors "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
 	dnspod "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod/v20210323"
 	privatedns "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns/v20201028"
 )
@@ -238,8 +238,8 @@ func (api *defaultTencentAPIService) ModifyRecord(request *dnspod.ModifyRecordRe
 
 func dealWithError(action Action, request string, err error) bool {
 	log.Errorf("dealWithError %s/%s request: %s, error: %s.", action.Service, action.Name, request, err.Error())
-	sdkError := &errors.TencentCloudSDKError{}
-	if errs.As(err, &sdkError) {
+	sdkError := &tclouderrors.TencentCloudSDKError{}
+	if errors.As(err, &sdkError) {
 		switch sdkError.Code {
 		case "RequestLimitExceeded":
 			return true
@@ -253,7 +253,7 @@ func dealWithError(action Action, request string, err error) bool {
 		return false
 	}
 
-	return errs.As(err, new(net.Error))
+	return errors.As(err, new(net.Error))
 }
 
 func APIErrorRecord(apiAction Action, request string, response string, err error) {
