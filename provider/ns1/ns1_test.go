@@ -138,7 +138,7 @@ func TestNS1Records(t *testing.T) {
 
 	records, err := provider.Records(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(records))
+	assert.Len(t, records, 1)
 
 	provider.client = &MockNS1GetZoneFail{}
 	_, err = provider.Records(ctx)

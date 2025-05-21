@@ -89,7 +89,7 @@ func (r *Route53APIStub) ListResourceRecordSets(ctx context.Context, input *rout
 
 	output := &route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
 	require.NotNil(r.t, input.MaxItems)
-	assert.EqualValues(r.t, route53PageSize, *input.MaxItems)
+	assert.Equal(r.t, route53PageSize, *input.MaxItems)
 	if len(r.recordSets) == 0 {
 		output.ResourceRecordSets = []route53types.ResourceRecordSet{}
 	} else if _, ok := r.recordSets[*input.HostedZoneId]; !ok {
@@ -1582,7 +1582,7 @@ func TestAWSBatchChangeSet(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
-	require.Equal(t, 1, len(batchCs))
+	require.Len(t, batchCs, 1)
 
 	// sorting cs not needed as it should be returned as is
 	validateAWSChangeRecords(t, batchCs[0], cs)
@@ -1620,7 +1620,7 @@ func TestAWSBatchChangeSetExceeding(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, testLimit, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 
 	// sorting cs needed to match batchCs
 	for i, batch := range batchCs {
@@ -1658,7 +1658,7 @@ func TestAWSBatchChangeSetExceedingNameChange(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, testLimit, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
-	require.Equal(t, 0, len(batchCs))
+	require.Empty(t, batchCs)
 }
 
 func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
@@ -1717,7 +1717,7 @@ func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, testLimit, defaultBatchChangeSizeValues)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
@@ -1776,7 +1776,7 @@ func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, testLimit, defaultBatchChangeSizeValues)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
@@ -1835,7 +1835,7 @@ func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
@@ -1894,7 +1894,7 @@ func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
 
 	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 }
 
 func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
@@ -2086,7 +2086,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 	}
 
 	zone := canonicalHostedZone("foo.example.org")
-	assert.Equal(t, "", zone, "no canonical zone should be returned for a non-aws hostname")
+	assert.Empty(t, zone, "no canonical zone should be returned for a non-aws hostname")
 }
 
 func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {

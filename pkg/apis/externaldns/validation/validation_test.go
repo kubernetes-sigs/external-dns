@@ -84,7 +84,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestValidateBadRfc2136Batch(t *testing.T) {
@@ -98,7 +98,7 @@ func TestValidateBadRfc2136Batch(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestValidateGoodRfc2136Config(t *testing.T) {
@@ -112,7 +112,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
@@ -201,7 +201,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range invalidRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 }
 
@@ -224,6 +224,6 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range validRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 }

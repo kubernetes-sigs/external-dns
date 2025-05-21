@@ -157,7 +157,7 @@ func TestRecordsWithErrors(t *testing.T) {
 	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
 	_, err = p.Records(context.Background())
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
@@ -248,7 +248,7 @@ func TestApplyChanges(t *testing.T) {
 	successfulApplyChanges = false
 
 	err = p.ApplyChanges(context.TODO(), nil)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
@@ -290,7 +290,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.ApplyChanges(context.TODO(), nil)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.NotErrorIs(t, err, provider.SoftError)
 	assert.Contains(t, err.Error(), "failed to apply changes with code 511")
 }
@@ -390,9 +390,9 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			var changes plan.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			err = json.Unmarshal(b, &changes)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Len(t, changes.Create, 1)
 			require.Len(t, changes.Create[0].ProviderSpecific, 1)
 			require.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)

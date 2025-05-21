@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	pgo "github.com/ffledgling/pdns-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -802,7 +801,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			Server:       "http://localhost:8081",
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
-	assert.Error(suite.T(), err, "--pdns-api-key should be specified")
+	suite.Error(err, "--pdns-api-key should be specified")
 
 	_, err = NewPDNSProvider(
 		context.Background(),
@@ -811,7 +810,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			APIKey:       "foo",
 			DomainFilter: endpoint.NewDomainFilter([]string{"example.com", "example.org"}),
 		})
-	assert.Nil(suite.T(), err, "--domain-filter should raise no error")
+	suite.NoError(err, "--domain-filter should raise no error")
 
 	_, err = NewPDNSProvider(
 		context.Background(),
@@ -821,7 +820,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			DryRun:       true,
 		})
-	assert.Error(suite.T(), err, "--dry-run should raise an error")
+	suite.Error(err, "--dry-run should raise an error")
 
 	// This is our "regular" code path, no error should be thrown
 	_, err = NewPDNSProvider(
@@ -831,7 +830,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			APIKey:       "foo",
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
-	assert.Nil(suite.T(), err, "Regular case should raise no error")
+	suite.NoError(err, "Regular case should raise no error")
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
@@ -842,32 +841,32 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		return err
 	}
 
-	assert.Nil(suite.T(), newProvider(TLSConfig{SkipTLSVerify: true}), "Disabled TLS Config should raise no error")
+	suite.NoError(newProvider(TLSConfig{SkipTLSVerify: true}), "Disabled TLS Config should raise no error")
 
-	assert.Nil(suite.T(), newProvider(TLSConfig{
+	suite.NoError(newProvider(TLSConfig{
 		SkipTLSVerify:         true,
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 	}), "Disabled TLS Config with additional flags should raise no error")
 
-	assert.Nil(suite.T(), newProvider(TLSConfig{}), "Enabled TLS Config without --tls-ca should raise no error")
+	suite.NoError(newProvider(TLSConfig{}), "Enabled TLS Config without --tls-ca should raise no error")
 
-	assert.Nil(suite.T(), newProvider(TLSConfig{
+	suite.NoError(newProvider(TLSConfig{
 		CAFilePath: "../../internal/testresources/ca.pem",
 	}), "Enabled TLS Config with --tls-ca should raise no error")
 
-	assert.Error(suite.T(), newProvider(TLSConfig{
+	suite.Error(newProvider(TLSConfig{
 		CAFilePath:         "../../internal/testresources/ca.pem",
 		ClientCertFilePath: "../../internal/testresources/client-cert.pem",
 	}), "Enabled TLS Config with --tls-client-cert only should raise an error")
 
-	assert.Error(suite.T(), newProvider(TLSConfig{
+	suite.Error(newProvider(TLSConfig{
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 	}), "Enabled TLS Config with --tls-client-cert-key only should raise an error")
 
-	assert.Nil(suite.T(), newProvider(TLSConfig{
+	suite.NoError(newProvider(TLSConfig{
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
@@ -886,16 +885,16 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	   - We correctly create corresponding endpoints
 	*/
 	eps, err := p.convertRRSetToEndpoints(RRSetMultipleRecords)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), endpointsMultipleRecords, eps)
+	suite.NoError(err)
+	suite.Equal(endpointsMultipleRecords, eps)
 
 	/* Given an RRSet with two records, one of which is disabled, we test:
 	   - We can correctly convert the RRSet into a list of valid endpoints
 	   - We correctly discard/ignore the disabled record.
 	*/
 	eps, err = p.convertRRSetToEndpoints(RRSetDisabledRecord)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), endpointsDisabledRecord, eps)
+	suite.NoError(err)
+	suite.Equal(endpointsDisabledRecord, eps)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
@@ -911,8 +910,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	/* We test that endpoints are returned correctly for a Zone when Records() is called
 	 */
 	eps, err := p.Records(ctx)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), endpointsMixedRecords, eps)
+	suite.NoError(err)
+	suite.Equal(endpointsMixedRecords, eps)
 
 	// Test failures are handled correctly
 	// Create a new provider to run tests against
@@ -920,15 +919,15 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 		client: &PDNSAPIClientStubListZoneFailure{},
 	}
 	_, err = p.Records(ctx)
-	assert.NotNil(suite.T(), err)
-	assert.ErrorIs(suite.T(), err, provider.SoftError)
+	suite.Error(err)
+	suite.ErrorIs(err, provider.SoftError)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
 	_, err = p.Records(ctx)
-	assert.NotNil(suite.T(), err)
-	assert.ErrorIs(suite.T(), err, provider.SoftError)
+	suite.Error(err)
+	suite.ErrorIs(err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
@@ -941,48 +940,48 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 
 	// Check inserting endpoints from a single zone
 	zlist, err := p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check deleting endpoints from a single zone
 	zlist, err = p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsDelete)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
 
 	// Check endpoints from multiple zones #1
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch2}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch2}, zlist)
 
 	// Check endpoints from multiple zones #2
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones2, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch3}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch3}, zlist)
 
 	// Check endpoints from multiple zones where some endpoints which don't exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithNoExist, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from a zone that does not exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsNonexistantZone, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{}, zlist)
 
 	// Check endpoints that match multiple zones (one longer than other), is assigned to the right zone
 	zlist, err = p.ConvertEndpointsToZones(endpointsLongRecord, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToLongPatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToLongPatch}, zlist)
 
 	// Check endpoints of type CNAME always have their target records end with a dot.
 	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
-	assert.Nil(suite.T(), err)
+	suite.NoError(err)
 
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
 			if rs.Type_ == "CNAME" {
 				for _, r := range rs.Records {
-					assert.Equal(suite.T(), uint8(0x2e), r.Content[len(r.Content)-1])
+					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
 				}
 			}
 		}
@@ -990,13 +989,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 
 	// Check endpoints of type MX and SRV always have their values end with a trailing dot.
 	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
-	assert.Nil(suite.T(), err)
+	suite.NoError(err)
 
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
 			if rs.Type_ == "MX" || rs.Type_ == "SRV" {
 				for _, r := range rs.Records {
-					assert.Equal(suite.T(), uint8(0x2e), r.Content[len(r.Content)-1])
+					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
 				}
 			}
 		}
@@ -1004,8 +1003,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 
 	// Check endpoints of type CNAME are converted to ALIAS on the domain apex
 	zlist, err = p.ConvertEndpointsToZones(endpointsApexRecords, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToApexPatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToApexPatch}, zlist)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZones() {
@@ -1016,41 +1015,41 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZ
 
 	// Check inserting endpoints from a single zone which is specified in DomainFilter
 	zlist, err := p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check deleting endpoints from a single zone which is specified in DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsDelete)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
 
 	// Check endpoints from multiple zones # which one is specified in DomainFilter and one is not
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from multiple zones where some endpoints which don't exist and one that does
 	// and is part of DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithNoExist, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from a zone that does not exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsNonexistantZone, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{}, zlist)
 
 	// Check endpoints that match multiple zones (one longer than other), is assigned to the right zone when the longer
 	// zone is not part of the DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithLongRecordNotInDomainFilter, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatchLongRecordIgnoredInDomainFilter}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatchLongRecordIgnoredInDomainFilter}, zlist)
 
 	// Check endpoints that match multiple zones (one longer than other and one is very similar)
 	// is assigned to the right zone when the similar zone is not part of the DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithSimilarRecordNotInDomainFilter, PdnsReplace)
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
@@ -1064,16 +1063,16 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 
 	// Check inserting endpoints from a single zone
 	err := p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, c.patchedZones)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, c.patchedZones)
 
 	// Reset the "patchedZones"
 	c.patchedZones = []pgo.Zone{}
 
 	// Check deleting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("DELETE"))
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimpleDelete}, c.patchedZones)
+	suite.NoError(err)
+	suite.Equal([]pgo.Zone{ZoneEmptyToSimpleDelete}, c.patchedZones)
 
 	// Check we fail correctly when patching fails for whatever reason
 	p = &PDNSProvider{
@@ -1081,8 +1080,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	}
 	// Check inserting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
-	assert.NotNil(suite.T(), err)
-	assert.ErrorIs(suite.T(), err, provider.SoftError)
+	suite.Error(err)
+	suite.ErrorIs(err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
@@ -1116,22 +1115,22 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 
 	// Check filtered, residual zones when no domain filter specified
 	filteredZones, residualZones := DomainFilterEmptyClient.PartitionZones(zoneList)
-	assert.Equal(suite.T(), partitionResultFilteredEmptyFilter, filteredZones)
-	assert.Equal(suite.T(), partitionResultResidualEmptyFilter, residualZones)
+	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
+	suite.Equal(partitionResultResidualEmptyFilter, residualZones)
 
 	// Check filtered, residual zones when a single domain filter specified
 	filteredZones, residualZones = DomainFilterSingleClient.PartitionZones(zoneList)
-	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
-	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
+	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
+	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 
 	// Check filtered, residual zones when a multiple domain filter specified
 	filteredZones, residualZones = DomainFilterMultipleClient.PartitionZones(zoneList)
-	assert.Equal(suite.T(), partitionResultFilteredMultipleFilter, filteredZones)
-	assert.Equal(suite.T(), partitionResultResidualMultipleFilter, residualZones)
+	suite.Equal(partitionResultFilteredMultipleFilter, filteredZones)
+	suite.Equal(partitionResultResidualMultipleFilter, residualZones)
 
 	filteredZones, residualZones = RegexDomainFilterClient.PartitionZones(zoneList)
-	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
-	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
+	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
+	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 }
 
 // Validate whether invalid endpoints are removed by AdjustEndpoints
@@ -1174,8 +1173,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 
 	for _, tt := range tests {
 		actual, err := p.AdjustEndpoints(tt.endpoints)
-		assert.Nil(suite.T(), err)
-		assert.Equal(suite.T(), tt.expected, actual)
+		suite.NoError(err)
+		suite.Equal(tt.expected, actual)
 	}
 }
 

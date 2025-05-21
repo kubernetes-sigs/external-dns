@@ -273,7 +273,7 @@ func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
 	}
 	jsonBytes, err := json.Marshal(ch)
 	assert.NoError(t, err)
-	assert.Equal(t,
+	assert.JSONEq(t,
 		`{"create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"delete":[{"dnsName":"qux"}]}`,
 		string(jsonBytes))
 	var changes Changes
@@ -412,7 +412,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().False(changes.HasChanges())
+	suite.False(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestHasChanges() {
@@ -427,7 +427,7 @@ func (suite *PlanTestSuite) TestHasChanges() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().True(changes.HasChanges())
+	suite.True(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {

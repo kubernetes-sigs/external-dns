@@ -26,6 +26,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -352,7 +353,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 				found = true
 			}
 		}
-		assert.Equal(t, true, found)
+		assert.True(t, found)
 	}
 }
 

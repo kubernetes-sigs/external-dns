@@ -265,15 +265,15 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
-	assert.Equal(t, 1, len(recs), "expected single record")
-	assert.Equal(t, recs[0].DNSName, "foo.com")
-	assert.Equal(t, 2, len(recs[0].Targets), "expected two targets")
+	assert.Len(t, recs, 1, "expected single record")
+	assert.Equal(t, "foo.com", recs[0].DNSName)
+	assert.Len(t, recs[0].Targets, 2, "expected two targets")
 	assert.True(t, recs[0].Targets[0] == "1.1.1.1" || recs[0].Targets[1] == "1.1.1.1") // ignore order
 	assert.True(t, recs[0].Targets[0] == "2.2.2.2" || recs[0].Targets[1] == "2.2.2.2") // ignore order
-	assert.Equal(t, recs[0].RecordType, "A")
+	assert.Equal(t, "A", recs[0].RecordType)
 	assert.Equal(t, recs[0].RecordTTL, endpoint.TTL(3600))
-	assert.Equal(t, 0, len(recs[0].Labels), "expected no labels")
-	assert.Equal(t, 0, len(recs[0].ProviderSpecific), "expected no provider specific config")
+	assert.Empty(t, recs[0].Labels, "expected no labels")
+	assert.Empty(t, recs[0].ProviderSpecific, "expected no provider specific config")
 }
 
 func TestRfc2136PTRCreation(t *testing.T) {
@@ -291,10 +291,10 @@ func TestRfc2136PTRCreation(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(stub.createMsgs), "expected two records, one A and one PTR")
+	assert.Len(t, stub.createMsgs, 2, "expected two records, one A and one PTR")
 	createMsgs := getSortedChanges(stub.createMsgs)
-	assert.True(t, strings.Contains(strings.Join(strings.Fields(createMsgs[0]), " "), "4.3.2.1.in-addr.arpa. 300 IN PTR demo.foo.com."), "excpeted a PTR record")
-	assert.True(t, strings.Contains(strings.Join(strings.Fields(createMsgs[1]), " "), "demo.foo.com. 300 IN A 1.2.3.4"), "expected an A record")
+	assert.Contains(t, strings.Join(strings.Fields(createMsgs[0]), " "), "4.3.2.1.in-addr.arpa. 300 IN PTR demo.foo.com.", "excpeted a PTR record")
+	assert.Contains(t, strings.Join(strings.Fields(createMsgs[1]), " "), "demo.foo.com. 300 IN A 1.2.3.4", "expected an A record")
 }
 
 func TestRfc2136TLSConfig(t *testing.T) {
@@ -331,7 +331,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
-	assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
+	assert.False(t, client.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
 	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
@@ -375,7 +375,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 		ns = strings.Split(ns, ":")[0]
 
 		assert.Equal(t, "tcp-tls", client.Net)
-		assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
+		assert.False(t, client.TLSConfig.InsecureSkipVerify)
 		assert.Equal(t, ns, client.TLSConfig.ServerName)
 		assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
 		assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
@@ -416,7 +416,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
-	assert.Equal(t, true, client.TLSConfig.InsecureSkipVerify)
+	assert.True(t, client.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
 	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
@@ -487,7 +487,7 @@ hl6aAPCe16pwvljB7yImxLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTM=
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
-	assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
+	assert.False(t, client.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
 	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
@@ -511,7 +511,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
-	assert.Equal(t, 6, len(recs))
+	assert.Len(t, recs, 6)
 	assert.True(t, contains(recs, "v1.foo.com"))
 	assert.True(t, contains(recs, "v2.bar.com"))
 	assert.True(t, contains(recs, "v2.foo.com"))
@@ -584,19 +584,19 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 3, len(stub.createMsgs))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
+	assert.Len(t, stub.createMsgs, 3)
+	assert.Contains(t, stub.createMsgs[0].String(), "v1.foo.com")
+	assert.Contains(t, stub.createMsgs[0].String(), "1.2.3.4")
 
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
+	assert.Contains(t, stub.createMsgs[1].String(), "v1.foobar.com")
+	assert.Contains(t, stub.createMsgs[1].String(), "boom")
 
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "ns.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "boom"))
+	assert.Contains(t, stub.createMsgs[2].String(), "ns.foobar.com")
+	assert.Contains(t, stub.createMsgs[2].String(), "boom")
 
-	assert.Equal(t, 2, len(stub.updateMsgs))
-	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))
-	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v2.foobar.com"))
+	assert.Len(t, stub.updateMsgs, 2)
+	assert.Contains(t, stub.updateMsgs[0].String(), "v2.foo.com")
+	assert.Contains(t, stub.updateMsgs[1].String(), "v2.foobar.com")
 }
 
 // These tests all use the foo.com and foobar.com zones with no filters
@@ -642,25 +642,25 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 3, len(stub.createMsgs))
+	assert.Len(t, stub.createMsgs, 3)
 	createMsgs := getSortedChanges(stub.createMsgs)
-	assert.Equal(t, 3, len(createMsgs))
+	assert.Len(t, createMsgs, 3)
 
-	assert.True(t, strings.Contains(createMsgs[0], "v1.foo.com"))
-	assert.True(t, strings.Contains(createMsgs[0], "1.2.3.4"))
+	assert.Contains(t, createMsgs[0], "v1.foo.com")
+	assert.Contains(t, createMsgs[0], "1.2.3.4")
 
-	assert.True(t, strings.Contains(createMsgs[1], "v1.foobar.com"))
-	assert.True(t, strings.Contains(createMsgs[1], "boom"))
+	assert.Contains(t, createMsgs[1], "v1.foobar.com")
+	assert.Contains(t, createMsgs[1], "boom")
 
-	assert.True(t, strings.Contains(createMsgs[2], "ns.foobar.com"))
-	assert.True(t, strings.Contains(createMsgs[2], "boom"))
+	assert.Contains(t, createMsgs[2], "ns.foobar.com")
+	assert.Contains(t, createMsgs[2], "boom")
 
-	assert.Equal(t, 2, len(stub.updateMsgs))
+	assert.Len(t, stub.updateMsgs, 2)
 	updateMsgs := getSortedChanges(stub.updateMsgs)
-	assert.Equal(t, 2, len(updateMsgs))
+	assert.Len(t, updateMsgs, 2)
 
-	assert.True(t, strings.Contains(updateMsgs[0], "v2.foo.com"))
-	assert.True(t, strings.Contains(updateMsgs[1], "v2.foobar.com"))
+	assert.Contains(t, updateMsgs[0], "v2.foo.com")
+	assert.Contains(t, updateMsgs[1], "v2.foobar.com")
 }
 
 // These tests use the foo.com and foobar.com zones and with filters set to both zones
@@ -712,29 +712,29 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 3, len(stub.createMsgs))
+	assert.Len(t, stub.createMsgs, 3)
 	createMsgs := getSortedChanges(stub.createMsgs)
-	assert.Equal(t, 3, len(createMsgs))
+	assert.Len(t, createMsgs, 3)
 
-	assert.True(t, strings.Contains(createMsgs[0], "v1.foo.com"))
-	assert.True(t, strings.Contains(createMsgs[0], "1.2.3.4"))
+	assert.Contains(t, createMsgs[0], "v1.foo.com")
+	assert.Contains(t, createMsgs[0], "1.2.3.4")
 
-	assert.True(t, strings.Contains(createMsgs[1], "v1.foobar.com"))
-	assert.True(t, strings.Contains(createMsgs[1], "boom"))
+	assert.Contains(t, createMsgs[1], "v1.foobar.com")
+	assert.Contains(t, createMsgs[1], "boom")
 
-	assert.True(t, strings.Contains(createMsgs[2], "ns.foobar.com"))
-	assert.True(t, strings.Contains(createMsgs[2], "boom"))
+	assert.Contains(t, createMsgs[2], "ns.foobar.com")
+	assert.Contains(t, createMsgs[2], "boom")
 
 	for _, s := range createMsgs {
-		assert.False(t, strings.Contains(s, "filtered-out.foo.bar"))
+		assert.NotContains(t, s, "filtered-out.foo.bar")
 	}
 
-	assert.Equal(t, 2, len(stub.updateMsgs))
+	assert.Len(t, stub.updateMsgs, 2)
 	updateMsgs := getSortedChanges(stub.updateMsgs)
-	assert.Equal(t, 2, len(updateMsgs))
+	assert.Len(t, updateMsgs, 2)
 
-	assert.True(t, strings.Contains(updateMsgs[0], "v2.foo.com"))
-	assert.True(t, strings.Contains(updateMsgs[1], "v2.foobar.com"))
+	assert.Contains(t, updateMsgs[0], "v2.foo.com")
+	assert.Contains(t, updateMsgs[1], "v2.foobar.com")
 
 }
 
@@ -770,16 +770,16 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	assert.NoError(t, err)
 
 	createRecords := extractUpdateSectionFromMessage(stub.createMsgs[0])
-	assert.Equal(t, 3, len(createRecords))
-	assert.True(t, strings.Contains(createRecords[0], "v1.foo.com"))
-	assert.True(t, strings.Contains(createRecords[0], "2.1.1.1"))
-	assert.True(t, strings.Contains(createRecords[0], "400"))
-	assert.True(t, strings.Contains(createRecords[1], "v2.foo.com"))
-	assert.True(t, strings.Contains(createRecords[1], "3.2.2.2"))
-	assert.True(t, strings.Contains(createRecords[1], "300"))
-	assert.True(t, strings.Contains(createRecords[2], "v3.foo.com"))
-	assert.True(t, strings.Contains(createRecords[2], "4.3.3.3"))
-	assert.True(t, strings.Contains(createRecords[2], "300"))
+	assert.Len(t, createRecords, 3)
+	assert.Contains(t, createRecords[0], "v1.foo.com")
+	assert.Contains(t, createRecords[0], "2.1.1.1")
+	assert.Contains(t, createRecords[0], "400")
+	assert.Contains(t, createRecords[1], "v2.foo.com")
+	assert.Contains(t, createRecords[1], "3.2.2.2")
+	assert.Contains(t, createRecords[1], "300")
+	assert.Contains(t, createRecords[2], "v3.foo.com")
+	assert.Contains(t, createRecords[2], "4.3.3.3")
+	assert.Contains(t, createRecords[2], "300")
 }
 
 func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
@@ -839,24 +839,24 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 4, len(stub.createMsgs))
-	assert.Equal(t, 2, len(stub.updateMsgs))
+	assert.Len(t, stub.createMsgs, 4)
+	assert.Len(t, stub.updateMsgs, 2)
 
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "v1.foo.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "1.2.3.5"))
+	assert.Contains(t, stub.createMsgs[0].String(), "v1.foo.com")
+	assert.Contains(t, stub.createMsgs[0].String(), "1.2.3.4")
+	assert.Contains(t, stub.createMsgs[2].String(), "v1.foo.com")
+	assert.Contains(t, stub.createMsgs[2].String(), "1.2.3.5")
 
-	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v1.foo.com"))
-	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "1.2.3.4"))
+	assert.Contains(t, stub.updateMsgs[0].String(), "v1.foo.com")
+	assert.Contains(t, stub.updateMsgs[0].String(), "1.2.3.4")
 
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
-	assert.True(t, strings.Contains(stub.createMsgs[3].String(), "v1.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[3].String(), "kablui"))
+	assert.Contains(t, stub.createMsgs[1].String(), "v1.foobar.com")
+	assert.Contains(t, stub.createMsgs[1].String(), "boom")
+	assert.Contains(t, stub.createMsgs[3].String(), "v1.foobar.com")
+	assert.Contains(t, stub.createMsgs[3].String(), "kablui")
 
-	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v1.foobar.com"))
-	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "boom"))
+	assert.Contains(t, stub.updateMsgs[1].String(), "v1.foobar.com")
+	assert.Contains(t, stub.updateMsgs[1].String(), "boom")
 }
 
 func TestChunkBy(t *testing.T) {
@@ -895,7 +895,7 @@ func TestCreateRfc2136StubProviderWithHosts(t *testing.T) {
 	rawProvider, ok := provider.(*rfc2136Provider)
 	assert.True(t, ok, "expected provider to be of type *rfc2136Provider")
 
-	assert.Equal(t, 3, len(rawProvider.nameservers))
+	assert.Len(t, rawProvider.nameservers, 3)
 	assert.Equal(t, "rfc2136-host1:0", rawProvider.nameservers[0])
 	assert.Equal(t, "rfc2136-host2:0", rawProvider.nameservers[1])
 	assert.Equal(t, "rfc2136-host3:0", rawProvider.nameservers[2])
