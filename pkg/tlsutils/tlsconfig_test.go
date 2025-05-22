@@ -107,6 +107,48 @@ func TestCreateTLSConfig(t *testing.T) {
 				assert.Equal(t, actual.MinVersion, uint16(defaultMinVersion))
 			},
 		},
+		{
+			"Invalid CA file returns error",
+			"prefix",
+			"invalid-ca-content",
+			"",
+			"",
+			"",
+			"",
+			func(actual *tls.Config, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "could not read root certs")
+			},
+		},
+		{
+			"Invalid CA file path returns error",
+			"prefix",
+			"ca-path-does-not-exist",
+			"",
+			"",
+			"",
+			"server-name",
+			func(actual *tls.Config, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "error reading /path/does/not/exist")
+			},
+		},
+		{
+			"Complete config with CA, cert, and key returns valid tls.Config",
+			"prefix",
+			rsaCertPEM,
+			rsaCertPEM,
+			rsaKeyPEM,
+			"",
+			"server-name",
+			func(actual *tls.Config, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, "server-name", actual.ServerName)
+				assert.NotNil(t, actual.Certificates[0])
+				assert.NotNil(t, actual.RootCAs)
+				assert.False(t, actual.InsecureSkipVerify)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -118,6 +160,10 @@ func TestCreateTLSConfig(t *testing.T) {
 				path := fmt.Sprintf("%s/caFile", dir)
 				utils.WriteToFile(path, tc.caFile)
 				t.Setenv(fmt.Sprintf("%s_CA_FILE", tc.prefix), path)
+			}
+
+			if tc.caFile == "ca-path-does-not-exist" {
+				t.Setenv(fmt.Sprintf("%s_CA_FILE", tc.prefix), "/path/does/not/exist")
 			}
 
 			if tc.certFile != "" {
