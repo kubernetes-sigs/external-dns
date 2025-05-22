@@ -320,6 +320,8 @@ See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-
 
 This feature is disabled by default and supports the `--cloudflare-custom-hostnames-min-tls-version` and `--cloudflare-custom-hostnames-certificate-authority` flags.
 
+`--cloudflare-custom-hostnames-certificate-authority` defaults to not selecting a CA. If a specific CA is required use this flag to select one.
+
 The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns.alpha.kubernetes.io/hostname`) for automatic certificate validation via the HTTP method. It's important to note that the TXT method does not allow automatic validation and is not supported.
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
