@@ -198,6 +198,7 @@ func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch
 type DNSRecordsConfig struct {
 	PerPage int
 	Comment string
+	Tags    string
 }
 
 func (c *DNSRecordsConfig) trimAndValidateComment(dnsName, comment string, paidZone func(string) bool) string {
@@ -211,6 +212,20 @@ func (c *DNSRecordsConfig) trimAndValidateComment(dnsName, comment string, paidZ
 		}
 	}
 	return comment
+}
+
+func (c *DNSRecordsConfig) validateTags(dnsName string, tags []string, paidZone func(string) bool) []string {
+	if tags == nil {
+		return nil
+	}
+
+	if !paidZone(dnsName) {
+		log.Warnf("DNS record tags is not supported for free zones. Skipping for %s", dnsName)
+		c.Tags = ""
+		return nil
+	}
+
+	return tags
 }
 
 func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
@@ -324,6 +339,9 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
 
+	tags := strings.Split(dnsRecordsConfig.Tags, ",")
+	sort.Strings(tags)
+	dnsRecordsConfig.Tags = strings.Join(tags, ",")
 	return &CloudFlareProvider{
 		Client:                zoneService{config},
 		domainFilter:          domainFilter,
@@ -881,6 +899,17 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 		comment = p.DNSRecordsConfig.trimAndValidateComment(ep.DNSName, comment, p.ZoneHasPaidPlan)
 	}
 
+	// Load tags from program flag
+	tags := p.DNSRecordsConfig.Tags
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); ok {
+		// Replace comment with Ingress annotation
+		t := strings.Split(val, ",")
+		sort.Strings(t)
+		tags = strings.Join(t, ",")
+	}
+	validTags := strings.Split(tags, ",")
+	validTags = p.DNSRecordsConfig.validateTags(ep.DNSName, validTags, p.ZoneHasPaidPlan)
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
@@ -892,6 +921,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			Type:    ep.RecordType,
 			Content: target,
 			Comment: comment,
+			Tags:    validTags,
 		},
 		RegionalHostname:    regionalHostname,
 		CustomHostnamesPrev: prevCustomHostnames,
