@@ -92,7 +92,7 @@
 | `--[no-]cloudflare-proxied` | When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled) |
 | `--[no-]cloudflare-custom-hostnames` | When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires "Cloudflare for SaaS" enabled. (default: disabled) |
 | `--cloudflare-custom-hostnames-min-tls-version=1.0` | When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3) |
-| `--cloudflare-custom-hostnames-certificate-authority=google` | When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt) |
+| `--cloudflare-custom-hostnames-certificate-authority=CLOUDFLARE-CUSTOM-HOSTNAMES-CERTIFICATE-AUTHORITY` | When using the Cloudflare provider with the Custom Hostnames, optionally specify which Certificate Authority will be used. (optional, options: google, ssl_com, lets_encrypt) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
 | `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
