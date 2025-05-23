@@ -160,28 +160,28 @@ func TestNewGandiProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
-	assert.Equal(t, true, provider.DryRun)
+	assert.True(t, provider.DryRun)
 
 	_ = os.Setenv("GANDI_PAT", "myGandiPAT")
 	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
-	assert.Equal(t, true, provider.DryRun)
+	assert.True(t, provider.DryRun)
 
 	_ = os.Unsetenv("GANDI_KEY")
 	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
-	assert.Equal(t, true, provider.DryRun)
+	assert.True(t, provider.DryRun)
 
 	_ = os.Setenv("GANDI_SHARING_ID", "aSharingId")
 	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), false)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
-	assert.Equal(t, false, provider.DryRun)
+	assert.False(t, provider.DryRun)
 
 	_ = os.Unsetenv("GANDI_PAT")
 	_, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
@@ -248,7 +248,7 @@ func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(expectedEndpoints), len(actualEndpoints))
+	assert.Len(t, actualEndpoints, len(expectedEndpoints))
 	// we could use testutils.SameEndpoints (plural), but this makes it easier to identify which case is failing
 	for i := range actualEndpoints {
 		if !testutils.SameEndpoint(expectedEndpoints[i], actualEndpoints[i]) {

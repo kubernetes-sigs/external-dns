@@ -19,7 +19,6 @@ package externaldns
 import (
 	"os"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -563,6 +562,6 @@ func TestPasswordsNotLogged(t *testing.T) {
 
 	s := cfg.String()
 
-	assert.False(t, strings.Contains(s, "pdns-api-key"))
-	assert.False(t, strings.Contains(s, "tsig-secret"))
+	assert.NotContains(t, s, "pdns-api-key")
+	assert.NotContains(t, s, "tsig-secret")
 }

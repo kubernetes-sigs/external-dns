@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
@@ -640,16 +641,16 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRouteTCP)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(ingressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
@@ -658,7 +659,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
 			assert.Equal(t, ti.expected, endpoints)
 		})

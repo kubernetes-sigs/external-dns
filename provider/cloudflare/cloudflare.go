@@ -214,8 +214,8 @@ func (c *DNSRecordsConfig) trimAndValidateComment(dnsName, comment string, paidZ
 	return comment
 }
 
-func (c *DNSRecordsConfig) validateTags(dnsName string, tags []string, paidZone func(string) bool) []string {
-	if tags == nil {
+func (c *DNSRecordsConfig) validTags(dnsName string, paidZone func(string) bool) []string {
+	if c.Tags == "" {
 		return nil
 	}
 
@@ -225,6 +225,8 @@ func (c *DNSRecordsConfig) validateTags(dnsName string, tags []string, paidZone 
 		return nil
 	}
 
+	tags := strings.Split(c.Tags, ",")
+	sort.Strings(tags)
 	return tags
 }
 
@@ -720,7 +722,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			}
 			chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
 			if chErr != nil {
-				return fmt.Errorf("could not fetch custom hostnames from zone, %v", chErr)
+				return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
 			}
 			if change.Action == cloudFlareUpdate {
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
@@ -900,15 +902,12 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 	}
 
 	// Load tags from program flag
-	tags := p.DNSRecordsConfig.Tags
 	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); ok {
 		// Replace comment with Ingress annotation
 		t := strings.Split(val, ",")
 		sort.Strings(t)
-		tags = strings.Join(t, ",")
+		p.DNSRecordsConfig.Tags = strings.Join(t, ",")
 	}
-	validTags := strings.Split(tags, ",")
-	validTags = p.DNSRecordsConfig.validateTags(ep.DNSName, validTags, p.ZoneHasPaidPlan)
 
 	return &cloudFlareChange{
 		Action: action,
@@ -921,7 +920,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, ep *endpoint.End
 			Type:    ep.RecordType,
 			Content: target,
 			Comment: comment,
-			Tags:    validTags,
+			Tags:    p.DNSRecordsConfig.validTags(ep.DNSName, p.ZoneHasPaidPlan),
 		},
 		RegionalHostname:    regionalHostname,
 		CustomHostnamesPrev: prevCustomHostnames,

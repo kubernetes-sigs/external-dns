@@ -31,6 +31,7 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -895,7 +896,7 @@ func TestCloudflareZones(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, 1, len(zones))
+	assert.Len(t, zones, 1)
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
@@ -932,7 +933,7 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	}
 
 	// foo.com should *not* be returned as it doesn't match ZoneID filter
-	assert.Equal(t, 1, len(zones))
+	assert.Len(t, zones, 1)
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
@@ -991,7 +992,7 @@ func TestCloudflareRecords(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	assert.Equal(t, 2, len(records))
+	assert.Len(t, records, 2)
 	client.dnsRecordsError = errors.New("failed to list dns records")
 	_, err = p.Records(ctx)
 	if err == nil {
@@ -1204,7 +1205,7 @@ func TestCloudflareDryRunApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	assert.Equal(t, 0, len(records), "should not have any records")
+	assert.Empty(t, records, "should not have any records")
 }
 
 func TestCloudflareApplyChangesError(t *testing.T) {
@@ -1245,13 +1246,13 @@ func TestCloudflareGetRecordID(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeA,
 		Content: "foobar",
 	}))
 
-	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "fizfuz",
@@ -1262,7 +1263,7 @@ func TestCloudflareGetRecordID(t *testing.T) {
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "foobar",
 	}))
-	assert.Equal(t, "", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "2.3.4.5",
@@ -1579,7 +1580,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			if err != nil {
 				t.Errorf("should not fail, %s", err)
 			}
-			assert.Equal(t, 1, len(current))
+			assert.Len(t, current, 1)
 
 			desired := []*endpoint.Endpoint{}
 			for _, c := range current {
@@ -1608,15 +1609,15 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			if plan.Changes == nil {
 				return
 			}
-			assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
-			assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
+			assert.Empty(t, plan.Changes.Create, "should not have creates")
+			assert.Empty(t, plan.Changes.Delete, "should not have deletes")
 
 			if test.ShouldBeUpdated {
-				assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should not have new updates")
-				assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should not have old updates")
+				assert.Len(t, plan.Changes.UpdateNew, 1, "should not have new updates")
+				assert.Len(t, plan.Changes.UpdateOld, 1, "should not have old updates")
 			} else {
-				assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
-				assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
+				assert.Empty(t, plan.Changes.UpdateNew, "should not have new updates")
+				assert.Empty(t, plan.Changes.UpdateOld, "should not have old updates")
 			}
 		})
 	}
@@ -1754,10 +1755,10 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 
 	planned := plan.Calculate()
 
-	assert.Equal(t, 0, len(planned.Changes.Create), "no new changes should be here")
-	assert.Equal(t, 0, len(planned.Changes.UpdateNew), "no new changes should be here")
-	assert.Equal(t, 0, len(planned.Changes.UpdateOld), "no new changes should be here")
-	assert.Equal(t, 0, len(planned.Changes.Delete), "no new changes should be here")
+	assert.Empty(t, planned.Changes.Create, "no new changes should be here")
+	assert.Empty(t, planned.Changes.UpdateNew, "no new changes should be here")
+	assert.Empty(t, planned.Changes.UpdateOld, "no new changes should be here")
+	assert.Empty(t, planned.Changes.Delete, "no new changes should be here")
 }
 
 func TestCloudFlareProvider_Region(t *testing.T) {
@@ -1919,6 +1920,73 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 			change := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
 			if len(change.ResourceRecord.Comment) != test.expected {
 				t.Errorf("expected comment to be %d characters long, but got %d", test.expected, len(change.ResourceRecord.Comment))
+			}
+		})
+	}
+
+	tagsTestCases := []struct {
+		name     string
+		provider *CloudFlareProvider
+		endpoint *endpoint.Endpoint
+		expected []string
+	}{
+		{
+			name:     "For free Zones setting Tags, expect them to be ignored",
+			provider: p,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "example.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordTagsKey,
+						Value: "tag1,tag2",
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name:     "For paid Zones setting tags, expect them to be set",
+			provider: paidProvider,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "bar.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordTagsKey,
+						Value: "tag1,tag2",
+					},
+				},
+			},
+			expected: []string{"tag1", "tag2"},
+		},
+		{
+			name:     "For paid Zones settings tags not alphabetically sorted, expect them to be sorted",
+			provider: paidProvider,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "bar.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordTagsKey,
+						Value: "tag2,tag1",
+					},
+				},
+			},
+			expected: []string{"tag1", "tag2"},
+		},
+	}
+
+	for _, test := range tagsTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			change := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
+			if test.expected == nil && len(change.ResourceRecord.Tags) != 0 {
+				t.Errorf("expected tags to be %v, but got %v", test.expected, change.ResourceRecord.Tags)
+			} else if !reflect.DeepEqual(change.ResourceRecord.Tags, test.expected) {
+				t.Errorf("expected tags to be %v, but got %v", test.expected, change.ResourceRecord.Tags)
 			}
 		})
 	}
@@ -2100,7 +2168,7 @@ func checkFailed(name string, err error, shouldFail bool) error {
 		return fmt.Errorf("should fail - %q", name)
 	}
 	if !errors.Is(err, nil) && !shouldFail {
-		return fmt.Errorf("should not fail - %q, %v", name, err)
+		return fmt.Errorf("should not fail - %q, %w", name, err)
 	}
 	return nil
 }
@@ -2795,7 +2863,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 			t.Error(e)
 		}
 		if tc.testChanges {
-			assert.Equal(t, planned.Changes.HasChanges(), false, "no new changes should be here")
+			assert.False(t, planned.Changes.HasChanges(), "no new changes should be here")
 		}
 	}
 }
@@ -2983,7 +3051,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 	if chErr != nil {
 		t.Errorf("should not fail - %v", chErr)
 	}
-	assert.Equal(t, len(chs), CustomHostnamesNumber)
+	assert.Len(t, chs, CustomHostnamesNumber)
 }
 
 func Test_getRegionKey(t *testing.T) {
@@ -3325,9 +3393,9 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
-	assert.Equal(t, false, cfprovider.ZoneHasPaidPlan("subdomain.foo.com"))
-	assert.Equal(t, true, cfprovider.ZoneHasPaidPlan("subdomain.bar.com"))
-	assert.Equal(t, false, cfprovider.ZoneHasPaidPlan("invaliddomain"))
+	assert.False(t, cfprovider.ZoneHasPaidPlan("subdomain.foo.com"))
+	assert.True(t, cfprovider.ZoneHasPaidPlan("subdomain.bar.com"))
+	assert.False(t, cfprovider.ZoneHasPaidPlan("invaliddomain"))
 
 	client.zoneDetailsError = errors.New("zone lookup failed")
 	cfproviderWithZoneError := &CloudFlareProvider{
@@ -3335,5 +3403,5 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
-	assert.Equal(t, false, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
+	assert.False(t, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }

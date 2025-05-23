@@ -51,11 +51,11 @@ type config struct {
 func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string) (*config, error) {
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file '%s': %w", configFile, err)
 	}
 	cfg := &config{}
 	if err := json.Unmarshal(contents, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to parse Azure config file '%s': %w", configFile, err)
 	}
 	// If a subscription ID was given, override what was present in the config file
 	if subscriptionID != "" {

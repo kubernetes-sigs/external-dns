@@ -96,7 +96,7 @@ func waitForCacheSync(ctx context.Context, factory informerFactory) error {
 		if !done {
 			select {
 			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
+				return fmt.Errorf("failed to sync %v: %w", typ, ctx.Err())
 			default:
 				return fmt.Errorf("failed to sync %v", typ)
 			}
@@ -116,7 +116,7 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 		if !done {
 			select {
 			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
+				return fmt.Errorf("failed to sync %v: %w", typ, ctx.Err())
 			default:
 				return fmt.Errorf("failed to sync %v", typ)
 			}

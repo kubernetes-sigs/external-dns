@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -202,10 +203,10 @@ func TestExecTemplate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpl, err := ParseTemplate(tt.tmpl)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			got, err := ExecTemplate(tmpl, tt.obj)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -213,7 +214,7 @@ func TestExecTemplate(t *testing.T) {
 
 func TestExecTemplateEmptyObject(t *testing.T) {
 	tmpl, err := ParseTemplate("{{ toLower .Labels.department }}.example.org")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = ExecTemplate(tmpl, nil)
 	assert.Error(t, err)
 }
@@ -240,10 +241,10 @@ func TestFqdnTemplate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpl, err := ParseTemplate(tt.fqdnTemplate)
 			if tt.expectedError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Nil(t, tmpl)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.fqdnTemplate == "" {
 					assert.Nil(t, tmpl)
 				} else {

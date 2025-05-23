@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -127,7 +126,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
 	endpoints, err := suite.source.Endpoints(context.Background())
 	suite.NoError(err, "should succeed")
-	suite.Equal(len(endpoints), 2, "should return the correct number of endpoints")
+	suite.Len(endpoints, 2, "should return the correct number of endpoints")
 	for _, ep := range endpoints {
 		suite.Equal("virtualservice/istio-other/foo-virtualservice", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
 	}
@@ -2198,7 +2197,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.fields.virtualServiceSource.getGateway(tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
 			if tt.expectedErrStr != "" {
-				assert.EqualError(t, err, tt.expectedErrStr, fmt.Sprintf("getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService))
+				assert.EqualError(t, err, tt.expectedErrStr, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
 				return
 			} else {
 				require.NoError(t, err)

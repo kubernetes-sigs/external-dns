@@ -26,6 +26,7 @@ import (
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -246,7 +247,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 	}
 
 	after, err := provider.AdjustEndpoints(before)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	for i := range after {
 		if !checkRecordEquality(after[i], expected[i]) {
 			t.Errorf("got record %s instead of %s", after[i], expected[i])
@@ -352,7 +353,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 				found = true
 			}
 		}
-		assert.Equal(t, true, found)
+		assert.True(t, found)
 	}
 }
 
