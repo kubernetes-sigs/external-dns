@@ -24,6 +24,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -124,7 +125,7 @@ func Test_regionalHostname(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := CloudFlareProvider{RegionKey: tt.args.defaultRegionKey}
 			got := p.regionalHostname(tt.args.endpoint)
-			assert.Equal(t, got, tt.want)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
