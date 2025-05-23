@@ -188,7 +188,7 @@ var (
 		CloudflareProxied:                      true,
 		CloudflareCustomHostnames:              true,
 		CloudflareCustomHostnamesMinTLSVersion: "1.3",
-		CloudflareCustomHostnamesCertificateAuthority: "",
+		CloudflareCustomHostnamesCertificateAuthority: "google",
 		CloudflareDNSRecordsPerPage:                   5000,
 		CloudflareRegionKey:                           "us",
 		CoreDNSPrefix:                                 "/coredns/",
