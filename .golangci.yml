@@ -95,7 +95,6 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - endpoint/zz_generated.deepcopy.go
       - third_party$
       - builtin$
       - examples$
