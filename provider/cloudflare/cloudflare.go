@@ -811,9 +811,9 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 
 func getCustomHostnamesSSLOptions(customHostnamesConfig CustomHostnamesConfig) *cloudflare.CustomHostnameSSL {
 	ssl := &cloudflare.CustomHostnameSSL{
-		Type:                 "dv",
-		Method:               "http",
-		BundleMethod:         "ubiquitous",
+		Type:         "dv",
+		Method:       "http",
+		BundleMethod: "ubiquitous",
 		Settings: cloudflare.CustomHostnameSSLSettings{
 			MinTLSVersion: customHostnamesConfig.MinTLSVersion,
 		},
