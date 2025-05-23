@@ -180,12 +180,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	for _, dnsEndpoint := range result.Items {
-		crdEndpoints := []*endpoint.Endpoint{} // Temporary list for endpoints from this specific CRD
+		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
-			// Note: Target validation (like empty target check for A/CNAME) is removed here
-			// to allow default-targets logic to function correctly.
-
-			// Validate target format (e.g., trailing dots)
 			illegalTarget := false
 			for _, target := range ep.Targets {
 				if ep.RecordType != "NAPTR" && strings.HasSuffix(target, ".") {
@@ -199,22 +195,18 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 			if illegalTarget {
 				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target format.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName)
-				continue // Skip this specific endpoint
+				continue
 			}
 
-			// Ensure labels are initialized
 			if ep.Labels == nil {
 				ep.Labels = endpoint.NewLabels()
 			}
 
-			// Add the valid endpoint to a temporary list for this CRD
 			crdEndpoints = append(crdEndpoints, ep)
 		}
 
-		// Add resource label to all valid endpoints from this CRD
 		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
 
-		// Add the processed endpoints for this CRD to the main list
 		endpoints = append(endpoints, crdEndpoints...)
 
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {

@@ -226,12 +226,12 @@ func testCRDSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "no-targets.example.org",
-					Targets:    endpoint.Targets{}, // Empty targets, should rely on default-targets later
+					Targets:    endpoint.Targets{},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true, // Expect the endpoint to be processed, default targets applied later
+			expectEndpoints: true,
 			expectError:     false,
 		},
 		{
