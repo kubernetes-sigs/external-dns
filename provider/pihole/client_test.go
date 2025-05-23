@@ -19,6 +19,7 @@ package pihole
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -38,7 +39,7 @@ func TestNewPiholeClient(t *testing.T) {
 	_, err := newPiholeClient(PiholeConfig{})
 	if err == nil {
 		t.Error("Expected error from config with no server")
-	} else if err != ErrNoPiholeServer {
+	} else if !errors.Is(err, ErrNoPiholeServer) {
 		t.Error("Expected ErrNoPiholeServer, got", err)
 	}
 

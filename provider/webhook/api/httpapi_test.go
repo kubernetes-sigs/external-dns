@@ -30,6 +30,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -228,7 +229,7 @@ func TestRecordsHandlerWithMixedCase(t *testing.T) {
 	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusNoContent, res.StatusCode)
-	assert.Equal(t, 1, len(records))
+	assert.Len(t, records, 1)
 }
 
 func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {

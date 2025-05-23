@@ -73,7 +73,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{foo, bar},
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 

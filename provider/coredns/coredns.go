@@ -18,8 +18,6 @@ package coredns
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,6 +29,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
+
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -153,50 +153,6 @@ func (c etcdClient) DeleteService(key string) error {
 	return err
 }
 
-// loads TLS artifacts and builds tls.Config object
-func newTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool) (*tls.Config, error) {
-	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
-		return nil, errors.New("either both cert and key or none must be provided")
-	}
-	var certificates []tls.Certificate
-	if certPath != "" {
-		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-		if err != nil {
-			return nil, fmt.Errorf("could not load TLS cert: %w", err)
-		}
-		certificates = append(certificates, cert)
-	}
-	roots, err := loadRoots(caPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &tls.Config{
-		Certificates:       certificates,
-		RootCAs:            roots,
-		InsecureSkipVerify: insecure,
-		ServerName:         serverName,
-	}, nil
-}
-
-// loads CA cert
-func loadRoots(caPath string) (*x509.CertPool, error) {
-	if caPath == "" {
-		return nil, nil
-	}
-
-	roots := x509.NewCertPool()
-	pem, err := os.ReadFile(caPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading %s: %w", caPath, err)
-	}
-	ok := roots.AppendCertsFromPEM(pem)
-	if !ok {
-		return nil, fmt.Errorf("could not read root certs: %w", err)
-	}
-	return roots, nil
-}
-
 // builds etcd client config depending on connection scheme and TLS parameters
 func getETCDConfig() (*etcdcv3.Config, error) {
 	etcdURLsStr := os.Getenv("ETCD_URLS")
@@ -210,16 +166,11 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 	if strings.HasPrefix(firstURL, "http://") {
 		return &etcdcv3.Config{Endpoints: etcdURLs, Username: etcdUsername, Password: etcdPassword}, nil
 	} else if strings.HasPrefix(firstURL, "https://") {
-		caFile := os.Getenv("ETCD_CA_FILE")
-		certFile := os.Getenv("ETCD_CERT_FILE")
-		keyFile := os.Getenv("ETCD_KEY_FILE")
-		serverName := os.Getenv("ETCD_TLS_SERVER_NAME")
-		isInsecureStr := strings.ToLower(os.Getenv("ETCD_TLS_INSECURE"))
-		isInsecure := isInsecureStr == "true" || isInsecureStr == "yes" || isInsecureStr == "1"
-		tlsConfig, err := newTLSConfig(certFile, keyFile, caFile, serverName, isInsecure)
+		tlsConfig, err := tlsutils.CreateTLSConfig("ETCD")
 		if err != nil {
 			return nil, err
 		}
+		log.Debug("using TLS for etcd")
 		return &etcdcv3.Config{
 			Endpoints: etcdURLs,
 			TLS:       tlsConfig,
@@ -231,7 +182,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 	}
 }
 
-// newETCDClient is an etcd client constructor
+// the newETCDClient is an etcd client constructor
 func newETCDClient() (coreDNSClient, error) {
 	cfg, err := getETCDConfig()
 	if err != nil {
@@ -283,7 +234,7 @@ func findLabelInTargets(targets []string, label string) (string, bool) {
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
-func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	services, err := p.client.GetServices(p.coreDNSPrefix)
 	if err != nil {

@@ -24,6 +24,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
@@ -43,7 +44,7 @@ func TestAWSRecordsV1(t *testing.T) {
 	ctx := context.Background()
 	z, err := provider.Zones(ctx)
 	assert.NoError(t, err)
-	assert.EqualValues(t, 3, len(z))
+	assert.Len(t, z, 3)
 }
 
 func TestAWSZonesFilterWithTags(t *testing.T) {
@@ -58,7 +59,7 @@ func TestAWSZonesFilterWithTags(t *testing.T) {
 	ctx := context.Background()
 	z, err := provider.Zones(ctx)
 	assert.NoError(t, err)
-	assert.EqualValues(t, 24, len(z))
+	assert.Len(t, z, 24)
 	assert.Equal(t, 17, stub.calls["listtagsforresource"])
 }
 
@@ -85,8 +86,8 @@ func TestAWSZonesFiltersWithTags(t *testing.T) {
 			)
 			z, err := provider.Zones(context.Background())
 			assert.NoError(t, err)
-			assert.EqualValues(t, tt.want, len(z))
-			assert.EqualValues(t, tt.calls, stub.calls["listtagsforresource"])
+			assert.Len(t, z, tt.want)
+			assert.Equal(t, tt.calls, stub.calls["listtagsforresource"])
 		})
 	}
 }

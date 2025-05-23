@@ -4,7 +4,7 @@ The pod source creates DNS entries based on `Pod` resources.
 
 ## Pods not running with host networking
 
-By default, the pod source will not consider the pods that aren't running with host networking enabled. You can override this behavior by using the `--ignore-non-host-network-pods` option.
+By default, the pod source will consider the pods that aren't running with host networking enabled. You can override this behavior by using the `--ignore-non-host-network-pods` option to ignore non host networking pods.
 
 ## Using a default domain for pods
 
@@ -22,7 +22,6 @@ You will then use the following mix of options:
 - `--domain-filter=10.0.0.in-addr.arpa`
 - `--source=pod`
 - `--pod-source-domain=example.org`
-- `--no-ignore-non-host-network-pods`
 - `--rfc2136-create-ptr`
 - `--rfc2136-zone=example.org`
 - `--rfc2136-zone=10.0.0.in-addr.arpa`

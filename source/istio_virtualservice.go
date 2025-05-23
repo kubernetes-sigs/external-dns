@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"sort"
@@ -193,7 +194,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.
-func (sc *virtualServiceSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *virtualServiceSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio VirtualService")
 
 	sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
@@ -210,27 +211,25 @@ func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string,
 		log.Debugf("Failed parsing gatewayStr %s of VirtualService %s/%s", gatewayStr, virtualService.Namespace, virtualService.Name)
 		return nil, err
 	}
-	if namespace == "" {
-		namespace = virtualService.Namespace
-	}
+	namespace = cmp.Or(namespace, virtualService.Namespace)
 
 	gateway, err := sc.gatewayInformer.Lister().Gateways(namespace).Get(name)
 	if errors.IsNotFound(err) {
 		log.Warnf("VirtualService (%s/%s) references non-existent gateway: %s ", virtualService.Namespace, virtualService.Name, gatewayStr)
-		return nil, nil
+		return gateway, nil
 	} else if err != nil {
 		log.Errorf("Failed retrieving gateway %s referenced by VirtualService %s/%s: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
 		return nil, err
 	}
 	if gateway == nil {
 		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
-		return nil, nil
+		return gateway, nil
 	}
 	return gateway, nil
 }
 
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, virtualService)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, virtualService)
 	if err != nil {
 		return nil, err
 	}
@@ -290,17 +289,17 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
 	for _, gateway := range virtualService.Spec.Gateways {
-		gateway, err := sc.getGateway(ctx, gateway, virtualService)
+		gw, err := sc.getGateway(ctx, gateway, virtualService)
 		if err != nil {
 			return nil, err
 		}
-		if gateway == nil {
+		if gw == nil {
 			continue
 		}
-		if !virtualServiceBindsToGateway(virtualService, gateway, vsHost) {
+		if !virtualServiceBindsToGateway(virtualService, gw, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(ctx, gateway)
+		tgs, err := sc.targetsFromGateway(ctx, gw)
 		if err != nil {
 			return targets, err
 		}

@@ -468,7 +468,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 

@@ -19,9 +19,11 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
@@ -31,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -327,7 +330,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -621,7 +624,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -638,16 +641,16 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRouteTCP)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(ingressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
@@ -656,7 +659,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
 			assert.Equal(t, ti.expected, endpoints)
 		})
@@ -763,7 +766,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			expected:                 nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1093,7 +1096,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1387,7 +1390,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1529,7 +1532,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			expected:                 nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1692,7 +1695,7 @@ func TestTraefikAPIGroupDisableFlags(t *testing.T) {
 			disableNew:    true,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1806,7 +1809,7 @@ type testInformer struct {
 	times int
 }
 
-func (t *testInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+func (t *testInformer) AddEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	t.times += 1
-	return nil, nil
+	return nil, fmt.Errorf("not implemented")
 }

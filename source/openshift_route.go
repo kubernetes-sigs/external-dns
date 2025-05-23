@@ -170,7 +170,7 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(ors.fqdnTemplate, ocpRoute)
+	hostnames, err := fqdn.ExecTemplate(ors.fqdnTemplate, ocpRoute)
 	if err != nil {
 		return nil, err
 	}

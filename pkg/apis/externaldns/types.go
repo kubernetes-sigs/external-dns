@@ -109,10 +109,12 @@ type Config struct {
 	AzureMaxRetriesCount                          int
 	CloudflareProxied                             bool
 	CloudflareCustomHostnames                     bool
+	CloudflareDNSRecordsPerPage                   int
+	CloudflareDNSRecordsComment                   string
 	CloudflareCustomHostnamesMinTLSVersion        string
 	CloudflareCustomHostnamesCertificateAuthority string
-	CloudflareDNSRecordsPerPage                   int
 	CloudflareRegionKey                           string
+	CloudflareRecordComment                       string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
 	AkamaiClientToken                             string
@@ -477,7 +479,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
 	app.Flag("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressRulesSpec)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
-	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: true)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
+	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
 	app.Flag("ingress-class", "Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
@@ -542,6 +544,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt)").Default("google").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt")
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
+	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
+
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)
@@ -586,7 +590,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to RFC2136 provider
-	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy)").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
+	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
 	app.Flag("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server").Default(strconv.Itoa(defaultConfig.RFC2136Port)).IntVar(&cfg.RFC2136Port)
 	app.Flag("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)").StringsVar(&cfg.RFC2136Zone)
 	app.Flag("rfc2136-create-ptr", "When using the RFC2136 provider, enable PTR management").Default(strconv.FormatBool(defaultConfig.RFC2136CreatePTR)).BoolVar(&cfg.RFC2136CreatePTR)

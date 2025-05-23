@@ -136,7 +136,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			labelFilter: "app=web-external",
 		},
 	} {
-		ti := ti
+
 		labelSelector, err := labels.Parse(ti.labelFilter)
 		require.NoError(t, err)
 		t.Run(ti.title, func(t *testing.T) {
@@ -516,7 +516,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 			// Create a Kubernetes testing client

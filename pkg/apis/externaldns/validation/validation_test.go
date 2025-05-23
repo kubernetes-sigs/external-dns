@@ -27,29 +27,29 @@ import (
 
 func TestValidateFlags(t *testing.T) {
 	cfg := newValidConfig(t)
-	assert.NoError(t, ValidateConfig(cfg))
+	require.NoError(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = "test"
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = ""
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	for _, format := range []string{"text", "json"} {
 		cfg = newValidConfig(t)
 		cfg.LogFormat = format
-		assert.NoError(t, ValidateConfig(cfg))
+		require.NoError(t, ValidateConfig(cfg))
 	}
 
 	cfg = newValidConfig(t)
 	cfg.Sources = []string{}
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.Provider = ""
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 }
 
 func newValidConfig(t *testing.T) *externaldns.Config {
@@ -84,7 +84,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestValidateBadRfc2136Batch(t *testing.T) {
@@ -98,7 +98,7 @@ func TestValidateBadRfc2136Batch(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestValidateGoodRfc2136Config(t *testing.T) {
@@ -112,7 +112,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
@@ -201,7 +201,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range invalidRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 }
 
@@ -224,6 +224,6 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range validRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 }
