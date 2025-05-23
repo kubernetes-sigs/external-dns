@@ -3,21 +3,31 @@ version: "2"
 linters:
   default: none
   enable: # golangci-lint help linters
-    - dogsled
+    - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/usage/linters/#copyloopvar
+    - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/usage/linters/#dogsled
+    - dupword # Duplicate word. https://golangci-lint.run/usage/linters/#dupword
     - goprintffuncname
     - govet
     - ineffassign
     - misspell
     - revive
-    - rowserrcheck
+    - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
+    - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/usage/linters/#errcheck
     - staticcheck
     - unconvert
     - unused
+    - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. https://golangci-lint.run/usage/linters/#usestdlibvars
     - whitespace
+    - decorder # Check declaration order and count of types, constants, variables and functions. https://golangci-lint.run/usage/linters/#decorder
+    - tagalign # Check that struct tags are well aligned. https://golangci-lint.run/usage/linters/#tagalign
     - predeclared # Find code that shadows one of Go's predeclared identifiers
     - sloglint # Ensure consistent code style when using log/slog
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
+    - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
+
+    # tests
+    - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint
   settings:
     exhaustive:
       default-signifies-exhaustive: false
@@ -27,6 +37,19 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
+    cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
+      max-complexity: 52
+    testifylint:
+      # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
+      # Default: false
+      enable-all: true
+      # Disable checkers by name
+      # (in addition to default
+      #   suite-thelper
+      # ).
+      # TODO: enable in follow-up
+      disable:
+        - require-error
   exclusions:
     generated: lax
     presets:
@@ -52,6 +75,10 @@ linters:
           - varcheck
           - whitespace
         path: _test\.go
+      # TODO: skiip as will require design changes
+      - linters:
+          - nilnil
+        path: istio_virtualservice.go|fqdn.go|cloudflare.go
     paths:
       - endpoint/zz_generated.deepcopy.go
       - third_party$

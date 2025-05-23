@@ -188,7 +188,7 @@ func (suite *ByNamesTestSuite) TestSourceNotFound() {
 
 	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"foo"}, &Config{})
 	suite.Equal(err, ErrSourceNotFound, "should return source not found")
-	suite.Len(sources, 0, "should not returns any source")
+	suite.Empty(sources, "should not returns any source")
 }
 
 func (suite *ByNamesTestSuite) TestKubeClientFails() {

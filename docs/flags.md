@@ -36,7 +36,7 @@
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
 | `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
-| `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: true) |
+| `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: false) |
 | `--ingress-class=INGRESS-CLASS` | Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class) |
 | `--label-filter=""` | Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host |
 | `--managed-record-types=A...` | Record types to manage; specify multiple times to include many; (default: A,AAAA,CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT) |
@@ -95,6 +95,7 @@
 | `--cloudflare-custom-hostnames-certificate-authority=google` | When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
 | `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth) |
+| `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-token=""` | When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified) |
@@ -132,7 +133,7 @@
 | `--exoscale-apizone="ch-gva-2"` | When using Exoscale provider, specify the API Zone (optional) |
 | `--exoscale-apikey=""` | Provide your API Key for the Exoscale provider |
 | `--exoscale-apisecret=""` | Provide your API Secret for the Exoscale provider |
-| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy) |
+| `--rfc2136-host=` | When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy) |
 | `--rfc2136-port=0` | When using the RFC2136 provider, specify the port of the DNS server |
 | `--rfc2136-zone=RFC2136-ZONE` | When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times) |
 | `--[no-]rfc2136-create-ptr` | When using the RFC2136 provider, enable PTR management |

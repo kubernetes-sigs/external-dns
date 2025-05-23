@@ -496,8 +496,8 @@ func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
 
 func TestMatchFilterReturnsProperEmptyVal(t *testing.T) {
 	emptyFilters := []string{}
-	assert.Equal(t, true, matchFilter(emptyFilters, "somedomain.com", true))
-	assert.Equal(t, false, matchFilter(emptyFilters, "somedomain.com", false))
+	assert.True(t, matchFilter(emptyFilters, "somedomain.com", true))
+	assert.False(t, matchFilter(emptyFilters, "somedomain.com", false))
 }
 
 func TestDomainFilterIsConfigured(t *testing.T) {
@@ -813,8 +813,8 @@ func TestSimpleDomainFilterWithExclusion(t *testing.T) {
 					got = append(got, domain)
 				}
 			}
-			assert.Equal(t, len(got), len(tt.want))
-			assert.Equal(t, got, tt.want)
+			assert.Len(t, tt.want, len(got))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -22,6 +22,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 

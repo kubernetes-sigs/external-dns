@@ -35,27 +35,27 @@ import (
 
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
-	Cloud                        string `json:"cloud" yaml:"cloud"`
-	TenantID                     string `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID               string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup                string `json:"resourceGroup" yaml:"resourceGroup"`
-	Location                     string `json:"location" yaml:"location"`
-	ClientID                     string `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret                 string `json:"aadClientSecret" yaml:"aadClientSecret"`
-	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
+	Cloud                        string `json:"cloud"                        yaml:"cloud"`
+	TenantID                     string `json:"tenantId"                     yaml:"tenantId"`
+	SubscriptionID               string `json:"subscriptionId"               yaml:"subscriptionId"`
+	ResourceGroup                string `json:"resourceGroup"                yaml:"resourceGroup"`
+	Location                     string `json:"location"                     yaml:"location"`
+	ClientID                     string `json:"aadClientId"                  yaml:"aadClientId"`
+	ClientSecret                 string `json:"aadClientSecret"              yaml:"aadClientSecret"`
+	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension"  yaml:"useManagedIdentityExtension"`
 	UseWorkloadIdentityExtension bool   `json:"useWorkloadIdentityExtension" yaml:"useWorkloadIdentityExtension"`
-	UserAssignedIdentityID       string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
+	UserAssignedIdentityID       string `json:"userAssignedIdentityID"       yaml:"userAssignedIdentityID"`
 	ActiveDirectoryAuthorityHost string `json:"activeDirectoryAuthorityHost" yaml:"activeDirectoryAuthorityHost"`
 }
 
 func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string) (*config, error) {
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file '%s': %w", configFile, err)
 	}
 	cfg := &config{}
 	if err := json.Unmarshal(contents, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to parse Azure config file '%s': %w", configFile, err)
 	}
 	// If a subscription ID was given, override what was present in the config file
 	if subscriptionID != "" {

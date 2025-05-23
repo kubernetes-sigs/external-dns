@@ -19,7 +19,6 @@ package externaldns
 import (
 	"os"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -79,6 +78,7 @@ var (
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
 		CloudflareCustomHostnamesCertificateAuthority: "google",
 		CloudflareDNSRecordsPerPage:                   100,
+		CloudflareDNSRecordsComment:                   "",
 		CloudflareRegionKey:                           "",
 		CoreDNSPrefix:                                 "/skydns/",
 		AkamaiServiceConsumerDomain:                   "",
@@ -145,7 +145,7 @@ var (
 		Sources:                                []string{"service", "ingress", "connector"},
 		Namespace:                              "namespace",
 		IgnoreHostnameAnnotation:               true,
-		IgnoreNonHostNetworkPods:               false,
+		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
 		IgnoreIngressRulesSpec:                 true,
 		FQDNTemplate:                           "{{.Name}}.service.example.com",
@@ -285,7 +285,7 @@ func TestParseFlags(t *testing.T) {
 				"--source=connector",
 				"--namespace=namespace",
 				"--fqdn-template={{.Name}}.service.example.com",
-				"--no-ignore-non-host-network-pods",
+				"--ignore-non-host-network-pods",
 				"--ignore-hostname-annotation",
 				"--ignore-ingress-tls-spec",
 				"--ignore-ingress-rules-spec",
@@ -417,7 +417,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_SOURCE":                                            "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                                         "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":                                     "{{.Name}}.service.example.com",
-				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "0",
+				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "1",
 				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":                        "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":                           "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_RULES_SPEC":                         "1",
@@ -562,6 +562,6 @@ func TestPasswordsNotLogged(t *testing.T) {
 
 	s := cfg.String()
 
-	assert.False(t, strings.Contains(s, "pdns-api-key"))
-	assert.False(t, strings.Contains(s, "tsig-secret"))
+	assert.NotContains(t, s, "pdns-api-key")
+	assert.NotContains(t, s, "tsig-secret")
 }

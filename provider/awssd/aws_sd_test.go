@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// Compile time check for interface conformance
+// Compile time checks for interface conformance
 var _ AWSSDClient = &AWSSDClientStub{}
 
 var (
@@ -491,7 +491,7 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 
 	// make sure only one instance is de-registered
 	assert.Len(t, api.deregistered, 1)
-	assert.Equal(t, api.deregistered[0], "1.2.3.5", "wrong target de-registered")
+	assert.Equal(t, "1.2.3.5", api.deregistered[0], "wrong target de-registered")
 }
 
 func TestAWSSDProvider_ListNamespaces(t *testing.T) {
@@ -803,12 +803,12 @@ func TestAWSSDProvider_DeleteService(t *testing.T) {
 
 	// delete first service
 	err := provider.DeleteService(context.Background(), services["private"]["srv1"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 2)
 
 	// delete third service
 	err1 := provider.DeleteService(context.Background(), services["private"]["srv3"])
-	assert.NoError(t, err1)
+	require.NoError(t, err1)
 	assert.Len(t, api.services["private"], 1)
 
 	expectedServices := map[string]*sdtypes.Service{
@@ -1027,7 +1027,7 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 
 	provider.DeregisterInstance(context.Background(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
 
-	assert.Len(t, instances["srv1"], 0)
+	assert.Empty(t, instances["srv1"])
 }
 
 func TestAWSSDProvider_awsTags(t *testing.T) {

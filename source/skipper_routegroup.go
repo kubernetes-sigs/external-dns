@@ -164,7 +164,7 @@ func (cli *routeGroupClient) getRouteGroupList(url string) (*routeGroupList, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get routegroup list from %s, got: %s", url, resp.Status)
 	}
 
@@ -178,7 +178,7 @@ func (cli *routeGroupClient) getRouteGroupList(url string) (*routeGroupList, err
 }
 
 func (cli *routeGroupClient) get(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, rg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on routegroup %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, err)
+		return nil, fmt.Errorf("failed to apply template on routegroup %s/%s: %w", rg.Metadata.Namespace, rg.Metadata.Name, err)
 	}
 
 	hostnames := buf.String()

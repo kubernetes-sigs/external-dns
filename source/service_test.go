@@ -145,7 +145,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 			serviceTypesFilter: []string{string(v1.ServiceTypeClusterIP)},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1074,7 +1074,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1303,7 +1303,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1611,7 +1611,7 @@ func TestClusterIpServices(t *testing.T) {
 			expected:  []*endpoint.Endpoint{},
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -2303,7 +2303,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}},
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -3079,7 +3079,7 @@ func TestHeadlessServices(t *testing.T) {
 			false,
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -3548,7 +3548,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			false,
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -3777,7 +3777,7 @@ func TestExternalServices(t *testing.T) {
 			false,
 		},
 	} {
-		tc := tc
+
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
