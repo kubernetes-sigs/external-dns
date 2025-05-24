@@ -160,7 +160,8 @@ func TestFetchZonesZoneIDFilter(t *testing.T) {
 	stub.setOutput("zone", []interface{}{"test1.testzone.com", "test2.testzone.com"})
 
 	x, _ := c.fetchZones()
-	y, _ := json.Marshal(x)
+	y, err := json.Marshal(x)
+	require.NoError(t, err)
 	if assert.NotNil(t, y) {
 		assert.JSONEq(t, "{\"zones\":[{\"contractId\":\"contract\",\"zone\":\"test1.testzone.com\"},{\"contractId\":\"contract\",\"zone\":\"test2.testzone.com\"}]}", string(y))
 	}
@@ -175,7 +176,8 @@ func TestFetchZonesEmpty(t *testing.T) {
 	stub.setOutput("zone", []interface{}{})
 
 	x, _ := c.fetchZones()
-	y, _ := json.Marshal(x)
+	y, err := json.Marshal(x)
+	require.NoError(t, err)
 	if assert.NotNil(t, y) {
 		assert.JSONEq(t, "{\"zones\":[]}", string(y))
 	}
