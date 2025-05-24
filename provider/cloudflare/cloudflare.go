@@ -820,7 +820,7 @@ func getCustomHostnamesSSLOptions(customHostnamesConfig CustomHostnamesConfig) *
 	}
 	// Set CertificateAuthority if provided
 	// We're not able to set it at all (even with a blank) if you're not on an enterprise plan
-	if customHostnamesConfig.CertificateAuthority != "" {
+	if customHostnamesConfig.CertificateAuthority != "none" {
 		ssl.CertificateAuthority = customHostnamesConfig.CertificateAuthority
 	}
 	return ssl
