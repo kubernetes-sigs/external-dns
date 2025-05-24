@@ -1838,3 +1838,43 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 
 	testutils.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
 }
+
+// TestTXTRegistryRecreatesMissingDataRecords reproduces issue #4914.
+// It verifies that External‑DNS recreates A/CNAME records that were accidentally deleted while their companion TXT records remain.
+// An InMemoryProvider is used because, like Route53, it throws an error when attempting to create a duplicate record.
+func TestTXTRegistryRecreatesMissingDataRecords(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+
+	// Data records that disappeared from the zone (to be recreated).
+	missingDataRecords := []*endpoint.Endpoint{
+		newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
+		newEndpointWithOwner("new-record-2.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+	}
+
+	// TXT records that survived the accidental deletion of data records.
+	existingTXTRecords := []*endpoint.Endpoint{
+		newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		newEndpointWithOwner("cname-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		newEndpointWithOwner("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		newEndpointWithOwner("a-new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+	}
+
+	p.CreateZone(testZone)
+
+	err := p.ApplyChanges(ctx, &plan.Changes{Create: existingTXTRecords})
+	assert.NoError(t, err)
+
+	registry, err := NewTXTRegistry(p, "", "", "owner", time.Hour, "", nil, nil, false, nil, false)
+	assert.NoError(t, err)
+
+	// Reconciliation attempts to recreate the missing data records.
+	err = registry.ApplyChanges(ctx, &plan.Changes{Create: missingDataRecords})
+	assert.NoError(t, err)
+
+	records, err := p.Records(ctx)
+	assert.NoError(t, err)
+
+	expectedRecords := append(missingDataRecords, existingTXTRecords...)
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+}
