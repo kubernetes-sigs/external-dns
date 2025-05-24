@@ -306,7 +306,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 			}
 			// If records were fetched successfully, break out of the loop
 			if len(records) > 0 {
-				return records, nil
+				break
 			}
 		}
 
