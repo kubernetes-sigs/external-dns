@@ -312,7 +312,7 @@ If not set the value will default to `global`.
 
 ## Setting cloudflare-custom-hostname
 
-Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the --cloudflare-custom-hostnames flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
+Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the `--cloudflare-custom-hostnames` flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
 
 Multiple hostnames are supported via a comma-separated list: `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname 1>,<custom hostname 2>`.
 
@@ -320,7 +320,7 @@ See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-
 
 This feature is disabled by default and supports the `--cloudflare-custom-hostnames-min-tls-version` and `--cloudflare-custom-hostnames-certificate-authority` flags.
 
-`--cloudflare-custom-hostnames-certificate-authority` defaults to not selecting a CA. If a specific CA is required use this flag to select one.
+`--cloudflare-custom-hostnames-certificate-authority` defaults to `none`, which explicitly means no Certificate Authority (CA) is set when using the Cloudflare API. Specifying a custom CA is only possible for enterprise accounts.
 
 The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns.alpha.kubernetes.io/hostname`) for automatic certificate validation via the HTTP method. It's important to note that the TXT method does not allow automatic validation and is not supported.
 
