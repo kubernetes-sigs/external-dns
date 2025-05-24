@@ -254,7 +254,7 @@ var defaultConfig = &Config{
 	CFAPIEndpoint:               "",
 	CFPassword:                  "",
 	CFUsername:                  "",
-	CloudflareCustomHostnamesCertificateAuthority: "google",
+	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
 	CloudflareDNSRecordsPerPage:                   100,
@@ -538,7 +538,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-custom-hostnames", "When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires \"Cloudflare for SaaS\" enabled. (default: disabled)").BoolVar(&cfg.CloudflareCustomHostnames)
 	app.Flag("cloudflare-custom-hostnames-min-tls-version", "When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)").Default("1.0").EnumVar(&cfg.CloudflareCustomHostnamesMinTLSVersion, "1.0", "1.1", "1.2", "1.3")
-	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt)").Default("google").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt")
+	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none)").Default("none").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt", "none")
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
 	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
