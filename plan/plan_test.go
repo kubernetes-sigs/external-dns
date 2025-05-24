@@ -1077,6 +1077,26 @@ func TestNormalizeDNSName(t *testing.T) {
 			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
 			"my-example-my-example-1214.foo-1235.bar-foo.com.",
 		},
+		{
+			"點看.org.",
+			"xn--c1yn36f.org.",
+		},
+		{
+			"nordic-ø.xn--kitty-點看pd34d.com",
+			"xn--nordic--w1a.xn--xn--kitty-pd34d-hn01b3542b.com.",
+		},
+		{
+			"nordic-ø.kitty😸.com.",
+			"xn--nordic--w1a.xn--kitty-pd34d.com.",
+		},
+		{
+			"  nordic-ø.kitty😸.COM",
+			"xn--nordic--w1a.xn--kitty-pd34d.com.",
+		},
+		{
+			"xn--nordic--w1a.kitty😸.com.",
+			"xn--nordic--w1a.xn--kitty-pd34d.com.",
+		},
 	}
 	for _, r := range records {
 		gotName := normalizeDNSName(r.dnsName)
