@@ -91,6 +91,7 @@ Known providers using webhooks:
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
+| deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
