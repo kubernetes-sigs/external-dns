@@ -56,7 +56,7 @@ jobs:
       with:
         file_glob: 'api/*.yaml'
 
-    - uses: actions/setup-python@v3
+    - uses: actions/setup-python@v5
     # https://github.com/pre-commit/action
     - name: Verify with pre-commit
       uses: pre-commit/action@v3.0.1
