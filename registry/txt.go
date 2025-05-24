@@ -19,6 +19,7 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -60,6 +61,46 @@ type TXTRegistry struct {
 	txtEncryptAESKey  []byte
 
 	newFormatOnly bool
+
+	// existingTXT caches the TXT records that already exist in the zone so that
+	// ApplyChanges() can skip re-creating them. See the struct below for details.
+	existingTXT txtCache
+}
+
+// txtCache stores pre‑existing TXT records to avoid duplicate creation.
+// It relies on the fact that Records() is always called **before** ApplyChanges()
+// within a single reconciliation cycle. The "synced" flag prevents accidental
+// use before the cache is filled.
+type txtCache struct {
+	entries []*endpoint.Endpoint
+	synced  bool
+}
+
+// filterExistingTXT removes endpoints whose TXT companions are already present
+// in the provider. Caller must guarantee that c.synced == true.
+func (r *TXTRegistry) filterExistingTXT(eps []*endpoint.Endpoint) []*endpoint.Endpoint {
+	if !r.existingTXT.synced {
+		// If we haven't synced the cache yet, we need to call Records() to populate the cache.
+		// This is generally not executed because Records() is always called before ApplyChanges()
+		// in the same reconciliation cycle.
+		_, _ = r.Records(context.Background())
+	}
+
+	// Build a lookup table of existing TXT keys.
+	table := make(map[string]struct{}, len(r.existingTXT.entries))
+	for _, rec := range r.existingTXT.entries {
+		k := fmt.Sprintf("%s|%s|%s", rec.DNSName, rec.RecordType, rec.SetIdentifier)
+		table[k] = struct{}{}
+	}
+
+	var out []*endpoint.Endpoint
+	for _, ep := range eps {
+		k := fmt.Sprintf("%s|%s|%s", ep.DNSName, ep.RecordType, ep.SetIdentifier)
+		if _, found := table[k]; !found {
+			out = append(out, ep)
+		}
+	}
+	return out
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -104,6 +145,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		newFormatOnly:       newFormatOnly,
+		existingTXT:         txtCache{},
 	}, nil
 }
 
@@ -123,6 +165,7 @@ func (im *TXTRegistry) OwnerID() string {
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
 func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	im.existingTXT.synced = true
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
@@ -171,6 +214,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		labelMap[key] = labels
 		txtRecordsMap[record.DNSName] = struct{}{}
+
+		im.existingTXT.entries = append(im.existingTXT.entries, record)
 	}
 
 	for _, ep := range endpoints {
@@ -279,7 +324,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
+		generatedTXTRecords := im.generateTXTRecord(r)
+
+		filteredChanges.Create = append(filteredChanges.Create, im.filterExistingTXT(generatedTXTRecords)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
