@@ -76,7 +76,7 @@ var (
 		CloudflareProxied:                      false,
 		CloudflareCustomHostnames:              false,
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
-		CloudflareCustomHostnamesCertificateAuthority: "",
+		CloudflareCustomHostnamesCertificateAuthority: "none",
 		CloudflareDNSRecordsPerPage:                   100,
 		CloudflareDNSRecordsComment:                   "",
 		CloudflareRegionKey:                           "",
