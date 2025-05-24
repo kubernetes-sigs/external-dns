@@ -106,7 +106,10 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 
 func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
-	json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
+	err := json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 // StartHTTPApi starts a HTTP server given any provider.
