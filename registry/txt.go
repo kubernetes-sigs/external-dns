@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	//"fmt"
 	"strings"
 	"time"
 
@@ -73,41 +72,31 @@ type TXTRegistry struct {
 // It relies on the fact that Records() is always called **before** ApplyChanges()
 // within a single reconciliation cycle.
 type existingTXTs struct {
-	entries []*endpoint.Endpoint
+	entries map[string]struct{}
 }
 
 func newExistingTXTs() existingTXTs {
 	return existingTXTs{
-		entries: make([]*endpoint.Endpoint, 0),
+		entries: make(map[string]struct{}),
 	}
 }
 
 func (im *existingTXTs) add(r *endpoint.Endpoint) {
-	im.entries = append(im.entries, r)
+	if im.entries == nil {
+		im.entries = make(map[string]struct{})
+	}
+	im.entries[fmt.Sprintf("%s|%s", r.DNSName, r.SetIdentifier)] = struct{}{}
 }
 
 // filterOutExistingTXTRecords removes endpoints whose TXT companions are already present
-func (im *existingTXTs) filterOutExistingTXTRecords(eps []*endpoint.Endpoint) []*endpoint.Endpoint {
-	// Build a lookup table of existing TXT keys.
-	table := make(map[string]struct{}, len(im.entries))
-	for _, rec := range im.entries {
-		k := fmt.Sprintf("%s|%s", rec.DNSName, rec.SetIdentifier)
-		table[k] = struct{}{}
-	}
+func (im *existingTXTs) isManaged(ep *endpoint.Endpoint) bool {
+	k := fmt.Sprintf("%s|%s", ep.DNSName, ep.SetIdentifier)
+	_, ok := im.entries[k]
+	return ok
+}
 
-	var out []*endpoint.Endpoint
-	for _, ep := range eps {
-		if ep.RecordType != endpoint.RecordTypeTXT {
-			// Only filter TXT records.
-			out = append(out, ep)
-			continue
-		}
-		k := fmt.Sprintf("%s|%s", ep.DNSName, ep.SetIdentifier)
-		if _, found := table[k]; !found {
-			out = append(out, ep)
-		}
-	}
-	return out
+func (im *existingTXTs) reset() existingTXTs {
+	return newExistingTXTs()
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -152,7 +141,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		newFormatOnly:       newFormatOnly,
-		existingTXTs:        existingTXTs{},
+		existingTXTs:        newExistingTXTs(),
 	}, nil
 }
 
@@ -329,14 +318,20 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
+		generatedTXTs := im.generateTXTRecord(r)
+		for _, txt := range generatedTXTs {
+			// If the TXT record is already managed by this instance, skip it
+			if im.existingTXTs.isManaged(txt) {
+				continue
+			}
+			filteredChanges.Create = append(filteredChanges.Create, txt)
+		}
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
 	}
-	filteredChanges.Create = im.existingTXTs.filterOutExistingTXTRecords(filteredChanges.Create)
-	im.existingTXTs = newExistingTXTs() // reset existing TXTs for the next reconciliation cycle
+	im.existingTXTs = im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
 
 	for _, r := range filteredChanges.Delete {
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
