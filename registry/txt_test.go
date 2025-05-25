@@ -1867,6 +1867,7 @@ func TestTXTRegistryRecreatesMissingDataRecords(t *testing.T) {
 
 	registry, err := NewTXTRegistry(p, "", "", "owner", time.Hour, "", nil, nil, false, nil, false)
 	assert.NoError(t, err)
+	registry.Records(ctx)
 
 	// Reconciliation attempts to recreate the missing data records.
 	err = registry.ApplyChanges(ctx, &plan.Changes{Create: missingDataRecords})
