@@ -146,7 +146,6 @@ The following table clarifies the current status of the providers according to t
 | TransIP                         | Alpha  |                  |
 | OVHcloud                        | Beta   | @rbeuque74       |
 | Scaleway DNS                    | Alpha  | @Sh4d1           |
-| UltraDNS                        | Alpha  |                  |
 | GoDaddy                         | Alpha  |                  |
 | Gandi                           | Alpha  | @packi           |
 | Plural                          | Alpha  | @michaeljguarino |
@@ -206,7 +205,6 @@ The following tutorials are provided:
 - [TransIP](docs/tutorials/transip.md)
 - [OVHcloud](docs/tutorials/ovh.md)
 - [Scaleway](docs/tutorials/scaleway.md)
-- [UltraDNS](docs/tutorials/ultradns.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
 - [Gandi](docs/tutorials/gandi.md)
 - [Nodes as source](docs/sources/nodes.md)

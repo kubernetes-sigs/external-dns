@@ -29,5 +29,4 @@ Provider supported configurations
 | RFC2136       | n/a        | yes     | n/a                   |
 | Scaleway      | n/a        | n/a     | 300                   |
 | Transip       | n/a        | yes     | 60                    |
-| Ultradns      | n/a        | yes     | n/a                   |
 | Webhook       | n/a        | n/a     | n/a                   |
