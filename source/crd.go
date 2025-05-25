@@ -24,17 +24,23 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
+	sc "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/reference"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -50,6 +56,7 @@ type crdSource struct {
 	annotationFilter string
 	labelSelector    labels.Selector
 	informer         *cache.SharedInformer
+	recorder         record.EventRecorder
 }
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
@@ -95,7 +102,10 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	}
 
 	scheme := runtime.NewScheme()
-	addKnownTypes(scheme, groupVersion)
+	err = addKnownTypes(scheme, groupVersion)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
@@ -105,11 +115,18 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	if err != nil {
 		return nil, nil, err
 	}
+
 	return crdClient, scheme, nil
 }
 
 // NewCRDSource creates a new crdSource with the given config.
-func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFilter string, labelSelector labels.Selector, scheme *runtime.Scheme, startInformer bool) (Source, error) {
+func NewCRDSource(crdClient rest.Interface, kubeClient kubernetes.Interface, namespace, kind string, annotationFilter string, labelSelector labels.Selector, scheme *runtime.Scheme, startInformer bool) (Source, error) {
+	broadcaster := record.NewBroadcaster()
+	// broadcaster.StartLogging(log.Infof)
+
+	broadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events(v1.NamespaceAll)})
+	recorder := broadcaster.NewRecorder(scheme, v1.EventSource{Component: "external-dns"})
+
 	sourceCrd := crdSource{
 		crdResource:      strings.ToLower(kind) + "s",
 		namespace:        namespace,
@@ -117,6 +134,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 		labelSelector:    labelSelector,
 		crdClient:        crdClient,
 		codec:            runtime.NewParameterCodec(scheme),
+		recorder:         recorder,
 	}
 	if startInformer {
 		// external-dns already runs its sync-handler periodically (controlled by `--interval` flag) to ensure any
@@ -138,26 +156,31 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	return &sourceCrd, nil
 }
 
-func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
-	if cs.informer != nil {
-		log.Debug("Adding event handler for CRD")
-		// Right now there is no way to remove event handler from informer, see:
-		// https://github.com/kubernetes/kubernetes/issues/79610
-		informer := *cs.informer
-		informer.AddEventHandler(
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					handler()
-				},
-				UpdateFunc: func(old interface{}, newI interface{}) {
-					handler()
-				},
-				DeleteFunc: func(obj interface{}) {
-					handler()
-				},
-			},
-		)
+func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
+	if cs.informer == nil {
+		return
 	}
+
+	log.Debug("Adding event handler for CRD")
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	informer := *cs.informer
+	informer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				fmt.Println("Adding CRD object")
+				handler()
+			},
+			UpdateFunc: func(old interface{}, newI interface{}) {
+				fmt.Println("Update CRD object")
+				handler()
+			},
+			DeleteFunc: func(obj interface{}) {
+				fmt.Println("Delete CRD object")
+				handler()
+			},
+		},
+	)
 }
 
 // Endpoints returns endpoint objects.
@@ -183,18 +206,18 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		// Make sure that all endpoints have targets for A or CNAME type
 		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
-			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
+			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if ep.RecordType != "NAPTR" && strings.HasSuffix(target, ".") {
+				if ep.RecordType != endpoint.RecordTypeNAPTR && strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
-				if ep.RecordType == "NAPTR" && !strings.HasSuffix(target, ".") {
+				if ep.RecordType == endpoint.RecordTypeNAPTR && !strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
@@ -244,37 +267,35 @@ func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch
 		Watch(ctx)
 }
 
-func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result *apiv1alpha1.DNSEndpointList, err error) {
-	result = &apiv1alpha1.DNSEndpointList{}
-	err = cs.crdClient.Get().
+func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (*apiv1alpha1.DNSEndpointList, error) {
+	result := &apiv1alpha1.DNSEndpointList{}
+	return result, cs.crdClient.Get().
 		Namespace(cs.namespace).
 		Resource(cs.crdResource).
 		VersionedParams(opts, cs.codec).
 		Do(ctx).
 		Into(result)
-	return
 }
 
-func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (result *apiv1alpha1.DNSEndpoint, err error) {
-	result = &apiv1alpha1.DNSEndpoint{}
-	err = cs.crdClient.Put().
+func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (*apiv1alpha1.DNSEndpoint, error) {
+	err := cs.crdClient.Put().
 		Namespace(dnsEndpoint.Namespace).
 		Resource(cs.crdResource).
 		Name(dnsEndpoint.Name).
 		SubResource("status").
 		Body(dnsEndpoint).
 		Do(ctx).
-		Into(result)
-	return
+		Into(dnsEndpoint)
+	ref, err := reference.GetReference(sc.Scheme, dnsEndpoint)
+	if err != nil {
+		cs.recorder.Event(ref, v1.EventTypeWarning, "UpdateStatusFailed", fmt.Sprintf("Failed to update status for %s: %v", dnsEndpoint.Name, err))
+	}
+	return dnsEndpoint, err
 }
 
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
 func (cs *crdSource) filterByAnnotations(dnsendpoints *apiv1alpha1.DNSEndpointList) (*apiv1alpha1.DNSEndpointList, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(cs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(cs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

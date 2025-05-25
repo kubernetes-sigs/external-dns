@@ -320,7 +320,14 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
-// Apply filter to slice of endpoints and return new filtered slice that includes
+func (e *Endpoint) GetLabels() Labels {
+	if e.Labels == nil {
+		return NewLabels()
+	}
+	return e.Labels
+}
+
+// FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
