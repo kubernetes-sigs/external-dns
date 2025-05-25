@@ -18,7 +18,6 @@ Provider supported configurations
 | Gandi         | n/a        | no      | 600                   |
 | GoDaddy       | n/a        | yes     | 600                   |
 | Google GCP    | n/a        | yes     | 300                   |
-| IBMCloud      | n/a        | yes     | 1                     |
 | InMemory      | n/a        | n/a     | n/a                   |
 | Linode        | n/a        | n/a     | n/a                   |
 | NS1           | n/a        | yes     | 10                    |

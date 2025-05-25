@@ -151,7 +151,6 @@ The following table clarifies the current status of the providers according to t
 | UltraDNS                        | Alpha  |                  |
 | GoDaddy                         | Alpha  |                  |
 | Gandi                           | Alpha  | @packi           |
-| IBMCloud                        | Alpha  | @hughhuangzh     |
 | TencentCloud                    | Alpha  | @Hyzhou          |
 | Plural                          | Alpha  | @michaeljguarino |
 | Pi-hole                         | Alpha  | @tinyzimmer      |
@@ -213,7 +212,6 @@ The following tutorials are provided:
 - [UltraDNS](docs/tutorials/ultradns.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
 - [Gandi](docs/tutorials/gandi.md)
-- [IBM Cloud](docs/tutorials/ibmcloud.md)
 - [Nodes as source](docs/sources/nodes.md)
 - [TencentCloud](docs/tutorials/tencentcloud.md)
 - [Plural](docs/tutorials/plural.md)
