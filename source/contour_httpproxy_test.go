@@ -35,8 +35,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This is a compile-time validation that httpProxySource is a Source.
-var _ Source = &httpProxySource{}
+var (
+	// This is a compile-time validation that httpProxySource is a Source.
+	_ Source = &httpProxySource{}
+)
 
 type HTTPProxySuite struct {
 	suite.Suite

@@ -43,342 +43,343 @@ type regexDomainFilterTest struct {
 	expectedSerialization map[string]string
 }
 
-var domainFilterTests = []domainFilterTest{
-	{
-		[]string{"google.com.", "exaring.de", "inovex.de"},
-		[]string{},
-		[]string{"google.com", "exaring.de", "inovex.de"},
-		true,
-		map[string][]string{
-			"include": {"exaring.de", "google.com", "inovex.de"},
+var (
+	domainFilterTests = []domainFilterTest{
+		{
+			[]string{"google.com.", "exaring.de", "inovex.de"},
+			[]string{},
+			[]string{"google.com", "exaring.de", "inovex.de"},
+			true,
+			map[string][]string{
+				"include": {"exaring.de", "google.com", "inovex.de"},
+			},
 		},
-	},
-	{
-		[]string{"google.com.", "exaring.de", "inovex.de"},
-		[]string{},
-		[]string{"google.com", "exaring.de", "inovex.de"},
-		true,
-		map[string][]string{
-			"include": {"exaring.de", "google.com", "inovex.de"},
+		{
+			[]string{"google.com.", "exaring.de", "inovex.de"},
+			[]string{},
+			[]string{"google.com", "exaring.de", "inovex.de"},
+			true,
+			map[string][]string{
+				"include": {"exaring.de", "google.com", "inovex.de"},
+			},
 		},
-	},
-	{
-		[]string{"google.com.", "exaring.de.", "inovex.de"},
-		[]string{},
-		[]string{"google.com", "exaring.de", "inovex.de"},
-		true,
-		map[string][]string{
-			"include": {"exaring.de", "google.com", "inovex.de"},
+		{
+			[]string{"google.com.", "exaring.de.", "inovex.de"},
+			[]string{},
+			[]string{"google.com", "exaring.de", "inovex.de"},
+			true,
+			map[string][]string{
+				"include": {"exaring.de", "google.com", "inovex.de"},
+			},
 		},
-	},
-	{
-		[]string{"foo.org.      "},
-		[]string{},
-		[]string{"foo.org"},
-		true,
-		map[string][]string{
-			"include": {"foo.org"},
+		{
+			[]string{"foo.org.      "},
+			[]string{},
+			[]string{"foo.org"},
+			true,
+			map[string][]string{
+				"include": {"foo.org"},
+			},
 		},
-	},
-	{
-		[]string{"   foo.org"},
-		[]string{},
-		[]string{"foo.org"},
-		true,
-		map[string][]string{
-			"include": {"foo.org"},
+		{
+			[]string{"   foo.org"},
+			[]string{},
+			[]string{"foo.org"},
+			true,
+			map[string][]string{
+				"include": {"foo.org"},
+			},
 		},
-	},
-	{
-		[]string{"foo.org."},
-		[]string{},
-		[]string{"foo.org"},
-		true,
-		map[string][]string{
-			"include": {"foo.org"},
+		{
+			[]string{"foo.org."},
+			[]string{},
+			[]string{"foo.org"},
+			true,
+			map[string][]string{
+				"include": {"foo.org"},
+			},
 		},
-	},
-	{
-		[]string{"foo.org."},
-		[]string{},
-		[]string{"baz.org"},
-		false,
-		map[string][]string{
-			"include": {"foo.org"},
+		{
+			[]string{"foo.org."},
+			[]string{},
+			[]string{"baz.org"},
+			false,
+			map[string][]string{
+				"include": {"foo.org"},
+			},
 		},
-	},
-	{
-		[]string{"baz.foo.org."},
-		[]string{},
-		[]string{"foo.org"},
-		false,
-		map[string][]string{
-			"include": {"baz.foo.org"},
+		{
+			[]string{"baz.foo.org."},
+			[]string{},
+			[]string{"foo.org"},
+			false,
+			map[string][]string{
+				"include": {"baz.foo.org"},
+			},
 		},
-	},
-	{
-		[]string{"", "foo.org."},
-		[]string{},
-		[]string{"foo.org"},
-		true,
-		map[string][]string{
-			"include": {"foo.org"},
+		{
+			[]string{"", "foo.org."},
+			[]string{},
+			[]string{"foo.org"},
+			true,
+			map[string][]string{
+				"include": {"foo.org"},
+			},
 		},
-	},
-	{
-		[]string{"", "foo.org."},
-		[]string{},
-		[]string{},
-		true,
-		map[string][]string{
-			"include": {"foo.org"},
+		{
+			[]string{"", "foo.org."},
+			[]string{},
+			[]string{},
+			true,
+			map[string][]string{
+				"include": {"foo.org"},
+			},
 		},
-	},
-	{
-		[]string{""},
-		[]string{},
-		[]string{"foo.org"},
-		true,
-		map[string][]string{},
-	},
-	{
-		[]string{""},
-		[]string{},
-		[]string{},
-		true,
-		map[string][]string{},
-	},
-	{
-		[]string{" "},
-		[]string{},
-		[]string{},
-		true,
-		map[string][]string{},
-	},
-	{
-		[]string{"bar.sub.example.org"},
-		[]string{},
-		[]string{"foo.bar.sub.example.org"},
-		true,
-		map[string][]string{
-			"include": {"bar.sub.example.org"},
+		{
+			[]string{""},
+			[]string{},
+			[]string{"foo.org"},
+			true,
+			map[string][]string{},
 		},
-	},
-	{
-		[]string{"example.org"},
-		[]string{},
-		[]string{"anexample.org", "test.anexample.org"},
-		false,
-		map[string][]string{
-			"include": {"example.org"},
+		{
+			[]string{""},
+			[]string{},
+			[]string{},
+			true,
+			map[string][]string{},
 		},
-	},
-	{
-		[]string{".example.org"},
-		[]string{},
-		[]string{"anexample.org", "test.anexample.org"},
-		false,
-		map[string][]string{
-			"include": {".example.org"},
+		{
+			[]string{" "},
+			[]string{},
+			[]string{},
+			true,
+			map[string][]string{},
 		},
-	},
-	{
-		[]string{".example.org"},
-		[]string{},
-		[]string{"example.org"},
-		false,
-		map[string][]string{
-			"include": {".example.org"},
+		{
+			[]string{"bar.sub.example.org"},
+			[]string{},
+			[]string{"foo.bar.sub.example.org"},
+			true,
+			map[string][]string{
+				"include": {"bar.sub.example.org"},
+			},
 		},
-	},
-	{
-		[]string{".example.org"},
-		[]string{},
-		[]string{"test.example.org"},
-		true,
-		map[string][]string{
-			"include": {".example.org"},
+		{
+			[]string{"example.org"},
+			[]string{},
+			[]string{"anexample.org", "test.anexample.org"},
+			false,
+			map[string][]string{
+				"include": {"example.org"},
+			},
 		},
-	},
-	{
-		[]string{"anexample.org"},
-		[]string{},
-		[]string{"example.org", "test.example.org"},
-		false,
-		map[string][]string{
-			"include": {"anexample.org"},
+		{
+			[]string{".example.org"},
+			[]string{},
+			[]string{"anexample.org", "test.anexample.org"},
+			false,
+			map[string][]string{
+				"include": {".example.org"},
+			},
 		},
-	},
-	{
-		[]string{".org"},
-		[]string{},
-		[]string{"example.org", "test.example.org", "foo.test.example.org"},
-		true,
-		map[string][]string{
-			"include": {".org"},
+		{
+			[]string{".example.org"},
+			[]string{},
+			[]string{"example.org"},
+			false,
+			map[string][]string{
+				"include": {".example.org"},
+			},
 		},
-	},
-	{
-		[]string{"example.org"},
-		[]string{"api.example.org"},
-		[]string{"example.org", "test.example.org", "foo.test.example.org"},
-		true,
-		map[string][]string{
-			"include": {"example.org"},
-			"exclude": {"api.example.org"},
+		{
+			[]string{".example.org"},
+			[]string{},
+			[]string{"test.example.org"},
+			true,
+			map[string][]string{
+				"include": {".example.org"},
+			},
 		},
-	},
-	{
-		[]string{"example.org"},
-		[]string{"api.example.org"},
-		[]string{"foo.api.example.org", "api.example.org"},
-		false,
-		map[string][]string{
-			"include": {"example.org"},
-			"exclude": {"api.example.org"},
+		{
+			[]string{"anexample.org"},
+			[]string{},
+			[]string{"example.org", "test.example.org"},
+			false,
+			map[string][]string{
+				"include": {"anexample.org"},
+			},
 		},
-	},
-	{
-		[]string{"   example.org. "},
-		[]string{"   .api.example.org    "},
-		[]string{"foo.api.example.org", "bar.baz.api.example.org."},
-		false,
-		map[string][]string{
-			"include": {"example.org"},
-			"exclude": {".api.example.org"},
+		{
+			[]string{".org"},
+			[]string{},
+			[]string{"example.org", "test.example.org", "foo.test.example.org"},
+			true,
+			map[string][]string{
+				"include": {".org"},
+			},
 		},
-	},
-	{
-		[]string{"example.org."},
-		[]string{"api.example.org"},
-		[]string{"dev-api.example.org", "qa-api.example.org"},
-		true,
-		map[string][]string{
-			"include": {"example.org"},
-			"exclude": {"api.example.org"},
+		{
+			[]string{"example.org"},
+			[]string{"api.example.org"},
+			[]string{"example.org", "test.example.org", "foo.test.example.org"},
+			true,
+			map[string][]string{
+				"include": {"example.org"},
+				"exclude": {"api.example.org"},
+			},
 		},
-	},
-	{
-		[]string{"example.org."},
-		[]string{"api.example.org"},
-		[]string{"dev.api.example.org", "qa.api.example.org"},
-		false,
-		map[string][]string{
-			"include": {"example.org"},
-			"exclude": {"api.example.org"},
+		{
+			[]string{"example.org"},
+			[]string{"api.example.org"},
+			[]string{"foo.api.example.org", "api.example.org"},
+			false,
+			map[string][]string{
+				"include": {"example.org"},
+				"exclude": {"api.example.org"},
+			},
 		},
-	},
-	{
-		[]string{"example.org", "api.example.org"},
-		[]string{"internal.api.example.org"},
-		[]string{"foo.api.example.org"},
-		true,
-		map[string][]string{
-			"include": {"api.example.org", "example.org"},
-			"exclude": {"internal.api.example.org"},
+		{
+			[]string{"   example.org. "},
+			[]string{"   .api.example.org    "},
+			[]string{"foo.api.example.org", "bar.baz.api.example.org."},
+			false,
+			map[string][]string{
+				"include": {"example.org"},
+				"exclude": {".api.example.org"},
+			},
 		},
-	},
-	{
-		[]string{"example.org", "api.example.org"},
-		[]string{"internal.api.example.org"},
-		[]string{"foo.internal.api.example.org"},
-		false,
-		map[string][]string{
-			"include": {"api.example.org", "example.org"},
-			"exclude": {"internal.api.example.org"},
+		{
+			[]string{"example.org."},
+			[]string{"api.example.org"},
+			[]string{"dev-api.example.org", "qa-api.example.org"},
+			true,
+			map[string][]string{
+				"include": {"example.org"},
+				"exclude": {"api.example.org"},
+			},
 		},
-	},
-	{
-		[]string{"eXaMPle.ORG", "API.example.ORG"},
-		[]string{"Foo-Bar.Example.Org"},
-		[]string{"FoOoo.Api.Example.Org"},
-		true,
-		map[string][]string{
-			"include": {"api.example.org", "example.org"},
-			"exclude": {"foo-bar.example.org"},
+		{
+			[]string{"example.org."},
+			[]string{"api.example.org"},
+			[]string{"dev.api.example.org", "qa.api.example.org"},
+			false,
+			map[string][]string{
+				"include": {"example.org"},
+				"exclude": {"api.example.org"},
+			},
 		},
-	},
-	{
-		[]string{"eXaMPle.ORG", "API.example.ORG"},
-		[]string{"api.example.org"},
-		[]string{"foobar.Example.Org"},
-		true,
-		map[string][]string{
-			"include": {"api.example.org", "example.org"},
-			"exclude": {"api.example.org"},
+		{
+			[]string{"example.org", "api.example.org"},
+			[]string{"internal.api.example.org"},
+			[]string{"foo.api.example.org"},
+			true,
+			map[string][]string{
+				"include": {"api.example.org", "example.org"},
+				"exclude": {"internal.api.example.org"},
+			},
 		},
-	},
-	{
-		[]string{"eXaMPle.ORG", "API.example.ORG"},
-		[]string{"api.example.org"},
-		[]string{"foobar.API.Example.Org"},
-		false,
-		map[string][]string{
-			"include": {"api.example.org", "example.org"},
-			"exclude": {"api.example.org"},
+		{
+			[]string{"example.org", "api.example.org"},
+			[]string{"internal.api.example.org"},
+			[]string{"foo.internal.api.example.org"},
+			false,
+			map[string][]string{
+				"include": {"api.example.org", "example.org"},
+				"exclude": {"internal.api.example.org"},
+			},
 		},
-	},
-}
-
-var regexDomainFilterTests = []regexDomainFilterTest{
-	{
-		regexp.MustCompile(`\.org$`),
-		regexp.MustCompile(""),
-		[]string{"foo.org", "bar.org", "foo.bar.org"},
-		true,
-		map[string]string{
-			"regexInclude": "\\.org$",
+		{
+			[]string{"eXaMPle.ORG", "API.example.ORG"},
+			[]string{"Foo-Bar.Example.Org"},
+			[]string{"FoOoo.Api.Example.Org"},
+			true,
+			map[string][]string{
+				"include": {"api.example.org", "example.org"},
+				"exclude": {"foo-bar.example.org"},
+			},
 		},
-	},
-	{
-		regexp.MustCompile(`\.bar\.org$`),
-		regexp.MustCompile(""),
-		[]string{"foo.org", "bar.org", "example.com"},
-		false,
-		map[string]string{
-			"regexInclude": "\\.bar\\.org$",
+		{
+			[]string{"eXaMPle.ORG", "API.example.ORG"},
+			[]string{"api.example.org"},
+			[]string{"foobar.Example.Org"},
+			true,
+			map[string][]string{
+				"include": {"api.example.org", "example.org"},
+				"exclude": {"api.example.org"},
+			},
 		},
-	},
-	{
-		regexp.MustCompile(`(?:foo|bar)\.org$`),
-		regexp.MustCompile(""),
-		[]string{"foo.org", "bar.org", "example.foo.org", "example.bar.org", "a.example.foo.org", "a.example.bar.org"},
-		true,
-		map[string]string{
-			"regexInclude": "(?:foo|bar)\\.org$",
+		{
+			[]string{"eXaMPle.ORG", "API.example.ORG"},
+			[]string{"api.example.org"},
+			[]string{"foobar.API.Example.Org"},
+			false,
+			map[string][]string{
+				"include": {"api.example.org", "example.org"},
+				"exclude": {"api.example.org"},
+			},
 		},
-	},
-	{
-		regexp.MustCompile(`(?:foo|bar)\.org$`),
-		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
-		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
-		true,
-		map[string]string{
-			"regexInclude": `(?:foo|bar)\.org$`,
-			"regexExclude": `^example\.(?:foo|bar)\.org$`,
+	}
+	regexDomainFilterTests = []regexDomainFilterTest{
+		{
+			regexp.MustCompile(`\.org$`),
+			regexp.MustCompile(""),
+			[]string{"foo.org", "bar.org", "foo.bar.org"},
+			true,
+			map[string]string{
+				"regexInclude": "\\.org$",
+			},
 		},
-	},
-	{
-		regexp.MustCompile(`(?:foo|bar)\.org$`),
-		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
-		[]string{"example.foo.org", "example.bar.org"},
-		false,
-		map[string]string{
-			"regexInclude": "(?:foo|bar)\\.org$",
-			"regexExclude": "^example\\.(?:foo|bar)\\.org$",
+		{
+			regexp.MustCompile(`\.bar\.org$`),
+			regexp.MustCompile(""),
+			[]string{"foo.org", "bar.org", "example.com"},
+			false,
+			map[string]string{
+				"regexInclude": "\\.bar\\.org$",
+			},
 		},
-	},
-	{
-		regexp.MustCompile(`(?:foo|bar)\.org$`),
-		regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
-		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
-		true,
-		map[string]string{
-			"regexInclude": "(?:foo|bar)\\.org$",
-			"regexExclude": "^example\\.(?:foo|bar)\\.org$",
+		{
+			regexp.MustCompile(`(?:foo|bar)\.org$`),
+			regexp.MustCompile(""),
+			[]string{"foo.org", "bar.org", "example.foo.org", "example.bar.org", "a.example.foo.org", "a.example.bar.org"},
+			true,
+			map[string]string{
+				"regexInclude": "(?:foo|bar)\\.org$",
+			},
 		},
-	},
-}
+		{
+			regexp.MustCompile(`(?:foo|bar)\.org$`),
+			regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
+			[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
+			true,
+			map[string]string{
+				"regexInclude": `(?:foo|bar)\.org$`,
+				"regexExclude": `^example\.(?:foo|bar)\.org$`,
+			},
+		},
+		{
+			regexp.MustCompile(`(?:foo|bar)\.org$`),
+			regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
+			[]string{"example.foo.org", "example.bar.org"},
+			false,
+			map[string]string{
+				"regexInclude": "(?:foo|bar)\\.org$",
+				"regexExclude": "^example\\.(?:foo|bar)\\.org$",
+			},
+		},
+		{
+			regexp.MustCompile(`(?:foo|bar)\.org$`),
+			regexp.MustCompile(`^example\.(?:foo|bar)\.org$`),
+			[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
+			true,
+			map[string]string{
+				"regexInclude": "(?:foo|bar)\\.org$",
+				"regexExclude": "^example\\.(?:foo|bar)\\.org$",
+			},
+		},
+	}
+)
 
 func TestDomainFilterMatch(t *testing.T) {
 	for i, tt := range domainFilterTests {

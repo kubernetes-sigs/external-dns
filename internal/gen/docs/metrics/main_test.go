@@ -29,7 +29,9 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
-const pathToDocs = "%s/../../../../docs/monitoring"
+const (
+	pathToDocs = "%s/../../../../docs/monitoring"
+)
 
 func TestComputeMetrics(t *testing.T) {
 	reg := metrics.RegisterMetric

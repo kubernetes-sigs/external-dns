@@ -36,8 +36,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This is a compile-time validation that istioVirtualServiceSource is a Source.
-var _ Source = &virtualServiceSource{}
+var (
+	// This is a compile-time validation that istioVirtualServiceSource is a Source.
+	_ Source = &virtualServiceSource{}
+)
 
 type VirtualServiceSuite struct {
 	suite.Suite

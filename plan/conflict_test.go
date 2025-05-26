@@ -24,7 +24,9 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-var _ ConflictResolver = PerResource{}
+var (
+	_ ConflictResolver = PerResource{}
+)
 
 type ResolverSuite struct {
 	// resolvers

@@ -16,7 +16,9 @@ limitations under the License.
 
 package provider
 
-import "strings"
+import (
+	"strings"
+)
 
 // ZoneIDFilter holds a list of zone ids to filter by
 type ZoneIDFilter struct {

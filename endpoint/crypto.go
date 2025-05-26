@@ -29,7 +29,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const standardGcmNonceSize = 12
+const (
+	standardGcmNonceSize = 12
+)
 
 // GenerateNonce creates a random nonce of a fixed size
 func GenerateNonce() ([]byte, error) {

@@ -24,8 +24,10 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
-// Validates that dedupSource is a Source
-var _ Source = &nat64Source{}
+var (
+	// Validates that dedupSource is a Source
+	_ Source = &nat64Source{}
+)
 
 func TestNAT64Source(t *testing.T) {
 	t.Run("Endpoints", testNat64Source)

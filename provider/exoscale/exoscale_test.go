@@ -48,26 +48,26 @@ var (
 	createExoscale []createRecordExoscale
 	deleteExoscale []deleteRecordExoscale
 	updateExoscale []updateRecordExoscale
-)
 
-var defaultTTL int64 = 3600
-var domainIDs = []string{uuid.New().String(), uuid.New().String(), uuid.New().String(), uuid.New().String()}
-var groups = map[string][]egoscale.DNSDomainRecord{
-	domainIDs[0]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("CNAME"), Content: strPtr("test"), TTL: &defaultTTL},
-	},
-	domainIDs[1]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("A"), Content: strPtr("test"), TTL: &defaultTTL},
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v3"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
-	},
-	domainIDs[2]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
-	},
-	domainIDs[3]: {
-		{ID: strPtr(uuid.New().String()), Name: strPtr("v4"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
-	},
-}
+	defaultTTL int64 = 3600
+	domainIDs        = []string{uuid.New().String(), uuid.New().String(), uuid.New().String(), uuid.New().String()}
+	groups           = map[string][]egoscale.DNSDomainRecord{
+		domainIDs[0]: {
+			{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
+			{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("CNAME"), Content: strPtr("test"), TTL: &defaultTTL},
+		},
+		domainIDs[1]: {
+			{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("A"), Content: strPtr("test"), TTL: &defaultTTL},
+			{ID: strPtr(uuid.New().String()), Name: strPtr("v3"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+		},
+		domainIDs[2]: {
+			{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
+		},
+		domainIDs[3]: {
+			{ID: strPtr(uuid.New().String()), Name: strPtr("v4"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+		},
+	}
+)
 
 func strPtr(s string) *string {
 	return &s

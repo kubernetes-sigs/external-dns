@@ -41,15 +41,18 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// ambHostAnnotation is the annotation in the Host that maps to a Service
-const ambHostAnnotation = "external-dns.ambassador-service"
+const (
+	// ambHostAnnotation is the annotation in the Host that maps to a Service
+	ambHostAnnotation = "external-dns.ambassador-service"
 
-// groupName is the group name for the Ambassador API
-const groupName = "getambassador.io"
+	// groupName is the group name for the Ambassador API
+	groupName = "getambassador.io"
+)
 
-var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
-
-var ambHostGVR = schemeGroupVersion.WithResource("hosts")
+var (
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
+	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
+)
 
 // ambassadorHostSource is an implementation of Source for Ambassador Host objects.
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.

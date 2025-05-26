@@ -16,7 +16,9 @@ limitations under the License.
 
 package provider
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestRecordTypeFilter(t *testing.T) {
 	records := []struct {

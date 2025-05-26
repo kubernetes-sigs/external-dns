@@ -42,8 +42,10 @@ import (
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
-// IstioMeshGateway is the built in gateway for all sidecars
-const IstioMeshGateway = "mesh"
+const (
+	// IstioMeshGateway is the built-in gateway for all sidecars
+	IstioMeshGateway = "mesh"
+)
 
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.

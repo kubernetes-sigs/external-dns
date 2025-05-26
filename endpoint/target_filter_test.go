@@ -29,44 +29,46 @@ type targetFilterTest struct {
 	expected     bool
 }
 
-var targetFilterTests = []targetFilterTest{
-	{
-		[]string{"10.0.0.0/8"},
-		[]string{},
-		[]string{"10.1.2.3"},
-		true,
-	},
-	{
-		[]string{" 10.0.0.0/8 "},
-		[]string{},
-		[]string{"10.1.2.3"},
-		true,
-	},
-	{
-		[]string{"0"},
-		[]string{},
-		[]string{"10.1.2.3"},
-		true,
-	},
-	{
-		[]string{"10.0.0.0/8"},
-		[]string{},
-		[]string{"1.1.1.1"},
-		false,
-	},
-	{
-		[]string{},
-		[]string{"10.0.0.0/8"},
-		[]string{"1.1.1.1"},
-		true,
-	},
-	{
-		[]string{},
-		[]string{"10.0.0.0/8"},
-		[]string{"10.1.2.3"},
-		false,
-	},
-}
+var (
+	targetFilterTests = []targetFilterTest{
+		{
+			[]string{"10.0.0.0/8"},
+			[]string{},
+			[]string{"10.1.2.3"},
+			true,
+		},
+		{
+			[]string{" 10.0.0.0/8 "},
+			[]string{},
+			[]string{"10.1.2.3"},
+			true,
+		},
+		{
+			[]string{"0"},
+			[]string{},
+			[]string{"10.1.2.3"},
+			true,
+		},
+		{
+			[]string{"10.0.0.0/8"},
+			[]string{},
+			[]string{"1.1.1.1"},
+			false,
+		},
+		{
+			[]string{},
+			[]string{"10.0.0.0/8"},
+			[]string{"1.1.1.1"},
+			true,
+		},
+		{
+			[]string{},
+			[]string{"10.0.0.0/8"},
+			[]string{"10.1.2.3"},
+			false,
+		},
+	}
+)
 
 func TestTargetFilterWithExclusions(t *testing.T) {
 	for i, tt := range targetFilterTests {

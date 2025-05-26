@@ -41,8 +41,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
-// ErrSourceNotFound is returned when a requested source doesn't exist.
-var ErrSourceNotFound = errors.New("source not found")
+var (
+	// ErrSourceNotFound is returned when a requested source doesn't exist.
+	ErrSourceNotFound = errors.New("source not found")
+)
 
 // Config holds shared configuration options for all Sources.
 type Config struct {

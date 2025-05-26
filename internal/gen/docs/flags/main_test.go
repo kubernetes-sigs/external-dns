@@ -26,7 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const pathToDocs = "%s/../../../../docs"
+const (
+	pathToDocs = "%s/../../../../docs"
+)
 
 func TestComputeFlags(t *testing.T) {
 	flags := computeFlags()

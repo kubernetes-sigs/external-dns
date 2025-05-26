@@ -41,11 +41,13 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-var f5TransportServerGVR = schema.GroupVersionResource{
-	Group:    "cis.f5.com",
-	Version:  "v1",
-	Resource: "transportservers",
-}
+var (
+	f5TransportServerGVR = schema.GroupVersionResource{
+		Group:    "cis.f5.com",
+		Version:  "v1",
+		Resource: "transportservers",
+	}
+)
 
 // transportServerSource is an implementation of Source for F5 TransportServer objects.
 type f5TransportServerSource struct {

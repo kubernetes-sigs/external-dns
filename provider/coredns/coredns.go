@@ -44,6 +44,10 @@ const (
 	randomPrefixLabel = "prefix"
 )
 
+var (
+	_ coreDNSClient = etcdClient{}
+)
+
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
 	GetServices(prefix string) ([]*Service, error)
@@ -89,8 +93,6 @@ type etcdClient struct {
 	client *etcdcv3.Client
 	ctx    context.Context
 }
-
-var _ coreDNSClient = etcdClient{}
 
 // GetServices GetService return all Service records stored in etcd stored anywhere under the given key (recursively)
 func (c etcdClient) GetServices(prefix string) ([]*Service, error) {

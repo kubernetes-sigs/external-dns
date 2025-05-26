@@ -35,8 +35,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This is a compile-time validation that gatewaySource is a Source.
-var _ Source = &gatewaySource{}
+var (
+	// This is a compile-time validation that gatewaySource is a Source.
+	_ Source = &gatewaySource{}
+)
 
 type GatewaySuite struct {
 	suite.Suite

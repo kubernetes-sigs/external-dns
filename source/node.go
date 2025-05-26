@@ -34,7 +34,9 @@ import (
 	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
-const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
+const (
+	warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
+)
 
 type nodeSource struct {
 	client               kubernetes.Interface

@@ -7,7 +7,8 @@ linters:
     - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/usage/linters/#dogsled
     - dupword # Duplicate word. https://golangci-lint.run/usage/linters/#dupword
     - goprintffuncname
-    - govet
+    - govet # Vet examines Go source code and reports suspicious constructs. https://golangci-lint.run/usage/linters/#govet
+    - grouper # Analyze expression groups. https://golangci-lint.run/usage/linters/#grouper
     - ineffassign
     - misspell
     - revive
@@ -51,6 +52,13 @@ linters:
       # TODO: enable in follow-up
       disable:
         - require-error
+    grouper:
+      const-require-single-const: true
+      const-require-grouping: true
+      import-require-single-import: true
+      import-require-grouping: true
+      var-require-single-var: true
+      var-require-grouping: true
   exclusions:
     generated: lax
     presets:

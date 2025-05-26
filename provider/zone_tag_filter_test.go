@@ -23,43 +23,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var basicZoneTags = []struct {
-	name       string
-	tagsFilter []string
-	zoneTags   map[string]string
-	matches    bool
-}{
-	{
-		"single tag no match", []string{"tag1=value1"}, map[string]string{"tag0": "value0"}, false,
-	},
-	{
-		"single tag matches", []string{"tag1=value1"}, map[string]string{"tag1": "value1"}, true,
-	},
-	{
-		"multiple tags no value match", []string{"tag1=value1"}, map[string]string{"tag0": "value0", "tag1": "value2"}, false,
-	},
-	{
-		"multiple tags matches", []string{"tag1=value1"}, map[string]string{"tag0": "value0", "tag1": "value1"}, true,
-	},
-	{
-		"tag name no match", []string{"tag1"}, map[string]string{"tag0": "value0"}, false,
-	},
-	{
-		"tag name matches", []string{"tag1"}, map[string]string{"tag1": "value1"}, true,
-	},
-	{
-		"multiple filter no match", []string{"tag1=value1", "tag2=value2"}, map[string]string{"tag1": "value1"}, false,
-	},
-	{
-		"multiple filter matches", []string{"tag1=value1", "tag2=value2"}, map[string]string{"tag2": "value2", "tag1": "value1", "tag3": "value3"}, true,
-	},
-	{
-		"empty tag filter matches all", []string{""}, map[string]string{"tag0": "value0"}, true,
-	},
-	{
-		"tag filter without key and equal sign", []string{"tag1=value1", "=haha"}, map[string]string{"tag1": "value1"}, true,
-	},
-}
+var (
+	basicZoneTags = []struct {
+		name       string
+		tagsFilter []string
+		zoneTags   map[string]string
+		matches    bool
+	}{
+		{
+			"single tag no match", []string{"tag1=value1"}, map[string]string{"tag0": "value0"}, false,
+		},
+		{
+			"single tag matches", []string{"tag1=value1"}, map[string]string{"tag1": "value1"}, true,
+		},
+		{
+			"multiple tags no value match", []string{"tag1=value1"}, map[string]string{"tag0": "value0", "tag1": "value2"}, false,
+		},
+		{
+			"multiple tags matches", []string{"tag1=value1"}, map[string]string{"tag0": "value0", "tag1": "value1"}, true,
+		},
+		{
+			"tag name no match", []string{"tag1"}, map[string]string{"tag0": "value0"}, false,
+		},
+		{
+			"tag name matches", []string{"tag1"}, map[string]string{"tag1": "value1"}, true,
+		},
+		{
+			"multiple filter no match", []string{"tag1=value1", "tag2=value2"}, map[string]string{"tag1": "value1"}, false,
+		},
+		{
+			"multiple filter matches", []string{"tag1=value1", "tag2=value2"}, map[string]string{"tag2": "value2", "tag1": "value1", "tag3": "value3"}, true,
+		},
+		{
+			"empty tag filter matches all", []string{""}, map[string]string{"tag0": "value0"}, true,
+		},
+		{
+			"tag filter without key and equal sign", []string{"tag1=value1", "=haha"}, map[string]string{"tag1": "value1"}, true,
+		},
+	}
+	benchFixtures = []struct {
+		source filterZoneTags
+	}{
+		// match
+		{generateTagFilterAndZoneTagsForMatch(10, 30)},
+		{generateTagFilterAndZoneTagsForMatch(5, 40)},
+		{generateTagFilterAndZoneTagsForMatch(30, 50)},
+		// 	no match
+		{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
+		{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
+		{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
+	}
+)
 
 func TestZoneTagFilterMatch(t *testing.T) {
 	for _, tc := range basicZoneTags {
@@ -131,19 +145,6 @@ func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 			zoneTagFilter.Match(tc.zoneTags)
 		}
 	}
-}
-
-var benchFixtures = []struct {
-	source filterZoneTags
-}{
-	// match
-	{generateTagFilterAndZoneTagsForMatch(10, 30)},
-	{generateTagFilterAndZoneTagsForMatch(5, 40)},
-	{generateTagFilterAndZoneTagsForMatch(30, 50)},
-	// 	no match
-	{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
-	{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
-	{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
 }
 
 func BenchmarkZoneTagFilterComplex(b *testing.B) {

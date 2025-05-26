@@ -41,9 +41,9 @@ func NewMockService(privateZones []*privatedns.PrivateZone, privateZoneRecords m
 	}
 }
 
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 // PrivateDns API
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 
 func (api *mockAPIService) CreatePrivateZoneRecord(request *privatedns.CreatePrivateZoneRecordRequest) (response *privatedns.CreatePrivateZoneRecordResponse, err error) {
 	randomRecordId := RandStringRunes(8)
@@ -129,9 +129,9 @@ func (api *mockAPIService) DescribePrivateZoneRecordList(request *privatedns.Des
 	return response, nil
 }
 
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 // DnsPod API
-////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////
 
 func (api *mockAPIService) DescribeDomainList(request *dnspod.DescribeDomainListRequest) (response *dnspod.DescribeDomainListResponse, err error) {
 	response = dnspod.NewDescribeDomainListResponse()
@@ -219,7 +219,9 @@ func (api *mockAPIService) ModifyRecord(request *dnspod.ModifyRecordRequest) (re
 	return response, nil
 }
 
-var letterRunes = []byte("abcdefghijklmnopqrstuvwxyz")
+var (
+	letterRunes = []byte("abcdefghijklmnopqrstuvwxyz")
+)
 
 func RandStringRunes(n int) string {
 	b := make([]byte, n)

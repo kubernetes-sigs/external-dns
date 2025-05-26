@@ -16,16 +16,18 @@ limitations under the License.
 
 package plan
 
+var (
+	// Policies is a registry of available policies.
+	Policies = map[string]Policy{
+		"sync":        &SyncPolicy{},
+		"upsert-only": &UpsertOnlyPolicy{},
+		"create-only": &CreateOnlyPolicy{},
+	}
+)
+
 // Policy allows to apply different rules to a set of changes.
 type Policy interface {
 	Apply(changes *Changes) *Changes
-}
-
-// Policies is a registry of available policies.
-var Policies = map[string]Policy{
-	"sync":        &SyncPolicy{},
-	"upsert-only": &UpsertOnlyPolicy{},
-	"create-only": &CreateOnlyPolicy{},
 }
 
 // SyncPolicy allows for full synchronization of DNS records.

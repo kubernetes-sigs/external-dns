@@ -25,6 +25,11 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+var (
+	// Validate that FakeSource is a source
+	_ Source = &fakeSource{}
+)
+
 func generateTestEndpoints() []*endpoint.Endpoint {
 	sc, _ := NewFakeSource("")
 
@@ -68,6 +73,3 @@ func TestFakeEndpointsResolveToIPAddresses(t *testing.T) {
 		}
 	}
 }
-
-// Validate that FakeSource is a source
-var _ Source = &fakeSource{}

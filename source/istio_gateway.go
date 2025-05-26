@@ -41,9 +41,11 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
-// instead of a standard LoadBalancer service type
-const IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
+const (
+	// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
+	// instead of a standard LoadBalancer service type
+	IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
+)
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.

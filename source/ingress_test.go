@@ -31,8 +31,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// Validates that ingressSource is a Source
-var _ Source = &ingressSource{}
+var (
+	// Validates that ingressSource is a Source
+	_ Source = &ingressSource{}
+)
 
 type IngressSuite struct {
 	suite.Suite

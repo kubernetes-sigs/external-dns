@@ -27,10 +27,17 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// SoftError is an error, that provider will only log as error instead
-// of fatal. It is meant for error propagation from providers to tell
-// that this is a transient error.
-var SoftError error = errors.New("soft error") //nolint:staticcheck
+var (
+	// SoftError is an error, that provider will only log as error instead
+	// of fatal. It is meant for error propagation from providers to tell
+	// that this is a transient error.
+	SoftError = errors.New("soft error") //nolint:staticcheck
+
+	// RecordsContextKey is a context key. It can be used during ApplyChanges
+	// to access previously cached records. The associated value will be of
+	// type []*endpoint.Endpoint.
+	RecordsContextKey = &contextKey{"records"}
+)
 
 // NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
 func NewSoftErrorf(format string, a ...any) error {
@@ -72,11 +79,6 @@ type contextKey struct {
 }
 
 func (k *contextKey) String() string { return "provider context value " + k.name }
-
-// RecordsContextKey is a context key. It can be used during ApplyChanges
-// to access previously cached records. The associated value will be of
-// type []*endpoint.Endpoint.
-var RecordsContextKey = &contextKey{"records"}
 
 // EnsureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
 func EnsureTrailingDot(hostname string) string {

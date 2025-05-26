@@ -35,7 +35,9 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-var records []*endpoint.Endpoint
+var (
+	records []*endpoint.Endpoint
+)
 
 type FakeWebhookProvider struct {
 	err           error

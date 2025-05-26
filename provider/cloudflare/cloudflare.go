@@ -55,16 +55,6 @@ const (
 	paidZoneMaxCommentLength = 500
 )
 
-var changeActionNames = map[changeAction]string{
-	cloudFlareCreate: "CREATE",
-	cloudFlareDelete: "DELETE",
-	cloudFlareUpdate: "UPDATE",
-}
-
-func (action changeAction) String() string {
-	return changeActionNames[action]
-}
-
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 // see: https://github.com/cloudflare/cloudflare-go/pull/595
 
@@ -73,6 +63,19 @@ var (
 	proxyEnabled *bool = boolPtr(true)
 	// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
 	proxyDisabled *bool = boolPtr(false)
+
+	recordTypeProxyNotSupported = map[string]bool{
+		"LOC": true,
+		"MX":  true,
+		"NS":  true,
+		"SPF": true,
+		"TXT": true,
+		"SRV": true,
+	}
+	recordTypeCustomHostnameSupported = map[string]bool{
+		"A":     true,
+		"CNAME": true,
+	}
 )
 
 type DNSRecordIndex struct {
@@ -83,31 +86,17 @@ type DNSRecordIndex struct {
 
 type DNSRecordsMap map[DNSRecordIndex]cloudflare.DNSRecord
 
-// for faster getCustomHostname() lookup
+// CustomHostnameIndex for faster getCustomHostname() lookup
 type CustomHostnameIndex struct {
 	Hostname string
 }
 
 type CustomHostnamesMap map[CustomHostnameIndex]cloudflare.CustomHostname
 
-var recordTypeProxyNotSupported = map[string]bool{
-	"LOC": true,
-	"MX":  true,
-	"NS":  true,
-	"SPF": true,
-	"TXT": true,
-	"SRV": true,
-}
-
 type CustomHostnamesConfig struct {
 	Enabled              bool
 	MinTLSVersion        string
 	CertificateAuthority string
-}
-
-var recordTypeCustomHostnameSupported = map[string]bool{
-	"A":     true,
-	"CNAME": true,
 }
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.

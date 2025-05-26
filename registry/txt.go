@@ -36,6 +36,10 @@ const (
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
+var (
+	_ nameMapper = affixNameMapper{}
+)
+
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
@@ -329,11 +333,12 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 	return im.provider.AdjustEndpoints(endpoints)
 }
 
-/**
-  nameMapper is the interface for mapping between the endpoint for the source
-  and the endpoint for the TXT record.
-*/
+/*
+*
 
+	nameMapper is the interface for mapping between the endpoint for the source
+	and the endpoint for the TXT record.
+*/
 type nameMapper interface {
 	toEndpointName(string) (endpointName string, recordType string)
 	toTXTName(string) string
@@ -346,8 +351,6 @@ type affixNameMapper struct {
 	suffix              string
 	wildcardReplacement string
 }
-
-var _ nameMapper = affixNameMapper{}
 
 func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMapper {
 	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}

@@ -35,7 +35,9 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const defaultTTL = 300
+const (
+	defaultTTL = 300
+)
 
 // OCIAuthConfig holds connection parameters for the OCI API.
 type OCIAuthConfig struct {

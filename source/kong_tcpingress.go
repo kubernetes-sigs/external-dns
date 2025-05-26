@@ -40,11 +40,13 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-var kongGroupdVersionResource = schema.GroupVersionResource{
-	Group:    "configuration.konghq.com",
-	Version:  "v1beta1",
-	Resource: "tcpingresses",
-}
+var (
+	kongGroupdVersionResource = schema.GroupVersionResource{
+		Group:    "configuration.konghq.com",
+		Version:  "v1beta1",
+		Resource: "tcpingresses",
+	}
+)
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
 type kongTCPIngressSource struct {

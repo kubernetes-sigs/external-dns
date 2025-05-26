@@ -29,7 +29,7 @@ import (
 	"github.com/IBM/networking-go-sdk/dnsrecordsv1"
 	"github.com/IBM/networking-go-sdk/dnssvcsv1"
 	"github.com/IBM/networking-go-sdk/zonesv1"
-	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml"
 
 	log "github.com/sirupsen/logrus"
 
@@ -38,21 +38,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source"
 )
-
-var proxyTypeNotSupported = map[string]bool{
-	"LOC": true,
-	"MX":  true,
-	"NS":  true,
-	"SPF": true,
-	"TXT": true,
-	"SRV": true,
-}
-
-var privateTypeSupported = map[string]bool{
-	"A":     true,
-	"CNAME": true,
-	"TXT":   true,
-}
 
 const (
 	// recordCreate is a ChangeAction enum value
@@ -68,6 +53,22 @@ const (
 	vpcFilter               = "ibmcloud-vpc"
 	zoneStatePendingNetwork = "PENDING_NETWORK_ADD"
 	zoneStateActive         = "ACTIVE"
+)
+
+var (
+	proxyTypeNotSupported = map[string]bool{
+		"LOC": true,
+		"MX":  true,
+		"NS":  true,
+		"SPF": true,
+		"TXT": true,
+		"SRV": true,
+	}
+	privateTypeSupported = map[string]bool{
+		"A":     true,
+		"CNAME": true,
+		"TXT":   true,
+	}
 )
 
 // Source shadow the interface source.Source. used primarily for unit testing.

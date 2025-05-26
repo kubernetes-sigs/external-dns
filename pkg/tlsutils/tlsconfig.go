@@ -25,7 +25,9 @@ import (
 	"strings"
 )
 
-const defaultMinVersion = 0
+const (
+	defaultMinVersion = 0
+)
 
 // CreateTLSConfig creates tls.Config instance from TLS parameters passed in environment variables with the given prefix
 func CreateTLSConfig(prefix string) (*tls.Config, error) {

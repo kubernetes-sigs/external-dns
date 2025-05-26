@@ -31,11 +31,13 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-var recordTypeRegionalHostnameSupported = map[string]bool{
-	"A":     true,
-	"AAAA":  true,
-	"CNAME": true,
-}
+var (
+	recordTypeRegionalHostnameSupported = map[string]bool{
+		"A":     true,
+		"AAAA":  true,
+		"CNAME": true,
+	}
+)
 
 type regionalHostnameChange struct {
 	action changeAction

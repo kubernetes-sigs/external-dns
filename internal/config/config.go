@@ -16,5 +16,7 @@ limitations under the License.
 
 package config
 
-// FastPoll used for fast testing
-var FastPoll = false
+var (
+	// FastPoll used for fast testing
+	FastPoll = false
+)

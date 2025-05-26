@@ -34,7 +34,9 @@ import (
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
 
-const defaultF5TransportServerNamespace = "transportserver"
+const (
+	defaultF5TransportServerNamespace = "transportserver"
+)
 
 func TestF5TransportServerEndpoints(t *testing.T) {
 	t.Parallel()

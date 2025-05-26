@@ -24,8 +24,10 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
-// Validates that dedupSource is a Source
-var _ Source = &dedupSource{}
+var (
+	// Validates that dedupSource is a Source
+	_ Source = &dedupSource{}
+)
 
 func TestDedup(t *testing.T) {
 	t.Run("Endpoints", testDedupEndpoints)

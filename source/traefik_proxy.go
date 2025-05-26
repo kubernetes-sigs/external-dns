@@ -72,9 +72,7 @@ var (
 		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
 	}
-)
 
-var (
 	traefikHostExtractor  = regexp.MustCompile(`(?:HostSNI|HostHeader|Host)\s*\(\s*(\x60.*?\x60)\s*\)`)
 	traefikValueProcessor = regexp.MustCompile(`\x60([^,\x60]+)\x60`)
 )
