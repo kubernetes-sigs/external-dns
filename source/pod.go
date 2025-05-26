@@ -90,68 +90,77 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpointMap := make(map[endpoint.EndpointKey][]string)
 	for _, pod := range pods {
-		if ps.ignoreNonHostNetworkPods && !pod.Spec.HostNetwork {
-			log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
-			continue
-		}
-
-		targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
-
-		if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
-			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-			for _, domain := range domainList {
-				if len(targets) == 0 {
-					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
-				} else {
-					for _, target := range targets {
-						addToEndpointMap(endpointMap, domain, suitableType(target), target)
-					}
-				}
-			}
-		}
-
-		if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
-			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-			if len(targets) == 0 {
-				ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
-			} else {
-				for _, domain := range domainList {
-					for _, target := range targets {
-						addToEndpointMap(endpointMap, domain, suitableType(target), target)
-					}
-				}
-			}
-		}
-
-		if ps.compatibility == "kops-dns-controller" {
-			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
-				domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-				for _, domain := range domainList {
-					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
-				}
-			}
-
-			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
-				domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-				ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
-			}
-		}
-
-		if ps.podSourceDomain != "" {
-			domain := pod.Name + "." + ps.podSourceDomain
-			if len(targets) == 0 {
-				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
-			}
-			for _, target := range targets {
-				addToEndpointMap(endpointMap, domain, suitableType(target), target)
-			}
-		}
+		ps.addPodEndpointsToEndpointMap(endpointMap, pod)
 	}
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
 		endpoints = append(endpoints, endpoint.NewEndpoint(key.DNSName, key.RecordType, targets...))
 	}
 	return endpoints, nil
+}
+
+func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod) {
+	if ps.ignoreNonHostNetworkPods && !pod.Spec.HostNetwork {
+		log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
+		return
+	}
+
+	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
+
+	ps.addInternalHostnameAnnotationEndpoints(endpointMap, pod, targets)
+	ps.addHostnameAnnotationEndpoints(endpointMap, pod, targets)
+	ps.addKopsDNSControllerEndpoints(endpointMap, pod, targets)
+	ps.addPodSourceDomainEndpoints(endpointMap, pod, targets)
+}
+
+func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+	if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
+		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
+		for _, domain := range domainList {
+			if len(targets) == 0 {
+				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+			} else {
+				addTargetsToEndpointMap(endpointMap, targets, domain)
+			}
+		}
+	}
+}
+
+func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+	if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
+		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
+		if len(targets) == 0 {
+			ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
+		} else {
+			addTargetsToEndpointMap(endpointMap, targets, domainList...)
+		}
+	}
+}
+
+func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+	if ps.compatibility == "kops-dns-controller" {
+		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
+			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
+			for _, domain := range domainList {
+				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+			}
+		}
+
+		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
+			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
+			ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
+		}
+	}
+}
+
+func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
+	if ps.podSourceDomain != "" {
+		domain := pod.Name + "." + ps.podSourceDomain
+		if len(targets) == 0 {
+			addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+		}
+		addTargetsToEndpointMap(endpointMap, targets, domain)
+	}
 }
 
 func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, domainList []string) {
@@ -167,6 +176,14 @@ func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.E
 			if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
 				addToEndpointMap(endpointMap, domain, recordType, address.Address)
 			}
+		}
+	}
+}
+
+func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, targets []string, domainList ...string) {
+	for _, domain := range domainList {
+		for _, target := range targets {
+			addToEndpointMap(endpointMap, domain, suitableType(target), target)
 		}
 	}
 }
