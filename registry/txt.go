@@ -89,10 +89,10 @@ func (im *existingTXTs) add(r *endpoint.Endpoint) {
 }
 
 // filterOutExistingTXTRecords removes endpoints whose TXT companions are already present
-func (im *existingTXTs) isManaged(ep *endpoint.Endpoint) bool {
+func (im *existingTXTs) isNotManaged(ep *endpoint.Endpoint) bool {
 	k := fmt.Sprintf("%s|%s", ep.DNSName, ep.SetIdentifier)
 	_, ok := im.entries[k]
-	return ok
+	return !ok
 }
 
 func (im *existingTXTs) reset() existingTXTs {
@@ -273,13 +273,17 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool { return true })
+}
+
+func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	// Create legacy format record by default unless newFormatOnly is true
 	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-		if txt != nil {
+		if txt != nil && filter(txt) {
 			txt.WithSetIdentifier(r.SetIdentifier)
 			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 			txt.ProviderSpecific = r.ProviderSpecific
@@ -294,7 +298,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		recordType = endpoint.RecordTypeCNAME
 	}
 	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
+	if txtNew != nil && filter(txtNew) {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
@@ -318,14 +322,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		generatedTXTs := im.generateTXTRecord(r)
-		for _, txt := range generatedTXTs {
-			// If the TXT record is already managed by this instance, skip it
-			if im.existingTXTs.isManaged(txt) {
-				continue
-			}
-			filteredChanges.Create = append(filteredChanges.Create, txt)
-		}
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isNotManaged)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
