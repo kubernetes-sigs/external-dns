@@ -63,8 +63,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [GoDaddy](https://www.godaddy.com)
 - [Gandi](https://www.gandi.net)
 - [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
-- [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
-- [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
 
@@ -149,11 +147,8 @@ The following table clarifies the current status of the providers according to t
 | TransIP                         | Alpha  |                  |
 | OVHcloud                        | Beta   | @rbeuque74       |
 | Scaleway DNS                    | Alpha  | @Sh4d1           |
-| UltraDNS                        | Alpha  |                  |
 | GoDaddy                         | Alpha  |                  |
 | Gandi                           | Alpha  | @packi           |
-| IBMCloud                        | Alpha  | @hughhuangzh     |
-| TencentCloud                    | Alpha  | @Hyzhou          |
 | Plural                          | Alpha  | @michaeljguarino |
 | Pi-hole                         | Alpha  | @tinyzimmer      |
 
@@ -211,12 +206,9 @@ The following tutorials are provided:
 - [TransIP](docs/tutorials/transip.md)
 - [OVHcloud](docs/tutorials/ovh.md)
 - [Scaleway](docs/tutorials/scaleway.md)
-- [UltraDNS](docs/tutorials/ultradns.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
 - [Gandi](docs/tutorials/gandi.md)
-- [IBM Cloud](docs/tutorials/ibmcloud.md)
 - [Nodes as source](docs/sources/nodes.md)
-- [TencentCloud](docs/tutorials/tencentcloud.md)
 - [Plural](docs/tutorials/plural.md)
 - [Pi-hole](docs/tutorials/pihole.md)
 

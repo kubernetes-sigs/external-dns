@@ -301,19 +301,6 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 			expectedIdentifier: "id1",
 		},
 		{
-			title: "ibmcloud- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ibmcloud-annotation-1": "value 1",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/ibmcloud-annotation-2": "value 2",
-			},
-			expectedResult: map[string]string{
-				"ibmcloud-annotation-1": "value 1",
-				"ibmcloud-annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-		{
 			title: "webhook- provider specific annotations are set correctly",
 			annotations: map[string]string{
 				"external-dns.alpha.kubernetes.io/webhook-annotation-1": "value 1",
