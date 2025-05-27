@@ -194,6 +194,7 @@ The following tutorials are provided:
   - [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
   - [Using the Nginx Ingress Controller](docs/tutorials/gke-nginx.md)
 - [Headless Services](docs/tutorials/hostport.md)
+- [IONOS Cloud](docs/tutorials/ionoscloud.md)
 - [Istio Gateway Source](docs/sources/istio.md)
 - [Linode](docs/tutorials/linode.md)
 - [NS1](docs/tutorials/ns1.md)
