@@ -2036,16 +2036,16 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					isCalled := false
 					p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
 						if isCalled {
-							assert.Len(t, changes.Create, 0, "ApplyChanges should not be called multiple times with new changes")
+							assert.Empty(t, changes.Create, "ApplyChanges should not be called multiple times with new changes")
 						} else {
 							assert.True(t,
 								testutils.SameEndpoints(changes.Create, expectedCreate),
 								"Expected create changes: %v, but got: %v", expectedCreate, changes.Create,
 							)
 						}
-						assert.Len(t, changes.UpdateNew, 0, "UpdateNew should be empty")
-						assert.Len(t, changes.UpdateOld, 0, "UpdateOld should be empty")
-						assert.Len(t, changes.Delete, 0, "Delete should be empty")
+						assert.Empty(t, changes.UpdateNew, "UpdateNew should be empty")
+						assert.Empty(t, changes.UpdateOld, "UpdateOld should be empty")
+						assert.Empty(t, changes.Delete, "Delete should be empty")
 						isCalled = true
 					}
 
