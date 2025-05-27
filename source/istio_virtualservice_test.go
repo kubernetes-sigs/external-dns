@@ -744,19 +744,19 @@ func testVirtualServiceEndpoints(t *testing.T) {
 
 	namespace := "testing"
 	for _, ti := range []struct {
-		title                    string
-		targetNamespace          string
-		annotationFilter         string
-		lbServices              []fakeIngressGatewayService
-		ingresses               []fakeIngress
-		gwConfigs              []fakeGatewayConfig
-		vsConfigs              []fakeVirtualServiceConfig
-		expected               []*endpoint.Endpoint
-		expectError            bool
-		fqdnTemplate           string
-		combineFQDNAnnotation  bool
-		ignoreHostnameAnnotation bool
-		workerCount             int
+		title                     string
+		targetNamespace           string
+		annotationFilter          string
+		lbServices                []fakeIngressGatewayService
+		ingresses                 []fakeIngress
+		gwConfigs                 []fakeGatewayConfig
+		vsConfigs                 []fakeVirtualServiceConfig
+		expected                  []*endpoint.Endpoint
+		expectError               bool
+		fqdnTemplate              string
+		combineFQDNAndAnnotation  bool
+		ignoreHostnameAnnotation  bool
+		workerCount               int
 	}{
 		{
 			title: "two simple virtualservices with one gateway each, one ingressgateway loadbalancer service",
@@ -1424,7 +1424,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				},
 			},
 			fqdnTemplate:          "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
-			combineFQDNAnnotation: true,
+			combineFQDNAndAnnotation: true,
 		},
 		{
 			title: "virtualservice with target annotation",
@@ -2000,11 +2000,6 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			workerCount: 1,
 		},
 	} {
-		// Set default worker count if not specified
-		if ti.workerCount == 0 {
-			ti.workerCount = 1
-		}
-		
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
