@@ -88,7 +88,8 @@ func (im *existingTXTs) add(r *endpoint.Endpoint) {
 	im.entries[fmt.Sprintf("%s|%s", r.DNSName, r.SetIdentifier)] = struct{}{}
 }
 
-// filterOutExistingTXTRecords removes endpoints whose TXT companions are already present
+// isNotManaged reports whether the given endpoint's TXT record is absent from the existing set.
+// Used to determine whether a new TXT record needs to be created.
 func (im *existingTXTs) isNotManaged(ep *endpoint.Endpoint) bool {
 	k := fmt.Sprintf("%s|%s", ep.DNSName, ep.SetIdentifier)
 	_, ok := im.entries[k]
