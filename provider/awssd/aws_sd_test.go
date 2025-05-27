@@ -36,11 +36,10 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// Compile time checks for interface conformance
-var _ AWSSDClient = &AWSSDClientStub{}
-
 var (
-	ErrNamespaceNotFound = errors.New("Namespace not found")
+	// Compile time checks for interface conformance
+	_                    AWSSDClient = &AWSSDClientStub{}
+	ErrNamespaceNotFound             = errors.New("Namespace not found")
 )
 
 type AWSSDClientStub struct {

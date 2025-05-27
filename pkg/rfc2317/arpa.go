@@ -23,6 +23,10 @@ import (
 	"strings"
 )
 
+const (
+	hexDigit = "0123456789abcdef"
+)
+
 // CidrToInAddr converts a CIDR block into its reverse lookup (in-addr) name.
 // Given "2001::/16" returns "1.0.0.2.ip6.arpa"
 // Given "10.20.30.0/24" returns "30.20.10.in-addr.arpa"
@@ -120,8 +124,6 @@ func reverseaddr(addr string) (arpa string, err error) {
 	buf = append(buf, "ip6.arpa."...)
 	return string(buf), nil
 }
-
-const hexDigit = "0123456789abcdef"
 
 func Uitoa(val uint) string {
 	return strconv.FormatInt(int64(val), 10)

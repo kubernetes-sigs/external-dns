@@ -29,7 +29,9 @@ import (
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
-var _ Registry = &NoopRegistry{}
+var (
+	_ Registry = &NoopRegistry{}
+)
 
 func TestNoopRegistry(t *testing.T) {
 	t.Run("NewNoopRegistry", testNoopInit)

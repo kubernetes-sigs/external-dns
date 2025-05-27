@@ -37,10 +37,14 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This is a compile-time validation that traefikSource is a Source.
-var _ Source = &traefikSource{}
+var (
+	// This is a compile-time validation that traefikSource is a Source.
+	_ Source = &traefikSource{}
+)
 
-const defaultTraefikNamespace = "traefik"
+const (
+	defaultTraefikNamespace = "traefik"
+)
 
 func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 	t.Parallel()

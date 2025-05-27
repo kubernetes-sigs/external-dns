@@ -29,15 +29,19 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+const (
+	defaultFQDNTemplate = "example.com"
+)
+
+var (
+	letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
+)
+
 // fakeSource is an implementation of Source that provides dummy endpoints for
 // testing/dry-running of dns providers without needing an attached Kubernetes cluster.
 type fakeSource struct {
 	dnsName string
 }
-
-const (
-	defaultFQDNTemplate = "example.com"
-)
 
 // NewFakeSource creates a new fakeSource with the given config.
 func NewFakeSource(fqdnTemplate string) (Source, error) {
@@ -83,8 +87,6 @@ func generateIPAddress() string {
 		byte(rand.Intn(253)+1),
 	).String()
 }
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
 func generateDNSName(prefixLength int, dnsName string) string {
 	prefixBytes := make([]rune, prefixLength)

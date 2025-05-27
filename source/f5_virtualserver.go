@@ -42,11 +42,13 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-var f5VirtualServerGVR = schema.GroupVersionResource{
-	Group:    "cis.f5.com",
-	Version:  "v1",
-	Resource: "virtualservers",
-}
+var (
+	f5VirtualServerGVR = schema.GroupVersionResource{
+		Group:    "cis.f5.com",
+		Version:  "v1",
+		Resource: "virtualservers",
+	}
+)
 
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
 type f5VirtualServerSource struct {

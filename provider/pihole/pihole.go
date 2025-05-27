@@ -25,9 +25,10 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-// ErrNoPiholeServer is returned when there is no Pihole server configured
-// in the environment.
-var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
+var (
+	// ErrNoPiholeServer is returned when there is no Pihole server configured in the environment.
+	ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
+)
 
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {

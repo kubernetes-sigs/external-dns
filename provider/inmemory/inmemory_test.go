@@ -28,7 +28,9 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-var _ provider.Provider = &InMemoryProvider{}
+var (
+	_ provider.Provider = &InMemoryProvider{}
+)
 
 func TestInMemoryProvider(t *testing.T) {
 	t.Run("Records", testInMemoryRecords)

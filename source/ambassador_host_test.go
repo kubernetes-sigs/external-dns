@@ -37,11 +37,15 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-const defaultAmbassadorNamespace = "ambassador"
-const defaultAmbassadorServiceName = "ambassador"
+const (
+	defaultAmbassadorNamespace   = "ambassador"
+	defaultAmbassadorServiceName = "ambassador"
+)
 
-// This is a compile-time validation that ambassadorHostSource is a Source.
-var _ Source = &ambassadorHostSource{}
+var (
+	// This is a compile-time validation that ambassadorHostSource is a Source.
+	_ Source = &ambassadorHostSource{}
+)
 
 type AmbassadorSuite struct {
 	suite.Suite

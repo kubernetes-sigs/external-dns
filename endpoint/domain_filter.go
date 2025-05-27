@@ -25,6 +25,10 @@ import (
 	"strings"
 )
 
+var (
+	_ DomainFilterInterface = &DomainFilter{}
+)
+
 type MatchAllDomainFilters []DomainFilterInterface
 
 func (f MatchAllDomainFilters) Match(domain string) bool {
@@ -54,8 +58,6 @@ type DomainFilter struct {
 	// regexExclusion defines a regular expression to exclude the domains matched
 	regexExclusion *regexp.Regexp
 }
-
-var _ DomainFilterInterface = &DomainFilter{}
 
 // domainFilterSerde is a helper type for serializing and deserializing DomainFilter.
 type domainFilterSerde struct {

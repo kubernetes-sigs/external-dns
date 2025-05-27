@@ -46,6 +46,17 @@ const (
 	clockSkew = 300
 )
 
+var (
+	// Map of supported TSIG algorithms
+	tsigAlgs = map[string]string{
+		"hmac-sha1":   dns.HmacSHA1,
+		"hmac-sha224": dns.HmacSHA224,
+		"hmac-sha256": dns.HmacSHA256,
+		"hmac-sha384": dns.HmacSHA384,
+		"hmac-sha512": dns.HmacSHA512,
+	}
+)
+
 // rfc2136 provider type
 type rfc2136Provider struct {
 	provider.BaseProvider
@@ -93,15 +104,6 @@ type TLSConfig struct {
 	CAFilePath            string
 	ClientCertFilePath    string
 	ClientCertKeyFilePath string
-}
-
-// Map of supported TSIG algorithms
-var tsigAlgs = map[string]string{
-	"hmac-sha1":   dns.HmacSHA1,
-	"hmac-sha224": dns.HmacSHA224,
-	"hmac-sha256": dns.HmacSHA256,
-	"hmac-sha384": dns.HmacSHA384,
-	"hmac-sha512": dns.HmacSHA512,
 }
 
 type rfc2136Actions interface {

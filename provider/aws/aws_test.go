@@ -50,7 +50,9 @@ const (
 )
 
 // Compile time check for interface conformance
-var _ Route53API = &Route53APIStub{}
+var (
+	_ Route53API = &Route53APIStub{}
+)
 
 // Route53APIStub is a minimal implementation of Route53API, used primarily for unit testing.
 // See http://http://docs.aws.amazon.com/sdk-for-go/api/service/route53.html for descriptions

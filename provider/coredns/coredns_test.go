@@ -31,7 +31,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const defaultCoreDNSPrefix = "/skydns/"
+const (
+	defaultCoreDNSPrefix = "/skydns/"
+)
 
 type fakeETCDClient struct {
 	services map[string]Service

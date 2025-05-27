@@ -58,33 +58,35 @@ type mockCloudFlareClient struct {
 	customHostnames       map[string][]cloudflare.CustomHostname
 }
 
-var ExampleDomain = []cloudflare.DNSRecord{
-	{
-		ID:      "1234567890",
-		Name:    "foobar.bar.com",
-		Type:    endpoint.RecordTypeA,
-		TTL:     120,
-		Content: "1.2.3.4",
-		Proxied: proxyDisabled,
-		Comment: "valid comment",
-	},
-	{
-		ID:      "2345678901",
-		Name:    "foobar.bar.com",
-		Type:    endpoint.RecordTypeA,
-		TTL:     120,
-		Content: "3.4.5.6",
-		Proxied: proxyDisabled,
-	},
-	{
-		ID:      "1231231233",
-		Name:    "bar.foo.com",
-		Type:    endpoint.RecordTypeA,
-		TTL:     1,
-		Content: "2.3.4.5",
-		Proxied: proxyDisabled,
-	},
-}
+var (
+	ExampleDomain = []cloudflare.DNSRecord{
+		{
+			ID:      "1234567890",
+			Name:    "foobar.bar.com",
+			Type:    endpoint.RecordTypeA,
+			TTL:     120,
+			Content: "1.2.3.4",
+			Proxied: proxyDisabled,
+			Comment: "valid comment",
+		},
+		{
+			ID:      "2345678901",
+			Name:    "foobar.bar.com",
+			Type:    endpoint.RecordTypeA,
+			TTL:     120,
+			Content: "3.4.5.6",
+			Proxied: proxyDisabled,
+		},
+		{
+			ID:      "1231231233",
+			Name:    "bar.foo.com",
+			Type:    endpoint.RecordTypeA,
+			TTL:     1,
+			Content: "2.3.4.5",
+			Proxied: proxyDisabled,
+		},
+	}
+)
 
 func NewMockCloudFlareClient() *mockCloudFlareClient {
 	return &mockCloudFlareClient{
