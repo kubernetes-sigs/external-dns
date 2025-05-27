@@ -51,6 +51,7 @@
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
+| `--worker-count=10` | Number of worker goroutines for concurrent processing (default: 10) (implemented for istio-virtualservice source and istio-gateway source) |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, ibmcloud, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, tencentcloud, transip, ultradns, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |

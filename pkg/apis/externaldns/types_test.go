@@ -134,6 +134,7 @@ var (
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		ExcludeUnschedulable:                          true,
+		WorkerCount:                                   10,
 	}
 
 	overriddenConfig = &Config{
@@ -251,6 +252,7 @@ var (
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		ExcludeUnschedulable:                          false,
+		WorkerCount:                                   0,
 	}
 )
 
@@ -400,6 +402,7 @@ func TestParseFlags(t *testing.T) {
 				"--ibmcloud-config-file=ibmcloud.json",
 				"--tencent-cloud-config-file=tencent-cloud.json",
 				"--tencent-cloud-zone-type=private",
+				"--worker-count=0",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -520,6 +523,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":                              "ibmcloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":                         "tencent-cloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":                           "private",
+				"EXTERNAL_DNS_WORKER_COUNT":                                      "0",
 			},
 			expected: overriddenConfig,
 		},

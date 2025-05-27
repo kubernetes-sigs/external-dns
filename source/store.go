@@ -85,6 +85,7 @@ type Config struct {
 	TraefikDisableNew              bool
 	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
+	WorkerCount                    int
 }
 
 func NewSourceConfig(cfg *externaldns.Config) *Config {
@@ -130,6 +131,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
+		WorkerCount:                    cfg.WorkerCount,
 	}
 }
 
@@ -305,7 +307,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.WorkerCount)
 	case "istio-virtualservice":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -315,7 +317,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.WorkerCount)
 	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {

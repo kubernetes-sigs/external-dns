@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
@@ -58,6 +59,7 @@ type gatewaySource struct {
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
 	gatewayInformer          networkingv1alpha3informer.GatewayInformer
+	workerCount              int
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -70,6 +72,7 @@ func NewIstioGatewaySource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	workerCount int,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -121,6 +124,7 @@ func NewIstioGatewaySource(
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
 		gatewayInformer:          gatewayInformer,
+		workerCount:              workerCount,
 	}, nil
 }
 
@@ -138,53 +142,112 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return nil, err
 	}
 
-	var endpoints []*endpoint.Endpoint
+	type gatewayWork struct {
+		gateway *networkingv1alpha3.Gateway
+		result []*endpoint.Endpoint
+		err    error
+	}
 
+	// Create work and result channels
+	workChan := make(chan *networkingv1alpha3.Gateway, len(gateways))
+	resultChan := make(chan gatewayWork, len(gateways))
+	errorsChan := make(chan error, len(gateways))
+
+	var wg sync.WaitGroup
+	// Start worker pool
+	wg.Add(sc.workerCount)
+	for i := 0; i < sc.workerCount; i++ {
+		go func() {
+			defer wg.Done()
+			for gateway := range workChan {
+				work := gatewayWork{gateway: gateway}
+
+				// Check controller annotation to see if we are responsible.
+				controller, ok := gateway.Annotations[controllerAnnotationKey]
+				if ok && controller != controllerAnnotationValue {
+					log.Debugf("Skipping gateway %s/%s because controller value does not match, found: %s, required: %s",
+						gateway.Namespace, gateway.Name, controller, controllerAnnotationValue)
+					resultChan <- work
+					continue
+				}
+
+				gwHostnames, err := sc.hostNamesFromGateway(gateway)
+				if err != nil {
+					work.err = err
+					errorsChan <- err
+					resultChan <- work
+					continue
+				}
+
+				// apply template if host is missing on gateway
+				if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
+					iHostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
+					if err != nil {
+						work.err = err
+						errorsChan <- err
+						resultChan <- work
+						continue
+					}
+
+					if sc.combineFQDNAnnotation {
+						gwHostnames = append(gwHostnames, iHostnames...)
+					} else {
+						gwHostnames = iHostnames
+					}
+				}
+
+				if len(gwHostnames) == 0 {
+					log.Debugf("No hostnames could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
+					resultChan <- work
+					continue
+				}
+
+				gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
+				if err != nil {
+					work.err = err
+					errorsChan <- err
+					resultChan <- work
+					continue
+				}
+
+				if len(gwEndpoints) == 0 {
+					log.Debugf("No endpoints could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
+					resultChan <- work
+					continue
+				}
+
+				log.Debugf("Endpoints generated from gateway: %s/%s: %v", gateway.Namespace, gateway.Name, gwEndpoints)
+				work.result = gwEndpoints
+				resultChan <- work
+			}
+		}()
+	}
+
+	// Distribute work
 	for _, gateway := range gateways {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := gateway.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping gateway %s/%s because controller value does not match, found: %s, required: %s",
-				gateway.Namespace, gateway.Name, controller, controllerAnnotationValue)
-			continue
-		}
+		workChan <- gateway
+	}
+	close(workChan)
 
-		gwHostnames, err := sc.hostNamesFromGateway(gateway)
-		if err != nil {
+	// Start a goroutine to close resultChan once all workers are done
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Collect results
+	var endpoints []*endpoint.Endpoint
+	for work := range resultChan {
+		if work.err == nil && work.result != nil {
+			endpoints = append(endpoints, work.result...)
+		}
+		select {
+		case err := <-errorsChan:
 			return nil, err
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
 		}
-
-		// apply template if host is missing on gateway
-		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				gwHostnames = append(gwHostnames, iHostnames...)
-			} else {
-				gwHostnames = iHostnames
-			}
-		}
-
-		if len(gwHostnames) == 0 {
-			log.Debugf("No hostnames could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
-			continue
-		}
-
-		gwEndpoints, err := sc.endpointsFromGateway(ctx, gwHostnames, gateway)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from gateway: %s/%s: %v", gateway.Namespace, gateway.Name, gwEndpoints)
-		endpoints = append(endpoints, gwEndpoints...)
 	}
 
 	for _, ep := range endpoints {
