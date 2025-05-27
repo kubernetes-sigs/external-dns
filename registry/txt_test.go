@@ -1687,15 +1687,15 @@ func newEndpointWithOwnerResource(dnsName, target, recordType, ownerID, resource
 }
 
 // This is primarily used to prevent data races when running tests in parallel (t.Parallel).
-func cloneEndpoints(list []*endpoint.Endpoint) []*endpoint.Endpoint {
+func cloneEndpointsWithOpts(list []*endpoint.Endpoint, opt ...func(*endpoint.Endpoint)) []*endpoint.Endpoint {
 	cloned := make([]*endpoint.Endpoint, len(list))
 	for i, e := range list {
-		cloned[i] = cloneEndpoint(e)
+		cloned[i] = cloneEndpointWithOpts(e, opt...)
 	}
 	return cloned
 }
 
-func cloneEndpoint(e *endpoint.Endpoint) *endpoint.Endpoint {
+func cloneEndpointWithOpts(e *endpoint.Endpoint, opt ...func(*endpoint.Endpoint)) *endpoint.Endpoint {
 	targets := make(endpoint.Targets, len(e.Targets))
 	copy(targets, e.Targets)
 
@@ -1719,7 +1719,7 @@ func cloneEndpoint(e *endpoint.Endpoint) *endpoint.Endpoint {
 
 	ttl := e.RecordTTL
 
-	return &endpoint.Endpoint{
+	ep := &endpoint.Endpoint{
 		DNSName:          e.DNSName,
 		Targets:          targets,
 		RecordType:       e.RecordType,
@@ -1728,6 +1728,10 @@ func cloneEndpoint(e *endpoint.Endpoint) *endpoint.Endpoint {
 		ProviderSpecific: providerSpecific,
 		SetIdentifier:    e.SetIdentifier,
 	}
+	for _, o := range opt {
+		o(ep)
+	}
+	return ep
 }
 
 func TestNewTXTRegistryWithNewFormatOnly(t *testing.T) {
@@ -2004,72 +2008,80 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 		// The regeneration logic will be introduced in a separate PR.
 	}
 	for _, tt := range tests {
-		for pName, policy := range plan.Policies {
-			// Clone inputs per policy to avoid data races when using t.Parallel.
-			desired := cloneEndpoints(tt.desired)
-			existing := cloneEndpoints(tt.existing)
-			expectedCreate := cloneEndpoints(tt.expectedCreate)
+		for _, setIdentifier := range []string{"", "set-identifier"} {
+			for pName, policy := range plan.Policies {
+				// Clone inputs per policy to avoid data races when using t.Parallel.
+				desired := cloneEndpointsWithOpts(tt.desired, func(e *endpoint.Endpoint) {
+					e.WithSetIdentifier(setIdentifier)
+				})
+				existing := cloneEndpointsWithOpts(tt.existing, func(e *endpoint.Endpoint) {
+					e.WithSetIdentifier(setIdentifier)
+				})
+				expectedCreate := cloneEndpointsWithOpts(tt.expectedCreate, func(e *endpoint.Endpoint) {
+					e.WithSetIdentifier(setIdentifier)
+				})
 
-			t.Run(fmt.Sprintf("%s with %s policy", tt.name, pName), func(t *testing.T) {
-				t.Parallel()
-				ctx := context.Background()
-				p := inmemory.NewInMemoryProvider()
+				t.Run(fmt.Sprintf("%s with %s policy and setIdentifier=%s", tt.name, pName, setIdentifier), func(t *testing.T) {
+					t.Parallel()
+					ctx := context.Background()
+					p := inmemory.NewInMemoryProvider()
 
-				// Given: Register existing records
-				p.CreateZone(testZone)
-				err := p.ApplyChanges(ctx, &plan.Changes{Create: existing})
-				assert.NoError(t, err)
+					// Given: Register existing records
+					p.CreateZone(testZone)
+					err := p.ApplyChanges(ctx, &plan.Changes{Create: existing})
+					assert.NoError(t, err)
 
-				// The first ApplyChanges call should create the expected records.
-				// Subsequent calls are expected to be no-ops (i.e., no additional creates).
-				isCalled := false
-				p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
-					if isCalled {
-						assert.Len(t, changes.Create, 0, "ApplyChanges should not be called multiple times with new changes")
-					} else {
-						assert.True(t,
-							testutils.SameEndpoints(changes.Create, expectedCreate),
-							"Expected create changes: %v, but got: %v", expectedCreate, changes.Create,
+					// The first ApplyChanges call should create the expected records.
+					// Subsequent calls are expected to be no-ops (i.e., no additional creates).
+					isCalled := false
+					p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+						if isCalled {
+							assert.Len(t, changes.Create, 0, "ApplyChanges should not be called multiple times with new changes")
+						} else {
+							assert.True(t,
+								testutils.SameEndpoints(changes.Create, expectedCreate),
+								"Expected create changes: %v, but got: %v", expectedCreate, changes.Create,
+							)
+						}
+						assert.Len(t, changes.UpdateNew, 0, "UpdateNew should be empty")
+						assert.Len(t, changes.UpdateOld, 0, "UpdateOld should be empty")
+						assert.Len(t, changes.Delete, 0, "Delete should be empty")
+						isCalled = true
+					}
+
+					// When: Apply changes to recreate missing A records
+					managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
+					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, false)
+					assert.NoError(t, err)
+
+					expectedRecords := append(existing, expectedCreate...)
+
+					// Simulate the reconciliation loop by executing multiple times
+					reconciliationLoops := 3
+					for i := range reconciliationLoops {
+						records, err := registry.Records(ctx)
+						assert.NoError(t, err)
+						plan := &plan.Plan{
+							Policies:       []plan.Policy{policy},
+							Current:        records,
+							Desired:        desired,
+							ManagedRecords: managedRecords,
+							OwnerID:        ownerId,
+						}
+						plan = plan.Calculate()
+						err = registry.ApplyChanges(ctx, plan.Changes)
+						assert.NoError(t, err)
+
+						// Then: Verify that the missing records are recreated or the existing records are not modified
+						records, err = p.Records(ctx)
+						assert.NoError(t, err)
+						assert.True(t, testutils.SameEndpoints(records, expectedRecords),
+							"Expected records after reconciliation loop #%d: %v, but got: %v",
+							i, expectedRecords, records,
 						)
 					}
-					assert.Len(t, changes.UpdateNew, 0, "UpdateNew should be empty")
-					assert.Len(t, changes.UpdateOld, 0, "UpdateOld should be empty")
-					assert.Len(t, changes.Delete, 0, "Delete should be empty")
-					isCalled = true
-				}
-
-				// When: Apply changes to recreate missing A records
-				managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
-				registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, false)
-				assert.NoError(t, err)
-
-				expectedRecords := append(existing, expectedCreate...)
-
-				// Simulate the reconciliation loop by executing multiple times
-				reconciliationLoops := 3
-				for i := range reconciliationLoops {
-					records, err := registry.Records(ctx)
-					assert.NoError(t, err)
-					plan := &plan.Plan{
-						Policies:       []plan.Policy{policy},
-						Current:        records,
-						Desired:        desired,
-						ManagedRecords: managedRecords,
-						OwnerID:        ownerId,
-					}
-					plan = plan.Calculate()
-					err = registry.ApplyChanges(ctx, plan.Changes)
-					assert.NoError(t, err)
-
-					// Then: Verify that the missing records are recreated or the existing records are not modified
-					records, err = p.Records(ctx)
-					assert.NoError(t, err)
-					assert.True(t, testutils.SameEndpoints(records, expectedRecords),
-						"Expected records after reconciliation loop #%d: %v, but got: %v",
-						i, expectedRecords, records,
-					)
-				}
-			})
+				})
+			}
 		}
 	}
 }

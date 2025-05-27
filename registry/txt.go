@@ -284,11 +284,13 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-		if txt != nil && filter(txt) {
+		if txt != nil {
 			txt.WithSetIdentifier(r.SetIdentifier)
 			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 			txt.ProviderSpecific = r.ProviderSpecific
-			endpoints = append(endpoints, txt)
+			if filter(txt) {
+				endpoints = append(endpoints, txt)
+			}
 		}
 	}
 
@@ -299,11 +301,13 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		recordType = endpoint.RecordTypeCNAME
 	}
 	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil && filter(txtNew) {
+	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
+		if filter(txtNew) {
+			endpoints = append(endpoints, txtNew)
+		}
 	}
 	return endpoints
 }
