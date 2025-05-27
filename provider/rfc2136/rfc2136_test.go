@@ -153,7 +153,24 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {
-			outChan <- e
+
+			var responseEnvelope *dns.Envelope
+			for _, record := range e.RR {
+				for _, q := range m.Question {
+					if strings.HasSuffix(record.Header().Name, q.Name) {
+						if responseEnvelope == nil {
+							responseEnvelope = &dns.Envelope{}
+						}
+						responseEnvelope.RR = append(responseEnvelope.RR, record)
+						break
+					}
+				}
+			}
+
+			if responseEnvelope == nil {
+				continue
+			}
+			outChan <- responseEnvelope
 		}
 		close(outChan)
 	}()
@@ -161,7 +178,7 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 	return outChan, nil
 }
 
-func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
+func createRfc2136StubProvider(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error) {
 	tlsConfig := TLSConfig{
 		UseTLS:                false,
 		SkipTLSVerify:         false,
@@ -169,7 +186,7 @@ func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	return NewRfc2136Provider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
+	return NewRfc2136Provider([]string{""}, 0, zoneNames, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProviderWithHosts(stub *rfc2136Stub) (provider.Provider, error) {
@@ -506,7 +523,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	provider, err := createRfc2136StubProvider(stub)
+	provider, err := createRfc2136StubProvider(stub, "barfoo.com", "foo.com", "bar.com", "foobar.com")
 	assert.NoError(t, err)
 
 	recs, err := provider.Records(context.Background())

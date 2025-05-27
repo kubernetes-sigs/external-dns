@@ -810,15 +810,20 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 }
 
 func getCustomHostnamesSSLOptions(customHostnamesConfig CustomHostnamesConfig) *cloudflare.CustomHostnameSSL {
-	return &cloudflare.CustomHostnameSSL{
-		Type:                 "dv",
-		Method:               "http",
-		CertificateAuthority: customHostnamesConfig.CertificateAuthority,
-		BundleMethod:         "ubiquitous",
+	ssl := &cloudflare.CustomHostnameSSL{
+		Type:         "dv",
+		Method:       "http",
+		BundleMethod: "ubiquitous",
 		Settings: cloudflare.CustomHostnameSSLSettings{
 			MinTLSVersion: customHostnamesConfig.MinTLSVersion,
 		},
 	}
+	// Set CertificateAuthority if provided
+	// We're not able to set it at all (even with a blank) if you're not on an enterprise plan
+	if customHostnamesConfig.CertificateAuthority != "none" {
+		ssl.CertificateAuthority = customHostnamesConfig.CertificateAuthority
+	}
+	return ssl
 }
 
 func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {

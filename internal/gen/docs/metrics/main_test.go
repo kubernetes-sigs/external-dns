@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"io/fs"
-	"math/rand/v2"
 	"os"
 	"testing"
 
@@ -57,7 +56,7 @@ func TestGenerateMarkdownTableWithSingleMetric(t *testing.T) {
 	reg.MustRegister(metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
-			Subsystem: fmt.Sprintf("controller_%d", rand.IntN(100)),
+			Subsystem: "controller_0",
 			Name:      "verified_aaaa_records",
 			Help:      "This is just a test.",
 		},
@@ -95,7 +94,7 @@ func TestMetricsMdExtraMetricAdded(t *testing.T) {
 	reg.MustRegister(metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
-			Subsystem: fmt.Sprintf("controller_%d", rand.IntN(100)),
+			Subsystem: "controller_1",
 			Name:      "verified_aaaa_records",
 			Help:      "This is just a test.",
 		},
