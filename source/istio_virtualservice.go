@@ -163,10 +163,15 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	resultChan := make(chan virtualServiceWork, len(virtualServices))
 	errorsChan := make(chan error, len(virtualServices))
 
+	workerCount := sc.workerCount
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+
 	var wg sync.WaitGroup
 	// Start worker pool
-	wg.Add(sc.workerCount)
-	for i := 0; i < sc.workerCount; i++ {
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
 		go func() {
 			defer wg.Done()
 			for virtualService := range workChan {

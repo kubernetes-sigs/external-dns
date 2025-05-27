@@ -154,9 +154,14 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	errorsChan := make(chan error, len(gateways))
 
 	var wg sync.WaitGroup
+
+	workerCount := sc.workerCount
+	if workerCount <= 0 {
+		workerCount = 1
+	}
 	// Start worker pool
-	wg.Add(sc.workerCount)
-	for i := 0; i < sc.workerCount; i++ {
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
 		go func() {
 			defer wg.Done()
 			for gateway := range workChan {

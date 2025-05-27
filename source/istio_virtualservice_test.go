@@ -1423,8 +1423,8 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
-			fqdnTemplate:             "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
+			fqdnTemplate:          "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
+			combineFQDNAnnotation: true,
 		},
 		{
 			title: "virtualservice with target annotation",

@@ -134,7 +134,7 @@ var (
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		ExcludeUnschedulable:                          true,
-		WorkerCount:                                   10,
+		WorkerCount:                                   1,
 	}
 
 	overriddenConfig = &Config{

@@ -384,7 +384,7 @@ var defaultConfig = &Config{
 	WebhookProviderWriteTimeout:  10 * time.Second,
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
-	WorkerCount:                  10,
+	WorkerCount:                  1,
 }
 
 // NewConfig returns new Config object
@@ -495,7 +495,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
-	app.Flag("worker-count", "Number of worker goroutines for concurrent processing (default: 10) (implemented for istio-virtualservice source and istio-gateway source)").Default(strconv.Itoa(defaultConfig.WorkerCount)).IntVar(&cfg.WorkerCount)
+	app.Flag("worker-count", "Number of worker goroutines for concurrent processing (default: 1) (implemented for istio-virtualservice source and istio-gateway source)").Default(strconv.Itoa(defaultConfig.WorkerCount)).IntVar(&cfg.WorkerCount)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
