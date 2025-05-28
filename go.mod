@@ -23,7 +23,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/civo/civogo v0.5.1
+	github.com/civo/civogo v0.5.3
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
@@ -38,12 +38,12 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.50.0
+	github.com/linode/linodego v1.52.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.66
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.91.0
+	github.com/oracle/oci-go-sdk/v65 v65.92.0
 	github.com/ovh/go-ovh v1.7.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
@@ -60,7 +60,7 @@ require (
 	golang.org/x/sync v0.14.0
 	golang.org/x/text v0.25.0
 	golang.org/x/time v0.11.0
-	google.golang.org/api v0.233.0
+	google.golang.org/api v0.234.0
 	gopkg.in/ns1/ns1-go.v2 v2.14.3
 	istio.io/api v1.26.0
 	istio.io/client-go v1.26.0
@@ -68,7 +68,7 @@ require (
 	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.33.1
 	k8s.io/klog/v2 v2.130.1
-	sigs.k8s.io/controller-runtime v0.20.4
+	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/gateway-api v1.3.0
 )
 
@@ -118,7 +118,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
-	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
+	github.com/googleapis/gax-go/v2 v2.14.2 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -180,8 +180,8 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250505200425-f936aa4a68b2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250512202823-5a2f75b736a9 // indirect
 	google.golang.org/grpc v1.72.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
