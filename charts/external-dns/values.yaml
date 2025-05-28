@@ -14,6 +14,9 @@ image:  # @schema additionalProperties: false
   # -- Image pull policy for the `external-dns` container.
   pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
 
+# -- Set this to `false` to disable the installation of the _Custom Resource Definitions_ (CRDs) for _ExternalDNS_.
+installCRDs: true
+
 # -- Image pull secrets.
 imagePullSecrets: []  # @schema item: object
 

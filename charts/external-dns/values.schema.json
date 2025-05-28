@@ -130,6 +130,9 @@
     "initContainers": {
       "type": "array"
     },
+    "installCRDs": {
+      "type": "boolean"
+    },
     "interval": {
       "type": "string"
     },

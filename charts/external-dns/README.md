@@ -115,6 +115,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | image.tag | string | `nil` | Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set. |
 | imagePullSecrets | list | `[]` | Image pull secrets. |
 | initContainers | list | `[]` | [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition. |
+| installCRDs | bool | `true` | Set this to `false` to disable the installation of the _Custom Resource Definitions_ (CRDs) for _ExternalDNS_. |
 | interval | string | `"1m"` | Interval for DNS updates. |
 | labelFilter | string | `nil` | Filter resources queried for endpoints by label selector |
 | livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
