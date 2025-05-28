@@ -291,7 +291,8 @@ It's useful when you run bare metal Kubernetes clusters behind NAT or in a simil
 
 ## DNS Record Tags Support
 
-ExternalDNS now supports DNS record tags via the `Tags` field in the Endpoint struct. This feature is currently supported by some providers, such as Cloudflare (may require a paid plan). Tags allow you to add metadata to DNS records for advanced management and filtering. See provider documentation for details and limitations.
+ExternalDNS now supports DNS record tags via the `Tags` field in the Endpoint struct. This feature is currently supported by some providers, such as Cloudflare (may require a paid plan).
+Tags allow you to add metadata to DNS records for advanced management and filtering. See provider documentation for details and limitations.
 
 ## Contributing
 
