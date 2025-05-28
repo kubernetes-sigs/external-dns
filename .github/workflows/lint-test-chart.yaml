@@ -2,13 +2,24 @@ name: Lint and Test Chart
 
 on:
   pull_request:
+    branches:
+      - master
     paths:
       - "charts/external-dns/**"
 
+concurrency:
+  group: chart-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
 jobs:
   lint-test:
+    name: Lint and Test
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash
@@ -21,15 +32,20 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
         with:
-          token: ${{ github.token }}
           version: latest
+
+      - name: Configure Helm
+        run: |
+          set -euo pipefail
+
+          helm plugin install https://github.com/losisin/helm-values-schema-json.git
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git
 
       - name: Run Helm Schema check
         working-directory: charts/external-dns
         run: |
           set -euo pipefail
 
-          helm plugin install https://github.com/losisin/helm-values-schema-json.git
           helm schema
           if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
           then
@@ -61,8 +77,92 @@ jobs:
       - name: Run Helm Unit Tests
         run: |
           set -euo pipefail
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git >/dev/null 2>&1
+
           helm unittest -f 'tests/*_test.yaml' --color charts/external-dns
+
+      - name: Install YQ
+        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        with:
+          github_token: ${{ github.token }}
+          owner: mikefarah
+          repository: yq
+          extract: false
+          filename_format: "{name}_{os}_{arch}"
+          check_command: yq --version
+          version: latest
+
+      - name: Install MDQ
+        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        with:
+          github_token: ${{ github.token }}
+          owner: yshavit
+          repository: mdq
+          arch_amd64: x64
+          filename_format: "{name}-{os}-{arch}.{ext}"
+          check_command: mdq --version
+          version: latest
+
+      - name: Run CHANGELOG check
+        run: |
+          set -euo pipefail
+
+          chart_file_path="./charts/external-dns/Chart.yaml"
+          changelog_file_path="./charts/external-dns/CHANGELOG.md"
+          version="$(yq eval '.version' "${chart_file_path}")"
+          entry="$(mdq --no-br --link-format inline "# v${version}" <"${changelog_file_path}" || true)"
+          if [[ -z "${entry}" ]]
+          then
+            echo "No CHANGELOG entry for ${chart} version ${version}!" >&2
+            exit 1
+          fi
+
+          added="$(mdq --output plain "# v${version} | # Added | -" <"${changelog_file_path}" || true)"
+          changed="$(mdq --output plain "# v${version} | # Changed | -" <"${changelog_file_path}" || true)"
+          deprecated="$(mdq --output plain "# v${version} | # Deprecated | -" <"${changelog_file_path}" || true)"
+          removed="$(mdq --output plain "# v${version} | # Removed | -" <"${changelog_file_path}" || true)"
+          fixed="$(mdq --output plain "# v${version} | # Fixed | -" <"${changelog_file_path}" || true)"
+          security="$(mdq --output plain "# v${version} | # Security | -" <"${changelog_file_path}" || true)"
+
+          changes_path="./charts/external-dns/changes.txt"
+          rm -f "${changes_path}"
+
+          old_ifs="${IFS}"
+          IFS=$'\n'
+
+          for item in ${added}; do
+            printf -- '- kind: added\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${changed}; do
+            printf -- '- kind: changed\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${deprecated}; do
+            printf -- '- kind: deprecated\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${removed}; do
+            printf -- '- kind: removed\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${fixed}; do
+            printf -- '- kind: fixed\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${security}; do
+            printf -- '- kind: security\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          IFS="${old_ifs}"
+
+          if [[ -f "${changes_path}" ]]; then
+            echo "::group::Changes"
+            cat "${changes_path}"
+            echo "::endgroup::"
+
+            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' "${chart_file_path}"
+            rm -f "${changes_path}"
+          fi
 
       - name: Install Artifact Hub CLI
         uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
@@ -75,7 +175,7 @@ jobs:
           version: latest
 
       - name: Run Artifact Hub lint
-        run: ah lint --kind helm || exit 1
+        run: ah lint --kind helm --path ./charts/external-dns || exit 1
 
       - name: Install Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -86,23 +186,13 @@ jobs:
       - name: Set-up chart-testing
         uses: helm/chart-testing-action@0d28d3144d3a25ea2cc349d6e59901c4ff469b3b # v2.7.0
 
-      - name: Check for changes
-        id: changes
-        run: |
-          changed=$(ct list-changed --target-branch=master)
-          if [[ -n "$changed" ]]; then
-            echo "changed=true" >> "${GITHUB_OUTPUT}"
-          fi
-
       - name: Run chart-testing lint
-        run: ct lint --target-branch=master --check-version-increment=false
+        run: ct lint --charts=./charts/external-dns --target-branch=${{ github.event.repository.default_branch }} --check-version-increment=false
 
       - name: Create Kind cluster
-        if: steps.changes.outputs.changed == 'true'
         uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
         with:
           wait: 120s
 
       - name: Run chart-testing install
-        if: steps.changes.outputs.changed == 'true'
-        run: ct install --target-branch=master
+        run: ct install --charts=./charts/external-dns --target-branch=${{ github.event.repository.default_branch }}

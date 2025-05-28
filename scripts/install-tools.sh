@@ -53,6 +53,16 @@ install_generator() {
       set -ex ;\
 	    go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
   fi
+
+  if [[ ! -x $(which yq) ]]; then
+      set -ex ;\
+      go install github.com/mikefarah/yq/v4@latest ;
+  fi
+
+  if [[ ! -x $(which yamlfmt) ]]; then
+      set -ex ;\
+      go install github.com/google/yamlfmt/cmd/yamlfmt@latest ;
+  fi
 }
 
 install_golangci() {

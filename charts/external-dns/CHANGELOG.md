@@ -18,13 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.17.0] - 2025-06-04
+
 ### Changed
 
-- Allow extraArgs to also be a map enabling overrides of individual values ([#5293](https://github.com/kubernetes-sigs/external-dns/pull/5293)) _@frittentheke
+- Allow extraArgs to also be a map enabling overrides of individual values. ([#5293](https://github.com/kubernetes-sigs/external-dns/pull/5293)) _@frittentheke_
+- Update CRD. ([#5287](https://github.com/kubernetes-sigs/external-dns/pull/5287)) _@mloiseleur_
+- Update CRD. ([#5446](https://github.com/kubernetes-sigs/external-dns/pull/5446)) _@mloiseleur_
+- Update _ExternalDNS_ OCI image version to [v0.17.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.17.0). ([#5479](https://github.com/kubernetes-sigs/external-dns/pull/5479)) _@stevehipwell_
 
 ### Fixed
 
-- Fixed wrong type definitions for webhook probes. ([#5297](https://github.com/kubernetes-sigs/external-dns/pull/5297)) _@semnell_
+- Fix wrong type definitions for webhook probes. ([#5297](https://github.com/kubernetes-sigs/external-dns/pull/5297)) _@semnell_
 - Update schema with latest plugin release. ([#5510](https://github.com/kubernetes-sigs/external-dns/pull/5510)) _@mloiseleur
 
 ## [v1.16.1] - 2025-04-10
@@ -35,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Correctly handles 'txtPrefix' and 'txtSuffix' arguments when both are provided. ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
+- Correctly handle `txtPrefix` and `txtSuffix` arguments when both are provided. ([#5250](https://github.com/kubernetes-sigs/external-dns/pull/5250)) _@ivankatliarchuk_
 - Add missing types in the schema for empty values. ([#5228](https://github.com/kubernetes-sigs/external-dns/pull/5228)) _@ivankatliarchuk_
 - Add missing types in the schema for empty values. ([#5207](https://github.com/kubernetes-sigs/external-dns/pull/5207)) _@t3mi_
 
@@ -262,6 +267,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.17.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.17.0
 [v1.16.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.1
 [v1.16.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.0
 [v1.15.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.15.2
