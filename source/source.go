@@ -18,14 +18,10 @@ package source
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -84,43 +80,3 @@ type eventHandlerFunc func()
 func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
 func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
 func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
-
-type informerFactory interface {
-	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
-}
-
-func waitForCacheSync(ctx context.Context, factory informerFactory) error {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
-		if !done {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %w", typ, ctx.Err())
-			default:
-				return fmt.Errorf("failed to sync %v", typ)
-			}
-		}
-	}
-	return nil
-}
-
-type dynamicInformerFactory interface {
-	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
-}
-
-func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
-		if !done {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %w", typ, ctx.Err())
-			default:
-				return fmt.Errorf("failed to sync %v", typ)
-			}
-		}
-	}
-	return nil
-}
