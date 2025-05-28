@@ -815,3 +815,26 @@ func TestPDNScheckEndpoint(t *testing.T) {
 		assert.Equal(t, tt.expected, actual)
 	}
 }
+
+func TestEndpointTags(t *testing.T) {
+	t.Run("Tags default to nil", func(t *testing.T) {
+		e := NewEndpoint("example.org", "A", "1.2.3.4")
+		assert.Nil(t, e.Tags)
+	})
+
+	t.Run("Tags can be set and retrieved", func(t *testing.T) {
+		e := NewEndpoint("example.org", "A", "1.2.3.4")
+		tags := []string{"foo", "bar"}
+		e.Tags = tags
+		assert.Equal(t, tags, e.Tags)
+	})
+
+	t.Run("Tags equality", func(t *testing.T) {
+		e1 := NewEndpoint("example.org", "A", "1.2.3.4")
+		e2 := NewEndpoint("example.org", "A", "1.2.3.4")
+		tags := []string{"tag1", "tag2"}
+		e1.Tags = tags
+		e2.Tags = tags
+		assert.Equal(t, e1.Tags, e2.Tags)
+	})
+}

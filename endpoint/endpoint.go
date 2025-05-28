@@ -220,6 +220,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// Tags stores DNS record tags (for providers that support them, e.g. Cloudflare)
+	// +optional
+	Tags []string `json:"tags,omitempty"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -247,6 +250,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		RecordType: recordType,
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,
+		Tags:       nil, // default to nil, can be set later
 	}
 }
 
