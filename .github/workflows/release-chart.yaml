@@ -7,14 +7,19 @@ on:
     paths:
       - "charts/external-dns/Chart.yaml"
 
-permissions: {}
+concurrency:
+  group: chart-release
+  cancel-in-progress: false
+
+permissions: read-all
+
 jobs:
   release:
-    permissions:
-      contents: write #  to push chart release and create a release (helm/chart-releaser-action)
-
+    name: Release
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         shell: bash
@@ -38,12 +43,79 @@ jobs:
           path: charts/external-dns/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
 
-      - name: Create release notes
+      - name: Process changelog
+        id: changelog
         run: |
           set -euo pipefail
-          cat <<"EOF" > charts/external-dns/RELEASE.md
+
+          package_dir="./.cr-release-packages"
+          mkdir -p "${package_dir}"
+
+          release_notes_file="RELEASE.md"
+          release_notes_path="./charts/external-dns/${release_notes_file}"
+
+          cat <<"EOF" > "${release_notes_path}"
           ${{ steps.changelog_reader.outputs.changes }}
           EOF
+
+          added="$(mdq --output plain '# Added | -' <"${release_notes_path}" || true)"
+          changed="$(mdq --output plain '# Changed | -' <"${release_notes_path}" || true)"
+          deprecated="$(mdq --output plain '# Deprecated | -' <"${release_notes_path}" || true)"
+          removed="$(mdq --output plain '# Removed | -' <"${release_notes_path}" || true)"
+          fixed="$(mdq --output plain '# Fixed | -' <"${release_notes_path}" || true)"
+          security="$(mdq --output plain '# Security | -' <"${release_notes_path}" || true)"
+
+          changes_path="./charts/external-dns/changes.txt"
+          rm -f "${changes_path}"
+
+          old_ifs="${IFS}"
+          IFS=$'\n'
+
+          for item in ${added}; do
+            printf -- '- kind: added\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${changed}; do
+            printf -- '- kind: changed\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${deprecated}; do
+            printf -- '- kind: deprecated\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${removed}; do
+            printf -- '- kind: removed\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${fixed}; do
+            printf -- '- kind: fixed\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          for item in ${security}; do
+            printf -- '- kind: security\n  description: "%s"\n' "${item%.*}." >> "${changes_path}"
+          done
+
+          IFS="${old_ifs}"
+
+          if [[ -f "${changes_path}" ]]; then
+            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/external-dns/Chart.yaml"
+            rm -f "${changes_path}"
+          fi
+
+          echo "release_notes_file=${release_notes_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install Artifact Hub CLI
+        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        with:
+          github_token: ${{ github.token }}
+          owner: artifacthub
+          repository: hub
+          name: ah
+          check_command: ah version
+          version: latest
+
+      - name: Run Artifact Hub lint
+        run: ah lint --kind helm --path ./charts/external-dns || exit 1
 
       - name: Configure Git
         run: |
@@ -58,7 +130,7 @@ jobs:
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_TOKEN: "${{ github.token }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
-          CR_RELEASE_NOTES_FILE: RELEASE.md
-          CR_MAKE_RELEASE_LATEST: false
+          CR_RELEASE_NOTES_FILE: "${{ steps.changelog.outputs.release_notes_file }}"
+          CR_MAKE_RELEASE_LATEST: "false"
