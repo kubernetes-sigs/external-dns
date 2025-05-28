@@ -222,6 +222,7 @@ type Endpoint struct {
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// Tags stores DNS record tags (for providers that support them, e.g. Cloudflare)
 	// +optional
+	// Tags are only supported by some providers and may require a paid plan (e.g. Cloudflare).
 	Tags []string `json:"tags,omitempty"`
 }
 
