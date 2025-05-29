@@ -92,17 +92,17 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 	}{
 		{
 			name:        "all caches synced",
-			syncResults: map[schema.GroupVersionResource]bool{schema.GroupVersionResource{}: true},
+			syncResults: map[schema.GroupVersionResource]bool{{}: true},
 		},
 		{
 			name:        "some caches not synced",
-			syncResults: map[schema.GroupVersionResource]bool{schema.GroupVersionResource{}: false},
+			syncResults: map[schema.GroupVersionResource]bool{{}: false},
 			expectError: true,
 			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
 		{
 			name:        "context timeout",
-			syncResults: map[schema.GroupVersionResource]bool{schema.GroupVersionResource{}: false},
+			syncResults: map[schema.GroupVersionResource]bool{{}: false},
 			expectError: true,
 			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
