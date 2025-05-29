@@ -19,6 +19,8 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
+
 	"strings"
 	"time"
 
@@ -60,6 +62,42 @@ type TXTRegistry struct {
 	txtEncryptAESKey  []byte
 
 	newFormatOnly bool
+
+	// existingTXTs is the TXT records that already exist in the zone so that
+	// ApplyChanges() can skip re-creating them. See the struct below for details.
+	existingTXTs existingTXTs
+}
+
+// existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
+// It relies on the fact that Records() is always called **before** ApplyChanges()
+// within a single reconciliation cycle.
+type existingTXTs struct {
+	entries map[string]struct{}
+}
+
+func newExistingTXTs() existingTXTs {
+	return existingTXTs{
+		entries: make(map[string]struct{}),
+	}
+}
+
+func (im *existingTXTs) add(r *endpoint.Endpoint) {
+	if im.entries == nil {
+		im.entries = make(map[string]struct{})
+	}
+	im.entries[fmt.Sprintf("%s|%s", r.DNSName, r.SetIdentifier)] = struct{}{}
+}
+
+// isNotManaged reports whether the given endpoint's TXT record is absent from the existing set.
+// Used to determine whether a new TXT record needs to be created.
+func (im *existingTXTs) isNotManaged(ep *endpoint.Endpoint) bool {
+	k := fmt.Sprintf("%s|%s", ep.DNSName, ep.SetIdentifier)
+	_, ok := im.entries[k]
+	return !ok
+}
+
+func (im *existingTXTs) reset() existingTXTs {
+	return newExistingTXTs()
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -104,6 +142,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		newFormatOnly:       newFormatOnly,
+		existingTXTs:        newExistingTXTs(),
 	}, nil
 }
 
@@ -171,6 +210,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		labelMap[key] = labels
 		txtRecordsMap[record.DNSName] = struct{}{}
+		im.existingTXTs.add(record)
 	}
 
 	for _, ep := range endpoints {
@@ -234,6 +274,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool { return true })
+}
+
+func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	// Create legacy format record by default unless newFormatOnly is true
@@ -244,7 +288,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 			txt.WithSetIdentifier(r.SetIdentifier)
 			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 			txt.ProviderSpecific = r.ProviderSpecific
-			endpoints = append(endpoints, txt)
+			if filter(txt) {
+				endpoints = append(endpoints, txt)
+			}
 		}
 	}
 
@@ -259,7 +305,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
+		if filter(txtNew) {
+			endpoints = append(endpoints, txtNew)
+		}
 	}
 	return endpoints
 }
@@ -279,12 +327,13 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isNotManaged)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
 	}
+	im.existingTXTs = im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
 
 	for _, r := range filteredChanges.Delete {
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
