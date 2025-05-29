@@ -85,13 +85,13 @@ type AlibabaCloudProvider struct {
 }
 
 type alibabaCloudConfig struct {
-	RegionID        string    `json:"regionId" yaml:"regionId"`
-	AccessKeyID     string    `json:"accessKeyId" yaml:"accessKeyId"`
+	RegionID        string    `json:"regionId"        yaml:"regionId"`
+	AccessKeyID     string    `json:"accessKeyId"     yaml:"accessKeyId"`
 	AccessKeySecret string    `json:"accessKeySecret" yaml:"accessKeySecret"`
-	VPCID           string    `json:"vpcId" yaml:"vpcId"`
-	RoleName        string    `json:"-" yaml:"-"` // For ECS RAM role only
-	StsToken        string    `json:"-" yaml:"-"`
-	ExpireTime      time.Time `json:"-" yaml:"-"`
+	VPCID           string    `json:"vpcId"           yaml:"vpcId"`
+	RoleName        string    `json:"-"               yaml:"-"` // For ECS RAM role only
+	StsToken        string    `json:"-"               yaml:"-"`
+	ExpireTime      time.Time `json:"-"               yaml:"-"`
 }
 
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
@@ -102,17 +102,17 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 	if configFile != "" {
 		contents, err := os.ReadFile(configFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read Alibaba Cloud config file '%s': %v", configFile, err)
+			return nil, fmt.Errorf("failed to read Alibaba Cloud config file '%s': %w", configFile, err)
 		}
 		err = yaml.Unmarshal(contents, &cfg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse Alibaba Cloud config file '%s': %v", configFile, err)
+			return nil, fmt.Errorf("failed to parse Alibaba Cloud config file '%s': %w", configFile, err)
 		}
 	} else {
 		var tmpError error
 		cfg, tmpError = getCloudConfigFromStsToken()
 		if tmpError != nil {
-			return nil, fmt.Errorf("failed to getCloudConfigFromStsToken: %v", tmpError)
+			return nil, fmt.Errorf("failed to getCloudConfigFromStsToken: %w", tmpError)
 		}
 	}
 
@@ -136,7 +136,7 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Alibaba Cloud DNS client: %v", err)
+		return nil, fmt.Errorf("failed to create Alibaba Cloud DNS client: %w", err)
 	}
 
 	// Private DNS service
@@ -184,19 +184,19 @@ func getCloudConfigFromStsToken() (alibabaCloudConfig, error) {
 	roleName := ""
 	var err error
 	if roleName, err = m.RoleName(); err != nil {
-		return cfg, fmt.Errorf("failed to get role name from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get role name from Metadata Service: %w", err)
 	}
 	vpcID, err := m.VpcID()
 	if err != nil {
-		return cfg, fmt.Errorf("failed to get VPC ID from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get VPC ID from Metadata Service: %w", err)
 	}
 	regionID, err := m.Region()
 	if err != nil {
-		return cfg, fmt.Errorf("failed to get Region ID from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get Region ID from Metadata Service: %w", err)
 	}
 	role, err := m.RamRoleToken(roleName)
 	if err != nil {
-		return cfg, fmt.Errorf("failed to get STS Token from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get STS Token from Metadata Service: %w", err)
 	}
 	cfg.RegionID = regionID
 	cfg.RoleName = roleName

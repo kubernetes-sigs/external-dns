@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/informers"
+
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -65,10 +67,11 @@ type serviceSource struct {
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              map[string]struct{}
 	labelSelector                  labels.Selector
+	exposeInternalIPv6             bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool, exposeInternalIPv6 bool) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -111,7 +114,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -141,6 +144,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		labelSelector:                  labelSelector,
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
+		exposeInternalIPv6:             exposeInternalIPv6,
 	}, nil
 }
 
@@ -319,7 +323,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 							return endpoints
 						}
 						for _, address := range node.Status.Addresses {
-							if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+							if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
 								targets = append(targets, address.Address)
 								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 							}
@@ -384,7 +388,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 }
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, svc)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, svc)
 	if err != nil {
 		return nil, err
 	}
@@ -584,68 +588,87 @@ func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodC
 	return -1, nil
 }
 
+// nodesExternalTrafficPolicyTypeLocal filters nodes that have running pods belonging to the given NodePort service
+// with externalTrafficPolicy=Local. Returns a prioritized slice of nodes, favoring those with ready, non-terminating pods.
+func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
+	var nodesReady []*v1.Node
+	var nodesRunning []*v1.Node
+	var nodes []*v1.Node
+	nodesMap := map[*v1.Node]struct{}{}
+
+	pods := sc.pods(svc)
+
+	for _, v := range pods {
+		if v.Status.Phase == v1.PodRunning {
+			node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
+			if err != nil {
+				log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
+				continue
+			}
+
+			if _, ok := nodesMap[node]; !ok {
+				nodesMap[node] = *new(struct{})
+				nodesRunning = append(nodesRunning, node)
+
+				if isPodStatusReady(v.Status) {
+					nodesReady = append(nodesReady, node)
+					// Check pod not terminating
+					if v.GetDeletionTimestamp() == nil {
+						nodes = append(nodes, node)
+					}
+				}
+			}
+		}
+	}
+
+	// Prioritize nodes with non-terminating ready pods
+	// If none available, fall back to nodes with ready pods
+	// If still none, use nodes with any running pods
+	if len(nodes) > 0 {
+		// Works same as service endpoints
+	} else if len(nodesReady) > 0 {
+		// 2 level of panic modes as safe guard, because old wrong behavior can be used by someone
+		// Publish all endpoints not always a bad thing
+		log.Debugf("All pods in terminating state, use ready")
+		nodes = nodesReady
+	} else {
+		log.Debugf("All pods not ready, use all running")
+		nodes = nodesRunning
+	}
+
+	return nodes
+}
+
+// pods retrieves a slice of pods associated with the given Service
+func (sc *serviceSource) pods(svc *v1.Service) []*v1.Pod {
+	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
+	if err != nil {
+		return nil
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil
+	}
+	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+	if err != nil {
+		return nil
+	}
+
+	return pods
+}
+
 func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targets, error) {
 	var (
 		internalIPs endpoint.Targets
 		externalIPs endpoint.Targets
 		ipv6IPs     endpoint.Targets
 		nodes       []*v1.Node
-		err         error
 	)
 
-	switch svc.Spec.ExternalTrafficPolicy {
-	case v1.ServiceExternalTrafficPolicyTypeLocal:
-		nodesMap := map[*v1.Node]struct{}{}
-		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-		if err != nil {
-			return nil, err
-		}
-		selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-		if err != nil {
-			return nil, err
-		}
-		pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
-		if err != nil {
-			return nil, err
-		}
-
-		var nodesReady []*v1.Node
-		var nodesRunning []*v1.Node
-		for _, v := range pods {
-			if v.Status.Phase == v1.PodRunning {
-				node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
-				if err != nil {
-					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
-					continue
-				}
-
-				if _, ok := nodesMap[node]; !ok {
-					nodesMap[node] = *new(struct{})
-					nodesRunning = append(nodesRunning, node)
-
-					if isPodStatusReady(v.Status) {
-						nodesReady = append(nodesReady, node)
-						// Check pod not terminating
-						if v.GetDeletionTimestamp() == nil {
-							nodes = append(nodes, node)
-						}
-					}
-				}
-			}
-		}
-
-		if len(nodes) > 0 {
-			// Works same as service endpoints
-		} else if len(nodesReady) > 0 {
-			// 2 level of panic modes as safe guard, because old wrong behavior can be used by someone
-			// Publish all endpoints not always a bad thing
-			log.Debugf("All pods in terminating state, use ready")
-			nodes = nodesReady
-		} else {
-			log.Debugf("All pods not ready, use all running")
-			nodes = nodesRunning
-		}
-	default:
+	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
+		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc)
+	} else {
+		var err error
 		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
 		if err != nil {
 			return nil, err
@@ -667,15 +690,17 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	access := getAccessFromAnnotations(svc.Annotations)
-	if access == "public" {
+	switch access {
+	case "public":
 		return append(externalIPs, ipv6IPs...), nil
-	}
-	if access == "private" {
+	case "private":
 		return internalIPs, nil
 	}
+
 	if len(externalIPs) > 0 {
 		return append(externalIPs, ipv6IPs...), nil
 	}
+
 	return internalIPs, nil
 }
 

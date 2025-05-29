@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
@@ -43,7 +44,7 @@ type nodeSource struct {
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector
 	excludeUnschedulable bool
-	exposeInternalIPV6   bool
+	exposeInternalIPv6   bool
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
@@ -70,7 +71,7 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +82,7 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 		nodeInformer:         nodeInformer,
 		labelSelector:        labelSelector,
 		excludeUnschedulable: excludeUnschedulable,
-		exposeInternalIPV6:   exposeInternalIPv6,
+		exposeInternalIPv6:   exposeInternalIPv6,
 	}, nil
 }
 
@@ -124,7 +125,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		if ns.fqdnTemplate != nil {
-			hostnames, err := execTemplate(ns.fqdnTemplate, node)
+			hostnames, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
 			if err != nil {
 				return nil, err
 			}
@@ -193,7 +194,7 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
-		if ns.exposeInternalIPV6 {
+		if ns.exposeInternalIPv6 {
 			log.Warn(warningMsg)
 			return append(addresses[v1.NodeExternalIP], internalIpv6Addresses...), nil
 		}

@@ -32,20 +32,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
-// ambHostAnnotation is the annotation in the Host that maps to a Service
-const ambHostAnnotation = "external-dns.ambassador-service"
-
-// groupName is the group name for the Ambassador API
-const groupName = "getambassador.io"
+const (
+	// ambHostAnnotation is the annotation in the Host that maps to a Service
+	ambHostAnnotation = "external-dns.ambassador-service"
+	// groupName is the group name for the Ambassador API
+	groupName = "getambassador.io"
+)
 
 var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
 
@@ -59,7 +61,7 @@ type ambassadorHostSource struct {
 	kubeClient             kubernetes.Interface
 	namespace              string
 	annotationFilter       string
-	ambassadorHostInformer informers.GenericInformer
+	ambassadorHostInformer kubeinformers.GenericInformer
 	unstructuredConverter  *unstructuredConverter
 	labelSelector          labels.Selector
 }
@@ -91,7 +93,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 

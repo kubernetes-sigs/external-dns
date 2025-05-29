@@ -277,7 +277,7 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 
 	// make sure only one instance is de-registered
 	assert.Len(t, api.deregistered, 1)
-	assert.Equal(t, api.deregistered[0], "1.2.3.5", "wrong target de-registered")
+	assert.Equal(t, "1.2.3.5", api.deregistered[0], "wrong target de-registered")
 }
 
 func TestAWSSDProvider_ListNamespaces(t *testing.T) {
@@ -555,7 +555,7 @@ func TestAWSSDProvider_CreateService_LabelNotSet(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, service)
-	assert.Equal(t, "", *service.Description)
+	assert.Empty(t, *service.Description)
 }
 
 func TestAWSSDProvider_UpdateService(t *testing.T) {
@@ -1003,7 +1003,7 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 
 	provider.DeregisterInstance(context.Background(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
 
-	assert.Len(t, instances["srv1"], 0)
+	assert.Empty(t, instances["srv1"])
 }
 
 func TestAWSSDProvider_awsTags(t *testing.T) {

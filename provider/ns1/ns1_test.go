@@ -39,15 +39,15 @@ type MockNS1DomainClient struct {
 }
 
 func (m *MockNS1DomainClient) CreateRecord(r *dns.Record) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1DomainClient) DeleteRecord(zone string, domain string, t string) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1DomainClient) UpdateRecord(r *dns.Record) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1DomainClient) GetZone(zone string) (*dns.Zone, *http.Response, error) {
@@ -81,16 +81,16 @@ func (m *MockNS1DomainClient) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 type MockNS1GetZoneFail struct{}
 
-func (m *MockNS1GetZoneFail) CreateRecord(r *dns.Record) (*http.Response, error) {
-	return nil, nil
+func (m *MockNS1GetZoneFail) CreateRecord(_ *dns.Record) (*http.Response, error) {
+	return &http.Response{}, nil
 }
 
-func (m *MockNS1GetZoneFail) DeleteRecord(zone string, domain string, t string) (*http.Response, error) {
-	return nil, nil
+func (m *MockNS1GetZoneFail) DeleteRecord(_ string, _ string, _ string) (*http.Response, error) {
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1GetZoneFail) UpdateRecord(r *dns.Record) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1GetZoneFail) GetZone(zone string) (*dns.Zone, *http.Response, error) {
@@ -107,20 +107,20 @@ func (m *MockNS1GetZoneFail) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 type MockNS1ListZonesFail struct{}
 
-func (m *MockNS1ListZonesFail) CreateRecord(r *dns.Record) (*http.Response, error) {
-	return nil, nil
+func (m *MockNS1ListZonesFail) CreateRecord(_ *dns.Record) (*http.Response, error) {
+	return &http.Response{}, nil
 }
 
-func (m *MockNS1ListZonesFail) DeleteRecord(zone string, domain string, t string) (*http.Response, error) {
-	return nil, nil
+func (m *MockNS1ListZonesFail) DeleteRecord(_ string, _ string, _ string) (*http.Response, error) {
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1ListZonesFail) UpdateRecord(r *dns.Record) (*http.Response, error) {
-	return nil, nil
+	return &http.Response{}, nil
 }
 
 func (m *MockNS1ListZonesFail) GetZone(zone string) (*dns.Zone, *http.Response, error) {
-	return &dns.Zone{}, nil, nil
+	return &dns.Zone{}, &http.Response{}, nil
 }
 
 func (m *MockNS1ListZonesFail) ListZones() ([]*dns.Zone, *http.Response, error) {
@@ -138,7 +138,7 @@ func TestNS1Records(t *testing.T) {
 
 	records, err := provider.Records(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(records))
+	assert.Len(t, records, 1)
 
 	provider.client = &MockNS1GetZoneFail{}
 	_, err = provider.Records(ctx)

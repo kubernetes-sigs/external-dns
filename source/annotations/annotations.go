@@ -22,10 +22,10 @@ const (
 	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
 	CloudflareRegionKey         = "external-dns.alpha.kubernetes.io/cloudflare-region-key"
+	CloudflareRecordCommentKey  = "external-dns.alpha.kubernetes.io/cloudflare-record-comment"
 
 	AWSPrefix        = "external-dns.alpha.kubernetes.io/aws-"
 	SCWPrefix        = "external-dns.alpha.kubernetes.io/scw-"
-	IBMCloudPrefix   = "external-dns.alpha.kubernetes.io/ibmcloud-"
 	WebhookPrefix    = "external-dns.alpha.kubernetes.io/webhook-"
 	CloudflarePrefix = "external-dns.alpha.kubernetes.io/cloudflare-"
 

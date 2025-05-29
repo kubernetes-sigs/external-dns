@@ -30,13 +30,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
-
-	"sigs.k8s.io/external-dns/source/fqdn"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
@@ -49,7 +49,7 @@ type httpProxySource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
-	httpProxyInformer        informers.GenericInformer
+	httpProxyInformer        kubeinformers.GenericInformer
 	unstructuredConverter    *UnstructuredConverter
 }
 
@@ -84,7 +84,7 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +113,6 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
-	// Convert to []*projectcontour.HTTPProxy
 	var httpProxies []*projectcontour.HTTPProxy
 	for _, hp := range hps {
 		unstructuredHP, ok := hp.(*unstructured.Unstructured)
@@ -181,7 +180,7 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, httpProxy)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, httpProxy)
 	if err != nil {
 		return nil, err
 	}

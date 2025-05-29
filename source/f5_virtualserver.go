@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var f5VirtualServerGVR = schema.GroupVersionResource{
@@ -51,7 +52,7 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
 type f5VirtualServerSource struct {
 	dynamicKubeClient     dynamic.Interface
-	virtualServerInformer informers.GenericInformer
+	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
 	annotationFilter      string
 	namespace             string
@@ -78,7 +79,7 @@ func NewF5VirtualServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 

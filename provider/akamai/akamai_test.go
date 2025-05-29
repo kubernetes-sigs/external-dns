@@ -22,9 +22,11 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 
 	dns "github.com/akamai/AkamaiOPEN-edgegrid-golang/configdns-v2"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -154,13 +156,14 @@ func TestFetchZonesZoneIDFilter(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.NewZoneIDFilter([]string{"Test"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	stub.setOutput("zone", []interface{}{"test1.testzone.com", "test2.testzone.com"})
 
 	x, _ := c.fetchZones()
-	y, _ := json.Marshal(x)
+	y, err := json.Marshal(x)
+	require.NoError(t, err)
 	if assert.NotNil(t, y) {
-		assert.Equal(t, "{\"zones\":[{\"contractId\":\"contract\",\"zone\":\"test1.testzone.com\"},{\"contractId\":\"contract\",\"zone\":\"test2.testzone.com\"}]}", string(y))
+		assert.JSONEq(t, "{\"zones\":[{\"contractId\":\"contract\",\"zone\":\"test1.testzone.com\"},{\"contractId\":\"contract\",\"zone\":\"test2.testzone.com\"}]}", string(y))
 	}
 }
 
@@ -169,13 +172,14 @@ func TestFetchZonesEmpty(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"Nonexistent"})
 	idfilter := provider.NewZoneIDFilter([]string{"Nonexistent"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	stub.setOutput("zone", []interface{}{})
 
 	x, _ := c.fetchZones()
-	y, _ := json.Marshal(x)
+	y, err := json.Marshal(x)
+	require.NoError(t, err)
 	if assert.NotNil(t, y) {
-		assert.Equal(t, "{\"zones\":[]}", string(y))
+		assert.JSONEq(t, "{\"zones\":[]}", string(y))
 	}
 }
 
@@ -185,7 +189,7 @@ func TestAkamaiRecords(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	stub.setOutput("zone", []interface{}{"test1.testzone.com"})
 	recordsets := make([]interface{}, 0)
 	recordsets = append(recordsets, dns.Recordset{
@@ -220,7 +224,7 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.NewZoneIDFilter([]string{"Nonexistent"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	stub.setOutput("zone", []interface{}{"test1.testzone.com"})
 	recordsets := make([]interface{}, 0)
 	stub.setOutput("recordset", recordsets)
@@ -234,7 +238,7 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"www.exclude.me"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	stub.setOutput("zone", []interface{}{"www.exclude.me"})
 	recordsets := make([]interface{}, 0)
 	recordsets = append(recordsets, dns.Recordset{
@@ -264,7 +268,7 @@ func TestCreateRecords(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -272,7 +276,7 @@ func TestCreateRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 
 	err = c.createRecordsets(zoneNameIDMapper, endpoints)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateRecordsDomainFilter(t *testing.T) {
@@ -280,7 +284,7 @@ func TestCreateRecordsDomainFilter(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -289,7 +293,7 @@ func TestCreateRecordsDomainFilter(t *testing.T) {
 	exclude := append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 
 	err = c.createRecordsets(zoneNameIDMapper, exclude)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // TestDeleteRecords validate delete
@@ -298,7 +302,7 @@ func TestDeleteRecords(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -306,7 +310,7 @@ func TestDeleteRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 
 	err = c.deleteRecordsets(zoneNameIDMapper, endpoints)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestDeleteRecordsDomainFilter(t *testing.T) {
@@ -314,7 +318,7 @@ func TestDeleteRecordsDomainFilter(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -323,7 +327,7 @@ func TestDeleteRecordsDomainFilter(t *testing.T) {
 	exclude := append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 
 	err = c.deleteRecordsets(zoneNameIDMapper, exclude)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // Test record update func
@@ -332,7 +336,7 @@ func TestUpdateRecords(t *testing.T) {
 	domfilter := endpoint.DomainFilter{}
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -340,7 +344,7 @@ func TestUpdateRecords(t *testing.T) {
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
 
 	err = c.updateNewRecordsets(zoneNameIDMapper, endpoints)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestUpdateRecordsDomainFilter(t *testing.T) {
@@ -348,7 +352,7 @@ func TestUpdateRecordsDomainFilter(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -357,7 +361,7 @@ func TestUpdateRecordsDomainFilter(t *testing.T) {
 	exclude := append(endpoints, endpoint.NewEndpoint("www.exclude.me", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 
 	err = c.updateNewRecordsets(zoneNameIDMapper, exclude)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAkamaiApplyChanges(t *testing.T) {
@@ -365,7 +369,7 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	domfilter := endpoint.NewDomainFilter([]string{"example.com"})
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	stub.setOutput("zone", []interface{}{"example.com"})
 	changes := &plan.Changes{}
@@ -382,5 +386,5 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
 	apply := c.ApplyChanges(context.Background(), changes)
-	assert.Nil(t, apply)
+	assert.NoError(t, apply)
 }

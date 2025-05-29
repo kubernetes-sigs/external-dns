@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -272,13 +273,13 @@ func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
 		},
 	}
 	jsonBytes, err := json.Marshal(ch)
-	assert.NoError(t, err)
-	assert.Equal(t,
+	require.NoError(t, err)
+	assert.JSONEq(t,
 		`{"create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"delete":[{"dnsName":"qux"}]}`,
 		string(jsonBytes))
 	var changes Changes
 	err = json.NewDecoder(bytes.NewBuffer(jsonBytes)).Decode(&changes)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, ch, &changes)
 }
 
@@ -286,7 +287,7 @@ func TestPlan_ChangesJson_DecodeMixedCase(t *testing.T) {
 	input := `{"Create":[{"dnsName":"foo"}],"UpdateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux"}]}`
 	var changes Changes
 	err := json.NewDecoder(strings.NewReader(input)).Decode(&changes)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, changes.Create, 1)
 }
 
@@ -412,7 +413,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().False(changes.HasChanges())
+	suite.False(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestHasChanges() {
@@ -427,7 +428,7 @@ func (suite *PlanTestSuite) TestHasChanges() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().True(changes.HasChanges())
+	suite.True(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {

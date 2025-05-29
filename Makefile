@@ -66,7 +66,8 @@ lint: licensecheck go-lint oas-lint
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
 crd: controller-gen-install
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > config/crd/standard/dnsendpoint.yaml
+	${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./endpoint/..."
+	${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout > config/crd/standard/dnsendpoint.yaml
 	cp -f config/crd/standard/dnsendpoint.yaml charts/external-dns/crds/dnsendpoint.yaml
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
@@ -200,5 +201,12 @@ helm-lint:
 	scripts/helm-tools.sh --docs
 
 .PHONY: go-dependency
-go-dependency: ## Dependency maintanance
+#? go-dependency: Dependency maintanance
+go-dependency:
 	go mod tidy
+
+.PHONY: mkdocs-serve
+#? mkdocs-serve: Run the builtin development server for mkdocs
+mkdocs-serve:
+	@$(info "contribute to documentation docs/contributing/dev-guide.md")
+	@mkdocs serve

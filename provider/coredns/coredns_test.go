@@ -18,13 +18,14 @@ package coredns
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 
 	"github.com/stretchr/testify/require"
@@ -87,37 +88,45 @@ func TestETCDConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			closer := envSetter(tt.input)
+			testutils.TestHelperEnvSetter(t, tt.input)
 			cfg, _ := getETCDConfig()
 			if !reflect.DeepEqual(cfg, tt.want) {
 				t.Errorf("unexpected config. Got %v, want %v", cfg, tt.want)
 			}
-			t.Cleanup(closer)
 		})
 	}
-
 }
 
-func envSetter(envs map[string]string) (closer func()) {
-	originalEnvs := map[string]string{}
-
-	for name, value := range envs {
-		if originalValue, ok := os.LookupEnv(name); ok {
-			originalEnvs[name] = originalValue
-		}
-		_ = os.Setenv(name, value)
+func TestEtcdHttpsProtocol(t *testing.T) {
+	envs := map[string]string{
+		"ETCD_URLS": "https://example.com:2379",
 	}
+	testutils.TestHelperEnvSetter(t, envs)
 
-	return func() {
-		for name := range envs {
-			origValue, has := originalEnvs[name]
-			if has {
-				_ = os.Setenv(name, origValue)
-			} else {
-				_ = os.Unsetenv(name)
-			}
-		}
+	cfg, err := getETCDConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+func TestEtcdHttpsIncorrectConfigError(t *testing.T) {
+	envs := map[string]string{
+		"ETCD_URLS":     "https://example.com:2379",
+		"ETCD_KEY_FILE": "incorrect-path-to-etcd-tls-key",
 	}
+	testutils.TestHelperEnvSetter(t, envs)
+
+	_, err := getETCDConfig()
+	assert.Errorf(t, err, "Error creating TLS config: either both cert and key or none must be provided")
+}
+
+func TestEtcdUnsupportedProtocolError(t *testing.T) {
+	envs := map[string]string{
+		"ETCD_URLS": "jdbc:ftp:RemoteHost=MyFTPServer",
+	}
+	testutils.TestHelperEnvSetter(t, envs)
+
+	_, err := getETCDConfig()
+	assert.Errorf(t, err, "etcd URLs must start with either http:// or https://")
 }
 
 func TestAServiceTranslation(t *testing.T) {

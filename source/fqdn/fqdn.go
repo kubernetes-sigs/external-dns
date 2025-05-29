@@ -17,22 +17,55 @@ limitations under the License.
 package fqdn
 
 import (
+	"bytes"
+	"fmt"
 	"net/netip"
 	"strings"
 	"text/template"
+	"unicode"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func ParseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
-	if fqdnTemplate == "" {
+func ParseTemplate(input string) (tmpl *template.Template, err error) {
+	if input == "" {
 		return nil, nil
 	}
 	funcs := template.FuncMap{
+		"contains":   strings.Contains,
 		"trimPrefix": strings.TrimPrefix,
+		"trimSuffix": strings.TrimSuffix,
+		"trim":       strings.TrimSpace,
+		"toLower":    strings.ToLower,
 		"replace":    replace,
 		"isIPv6":     isIPv6String,
 		"isIPv4":     isIPv4String,
 	}
-	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
+	return template.New("endpoint").Funcs(funcs).Parse(input)
+}
+
+type kubeObject interface {
+	runtime.Object
+	metav1.Object
+}
+
+func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("object is nil")
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, obj); err != nil {
+		kind := obj.GetObjectKind().GroupVersionKind().Kind
+		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+	}
+	var hostnames []string
+	for _, name := range strings.Split(buf.String(), ",") {
+		name = strings.TrimFunc(name, unicode.IsSpace)
+		name = strings.TrimSuffix(name, ".")
+		hostnames = append(hostnames, name)
+	}
+	return hostnames, nil
 }
 
 // replace all instances of oldValue with newValue in target string.

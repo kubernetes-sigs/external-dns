@@ -32,13 +32,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var (
@@ -83,12 +84,12 @@ type traefikSource struct {
 	annotationFilter           string
 	ignoreHostnameAnnotation   bool
 	dynamicKubeClient          dynamic.Interface
-	ingressRouteInformer       informers.GenericInformer
-	ingressRouteTcpInformer    informers.GenericInformer
-	ingressRouteUdpInformer    informers.GenericInformer
-	oldIngressRouteInformer    informers.GenericInformer
-	oldIngressRouteTcpInformer informers.GenericInformer
-	oldIngressRouteUdpInformer informers.GenericInformer
+	ingressRouteInformer       kubeinformers.GenericInformer
+	ingressRouteTcpInformer    kubeinformers.GenericInformer
+	ingressRouteUdpInformer    kubeinformers.GenericInformer
+	oldIngressRouteInformer    kubeinformers.GenericInformer
+	oldIngressRouteTcpInformer kubeinformers.GenericInformer
+	oldIngressRouteUdpInformer kubeinformers.GenericInformer
 	kubeClient                 kubernetes.Interface
 	namespace                  string
 	unstructuredConverter      *unstructuredConverter
@@ -98,8 +99,8 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
-	var ingressRouteInformer, ingressRouteTcpInformer, ingressRouteUdpInformer informers.GenericInformer
-	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer informers.GenericInformer
+	var ingressRouteInformer, ingressRouteTcpInformer, ingressRouteUdpInformer kubeinformers.GenericInformer
+	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer kubeinformers.GenericInformer
 
 	// Add default resource event handlers to properly initialize informers.
 	if !disableNew {
@@ -146,7 +147,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 	informerFactory.Start((ctx.Done()))
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 

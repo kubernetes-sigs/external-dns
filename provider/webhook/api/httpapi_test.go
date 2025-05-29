@@ -30,6 +30,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -97,7 +98,7 @@ func TestRecordsHandlerRecords(t *testing.T) {
 	// require that the res has the same endpoints as the records slice
 	defer res.Body.Close()
 	require.NotNil(t, res.Body)
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 	if err := json.NewDecoder(res.Body).Decode(&endpoints); err != nil {
 		t.Errorf("Failed to decode response body: %s", err.Error())
 	}
@@ -228,7 +229,7 @@ func TestRecordsHandlerWithMixedCase(t *testing.T) {
 	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusNoContent, res.StatusCode)
-	assert.Equal(t, 1, len(records))
+	assert.Len(t, records, 1)
 }
 
 func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
@@ -316,4 +317,41 @@ func TestStartHTTPApi(t *testing.T) {
 	b, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.NoError(t, df.UnmarshalJSON(b))
+}
+
+func TestNegotiateHandler_Success(t *testing.T) {
+	provider := &FakeWebhookProvider{
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.bar.com"}),
+	}
+	server := &WebhookServer{Provider: provider}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	server.NegotiateHandler(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
+	require.Equal(t, MediaTypeFormatAndVersion, res.Header.Get(ContentTypeHeader))
+
+	var df endpoint.DomainFilter
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	require.NoError(t, df.UnmarshalJSON(body))
+	require.Equal(t, provider.domainFilter, df)
+}
+
+func TestNegotiateHandler_FiltersWithSpecialEncodings(t *testing.T) {
+	provider := &FakeWebhookProvider{
+		domainFilter: endpoint.NewDomainFilter([]string{"\\u001a", "\\Xfoo.\\u2028, \\u0000.com", "<invalid json>"}),
+	}
+	server := &WebhookServer{Provider: provider}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	server.NegotiateHandler(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
 }

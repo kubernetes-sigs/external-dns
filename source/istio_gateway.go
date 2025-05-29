@@ -35,10 +35,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"sigs.k8s.io/external-dns/source/fqdn"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 // IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
@@ -104,10 +104,10 @@ func NewIstioGatewaySource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
-	if err := waitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(context.Background(), istioInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -156,7 +156,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// apply template if host is missing on gateway
 		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := execTemplate(sc.fqdnTemplate, gateway)
+			iHostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, gateway)
 			if err != nil {
 				return nil, err
 			}
