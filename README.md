@@ -291,6 +291,11 @@ If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be
 If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
 It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
 
+## DNS Record Tags Support
+
+ExternalDNS now supports DNS record tags via the `Tags` field in the Endpoint struct. This feature is currently supported by some providers, such as Cloudflare (may require a paid plan).
+Tags allow you to add metadata to DNS records for advanced management and filtering. See provider documentation for details and limitations.
+
 ## Contributing
 
 Are you interested in contributing to external-dns? We, the maintainers and community, would love your

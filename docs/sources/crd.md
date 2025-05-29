@@ -36,6 +36,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// Tags stores DNS record tags (supported by some providers, e.g., Cloudflare)
+	// +optional
+	Tags []string `json:"tags,omitempty"`
 }
 
 type DNSEndpointSpec struct {
