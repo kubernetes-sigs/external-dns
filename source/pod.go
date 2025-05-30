@@ -112,17 +112,10 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-			for _, domain := range domainList {
-				if len(targets) == 0 {
-					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
-					for _, address := range node.Status.Addresses {
-						recordType := suitableType(address.Address)
-						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
-							addToEndpointMap(endpointMap, domain, recordType, address.Address)
-						}
-					}
-				} else {
+			if len(targets) == 0 {
+				ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
+			} else {
+				for _, domain := range domainList {
 					for _, target := range targets {
 						addToEndpointMap(endpointMap, domain, suitableType(target), target)
 					}
@@ -140,16 +133,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
 				domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-				for _, domain := range domainList {
-					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
-					for _, address := range node.Status.Addresses {
-						recordType := suitableType(address.Address)
-						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
-							addToEndpointMap(endpointMap, domain, recordType, address.Address)
-						}
-					}
-				}
+				ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
 			}
 		}
 
@@ -168,6 +152,23 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		endpoints = append(endpoints, endpoint.NewEndpoint(key.DNSName, key.RecordType, targets...))
 	}
 	return endpoints, nil
+}
+
+func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, domainList []string) {
+	node, err := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
+	if err != nil {
+		log.Debugf("Get node[%s] of pod[%s] error: %v; ignoring", pod.Spec.NodeName, pod.GetName(), err)
+		return
+	}
+	for _, domain := range domainList {
+		for _, address := range node.Status.Addresses {
+			recordType := suitableType(address.Address)
+			// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+			if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+				addToEndpointMap(endpointMap, domain, recordType, address.Address)
+			}
+		}
+	}
 }
 
 func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, domain string, recordType string, address string) {

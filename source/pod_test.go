@@ -20,11 +20,13 @@ import (
 	"context"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -41,6 +43,7 @@ func TestPodSource(t *testing.T) {
 		PodSourceDomain          string
 		expected                 []*endpoint.Endpoint
 		expectError              bool
+		expectedDebugMsgs        []string
 		nodes                    []*corev1.Node
 		pods                     []*corev1.Pod
 	}{
@@ -55,6 +58,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -104,6 +108,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -153,6 +158,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv6(),
 			[]*corev1.Pod{
 				{
@@ -202,6 +208,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv6(),
 			[]*corev1.Pod{
 				{
@@ -251,6 +258,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -303,6 +311,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "b.foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			[]*corev1.Node{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -374,6 +383,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			[]string{"skipping pod my-pod2. hostNetwork=false"},
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -423,6 +433,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -472,6 +483,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.b.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			[]*corev1.Node{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -514,6 +526,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "my-pod2.example.org", Targets: endpoint.Targets{"192.168.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -559,6 +572,7 @@ func TestPodSource(t *testing.T) {
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			nil,
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
@@ -599,6 +613,35 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"host network pod on a missing node",
+			"",
+			"",
+			true,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			[]string{`Get node[missing-node] of pod[my-pod1] error: node "missing-node" not found; ignoring`},
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "missing-node",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
@@ -625,12 +668,23 @@ func TestPodSource(t *testing.T) {
 			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain)
 			require.NoError(t, err)
 
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
 			endpoints, err := client.Endpoints(ctx)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
+
+			if tc.expectedDebugMsgs != nil {
+				for _, expectedMsg := range tc.expectedDebugMsgs {
+					testutils.TestHelperLogContains(expectedMsg, hook, t)
+				}
+			} else {
+				require.Empty(t, hook.AllEntries(), "Expected no debug messages")
+			}
+
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
 		})
