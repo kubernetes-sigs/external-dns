@@ -18,10 +18,13 @@ package source
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"net"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +46,7 @@ type ServiceSuite struct {
 }
 
 func (suite *ServiceSuite) SetupTest() {
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 
 	suite.fooWithTargets = &v1.Service{
 		Spec: v1.ServiceSpec{
@@ -151,7 +154,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 
 			_, err := NewServiceSource(
 				context.TODO(),
-				fake.NewSimpleClientset(),
+				fake.NewClientset(),
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1079,7 +1082,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			// Create a service to test against
 			ingresses := []v1.LoadBalancerIngress{}
@@ -1308,10 +1311,10 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			// Create services to test against
-			for lb, annotations := range tc.services {
+			for lb, ants := range tc.services {
 				ingresses := []v1.LoadBalancerIngress{}
 				ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
 
@@ -1324,7 +1327,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 						Namespace:   tc.svcNamespace,
 						Name:        tc.svcName + lb,
 						Labels:      tc.labels,
-						Annotations: annotations,
+						Annotations: ants,
 					},
 					Status: v1.ServiceStatus{
 						LoadBalancer: v1.LoadBalancerStatus{
@@ -1616,7 +1619,7 @@ func TestClusterIpServices(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			// Create a service to test against
 			service := &v1.Service{
@@ -2308,7 +2311,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			// Create the nodes
 			for _, node := range tc.nodes {
@@ -3883,4 +3886,200 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		_, err := client.Endpoints(context.Background())
 		require.NoError(b, err)
 	}
+}
+
+func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
+	serviceTypeFilter := []string{"ClusterIP", "ServiceTypeNotExist"}
+
+	svc, err := NewServiceSource(
+		context.TODO(),
+		fake.NewClientset(),
+		"default",
+		"",
+		"",
+		false,
+		"",
+		false,
+		false,
+		false,
+		serviceTypeFilter,
+		false,
+		labels.Everything(),
+		false,
+		false,
+		false,
+	)
+	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
+	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
+}
+
+func TestNewServiceTypes(t *testing.T) {
+	tests := []struct {
+		name        string
+		filter      []string
+		wantEnabled bool
+		wantTypes   map[v1.ServiceType]bool
+		wantErr     bool
+	}{
+		{
+			name:        "empty filter disables serviceTypes",
+			filter:      []string{},
+			wantEnabled: false,
+			wantTypes:   nil,
+			wantErr:     false,
+		},
+		{
+			name:        "filter with empty string disables serviceTypes",
+			filter:      []string{""},
+			wantEnabled: false,
+			wantTypes:   nil,
+			wantErr:     false,
+		},
+		{
+			name:        "valid filter enables serviceTypes",
+			filter:      []string{string(v1.ServiceTypeClusterIP), string(v1.ServiceTypeNodePort)},
+			wantEnabled: true,
+			wantTypes: map[v1.ServiceType]bool{
+				v1.ServiceTypeClusterIP: true,
+				v1.ServiceTypeNodePort:  true,
+			},
+			wantErr: false,
+		},
+		{
+			name:        "filter with unknown type returns error",
+			filter:      []string{"UnknownType"},
+			wantEnabled: false,
+			wantTypes:   nil,
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			st, err := computeServiceTypes(tt.filter)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, st)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantEnabled, st.enabled)
+				if tt.wantTypes != nil {
+					assert.Equal(t, tt.wantTypes, st.types)
+				}
+			}
+		})
+	}
+}
+
+func TestFilterByServiceType_WithFixture(t *testing.T) {
+	namespace := "testns"
+
+	tests := []struct {
+		name            string
+		filter          *serviceTypes
+		currentServices []*v1.Service
+		expected        int
+	}{
+		{
+			name: "all types of services with filter enabled for ServiceTypeNodePort and ServiceTypeClusterIP",
+			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+				v1.ServiceTypeLoadBalancer: 3,
+				v1.ServiceTypeNodePort:     4,
+				v1.ServiceTypeClusterIP:    5,
+				v1.ServiceTypeExternalName: 2,
+			}),
+			filter: &serviceTypes{
+				enabled: true,
+				types: map[v1.ServiceType]bool{
+					v1.ServiceTypeNodePort:  true,
+					v1.ServiceTypeClusterIP: true,
+				},
+			},
+			expected: 4 + 5,
+		},
+		{
+			name: "all types of services with filter enabled for ServiceTypeLoadBalancer",
+			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+				v1.ServiceTypeLoadBalancer: 3,
+				v1.ServiceTypeNodePort:     4,
+				v1.ServiceTypeClusterIP:    5,
+				v1.ServiceTypeExternalName: 2,
+			}),
+			filter: &serviceTypes{
+				enabled: true,
+				types: map[v1.ServiceType]bool{
+					v1.ServiceTypeLoadBalancer: true,
+				},
+			},
+			expected: 3,
+		},
+		{
+			name: "enabled for ServiceTypeLoadBalancer when not all types are present",
+			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+				v1.ServiceTypeNodePort:     4,
+				v1.ServiceTypeClusterIP:    5,
+				v1.ServiceTypeExternalName: 2,
+			}),
+			filter: &serviceTypes{
+				enabled: true,
+				types: map[v1.ServiceType]bool{
+					v1.ServiceTypeLoadBalancer: true,
+				},
+			},
+			expected: 0,
+		},
+		{
+			name: "filter disabled returns all services",
+			currentServices: createTestServicesByType(namespace, map[v1.ServiceType]int{
+				v1.ServiceTypeLoadBalancer: 3,
+				v1.ServiceTypeNodePort:     4,
+				v1.ServiceTypeClusterIP:    5,
+				v1.ServiceTypeExternalName: 2,
+			}),
+			filter: &serviceTypes{
+				enabled: false,
+				types:   map[v1.ServiceType]bool{},
+			},
+			expected: 14,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sc := &serviceSource{serviceTypeFilter: tt.filter}
+			assert.NotNil(t, sc)
+			got := sc.filterByServiceType(tt.currentServices)
+			assert.Len(t, got, tt.expected)
+		})
+	}
+}
+
+// createTestServicesByType creates the requested number of services per type in the given namespace.
+func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]int) []*v1.Service {
+	var services []*v1.Service
+	idx := 0
+	for svcType, count := range typeCounts {
+		for i := 0; i < count; i++ {
+			svc := &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("svc-%s-%d", svcType, idx),
+					Namespace: namespace,
+				},
+				Spec: v1.ServiceSpec{
+					Type: svcType,
+				},
+			}
+			if svcType == v1.ServiceTypeExternalName {
+				svc.Spec.ExternalName = fmt.Sprintf("external-%d.example.com", idx)
+			}
+			services = append(services, svc)
+			idx++
+		}
+	}
+	// Shuffle the resulting services to ensure randomness in the order.
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	rand.Shuffle(len(services), func(i, j int) {
+		services[i], services[j] = services[j], services[i]
+	})
+	return services
 }
