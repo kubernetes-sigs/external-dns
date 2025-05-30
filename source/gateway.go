@@ -102,6 +102,8 @@ type gatewayRouteSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
+
+	httprouteGenerationsGap int64
 }
 
 func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string, newInformerFn newGatewayRouteInformerFunc) (Source, error) {
@@ -182,6 +184,8 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    config.CombineFQDNAndAnnotation,
 		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
+
+		httprouteGenerationsGap: config.HTTPRouteGenerationsGap,
 	}
 	return src, nil
 }
@@ -335,7 +339,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		}
 
 		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions, meta) {
+		if !gwRouteIsAccepted(rps.Conditions, meta, c.src.httprouteGenerationsGap) {
 			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
@@ -497,10 +501,20 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition, meta *metav1.ObjectMeta) bool {
+func gwRouteIsAccepted(conds []metav1.Condition, meta *metav1.ObjectMeta, httprouteGenerationsGap int64) bool {
 	for _, c := range conds {
 		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
-			return c.Status == metav1.ConditionTrue && c.ObservedGeneration == meta.Generation
+			if c.Status == metav1.ConditionTrue {
+				if c.ObservedGeneration == meta.Generation {
+					return true
+				}
+				if meta.Generation > 1 && meta.Generation-c.ObservedGeneration <= httprouteGenerationsGap {
+					log.Debugf("Route %s/%s, generation %d, observed generation %d - tolerating %d generation(s) difference",
+						meta.Namespace, meta.Name, meta.Generation, c.ObservedGeneration, httprouteGenerationsGap)
+					return true
+				}
+			}
+			return false
 		}
 	}
 	return false

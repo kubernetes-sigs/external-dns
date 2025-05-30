@@ -300,6 +300,62 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "GatewayHTTPRouteToleratedGenerationGap",
+			config: Config{
+				GatewayName:             "gateway-name",
+				HTTPRouteGenerationsGap: 2,
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{
+				{
+					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "tolerated-test"), 7),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("tolerated-test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gateway-name"),
+						},
+					},
+				},
+				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
+					gwParentRef("gateway-namespace", "gateway-name"),
+				), 5),
+			},
+				{
+					ObjectMeta: omWithGeneration(objectMeta("route-namespace", "not-tolerated-test"), 8),
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("not-tolerated-test.example.internal"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "gateway-name"),
+							},
+						},
+					},
+					Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
+						gwParentRef("gateway-namespace", "gateway-name"),
+					), 5),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("tolerated-test.example.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"tolerating 2 generation(s) difference",
+				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/not-tolerated-test",
+			},
+		},
+		{
 			title: "GatewayNamespace",
 			config: Config{
 				GatewayNamespace: "gateway-namespace",
