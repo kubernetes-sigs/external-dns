@@ -63,10 +63,9 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [GoDaddy](https://www.godaddy.com)
 - [Gandi](https://www.gandi.net)
 - [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
-- [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
-- [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
+- [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.
 We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster.
@@ -91,6 +90,7 @@ Known providers using webhooks:
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
+| deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
@@ -128,7 +128,7 @@ We define the following stability levels for providers:
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
 | Provider                        | Status | Maintainers      |
-| ------------------------------- | ------ | ---------------- |
+|---------------------------------| ------ |------------------|
 | Google Cloud DNS                | Stable |                  |
 | AWS Route 53                    | Stable |                  |
 | AWS Cloud Map                   | Beta   |                  |
@@ -148,13 +148,11 @@ The following table clarifies the current status of the providers according to t
 | TransIP                         | Alpha  |                  |
 | OVHcloud                        | Beta   | @rbeuque74       |
 | Scaleway DNS                    | Alpha  | @Sh4d1           |
-| UltraDNS                        | Alpha  |                  |
 | GoDaddy                         | Alpha  |                  |
 | Gandi                           | Alpha  | @packi           |
-| IBMCloud                        | Alpha  | @hughhuangzh     |
-| TencentCloud                    | Alpha  | @Hyzhou          |
 | Plural                          | Alpha  | @michaeljguarino |
 | Pi-hole                         | Alpha  | @tinyzimmer      |
+| Alibaba Cloud DNS               | Alpha  |                  |
 
 ## Kubernetes version compatibility
 
@@ -198,6 +196,7 @@ The following tutorials are provided:
   - [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
   - [Using the Nginx Ingress Controller](docs/tutorials/gke-nginx.md)
 - [Headless Services](docs/tutorials/hostport.md)
+- [IONOS Cloud](docs/tutorials/ionoscloud.md)
 - [Istio Gateway Source](docs/sources/istio.md)
 - [Linode](docs/tutorials/linode.md)
 - [NS1](docs/tutorials/ns1.md)
@@ -210,12 +209,9 @@ The following tutorials are provided:
 - [TransIP](docs/tutorials/transip.md)
 - [OVHcloud](docs/tutorials/ovh.md)
 - [Scaleway](docs/tutorials/scaleway.md)
-- [UltraDNS](docs/tutorials/ultradns.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
 - [Gandi](docs/tutorials/gandi.md)
-- [IBM Cloud](docs/tutorials/ibmcloud.md)
 - [Nodes as source](docs/sources/nodes.md)
-- [TencentCloud](docs/tutorials/tencentcloud.md)
 - [Plural](docs/tutorials/plural.md)
 - [Pi-hole](docs/tutorials/pihole.md)
 

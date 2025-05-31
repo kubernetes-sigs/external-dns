@@ -41,28 +41,40 @@ type mockOvhClient struct {
 
 func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, output interface{}) error {
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) DeleteWithContext(ctx context.Context, endpoint string, output interface{}) error {
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }

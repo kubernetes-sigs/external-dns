@@ -17,58 +17,76 @@ limitations under the License.
 package source
 
 import (
-	"context"
-	"reflect"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
-type mockInformerFactory struct {
-	syncResults map[reflect.Type]bool
-}
-
-func (m *mockInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
-	return m.syncResults
-}
-
-func TestWaitForCacheSync(t *testing.T) {
+func TestGetLabelSelector(t *testing.T) {
 	tests := []struct {
-		name        string
-		syncResults map[reflect.Type]bool
-		expectError bool
+		name             string
+		annotationFilter string
+		expectError      bool
+		expectedSelector string
 	}{
 		{
-			name:        "all caches synced",
-			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): true},
-			expectError: false,
+			name:             "Valid label selector",
+			annotationFilter: "key1=value1,key2=value2",
+			expectedSelector: "key1=value1,key2=value2",
 		},
 		{
-			name:        "some caches not synced",
-			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): false},
-			expectError: true,
+			name:             "Invalid label selector",
+			annotationFilter: "key1==value1",
+			expectedSelector: "key1=value1",
 		},
 		{
-			name:        "context timeout",
-			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): false},
-			expectError: true,
+			name:             "Empty label selector",
+			annotationFilter: "",
+			expectedSelector: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-			defer cancel()
+			selector, err := getLabelSelector(tt.annotationFilter)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedSelector, selector.String())
+		})
+	}
+}
 
-			factory := &mockInformerFactory{syncResults: tt.syncResults}
-			err := waitForCacheSync(ctx, factory)
+func TestMatchLabelSelector(t *testing.T) {
+	tests := []struct {
+		name           string
+		selector       labels.Selector
+		srcAnnotations map[string]string
+		expectedMatch  bool
+	}{
+		{
+			name:           "Matching label selector",
+			selector:       labels.SelectorFromSet(labels.Set{"key1": "value1"}),
+			srcAnnotations: map[string]string{"key1": "value1", "key2": "value2"},
+			expectedMatch:  true,
+		},
+		{
+			name:           "Non-matching label selector",
+			selector:       labels.SelectorFromSet(labels.Set{"key1": "value1"}),
+			srcAnnotations: map[string]string{"key2": "value2"},
+			expectedMatch:  false,
+		},
+		{
+			name:           "Empty label selector",
+			selector:       labels.NewSelector(),
+			srcAnnotations: map[string]string{"key1": "value1"},
+			expectedMatch:  true,
+		},
+	}
 
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := matchLabelSelector(tt.selector, tt.srcAnnotations)
+			assert.Equal(t, tt.expectedMatch, result)
 		})
 	}
 }

@@ -27,7 +27,6 @@ const (
 
 	AWSPrefix        = "external-dns.alpha.kubernetes.io/aws-"
 	SCWPrefix        = "external-dns.alpha.kubernetes.io/scw-"
-	IBMCloudPrefix   = "external-dns.alpha.kubernetes.io/ibmcloud-"
 	WebhookPrefix    = "external-dns.alpha.kubernetes.io/webhook-"
 	CloudflarePrefix = "external-dns.alpha.kubernetes.io/cloudflare-"
 

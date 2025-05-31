@@ -12,6 +12,7 @@ linters:
     - misspell
     - revive
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
+    - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/usage/linters/#errchkjson
     - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/usage/linters/#errcheck
     - staticcheck
     - unconvert
@@ -95,7 +96,6 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - endpoint/zz_generated.deepcopy.go
       - third_party$
       - builtin$
       - examples$

@@ -18,7 +18,6 @@ Provider supported configurations
 | Gandi         | n/a        | no      | 600                   |
 | GoDaddy       | n/a        | yes     | 600                   |
 | Google GCP    | n/a        | yes     | 300                   |
-| IBMCloud      | n/a        | yes     | 1                     |
 | InMemory      | n/a        | n/a     | n/a                   |
 | Linode        | n/a        | n/a     | n/a                   |
 | NS1           | n/a        | yes     | 10                    |
@@ -29,7 +28,5 @@ Provider supported configurations
 | Plural        | n/a        | n/a     | n/a                   |
 | RFC2136       | n/a        | yes     | n/a                   |
 | Scaleway      | n/a        | n/a     | 300                   |
-| TencentCloud  | n/a        | n/a     | n/a                   |
 | Transip       | n/a        | yes     | 60                    |
-| Ultradns      | n/a        | yes     | n/a                   |
 | Webhook       | n/a        | n/a     | n/a                   |
