@@ -30,14 +30,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
+	"sigs.k8s.io/external-dns/source/informers"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -49,7 +52,7 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // transportServerSource is an implementation of Source for F5 TransportServer objects.
 type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
-	transportServerInformer informers.GenericInformer
+	transportServerInformer kubeinformers.GenericInformer
 	kubeClient              kubernetes.Interface
 	annotationFilter        string
 	namespace               string
@@ -76,7 +79,7 @@ func NewF5TransportServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -150,9 +153,9 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 
 		resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
 
-		ttl := getTTLFromAnnotations(transportServer.Annotations, resource)
+		ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
 
-		targets := getTargetsFromTargetAnnotation(transportServer.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
 		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
 			targets = append(targets, transportServer.Spec.VirtualServerAddress)
 		}

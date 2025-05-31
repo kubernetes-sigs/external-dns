@@ -30,12 +30,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
-	"sigs.k8s.io/external-dns/source/fqdn"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
@@ -48,7 +49,7 @@ type httpProxySource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
-	httpProxyInformer        informers.GenericInformer
+	httpProxyInformer        kubeinformers.GenericInformer
 	unstructuredConverter    *UnstructuredConverter
 }
 
@@ -83,7 +84,7 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -112,7 +113,6 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
-	// Convert to []*projectcontour.HTTPProxy
 	var httpProxies []*projectcontour.HTTPProxy
 	for _, hp := range hps {
 		unstructuredHP, ok := hp.(*unstructured.Unstructured)
@@ -180,16 +180,16 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, httpProxy)
+	hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, httpProxy)
 	if err != nil {
 		return nil, err
 	}
 
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
-	ttl := getTTLFromAnnotations(httpProxy.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
 	if len(targets) == 0 {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
@@ -201,7 +201,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(httpProxy.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -242,9 +242,9 @@ func (sc *httpProxySource) filterByAnnotations(httpProxies []*projectcontour.HTT
 func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
-	ttl := getTTLFromAnnotations(httpProxy.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
 
-	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
+	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
 
 	if len(targets) == 0 {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
@@ -257,7 +257,7 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(httpProxy.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 
@@ -269,7 +269,7 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(httpProxy.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(httpProxy.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}

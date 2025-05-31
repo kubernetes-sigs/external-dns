@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -49,40 +50,50 @@ var (
 func (c *mockGoDaddyClient) Post(endpoint string, input interface{}, output interface{}) error {
 	log.Infof("POST: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Patch(endpoint string, input interface{}, output interface{}) error {
 	log.Infof("PATCH: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Put(endpoint string, input interface{}, output interface{}) error {
 	log.Infof("PUT: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Get(endpoint string, output interface{}) error {
 	log.Infof("GET: %s", endpoint)
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Delete(endpoint string, output interface{}) error {
 	log.Infof("DELETE: %s", endpoint)
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 

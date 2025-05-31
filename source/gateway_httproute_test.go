@@ -26,11 +26,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -1138,8 +1140,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Name:      "provider-annotations",
 					Namespace: "default",
 					Annotations: map[string]string{
-						SetIdentifierKey:   "test-set-identifier",
-						aliasAnnotationKey: "true",
+						annotations.SetIdentifierKey: "test-set-identifier",
+						aliasAnnotationKey:           "true",
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
@@ -1660,7 +1662,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
+
 		t.Run(tt.title, func(t *testing.T) {
 			if len(tt.logExpectations) == 0 {
 				t.Parallel()

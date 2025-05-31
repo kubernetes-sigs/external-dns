@@ -65,12 +65,16 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 <!-- TODO: generate from code -->
 
-| Function     | Description                                                                              |
-|:-------------|:-----------------------------------------------------------------------------------------|
-| `trimPrefix`  | Function from the `strings` package. Returns `string` without the provided leading prefix. |
-| `replace`     | Function that performs a simple replacement of all `old` string with `new` in the source string. |
-| `isIPv4`      | Function that checks if a string is a valid IPv4 address. |
-| `isIPv6`      | Function that checks if a string is a valid IPv6 address (including IPv4-mapped IPv6). |
+| Function     | Description                                           | Example                                                                          |
+|:-------------|:------------------------------------------------------|:---------------------------------------------------------------------------------|
+| `contains`   | Check if `substr` is in `string`                      | `{{ contains "hello" "ell" }} → true`                                            |
+| `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                              |
+| `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true`<br/>`{{ isIPv6 "::FFFF:192.168.1.1" }}→true` |
+| `replace`    | Replace `old` with `new`                              | `{{ replace "hello" "l" "w" }} → hewwo`                                          |
+| `trim`       | Remove leading and trailing spaces                    | `{{ trim "  hello  " }} → hello`                                                 |
+| `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                  |
+| `trimPrefix` | Remove the leading `prefix`                           | `{{ trimPrefix "pre" "prefix" }} → fix`                                          |
+| `trimSuffix` | Remove the trailing `suffix`                          | `{{ trimSuffix "fix" "suffix" }} → suf`                                          |
 
 ---
 

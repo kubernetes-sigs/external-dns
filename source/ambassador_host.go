@@ -32,19 +32,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
-// ambHostAnnotation is the annotation in the Host that maps to a Service
-const ambHostAnnotation = "external-dns.ambassador-service"
-
-// groupName is the group name for the Ambassador API
-const groupName = "getambassador.io"
+const (
+	// ambHostAnnotation is the annotation in the Host that maps to a Service
+	ambHostAnnotation = "external-dns.ambassador-service"
+	// groupName is the group name for the Ambassador API
+	groupName = "getambassador.io"
+)
 
 var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
 
@@ -58,7 +61,7 @@ type ambassadorHostSource struct {
 	kubeClient             kubernetes.Interface
 	namespace              string
 	annotationFilter       string
-	ambassadorHostInformer informers.GenericInformer
+	ambassadorHostInformer kubeinformers.GenericInformer
 	unstructuredConverter  *unstructuredConverter
 	labelSelector          labels.Selector
 }
@@ -90,7 +93,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -152,7 +155,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		targets := getTargetsFromTargetAnnotation(host.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(host.Annotations)
 		if len(targets) == 0 {
 			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 			if err != nil {
@@ -187,8 +190,8 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(host.Annotations)
-	ttl := getTTLFromAnnotations(host.Annotations, resource)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(host.Annotations)
+	ttl := annotations.TTLFromAnnotations(host.Annotations, resource)
 
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname

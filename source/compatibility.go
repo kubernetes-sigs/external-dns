@@ -55,8 +55,8 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
-	hostname, exists := svc.Annotations[mateAnnotationKey]
-	if !exists {
+	hostname, ok := svc.Annotations[mateAnnotationKey]
+	if !ok {
 		return nil
 	}
 
@@ -159,7 +159,7 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 			for _, address := range node.Status.Addresses {
 				recordType := suitableType(address.Address)
 				// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-				if isExternal && (address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
+				if isExternal && (address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
 					endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, address.Address))
 				}
 				if isInternal && address.Type == v1.NodeInternalIP {

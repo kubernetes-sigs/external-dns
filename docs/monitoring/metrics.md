@@ -80,6 +80,8 @@ curl https://localhost:7979/metrics
 | http_request_duration_seconds |
 | process_cpu_seconds_total |
 | process_max_fds |
+| process_network_receive_bytes_total |
+| process_network_transmit_bytes_total |
 | process_open_fds |
 | process_resident_memory_bytes |
 | process_start_time_seconds |

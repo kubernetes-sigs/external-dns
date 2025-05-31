@@ -41,28 +41,40 @@ type mockOvhClient struct {
 
 func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, output interface{}) error {
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) DeleteWithContext(ctx context.Context, endpoint string, output interface{}) error {
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
@@ -328,7 +340,8 @@ func TestOvhComputeChanges(t *testing.T) {
 	}
 
 	provider := &OVHProvider{client: nil, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
-	ovhChanges := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+	ovhChanges, err := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+	td.CmpNoError(t, err)
 	td.Cmp(t, ovhChanges, []ovhChange{
 		{
 			Action: ovhCreate,

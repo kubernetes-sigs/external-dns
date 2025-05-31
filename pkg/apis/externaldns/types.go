@@ -106,12 +106,15 @@ type Config struct {
 	AzureUserAssignedIdentityClientID             string
 	AzureActiveDirectoryAuthorityHost             string
 	AzureZonesCacheDuration                       time.Duration
+	AzureMaxRetriesCount                          int
 	CloudflareProxied                             bool
 	CloudflareCustomHostnames                     bool
+	CloudflareDNSRecordsPerPage                   int
+	CloudflareDNSRecordsComment                   string
 	CloudflareCustomHostnamesMinTLSVersion        string
 	CloudflareCustomHostnamesCertificateAuthority string
-	CloudflareDNSRecordsPerPage                   int
 	CloudflareRegionKey                           string
+	CloudflareRecordComment                       string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
 	AkamaiClientToken                             string
@@ -196,10 +199,6 @@ type Config struct {
 	GoDaddyTTL                                    int64
 	GoDaddyOTE                                    bool
 	OCPRouterName                                 string
-	IBMCloudProxied                               bool
-	IBMCloudConfigFile                            string
-	TencentCloudConfigFile                        string
-	TencentCloudZoneType                          string
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
 	PiholeTLSInsecureSkipVerify                   bool
@@ -247,10 +246,11 @@ var defaultConfig = &Config{
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
 	AzureZonesCacheDuration:     0 * time.Second,
+	AzureMaxRetriesCount:        3,
 	CFAPIEndpoint:               "",
 	CFPassword:                  "",
 	CFUsername:                  "",
-	CloudflareCustomHostnamesCertificateAuthority: "google",
+	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
 	CloudflareDNSRecordsPerPage:                   100,
@@ -289,8 +289,6 @@ var defaultConfig = &Config{
 	GoogleBatchChangeSize:        1000,
 	GoogleProject:                "",
 	GoogleZoneVisibility:         "",
-	IBMCloudConfigFile:           "/etc/kubernetes/ibmcloud.json",
-	IBMCloudProxied:              false,
 	IgnoreHostnameAnnotation:     false,
 	IgnoreIngressRulesSpec:       false,
 	IgnoreIngressTLSSpec:         false,
@@ -356,8 +354,6 @@ var defaultConfig = &Config{
 	SkipperRouteGroupVersion:     "zalando.org/v1",
 	Sources:                      nil,
 	TargetNetFilter:              []string{},
-	TencentCloudConfigFile:       "/etc/kubernetes/tencent-cloud.json",
-	TencentCloudZoneType:         "",
 	TLSCA:                        "",
 	TLSClientCert:                "",
 	TLSClientCertKey:             "",
@@ -456,7 +452,7 @@ func App(cfg *Config) *kingpin.Application {
 	// Flags related to processing source
 	app.Flag("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)").BoolVar(&cfg.AlwaysPublishNotReadyAddresses)
 	app.Flag("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
-	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
+	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
@@ -473,7 +469,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
 	app.Flag("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressRulesSpec)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
-	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: true)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
+	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
 	app.Flag("ingress-class", "Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
@@ -491,7 +487,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "webhook"}
+	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "transip", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("provider-cache-time", "The time to cache the DNS provider record list requests.").Default(defaultConfig.ProviderCacheTime.String()).DurationVar(&cfg.ProviderCacheTime)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
@@ -527,15 +523,16 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("azure-subscription-id", "When using the Azure provider, override the Azure subscription to use (optional)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
 	app.Flag("azure-zones-cache-duration", "When using the Azure provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AzureZonesCacheDuration.String()).DurationVar(&cfg.AzureZonesCacheDuration)
-	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
-	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
+	app.Flag("azure-maxretries-count", "When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional)").Default(strconv.Itoa(defaultConfig.AzureMaxRetriesCount)).IntVar(&cfg.AzureMaxRetriesCount)
 
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-custom-hostnames", "When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires \"Cloudflare for SaaS\" enabled. (default: disabled)").BoolVar(&cfg.CloudflareCustomHostnames)
 	app.Flag("cloudflare-custom-hostnames-min-tls-version", "When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)").Default("1.0").EnumVar(&cfg.CloudflareCustomHostnamesMinTLSVersion, "1.0", "1.1", "1.2", "1.3")
-	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Cerrtificate Authority will be used by default. (default: google, options: google, ssl_com, lets_encrypt)").Default("google").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt")
+	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none)").Default("none").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt", "none")
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
+	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
+
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)
@@ -560,8 +557,6 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
 	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
-	app.Flag("ibmcloud-config-file", "When using the IBM Cloud provider, specify the IBM Cloud configuration file (required when --provider=ibmcloud").Default(defaultConfig.IBMCloudConfigFile).StringVar(&cfg.IBMCloudConfigFile)
-	app.Flag("ibmcloud-proxied", "When using the IBM provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.IBMCloudProxied)
 	// GoDaddy flags
 	app.Flag("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)").Default(defaultConfig.GoDaddyAPIKey).StringVar(&cfg.GoDaddyAPIKey)
 	app.Flag("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)").Default(defaultConfig.GoDaddySecretKey).StringVar(&cfg.GoDaddySecretKey)
@@ -580,7 +575,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to RFC2136 provider
-	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when when using --rfc2136-load-balancing-strategy)").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
+	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
 	app.Flag("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server").Default(strconv.Itoa(defaultConfig.RFC2136Port)).IntVar(&cfg.RFC2136Port)
 	app.Flag("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)").StringsVar(&cfg.RFC2136Zone)
 	app.Flag("rfc2136-create-ptr", "When using the RFC2136 provider, enable PTR management").Default(strconv.FormatBool(defaultConfig.RFC2136CreatePTR)).BoolVar(&cfg.RFC2136CreatePTR)
