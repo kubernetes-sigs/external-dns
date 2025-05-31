@@ -46,7 +46,7 @@
 | `--pod-source-domain=""` | Domain to use for pods records (optional) |
 | `--[no-]publish-host-ip` | Allow external-dns to publish host-ip for headless services (optional) |
 | `--[no-]publish-internal-services` | Allow external-dns to publish DNS records for ClusterIP services (optional) |
-| `--service-type-filter=SERVICE-TYPE-FILTER` | The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName) |
+| `--service-type-filter=SERVICE-TYPE-FILTER` | The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName) |
 | `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
