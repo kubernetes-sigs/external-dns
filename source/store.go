@@ -60,6 +60,7 @@ type Config struct {
 	GatewayName                    string
 	GatewayNamespace               string
 	GatewayLabelFilter             string
+	HTTPRouteGenerationsGap        int64
 	Compatibility                  string
 	PodSourceDomain                string
 	PublishInternal                bool
@@ -105,6 +106,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		GatewayName:                    cfg.GatewayName,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
+		HTTPRouteGenerationsGap:        cfg.HTTPRouteGenerationsGap,
 		Compatibility:                  cfg.Compatibility,
 		PodSourceDomain:                cfg.PodSourceDomain,
 		PublishInternal:                cfg.PublishInternal,

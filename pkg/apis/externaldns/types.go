@@ -60,6 +60,7 @@ type Config struct {
 	GatewayName                                   string
 	GatewayNamespace                              string
 	GatewayLabelFilter                            string
+	HTTPRouteGenerationsGap                       int64
 	Compatibility                                 string
 	PodSourceDomain                               string
 	PublishInternal                               bool
@@ -277,9 +278,10 @@ var defaultConfig = &Config{
 	ExoscaleAPIZone:              "ch-gva-2",
 	ExposeInternalIPV6:           true,
 	FQDNTemplate:                 "",
-	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
+	GatewayLabelFilter:           "",
+	HTTPRouteGenerationsGap:      0,
 	GlooNamespaces:               []string{"gloo-system"},
 	GoDaddyAPIKey:                "",
 	GoDaddyOTE:                   false,
@@ -470,6 +472,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressRulesSpec)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
 	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
+	app.Flag("httproute-generations-gap", "Maximum allowed difference between an observed gateway route's generation and its accepted generation. The route remains valid within this threshold. (default: 0)").Default("0").Int64Var(&cfg.HTTPRouteGenerationsGap)
 	app.Flag("ingress-class", "Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))

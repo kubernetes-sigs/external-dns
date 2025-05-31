@@ -84,6 +84,8 @@ Matching Gateways are discovered by iterating over the \*Route's `status.parents
 
 - Ignores parents whose Gateway either does not exist or has not accepted the route.
 
+- By default, if a route's generation doesn't match the generation accepted by its parent, the route is ignored. This can trigger unnecessary DNS name recreation with `--policy=sync`, especially due to known gateway lags (e.g., GKE). The `--httproute-generations-gap` flag allows you to tolerate a maximum number of generations of drift, preventing premature DNS record changes caused by temporary inconsistencies.
+
 ### Matching listeners
 
 Iterates over all listeners for the parent's `parentRef.sectionName`:
