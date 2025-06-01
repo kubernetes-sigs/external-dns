@@ -773,12 +773,7 @@ type serviceTypes struct {
 // It validates the filter against known Kubernetes service types. If the filter is empty or contains an empty string,
 // service type filtering is disabled. If an unknown type is found, an error is returned.
 func computeServiceTypes(filter []string) (*serviceTypes, error) {
-	if len(filter) == 0 {
-		return &serviceTypes{
-			enabled: false,
-		}, nil
-	}
-	if slices.Contains(filter, "") {
+	if len(filter) == 0 || slices.Contains(filter, "") {
 		return &serviceTypes{
 			enabled: false,
 		}, nil
