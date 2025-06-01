@@ -131,7 +131,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	}
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
-	serviceTypes, err := computeServiceTypes(serviceTypeFilter)
+	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		endpointsInformer:              endpointsInformer,
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
-		serviceTypeFilter:              serviceTypes,
+		serviceTypeFilter:              sTypesFilter,
 		labelSelector:                  labelSelector,
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
@@ -769,10 +769,10 @@ type serviceTypes struct {
 	types   map[v1.ServiceType]bool
 }
 
-// computeServiceTypes processes a slice of service type filter strings and returns a serviceTypes struct.
+// newServiceTypesFilter processes a slice of service type filter strings and returns a serviceTypes struct.
 // It validates the filter against known Kubernetes service types. If the filter is empty or contains an empty string,
 // service type filtering is disabled. If an unknown type is found, an error is returned.
-func computeServiceTypes(filter []string) (*serviceTypes, error) {
+func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 	if len(filter) == 0 || slices.Contains(filter, "") {
 		return &serviceTypes{
 			enabled: false,

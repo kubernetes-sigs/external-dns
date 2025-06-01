@@ -3956,7 +3956,7 @@ func TestNewServiceTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st, err := computeServiceTypes(tt.filter)
+			st, err := newServiceTypesFilter(tt.filter)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, st)
