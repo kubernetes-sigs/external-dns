@@ -24,18 +24,22 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
-
+	"k8s.io/client-go/tools/cache"
+	cachetesting "k8s.io/client-go/tools/cache/testing"
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -83,7 +87,6 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 	codecFactory := serializer.WithoutConversionCodecFactory{
 		CodecFactory: serializer.NewCodecFactory(scheme),
 	}
-
 	client := &fake.RESTClient{
 		GroupVersion:         groupVersion,
 		VersionedAPIPath:     "/apis/" + apiVersion,
@@ -103,7 +106,10 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 				decoder := json.NewDecoder(req.Body)
 
 				var body apiv1alpha1.DNSEndpoint
-				decoder.Decode(&body)
+				err := decoder.Decode(&body)
+				if err != nil {
+					return nil, err
+				}
 				dnsEndpoint.Status.ObservedGeneration = body.Status.ObservedGeneration
 				return &http.Response{StatusCode: http.StatusOK, Header: defaultHeader(), Body: objBody(codec, dnsEndpoint)}, nil
 			default:
@@ -475,9 +481,11 @@ func testCRDSourceEndpoints(t *testing.T) {
 			restClient := fakeRESTClient(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
+			require.NotNil(t, groupVersion)
 
 			scheme := runtime.NewScheme()
-			require.NoError(t, addKnownTypes(scheme, groupVersion))
+			err = addKnownTypes(scheme, groupVersion)
+			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(ti.labelFilter)
 			require.NoError(t, err)
@@ -485,12 +493,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 			// At present, client-go's fake.RESTClient (used by crd_test.go) is known to cause race conditions when used
 			// with informers: https://github.com/kubernetes/kubernetes/issues/95372
 			// So don't start the informer during testing.
-			startInformer := false
-
-			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, startInformer)
+			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, false)
 			require.NoError(t, err)
 
-			receivedEndpoints, err := cs.Endpoints(context.Background())
+			receivedEndpoints, err := cs.Endpoints(t.Context())
 			if ti.expectError {
 				require.Errorf(t, err, "Received err %v", err)
 			} else {
@@ -511,7 +517,133 @@ func testCRDSourceEndpoints(t *testing.T) {
 	}
 }
 
+func TestCRDSource_NoInformer(t *testing.T) {
+	cs := &crdSource{informer: nil}
+	called := false
+
+	cs.AddEventHandler(context.Background(), func() { called = true })
+	require.False(t, called, "handler must not be called when informer is nil")
+}
+
+func TestCRDSource_AddEventHandler_Add(t *testing.T) {
+	ctx := t.Context()
+	watcher, cs := helperCreateWatcherWithInformer(t)
+
+	var counter atomic.Int32
+	cs.AddEventHandler(ctx, func() {
+		counter.Add(1)
+	})
+
+	obj := &unstructured.Unstructured{}
+	obj.SetName("test")
+
+	watcher.Add(obj)
+
+	require.Eventually(t, func() bool {
+		return counter.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCRDSource_AddEventHandler_Update(t *testing.T) {
+	ctx := t.Context()
+	watcher, cs := helperCreateWatcherWithInformer(t)
+
+	var counter atomic.Int32
+	cs.AddEventHandler(ctx, func() {
+		counter.Add(1)
+	})
+
+	obj := unstructured.Unstructured{}
+	obj.SetName("test")
+	obj.SetNamespace("default")
+	obj.SetUID("9be5b64e-3ee9-11f0-88ee-1eb95c6fd730")
+
+	watcher.Add(&obj)
+
+	require.Eventually(t, func() bool {
+		return len(watcher.Items) == 1
+	}, time.Second, 10*time.Millisecond)
+
+	modified := obj.DeepCopy()
+	modified.SetLabels(map[string]string{"new-label": "this"})
+	watcher.Modify(modified)
+
+	require.Eventually(t, func() bool {
+		return len(watcher.Items) == 1
+	}, time.Second, 10*time.Millisecond)
+
+	require.Eventually(t, func() bool {
+		return counter.Load() == 2
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
+	ctx := t.Context()
+	watcher, cs := helperCreateWatcherWithInformer(t)
+
+	var counter atomic.Int32
+	cs.AddEventHandler(ctx, func() {
+		counter.Add(1)
+	})
+
+	obj := &unstructured.Unstructured{}
+	obj.SetName("test")
+
+	watcher.Delete(obj)
+
+	require.Eventually(t, func() bool {
+		return counter.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCRDSource_Watch(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := apiv1alpha1.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	var watchCalled bool
+
+	codecFactory := serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme),
+	}
+
+	versionApiPath := fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String())
+
+	client := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		VersionedAPIPath:     versionApiPath,
+		NegotiatedSerializer: codecFactory,
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			if req.URL.Path == fmt.Sprintf("%s/namespaces/test-ns/dnsendpoints", versionApiPath) &&
+				req.URL.Query().Get("watch") == "true" {
+				watchCalled = true
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+				}, nil
+			}
+			t.Errorf("unexpected request: %v", req.URL)
+			return nil, fmt.Errorf("unexpected request: %v", req.URL)
+		}),
+	}
+
+	cs := &crdSource{
+		crdClient:   client,
+		namespace:   "test-ns",
+		crdResource: "dnsendpoints",
+		codec:       runtime.NewParameterCodec(scheme),
+	}
+
+	opts := &metav1.ListOptions{}
+
+	_, err = cs.watch(t.Context(), opts)
+	require.NoError(t, err)
+	require.True(t, watchCalled)
+	require.True(t, opts.Watch)
+}
+
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
+	t.Helper()
 	cs := src.(*crdSource)
 	result, err := cs.List(context.Background(), &metav1.ListOptions{})
 	if expectError {
@@ -525,4 +657,25 @@ func validateCRDResource(t *testing.T, src Source, expectError bool) {
 			require.Errorf(t, err, "Unexpected CRD resource result: ObservedGenerations <%v> is not equal to Generation<%v>", dnsEndpoint.Status.ObservedGeneration, dnsEndpoint.Generation)
 		}
 	}
+}
+
+func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeControllerSource, crdSource) {
+	t.Helper()
+	ctx := t.Context()
+
+	watcher := cachetesting.NewFakeControllerSource()
+
+	informer := cache.NewSharedInformer(watcher, &unstructured.Unstructured{}, 0)
+
+	go informer.RunWithContext(ctx)
+
+	require.Eventually(t, func() bool {
+		return cache.WaitForCacheSync(ctx.Done(), informer.HasSynced)
+	}, time.Second, 10*time.Millisecond)
+
+	cs := &crdSource{
+		informer: &informer,
+	}
+
+	return watcher, *cs
 }

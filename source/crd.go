@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/annotations"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -95,7 +97,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	}
 
 	scheme := runtime.NewScheme()
-	addKnownTypes(scheme, groupVersion)
+	_ = addKnownTypes(scheme, groupVersion)
 
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
@@ -120,14 +122,14 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	}
 	if startInformer {
 		// external-dns already runs its sync-handler periodically (controlled by `--interval` flag) to ensure any
-		// missed or dropped events are handled.  specify a resync period 0 to avoid unnecessary sync handler invocations.
+		// missed or dropped events are handled. specify resync period 0 to avoid unnecessary sync handler invocations.
 		informer := cache.NewSharedInformer(
 			&cache.ListWatch{
-				ListFunc: func(lo metav1.ListOptions) (result runtime.Object, err error) {
-					return sourceCrd.List(context.TODO(), &lo)
+				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (result runtime.Object, err error) {
+					return sourceCrd.List(ctx, &lo)
 				},
-				WatchFunc: func(lo metav1.ListOptions) (watch.Interface, error) {
-					return sourceCrd.watch(context.TODO(), &lo)
+				WatchFuncWithContext: func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
+					return sourceCrd.watch(ctx, &lo)
 				},
 			},
 			&apiv1alpha1.DNSEndpoint{},
@@ -138,13 +140,13 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	return &sourceCrd, nil
 }
 
-func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
+func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 	if cs.informer != nil {
 		log.Debug("Adding event handler for CRD")
 		// Right now there is no way to remove event handler from informer, see:
 		// https://github.com/kubernetes/kubernetes/issues/79610
 		informer := *cs.informer
-		informer.AddEventHandler(
+		_, _ = informer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
 					handler()
@@ -183,18 +185,18 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		// Make sure that all endpoints have targets for A or CNAME type
 		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
-			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
+			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if ep.RecordType != "NAPTR" && strings.HasSuffix(target, ".") {
+				if ep.RecordType != endpoint.RecordTypeNAPTR && strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
-				if ep.RecordType == "NAPTR" && !strings.HasSuffix(target, ".") {
+				if ep.RecordType == endpoint.RecordTypeNAPTR && !strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
@@ -270,15 +272,10 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
 func (cs *crdSource) filterByAnnotations(dnsendpoints *apiv1alpha1.DNSEndpointList) (*apiv1alpha1.DNSEndpointList, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(cs.annotationFilter)
+	selector, err := annotations.ParseFilter(cs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
 	// empty filter returns original list
 	if selector.Empty() {
 		return dnsendpoints, nil
