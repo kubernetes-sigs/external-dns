@@ -567,18 +567,21 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 }
 
 func handleGeoProximityLocationRecord(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
-	if r.GeoProximityLocation.AWSRegion != nil {
-		ep.WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, aws.ToString(r.GeoProximityLocation.AWSRegion))
+	if region := aws.ToString(r.GeoProximityLocation.AWSRegion); region != "" {
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, region)
 	}
-	if r.GeoProximityLocation.Bias != nil {
-		ep.WithProviderSpecific(providerSpecificGeoProximityLocationBias, fmt.Sprintf("%d", aws.ToInt32(r.GeoProximityLocation.Bias)))
+
+	if bias := r.GeoProximityLocation.Bias; bias != nil {
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationBias, fmt.Sprintf("%d", aws.ToInt32(bias)))
 	}
-	if r.GeoProximityLocation.Coordinates != nil {
-		coordinates := fmt.Sprintf("%s,%s", aws.ToString(r.GeoProximityLocation.Coordinates.Latitude), aws.ToString(r.GeoProximityLocation.Coordinates.Longitude))
+
+	if coords := r.GeoProximityLocation.Coordinates; coords != nil {
+		coordinates := fmt.Sprintf("%s,%s", aws.ToString(coords.Latitude), aws.ToString(coords.Longitude))
 		ep.WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, coordinates)
 	}
-	if r.GeoProximityLocation.LocalZoneGroup != nil {
-		ep.WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, aws.ToString(r.GeoProximityLocation.LocalZoneGroup))
+
+	if localZoneGroup := aws.ToString(r.GeoProximityLocation.LocalZoneGroup); localZoneGroup != "" {
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, localZoneGroup)
 	}
 }
 
@@ -968,7 +971,7 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 			change.ResourceRecordSet.GeoLocation = geolocation
 		}
 
-		buildChangeForGeoProximityEndpoint(change, ep)
+		withChangeForGeoProximityEndpoint(change, ep)
 	}
 
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
@@ -982,37 +985,77 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	return change
 }
 
-func buildChangeForGeoProximityEndpoint(change *Route53Change, ep *endpoint.Endpoint) {
+func withChangeForGeoProximityEndpoint(change *Route53Change, ep *endpoint.Endpoint) {
 	geoproximity := &route53types.GeoProximityLocation{}
-	useGeoproximity := false
+	isGeoproximity := false
+
+	isGeoproximity = withGeoProximityAWSRegion(ep, geoproximity)
+	isGeoproximity = isGeoproximity || withGeoProximityCoordinates(ep, geoproximity)
+	isGeoproximity = isGeoproximity || withGeoProximityLocalZoneGroup(ep, geoproximity)
+	withGeoProximityBias(ep, geoproximity)
+
+	if isGeoproximity {
+		change.ResourceRecordSet.GeoProximityLocation = geoproximity
+	}
+}
+
+func withGeoProximityAWSRegion(ep *endpoint.Endpoint, geoproximity *route53types.GeoProximityLocation) bool {
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion); ok {
 		geoproximity.AWSRegion = aws.String(prop)
-		useGeoproximity = true
+		return true
 	}
-	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); ok {
-		bias, _ := strconv.ParseInt(prop, 10, 32)
-		geoproximity.Bias = aws.Int32(int32(bias))
+	return false
+}
+
+// validateCoordinates checks if the given latitude and longitude are valid.
+func validateCoordinates(lat, long string) error {
+	latitude, err := strconv.ParseFloat(lat, 64)
+	if err != nil || latitude < -90 || latitude > 90 {
+		return errors.New("invalid latitude: must be a number between -90 and 90")
 	}
+
+	longitude, err := strconv.ParseFloat(long, 64)
+	if err != nil || longitude < -180 || longitude > 180 {
+		return errors.New("invalid longitude: must be a number between -180 and 180")
+	}
+
+	return nil
+}
+
+func withGeoProximityCoordinates(ep *endpoint.Endpoint, geoproximity *route53types.GeoProximityLocation) bool {
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates); ok {
 		coordinates := strings.Split(prop, ",")
 		if len(coordinates) == 2 {
 			latitude := coordinates[0]
 			longitude := coordinates[1]
+			if err := validateCoordinates(latitude, longitude); err != nil {
+				log.Errorf("Invalid coordinates %s for name=%s setIdentifier=%s; %v", prop, ep.DNSName, ep.SetIdentifier, err)
+				return false
+			}
 			geoproximity.Coordinates = &route53types.Coordinates{
 				Latitude:  aws.String(latitude),
 				Longitude: aws.String(longitude),
 			}
-			useGeoproximity = true
+			return true
 		} else {
 			log.Errorf("Invalid coordinates format for %s: %s; expected format 'latitude,longitude'", providerSpecificGeoProximityLocationCoordinates, prop)
 		}
 	}
+	return false
+}
+
+func withGeoProximityLocalZoneGroup(ep *endpoint.Endpoint, geoproximity *route53types.GeoProximityLocation) bool {
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup); ok {
 		geoproximity.LocalZoneGroup = aws.String(prop)
-		useGeoproximity = true
+		return true
 	}
-	if useGeoproximity {
-		change.ResourceRecordSet.GeoProximityLocation = geoproximity
+	return false
+}
+
+func withGeoProximityBias(ep *endpoint.Endpoint, geoproximity *route53types.GeoProximityLocation) {
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); ok {
+		bias, _ := strconv.ParseInt(prop, 10, 32)
+		geoproximity.Bias = aws.Int32(int32(bias))
 	}
 }
 
