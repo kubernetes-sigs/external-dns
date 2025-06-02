@@ -183,7 +183,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	for _, dnsEndpoint := range result.Items {
 		// Make sure that all endpoints have targets for A or CNAME type
-		crdEndpoints := []*endpoint.Endpoint{}
+		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.Name, ep.DNSName)
@@ -206,14 +206,11 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				continue
 			}
 
-			if ep.Labels == nil {
-				ep.Labels = endpoint.NewLabels()
-			}
+			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
 
 			crdEndpoints = append(crdEndpoints, ep)
 		}
 
-		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
 		endpoints = append(endpoints, crdEndpoints...)
 
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
@@ -229,12 +226,6 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	return endpoints, nil
-}
-
-func (cs *crdSource) setResourceLabel(crd *apiv1alpha1.DNSEndpoint, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("crd/%s/%s", crd.Namespace, crd.Name)
-	}
 }
 
 func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {
