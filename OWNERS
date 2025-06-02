@@ -9,6 +9,7 @@
 # https://github.com/kubernetes/org/blob/main/config/kubernetes-sigs/sig-network/teams.yaml
 
 approvers:
+  - ivankatliarchuk
   - mloiseleur
   - raffo
   - szuecs
