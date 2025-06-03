@@ -92,7 +92,7 @@
 | `--cloudflare-custom-hostnames-min-tls-version=1.0` | When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3) |
 | `--cloudflare-custom-hostnames-certificate-authority=none` | When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
-| `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth) |
+| `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth). Common values: `earth` (all data centers), `eu`, `us`, `ap`, `fedramp`, `in`, `ca`, `jp`, `kr`, `br`, `za`, `ae`, `global` (alias for earth). See the [Cloudflare Regional Services documentation](https://developers.cloudflare.com/data-localization/regional-services/get-started/) for the full list and details. |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
