@@ -64,7 +64,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.200",
 					Status:    "OK",
 				},
@@ -97,7 +97,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.200",
 					Status:    "OK",
 				},
@@ -129,7 +129,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				Spec: f5.TransportServerSpec{
 					Host: "www.example.com",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -161,7 +161,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				Spec: f5.TransportServerSpec{
 					Host: "www.example.com",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "",
 				},
 			},
@@ -186,7 +186,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -222,7 +222,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -247,7 +247,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "192.168.1.100",
 					Status:    "OK",
 				},
@@ -282,7 +282,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:                 "www.example.com",
 					VirtualServerAddress: "192.168.1.100",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "",
 					Status:    "ERROR",
 					Error:     "Some error status message",
@@ -308,7 +308,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Host:      "www.example.com",
 					IPAMLabel: "test",
 				},
-				Status: f5.TransportServerStatus{
+				Status: f5.CustomResourceStatus{
 					VSAddress: "None",
 					Status:    "OK",
 				},
