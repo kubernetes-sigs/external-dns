@@ -234,7 +234,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		cleanTargets[idx] = strings.TrimSuffix(target, ".")
 	}
 
-	for _, label := range strings.Split(dnsName, ".") {
+	for label := range strings.SplitSeq(dnsName, ".") {
 		if len(label) > 63 {
 			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
 			return nil
@@ -299,6 +299,19 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 			return
 		}
 	}
+}
+
+// WithLabel adds or updates a label for the Endpoint.
+//
+// Example usage:
+//
+//	ep.WithLabel("owner", "user123")
+func (e *Endpoint) WithLabel(key, value string) *Endpoint {
+	if e.Labels == nil {
+		e.Labels = NewLabels()
+	}
+	e.Labels[key] = value
+	return e
 }
 
 // Key returns the EndpointKey of the Endpoint.
