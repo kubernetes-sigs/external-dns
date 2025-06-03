@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
@@ -30,13 +31,13 @@ import (
 func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 	for _, tt := range []struct {
-		title         string
-		services      []*v1.Service
-		endpoints     []*v1.Endpoints
-		fqdnTemplate  string
-		combineFQDN   bool
-		publishHostIp bool
-		expected      []*endpoint.Endpoint
+		title          string
+		services       []*v1.Service
+		endpointSlices []*discoveryv1.EndpointSlice
+		fqdnTemplate   string
+		combineFQDN    bool
+		publishHostIp  bool
+		expected       []*endpoint.Endpoint
 	}{
 		{
 			title:       "templating with multiple services",
@@ -346,23 +347,24 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			endpoints: []*v1.Endpoints{
+			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "default",
-						Name:      "service-one",
+						Name:      "service-one-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-one",
+						},
 					},
-					Subsets: []v1.EndpointSubset{
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
 						{
-							Addresses: []v1.EndpointAddress{
-								{
-									IP:       "100.66.2.241",
-									Hostname: "ip-10-1-164-158.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-1",
-										Namespace: "default",
-									}},
+							Addresses: []string{"100.66.2.241"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "default",
 							},
 						},
 					},
@@ -370,20 +372,20 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "default",
-						Name:      "service-two",
+						Name:      "service-two-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-two",
+						},
 					},
-					Subsets: []v1.EndpointSubset{
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
 						{
-							Addresses: []v1.EndpointAddress{
-								{
-									IP:       "100.66.2.244",
-									Hostname: "ip-10-1-164-152.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-2",
-										Namespace: "default",
-									},
-								},
+							Addresses: []string{"100.66.2.244"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-152.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "default",
 							},
 						},
 					},
@@ -391,29 +393,29 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "default",
-						Name:      "service-three",
+						Name:      "service-three-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-three",
+						},
 					},
-					Subsets: []v1.EndpointSubset{
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
 						{
-							Addresses: []v1.EndpointAddress{
-								{
-									IP:       "100.66.2.246",
-									Hostname: "ip-10-1-164-158.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-3",
-										Namespace: "default",
-									},
-								},
-								{
-									IP:       "100.66.2.247",
-									Hostname: "ip-10-1-164-158.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-4",
-										Namespace: "default",
-									},
-								},
+							Addresses: []string{"100.66.2.246"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-3",
+								Namespace: "default",
+							},
+						},
+						{
+							Addresses: []string{"100.66.2.247"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-4",
+								Namespace: "default",
 							},
 						},
 					},
@@ -476,23 +478,24 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			endpoints: []*v1.Endpoints{
+			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "default",
-						Name:      "service-one",
+						Name:      "service-one-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-one",
+						},
 					},
-					Subsets: []v1.EndpointSubset{
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
 						{
-							Addresses: []v1.EndpointAddress{
-								{
-									IP:       "100.66.2.241",
-									Hostname: "ip-10-1-164-158.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-1",
-										Namespace: "default",
-									}},
+							Addresses: []string{"100.66.2.241"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "default",
 							},
 						},
 					},
@@ -500,20 +503,20 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "default",
-						Name:      "service-two",
+						Name:      "service-two-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-two",
+						},
 					},
-					Subsets: []v1.EndpointSubset{
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
 						{
-							Addresses: []v1.EndpointAddress{
-								{
-									IP:       "100.66.2.244",
-									Hostname: "ip-10-1-164-152.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-2",
-										Namespace: "default",
-									},
-								},
+							Addresses: []string{"100.66.2.244"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-152.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "default",
 							},
 						},
 					},
@@ -521,29 +524,29 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: "default",
-						Name:      "service-three",
+						Name:      "service-three-xxxxx",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "service-three",
+						},
 					},
-					Subsets: []v1.EndpointSubset{
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
 						{
-							Addresses: []v1.EndpointAddress{
-								{
-									IP:       "100.66.2.246",
-									Hostname: "ip-10-1-164-158.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-3",
-										Namespace: "default",
-									},
-								},
-								{
-									IP:       "100.66.2.247",
-									Hostname: "ip-10-1-164-158.internal",
-									TargetRef: &v1.ObjectReference{
-										Kind:      "Pod",
-										Name:      "pod-4",
-										Namespace: "default",
-									},
-								},
+							Addresses: []string{"100.66.2.246"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-3",
+								Namespace: "default",
+							},
+						},
+						{
+							Addresses: []string{"100.66.2.247"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-4",
+								Namespace: "default",
 							},
 						},
 					},
@@ -569,24 +572,23 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			}
 
 			// Create endpoints and pods for the services
-			for _, el := range tt.endpoints {
-				_, err := kubeClient.CoreV1().Endpoints(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
+			for _, el := range tt.endpointSlices {
+				_, err := kubeClient.DiscoveryV1().EndpointSlices(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
 				require.NoError(t, err)
-				for i, subset := range el.Subsets {
-					for idx, address := range subset.Addresses {
-						_, err = kubeClient.CoreV1().Pods(el.Namespace).Create(t.Context(), &v1.Pod{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      address.TargetRef.Name,
-								Namespace: el.Namespace,
-							},
-							Spec: v1.PodSpec{
-								Hostname: address.Hostname,
-							},
-							Status: v1.PodStatus{
-								HostIP: fmt.Sprintf("10.1.2%d.4%d", i, idx),
-							},
-						}, metav1.CreateOptions{})
-					}
+				for i, ep := range el.Endpoints {
+					_, err = kubeClient.CoreV1().Pods(el.Namespace).Create(t.Context(), &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      ep.TargetRef.Name,
+							Namespace: el.Namespace,
+						},
+						Spec: v1.PodSpec{
+							Hostname: *ep.Hostname,
+						},
+						Status: v1.PodStatus{
+							HostIP: fmt.Sprintf("10.1.20.4%d", i),
+						},
+					}, metav1.CreateOptions{})
+					require.NoError(t, err)
 				}
 			}
 
