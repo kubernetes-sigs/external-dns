@@ -336,7 +336,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		}
 
 		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions, meta) {
+		if !gwRouteIsAccepted(rps.Conditions) {
 			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
@@ -498,10 +498,10 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 	return false
 }
 
-func gwRouteIsAccepted(conds []metav1.Condition, meta *metav1.ObjectMeta) bool {
+func gwRouteIsAccepted(conds []metav1.Condition) bool {
 	for _, c := range conds {
 		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
-			return c.Status == metav1.ConditionTrue && c.ObservedGeneration == meta.Generation
+			return c.Status == metav1.ConditionTrue
 		}
 	}
 	return false
