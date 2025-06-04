@@ -48,7 +48,7 @@ type nodeSource struct {
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6 bool, excludeUnschedulable bool) (Source, error) {
+func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6, excludeUnschedulable bool) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -103,8 +103,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 	// create endpoints for all nodes
 	for _, node := range nodes {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := node.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		if controller, ok := node.Annotations[controllerAnnotationKey]; ok && controller != controllerAnnotationValue {
 			log.Debugf("Skipping node %s because controller value does not match, found: %s, required: %s",
 				node.Name, controller, controllerAnnotationValue)
 			continue
@@ -119,28 +118,8 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
 
-		// create new endpoint with the information we already have
-		ep := &endpoint.Endpoint{
-			RecordTTL: ttl,
-		}
-
-		if ns.fqdnTemplate != nil {
-			hostnames, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
-			if err != nil {
-				return nil, err
-			}
-			hostname := ""
-			if len(hostnames) > 0 {
-				hostname = hostnames[0]
-			}
-			ep.DNSName = hostname
-			log.Debugf("applied template for %s, converting to %s", node.Name, ep.DNSName)
-		} else {
-			ep.DNSName = node.Name
-			log.Debugf("not applying template for %s", node.Name)
-		}
-
 		addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
+
 		if len(addrs) == 0 {
 			addrs, err = ns.nodeAddresses(node)
 			if err != nil {
@@ -148,19 +127,40 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			}
 		}
 
-		ep.Labels = endpoint.NewLabels()
-		for _, addr := range addrs {
-			log.Debugf("adding endpoint %s target %s", ep, addr)
-			key := endpoint.EndpointKey{
-				DNSName:    ep.DNSName,
-				RecordType: suitableType(addr),
+		dnsNames := make(map[string]bool)
+
+		if ns.fqdnTemplate != nil {
+			hostnames, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
+			if err != nil {
+				return nil, err
 			}
-			if _, ok := endpoints[key]; !ok {
-				epCopy := *ep
-				epCopy.RecordType = key.RecordType
-				endpoints[key] = &epCopy
+
+			for _, name := range hostnames {
+				dnsNames[name] = true
+				log.Debugf("applied template for %s, converting to %s", node.Name, name)
 			}
-			endpoints[key].Targets = append(endpoints[key].Targets, addr)
+		} else {
+			dnsNames[node.Name] = true
+			log.Debugf("not applying template for %s", node.Name)
+		}
+
+		for dns := range dnsNames {
+			log.Debugf("adding endpoint with %d targets", len(addrs))
+
+			for _, addr := range addrs {
+				ep := endpoint.NewEndpointWithTTL(dns, suitableType(addr), ttl)
+				log.Debugf("adding endpoint %s target %s", ep, addr)
+				key := endpoint.EndpointKey{
+					DNSName:    ep.DNSName,
+					RecordType: ep.RecordType,
+				}
+				if _, ok := endpoints[key]; !ok {
+					epCopy := *ep
+					epCopy.RecordType = key.RecordType
+					endpoints[key] = &epCopy
+				}
+				endpoints[key].Targets = append(endpoints[key].Targets, addr)
+			}
 		}
 	}
 
@@ -172,10 +172,10 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 	return endpointsSlice, nil
 }
 
-func (ns *nodeSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ns *nodeSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
-// nodeAddress returns node's externalIP and if that's not found, node's internalIP
+// nodeAddress returns the node's externalIP and if that's not found, the node's internalIP
 // basically what k8s.io/kubernetes/pkg/util/node.GetPreferredNodeAddress does
 func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	addresses := map[v1.NodeAddressType][]string{
@@ -223,7 +223,7 @@ func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) 
 	var filteredList []*v1.Node
 
 	for _, node := range nodes {
-		// include node if its annotations match the selector
+		// include a node if its annotations match the selector
 		if selector.Matches(labels.Set(node.Annotations)) {
 			filteredList = append(filteredList, node)
 		}

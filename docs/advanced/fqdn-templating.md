@@ -316,7 +316,7 @@ By setting the hostname annotation in the ingress resource, ExternalDNS construc
 
 ```yml
 args:
-  - --fqdn-template="{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.example.com
+  - --fqdn-template="{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.example.com"
 ```
 
 This is a complex template that iternates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
