@@ -308,6 +308,7 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotati
 Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic.
 
 **Accepted values for region key include:**
+
 - `earth` (default): All data centers (global)
 - `eu`: European Union data centers only
 - `us`: United States data centers only
