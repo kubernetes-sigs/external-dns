@@ -739,3 +739,59 @@ func TestAAAARecords(t *testing.T) {
 	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceAAAARecords.Gauge))
 	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryAAAARecords.Gauge))
 }
+
+type toggleRegistry struct {
+	registry.NoopRegistry
+	failCount int
+}
+
+func (r *toggleRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	if r.failCount < 3 {
+		r.failCount++
+		return nil, provider.SoftError
+	}
+	return []*endpoint.Endpoint{}, nil
+}
+
+func (r *toggleRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return nil
+}
+
+func TestToggleRegistry(t *testing.T) {
+	source := getTestSource()
+	cfg := getTestConfig()
+	r := &toggleRegistry{}
+
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+		Interval:           10 * time.Millisecond,
+	}
+	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	go func() {
+		ctrl.Run(ctx)
+		close(stopped)
+	}()
+
+	// Wait up to 2 seconds for failCount to reach at least 3
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if r.failCount >= 3 {
+			break
+		}
+		if time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+	<-stopped
+
+	if r.failCount < 3 {
+		t.Fatalf("failCount should be at least 3 after waiting up to 2s, got %d", r.failCount)
+	}
+}
