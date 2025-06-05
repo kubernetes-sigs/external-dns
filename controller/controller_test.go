@@ -743,7 +743,7 @@ func TestAAAARecords(t *testing.T) {
 
 type toggleRegistry struct {
 	registry.NoopRegistry
-	failCount int
+	failCount	int
 	failCountMu sync.Mutex // protects failCount
 }
 
