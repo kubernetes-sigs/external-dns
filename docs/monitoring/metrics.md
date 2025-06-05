@@ -20,6 +20,7 @@ curl https://localhost:7979/metrics
 
 | Name                             | Metric Type | Subsystem   |  Help                                                 |
 |:---------------------------------|:------------|:------------|:------------------------------------------------------|
+| consecutive_soft_errors | Gauge | controller | Number of consecutive soft errors in reconciliation loop. |
 | last_reconcile_timestamp_seconds | Gauge | controller | Timestamp of last attempted sync with the DNS provider |
 | last_sync_timestamp_seconds | Gauge | controller | Timestamp of last successful sync with the DNS provider |
 | no_op_runs_total | Counter | controller | Number of reconcile loops ending up with no changes on the DNS provider side. |
@@ -87,5 +88,3 @@ curl https://localhost:7979/metrics
 | process_start_time_seconds |
 | process_virtual_memory_bytes |
 | process_virtual_memory_max_bytes |
-| process_network_receive_bytes_total |
-| process_network_transmit_bytes_total |

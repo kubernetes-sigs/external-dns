@@ -22,6 +22,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -743,9 +744,12 @@ func TestAAAARecords(t *testing.T) {
 type toggleRegistry struct {
 	registry.NoopRegistry
 	failCount int
+	failCountMu sync.Mutex // protects failCount
 }
 
 func (r *toggleRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	r.failCountMu.Lock()
+	defer r.failCountMu.Unlock()
 	if r.failCount < 3 {
 		r.failCount++
 		return nil, provider.SoftError
@@ -780,7 +784,10 @@ func TestToggleRegistry(t *testing.T) {
 	// Wait up to 2 seconds for failCount to reach at least 3
 	deadline := time.Now().Add(2 * time.Second)
 	for {
-		if r.failCount >= 3 {
+		r.failCountMu.Lock()
+		count := r.failCount
+		r.failCountMu.Unlock()
+		if count >= 3 {
 			break
 		}
 		if time.Now().After(deadline) {
@@ -791,7 +798,10 @@ func TestToggleRegistry(t *testing.T) {
 	cancel()
 	<-stopped
 
-	if r.failCount < 3 {
-		t.Fatalf("failCount should be at least 3 after waiting up to 2s, got %d", r.failCount)
+	r.failCountMu.Lock()
+	finalCount := r.failCount
+	r.failCountMu.Unlock()
+	if finalCount < 3 {
+		t.Fatalf("failCount should be at least 3 after waiting up to 2s, got %d", finalCount)
 	}
 }
