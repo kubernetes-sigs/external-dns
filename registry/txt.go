@@ -19,7 +19,6 @@ package registry
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"strings"
 	"time"
@@ -65,39 +64,53 @@ type TXTRegistry struct {
 
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
-	existingTXTs existingTXTs
+	existingTXTs *existingTXTs
 }
 
 // existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
 // It relies on the fact that Records() is always called **before** ApplyChanges()
 // within a single reconciliation cycle.
 type existingTXTs struct {
-	entries map[string]struct{}
+	entries map[recordKey]struct{}
 }
 
-func newExistingTXTs() existingTXTs {
-	return existingTXTs{
-		entries: make(map[string]struct{}),
+type recordKey struct {
+	dnsName       string
+	setIdentifier string
+}
+
+func newExistingTXTs() *existingTXTs {
+	return &existingTXTs{
+		entries: make(map[recordKey]struct{}),
 	}
 }
 
 func (im *existingTXTs) add(r *endpoint.Endpoint) {
-	if im.entries == nil {
-		im.entries = make(map[string]struct{})
+	key := recordKey{
+		dnsName:       r.DNSName,
+		setIdentifier: r.SetIdentifier,
 	}
-	im.entries[fmt.Sprintf("%s|%s", r.DNSName, r.SetIdentifier)] = struct{}{}
+	if im.entries == nil {
+		im.entries = make(map[recordKey]struct{})
+	}
+	im.entries[key] = struct{}{}
 }
 
 // isNotManaged reports whether the given endpoint's TXT record is absent from the existing set.
 // Used to determine whether a new TXT record needs to be created.
 func (im *existingTXTs) isNotManaged(ep *endpoint.Endpoint) bool {
-	k := fmt.Sprintf("%s|%s", ep.DNSName, ep.SetIdentifier)
-	_, ok := im.entries[k]
+	key := recordKey{
+		dnsName:       ep.DNSName,
+		setIdentifier: ep.SetIdentifier,
+	}
+	_, ok := im.entries[key]
 	return !ok
 }
 
-func (im *existingTXTs) reset() existingTXTs {
-	return newExistingTXTs()
+func (im *existingTXTs) reset() {
+	// Reset the existing TXT records for the next reconciliation loop.
+	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
+	im.entries = make(map[recordKey]struct{})
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -315,6 +328,8 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	defer im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
+
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
@@ -333,7 +348,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			im.addToCache(r)
 		}
 	}
-	im.existingTXTs = im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
 
 	for _, r := range filteredChanges.Delete {
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
