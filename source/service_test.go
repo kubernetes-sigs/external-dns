@@ -40,14 +40,13 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
-	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/informers"
-	"sigs.k8s.io/external-dns/source/informers/fakes"
-	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
 type ServiceSuite struct {

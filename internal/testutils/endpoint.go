@@ -20,7 +20,7 @@ import (
 	"cmp"
 	"fmt"
 	"maps"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"reflect"
 	"slices"
@@ -345,4 +345,13 @@ func distributeByWeight(keys []string, weights map[string]int, n int) []string {
 	}
 
 	return result
+}
+
+// NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)
+func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
+	t := make(endpoint.Targets, len(targets))
+	for i, target := range targets {
+		t[i] = target.String()
+	}
+	return t
 }
