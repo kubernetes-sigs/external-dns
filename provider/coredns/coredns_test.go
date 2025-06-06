@@ -528,7 +528,8 @@ func TestGetServices_Duplicate(t *testing.T) {
 	}
 
 	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello"}
-	value, _ := json.Marshal(svc)
+	value, err := json.Marshal(svc)
+	require.NoError(t, err)
 
 	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
 		Kvs: []*mvccpb.KeyValue{
