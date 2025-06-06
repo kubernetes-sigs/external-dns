@@ -38,6 +38,7 @@ const (
 	ingressHostnameSourceKey      = annotations.IngressHostnameSourceKey
 	controllerAnnotationValue     = annotations.ControllerValue
 	internalHostnameAnnotationKey = annotations.InternalHostnameKey
+	gatewayHostnameSourceKey      = annotations.GatewayHostnameSourceKey
 
 	EndpointsTypeNodeExternalIP = "NodeExternalIP"
 	EndpointsTypeHostIP         = "HostIP"
