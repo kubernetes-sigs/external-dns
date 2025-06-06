@@ -1,19 +1,21 @@
 approvers:
   - knobunc
   - Miciah
-  - frobware
   - candita
   - rfredette
   - alebedev87
-  - miheer
   - gcs278
+  - grzpiotrowski
+  - Thealisyed
+  - rohara
 reviewers:
   - knobunc
   - Miciah
-  - frobware
   - candita
   - rfredette
   - alebedev87
-  - miheer
   - gcs278
+  - grzpiotrowski
+  - Thealisyed
+  - rohara
 component: DNS
