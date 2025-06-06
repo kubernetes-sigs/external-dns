@@ -67,7 +67,8 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(ctx context.Context,
+func NewIngressSource(
+	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	namespace, annotationFilter, fqdnTemplate string,
 	combineFqdnAnnotation, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec bool,
@@ -189,8 +190,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("Hostnames from template:", hostnames, len(hostnames))
 
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
