@@ -153,6 +153,14 @@ var (
 			Help:      "Number of DNS AAAA-records that exists both in source and registry.",
 		},
 	)
+	consecutiveSoftErrors = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "consecutive_soft_errors",
+			Help:      "Number of consecutive soft errors in reconciliation loop.",
+		},
+	)
 )
 
 func init() {
@@ -171,6 +179,7 @@ func init() {
 	metrics.RegisterMetric.MustRegister(sourceAAAARecords)
 	metrics.RegisterMetric.MustRegister(verifiedARecords)
 	metrics.RegisterMetric.MustRegister(verifiedAAAARecords)
+	metrics.RegisterMetric.MustRegister(consecutiveSoftErrors)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -356,14 +365,23 @@ func (c *Controller) ShouldRunOnce(now time.Time) bool {
 func (c *Controller) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+	var softErrorCount int
 	for {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
 				if errors.Is(err, provider.SoftError) {
-					log.Errorf("Failed to do run once: %v", err)
+					softErrorCount++
+					consecutiveSoftErrors.Gauge.Set(float64(softErrorCount))
+					log.Errorf("Failed to do run once: %v (consecutive soft errors: %d)", err, softErrorCount)
 				} else {
 					log.Fatalf("Failed to do run once: %v", err)
 				}
+			} else {
+				if softErrorCount > 0 {
+					log.Infof("Reconciliation succeeded after %d consecutive soft errors", softErrorCount)
+				}
+				softErrorCount = 0
+				consecutiveSoftErrors.Gauge.Set(0)
 			}
 		}
 		select {
