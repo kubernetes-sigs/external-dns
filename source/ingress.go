@@ -67,7 +67,12 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector, ingressClassNames []string) (Source, error) {
+func NewIngressSource(ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace, annotationFilter, fqdnTemplate string,
+	combineFqdnAnnotation, ignoreHostnameAnnotation, ignoreIngressTLSSpec, ignoreIngressRulesSpec bool,
+	labelSelector labels.Selector,
+	ingressClassNames []string) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -126,7 +131,7 @@ func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, name
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
@@ -144,9 +149,8 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := ing.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		// Check the controller annotation to see if we are responsible.
+		if controller, ok := ing.Annotations[controllerAnnotationKey]; ok && controller != controllerAnnotationValue {
 			log.Debugf("Skipping ingress %s/%s because controller value does not match, found: %s, required: %s",
 				ing.Namespace, ing.Name, controller, controllerAnnotationValue)
 			continue
@@ -185,6 +189,8 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("Hostnames from template:", hostnames, len(hostnames))
 
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 

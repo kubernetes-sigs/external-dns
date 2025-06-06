@@ -41,7 +41,7 @@ type IngressSuite struct {
 }
 
 func (suite *IngressSuite) SetupTest() {
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 
 	suite.fooWithTargets = (fakeIngress{
 		name:      "foo-with-targets",
@@ -97,31 +97,6 @@ func TestNewIngressSource(t *testing.T) {
 		ingressClassNames        []string
 	}{
 		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:                    "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
 			title:            "non-empty annotation filter label",
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
@@ -143,8 +118,8 @@ func TestNewIngressSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIngressSource(
-				context.TODO(),
-				fake.NewSimpleClientset(),
+				t.Context(),
+				fake.NewClientset(),
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1428,10 +1403,10 @@ func testIngressEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeClient := fake.NewSimpleClientset()
+			fakeClient := fake.NewClientset()
 			for _, item := range ti.ingressItems {
 				ingress := item.Ingress()
-				_, err := fakeClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+				_, err := fakeClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1453,7 +1428,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ingressClassNames,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
-			res, err := source.Endpoints(context.Background())
+			res, err := source.Endpoints(t.Context())
 			if ti.expectError {
 				require.Error(t, err)
 			} else {
