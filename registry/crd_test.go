@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -122,14 +124,14 @@ func testRecords(t *testing.T) {
 				namespace: "default",
 			},
 			response: &mockResponse{
-				content: DNSRecordList{
-					Items: []DNSRecord{{
+				content: apiv1alpha1.DNSRecordList{
+					Items: []apiv1alpha1.DNSRecord{{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								RecordResourceLabel: "some-value",
+								apiv1alpha1.RecordResourceLabel: "some-value",
 							},
 						},
-						Spec: DNSRecordSpec{
+						Spec: apiv1alpha1.DNSRecordSpec{
 							Endpoint: *e[0],
 						},
 					}},
@@ -169,14 +171,14 @@ func testRecords(t *testing.T) {
 				namespace: "default",
 			},
 			response: &mockResponse{
-				content: DNSRecordList{
-					Items: []DNSRecord{{
+				content: apiv1alpha1.DNSRecordList{
+					Items: []apiv1alpha1.DNSRecord{{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								RecordResourceLabel: "some-value",
+								apiv1alpha1.RecordResourceLabel: "some-value",
 							},
 						},
-						Spec: DNSRecordSpec{
+						Spec: apiv1alpha1.DNSRecordSpec{
 							Endpoint: endpoint.Endpoint{
 								DNSName:       "sub.mytestdomain.io",
 								RecordType:    "CNAME",
@@ -297,13 +299,13 @@ func TestCRDApplyChanges(t *testing.T) {
 					namespace: "default",
 				},
 				response: &mockResponse{
-					content: DNSRecord{
+					content: apiv1alpha1.DNSRecord{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: map[string]string{
-								RecordResourceLabel: "some-value",
+								apiv1alpha1.RecordResourceLabel: "some-value",
 							},
 						},
-						Spec: DNSRecordSpec{Endpoint: *testCase.Endpoint},
+						Spec: apiv1alpha1.DNSRecordSpec{Endpoint: *testCase.Endpoint},
 					},
 				},
 			})
@@ -317,13 +319,13 @@ func TestCRDApplyChanges(t *testing.T) {
 					namespace: "default",
 				},
 				response: &mockResponse{
-					content: DNSRecordList{
-						Items: []DNSRecord{{
+					content: apiv1alpha1.DNSRecordList{
+						Items: []apiv1alpha1.DNSRecord{{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "test-myid-2",
 								Namespace: "default",
 							},
-							Spec: DNSRecordSpec{
+							Spec: apiv1alpha1.DNSRecordSpec{
 								Endpoint: *testCase.Endpoint,
 							},
 						}},
@@ -347,13 +349,13 @@ func TestCRDApplyChanges(t *testing.T) {
 					namespace: "default",
 				},
 				response: &mockResponse{
-					content: DNSRecordList{
-						Items: []DNSRecord{{
+					content: apiv1alpha1.DNSRecordList{
+						Items: []apiv1alpha1.DNSRecord{{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "test-myid-3",
 								Namespace: "default",
 							},
-							Spec: DNSRecordSpec{
+							Spec: apiv1alpha1.DNSRecordSpec{
 								Endpoint: *testCase.Endpoint,
 							},
 						}},
