@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -34,77 +33,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source"
 )
-
-const (
-	RecordOwnerLabel      string = "externaldns.k8s.io/owner"
-	RecordNameLabel       string = "externaldns.k8s.io/record-name"
-	RecordTypeLabel       string = "externaldns.k8s.io/record-type"
-	RecordIdentifierLabel string = "externaldns.k8s.io/identifier"
-	RecordResourceLabel   string = "externaldns.k8s.io/resource"
-)
-
-// DNSRecordSpec defines the desired state of DNSEndpoint
-// +kubebuilder:object:generate=true
-type DNSRecordSpec struct {
-	Endpoint endpoint.Endpoint `json:"endpoints,omitempty"`
-}
-
-// DNSRecordStatus defines the observed state of DNSRecord
-// +kubebuilder:object:generate=true
-type DNSRecordStatus struct {
-	// The generation observed by the external-dns controller.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// DNSRecord is used to get all records managed by external-dns.
-// It can be used as a registry with the status subresource.
-// +k8s:openapi-gen=true
-// +groupName=externaldns.k8s.io
-// +kubebuilder:resource:path=dnsrecords
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +versionName=v1alpha1
-
-type DNSRecord struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   DNSRecordSpec   `json:"spec,omitempty"`
-	Status DNSRecordStatus `json:"status,omitempty"`
-}
-
-func (dr DNSRecord) IsEndpoint(e *endpoint.Endpoint) bool {
-	spec := dr.Spec.Endpoint
-
-	return spec.DNSName == strings.ToLower(e.DNSName) &&
-		spec.RecordType == e.RecordType &&
-		spec.SetIdentifier == e.SetIdentifier
-}
-
-func (dr DNSRecord) EndpointLabels() endpoint.Labels {
-	labels := endpoint.Labels{}
-
-	labels[endpoint.OwnerLabelKey] = dr.Labels[RecordOwnerLabel]
-	labels[endpoint.ResourceLabelKey] = dr.Labels[RecordResourceLabel]
-	return labels
-}
-
-// +kubebuilder:object:root=true
-// DNSEndpointList is a list of DNSEndpoint objects
-type DNSRecordList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []DNSRecord `json:"items"`
-}
 
 type CRDConfig struct {
 	KubeConfig   string
@@ -170,8 +104,8 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(groupVersion,
-		&DNSRecord{},
-		&DNSRecordList{},
+		&apiv1alpha1.DNSRecord{},
+		&apiv1alpha1.DNSRecordList{},
 	)
 	metav1.AddToGroupVersion(scheme, groupVersion)
 
@@ -279,10 +213,10 @@ func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		endpoints = append(endpoints, record)
 	}
 
-	var list DNSRecordList
+	var list apiv1alpha1.DNSRecordList
 	for more := true; more; more = list.Continue != "" {
 		opts := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s", RecordOwnerLabel, cr.ownerID),
+			LabelSelector: fmt.Sprintf("%s=%s", apiv1alpha1.RecordOwnerLabel, cr.ownerID),
 		}
 
 		if list.Continue != "" {
@@ -323,18 +257,18 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Create {
-		record := DNSRecord{
+		record := apiv1alpha1.DNSRecord{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%s", cr.OwnerID(), r.SetIdentifier),
 				Namespace: cr.namespace,
 				Labels: map[string]string{
-					RecordOwnerLabel:      cr.OwnerID(),
-					RecordNameLabel:       r.DNSName,
-					RecordTypeLabel:       r.RecordType,
-					RecordIdentifierLabel: r.SetIdentifier,
+					apiv1alpha1.RecordOwnerLabel:      cr.OwnerID(),
+					apiv1alpha1.RecordNameLabel:       r.DNSName,
+					apiv1alpha1.RecordTypeLabel:       r.RecordType,
+					apiv1alpha1.RecordIdentifierLabel: r.SetIdentifier,
 				},
 			},
-			Spec: DNSRecordSpec{
+			Spec: apiv1alpha1.DNSRecordSpec{
 				Endpoint: *r,
 			},
 		}
@@ -355,9 +289,9 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
-		var records DNSRecordList
+		var records apiv1alpha1.DNSRecordList
 		opts := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", RecordIdentifierLabel, r.SetIdentifier, RecordOwnerLabel, cr.ownerID),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", apiv1alpha1.RecordIdentifierLabel, r.SetIdentifier, apiv1alpha1.RecordOwnerLabel, cr.ownerID),
 		}
 
 		err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)
@@ -386,9 +320,9 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for i, e := range filteredChanges.UpdateNew {
 		old := filteredChanges.UpdateOld[i]
 
-		var records DNSRecordList
+		var records apiv1alpha1.DNSRecordList
 		opts := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", RecordIdentifierLabel, old.SetIdentifier, RecordOwnerLabel, cr.ownerID),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", apiv1alpha1.RecordIdentifierLabel, old.SetIdentifier, apiv1alpha1.RecordOwnerLabel, cr.ownerID),
 		}
 
 		err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)
