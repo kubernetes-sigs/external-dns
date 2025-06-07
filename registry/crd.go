@@ -163,12 +163,12 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, apiVer
 
 	k8sClient, err = clientGenerator.KubeClient()
 	if err != nil {
-		return nil, fmt.Errorf("unable to create kubeclient: %s", err)
+		return nil, fmt.Errorf("unable to create kubeclient: %w", err)
 	}
 
 	crdClient, err := NewCRDClientForAPIVersionKind(k8sClient, kubeConfig, apiServerURL, apiVersion)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create crdclient: %s", err)
+		return nil, fmt.Errorf("unable to create crdclient: %w", err)
 	}
 
 	return &CRDRegistry{
