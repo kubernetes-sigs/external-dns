@@ -416,7 +416,7 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "aws-sd":
 		reg, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	case "crd":
-		reg, err = registry.NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDAPIVersion, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout, cfg.TXTCacheInterval)
+		reg, err = registry.NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout, cfg.TXTCacheInterval)
 	case "dynamodb":
 		var dynamodbOpts []func(*dynamodb.Options)
 		if cfg.AWSDynamoDBRegion != "" {
