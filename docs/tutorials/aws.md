@@ -891,14 +891,14 @@ For any given DNS name, only **one** of the following routing policies can be us
 - Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
 - Failover:`external-dns.alpha.kubernetes.io/aws-failover`
 - Geolocation-based routing:
-    - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
-    - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
-    - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+  - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
+  - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
+  - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
 - Geoproximity routing:
-    - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-aws-region`
-    - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-local-zone-group`
-    - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-coordinates`
-    - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-bias`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-aws-region`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-local-zone-group`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-coordinates`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximitylocation-bias`
 - Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ### Associating DNS records with healthchecks
