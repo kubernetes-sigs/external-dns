@@ -52,7 +52,7 @@ jobs:
 
       # Run Spectral
     - name: Lint OpenAPI spec
-      uses: stoplightio/spectral-action@2ad0b9302e32a77c1caccf474a9b2191a8060d83 # v0.8.11
+      uses: stoplightio/spectral-action@577bade2d6e0eeb50528c94182a5588bf961ae8f # v0.8.12
       with:
         file_glob: 'api/*.yaml'
 
