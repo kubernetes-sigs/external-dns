@@ -573,6 +573,11 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 
 		// Validate returned endpoints against desired endpoints.
 		validateEndpoints(t, endpoints, tc.expected)
+
+		// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+		for _, ep := range endpoints {
+			require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+		}
 	}
 }
 
@@ -605,9 +610,8 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	got, err := client.Endpoints(t.Context())
 	require.NoError(t, err)
 	for _, ep := range got {
-		// TODO: node source should always set the resource label key. currently not supported by the node source.
-		assert.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
-		assert.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+		assert.NotEmpty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+		assert.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 	}
 }
 

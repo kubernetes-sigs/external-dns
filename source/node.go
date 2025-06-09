@@ -102,7 +102,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
-		// Check controller annotation to see if we are responsible.
+		// Check the controller annotation to see if we are responsible.
 		if controller, ok := node.Annotations[controllerAnnotationKey]; ok && controller != controllerAnnotationValue {
 			log.Debugf("Skipping node %s because controller value does not match, found: %s, required: %s",
 				node.Name, controller, controllerAnnotationValue)
@@ -149,6 +149,8 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 			for _, addr := range addrs {
 				ep := endpoint.NewEndpointWithTTL(dns, suitableType(addr), ttl)
+				ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
+
 				log.Debugf("adding endpoint %s target %s", ep, addr)
 				key := endpoint.EndpointKey{
 					DNSName:    ep.DNSName,
