@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -109,32 +110,144 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
-			Name:      "a_records",
-			Help:      "Number of Registry A records.",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeA)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeA),
 		},
 	)
 	registryAAAARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
-			Name:      "aaaa_records",
-			Help:      "Number of Registry AAAA records.",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeAAAA)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeAAAA),
+		},
+	)
+	registryCnameRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeCNAME)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeCNAME),
+		},
+	)
+	registryTXTRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeTXT)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeTXT),
+		},
+	)
+	registrySRVRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeSRV)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeSRV),
+		},
+	)
+	registryNSRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeNS)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeNS),
+		},
+	)
+	registryPTRRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypePTR)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypePTR),
+		},
+	)
+	registryMXRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeMX)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeMX),
+		},
+	)
+	registryNAPTRRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeNAPTR)),
+			Help:      fmt.Sprintf("Number of Registry %s records.", endpoint.RecordTypeNAPTR),
 		},
 	)
 	sourceARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
-			Name:      "a_records",
-			Help:      "Number of Source A records.",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeA)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeA),
 		},
 	)
 	sourceAAAARecords = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
-			Name:      "aaaa_records",
-			Help:      "Number of Source AAAA records.",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeAAAA)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeAAAA),
+		},
+	)
+	sourceCnameRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeCNAME)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeCNAME),
+		},
+	)
+	sourceTXTRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeTXT)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeTXT),
+		},
+	)
+	sourceSRVRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeSRV)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeSRV),
+		},
+	)
+	sourceNSRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeNS)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeNS),
+		},
+	)
+	sourcePTRRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypePTR)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypePTR),
+		},
+	)
+	sourceMXRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeMX)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeMX),
+		},
+	)
+	sourceNAPTRRecords = metrics.NewGaugeWithOpts(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      fmt.Sprintf("%s_records", strings.ToLower(endpoint.RecordTypeNAPTR)),
+			Help:      fmt.Sprintf("Number of Source %s records.", endpoint.RecordTypeNAPTR),
 		},
 	)
 	verifiedARecords = metrics.NewGaugeWithOpts(
@@ -173,10 +286,27 @@ func init() {
 	metrics.RegisterMetric.MustRegister(deprecatedRegistryErrors)
 	metrics.RegisterMetric.MustRegister(deprecatedSourceErrors)
 	metrics.RegisterMetric.MustRegister(controllerNoChangesTotal)
+
 	metrics.RegisterMetric.MustRegister(registryARecords)
 	metrics.RegisterMetric.MustRegister(registryAAAARecords)
+	metrics.RegisterMetric.MustRegister(registryCnameRecords)
+	metrics.RegisterMetric.MustRegister(registryTXTRecords)
+	metrics.RegisterMetric.MustRegister(registrySRVRecords)
+	metrics.RegisterMetric.MustRegister(registryNSRecords)
+	metrics.RegisterMetric.MustRegister(registryPTRRecords)
+	metrics.RegisterMetric.MustRegister(registryMXRecords)
+	metrics.RegisterMetric.MustRegister(registryNAPTRRecords)
+
 	metrics.RegisterMetric.MustRegister(sourceARecords)
 	metrics.RegisterMetric.MustRegister(sourceAAAARecords)
+	metrics.RegisterMetric.MustRegister(sourceCnameRecords)
+	metrics.RegisterMetric.MustRegister(sourceTXTRecords)
+	metrics.RegisterMetric.MustRegister(sourceSRVRecords)
+	metrics.RegisterMetric.MustRegister(sourceNSRecords)
+	metrics.RegisterMetric.MustRegister(sourcePTRRecords)
+	metrics.RegisterMetric.MustRegister(sourceMXRecords)
+	metrics.RegisterMetric.MustRegister(sourceNAPTRRecords)
+
 	metrics.RegisterMetric.MustRegister(verifiedARecords)
 	metrics.RegisterMetric.MustRegister(verifiedAAAARecords)
 	metrics.RegisterMetric.MustRegister(consecutiveSoftErrors)
@@ -219,6 +349,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	c.lastRunAt = time.Now()
 	c.runAtMutex.Unlock()
 
+	regMetrics := newMetricsRecorder()
+
 	records, err := c.Registry.Records(ctx)
 	if err != nil {
 		registryErrorsTotal.Counter.Inc()
@@ -227,9 +359,18 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	}
 
 	registryEndpointsTotal.Gauge.Set(float64(len(records)))
-	regARecords, regAAAARecords := countAddressRecords(records)
-	registryARecords.Gauge.Set(float64(regARecords))
-	registryAAAARecords.Gauge.Set(float64(regAAAARecords))
+
+	countAddressRecords(regMetrics, records)
+	registryARecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeA))
+	registryAAAARecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeAAAA))
+	registryCnameRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeCNAME))
+	registryTXTRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeTXT))
+	registrySRVRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeSRV))
+	registryNSRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeNS))
+	registryPTRRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypePTR))
+	registryMXRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeMX))
+	registryNAPTRRecords.Gauge.Set(regMetrics.loadFloat64(endpoint.RecordTypeNAPTR))
+
 	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints(ctx)
@@ -239,12 +380,24 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 	sourceEndpointsTotal.Gauge.Set(float64(len(endpoints)))
-	srcARecords, srcAAAARecords := countAddressRecords(endpoints)
-	sourceARecords.Gauge.Set(float64(srcARecords))
-	sourceAAAARecords.Gauge.Set(float64(srcAAAARecords))
-	vARecords, vAAAARecords := countMatchingAddressRecords(endpoints, records)
-	verifiedARecords.Gauge.Set(float64(vARecords))
-	verifiedAAAARecords.Gauge.Set(float64(vAAAARecords))
+
+	sourceMetrics := newMetricsRecorder()
+	countAddressRecords(sourceMetrics, endpoints)
+	sourceARecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeA))
+	sourceAAAARecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeAAAA))
+	sourceCnameRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeCNAME))
+	sourceTXTRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeTXT))
+	sourceSRVRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeSRV))
+	sourceNSRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeNS))
+	sourcePTRRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypePTR))
+	sourceMXRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeMX))
+	sourceNAPTRRecords.Gauge.Set(sourceMetrics.loadFloat64(endpoint.RecordTypeNAPTR))
+
+	vaMetrics := newMetricsRecorder()
+	countMatchingAddressRecords(vaMetrics, endpoints, records)
+	verifiedARecords.Gauge.Set(vaMetrics.loadFloat64(endpoint.RecordTypeA))
+	verifiedAAAARecords.Gauge.Set(vaMetrics.loadFloat64(endpoint.RecordTypeAAAA))
+
 	endpoints, err = c.Registry.AdjustEndpoints(endpoints)
 	if err != nil {
 		return fmt.Errorf("adjusting endpoints: %w", err)
@@ -298,8 +451,8 @@ func latest(r time.Time, times ...time.Time) time.Time {
 	return r
 }
 
-// Counts the intersections of A and AAAA records in endpoint and registry.
-func countMatchingAddressRecords(endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint) (int, int) {
+// Counts the intersections of records in endpoint and registry.
+func countMatchingAddressRecords(rec *metricsRecorder, endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint) {
 	recordsMap := make(map[string]map[string]struct{})
 	for _, regRecord := range registryRecords {
 		if _, found := recordsMap[regRecord.DNSName]; !found {
@@ -307,35 +460,20 @@ func countMatchingAddressRecords(endpoints []*endpoint.Endpoint, registryRecords
 		}
 		recordsMap[regRecord.DNSName][regRecord.RecordType] = struct{}{}
 	}
-	aCount := 0
-	aaaaCount := 0
+
 	for _, sourceRecord := range endpoints {
 		if _, found := recordsMap[sourceRecord.DNSName]; found {
-			if _, found := recordsMap[sourceRecord.DNSName][sourceRecord.RecordType]; found {
-				switch sourceRecord.RecordType {
-				case endpoint.RecordTypeA:
-					aCount++
-				case endpoint.RecordTypeAAAA:
-					aaaaCount++
-				}
+			if _, ok := recordsMap[sourceRecord.DNSName][sourceRecord.RecordType]; ok {
+				rec.recordEndpointType(sourceRecord.RecordType)
 			}
 		}
 	}
-	return aCount, aaaaCount
 }
 
-func countAddressRecords(endpoints []*endpoint.Endpoint) (int, int) {
-	aCount := 0
-	aaaaCount := 0
+func countAddressRecords(rec *metricsRecorder, endpoints []*endpoint.Endpoint) {
 	for _, endPoint := range endpoints {
-		switch endPoint.RecordType {
-		case endpoint.RecordTypeA:
-			aCount++
-		case endpoint.RecordTypeAAAA:
-			aaaaCount++
-		}
+		rec.recordEndpointType(endPoint.RecordType)
 	}
-	return aCount, aaaaCount
 }
 
 // ScheduleRunOnce makes sure execution happens at most once per interval.

@@ -30,12 +30,26 @@ curl https://localhost:7979/metrics
 | cache_records_calls | Counter | provider | Number of calls to the provider cache Records list. |
 | a_records | Gauge | registry | Number of Registry A records. |
 | aaaa_records | Gauge | registry | Number of Registry AAAA records. |
+| cname_records | Gauge | registry | Number of Registry CNAME records. |
 | endpoints_total | Gauge | registry | Number of Endpoints in the registry |
 | errors_total | Counter | registry | Number of Registry errors. |
+| mx_records | Gauge | registry | Number of Registry MX records. |
+| naptr_records | Gauge | registry | Number of Registry NAPTR records. |
+| ns_records | Gauge | registry | Number of Registry NS records. |
+| ptr_records | Gauge | registry | Number of Registry PTR records. |
+| srv_records | Gauge | registry | Number of Registry SRV records. |
+| txt_records | Gauge | registry | Number of Registry TXT records. |
 | a_records | Gauge | source | Number of Source A records. |
 | aaaa_records | Gauge | source | Number of Source AAAA records. |
+| cname_records | Gauge | source | Number of Source CNAME records. |
 | endpoints_total | Gauge | source | Number of Endpoints in all sources |
 | errors_total | Counter | source | Number of Source errors. |
+| mx_records | Gauge | source | Number of Source MX records. |
+| naptr_records | Gauge | source | Number of Source NAPTR records. |
+| ns_records | Gauge | source | Number of Source NS records. |
+| ptr_records | Gauge | source | Number of Source PTR records. |
+| srv_records | Gauge | source | Number of Source SRV records. |
+| txt_records | Gauge | source | Number of Source TXT records. |
 | adjustendpoints_errors_total | Gauge | webhook_provider | Errors with AdjustEndpoints method |
 | adjustendpoints_requests_total | Gauge | webhook_provider | Requests with AdjustEndpoints method |
 | applychanges_errors_total | Gauge | webhook_provider | Errors with ApplyChanges method |
@@ -81,10 +95,10 @@ curl https://localhost:7979/metrics
 | http_request_duration_seconds |
 | process_cpu_seconds_total |
 | process_max_fds |
-| process_network_receive_bytes_total |
-| process_network_transmit_bytes_total |
 | process_open_fds |
 | process_resident_memory_bytes |
 | process_start_time_seconds |
 | process_virtual_memory_bytes |
 | process_virtual_memory_max_bytes |
+| process_network_receive_bytes_total |
+| process_network_transmit_bytes_total |
