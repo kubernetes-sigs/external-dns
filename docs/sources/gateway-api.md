@@ -122,13 +122,15 @@ In certain scenarios, conflicting DNS records can arise when External DNS proces
 
 - A CNAME record (`company.public.example.com -> company.private.example.com`) is used to direct traffic to private endpoints (e.g., AWS PrivateLink).
 - Some third-party services require traffic to resolve publicly to the Gateway API load balancer, but the hostname (`company.public.example.com`) must remain unchanged to avoid breaking the CNAME setup.
-- Without this annotation, External DNS may override the CNAME record with an A record due to conflicting hostname definitions, resulting in errors like:
-  *"Domain company.public.example.com contains conflicting record type candidates; discarding CNAME record."*
+- Without this annotation, External DNS may override the CNAME record with an A record due to conflicting hostname definitions.
 
 **Usage:**
-By setting the annotation `external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only`, users can instruct External DNS to ignore hostnames defined in the `HTTPRoute` spec and use only the hostnames specified in annotations. This ensures compatibility with complex DNS configurations and avoids record conflicts.
+By setting the annotation `external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only`, users can instruct External DNS
+to ignore hostnames defined in the `HTTPRoute` spec and use only the hostnames specified in annotations. This ensures
+compatibility with complex DNS configurations and avoids record conflicts.
 
 **Example:**
+
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
