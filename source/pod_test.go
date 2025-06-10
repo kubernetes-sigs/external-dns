@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -664,7 +665,7 @@ func TestPodSource(t *testing.T) {
 			client, err := NewPodSource(t.Context(), kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
 			require.NoError(t, err)
 
-			_ = testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			endpoints, err := client.Endpoints(ctx)
 			if tc.expectError {
@@ -673,22 +674,22 @@ func TestPodSource(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			// if tc.expectedDebugMsgs != nil {
-			// 	for _, expectedMsg := range tc.expectedDebugMsgs {
-			// 		testutils.TestHelperLogContains(expectedMsg, hook, t)
-			// 	}
-			// } else {
-			// 	require.Empty(t, hook.AllEntries(), "Expected no debug messages")
-			// }
+			if tc.expectedDebugMsgs != nil {
+				for _, expectedMsg := range tc.expectedDebugMsgs {
+					testutils.TestHelperLogContains(expectedMsg, hook, t)
+				}
+			} else {
+				require.Empty(t, hook.AllEntries(), "Expected no debug messages")
+			}
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
 
-			// for _, ep := range endpoints {
-			// 	// TODO: source should always set the resource label key. currently not supported by the pod source.
-			// 	assert.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
-			// 	assert.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
-			// }
+			for _, ep := range endpoints {
+				// TODO: source should always set the resource label key. currently not supported by the pod source.
+				assert.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+				assert.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }
