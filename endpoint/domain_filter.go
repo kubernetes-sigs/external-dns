@@ -23,6 +23,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/idna"
 )
 
 type MatchAllDomainFilters []DomainFilterInterface
@@ -69,7 +72,7 @@ type domainFilterSerde struct {
 func prepareFilters(filters []string) []string {
 	var fs []string
 	for _, filter := range filters {
-		if domain := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(filter), ".")); domain != "" {
+		if domain := normalizeDomain(strings.TrimSpace(filter)); domain != "" {
 			fs = append(fs, domain)
 		}
 	}
@@ -109,7 +112,7 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 		return emptyval
 	}
 
-	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	strippedDomain := normalizeDomain(domain)
 	for _, filter := range filters {
 		if filter == "" {
 			continue
@@ -133,7 +136,7 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 // only regex regular expression matches the domain
 // Otherwise, if either negativeRegex matches or regex does not match the domain, it returns false
 func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain string) bool {
-	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	strippedDomain := normalizeDomain(domain)
 
 	if negativeRegex != nil && negativeRegex.String() != "" {
 		return !negativeRegex.MatchString(strippedDomain)
@@ -214,7 +217,7 @@ func (df DomainFilter) MatchParent(domain string) bool {
 		return true
 	}
 
-	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	strippedDomain := normalizeDomain(domain)
 	for _, filter := range df.Filters {
 		if filter == "" || strings.HasPrefix(filter, ".") {
 			// We don't check parents if the filter is prefixed with "."
@@ -225,4 +228,14 @@ func (df DomainFilter) MatchParent(domain string) bool {
 		}
 	}
 	return false
+}
+
+// normalizeDomain converts a domain to a canonical form, so that we can filter on it
+// it: trim "." suffix, get Unicode version of domain complient with Section 5 of RFC 5891
+func normalizeDomain(domain string) string {
+	s, err := idna.Lookup.ToUnicode(strings.TrimSuffix(domain, "."))
+	if err != nil {
+		log.Warnf(`Got error while parsing domain %s: %v`, domain, err)
+	}
+	return s
 }
