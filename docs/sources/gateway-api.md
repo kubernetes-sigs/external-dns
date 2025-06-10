@@ -112,3 +112,33 @@ spec:
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
+
+## Annotations
+
+### external-dns.alpha.kubernetes.io/gateway-hostname-source
+
+**Why is this needed:**
+In certain scenarios, conflicting DNS records can arise when External DNS processes both the hostname annotations and the hostnames defined in the `*Route` spec. For example:
+
+- A CNAME record (`company.public.example.com -> company.private.example.com`) is used to direct traffic to private endpoints (e.g., AWS PrivateLink).
+- Some third-party services require traffic to resolve publicly to the Gateway API load balancer, but the hostname (`company.public.example.com`) must remain unchanged to avoid breaking the CNAME setup.
+- Without this annotation, External DNS may override the CNAME record with an A record due to conflicting hostname definitions, resulting in errors like:
+  *"Domain company.public.example.com contains conflicting record type candidates; discarding CNAME record."*
+
+**Usage:**
+By setting the annotation `external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only`, users can instruct External DNS to ignore hostnames defined in the `HTTPRoute` spec and use only the hostnames specified in annotations. This ensures compatibility with complex DNS configurations and avoids record conflicts.
+
+**Example:**
+```yaml
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/gateway-hostname-source: annotation-only
+    external-dns.alpha.kubernetes.io/hostname: company.private.example.com
+spec:
+  hostnames:
+    - company.public.example.com
+```
+
+In this example, External DNS will create DNS records only for `company.private.example.com` based on the annotation, ignoring the `hostnames` field in the `HTTPRoute` spec. This prevents conflicts with existing CNAME records while enabling public resolution for specific endpoints.
