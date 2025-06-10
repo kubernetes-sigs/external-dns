@@ -661,7 +661,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(t.Context(), kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
+			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
 			require.NoError(t, err)
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)

@@ -353,7 +353,7 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 		},
 		{
-			title: "templating with fqdn template correct but value not exit",
+			title: "templating with fqdn template correct but value does not exist",
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{

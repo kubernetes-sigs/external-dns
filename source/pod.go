@@ -229,7 +229,7 @@ func (ps *podSource) hostsFromTemplate(pod *corev1.Pod) (map[endpoint.EndpointKe
 	for _, target := range hosts {
 		for _, address := range pod.Status.PodIPs {
 			if address.IP == "" {
-				log.Debugf("skipping pod %q. PodIP is empty with phasae is %q", pod.Name, pod.Status.Phase)
+				log.Debugf("skipping pod %q. PodIP is empty with phase %q", pod.Name, pod.Status.Phase)
 				continue
 			}
 			key := endpoint.EndpointKey{
