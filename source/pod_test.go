@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -687,8 +686,8 @@ func TestPodSource(t *testing.T) {
 
 			for _, ep := range endpoints {
 				// TODO: source should always set the resource label key. currently not supported by the pod source.
-				assert.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
-				assert.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+				require.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+				require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
 		})
 	}
