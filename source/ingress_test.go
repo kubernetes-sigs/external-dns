@@ -1460,6 +1460,11 @@ func testIngressEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 			validateEndpoints(t, res, ti.expected)
+
+			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+			for _, ep := range res {
+				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }

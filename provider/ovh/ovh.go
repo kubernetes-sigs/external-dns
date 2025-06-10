@@ -539,12 +539,14 @@ func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.
 
 	if len(toDeleteIds) > 0 {
 		// Copy the records because we need to mutate the list.
-		existingRecords = slices.Clone(existingRecords)
-		alreadyRemoved := 0
-		for _, id := range toDeleteIds {
-			existingRecords = slices.Delete(existingRecords, id-alreadyRemoved, id-alreadyRemoved+1)
-			alreadyRemoved++
+		newExistingRecords := make([]ovhRecord, 0, len(existingRecords)-len(toDeleteIds))
+		for id := range existingRecords {
+			if slices.Contains(toDeleteIds, id) {
+				continue
+			}
+			newExistingRecords = append(newExistingRecords, existingRecords[id])
 		}
+		existingRecords = newExistingRecords
 	}
 
 	return ovhChanges, existingRecords
@@ -615,7 +617,7 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 			}
 		}
 
-		toInsertTargetToDelete := []int{}
+		createChangeConvertedToUpdateChange := []int{}
 		for i, target := range toInsertTarget {
 			if len(oldRecords) == 0 {
 				break
@@ -637,11 +639,17 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 			}
 			p.formatCNAMETarget(&change)
 			changes = append(changes, change)
-			toInsertTargetToDelete = append(toInsertTargetToDelete, i)
+			createChangeConvertedToUpdateChange = append(createChangeConvertedToUpdateChange, i)
 		}
-		for _, i := range toInsertTargetToDelete {
-			toInsertTarget = slices.Delete(toInsertTarget, i, i+1)
+
+		newToInsertTarget := make([]string, 0, len(toInsertTarget)-len(createChangeConvertedToUpdateChange))
+		for i := range toInsertTarget {
+			if slices.Contains(createChangeConvertedToUpdateChange, i) {
+				continue
+			}
+			newToInsertTarget = append(newToInsertTarget, toInsertTarget[i])
 		}
+		toInsertTarget = newToInsertTarget
 
 		if len(toInsertTarget) > 0 {
 			for _, target := range toInsertTarget {
