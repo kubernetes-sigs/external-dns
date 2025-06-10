@@ -113,7 +113,6 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 	}
 
 	endpointMap := make(map[endpoint.EndpointKey][]string)
-	fqdnEndpointMap := make(map[endpoint.EndpointKey][]string)
 	for _, pod := range pods {
 		if ps.fqdnTemplate == nil || ps.combineFQDNAnnotation {
 			ps.addPodEndpointsToEndpointMap(endpointMap, pod)
@@ -125,11 +124,9 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 				log.Debug(err)
 				continue
 			}
-			maps.Copy(fqdnEndpointMap, fqdnHosts)
+			maps.Copy(endpointMap, fqdnHosts)
 		}
 	}
-
-	maps.Copy(endpointMap, fqdnEndpointMap)
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
