@@ -643,10 +643,7 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 	} {
-
 		t.Run(tc.title, func(t *testing.T) {
-			t.Parallel()
-
 			kubernetes := fake.NewClientset()
 			ctx := context.Background()
 
