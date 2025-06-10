@@ -408,7 +408,7 @@ func (e *Endpoint) CheckEndpoint() bool {
 
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
-		_, err := ParseMXRecord(target)
+		_, err := NewMXTarget(target)
 		if err != nil {
 			log.Debugf("Invalid MX record target: %s. %v", target, err)
 			return false
@@ -418,21 +418,19 @@ func (t Targets) ValidateMXRecord() bool {
 	return true
 }
 
-func ParseMXRecord(target string) (MXTarget, error) {
+func NewMXTarget(target string) (MXTarget, error) {
 	var mxTarget MXTarget
 	// MX records must have a preference value to indicate priority, e.g. "10 example.com"
 	// as per https://www.rfc-editor.org/rfc/rfc974.txt
 	targetParts := strings.Fields(strings.TrimSpace(target))
 	if len(targetParts) != 2 {
 		err := fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
-		log.Debug(err)
 		return MXTarget{}, err
 	}
 
 	parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
 	if err != nil {
 		err := fmt.Errorf("invalid integer value in target: %s", target)
-		log.Debug(err)
 		return MXTarget{}, err
 	}
 

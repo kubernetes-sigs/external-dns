@@ -301,7 +301,7 @@ func makeDomainEditRequest(domain, name, recordType, data string, ttl int) *godo
 	}
 
 	if recordType == endpoint.RecordTypeMX {
-		mxRecord, err := endpoint.ParseMXRecord(data)
+		mxRecord, err := endpoint.NewMXTarget(data)
 
 		if err == nil {
 			priority := mxRecord.Priority

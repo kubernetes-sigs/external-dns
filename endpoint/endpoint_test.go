@@ -816,7 +816,7 @@ func TestPDNScheckEndpoint(t *testing.T) {
 	}
 }
 
-func TestParseMXRecord(t *testing.T) {
+func TestNewMXTarget(t *testing.T) {
 	tests := []struct {
 		description string
 		target      string
@@ -851,7 +851,7 @@ func TestParseMXRecord(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			actual, err := ParseMXRecord(tt.target)
+			actual, err := NewMXTarget(tt.target)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
