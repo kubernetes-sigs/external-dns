@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	cloud.google.com/go/compute/metadata v0.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.20.0
@@ -13,14 +13,14 @@ require (
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
-	github.com/aws/aws-sdk-go-v2 v1.36.3
-	github.com/aws/aws-sdk-go-v2/config v1.29.15
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.68
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.19.1
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.43.2
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.52.0
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.5
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.20
+	github.com/aws/aws-sdk-go-v2 v1.36.4
+	github.com/aws/aws-sdk-go-v2/config v1.29.16
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.69
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.19.2
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.43.3
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.52.1
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.6
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.21
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/civo/civogo v0.5.4
@@ -43,7 +43,7 @@ require (
 	github.com/miekg/dns v1.1.66
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.93.0
+	github.com/oracle/oci-go-sdk/v65 v65.93.1
 	github.com/ovh/go-ovh v1.7.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
@@ -83,16 +83,16 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.35 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.35 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.25.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.25.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.16 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.16 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.2 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
