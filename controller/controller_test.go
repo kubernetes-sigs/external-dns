@@ -787,7 +787,7 @@ func TestToggleRegistry(t *testing.T) {
 	// Wait up to 1 minute for failCount to reach at least 3
 	// The timeout serves as a safety net against infinite loops while being
 	// sufficiently large to accommodate slow CI environments
-	deadline := time.Now().Add(1 * time.Minute)
+	deadline := time.Now().Add(15 * time.Second)
 	for {
 		r.failCountMu.Lock()
 		count := r.failCount
