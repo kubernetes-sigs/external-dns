@@ -67,8 +67,8 @@ lint: licensecheck go-lint oas-lint
 .PHONY: crd
 crd: controller-gen-install
 	${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./endpoint/..."
-	${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout > config/crd/standard/dnsendpoint.yaml
-	cp -f config/crd/standard/dnsendpoint.yaml charts/external-dns/crds/dnsendpoint.yaml
+	${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout > config/crd/standard/v1alpha1.yaml
+	cp -f config/crd/standard/v1alpha1.yaml charts/external-dns/crds/
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
