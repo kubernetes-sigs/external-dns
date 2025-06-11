@@ -121,8 +121,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		if ps.fqdnTemplate != nil {
 			fqdnHosts, err := ps.hostsFromTemplate(pod)
 			if err != nil {
-				log.Debug(err)
-				continue
+				return nil, err
 			}
 			maps.Copy(endpointMap, fqdnHosts)
 		}
