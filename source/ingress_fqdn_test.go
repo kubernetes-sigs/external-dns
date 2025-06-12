@@ -14,7 +14,6 @@ limitations under the License.
 package source
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,19 +54,9 @@ func TestIngressSourceNewNodeSourceWithFqdn(t *testing.T) {
 			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
 		},
 		{
-			title:        "valid template",
+			title:        "valid template with multiple hosts",
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
@@ -111,7 +100,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.StringPtr("my-ingress"),
+						IngressClassName: testutils.ToPtr("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "example.org",
@@ -160,7 +149,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.StringPtr("my-ingress"),
+						IngressClassName: testutils.ToPtr("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{Host: "example.org"},
 						},
@@ -192,7 +181,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.StringPtr("my-ingress"),
+						IngressClassName: testutils.ToPtr("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{Host: "example.org"},
 						},
@@ -221,7 +210,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.StringPtr("my-ingress"),
+						IngressClassName: testutils.ToPtr("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "example.org",
@@ -254,7 +243,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.StringPtr("ingress-with-override"),
+						IngressClassName: testutils.ToPtr("ingress-with-override"),
 						Rules: []networkv1.IngressRule{
 							{Host: "foo.bar.com"},
 							{Host: "bar.bar.com"},
@@ -292,7 +281,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 						Namespace: "default",
 					},
 					Spec: networkv1.IngressSpec{
-						IngressClassName: testutils.StringPtr("ingress-with-override"),
+						IngressClassName: testutils.ToPtr("ingress-with-override"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "foo.bar.com",
@@ -351,7 +340,6 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
-
 
 			validateEndpoints(t, endpoints, tt.expected)
 		})

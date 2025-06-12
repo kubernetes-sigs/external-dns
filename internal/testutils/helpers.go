@@ -17,11 +17,11 @@ limitations under the License.
 package testutils
 
 // ToPtr returns a pointer to the given value of any type.
+// Example usage:
+//
+//	foo := 42
+//	fooPtr := ToPtr(foo)
+//	fmt.Println(*fooPtr) // Output: 42
 func ToPtr[T any](v T) *T {
 	return &v
-}
-
-// StringPtr is a convenience wrapper around Ptr for string values.
-func StringPtr(v string) *string {
-	return ToPtr(v)
 }
