@@ -19,14 +19,11 @@ package controller
 import (
 	"context"
 	"errors"
-	"math"
 	"reflect"
 	"sort"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -235,8 +232,9 @@ func TestRunOnce(t *testing.T) {
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
 	// check the verified records
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords.Gauge))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords.Gauge))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 }
 
 // TestRun tests that Run correctly starts and stops
@@ -268,14 +266,9 @@ func TestRun(t *testing.T) {
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
-	// check the verified records
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords.Gauge))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords.Gauge))
-}
 
-func valueFromMetric(metric prometheus.Gauge) uint64 {
-	ref := reflect.ValueOf(metric)
-	return reflect.Indirect(ref).FieldByName("valBits").Uint()
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 }
 
 func TestShouldRunOnce(t *testing.T) {

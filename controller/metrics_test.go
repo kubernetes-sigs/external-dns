@@ -17,12 +17,15 @@ limitations under the License.
 package controller
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/registry"
 )
 
 func TestRecordKnownEndpointType(t *testing.T) {
@@ -90,7 +93,8 @@ func TestVerifyARecords(t *testing.T) {
 		},
 		[]*plan.Changes{},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords.Gauge))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
 
 	testControllerFiltersDomains(
 		t,
@@ -134,8 +138,9 @@ func TestVerifyARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords.Gauge))
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(verifiedAAAARecords.Gauge))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 }
 
 func TestVerifyAAAARecords(t *testing.T) {
@@ -168,7 +173,8 @@ func TestVerifyAAAARecords(t *testing.T) {
 		},
 		[]*plan.Changes{},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedAAAARecords.Gauge))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 
 	testControllerFiltersDomains(
 		t,
@@ -212,8 +218,9 @@ func TestVerifyAAAARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(verifiedARecords.Gauge))
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedAAAARecords.Gauge))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 }
 
 func TestARecords(t *testing.T) {
@@ -259,8 +266,8 @@ func TestARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceARecords.Gauge))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryARecords.Gauge))
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 }
 
 func TestAAAARecords(t *testing.T) {
@@ -306,88 +313,64 @@ func TestAAAARecords(t *testing.T) {
 			},
 		}},
 	)
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceAAAARecords.Gauge))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryAAAARecords.Gauge))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, sourceRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 2, sourceRecords.Gauge, map[string]string{"record_type": "aaaa"})
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 }
 
-func TestMixedRecords(t *testing.T) {
-	testControllerFiltersDomains(
-		t,
-		[]*endpoint.Endpoint{
-			{
-				DNSName:    "record1.used.tld",
-				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
-			},
-			{
-				DNSName:    "record2.used.tld",
-				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::2"},
-			},
-			{
-				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
-				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
-			},
-			{
-				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
-				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
-			},
-			{
-				DNSName:    "example.com",
-				RecordType: endpoint.RecordTypeMX,
-				Targets:    endpoint.Targets{"10 example.com"},
-			},
-			{
-				DNSName:    "cloud-ttl",
-				RecordType: endpoint.RecordTypeNS,
-				Targets:    endpoint.Targets{"ns1-ttl.example.com."},
-			},
-			{
-				DNSName:    "cloud.example.com",
-				RecordType: endpoint.RecordTypeNS,
-				Targets:    endpoint.Targets{"ns1.example.com."},
-			},
-		},
-		endpoint.NewDomainFilter([]string{"used.tld"}),
-		[]*endpoint.Endpoint{
-			{
-				DNSName:    "record1.used.tld",
-				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
-			},
-			{
-				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
-				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
-			},
-			{
-				DNSName:    "100.2.0.192.in-addr.arpa",
-				RecordType: endpoint.RecordTypePTR,
-				Targets:    endpoint.Targets{"mail.example.com"},
-			},
-		},
-		[]*plan.Changes{{
-			Create: []*endpoint.Endpoint{
-				{
-					DNSName:    "record2.used.tld",
-					RecordType: endpoint.RecordTypeAAAA,
-					Targets:    endpoint.Targets{"2001:DB8::2"},
-				},
-			},
-		}},
-	)
+func TestGaugeMetricsWithMixedRecords(t *testing.T) {
+	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
+		endpoint.RecordTypeA:     534,
+		endpoint.RecordTypeAAAA:  324,
+		endpoint.RecordTypeCNAME: 2,
+		endpoint.RecordTypeTXT:   56,
+		endpoint.RecordTypeSRV:   11,
+		endpoint.RecordTypeNS:    3,
+	})
 
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceSRVRecords.Gauge))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(registrySRVRecords.Gauge))
+	providerEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
+		endpoint.RecordTypeA:     5334,
+		endpoint.RecordTypeAAAA:  324,
+		endpoint.RecordTypeCNAME: 23,
+		endpoint.RecordTypeTXT:   6,
+		endpoint.RecordTypeSRV:   25,
+		endpoint.RecordTypeNS:    1,
+		endpoint.RecordTypePTR:   43,
+	})
 
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(sourceMXRecords.Gauge))
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(registryMXRecords.Gauge))
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
 
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(sourcePTRRecords.Gauge))
-	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryPTRRecords.Gauge))
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return(configuredEndpoints, nil)
 
-	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceNSRecords.Gauge))
-	assert.Equal(t, math.Float64bits(0), valueFromMetric(registryNSRecords.Gauge))
+	provider := &filteredMockProvider{
+		RecordsStore: providerEndpoints,
+	}
+	r, err := registry.NewNoopRegistry(provider)
+
+	require.NoError(t, err)
+
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		DomainFilter:       endpoint.NewDomainFilter([]string{}),
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+	}
+
+	assert.NoError(t, ctrl.RunOnce(t.Context()))
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 534, sourceRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, sourceRecords.Gauge, map[string]string{"record_type": "aaaa"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, sourceRecords.Gauge, map[string]string{"record_type": "cname"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 11, sourceRecords.Gauge, map[string]string{"record_type": "srv"})
+
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 5334, registryRecords.Gauge, map[string]string{"record_type": "a"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, registryRecords.Gauge, map[string]string{"record_type": "aaaa"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 0, registryRecords.Gauge, map[string]string{"record_type": "mx"})
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 43, registryRecords.Gauge, map[string]string{"record_type": "ptr"})
 }
