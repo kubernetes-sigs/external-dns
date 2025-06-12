@@ -24,12 +24,12 @@ curl https://localhost:7979/metrics
 | last_reconcile_timestamp_seconds | Gauge | controller | Timestamp of last attempted sync with the DNS provider |
 | last_sync_timestamp_seconds | Gauge | controller | Timestamp of last successful sync with the DNS provider |
 | no_op_runs_total | Counter | controller | Number of reconcile loops ending up with no changes on the DNS provider side. |
-| verified_records | Gauge | controller | Number of DNS that exists both in source and registry (vector). |
+| verified_records | Gauge | controller | Number of DNS records that exists both in source and registry (vector). |
 | cache_apply_changes_calls | Counter | provider | Number of calls to the provider cache ApplyChanges. |
 | cache_records_calls | Counter | provider | Number of calls to the provider cache Records list. |
 | endpoints_total | Gauge | registry | Number of Endpoints in the registry |
 | errors_total | Counter | registry | Number of Registry errors. |
-| records | Gauge | registry | Number of Registry records partitioned by label name (vector). |
+| records | Gauge | registry | Number of registry records partitioned by label name (vector). |
 | endpoints_total | Gauge | source | Number of Endpoints in all sources |
 | errors_total | Counter | source | Number of Source errors. |
 | records | Gauge | source | Number of source records partitioned by label name (vector). |
