@@ -18,11 +18,13 @@ package testutils
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStringPtr(t *testing.T) {
 	original := "hello"
-	ptr := StringPtr(original)
+	ptr := ToPtr(original)
 	if ptr == nil {
 		t.Fatal("StringPtr returned nil")
 	}
@@ -35,4 +37,11 @@ func TestStringPtr(t *testing.T) {
 	if *ptr == original {
 		t.Error("pointer value changed with the original variable")
 	}
+}
+
+func TestIsPointer(t *testing.T) {
+	value := "test"
+	ptr := ToPtr(value)
+
+	assert.IsType(t, *ptr, value)
 }
