@@ -111,7 +111,7 @@ var (
 			Namespace: "external_dns",
 			Subsystem: "registry",
 			Name:      "records",
-			Help:      "Number of Registry records partitioned by label name (vector).",
+			Help:      "Number of registry records partitioned by label name (vector).",
 		},
 		[]string{"record_type"},
 	)
@@ -131,7 +131,7 @@ var (
 			Namespace: "external_dns",
 			Subsystem: "controller",
 			Name:      "verified_records",
-			Help:      "Number of DNS that exists both in source and registry (vector).",
+			Help:      "Number of DNS records that exists both in source and registry (vector).",
 		},
 		[]string{"record_type"},
 	)
