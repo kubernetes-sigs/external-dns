@@ -173,7 +173,7 @@ func init() {
 type Controller struct {
 	Source   source.Source
 	Registry registry.Registry
-	// The policy that defines which changes to DNS records is allowed
+	// The policy that defines which change to DNS records is allowed
 	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
