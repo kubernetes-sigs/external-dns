@@ -23,7 +23,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -156,7 +155,6 @@ func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint
 			idx++
 		}
 	}
-	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(result), func(i, j int) {
 		result[i], result[j] = result[j], result[i]
 	})

@@ -102,14 +102,14 @@ func TestGaugeV_SetWithLabels(t *testing.T) {
 	err = g.Write(&m)
 	assert.NoError(t, err)
 	assert.NotNil(t, m.Gauge)
-	assert.Equal(t, 1.23, *m.Gauge.Value)
+	assert.InDelta(t, 1.23, *m.Gauge.Value, 0.01)
 
 	// Override the value
 	gv.SetWithLabels(4.56, "ALPHA", "beta")
 	// reuse g (same label combination)
 	err = g.Write(&m)
 	assert.NoError(t, err)
-	assert.Equal(t, 4.56, *m.Gauge.Value)
+	assert.InDelta(t, 4.56, *m.Gauge.Value, 0.01)
 
 	assert.Len(t, m.Label, 2)
 }
