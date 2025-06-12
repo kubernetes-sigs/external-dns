@@ -150,8 +150,8 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		if !isVirtualServerReady(virtualServer) {
-			log.Warnf("F5 VirtualServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+		if !hasValidVirtualServerIP(virtualServer) {
+			log.Warnf("F5 VirtualServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				virtualServer.Namespace, virtualServer.Name)
 			continue
 		}
@@ -219,11 +219,7 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 	return filteredList, nil
 }
 
-func isVirtualServerReady(vs *f5.VirtualServer) bool {
-	if strings.ToLower(vs.Status.Status) != "ok" {
-		return false
-	}
-
+func hasValidVirtualServerIP(vs *f5.VirtualServer) bool {
 	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
 	return normalizedAddress != "none" && normalizedAddress != ""
 }
