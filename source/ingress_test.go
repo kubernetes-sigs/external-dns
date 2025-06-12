@@ -1435,6 +1435,11 @@ func testIngressEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 			validateEndpoints(t, res, ti.expected)
+
+			for _, ep := range res {
+				require.NotEmpty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }
