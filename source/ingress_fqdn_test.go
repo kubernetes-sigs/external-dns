@@ -174,7 +174,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			fqdnTemplate: "{{ range .Status.LoadBalancer.Ingress }}{{ if contains .Hostname \"nip.io\" }}example.org{{end}}{{end}}",
+			fqdnTemplate: `{{ range .Status.LoadBalancer.Ingress }}{{ if contains .Hostname "nip.io" }}example.org{{end}}{{end}}`,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.200.130.84.nip.io"}},
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.200.130.84.nip.io"}},
@@ -206,14 +206,14 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			fqdnTemplate: "{{ range .Status.LoadBalancer.Ingress }}{{ if contains .Hostname \"nip.io\" }}tld.org{{break}}{{end}}{{end}}",
+			fqdnTemplate: `{{ range .Status.LoadBalancer.Ingress }}{{ if contains .Hostname "nip.io" }}tld.org{{break}}{{end}}{{end}}`,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.200.130.84"}},
 				{DNSName: "tld.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.200.130.84"}},
 			},
 		},
 		{
-			title: "templating resolve hostnames with nip.io and staus IP",
+			title: "templating resolve hostnames with nip.io and status IP",
 			ingresses: []*networkv1.Ingress{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -271,7 +271,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			fqdnTemplate: "{{ range .Spec.Rules }}{{ if contains .Host \"bar.com\" }}{{ .Host }}.internal{{break}}{{end}}{{end}}",
+			fqdnTemplate: `{{ range .Spec.Rules }}{{ if contains .Host "bar.com" }}{{ .Host }}.internal{{break}}{{end}}{{end}}`,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.bar.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.16.15.25"}},
 				{DNSName: "foo.bar.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"abc.org"}},
@@ -315,7 +315,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			fqdnTemplate: "{{ .Name }}.test.org,{{ range .Spec.TLS }}{{ range $value := .Hosts }}{{ $value | replace \".\" \"-\" }}.internal{{break}}{{end}}{{end}}",
+			fqdnTemplate: `{{ .Name }}.test.org,{{ range .Spec.TLS }}{{ range $value := .Hosts }}{{ $value | replace "." "-" }}.internal{{break}}{{end}}{{end}}`,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.bar.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.09.15.25"}},
 				{DNSName: "https-example.foo.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"10.09.15.25"}},
@@ -352,9 +352,6 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
-			for _, ep := range endpoints {
-				fmt.Println(ep, ep.Labels)
-			}
 
 			validateEndpoints(t, endpoints, tt.expected)
 		})
