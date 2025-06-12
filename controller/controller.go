@@ -212,17 +212,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	registryEndpointsTotal.Gauge.Set(float64(len(regRecords)))
 
-	// counts1 := map[string]int{
-	// 	endpoint.RecordTypeA:     21080,
-	// 	endpoint.RecordTypeAAAA:  1206,
-	// 	endpoint.RecordTypeCNAME: 123,
-	// 	endpoint.RecordTypeTXT:   940,
-	// 	endpoint.RecordTypeSRV:   27,
-	// 	endpoint.RecordTypeNS:    11,
-	// }
-	//
-	// regRecordsDummy := testutils.GenerateTestEndpointsByType(counts1)
-
 	countAddressRecords(regMetrics, regRecords, registryRecords)
 
 	ctx = context.WithValue(ctx, provider.RecordsContextKey, regRecords)
@@ -233,17 +222,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		deprecatedSourceErrors.Counter.Inc()
 		return err
 	}
-
-	// counts := map[string]int{
-	// 	endpoint.RecordTypeA:     23078,
-	// 	endpoint.RecordTypeAAAA:  1506,
-	// 	endpoint.RecordTypeCNAME: 123,
-	// 	endpoint.RecordTypeTXT:   980,
-	// 	endpoint.RecordTypeSRV:   67,
-	// 	endpoint.RecordTypeNS:    16,
-	// }
-	//
-	// epsDummy := testutils.GenerateTestEndpointsByType(counts)
 
 	sourceEndpointsTotal.Gauge.Set(float64(len(sourceEndpoints)))
 
