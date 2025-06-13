@@ -70,6 +70,7 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 			"process_network_receive_bytes_total",
 			"process_network_transmit_bytes_total",
 		}...)
+		sort.Strings(runtimeMetrics)
 	} else {
 		runtimeMetrics = []string{}
 	}

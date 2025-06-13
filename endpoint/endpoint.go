@@ -47,6 +47,19 @@ const (
 	RecordTypeNAPTR = "NAPTR"
 )
 
+var (
+	KnownRecordTypes = []string{
+		RecordTypeA,
+		RecordTypeAAAA,
+		RecordTypeTXT,
+		RecordTypeSRV,
+		RecordTypeNS,
+		RecordTypePTR,
+		RecordTypeMX,
+		RecordTypeNAPTR,
+	}
+)
+
 // TTL is a structure defining the TTL of a DNS record
 type TTL int64
 
