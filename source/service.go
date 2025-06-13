@@ -31,6 +31,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
@@ -52,6 +53,7 @@ var (
 		v1.ServiceTypeLoadBalancer: {}, // Exposes the service externally using a cloud provider's load balancer.
 		v1.ServiceTypeExternalName: {}, // Maps the service to an external DNS name.
 	}
+	serviceNameIndexKey = "serviceName"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -124,6 +126,26 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 			},
 		},
 	)
+
+	// Add an indexer to the EndpointSlice informer to index by the service name label
+	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
+		serviceNameIndexKey: func(obj any) ([]string, error) {
+			endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+			if !ok {
+				// This should never happen because the Informer should only contain EndpointSlice objects
+				return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
+			}
+			serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
+			if serviceName == "" {
+				return nil, nil
+			}
+			key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+			return []string{key}, nil
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	informerFactory.Start(ctx.Done())
 
@@ -280,12 +302,23 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return nil
 	}
 
-	endpointSlices, err := sc.endpointSlicesInformer.Lister().EndpointSlices(svc.Namespace).List(
-		labels.SelectorFromSet(labels.Set{discoveryv1.LabelServiceName: svc.GetName()}),
-	)
+	serviceKey := cache.ObjectName{Namespace: svc.Namespace, Name: svc.Name}.String()
+	rawEndpointSlices, err := sc.endpointSlicesInformer.Informer().GetIndexer().ByIndex(serviceNameIndexKey, serviceKey)
 	if err != nil {
+		// Should never happen as long as the index exists
 		log.Errorf("Get EndpointSlices of service[%s] error:%v", svc.GetName(), err)
-		return endpoints
+		return nil
+	}
+
+	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
+	for _, obj := range rawEndpointSlices {
+		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+		if !ok {
+			// Should never happen as the indexer can only contain EndpointSlice objects
+			log.Errorf("Expected %T but got %T instead, skipping", endpointSlice, obj)
+			continue
+		}
+		endpointSlices = append(endpointSlices, endpointSlice)
 	}
 
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
