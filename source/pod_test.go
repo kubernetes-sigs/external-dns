@@ -634,7 +634,7 @@ func TestPodSource(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// Create the nodes
 			for _, node := range tc.nodes {
@@ -652,7 +652,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain)
+			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -664,6 +664,12 @@ func TestPodSource(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			for _, ep := range endpoints {
+				// TODO: source should always set the resource label key. currently not supported by the pod source.
+				require.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+				require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }
@@ -874,7 +880,7 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "")
+			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false)
 			require.NoError(t, err)
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)

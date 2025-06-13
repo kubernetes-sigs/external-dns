@@ -18,6 +18,9 @@ package source
 
 import (
 	"context"
+	"fmt"
+	"maps"
+	"text/template"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -27,14 +30,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/fqdn"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
 type podSource struct {
-	client                   kubernetes.Interface
-	namespace                string
+	client                kubernetes.Interface
+	namespace             string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
+
 	podInformer              coreinformers.PodInformer
 	nodeInformer             coreinformers.NodeInformer
 	compatibility            string
@@ -43,18 +51,27 @@ type podSource struct {
 }
 
 // NewPodSource creates a new podSource with the given config.
-func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string, ignoreNonHostNetworkPods bool, podSourceDomain string) (Source, error) {
+func NewPodSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace string,
+	compatibility string,
+	ignoreNonHostNetworkPods bool,
+	podSourceDomain string,
+	fqdnTemplate string,
+	combineFqdnAnnotation bool,
+) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
-	podInformer.Informer().AddEventHandler(
+	_, _ = podInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
 		},
 	)
-	nodeInformer.Informer().AddEventHandler(
+	_, _ = nodeInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -68,6 +85,11 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 		return nil, err
 	}
 
+	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
+	}
+
 	return &podSource{
 		client:                   kubeClient,
 		podInformer:              podInformer,
@@ -76,13 +98,15 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 		compatibility:            compatibility,
 		ignoreNonHostNetworkPods: ignoreNonHostNetworkPods,
 		podSourceDomain:          podSourceDomain,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    combineFqdnAnnotation,
 	}, nil
 }
 
-func (*podSource) AddEventHandler(ctx context.Context, handler func()) {
+func (*podSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
-func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	pods, err := ps.podInformer.Lister().Pods(ps.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -90,8 +114,19 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpointMap := make(map[endpoint.EndpointKey][]string)
 	for _, pod := range pods {
-		ps.addPodEndpointsToEndpointMap(endpointMap, pod)
+		if ps.fqdnTemplate == nil || ps.combineFQDNAnnotation {
+			ps.addPodEndpointsToEndpointMap(endpointMap, pod)
+		}
+
+		if ps.fqdnTemplate != nil {
+			fqdnHosts, err := ps.hostsFromTemplate(pod)
+			if err != nil {
+				return nil, err
+			}
+			maps.Copy(endpointMap, fqdnHosts)
+		}
 	}
+
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
 		endpoints = append(endpoints, endpoint.NewEndpoint(key.DNSName, key.RecordType, targets...))
@@ -178,6 +213,30 @@ func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.E
 			}
 		}
 	}
+}
+
+func (ps *podSource) hostsFromTemplate(pod *corev1.Pod) (map[endpoint.EndpointKey][]string, error) {
+	hosts, err := fqdn.ExecTemplate(ps.fqdnTemplate, pod)
+	if err != nil {
+		return nil, fmt.Errorf("skipping generating endpoints from template for pod %s: %w", pod.Name, err)
+	}
+
+	result := make(map[endpoint.EndpointKey][]string)
+	for _, target := range hosts {
+		for _, address := range pod.Status.PodIPs {
+			if address.IP == "" {
+				log.Debugf("skipping pod %q. PodIP is empty with phase %q", pod.Name, pod.Status.Phase)
+				continue
+			}
+			key := endpoint.EndpointKey{
+				DNSName:    target,
+				RecordType: suitableType(address.IP),
+			}
+			result[key] = append(result[key], address.IP)
+		}
+	}
+
+	return result, nil
 }
 
 func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, targets []string, domainList ...string) {
