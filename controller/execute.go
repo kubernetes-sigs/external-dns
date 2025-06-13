@@ -423,8 +423,6 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 	combinedSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
 	// Filter targets
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-
-	// Combine multiple sources into a single, deduplicated source.
 	combinedSource = source.NewNAT64Source(combinedSource, cfg.NAT64Networks)
 	combinedSource = source.NewTargetFilterSource(combinedSource, targetFilter)
 	return combinedSource, nil
