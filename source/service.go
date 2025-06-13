@@ -28,10 +28,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -50,6 +52,7 @@ var (
 		v1.ServiceTypeLoadBalancer: {}, // Exposes the service externally using a cloud provider's load balancer.
 		v1.ServiceTypeExternalName: {}, // Maps the service to an external DNS name.
 	}
+	serviceNameIndexKey = "serviceName"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -72,7 +75,7 @@ type serviceSource struct {
 	resolveLoadBalancerHostname    bool
 	listenEndpointEvents           bool
 	serviceInformer                coreinformers.ServiceInformer
-	endpointsInformer              coreinformers.EndpointsInformer
+	endpointSlicesInformer         discoveryinformers.EndpointSliceInformer
 	podInformer                    coreinformers.PodInformer
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              *serviceTypes
@@ -93,7 +96,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	// Set the resync period to 0 to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	endpointsInformer := informerFactory.Core().V1().Endpoints()
+	endpointSlicesInformer := informerFactory.Discovery().V1().EndpointSlices()
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
@@ -104,7 +107,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 			},
 		},
 	)
-	endpointsInformer.Informer().AddEventHandler(
+	endpointSlicesInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -122,6 +125,25 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 			},
 		},
 	)
+
+	// Add an indexer to the EndpointSlice informer to index by the service name label
+	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
+		serviceNameIndexKey: func(obj any) ([]string, error) {
+			endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+			if !ok {
+				return nil, nil
+			}
+			serviceName, ok := endpointSlice.Labels[discoveryv1.LabelServiceName]
+			if !ok {
+				return nil, nil
+			}
+			key := cache.ObjectName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+			return []string{key}, nil
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	informerFactory.Start(ctx.Done())
 
@@ -148,7 +170,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		publishHostIP:                  publishHostIP,
 		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
-		endpointsInformer:              endpointsInformer,
+		endpointSlicesInformer:         endpointSlicesInformer,
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
@@ -279,42 +301,61 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return nil
 	}
 
-	endpointsObject, err := sc.endpointsInformer.Lister().Endpoints(svc.Namespace).Get(svc.GetName())
+	serviceKey := cache.ObjectName{Namespace: svc.Namespace, Name: svc.Name}.String()
+	rawEndpointSlices, err := sc.endpointSlicesInformer.Informer().GetIndexer().ByIndex(serviceNameIndexKey, serviceKey)
 	if err != nil {
-		log.Errorf("Get endpoints of service[%s] error:%v", svc.GetName(), err)
+		log.Errorf("Get EndpointSlices of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
+	}
+
+	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
+	for _, obj := range rawEndpointSlices {
+		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+		if !ok {
+			log.Errorf("Object %T is not an EndpointSlice, skipping", obj)
+			continue
+		}
+		endpointSlices = append(endpointSlices, endpointSlice)
 	}
 
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
-		log.Errorf("List pods of service[%s] error: %v", svc.GetName(), err)
+		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
 	}
 
 	endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
+	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
+	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
 	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
-	for _, subset := range endpointsObject.Subsets {
-		addresses := subset.Addresses
-		if svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses {
-			addresses = append(addresses, subset.NotReadyAddresses...)
-		}
+	for _, endpointSlice := range endpointSlices {
+		for _, ep := range endpointSlice.Endpoints {
+			if !conditionToBool(ep.Conditions.Ready) && !publishNotReadyAddresses {
+				continue
+			}
 
-		for _, address := range addresses {
+			if publishPodIPs &&
+				endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 &&
+				endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
+				log.Debugf("Skipping EndpointSlice %s/%s because its address type is unsupported: %s", endpointSlice.Namespace, endpointSlice.Name, endpointSlice.AddressType)
+				continue
+			}
+
 			// find pod for this address
-			if address.TargetRef == nil || address.TargetRef.APIVersion != "" || address.TargetRef.Kind != "Pod" {
-				log.Debugf("Skipping address because its target is not a pod: %v", address)
+			if ep.TargetRef == nil || ep.TargetRef.APIVersion != "" || ep.TargetRef.Kind != "Pod" {
+				log.Debugf("Skipping address because its target is not a pod: %v", ep)
 				continue
 			}
 			var pod *v1.Pod
 			for _, v := range pods {
-				if v.Name == address.TargetRef.Name {
+				if v.Name == ep.TargetRef.Name {
 					pod = v
 					break
 				}
 			}
 			if pod == nil {
-				log.Errorf("Pod %s not found for address %v", address.TargetRef.Name, address)
+				log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
 				continue
 			}
 
@@ -342,8 +383,13 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 						targets = endpoint.Targets{pod.Status.HostIP}
 						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
 					} else {
-						targets = endpoint.Targets{address.IP}
-						log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, address.IP)
+						if len(ep.Addresses) == 0 {
+							log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
+							continue
+						}
+						address := ep.Addresses[0] // Only use the first address, as additional addresses have no semantic defined
+						targets = endpoint.Targets{address}
+						log.Debugf("Generating matching endpoint %s with EndpointSliceAddress IP %s", headlessDomain, address)
 					}
 				}
 				for _, target := range targets {
@@ -760,7 +806,7 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	if sc.listenEndpointEvents {
-		sc.endpointsInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
 
@@ -790,4 +836,12 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 		enabled: true,
 		types:   types,
 	}, nil
+}
+
+// conditionToBool converts an EndpointConditions condition to a bool value.
+func conditionToBool(v *bool) bool {
+	if v == nil {
+		return true // nil should be interpreted as "true" as per EndpointConditions spec
+	}
+	return *v
 }
