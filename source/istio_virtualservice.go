@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
@@ -46,6 +47,13 @@ import (
 // IstioMeshGateway is the built in gateway for all sidecars
 const IstioMeshGateway = "mesh"
 
+// virtualServiceWork is a container for the VirtualService object and its processing results
+type virtualServiceWork struct {
+	virtualService *networkingv1alpha3.VirtualService
+	result        []*endpoint.Endpoint
+	err          error
+}
+
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
@@ -60,6 +68,7 @@ type virtualServiceSource struct {
 	serviceInformer          coreinformers.ServiceInformer
 	virtualserviceInformer   networkingv1alpha3informer.VirtualServiceInformer
 	gatewayInformer          networkingv1alpha3informer.GatewayInformer
+	workerCount              int
 }
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
@@ -72,6 +81,7 @@ func NewIstioVirtualServiceSource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	workerCount int,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -133,6 +143,7 @@ func NewIstioVirtualServiceSource(
 		serviceInformer:          serviceInformer,
 		virtualserviceInformer:   virtualServiceInformer,
 		gatewayInformer:          gatewayInformer,
+		workerCount:              workerCount,
 	}, nil
 }
 
@@ -148,43 +159,97 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		return nil, err
 	}
 
-	var endpoints []*endpoint.Endpoint
+	// Create work and result channels
+	workChan := make(chan *networkingv1alpha3.VirtualService, len(virtualServices))
+	resultChan := make(chan virtualServiceWork, len(virtualServices))
+	errorsChan := make(chan error, len(virtualServices))
 
+	workerCount := sc.workerCount
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+
+	var wg sync.WaitGroup
+	// Start worker pool
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			defer wg.Done()
+			for virtualService := range workChan {
+				work := virtualServiceWork{virtualService: virtualService}
+
+				// Check controller annotation to see if we are responsible.
+				controller, ok := virtualService.Annotations[controllerAnnotationKey]
+				if ok && controller != controllerAnnotationValue {
+					log.Debugf("Skipping VirtualService %s/%s because controller value does not match, found: %s, required: %s",
+						virtualService.Namespace, virtualService.Name, controller, controllerAnnotationValue)
+					resultChan <- work
+					continue
+				}
+
+				gwEndpoints, err := sc.endpointsFromVirtualService(ctx, virtualService)
+				if err != nil {
+					work.err = err
+					errorsChan <- err
+					resultChan <- work
+					continue
+				}
+
+				// apply template if host is missing on VirtualService
+				if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
+					iEndpoints, err := sc.endpointsFromTemplate(ctx, virtualService)
+					if err != nil {
+						work.err = err
+						errorsChan <- err
+						resultChan <- work
+						continue
+					}
+
+					if sc.combineFQDNAnnotation {
+						gwEndpoints = append(gwEndpoints, iEndpoints...)
+					} else {
+						gwEndpoints = iEndpoints
+					}
+				}
+
+				if len(gwEndpoints) == 0 {
+					log.Debugf("No endpoints could be generated from VirtualService %s/%s", virtualService.Namespace, virtualService.Name)
+					resultChan <- work
+					continue
+				}
+
+				log.Debugf("Endpoints generated from VirtualService: %s/%s: %v", virtualService.Namespace, virtualService.Name, gwEndpoints)
+				work.result = gwEndpoints
+				resultChan <- work
+			}
+		}()
+	}
+
+	// Distribute work
 	for _, virtualService := range virtualServices {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := virtualService.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping VirtualService %s/%s because controller value does not match, found: %s, required: %s",
-				virtualService.Namespace, virtualService.Name, controller, controllerAnnotationValue)
-			continue
-		}
+		workChan <- virtualService
+	}
+	close(workChan)
 
-		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, virtualService)
-		if err != nil {
+	// Start a goroutine to close resultChan once all workers are done
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Collect results
+	var endpoints []*endpoint.Endpoint
+	for work := range resultChan {
+		if work.err == nil && work.result != nil {
+			endpoints = append(endpoints, work.result...)
+		}
+		select {
+		case err := <-errorsChan:
 			return nil, err
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
 		}
-
-		// apply template if host is missing on VirtualService
-		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ctx, virtualService)
-			if err != nil {
-				return nil, err
-			}
-
-			if sc.combineFQDNAnnotation {
-				gwEndpoints = append(gwEndpoints, iEndpoints...)
-			} else {
-				gwEndpoints = iEndpoints
-			}
-		}
-
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from VirtualService %s/%s", virtualService.Namespace, virtualService.Name)
-			continue
-		}
-
-		log.Debugf("Endpoints generated from VirtualService: %s/%s: %v", virtualService.Namespace, virtualService.Name, gwEndpoints)
-		endpoints = append(endpoints, gwEndpoints...)
 	}
 
 	for _, ep := range endpoints {

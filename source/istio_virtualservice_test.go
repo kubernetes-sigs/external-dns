@@ -119,6 +119,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		1, // default worker count
 	)
 	suite.NoError(err, "should initialize virtualservice source")
 }
@@ -150,40 +151,56 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 		annotationFilter         string
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
+		workerCount              int
 		expectError              bool
 	}{
 		{
 			title:        "invalid template",
 			expectError:  true,
 			fqdnTemplate: "{{.Name",
+			workerCount:  1,
 		},
 		{
 			title:       "valid empty template",
 			expectError: false,
+			workerCount: 1,
 		},
 		{
 			title:        "valid template",
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			workerCount:  1,
 		},
 		{
 			title:        "valid template",
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
+			workerCount:  1,
 		},
 		{
 			title:                    "valid template",
 			expectError:              false,
 			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
 			combineFQDNAndAnnotation: true,
+			workerCount:              1,
 		},
 		{
 			title:            "non-empty annotation filter label",
 			expectError:      false,
 			annotationFilter: "kubernetes.io/gateway.class=nginx",
+			workerCount:      1,
+		},
+		{
+			title:       "invalid worker count",
+			expectError: false,
+			workerCount: -1, // should be set to default 1
+		},
+		{
+			title:       "custom worker count",
+			expectError: false,
+			workerCount: 5,
 		},
 	} {
-
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -196,6 +213,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				ti.workerCount,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -726,18 +744,19 @@ func testVirtualServiceEndpoints(t *testing.T) {
 
 	namespace := "testing"
 	for _, ti := range []struct {
-		title                    string
-		targetNamespace          string
-		annotationFilter         string
-		lbServices               []fakeIngressGatewayService
-		ingresses                []fakeIngress
-		gwConfigs                []fakeGatewayConfig
-		vsConfigs                []fakeVirtualServiceConfig
-		expected                 []*endpoint.Endpoint
-		expectError              bool
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		ignoreHostnameAnnotation bool
+		title                     string
+		targetNamespace           string
+		annotationFilter          string
+		lbServices                []fakeIngressGatewayService
+		ingresses                 []fakeIngress
+		gwConfigs                 []fakeGatewayConfig
+		vsConfigs                 []fakeVirtualServiceConfig
+		expected                  []*endpoint.Endpoint
+		expectError               bool
+		fqdnTemplate              string
+		combineFQDNAndAnnotation  bool
+		ignoreHostnameAnnotation  bool
+		workerCount               int
 	}{
 		{
 			title: "two simple virtualservices with one gateway each, one ingressgateway loadbalancer service",
@@ -1404,7 +1423,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
-			fqdnTemplate:             "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
+			fqdnTemplate:          "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
 			combineFQDNAndAnnotation: true,
 		},
 		{
@@ -1943,8 +1962,44 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
+		{
+			title:           "our controller type is specified",
+			targetNamespace: "testing",
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "foo-virtualservice",
+					namespace: "testing",
+					annotations: map[string]string{
+						controllerAnnotationKey: controllerAnnotationValue,
+					},
+					dnsnames: []string{"foo"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+			},
+			workerCount: 1,
+		},
+		{
+			title:           "different controller types are ignored",
+			targetNamespace: "testing",
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "foo-virtualservice",
+					namespace: "testing",
+					annotations: map[string]string{
+						controllerAnnotationKey: "not-external-dns",
+					},
+					dnsnames: []string{"foo"},
+				},
+			},
+			expected:    []*endpoint.Endpoint{},
+			workerCount: 1,
+		},
 	} {
-
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1993,6 +2048,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				ti.workerCount,
 			)
 			require.NoError(t, err)
 
@@ -2079,6 +2135,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, i
 		"{{.Name}}",
 		false,
 		false,
+		1, // default worker count
 	)
 	if err != nil {
 		return nil, err
