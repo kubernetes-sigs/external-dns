@@ -23,7 +23,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.21
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/civo/civogo v0.5.4
+	github.com/civo/civogo v0.6.1
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
