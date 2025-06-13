@@ -490,10 +490,12 @@ type toggleRegistry struct {
 	failCountMu sync.Mutex // protects failCount
 }
 
+const toggleRegistryFailureCount = 3
+
 func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	r.failCountMu.Lock()
 	defer r.failCountMu.Unlock()
-	if r.failCount < 3 {
+	if r.failCount < toggleRegistryFailureCount {
 		r.failCount++
 		return nil, provider.SoftError
 	}
@@ -509,12 +511,13 @@ func TestToggleRegistry(t *testing.T) {
 	cfg := getTestConfig()
 	r := &toggleRegistry{}
 
+	interval := 10 * time.Millisecond
 	ctrl := &Controller{
 		Source:             source,
 		Registry:           r,
 		Policy:             &plan.SyncPolicy{},
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
-		Interval:           10 * time.Millisecond,
+		Interval:           interval,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -524,19 +527,23 @@ func TestToggleRegistry(t *testing.T) {
 		close(stopped)
 	}()
 
-	// Wait up to 2 seconds for failCount to reach at least 3
-	deadline := time.Now().Add(2 * time.Second)
+	// Wait up to 1 minute for failCount to reach at least 3
+	// The timeout serves as a safety net against infinite loops while being
+	// sufficiently large to accommodate slow CI environments
+	deadline := time.Now().Add(15 * time.Second)
 	for {
 		r.failCountMu.Lock()
 		count := r.failCount
 		r.failCountMu.Unlock()
-		if count >= 3 {
+		if count >= toggleRegistryFailureCount {
 			break
 		}
 		if time.Now().After(deadline) {
 			break
 		}
-		time.Sleep(10 * time.Millisecond)
+		// Sleep for the controller interval to avoid busy waiting
+		// since the controller won't run again until the interval passes
+		time.Sleep(interval)
 	}
 	cancel()
 	<-stopped
@@ -544,7 +551,5 @@ func TestToggleRegistry(t *testing.T) {
 	r.failCountMu.Lock()
 	finalCount := r.failCount
 	r.failCountMu.Unlock()
-	if finalCount < 3 {
-		t.Fatalf("failCount should be at least 3 after waiting up to 2s, got %d", finalCount)
-	}
+	assert.Equal(t, toggleRegistryFailureCount, finalCount, "failCount should be at least %d", toggleRegistryFailureCount)
 }
