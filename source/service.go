@@ -52,6 +52,7 @@ var (
 		v1.ServiceTypeLoadBalancer: {}, // Exposes the service externally using a cloud provider's load balancer.
 		v1.ServiceTypeExternalName: {}, // Maps the service to an external DNS name.
 	}
+	serviceNameIndexKey = "serviceName"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -124,6 +125,25 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 			},
 		},
 	)
+
+	// Add an indexer to the EndpointSlice informer to index by the service name label
+	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
+		serviceNameIndexKey: func(obj any) ([]string, error) {
+			endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+			if !ok {
+				return nil, nil
+			}
+			serviceName, ok := endpointSlice.Labels[discoveryv1.LabelServiceName]
+			if !ok {
+				return nil, nil
+			}
+			key := cache.ObjectName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+			return []string{key}, nil
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	informerFactory.Start(ctx.Done())
 
@@ -281,12 +301,21 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return nil
 	}
 
-	endpointSlices, err := sc.endpointSlicesInformer.Lister().EndpointSlices(svc.Namespace).List(
-		labels.SelectorFromSet(labels.Set{discoveryv1.LabelServiceName: svc.GetName()}),
-	)
+	serviceKey := cache.ObjectName{Namespace: svc.Namespace, Name: svc.Name}.String()
+	rawEndpointSlices, err := sc.endpointSlicesInformer.Informer().GetIndexer().ByIndex(serviceNameIndexKey, serviceKey)
 	if err != nil {
 		log.Errorf("Get EndpointSlices of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
+	}
+
+	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
+	for _, obj := range rawEndpointSlices {
+		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+		if !ok {
+			log.Errorf("Object %T is not an EndpointSlice, skipping", obj)
+			continue
+		}
+		endpointSlices = append(endpointSlices, endpointSlice)
 	}
 
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
