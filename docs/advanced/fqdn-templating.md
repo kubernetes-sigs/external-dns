@@ -59,7 +59,7 @@ The template uses the following data from the source object (e.g., a `Service` o
 | `pod`                  | Queries Kubernetes Pod resources for endpoints.                 |       ✅        |      ✅       |
 | `service`              | Queries Kubernetes Service resources for endpoints.             |       ✅        |      ✅       |
 | `skipper-routegroup`   | Queries Skipper RouteGroup resources for endpoints.             |       ✅        |      ✅       |
-| `traefik-proxy`        | Queries Traefik Proxy resources for endpoints.                  |       ❌        |      ❌       |
+| `traefik-proxy`        | Queries Traefik IngressRoute resources for endpoints.                  |       ❌        |      ❌       |
 
 ## Custom Functions
 
