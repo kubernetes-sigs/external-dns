@@ -180,8 +180,8 @@ github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XL
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5/go.mod h1:/iP1qXHoty45bqomnu2LM+VVyAEdWN+vtSHGlQgyxbw=
-github.com/civo/civogo v0.5.4 h1:atR+zfqEEp9qvLa/DRr8eYWYPySi5Mh9uaMNbZ6b4fE=
-github.com/civo/civogo v0.5.4/go.mod h1:LaEbkszc+9nXSh4YNG0sYXFGYqdQFmXXzQg0gESs2hc=
+github.com/civo/civogo v0.6.1 h1:PFOh7rBU0vmj7LTDIv3z7l9uXG4SZyyzScCl3wyTFSc=
+github.com/civo/civogo v0.6.1/go.mod h1:LaEbkszc+9nXSh4YNG0sYXFGYqdQFmXXzQg0gESs2hc=
 github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4dUb/I5gc9Hdhagfvm9+RyrPryS/auMzxE=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudflare/cloudflare-go v0.115.0 h1:84/dxeeXweCc0PN5Cto44iTA8AkG1fyT11yPO5ZB7sM=
