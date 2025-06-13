@@ -342,6 +342,9 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 				return nil, provider.NewSoftError(err)
 			}
 		}
+		if strings.Contains(err.Error(), "exceeded available rate limit retries") {
+			return nil, provider.NewSoftError(err)
+		}
 		return nil, err
 	}
 
@@ -760,6 +763,10 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 					return nil, provider.NewSoftError(err)
 				}
 			}
+
+			if strings.Contains(err.Error(), "exceeded available rate limit retries") {
+				return nil, provider.NewSoftError(err)
+			}
 			return nil, err
 		}
 
@@ -794,6 +801,9 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 					// Handle rate limit error as a soft error
 					return nil, provider.NewSoftError(err)
 				}
+			}
+			if strings.Contains(err.Error(), "exceeded available rate limit retries") {
+				return nil, provider.NewSoftError(err)
 			}
 			log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
 			return nil, err
