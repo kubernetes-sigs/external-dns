@@ -11,6 +11,7 @@ linters:
     - ineffassign
     - misspell
     - revive
+    - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/usage/linters/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
     - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/usage/linters/#errchkjson
     - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/usage/linters/#errcheck
@@ -38,6 +39,13 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
+    recvcheck:
+      # User-defined method exclusions.
+      # The format is `struct_name.method_name` (ex: `Foo.MethodName`).
+      # A wildcard `*` can use as a struct name (ex: `*.MethodName`).
+      # Default: []
+      exclusions:
+        - "DomainFilter.UnmarshalJSON"
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 52
     testifylint:
