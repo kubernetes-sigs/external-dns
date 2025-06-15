@@ -3556,7 +3556,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
@@ -3654,6 +3654,11 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+			for _, ep := range endpoints {
+				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }
@@ -3785,7 +3790,7 @@ func TestExternalServices(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
@@ -3834,12 +3839,17 @@ func TestExternalServices(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+			for _, ep := range endpoints {
+				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }
 
 func BenchmarkServiceEndpoints(b *testing.B) {
-	kubernetes := fake.NewSimpleClientset()
+	kubernetes := fake.NewClientset()
 
 	service := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
