@@ -215,7 +215,6 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
-		sc.setResourceLabel(svc, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
@@ -390,6 +389,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		}
 
 		if ep != nil {
+			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 			endpoints = append(endpoints, ep)
 		}
 	}
@@ -472,12 +472,6 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 	}
 	log.Debugf("filtered %d services out of %d with service types filter %q", len(result), len(services), slices.Collect(maps.Keys(sc.serviceTypeFilter.types)))
 	return result
-}
-
-func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("service/%s/%s", service.Namespace, service.Name)
-	}
 }
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) (endpoints []*endpoint.Endpoint) {
@@ -745,6 +739,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			}
 
 			if ep != nil {
+				ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 				endpoints = append(endpoints, ep)
 			}
 		}
