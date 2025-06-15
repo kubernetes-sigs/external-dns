@@ -54,7 +54,7 @@ The template uses the following data from the source object (e.g., a `Service` o
 | `istio-gateway`        | Queries Istio Gateway resources for endpoints.                  |       ✅        |      ✅       |
 | `istio-virtualservice` | Queries Istio VirtualService resources for endpoints.           |       ✅        |      ✅       |
 | `kong-tcpingress`      | Queries Kong TCPIngress resources for endpoints.                |       ❌        |      ❌       |
-| `node`                 | Queries Kubernetes Node resources for endpoints.                |       ✅        |      ❌       |
+| `node`                 | Queries Kubernetes Node resources for endpoints.                |       ✅        |      ✅       |
 | `openshift-route`      | Queries OpenShift Route resources for endpoints.                |       ✅        |      ✅       |
 | `pod`                  | Queries Kubernetes Pod resources for endpoints.                 |       ✅        |      ✅       |
 | `service`              | Queries Kubernetes Service resources for endpoints.             |       ✅        |      ✅       |
