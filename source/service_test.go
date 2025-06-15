@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"maps"
 	"math/rand"
 	"net"
 	"sort"
@@ -30,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
@@ -3107,7 +3109,7 @@ func TestHeadlessServices(t *testing.T) {
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			var addresses, notReadyAddresses []v1.EndpointAddress
+			var endpointSliceEndpoints []discoveryv1.Endpoint
 			for i, podname := range tc.podnames {
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
@@ -3129,34 +3131,31 @@ func TestHeadlessServices(t *testing.T) {
 				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				address := v1.EndpointAddress{
-					IP: tc.podIPs[i],
+				ep := discoveryv1.Endpoint{
+					Addresses: []string{tc.podIPs[i]},
 					TargetRef: &v1.ObjectReference{
 						APIVersion: "",
 						Kind:       "Pod",
 						Name:       podname,
 					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready: &tc.podsReady[i],
+					},
 				}
-				if tc.podsReady[i] {
-					addresses = append(addresses, address)
-				} else {
-					notReadyAddresses = append(notReadyAddresses, address)
-				}
+				endpointSliceEndpoints = append(endpointSliceEndpoints, ep)
 			}
-			endpointsObject := &v1.Endpoints{
+			endpointSliceLabels := maps.Clone(tc.labels)
+			endpointSliceLabels[discoveryv1.LabelServiceName] = tc.svcName
+			endpointSlice := &discoveryv1.EndpointSlice{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tc.svcNamespace,
 					Name:      tc.svcName,
-					Labels:    tc.labels,
+					Labels:    endpointSliceLabels,
 				},
-				Subsets: []v1.EndpointSubset{
-					{
-						Addresses:         addresses,
-						NotReadyAddresses: notReadyAddresses,
-					},
-				},
+				AddressType: discoveryv1.AddressTypeIPv4,
+				Endpoints:   endpointSliceEndpoints,
 			}
-			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(context.Background(), endpointsObject, metav1.CreateOptions{})
+			_, err = kubernetes.DiscoveryV1().EndpointSlices(tc.svcNamespace).Create(context.Background(), endpointSlice, metav1.CreateOptions{})
 			require.NoError(t, err)
 			for _, node := range tc.nodes {
 				_, err = kubernetes.CoreV1().Nodes().Create(context.Background(), &node, metav1.CreateOptions{})
@@ -3576,8 +3575,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			var addresses []v1.EndpointAddress
-			var notReadyAddresses []v1.EndpointAddress
+			var endpointsSlicesEndpoints []discoveryv1.Endpoint
 			for i, podname := range tc.podnames {
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
@@ -3598,30 +3596,27 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				address := v1.EndpointAddress{
-					IP:        "4.3.2.1",
+				ep := discoveryv1.Endpoint{
+					Addresses: []string{"4.3.2.1"},
 					TargetRef: tc.targetRefs[i],
+					Conditions: discoveryv1.EndpointConditions{
+						Ready: &tc.podsReady[i],
+					},
 				}
-				if tc.podsReady[i] {
-					addresses = append(addresses, address)
-				} else {
-					notReadyAddresses = append(notReadyAddresses, address)
-				}
+				endpointsSlicesEndpoints = append(endpointsSlicesEndpoints, ep)
 			}
-			endpointsObject := &v1.Endpoints{
+			endpointSliceLabels := maps.Clone(tc.labels)
+			endpointSliceLabels[discoveryv1.LabelServiceName] = tc.svcName
+			endpointSlice := &discoveryv1.EndpointSlice{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tc.svcNamespace,
 					Name:      tc.svcName,
-					Labels:    tc.labels,
+					Labels:    endpointSliceLabels,
 				},
-				Subsets: []v1.EndpointSubset{
-					{
-						Addresses:         addresses,
-						NotReadyAddresses: notReadyAddresses,
-					},
-				},
+				AddressType: discoveryv1.AddressTypeIPv4,
+				Endpoints:   endpointsSlicesEndpoints,
 			}
-			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(context.Background(), endpointsObject, metav1.CreateOptions{})
+			_, err = kubernetes.DiscoveryV1().EndpointSlices(tc.svcNamespace).Create(context.Background(), endpointSlice, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
