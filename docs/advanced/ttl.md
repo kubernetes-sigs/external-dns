@@ -31,20 +31,70 @@ Both examples result in the same value of 60 seconds TTL.
 
 TTL must be a positive value.
 
-## Providers
+## TTL annotation support
 
-- [x] AWS (Route53)
-- [x] Azure
-- [x] Cloudflare
-- [x] DigitalOcean
-- [x] DNSimple
-- [x] Google
-- [ ] InMemory
-- [x] Linode
-- [x] TransIP
-- [x] RFC2136
+> Note: For TTL annotations to work, the `external-dns.alpha.kubernetes.io/hostname` annotation must be set on the resource and be supported by the provider as well as the source.
 
-PRs welcome!
+### Providers
+
+| Provider       | Supported |
+|:---------------|:---------:|
+| `Akamai`       |     ✅     |
+| `AlibabaCloud` |     ✅     |
+| `AWS`          |     ✅     |
+| `AWSSD`        |     ✅     |
+| `Azure`        |     ✅     |
+| `Civo`         |     ❌     |
+| `Cloudflare`   |     ✅     |
+| `CoreDNS`      |     ❌     |
+| `DigitalOcean` |     ✅     |
+| `DNSSimple`    |     ✅     |
+| `Exoscale`     |     ✅     |
+| `Gandi`        |     ✅     |
+| `GoDaddy`      |     ✅     |
+| `Google GCP`   |     ✅     |
+| `InMemory`     |     ❌     |
+| `Linode`       |     ❌     |
+| `NS1`          |     ❌     |
+| `OCI`          |     ✅     |
+| `OVH`          |     ❌     |
+| `PDNS`         |     ❌     |
+| `PiHole`       |     ✅     |
+| `Plural`       |     ❌     |
+| `RFC2136`      |     ✅     |
+| `Scaleway`     |     ✅     |
+| `Transip`      |     ✅     |
+| `Webhook`      |     ✅     |
+
+### Sources
+
+| Source                 | Supported |
+|:-----------------------|:---------:|
+| `ambassador-host`      |     ✅     |
+| `cloudfoundry`         |     ❌     |
+| `connector`            |     ❌     |
+| `contour-httpproxy`    |     ✅     |
+| `crd`                  |     ❌     |
+| `empty`                |     ❌     |
+| `f5-transportserver`   |     ✅     |
+| `f5-virtualserver`     |     ✅     |
+| `fake`                 |     ❌     |
+| `gateway-grpcroute`    |     ✅     |
+| `gateway-httproute`    |     ✅     |
+| `gateway-tcproute`     |     ✅     |
+| `gateway-tlsroute`     |     ✅     |
+| `gateway-udproute`     |     ✅     |
+| `gloo-proxy`           |     ✅     |
+| `ingress`              |     ✅     |
+| `istio-gateway`        |     ✅     |
+| `istio-virtualservice` |     ✅     |
+| `kong-tcpingress`      |     ✅     |
+| `node`                 |     ✅     |
+| `openshift-route`      |     ✅     |
+| `pod`                  |     ✅     |
+| `service`              |     ✅     |
+| `skipper-routegroup`   |     ✅     |
+| `traefik-proxy`        |     ✅     |
 
 ## Notes
 
