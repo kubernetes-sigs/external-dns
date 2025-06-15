@@ -417,21 +417,24 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 	// Skip endpoints if we do not want entries from annotations
-	if !sc.ignoreHostnameAnnotation {
-		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
-		var hostnameList []string
-		var internalHostnameList []string
-
-		hostnameList = annotations.HostnamesFromAnnotations(svc.Annotations)
-		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
-		}
-
-		internalHostnameList = annotations.InternalHostnamesFromAnnotations(svc.Annotations)
-		for _, hostname := range internalHostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
-		}
+	if sc.ignoreHostnameAnnotation {
+		return endpoints
 	}
+
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
+	var hostnameList []string
+	var internalHostnameList []string
+
+	hostnameList = annotations.HostnamesFromAnnotations(svc.Annotations)
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
+	}
+
+	internalHostnameList = annotations.InternalHostnamesFromAnnotations(svc.Annotations)
+	for _, hostname := range internalHostnameList {
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
+	}
+
 	return endpoints
 }
 
