@@ -267,7 +267,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable)
+		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.LabelFilter, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable, cfg.CombineFQDNAndAnnotation)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {

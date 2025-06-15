@@ -64,6 +64,7 @@ func TestNodeSourceNewNodeSourceWithFqdn(t *testing.T) {
 				labels.Everything(),
 				true,
 				true,
+				false,
 			)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -80,6 +81,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 		nodes        []*v1.Node
 		fqdnTemplate string
 		expected     []*endpoint.Endpoint
+		combineFQDN  bool
 	}{
 		{
 			title: "templating expansion with multiple domains",
@@ -293,6 +295,32 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "node-name-2.domain.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.178"}},
 			},
 		},
+		{
+			title:       "templating with shared all domain and fqdn combination annotation",
+			combineFQDN: true,
+			nodes: []*v1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "node-name-1"},
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "243.186.136.160"}},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "node-name-2"},
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "243.186.136.178"}},
+					},
+				},
+			},
+			fqdnTemplate: "{{ .Name }}.domain.tld,all.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "all.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.160", "243.186.136.178"}},
+				{DNSName: "node-name-1.domain.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.160"}},
+				{DNSName: "node-name-2.domain.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.178"}},
+				{DNSName: "node-name-1", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.160"}},
+				{DNSName: "node-name-2", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"243.186.136.178"}},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -310,6 +338,7 @@ func TestNodeSourceFqdnTemplatingExamples(t *testing.T) {
 				labels.Everything(),
 				true,
 				true,
+				tt.combineFQDN,
 			)
 			require.NoError(t, err)
 
