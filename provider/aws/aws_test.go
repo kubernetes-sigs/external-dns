@@ -584,6 +584,42 @@ func TestAWSRecords(t *testing.T) {
 			},
 		},
 		{
+			Name:            aws.String("geoproximitylocation-region.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoProximityLocation: &route53types.GeoProximityLocation{
+				AWSRegion: aws.String("us-west-2"),
+				Bias:      aws.Int32(10),
+			},
+		},
+		{
+			Name:            aws.String("geoproximitylocation-localzone.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoProximityLocation: &route53types.GeoProximityLocation{
+				LocalZoneGroup: aws.String("usw2-pdx1-az1"),
+				Bias:           aws.Int32(10),
+			},
+		},
+		{
+			Name:            aws.String("geoproximitylocation-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoProximityLocation: &route53types.GeoProximityLocation{
+				Coordinates: &route53types.Coordinates{
+					Latitude:  aws.String("90"),
+					Longitude: aws.String("90"),
+				},
+				Bias: aws.Int32(0),
+			},
+		},
+		{
 			Name:            aws.String("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeCname,
 			TTL:             aws.Int64(defaultTTL),
@@ -636,6 +672,9 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
 		endpoint.NewEndpointWithTTL("geolocation-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
+		endpoint.NewEndpointWithTTL("geoproximitylocation-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
+		endpoint.NewEndpointWithTTL("geoproximitylocation-localzone.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-pdx1-az1").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
+		endpoint.NewEndpointWithTTL("geoproximitylocation-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, "90,90").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "0"),
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(defaultTTL), "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(defaultTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
@@ -670,6 +709,7 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
+		endpoint.NewEndpoint("a-test-geoproximity-no-bias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2"),
 	}
 
 	records, err := provider.AdjustEndpoints(records)
@@ -687,6 +727,7 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 		endpoint.NewEndpoint("cname-test-elb-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
+		endpoint.NewEndpoint("a-test-geoproximity-no-bias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "0"),
 	})
 }
 
@@ -846,6 +887,27 @@ func TestAWSApplyChanges(t *testing.T) {
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("2606:4700:4700::1111")}, {Value: aws.String("2606:4700:4700::1001")}},
 			},
 			{
+				Name:            aws.String("delete-test-geoproximity.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("geoproximity-delete"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					AWSRegion: aws.String("us-west-2"),
+					Bias:      aws.Int32(10),
+				},
+			},
+			{
+				Name:            aws.String("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("geoproximity-update"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					LocalZoneGroup: aws.String("usw2-lax1-az2"),
+				},
+			},
+			{
 				Name:            aws.String("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
 				TTL:             aws.Int64(defaultTTL),
@@ -915,6 +977,13 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("create-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8", "8.8.4.4"),
 			endpoint.NewEndpoint("create-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
 			endpoint.NewEndpoint("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost1.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("create-test-geoproximity-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").
+				WithSetIdentifier("geoproximity-region").
+				WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").
+				WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
+			endpoint.NewEndpoint("create-test-geoproximity-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").
+				WithSetIdentifier("geoproximity-coordinates").
+				WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, "60,60"),
 		}
 
 		currentRecords := []*endpoint.Endpoint{
@@ -930,6 +999,9 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "bar.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
 			endpoint.NewEndpoint("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8", "8.8.4.4"),
 			endpoint.NewEndpoint("update-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
+			endpoint.NewEndpoint("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").
+				WithSetIdentifier("geoproximity-update").
+				WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-lax1-az2"),
 			endpoint.NewEndpoint("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("weighted-to-simple").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("simple-to-weighted.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
 			endpoint.NewEndpoint("policy-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithProviderSpecific(providerSpecificWeight, "10"),
@@ -951,6 +1023,9 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "baz.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
 			endpoint.NewEndpoint("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4", "4.3.2.1"),
 			endpoint.NewEndpoint("update-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1001", "2606:4700:4700::1111"),
+			endpoint.NewEndpoint("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").
+				WithSetIdentifier("geoproximity-update").
+				WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-phx2-az1"),
 			endpoint.NewEndpoint("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
 			endpoint.NewEndpoint("simple-to-weighted.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("simple-to-weighted").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("policy-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithProviderSpecific(providerSpecificRegion, "us-east-1"),
@@ -969,6 +1044,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "qux.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
 			endpoint.NewEndpoint("delete-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4", "4.3.2.1"),
 			endpoint.NewEndpoint("delete-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
+			endpoint.NewEndpoint("delete-test-geoproximity.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("geoproximity-delete").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 			endpoint.NewEndpoint("delete-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "30 mailhost1.foo.elb.amazonaws.com"),
 		}
 
@@ -1117,6 +1193,40 @@ func TestAWSApplyChanges(t *testing.T) {
 				Type:            route53types.RRTypeMx,
 				TTL:             aws.Int64(defaultTTL),
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("create-test-geoproximity-region.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+				SetIdentifier:   aws.String("geoproximity-region"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					AWSRegion: aws.String("us-west-2"),
+					Bias:      aws.Int32(10),
+				},
+			},
+			{
+				Name:            aws.String("update-test-geoproximity.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("geoproximity-update"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					LocalZoneGroup: aws.String("usw2-phx2-az1"),
+				},
+			},
+			{
+				Name:            aws.String("create-test-geoproximity-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeA,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+				SetIdentifier:   aws.String("geoproximity-coordinates"),
+				GeoProximityLocation: &route53types.GeoProximityLocation{
+					Coordinates: &route53types.Coordinates{
+						Latitude:  aws.String("60"),
+						Longitude: aws.String("60"),
+					},
+				},
 			},
 		})
 		validateRecords(t, listAWSRecords(t, provider.clients[defaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []route53types.ResourceRecordSet{
@@ -1902,7 +2012,7 @@ func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoin
 
 	normalized, err := provider.AdjustEndpoints(endpoints)
 	assert.NoError(t, err)
-	assert.True(t, testutils.SameEndpoints(normalized, expected), "actual and normalized endpoints don't match. %+v:%+v", endpoints, normalized)
+	assert.True(t, testutils.SameEndpoints(normalized, expected), "normalized and expected endpoints don't match. %+v:%+v", normalized, expected)
 }
 
 func validateAWSZones(t *testing.T, zones map[string]*route53types.HostedZone, expected map[string]*route53types.HostedZone) {
