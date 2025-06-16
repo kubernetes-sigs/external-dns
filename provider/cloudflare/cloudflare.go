@@ -788,8 +788,11 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 	for {
 		pageCustomHostnameListResponse, result, err := p.Client.CustomHostnames(ctx, zoneID, resultInfo.Page, cloudflare.CustomHostname{})
 		if err != nil {
-			log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
-			return nil, convertCloudflareError(err)
+			convertedError := convertCloudflareError(err)
+			if !strings.Contains(convertedError.Error(), provider.SoftError.Error()) {
+				log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
+			}
+			return nil, convertedError
 		}
 		for _, ch := range pageCustomHostnameListResponse {
 			chs[newCustomHostnameIndex(ch)] = ch
