@@ -279,6 +279,9 @@ func convertCloudflareError(err error) error {
 			return provider.NewSoftError(err)
 		}
 	}
+	// This is a workaround because Cloudflare library does not return a specific error type for rate limit exceeded.
+	// See https://github.com/cloudflare/cloudflare-go/issues/4155 and https://github.com/kubernetes-sigs/external-dns/pull/5524
+	// This workaround can be removed once Cloudflare library returns a specific error type.
 	if strings.Contains(err.Error(), "exceeded available rate limit retries") {
 		return provider.NewSoftError(err)
 	}
