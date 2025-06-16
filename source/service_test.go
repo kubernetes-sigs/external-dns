@@ -1718,7 +1718,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -1789,7 +1789,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
 			fqdnTemplate:     "{{.Name}}.bar.example.com",
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.bar.example.com.", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -1827,7 +1827,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -1863,7 +1863,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -1907,7 +1907,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -1954,7 +1954,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			nodes: []*v1.Node{{
@@ -1998,7 +1998,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			nodes: []*v1.Node{{
@@ -2054,7 +2054,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				accessAnnotationKey:   "private",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -2094,7 +2094,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				accessAnnotationKey:   "public",
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org.", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
