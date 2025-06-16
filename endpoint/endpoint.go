@@ -212,6 +212,7 @@ type EndpointKey struct {
 	DNSName       string
 	RecordType    string
 	SetIdentifier string
+	RecordTTL     TTL
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
