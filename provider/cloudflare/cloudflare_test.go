@@ -955,6 +955,24 @@ func TestCloudflareListZonesRateLimited(t *testing.T) {
 	}
 }
 
+func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
+	// Create a mock client that returns a rate limit error
+	client := NewMockCloudFlareClient()
+	client.listZonesContextError = errors.New("exceeded available rate limit retries")
+	p := &CloudFlareProvider{Client: client}
+
+	// Call the Zones function
+	_, err := p.Zones(context.Background())
+
+	fmt.Printf("Error: %v\n", err)
+	fmt.Printf("%v", strings.Contains(err.Error(), "exceeded available rate limit retries"))
+
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a rate limit error")
+	}
+}
+
 func TestCloudflareListZoneInternalErrors(t *testing.T) {
 	// Create a mock client that returns a internal server error
 	client := NewMockCloudFlareClient()
