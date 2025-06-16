@@ -210,7 +210,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 	}, nil
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error {
+func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) (cloudflare.DNSRecord, error) {
 	recordData := getDNSRecordFromRecordParams(rp)
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
@@ -221,12 +221,12 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		if _, ok := zone[rp.ID]; ok {
 			if strings.HasPrefix(recordData.Name, "newerror-update-") {
-				return errors.New("failed to update erroring DNS record")
+				return cloudflare.DNSRecord{}, errors.New("failed to update erroring DNS record")
 			}
 			zone[rp.ID] = recordData
 		}
 	}
-	return nil
+	return recordData, nil
 }
 
 func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
@@ -345,7 +345,12 @@ func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID 
 	var newCustomHostname cloudflare.CustomHostname = ch
 	newCustomHostname.ID = fmt.Sprintf("ID-%s", ch.Hostname)
 	m.customHostnames[zoneID] = append(m.customHostnames[zoneID], newCustomHostname)
-	return &cloudflare.CustomHostnameResponse{}, nil
+	return &cloudflare.CustomHostnameResponse{
+		Result: newCustomHostname,
+		Response: cloudflare.Response{
+			Success: true,
+		},
+	}, nil
 }
 
 func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, zoneID string, customHostnameID string) error {
@@ -1224,7 +1229,6 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 }
 
 func TestCloudflareGetRecordID(t *testing.T) {
-	p := &CloudFlareProvider{}
 	recordsMap := DNSRecordsMap{
 		{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
 			Name:    "foo.com",
@@ -1245,29 +1249,29 @@ func TestCloudflareGetRecordID(t *testing.T) {
 		},
 	}
 
-	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Empty(t, recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeA,
 		Content: "foobar",
 	}))
 
-	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Empty(t, recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "fizfuz",
 	}))
 
-	assert.Equal(t, "1", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "1", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "foobar",
 	}))
-	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Empty(t, recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "2.3.4.5",
 	}))
-	assert.Equal(t, "2", p.getRecordID(recordsMap, cloudflare.DNSRecord{
+	assert.Equal(t, "2", recordsMap.GetRecordID(cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "1.2.3.4",
@@ -1507,7 +1511,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	for _, tc := range testCases {
 		records := make(DNSRecordsMap)
 		for _, r := range tc.Records {
-			records[newDNSRecordIndex(r)] = r
+			records.Set(r)
 		}
 		endpoints := groupByNameAndTypeWithCustomHostnames(records, CustomHostnamesMap{})
 		// Targets order could be random with underlying map
@@ -2898,7 +2902,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 			t.Error(e)
 		}
 		if tc.preApplyHook == "corrupt" {
-			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
+			if ch, err := chs.Get("newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
 				chID := ch.ID
 				t.Logf("corrupting custom hostname %q", chID)
 				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
