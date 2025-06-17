@@ -2,6 +2,47 @@ apiVersion: v1
 entries:
   external-dns:
   - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
+          description: "Allow extraArgs to also be a map enabling overrides of individual values."
+        - kind: changed
+          description: "Update CRD."
+        - kind: changed
+          description: "Update CRD."
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.17.0."
+        - kind: fixed
+          description: "Fix wrong type definitions for webhook probes."
+        - kind: fixed
+          description: "Update schema with latest plugin release."
+    apiVersion: v2
+    appVersion: 0.17.0
+    created: "2025-06-17T19:57:30.457181213Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 9971c9cba2b64de1016586a58043bd0bb323761df3f162b5556027c5e19e52ad
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.17.0/external-dns-1.17.0.tgz
+    version: 1.17.0
+  - annotations:
       artifacthub.io/changes: |
         - kind: changed
           description: "Set defaults for `automountServiceAccountToken` and `serviceAccount.automountServiceAccountToken` to `true` in Helm chart values."
@@ -990,4 +1031,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-04-11T09:31:02.8890103Z"
+generated: "2025-06-17T19:57:30.457384935Z"
