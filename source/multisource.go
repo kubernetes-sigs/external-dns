@@ -50,14 +50,12 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 					log.Warnf("Source provided targets for %q (%s), ignoring default targets [%s] due to new behavior. Use --force-default-targets to revert to old behavior.", endpoints[i].DNSName, endpoints[i].RecordType, strings.Join(ms.defaultTargets, ", "))
 					result = append(result, endpoints[i])
 					continue
-				} else if ms.forceDefaultTargets || !hasSourceTargets {
+				} else {
 					eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier, "")
 					for _, ep := range eps {
 						ep.Labels = endpoints[i].Labels
 					}
 					result = append(result, eps...)
-				} else {
-					result = append(result, endpoints[i])
 				}
 			}
 		} else {
