@@ -9,6 +9,7 @@ ExternalDNS has a `--default-targets` flag that can be used to specify a default
 ### New Behavior (default)
 
 By default, ExternalDNS now has the following behavior:
+
 - If a `DNSEndpoint` resource has targets specified in its `spec.endpoints[].targets` field, these targets will be used for the DNS record, **overriding** any targets specified via the `--default-targets` flag.
 - If a `DNSEndpoint` resource has an **empty** `targets` field, the targets from the `--default-targets` flag will be used. This allows for creating records that point to default load balancers or IPs without explicitly listing them in every `DNSEndpoint` resource.
 
@@ -42,8 +43,8 @@ spec:
       - placeholder
 ```
 
-*   **Without `--force-default-targets` (New Behavior):** A CNAME record for `smoke-t.example.com` will be created pointing to `placeholder`.
-*   **With `--force-default-targets` (Legacy Behavior):** A CNAME record for `smoke-t.example.com` will be created pointing to `1.2.3.4`. The `placeholder` target will be ignored.
+- **Without `--force-default-targets` (New Behavior):** A CNAME record for `smoke-t.example.com` will be created pointing to `placeholder`.
+- **With `--force-default-targets` (Legacy Behavior):** A CNAME record for `smoke-t.example.com` will be created pointing to `1.2.3.4`. The `placeholder` target will be ignored.
 
 ### DNSEndpoint with Empty/No Targets
 
@@ -63,7 +64,7 @@ spec:
     recordType: CNAME
 ```
 
-*   **Without `--force-default-targets` (New Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
-*   **With `--force-default-targets` (Legacy Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
+- **Without `--force-default-targets` (New Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
+- **With `--force-default-targets` (Legacy Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
 
 `--force-default-targets` allows migration path to clean CRD resources.
