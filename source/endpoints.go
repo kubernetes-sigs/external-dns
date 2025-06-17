@@ -85,6 +85,7 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 	targets := endpoint.Targets{}
 
 	services, err := svcInformer.Lister().Services(namespace).List(labels.Everything())
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to list labels for services in namespace %q: %w", namespace, err)
 	}

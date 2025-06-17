@@ -15,13 +15,22 @@ package source
 
 import (
 	"context"
+	"encoding/binary"
+	"fmt"
+	"math/rand/v2"
+	"net"
+
+	// "net"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -137,7 +146,6 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
-			wantErr:   false,
 		},
 		{
 			name: "matching service with external IPs",
@@ -156,7 +164,23 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"192.0.2.1", "158.123.32.23"},
-			wantErr:   false,
+		},
+		{
+			name: "no matching service as service without selector",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc1",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						ExternalIPs: []string{"192.0.2.1"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{},
 		},
 		{
 			name: "matching service with load balancer IP",
@@ -181,7 +205,6 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"192.0.2.2"},
-			wantErr:   false,
 		},
 		{
 			name: "matching service with load balancer hostname",
@@ -206,7 +229,6 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"lb.example.com"},
-			wantErr:   false,
 		},
 		{
 			name: "no matching services",
@@ -224,13 +246,12 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
-			wantErr:   false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := fake.NewSimpleClientset()
+			client := fake.NewClientset()
 			informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0,
 				kubeinformers.WithNamespace(tt.namespace))
 			serviceInformer := informerFactory.Core().V1().Services()
@@ -252,4 +273,130 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEndpointTargetsFromServicesWithFixtures(b *testing.T) {
+	svcInformer, err := svcInformerWithServices(2, 9)
+	assert.NoError(b, err)
+
+	sel := map[string]string{"app": "nginx", "env": "prod"}
+
+	targets, err := EndpointTargetsFromServices(svcInformer, "default", sel)
+	assert.NoError(b, err)
+	assert.Equal(b, 2, targets.Len())
+}
+
+func BenchmarkEndpointTargetsFromServicesMedium(b *testing.B) {
+	svcInformer, err := svcInformerWithServices(36, 1000)
+	assert.NoError(b, err)
+
+	sel := map[string]string{"app": "nginx", "env": "prod"}
+
+	for b.Loop() {
+		targets, _ := EndpointTargetsFromServices(svcInformer, "default", sel)
+		assert.Equal(b, 36, targets.Len())
+	}
+}
+
+func BenchmarkEndpointTargetsFromServicesHigh(b *testing.B) {
+	svcInformer, err := svcInformerWithServices(36, 40000)
+	assert.NoError(b, err)
+
+	sel := map[string]string{"app": "nginx", "env": "prod"}
+
+	for b.Loop() {
+		targets, _ := EndpointTargetsFromServices(svcInformer, "default", sel)
+		assert.Equal(b, 36, targets.Len())
+	}
+}
+
+// helperToPopulateFakeClientWithServices populates a fake Kubernetes client with a specified services.
+func svcInformerWithServices(toLookup, underTest int) (coreinformers.ServiceInformer, error) {
+	client := fake.NewClientset()
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0, kubeinformers.WithNamespace("default"))
+	svcInformer := informerFactory.Core().V1().Services()
+	ctx := context.Background()
+
+	_, err := svcInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+			},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add event handler: %w", err)
+	}
+
+	services := fixturesSvcWithLabels(toLookup, underTest)
+	for _, svc := range services {
+		_, err := client.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create service %s: %w", svc.Name, err)
+		}
+	}
+
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	go informerFactory.Start(stopCh)
+	cache.WaitForCacheSync(stopCh, svcInformer.Informer().HasSynced)
+	return svcInformer, nil
+}
+
+// fixturesSvcWithLabels creates a list of Services for testing purposes.
+// It generates a specified number of services with static labels and random labels.
+// The first `toLookup` services have specific labels, while the next `underTest` services have random labels.
+func fixturesSvcWithLabels(toLookup, underTest int) []*corev1.Service {
+	var services []*corev1.Service
+
+	var randomLabels = func(input int) map[string]string {
+		if input%3 == 0 {
+			// every third service has no labels
+			return map[string]string{}
+		}
+		return map[string]string{
+			"app":                                fmt.Sprintf("service-%d", rand.IntN(100)),
+			fmt.Sprintf("key%d", rand.IntN(100)): fmt.Sprintf("value%d", rand.IntN(100)),
+		}
+	}
+
+	var randomIPs = func() []string {
+		ip := rand.Uint32()
+		buf := make([]byte, 4)
+		binary.LittleEndian.PutUint32(buf, ip)
+		return []string{net.IP(buf).String()}
+	}
+
+	var createService = func(name string, namespace string, selector map[string]string) *corev1.Service {
+		return &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+			Spec: corev1.ServiceSpec{
+				Selector:    selector,
+				ExternalIPs: randomIPs(),
+			},
+		}
+	}
+
+	// services with specific labels
+	for i := 0; i < toLookup; i++ {
+		svc := createService("nginx-svc-"+strconv.Itoa(i), "default", map[string]string{"app": "nginx", "env": "prod"})
+		services = append(services, svc)
+	}
+
+	// services with random labels
+	for i := 0; i < underTest; i++ {
+		svc := createService("random-svc-"+strconv.Itoa(i), "default", randomLabels(i))
+		services = append(services, svc)
+	}
+
+	// Shuffle the services to ensure randomness
+	for i := 0; i < 3; i++ {
+		rand.Shuffle(len(services), func(i, j int) {
+			services[i], services[j] = services[j], services[i]
+		})
+	}
+
+	return services
 }
