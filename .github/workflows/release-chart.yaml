@@ -120,7 +120,7 @@ jobs:
           IFS="${old_ifs}"
 
           if [[ -f "${changes_path}" ]]; then
-            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/external-dns/Chart.yaml"
+            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/external-dns/Chart.yaml
             rm -f "${changes_path}"
           fi
 
