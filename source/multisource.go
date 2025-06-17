@@ -20,8 +20,9 @@ import (
 	"context"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
