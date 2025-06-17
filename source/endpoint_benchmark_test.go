@@ -112,7 +112,7 @@ func svcInformerWithServices(toLookup, underTest int) (coreinformers.ServiceInfo
 
 	stopCh := make(chan struct{})
 	defer close(stopCh)
-	go informerFactory.Start(stopCh)
+	informerFactory.Start(stopCh)
 	cache.WaitForCacheSync(stopCh, svcInformer.Informer().HasSynced)
 	return svcInformer, nil
 }
