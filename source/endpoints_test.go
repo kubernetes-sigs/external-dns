@@ -267,13 +267,13 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 	}
 }
 
-func TestEndpointTargetsFromServicesWithFixtures(b *testing.T) {
+func TestEndpointTargetsFromServicesWithFixtures(t *testing.T) {
 	svcInformer, err := svcInformerWithServices(2, 9)
-	assert.NoError(b, err)
+	assert.NoError(t, err)
 
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
 	targets, err := EndpointTargetsFromServices(svcInformer, "default", sel)
-	assert.NoError(b, err)
-	assert.Equal(b, 2, targets.Len())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, targets.Len())
 }
