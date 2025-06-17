@@ -41,28 +41,40 @@ type mockOvhClient struct {
 
 func (c *mockOvhClient) PostWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) PutWithContext(ctx context.Context, endpoint string, input interface{}, output interface{}) error {
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) GetWithContext(ctx context.Context, endpoint string, output interface{}) error {
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
 
 func (c *mockOvhClient) DeleteWithContext(ctx context.Context, endpoint string, output interface{}) error {
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
+	data, err := json.Marshal(stub.Get(0))
+	if err != nil {
+		return err
+	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
 }
@@ -378,18 +390,18 @@ func TestOvhNewChange(t *testing.T) {
 
 	// Delete change
 	endpoints = []*endpoint.Endpoint{
-		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42", "203.0.113.42", "203.0.113.42"}},
+		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42", "203.0.113.42", "203.0.113.43"}},
 	}
 	records := []ovhRecord{
-		{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.42"}}},
+		{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.43"}}},
 		{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.42"}}},
 		{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.42"}}},
 	}
 	changes, _ = provider.newOvhChangeCreateDelete(ovhDelete, endpoints, "example.net", records)
 	td.Cmp(t, changes, []ovhChange{
-		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
 		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
 		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.43"}}}},
 	})
 
 	// Create change with CNAME relative

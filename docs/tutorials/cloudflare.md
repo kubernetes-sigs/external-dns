@@ -305,20 +305,41 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotati
 
 ## Setting cloudflare-region-key to configure regional services
 
-Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic. A list of available options can be seen [here](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
+Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic.
+
+**Accepted values for region key include:**
+
+- `earth` (default): All data centers (global)
+- `eu`: European Union data centers only
+- `us`: United States data centers only
+- `ap`: Asia-Pacific data centers only
+- `fedramp`: US public sector (FedRAMP) data centers
+- `in`: India data centers only
+- `ca`: Canada data centers only
+- `jp`: Japan data centers only
+- `kr`: South Korea data centers only
+- `br`: Brazil data centers only
+- `za`: South Africa data centers only
+- `ae`: United Arab Emirates data centers only
+- `global`: Alias for `earth`
+
+For the most up-to-date list and details, see the [Cloudflare Regional Services documentation](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
+
 Currently, requires SuperAdmin or Admin role.
 
 If not set the value will default to `global`.
 
 ## Setting cloudflare-custom-hostname
 
-Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the --cloudflare-custom-hostnames flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
+Automatic configuration of Cloudflare custom hostnames (using A/CNAME DNS records as custom origin servers) is enabled by the `--cloudflare-custom-hostnames` flag and the `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname>` annotation.
 
 Multiple hostnames are supported via a comma-separated list: `external-dns.alpha.kubernetes.io/cloudflare-custom-hostname: <custom hostname 1>,<custom hostname 2>`.
 
 See [Cloudflare for Platforms](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/domain-support/) for more information on custom hostnames.
 
 This feature is disabled by default and supports the `--cloudflare-custom-hostnames-min-tls-version` and `--cloudflare-custom-hostnames-certificate-authority` flags.
+
+`--cloudflare-custom-hostnames-certificate-authority` defaults to `none`, which explicitly means no Certificate Authority (CA) is set when using the Cloudflare API. Specifying a custom CA is only possible for enterprise accounts.
 
 The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns.alpha.kubernetes.io/hostname`) for automatic certificate validation via the HTTP method. It's important to note that the TXT method does not allow automatic validation and is not supported.
 

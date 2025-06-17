@@ -45,12 +45,6 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, IBMCloudPrefix) {
-			attr := strings.TrimPrefix(k, IBMCloudPrefix)
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("ibmcloud-%s", attr),
-				Value: v,
-			})
 		} else if strings.HasPrefix(k, WebhookPrefix) {
 			// Support for wildcard annotations for webhook providers
 			attr := strings.TrimPrefix(k, WebhookPrefix)

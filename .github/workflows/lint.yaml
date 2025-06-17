@@ -21,7 +21,7 @@ jobs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Lint markdown
-      uses: nosborn/github-action-markdown-cli@v3.4.0
+      uses: nosborn/github-action-markdown-cli@v3.5.0
       with:
         files: '.'
         config_file: ".markdownlint.json"
@@ -52,11 +52,11 @@ jobs:
 
       # Run Spectral
     - name: Lint OpenAPI spec
-      uses: stoplightio/spectral-action@2ad0b9302e32a77c1caccf474a9b2191a8060d83 # v0.8.11
+      uses: stoplightio/spectral-action@577bade2d6e0eeb50528c94182a5588bf961ae8f # v0.8.12
       with:
         file_glob: 'api/*.yaml'
 
-    - uses: actions/setup-python@v3
+    - uses: actions/setup-python@v5
     # https://github.com/pre-commit/action
     - name: Verify with pre-commit
       uses: pre-commit/action@v3.0.1

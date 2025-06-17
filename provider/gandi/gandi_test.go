@@ -452,6 +452,46 @@ func TestGandiProvider_ApplyChangesWithUnknownDomainDoesNoUpdate(t *testing.T) {
 	})
 }
 
+func TestGandiProvider_ApplyChangesConvertsApexDomain(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := &mockGandiClient{}
+	mockedProvider := &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	// Add a change where DNSName equals the zone name (apex domain)
+	changes.Create = []*endpoint.Endpoint{
+		{
+			DNSName:    "example.com", // Matches the zone name
+			Targets:    endpoint.Targets{"192.168.0.1"},
+			RecordType: "A",
+			RecordTTL:  666,
+		},
+	}
+
+	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	td.Cmp(t, mockedClient.Actions, []MockAction{
+		{
+			Name: "ListDomains",
+		},
+		{
+			Name: "CreateDomainRecord",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   endpoint.RecordTypeA,
+				RrsetName:   "@",
+				RrsetValues: []string{"192.168.0.1"},
+				RrsetTTL:    666,
+			},
+		},
+	})
+}
+
 func TestGandiProvider_FailingCases(t *testing.T) {
 	changes := &plan.Changes{}
 	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
