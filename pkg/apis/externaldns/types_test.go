@@ -130,6 +130,7 @@ var (
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		ExcludeUnschedulable:                          true,
+		WorkerCount:                                   1,
 	}
 
 	overriddenConfig = &Config{
@@ -243,6 +244,7 @@ var (
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
 		ExcludeUnschedulable:                          false,
+		WorkerCount:                                   0,
 	}
 )
 
@@ -388,6 +390,7 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
+				"--worker-count=0",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -504,6 +507,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
+				"EXTERNAL_DNS_WORKER_COUNT":                                      "0",
 			},
 			expected: overriddenConfig,
 		},
