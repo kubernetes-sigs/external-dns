@@ -17,7 +17,8 @@ By default, ExternalDNS now has the following behavior:
 
 To maintain backward compatibility and support certain migration scenarios, the `--force-default-targets` flag is available.
 
-- When `--force-default-targets` is used, ExternalDNS will **always** use the targets from `--default-targets`, regardless of whether the `DNSEndpoint` resource has targets specified or not. This flag allows for a smooth migration path to the new behavior. It allow keeping old CRD resources, allows to start removing targets from one by one resource and then remove the flag.
+- When `--force-default-targets` is used, ExternalDNS will **always** use the targets from `--default-targets`, regardless of whether the `DNSEndpoint` resource has targets specified or not.
+This flag allows for a smooth migration path to the new behavior. It allow keeping old CRD resources, allows to start removing targets from one by one resource and then remove the flag.
 
 ## Examples
 
