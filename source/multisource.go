@@ -42,24 +42,25 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			return nil, err
 		}
 
-		if hasDefaultTargets {
-			for i := range endpoints {
-				hasSourceTargets := len(endpoints[i].Targets) > 0
-
-				if !ms.forceDefaultTargets && hasSourceTargets {
-					log.Warnf("Source provided targets for %q (%s), ignoring default targets [%s] due to new behavior. Use --force-default-targets to revert to old behavior.", endpoints[i].DNSName, endpoints[i].RecordType, strings.Join(ms.defaultTargets, ", "))
-					result = append(result, endpoints[i])
-					continue
-				} else {
-					eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier, "")
-					for _, ep := range eps {
-						ep.Labels = endpoints[i].Labels
-					}
-					result = append(result, eps...)
-				}
-			}
-		} else {
+		if !hasDefaultTargets {
 			result = append(result, endpoints...)
+			continue
+		}
+
+		for i := range endpoints {
+			hasSourceTargets := len(endpoints[i].Targets) > 0
+
+			if ms.forceDefaultTargets || !hasSourceTargets {
+				eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier, "")
+				for _, ep := range eps {
+					ep.Labels = endpoints[i].Labels
+				}
+				result = append(result, eps...)
+				continue
+			}
+
+			log.Warnf("Source provided targets for %q (%s), ignoring default targets [%s] due to new behavior. Use --force-default-targets to revert to old behavior.", endpoints[i].DNSName, endpoints[i].RecordType, strings.Join(ms.defaultTargets, ", "))
+			result = append(result, endpoints[i])
 		}
 	}
 
