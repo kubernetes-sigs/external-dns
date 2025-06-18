@@ -78,6 +78,7 @@ type Config struct {
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
 	DefaultTargets                 []string
+	ForceDefaultTargets            bool
 	OCPRouterName                  string
 	UpdateEvents                   bool
 	ResolveLoadBalancerHostname    bool
@@ -123,6 +124,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
+		ForceDefaultTargets:            cfg.ForceDefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
