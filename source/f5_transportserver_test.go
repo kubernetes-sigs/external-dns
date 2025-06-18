@@ -265,7 +265,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name: "F5 TransportServer with error status",
+			name: "F5 TransportServer with error status but valid IP",
 			transportServer: f5.TransportServer{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: f5TransportServerGVR.GroupVersion().String(),
@@ -283,12 +283,22 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					VirtualServerAddress: "192.168.1.100",
 				},
 				Status: f5.CustomResourceStatus{
-					VSAddress: "",
+					VSAddress: "192.168.1.100",
 					Status:    "ERROR",
 					Error:     "Some error status message",
 				},
 			},
-			expected: nil,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  600,
+					Labels: endpoint.Labels{
+						"resource": "f5-transportserver/transportserver/test-ts",
+					},
+				},
+			},
 		},
 		{
 			name: "F5 TransportServer with missing IP address and OK status",
