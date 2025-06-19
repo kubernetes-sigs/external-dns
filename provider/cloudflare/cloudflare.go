@@ -29,7 +29,6 @@ import (
 	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go/v4"
-	dnsrecords "github.com/cloudflare/cloudflare-go/v4/dnsrecords"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -520,6 +519,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		log.Info("All records are already up to date")
 		return nil
 	}
+
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
@@ -751,7 +751,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 	// for faster getRecordID lookup
 	records := make(DNSRecordsMap)
 	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsConfig.PerPage, Page: 1}
-	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
+	params := dnsrecords.ListParams{ResultInfo: resultInfo}
 	rc := cloudflare.ZoneIdentifier(zoneID)
 	for {
 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, rc, params)
