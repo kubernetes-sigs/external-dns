@@ -966,9 +966,7 @@ func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 
 
 	// Assert that a soft error was returned
-	if !errors.Is(err, provider.SoftError) {
-		t.Error("expected a rate limit error")
-	}
+        assert.ErrorIs(t, err, provider.SoftError, "expected a rate limit error")
 }
 
 func TestCloudflareListZoneInternalErrors(t *testing.T) {
