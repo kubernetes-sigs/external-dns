@@ -964,9 +964,8 @@ func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 	// Call the Zones function
 	_, err := p.Zones(context.Background())
 
-
 	// Assert that a soft error was returned
-        assert.ErrorIs(t, err, provider.SoftError, "expected a rate limit error")
+	assert.ErrorIs(t, err, provider.SoftError, "expected a rate limit error")
 }
 
 func TestCloudflareListZoneInternalErrors(t *testing.T) {
