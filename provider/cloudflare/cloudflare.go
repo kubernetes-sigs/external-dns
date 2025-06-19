@@ -271,6 +271,23 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 	}
 }
 
+func convertCloudflareError(err error) error {
+	var apiErr *cloudflare.Error
+	if errors.As(err, &apiErr) {
+		if apiErr.ClientRateLimited() || apiErr.StatusCode >= http.StatusInternalServerError {
+			// Handle rate limit error as a soft error
+			return provider.NewSoftError(err)
+		}
+	}
+	// This is a workaround because Cloudflare library does not return a specific error type for rate limit exceeded.
+	// See https://github.com/cloudflare/cloudflare-go/issues/4155 and https://github.com/kubernetes-sigs/external-dns/pull/5524
+	// This workaround can be removed once Cloudflare library returns a specific error type.
+	if strings.Contains(err.Error(), "exceeded available rate limit retries") {
+		return provider.NewSoftError(err)
+	}
+	return err
+}
+
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
 func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, regionKey string, customHostnamesConfig CustomHostnamesConfig, dnsRecordsConfig DNSRecordsConfig) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
@@ -335,14 +352,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 
 	zonesResponse, err := p.Client.ListZonesContext(ctx)
 	if err != nil {
-		var apiErr *cloudflare.Error
-		if errors.As(err, &apiErr) {
-			if apiErr.ClientRateLimited() || apiErr.StatusCode >= http.StatusInternalServerError {
-				// Handle rate limit error as a soft error
-				return nil, provider.NewSoftError(err)
-			}
-		}
-		return nil, err
+		return nil, convertCloudflareError(err)
 	}
 
 	for _, zone := range zonesResponse.Result {
@@ -753,14 +763,7 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 	for {
 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
 		if err != nil {
-			var apiErr *cloudflare.Error
-			if errors.As(err, &apiErr) {
-				if apiErr.ClientRateLimited() || apiErr.StatusCode >= http.StatusInternalServerError {
-					// Handle rate limit error as a soft error
-					return nil, provider.NewSoftError(err)
-				}
-			}
-			return nil, err
+			return nil, convertCloudflareError(err)
 		}
 
 		for _, r := range pageRecords {
@@ -788,15 +791,11 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 	for {
 		pageCustomHostnameListResponse, result, err := p.Client.CustomHostnames(ctx, zoneID, resultInfo.Page, cloudflare.CustomHostname{})
 		if err != nil {
-			var apiErr *cloudflare.Error
-			if errors.As(err, &apiErr) {
-				if apiErr.ClientRateLimited() || apiErr.StatusCode >= http.StatusInternalServerError {
-					// Handle rate limit error as a soft error
-					return nil, provider.NewSoftError(err)
-				}
+			convertedError := convertCloudflareError(err)
+			if !errors.Is(convertedError, provider.SoftError) {
+				log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
 			}
-			log.Errorf("zone %q failed to fetch custom hostnames. Please check if \"Cloudflare for SaaS\" is enabled and API key permissions, %v", zoneID, err)
-			return nil, err
+			return nil, convertedError
 		}
 		for _, ch := range pageCustomHostnameListResponse {
 			chs[newCustomHostnameIndex(ch)] = ch
