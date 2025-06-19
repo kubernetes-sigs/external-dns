@@ -21,7 +21,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v4"
 
 	"github.com/stretchr/testify/assert"
 

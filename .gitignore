@@ -64,3 +64,5 @@ docs/redirect
 site
 _scratch
 Pipfile
+
+coverage.out
