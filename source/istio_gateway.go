@@ -260,13 +260,7 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 		return sc.targetsFromIngress(ctx, ingressStr, gateway)
 	}
 
-	targets, err := EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return targets, nil
+	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
@@ -322,13 +316,4 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1alpha3.Gatewa
 	}
 
 	return hostnames, nil
-}
-
-func gatewaySelectorMatchesServiceSelector(gwSelector, svcSelector map[string]string) bool {
-	for k, v := range gwSelector {
-		if lbl, ok := svcSelector[k]; !ok || lbl != v {
-			return false
-		}
-	}
-	return true
 }

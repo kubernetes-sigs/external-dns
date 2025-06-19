@@ -329,7 +329,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeKubernetesClient := fakeKube.NewClientset()
 			scheme := runtime.NewScheme()
 			scheme.AddKnownTypes(f5VirtualServerGVR.GroupVersion(), &f5.VirtualServer{}, &f5.VirtualServerList{})
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
