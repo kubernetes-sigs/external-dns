@@ -964,8 +964,6 @@ func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 	// Call the Zones function
 	_, err := p.Zones(context.Background())
 
-	fmt.Printf("Error: %v\n", err)
-	fmt.Printf("%v", strings.Contains(err.Error(), "exceeded available rate limit retries"))
 
 	// Assert that a soft error was returned
 	if !errors.Is(err, provider.SoftError) {
