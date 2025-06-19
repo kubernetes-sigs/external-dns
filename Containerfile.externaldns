@@ -11,8 +11,15 @@ RUN [ "$(sha1sum Dockerfile.cached | cut -d' ' -f1)" = "$(sha1sum Dockerfile | c
 FROM registry.access.redhat.com/ubi9/go-toolset:1.22 as builder
 # dummy copy to trigger the drift detection
 COPY --from=drift /app/Dockerfile.cached .
-COPY . /workspace
 WORKDIR /workspace
+# Dummy RUN to create /workspace directory.
+# WORKDIR doesn't create the directory (at least for Podman).
+# Without this step, the following COPY may create /workspace
+# as root-owned (instead of go-toolset's default 1001)
+# leading to "Permission denied" errors during "make build"
+# when trying to write output.
+RUN ls .
+COPY . /workspace
 RUN git config --global --add safe.directory /workspace
 # Build
 RUN make build
@@ -25,4 +32,5 @@ LABEL version="1.3.0"
 LABEL commit="76d92ad82b22c92c191a8c0145d3712e4012d987"
 WORKDIR /
 COPY --from=builder /workspace/build/external-dns /
+COPY LICENSE /licenses/
 ENTRYPOINT ["/external-dns"]
