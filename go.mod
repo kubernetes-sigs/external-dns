@@ -66,9 +66,9 @@ require (
 	gopkg.in/ns1/ns1-go.v2 v2.14.4
 	istio.io/api v1.26.1
 	istio.io/client-go v1.26.1
-	k8s.io/api v0.33.1
-	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.33.1
+	k8s.io/api v0.33.2
+	k8s.io/apimachinery v0.33.2
+	k8s.io/client-go v0.33.2
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/gateway-api v1.3.0
