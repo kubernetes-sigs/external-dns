@@ -702,7 +702,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 }
 
 func assertSerializes[T any](t *testing.T, domainFilter DomainFilter, expectedSerialization map[string]T) {
-	serialized, err := json.Marshal(domainFilter)
+	serialized, err := json.Marshal(&domainFilter)
 	assert.NoError(t, err, "serializing")
 	expected, err := json.Marshal(expectedSerialization)
 	require.NoError(t, err)

@@ -96,7 +96,7 @@ func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion
 
 // Match checks whether a domain can be found in the DomainFilter.
 // RegexFilter takes precedence over Filters
-func (df DomainFilter) Match(domain string) bool {
+func (df *DomainFilter) Match(domain string) bool {
 	if df.regex != nil && df.regex.String() != "" || df.regexExclusion != nil && df.regexExclusion.String() != "" {
 		return matchRegex(df.regex, df.regexExclusion, domain)
 	}
@@ -145,7 +145,7 @@ func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain strin
 }
 
 // IsConfigured returns true if any inclusion or exclusion rules have been specified.
-func (df DomainFilter) IsConfigured() bool {
+func (df *DomainFilter) IsConfigured() bool {
 	if df.regex != nil && df.regex.String() != "" {
 		return true
 	} else if df.regexExclusion != nil && df.regexExclusion.String() != "" {
@@ -154,7 +154,7 @@ func (df DomainFilter) IsConfigured() bool {
 	return len(df.Filters) > 0 || len(df.exclude) > 0
 }
 
-func (df DomainFilter) MarshalJSON() ([]byte, error) {
+func (df *DomainFilter) MarshalJSON() ([]byte, error) {
 	if df.regex != nil || df.regexExclusion != nil {
 		var include, exclude string
 		if df.regex != nil {
@@ -209,7 +209,7 @@ func (df *DomainFilter) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (df DomainFilter) MatchParent(domain string) bool {
+func (df *DomainFilter) MatchParent(domain string) bool {
 	if matchFilter(df.exclude, domain, false) {
 		return false
 	}
