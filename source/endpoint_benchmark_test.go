@@ -28,6 +28,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/source/informers"
 
 	v1alpha3 "istio.io/api/networking/v1alpha3"
 	istiov1a "istio.io/client-go/pkg/apis/networking/v1"
@@ -85,21 +86,16 @@ func BenchmarkEndpointTargetsFromServicesHighIterateOverGateways(b *testing.B) {
 	}
 }
 
-// helperToPopulateFakeClientWithServices populates a fake Kubernetes client with a specified services.
+// svcInformerWithServices populates a fake Kubernetes client with a specified services.
 func svcInformerWithServices(toLookup, underTest int) (coreinformers.ServiceInformer, error) {
 	client := fake.NewClientset()
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0, kubeinformers.WithNamespace("default"))
 	svcInformer := informerFactory.Core().V1().Services()
 	ctx := context.Background()
 
-	_, err := svcInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	err := informers.ServiceWithDefaultOptions(svcInformer, "default")
 	if err != nil {
-		return nil, fmt.Errorf("failed to add event handler: %w", err)
+		return nil, fmt.Errorf("failed to set default options for service informer: %w", err)
 	}
 
 	services := fixturesSvcWithLabels(toLookup, underTest)

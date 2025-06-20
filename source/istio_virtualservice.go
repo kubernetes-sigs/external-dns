@@ -81,21 +81,17 @@ func NewIstioVirtualServiceSource(
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
 	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	virtualServiceInformer := istioInformerFactory.Networking().V1alpha3().VirtualServices()
 	gatewayInformer := istioInformerFactory.Networking().V1alpha3().Gateways()
 
-	// Add default resource event handlers to properly initialize informer.
-	serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("service added")
-			},
-		},
-	)
+	serviceInformer := informerFactory.Core().V1().Services()
+	err = informers.ServiceWithDefaultOptions(serviceInformer, namespace)
+	if err != nil {
+		return nil, err
+	}
 
-	virtualServiceInformer.Informer().AddEventHandler(
+	_, _ = virtualServiceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				log.Debug("virtual service added")
@@ -103,7 +99,7 @@ func NewIstioVirtualServiceSource(
 		},
 	)
 
-	gatewayInformer.Informer().AddEventHandler(
+	_, _ = gatewayInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				log.Debug("gateway added")
@@ -115,10 +111,10 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -198,7 +194,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 func (sc *virtualServiceSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio VirtualService")
 
-	sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string, virtualService *networkingv1alpha3.VirtualService) (*networkingv1alpha3.Gateway, error) {

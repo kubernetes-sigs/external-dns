@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -244,15 +245,16 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := fake.NewClientset()
-			informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0,
-				kubeinformers.WithNamespace(tt.namespace))
+			informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0, kubeinformers.WithNamespace(tt.namespace))
 			serviceInformer := informerFactory.Core().V1().Services()
+			err := informers.ServiceWithDefaultOptions(serviceInformer, tt.namespace)
+			assert.NoError(t, err)
 
 			for _, svc := range tt.services {
-				_, err := client.CoreV1().Services(tt.namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+				err = serviceInformer.Informer().GetIndexer().Add(svc)
 				assert.NoError(t, err)
 
-				err = serviceInformer.Informer().GetIndexer().Add(svc)
+				_, err := client.CoreV1().Services(tt.namespace).Create(context.Background(), svc, metav1.CreateOptions{})
 				assert.NoError(t, err)
 			}
 
