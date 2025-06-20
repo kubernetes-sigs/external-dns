@@ -33,4 +33,5 @@ LABEL commit="76d92ad82b22c92c191a8c0145d3712e4012d987"
 WORKDIR /
 COPY --from=builder /workspace/build/external-dns /
 COPY LICENSE /licenses/
+USER 65532:65532
 ENTRYPOINT ["/external-dns"]
