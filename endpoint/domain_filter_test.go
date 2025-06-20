@@ -701,22 +701,22 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 	}
 }
 
-func assertSerializes[T any](t *testing.T, domainFilter DomainFilter, expectedSerialization map[string]T) {
-	serialized, err := json.Marshal(&domainFilter)
+func assertSerializes[T any](t *testing.T, domainFilter *DomainFilter, expectedSerialization map[string]T) {
+	serialized, err := json.Marshal(domainFilter)
 	assert.NoError(t, err, "serializing")
 	expected, err := json.Marshal(expectedSerialization)
 	require.NoError(t, err)
 	assert.JSONEq(t, string(expected), string(serialized), "json serialization")
 }
 
-func deserialize[T any](t *testing.T, serialized map[string]T) DomainFilter {
+func deserialize[T any](t *testing.T, serialized map[string]T) *DomainFilter {
 	inJson, err := json.Marshal(serialized)
 	require.NoError(t, err)
 	var deserialized DomainFilter
 	err = json.Unmarshal(inJson, &deserialized)
 	assert.NoError(t, err, "deserializing")
 
-	return deserialized
+	return &deserialized
 }
 
 func TestDomainFilterMatchParent(t *testing.T) {

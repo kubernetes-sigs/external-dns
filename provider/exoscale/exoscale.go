@@ -41,7 +41,7 @@ type EgoscaleClientI interface {
 // ExoscaleProvider initialized as dns provider with no records
 type ExoscaleProvider struct {
 	provider.BaseProvider
-	domain         endpoint.DomainFilter
+	domain         *endpoint.DomainFilter
 	client         EgoscaleClientI
 	apiEnv         string
 	apiZone        string
@@ -252,7 +252,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 // ExoscaleWithDomain modifies the domain on which dns zones are filtered
-func ExoscaleWithDomain(domainFilter endpoint.DomainFilter) ExoscaleOption {
+func ExoscaleWithDomain(domainFilter *endpoint.DomainFilter) ExoscaleOption {
 	return func(p *ExoscaleProvider) {
 		p.domain = domainFilter
 	}

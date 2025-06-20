@@ -206,7 +206,7 @@ func (s *AWSSDClientStub) DeleteService(ctx context.Context, input *sd.DeleteSer
 	return &sd.DeleteServiceOutput{}, nil
 }
 
-func newTestAWSSDProvider(api AWSSDClient, domainFilter endpoint.DomainFilter, namespaceTypeFilter, ownerID string) *AWSSDProvider {
+func newTestAWSSDProvider(api AWSSDClient, domainFilter *endpoint.DomainFilter, namespaceTypeFilter, ownerID string) *AWSSDProvider {
 	return &AWSSDProvider{
 		client:              api,
 		dryRun:              false,

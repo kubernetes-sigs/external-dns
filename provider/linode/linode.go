@@ -48,7 +48,7 @@ type LinodeDomainClient interface {
 type LinodeProvider struct {
 	provider.BaseProvider
 	Client       LinodeDomainClient
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	DryRun       bool
 }
 
@@ -79,7 +79,7 @@ type LinodeChangeDelete struct {
 }
 
 // NewLinodeProvider initializes a new Linode DNS based Provider.
-func NewLinodeProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*LinodeProvider, error) {
+func NewLinodeProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*LinodeProvider, error) {
 	token, ok := os.LookupEnv("LINODE_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")

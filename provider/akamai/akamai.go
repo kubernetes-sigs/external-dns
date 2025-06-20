@@ -51,7 +51,7 @@ type AkamaiDNSService interface {
 }
 
 type AkamaiConfig struct {
-	DomainFilter          endpoint.DomainFilter
+	DomainFilter          *endpoint.DomainFilter
 	ZoneIDFilter          provider.ZoneIDFilter
 	ServiceConsumerDomain string
 	ClientToken           string
@@ -68,7 +68,7 @@ type AkamaiConfig struct {
 type AkamaiProvider struct {
 	provider.BaseProvider
 	// Edgedns zones to filter on
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// Contract Ids to filter on
 	zoneIDFilter provider.ZoneIDFilter
 	// Edgegrid library configuration

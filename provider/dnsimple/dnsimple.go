@@ -87,7 +87,7 @@ type dnsimpleProvider struct {
 	client       dnsimpleZoneServiceInterface
 	identity     dnsimpleIdentityService
 	accountID    string
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
 	dryRun       bool
 }
@@ -98,7 +98,7 @@ type dnsimpleChange struct {
 }
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
-func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
+func NewDnsimpleProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")

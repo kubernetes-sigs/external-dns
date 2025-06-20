@@ -60,7 +60,7 @@ type OVHProvider struct {
 
 	apiRateLimiter ratelimit.Limiter
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 
 	// DryRun enables dry-run mode
 	DryRun bool
@@ -123,7 +123,7 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
@@ -371,7 +371,7 @@ func (p *OVHProvider) zones(ctx context.Context) ([]string, error) {
 	}
 
 	for _, zoneName := range zones {
-		if p.domainFilter.Match(zoneName) {
+		if p.domainFilter == nil || p.domainFilter.Match(zoneName) {
 			filteredZones = append(filteredZones, zoneName)
 		}
 	}
