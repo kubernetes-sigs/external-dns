@@ -45,7 +45,7 @@ func TestEncrypt(t *testing.T) {
 		t.Error("Data decryption failed, empty string should be as result")
 	}
 
-	// Verify that decrypt returns an error and empty data if unencrypted input is is supplied
+	// Verify that decrypt returns an error and empty data if unencrypted input is supplied
 	decryptedtext, _, err = DecryptText(plaintext, aesKey)
 	require.Error(t, err)
 	if decryptedtext != "" {
@@ -69,7 +69,7 @@ func TestGenerateNonceSuccess(t *testing.T) {
 	// Test nonce length
 	decodedNonce, err := base64.StdEncoding.DecodeString(string(nonce))
 	require.NoError(t, err)
-	require.Equal(t, standardGcmNonceSize, len(decodedNonce))
+	require.Len(t, decodedNonce, standardGcmNonceSize)
 }
 
 func TestGenerateNonceError(t *testing.T) {

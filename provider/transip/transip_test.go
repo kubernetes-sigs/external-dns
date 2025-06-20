@@ -70,39 +70,39 @@ func TestTransIPDnsEntriesAreEqual(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, true, dnsEntriesAreEqual(a, b))
+	assert.True(t, dnsEntriesAreEqual(a, b))
 
 	// change type on one of b's records
 	b[1].Type = "NS"
-	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
+	assert.False(t, dnsEntriesAreEqual(a, b))
 	b[1].Type = "CNAME"
 
 	// change ttl on one of b's records
 	b[1].Expire = 1800
-	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
+	assert.False(t, dnsEntriesAreEqual(a, b))
 	b[1].Expire = 3600
 
 	// change name on one of b's records
 	b[1].Name = "example.org"
-	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
+	assert.False(t, dnsEntriesAreEqual(a, b))
 
 	// remove last entry of b
 	b = b[:1]
-	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
+	assert.False(t, dnsEntriesAreEqual(a, b))
 }
 
 func TestTransIPGetMinimalValidTTL(t *testing.T) {
 	// test with 'unconfigured' TTL
 	ep := &endpoint.Endpoint{}
-	assert.EqualValues(t, defaultTTL, getMinimalValidTTL(ep))
+	assert.Equal(t, defaultTTL, getMinimalValidTTL(ep))
 
 	// test with lower than minimal ttl
 	ep.RecordTTL = (defaultTTL - 1)
-	assert.EqualValues(t, defaultTTL, getMinimalValidTTL(ep))
+	assert.Equal(t, defaultTTL, getMinimalValidTTL(ep))
 
 	// test with higher than minimal ttl
 	ep.RecordTTL = (defaultTTL + 1)
-	assert.EqualValues(t, defaultTTL+1, getMinimalValidTTL(ep))
+	assert.Equal(t, defaultTTL+1, getMinimalValidTTL(ep))
 }
 
 func TestTransIPRecordNameForEndpoint(t *testing.T) {
@@ -153,22 +153,22 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 	// add endpoint to zone's entries
 	result := dnsEntriesForEndpoint(ep, zone.Name)
 
-	if assert.Equal(t, 2, len(result)) {
+	if assert.Len(t, result, 2) {
 		assert.Equal(t, "www", result[0].Name)
 		assert.Equal(t, "A", result[0].Type)
 		assert.Equal(t, "192.168.0.1", result[0].Content)
-		assert.EqualValues(t, 1800, result[0].Expire)
+		assert.Equal(t, 1800, result[0].Expire)
 		assert.Equal(t, "www", result[1].Name)
 		assert.Equal(t, "A", result[1].Type)
 		assert.Equal(t, "192.168.0.2", result[1].Content)
-		assert.EqualValues(t, 1800, result[1].Expire)
+		assert.Equal(t, 1800, result[1].Expire)
 	}
 
 	// try again with CNAME
 	ep.RecordType = "CNAME"
 	ep.Targets = []string{"foo.bar"}
 	result = dnsEntriesForEndpoint(ep, zone.Name)
-	if assert.Equal(t, 1, len(result)) {
+	if assert.Len(t, result, 1) {
 		assert.Equal(t, "CNAME", result[0].Type)
 		assert.Equal(t, "foo.bar.", result[0].Content)
 	}
@@ -238,7 +238,7 @@ func TestProviderRecords(t *testing.T) {
 		switch {
 		case req.Endpoint == "/domains":
 			// return list of some domain names
-			// names only, other fields are not used
+			// only, other fields are not used
 			data = []byte(`{"domains":[{"name":"example.org"}, {"name":"example.com"}]}`)
 		case strings.HasSuffix(req.Endpoint, "/dns"):
 			// return list of DNS entries
@@ -256,11 +256,11 @@ func TestProviderRecords(t *testing.T) {
 
 	endpoints, err := p.Records(context.TODO())
 	if assert.NoError(t, err) {
-		if assert.Equal(t, 4, len(endpoints)) {
+		if assert.Len(t, endpoints, 4) {
 			assert.Equal(t, "www.example.org", endpoints[0].DNSName)
-			assert.EqualValues(t, "@", endpoints[0].Targets[0])
+			assert.Equal(t, "@", endpoints[0].Targets[0])
 			assert.Equal(t, "CNAME", endpoints[0].RecordType)
-			assert.Equal(t, 0, len(endpoints[0].Labels))
+			assert.Empty(t, endpoints[0].Labels)
 			assert.EqualValues(t, 1234, endpoints[0].RecordTTL)
 		}
 	}
@@ -341,7 +341,7 @@ func TestProviderEntriesForEndpoint(t *testing.T) {
 		RecordType: "A",
 	})
 	if assert.NoError(t, err) {
-		if assert.Equal(t, 2, len(entries)) {
+		if assert.Len(t, entries, 2) {
 			// only first and third entry should be returned
 			assert.Equal(t, dnsEntries[0], entries[0])
 			assert.Equal(t, dnsEntries[2], entries[1])

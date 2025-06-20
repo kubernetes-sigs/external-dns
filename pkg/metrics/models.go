@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -68,6 +69,24 @@ func (g CounterVecMetric) Get() *Metric {
 	return &g.Metric
 }
 
+type GaugeVecMetric struct {
+	Metric
+	Gauge prometheus.GaugeVec
+}
+
+func (g GaugeVecMetric) Get() *Metric {
+	return &g.Metric
+}
+
+// SetWithLabels sets the value of the Gauge metric for the specified label values.
+// All label values are converted to lowercase before being applied.
+func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
+	for i, v := range lvs {
+		lvs[i] = strings.ToLower(v)
+	}
+	g.Gauge.WithLabelValues(lvs...).Set(value)
+}
+
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	return GaugeMetric{
 		Metric: Metric{
@@ -79,6 +98,22 @@ func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 			Help:      opts.Help,
 		},
 		Gauge: prometheus.NewGauge(opts),
+	}
+}
+
+// NewGaugedVectorOpts creates a new GaugeVec based on the provided GaugeOpts and
+// partitioned by the given label names.
+func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVecMetric {
+	return GaugeVecMetric{
+		Metric: Metric{
+			Type:      "gauge",
+			Name:      opts.Name,
+			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+			Namespace: opts.Namespace,
+			Subsystem: opts.Subsystem,
+			Help:      opts.Help,
+		},
+		Gauge: *prometheus.NewGaugeVec(opts, labelNames),
 	}
 }
 

@@ -243,7 +243,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	// In case of several clients behind NAT we still can hit rate limit
-	for i := 1; i < 3 && resp != nil && resp.StatusCode == 429; i++ {
+	for i := 1; i < 3 && resp != nil && resp.StatusCode == http.StatusTooManyRequests; i++ {
 		retryAfter, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
 		if err != nil {
 			log.Error("Rate-limited response did not contain a valid Retry-After header, quota likely exceeded")

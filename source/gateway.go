@@ -32,14 +32,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
-	cache "k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
-	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 const (
@@ -62,25 +65,25 @@ type gatewayRoute interface {
 	RouteStatus() v1.RouteStatus
 }
 
-type newGatewayRouteInformerFunc func(informers.SharedInformerFactory) gatewayRouteInformer
+type newGatewayRouteInformerFunc func(gwinformers.SharedInformerFactory) gatewayRouteInformer
 
 type gatewayRouteInformer interface {
 	List(namespace string, selector labels.Selector) ([]gatewayRoute, error)
 	Informer() cache.SharedIndexInformer
 }
 
-func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) informers.SharedInformerFactory {
-	var opts []informers.SharedInformerOption
+func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
+	var opts []gwinformers.SharedInformerOption
 	if namespace != "" {
-		opts = append(opts, informers.WithNamespace(namespace))
+		opts = append(opts, gwinformers.WithNamespace(namespace))
 	}
 	if labelSelector != nil && !labelSelector.Empty() {
 		lbls := labelSelector.String()
-		opts = append(opts, informers.WithTweakListOptions(func(o *metav1.ListOptions) {
+		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
 			o.LabelSelector = lbls
 		}))
 	}
-	return informers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
+	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
 }
 
 type gatewayRouteSource struct {
@@ -117,7 +120,7 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if err != nil {
 		return nil, err
 	}
-	tmpl, err := parseTemplate(config.FQDNTemplate)
+	tmpl, err := fqdn.ParseTemplate(config.FQDNTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -152,14 +155,14 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if rtInformerFactory != informerFactory {
 		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := waitForCacheSync(ctx, rtInformerFactory); err != nil {
+		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
 			return nil, err
 		}
 	}
-	if err := waitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := waitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -236,8 +239,8 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		// Create endpoints from hostnames and targets.
 		var routeEndpoints []*endpoint.Endpoint
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
-		ttl := getTTLFromAnnotations(annots, resource)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
+		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
 			routeEndpoints = append(routeEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
@@ -334,9 +337,10 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 
 		// Confirm the Gateway has accepted the Route.
 		if !gwRouteIsAccepted(rps.Conditions) {
-			log.Debugf("Gateway %s/%s has not accepted %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
+
 		// Match the Route to all possible Listeners.
 		match := false
 		section := sectionVal(ref.SectionName, "")
@@ -373,7 +377,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
+				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
@@ -403,11 +407,11 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
 	// but other sources don't check if fqdn-template is set. Which should it be?
 	if !c.src.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
-		hosts, err := execTemplate(c.src.fqdnTemplate, rt.Object())
+		hosts, err := fqdn.ExecTemplate(c.src.fqdnTemplate, rt.Object())
 		if err != nil {
 			return nil, err
 		}

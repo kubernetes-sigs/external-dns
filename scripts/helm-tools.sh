@@ -116,7 +116,7 @@ function main() {
       helm_unittest
       ;;
     --helm-template)
-      helm_unittest
+      helm_template
       ;;
     -d|--diff)
       diff_schema

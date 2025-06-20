@@ -90,8 +90,8 @@ func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 func NewLabelsFromString(labelText string, aesKey []byte) (Labels, error) {
 	if len(aesKey) != 0 {
 		decryptedText, encryptionNonce, err := DecryptText(strings.Trim(labelText, "\""), aesKey)
-		// in case if we have decryption error, just try process original text
-		// decryption errors should be ignored here, because we can already have plain-text labels in registry
+		// in case if we have a decryption error, try process original text
+		// decryption errors should be ignored here, because we can already have plain-text labels in the registry
 		if err == nil {
 			labels, err := NewLabelsFromStringPlain(decryptedText)
 			if err == nil {

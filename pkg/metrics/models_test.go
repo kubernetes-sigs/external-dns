@@ -19,6 +19,8 @@ package metrics
 import (
 	"testing"
 
+	dto "github.com/prometheus/client_model/go"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
@@ -80,4 +82,34 @@ func TestNewCounterVecWithOpts(t *testing.T) {
 	assert.Equal(t, "This is a test counter vector", counterVecMetric.Help)
 	assert.Equal(t, "test_subsystem_test_counter_vec", counterVecMetric.FQDN)
 	assert.NotNil(t, counterVecMetric.CounterVec)
+}
+
+func TestGaugeV_SetWithLabels(t *testing.T) {
+	opts := prometheus.GaugeOpts{
+		Name:      "test_gauge",
+		Namespace: "test_ns",
+		Subsystem: "test_sub",
+		Help:      "help text",
+	}
+	gv := NewGaugedVectorOpts(opts, []string{"label1", "label2"})
+
+	gv.SetWithLabels(1.23, "Alpha", "BETA")
+
+	g, err := gv.Gauge.GetMetricWithLabelValues("alpha", "beta")
+	assert.NoError(t, err)
+
+	var m dto.Metric
+	err = g.Write(&m)
+	assert.NoError(t, err)
+	assert.NotNil(t, m.Gauge)
+	assert.InDelta(t, 1.23, *m.Gauge.Value, 0.01)
+
+	// Override the value
+	gv.SetWithLabels(4.56, "ALPHA", "beta")
+	// reuse g (same label combination)
+	err = g.Write(&m)
+	assert.NoError(t, err)
+	assert.InDelta(t, 4.56, *m.Gauge.Value, 0.01)
+
+	assert.Len(t, m.Label, 2)
 }

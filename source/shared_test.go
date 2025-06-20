@@ -81,12 +81,12 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 		t.Errorf("RecordTTL expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
 	}
 
-	// if non-empty record type is expected, check that it matches.
+	// if a non-empty record type is expected, check that it matches.
 	if endpoint.RecordType != expected.RecordType {
 		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
 	}
 
-	// if non-empty labels are expected, check that they matches.
+	// if non-empty labels are expected, check that they match.
 	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels, expected.Labels) {
 		t.Errorf("Labels expected %s, got %s", expected.Labels, endpoint.Labels)
 	}

@@ -17,7 +17,7 @@
 # renovate: datasource=github-releases depName=kubernetes-sigs/controller-tools
 CONTROLLER_TOOLS_GENERATOR_VERSION=v0.17.2
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANG_CI_LINTER_VERSION=v2.0.2
+GOLANG_CI_LINTER_VERSION=v2.1.6
 
 # Execute
 # scripts/install-tools.sh
@@ -52,6 +52,16 @@ install_generator() {
   if [[ "$install" == true ]]; then
       set -ex ;\
 	    go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
+  fi
+
+  if [[ ! -x $(which yq) ]]; then
+      set -ex ;\
+      go install github.com/mikefarah/yq/v4@latest ;
+  fi
+
+  if [[ ! -x $(which yamlfmt) ]]; then
+      set -ex ;\
+      go install github.com/google/yamlfmt/cmd/yamlfmt@latest ;
   fi
 }
 

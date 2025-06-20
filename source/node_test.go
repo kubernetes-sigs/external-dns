@@ -17,11 +17,17 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
+	"fmt"
+	"maps"
+	"math/rand"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"k8s.io/client-go/kubernetes"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
@@ -67,23 +73,29 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
+			title:        "complex template",
+			expectError:  false,
+			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
+		},
+		{
 			title:            "non-empty annotation filter label",
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewNodeSource(
 				context.TODO(),
-				fake.NewSimpleClientset(),
+				fake.NewClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				labels.Everything(),
 				true,
 				true,
+				false,
 			)
 
 			if ti.expectError {
@@ -391,7 +403,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			buf := testutils.LogsToBuffer(log.DebugLevel, t)
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 			labelSelector := labels.Everything()
 			if tc.labelSelector != "" {
@@ -401,7 +413,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			}
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubeClient := fake.NewClientset()
 
 			node := &v1.Node{
 				ObjectMeta: metav1.ObjectMeta{
@@ -417,18 +429,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
+			_, err := kubeClient.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
 				context.TODO(),
-				kubernetes,
+				kubeClient,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				labelSelector,
 				tc.exposeInternalIPv6,
 				tc.excludeUnschedulable,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -443,11 +456,10 @@ func testNodeSourceEndpoints(t *testing.T) {
 			validateEndpoints(t, endpoints, tc.expected)
 
 			for _, entry := range tc.expectedLogs {
-				assert.Contains(t, buf.String(), entry)
+				testutils.TestHelperLogContains(entry, hook, t)
 			}
-
 			for _, entry := range tc.expectedAbsentLogs {
-				assert.NotContains(t, buf.String(), entry)
+				testutils.TestHelperLogNotContains(entry, hook, t)
 			}
 		})
 	}
@@ -514,7 +526,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		}
 
 		// Create a Kubernetes testing client
-		kubernetes := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 
 		node := &v1.Node{
 			ObjectMeta: metav1.ObjectMeta{
@@ -530,38 +542,142 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			},
 		}
 
-		_, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
+		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		var buf *bytes.Buffer
+		var hook *test.Hook
 		if tc.exposeInternalIPv6 {
-			buf = testutils.LogsToBuffer(log.WarnLevel, t)
+			hook = testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 		}
 
 		// Create our object under test and get the endpoints.
 		client, err := NewNodeSource(
-			context.TODO(),
-			kubernetes,
+			t.Context(),
+			kubeClient,
 			tc.annotationFilter,
 			tc.fqdnTemplate,
 			labelSelector,
 			tc.exposeInternalIPv6,
 			tc.excludeUnschedulable,
+			false,
 		)
 		require.NoError(t, err)
 
-		endpoints, err := client.Endpoints(context.Background())
+		endpoints, err := client.Endpoints(t.Context())
 		if tc.expectError {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
 
-			if tc.exposeInternalIPv6 && buf != nil {
-				assert.Contains(t, buf.String(), warningMsg)
+			if tc.exposeInternalIPv6 && hook != nil {
+				testutils.TestHelperLogContainsWithLogLevel(warningMsg, log.WarnLevel, hook, t)
 			}
 		}
 
 		// Validate returned endpoints against desired endpoints.
 		validateEndpoints(t, endpoints, tc.expected)
+
+		// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
+		for _, ep := range endpoints {
+			require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+		}
 	}
+}
+
+func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
+	kubeClient := fake.NewClientset()
+
+	nodes := helperNodeBuilder().
+		withNode(nil).
+		withNode(nil).
+		withNode(nil).
+		withNode(nil).
+		build()
+
+	for _, node := range nodes.Items {
+		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &node, metav1.CreateOptions{})
+		require.NoError(t, err, "Failed to create node %s", node.Name)
+	}
+
+	client, err := NewNodeSource(
+		t.Context(),
+		kubeClient,
+		"",
+		"",
+		labels.Everything(),
+		false,
+		true,
+		false,
+	)
+	require.NoError(t, err)
+
+	got, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+	for _, ep := range got {
+		assert.NotEmpty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+		assert.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+	}
+}
+
+type nodeListBuilder struct {
+	nodes []v1.Node
+}
+
+func helperNodeBuilder() *nodeListBuilder {
+	return &nodeListBuilder{nodes: []v1.Node{}}
+}
+
+func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
+	idx := len(b.nodes) + 1
+	nodeName := fmt.Sprintf("ip-10-1-176-%d.internal", idx)
+	b.nodes = append(b.nodes, v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nodeName,
+			Labels: func() map[string]string {
+				base := map[string]string{
+					"test-label":                    "test-value",
+					"name":                          nodeName,
+					"topology.kubernetes.io/region": "eu-west-1",
+					"node.kubernetes.io/lifecycle":  "spot",
+				}
+				maps.Copy(base, labels)
+				return base
+			}(),
+			Annotations: map[string]string{
+				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
+				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
+				"external-dns.alpha.kubernetes.io/hostname":              fmt.Sprintf("node-%d.example.com", idx),
+			},
+		},
+		Spec: v1.NodeSpec{
+			Unschedulable: false,
+		},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeInternalIP, Address: fmt.Sprintf("10.1.176.%d", idx)},
+				{Type: v1.NodeInternalIP, Address: fmt.Sprintf("fc00:f853:ccd:e793::%d", idx)},
+			},
+		},
+	})
+
+	return b
+}
+
+func (b *nodeListBuilder) build() v1.NodeList {
+	if len(b.nodes) > 1 {
+		// Shuffle the result to ensure randomness in the order.
+		rand.New(rand.NewSource(time.Now().UnixNano()))
+		rand.Shuffle(len(b.nodes), func(i, j int) {
+			b.nodes[i], b.nodes[j] = b.nodes[j], b.nodes[i]
+		})
+	}
+	return v1.NodeList{Items: b.nodes}
+}
+
+func (b *nodeListBuilder) apply(t *testing.T, kubeClient kubernetes.Interface) v1.NodeList {
+	for _, node := range b.nodes {
+		_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &node, metav1.CreateOptions{})
+		require.NoError(t, err, "Failed to create node %s", node.Name)
+	}
+	return v1.NodeList{Items: b.nodes}
 }

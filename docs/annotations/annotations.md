@@ -107,7 +107,6 @@ Some providers define their own annotations. Cloud-specific annotations have key
 |------------|------------------------------------------------|
 | AWS        | `external-dns.alpha.kubernetes.io/aws-`        |
 | CloudFlare | `external-dns.alpha.kubernetes.io/cloudflare-` |
-| IBM Cloud  | `external-dns.alpha.kubernetes.io/ibmcloud-`   |
 | Scaleway   | `external-dns.alpha.kubernetes.io/scw-`        |
 
 Additional annotations that are currently implemented only by AWS are:

@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -127,7 +128,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 						assert.NoError(t, errDecrypt, "Error decrypting the encrypted text")
 
 						assert.True(t, strings.HasPrefix(encryptedText, nonce),
-							fmt.Sprintf("Nonce '%s' should be a prefix of the encrypted text: '%s'", nonce, encryptedText))
+							"Nonce '%s' should be a prefix of the encrypted text: '%s'", nonce, encryptedText)
 						assert.Equal(t, test.decrypted, actual)
 					}
 				}

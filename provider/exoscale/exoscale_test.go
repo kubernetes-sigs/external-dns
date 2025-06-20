@@ -121,7 +121,7 @@ func TestExoscaleGetRecords(t *testing.T) {
 
 	recs, err := provider.Records(context.Background())
 	if err == nil {
-		assert.Equal(t, 3, len(recs))
+		assert.Len(t, recs, 3)
 		assert.True(t, contains(recs, "v1.foo.com"))
 		assert.True(t, contains(recs, "v2.bar.com"))
 		assert.True(t, contains(recs, "v2.foo.com"))
@@ -190,15 +190,15 @@ func TestExoscaleApplyChanges(t *testing.T) {
 
 	provider.ApplyChanges(context.Background(), plan)
 
-	assert.Equal(t, 1, len(createExoscale))
+	assert.Len(t, createExoscale, 1)
 	assert.Equal(t, domainIDs[0], createExoscale[0].domainID)
 	assert.Equal(t, "v1", *createExoscale[0].record.Name)
 
-	assert.Equal(t, 1, len(deleteExoscale))
+	assert.Len(t, deleteExoscale, 1)
 	assert.Equal(t, domainIDs[0], deleteExoscale[0].domainID)
 	assert.Equal(t, *groups[domainIDs[0]][0].ID, deleteExoscale[0].recordID)
 
-	assert.Equal(t, 1, len(updateExoscale))
+	assert.Len(t, updateExoscale, 1)
 	assert.Equal(t, domainIDs[0], updateExoscale[0].domainID)
 	assert.Equal(t, *groups[domainIDs[0]][0].ID, *updateExoscale[0].record.ID)
 }
@@ -234,7 +234,7 @@ func TestExoscaleMerge_NoUpdateOnTTL0Changes(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, 0, len(merge(updateOld, updateNew)))
+	assert.Empty(t, merge(updateOld, updateNew))
 }
 
 func TestExoscaleMerge_UpdateOnTTLChanges(t *testing.T) {
@@ -269,7 +269,7 @@ func TestExoscaleMerge_UpdateOnTTLChanges(t *testing.T) {
 	}
 
 	merged := merge(updateOld, updateNew)
-	assert.Equal(t, 2, len(merged))
+	assert.Len(t, merged, 2)
 	assert.Equal(t, "name1", merged[0].DNSName)
 }
 
@@ -305,7 +305,7 @@ func TestExoscaleMerge_AlwaysUpdateTarget(t *testing.T) {
 	}
 
 	merged := merge(updateOld, updateNew)
-	assert.Equal(t, 1, len(merged))
+	assert.Len(t, merged, 1)
 	assert.Equal(t, "target1-changed", merged[0].Targets[0])
 }
 
@@ -341,5 +341,5 @@ func TestExoscaleMerge_NoUpdateIfTTLUnchanged(t *testing.T) {
 	}
 
 	merged := merge(updateOld, updateNew)
-	assert.Equal(t, 0, len(merged))
+	assert.Empty(t, merged)
 }

@@ -568,9 +568,9 @@ func testNewInMemoryProvider(t *testing.T) {
 func testInMemoryCreateZone(t *testing.T) {
 	im := NewInMemoryProvider()
 	err := im.CreateZone("zone")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = im.CreateZone("zone")
-	assert.EqualError(t, err, ErrZoneAlreadyExists.Error())
+	require.EqualError(t, err, ErrZoneAlreadyExists.Error())
 }
 
 func makeZone(s ...string) map[endpoint.EndpointKey]*endpoint.Endpoint {

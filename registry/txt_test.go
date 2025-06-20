@@ -638,7 +638,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -684,7 +684,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -727,7 +727,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -839,7 +839,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -920,7 +920,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1483,7 +1483,7 @@ func TestNewTXTScheme(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1587,7 +1587,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 			"Delete": got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
+		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1746,7 +1746,7 @@ func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 			r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, tc.newFormatOnly, false, "")
 			records := r.generateTXTRecord(tc.endpoint)
 
-			assert.Equal(t, tc.expectedRecords, len(records), tc.description)
+			assert.Len(t, records, tc.expectedRecords, tc.description)
 
 			for _, record := range records {
 				assert.Equal(t, endpoint.RecordTypeTXT, record.RecordType)
@@ -1793,7 +1793,7 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 1, len(txtRecords), "Should only create one TXT record in new format")
+	assert.Len(t, txtRecords, 1, "Should only create one TXT record in new format")
 
 	if len(txtRecords) > 0 {
 		assert.True(t, strings.HasPrefix(txtRecords[0].DNSName, "a-"),
@@ -1821,7 +1821,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	})
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false, false, "")
-	b := testutils.LogsToBuffer(log.ErrorLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
 
@@ -1835,7 +1835,8 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	}
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
-	assert.Contains(t, b.String(), "TXT record has no targets empty-targets.test-zone.example.org")
+
+	testutils.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
 }
 
 func TestTXTRecordMigration(t *testing.T) {

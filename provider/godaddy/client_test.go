@@ -58,12 +58,12 @@ func TestClient_DoWhenQuotaExceeded(t *testing.T) {
 	}
 
 	resp, err := client.Do(req)
-	assert.Nil(err, "A CODE_EXCEEDED response should not return an error")
+	assert.NoError(err, "A CODE_EXCEEDED response should not return an error")
 	assert.Equal(http.StatusTooManyRequests, resp.StatusCode, "Expected a 429 response")
 
 	respContents := GDErrorResponse{}
 	err = client.UnmarshalResponse(resp, &respContents)
-	if assert.NotNil(err) {
+	if assert.Error(err) {
 		var apiErr *APIError
 		errors.As(err, &apiErr)
 		assert.Equal("QUOTA_EXCEEDED", apiErr.Code)

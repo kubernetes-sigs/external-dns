@@ -21,6 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
@@ -53,13 +54,13 @@ func TestZoneIDName(t *testing.T) {
 
 	// no possible zone for entry
 	zoneID, zoneName = z.FindZone("name.qux.foo")
-	assert.Equal(t, "", zoneName)
-	assert.Equal(t, "", zoneID)
+	assert.Empty(t, zoneName)
+	assert.Empty(t, zoneID)
 
 	// no possible zone for entry of a substring to valid a zone
 	zoneID, zoneName = z.FindZone("nomatch-foo.bar")
-	assert.Equal(t, "", zoneName)
-	assert.Equal(t, "", zoneID)
+	assert.Empty(t, zoneName)
+	assert.Empty(t, zoneID)
 
 	// entry's suffix matches a subdomain but doesn't belong there
 	zoneID, zoneName = z.FindZone("name-foo.qux.baz")
@@ -76,7 +77,8 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "エイミー.みんな", zoneName)
 	assert.Equal(t, "987654", zoneID)
 
-	b := testutils.LogsToBuffer(log.WarnLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	_, _ = z.FindZone("???")
-	assert.Contains(t, b.String(), "level=warning msg=\"Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F\"")
+
+	testutils.TestHelperLogContains("Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F", hook, t)
 }

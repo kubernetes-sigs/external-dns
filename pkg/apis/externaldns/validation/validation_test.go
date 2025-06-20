@@ -27,29 +27,51 @@ import (
 
 func TestValidateFlags(t *testing.T) {
 	cfg := newValidConfig(t)
-	assert.NoError(t, ValidateConfig(cfg))
+	require.NoError(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = "test"
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = ""
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	for _, format := range []string{"text", "json"} {
 		cfg = newValidConfig(t)
 		cfg.LogFormat = format
-		assert.NoError(t, ValidateConfig(cfg))
+		require.NoError(t, ValidateConfig(cfg))
 	}
 
 	cfg = newValidConfig(t)
 	cfg.Sources = []string{}
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.Provider = ""
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.IgnoreHostnameAnnotation = true
+	cfg.FQDNTemplate = ""
+	require.Error(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.TXTPrefix = "foo"
+	cfg.TXTSuffix = "bar"
+	require.Error(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.LabelFilter = "foo"
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.LabelFilter = "foo=bar"
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.LabelFilter = "#invalid-selector"
+	require.Error(t, ValidateConfig(cfg))
 }
 
 func newValidConfig(t *testing.T) *externaldns.Config {
@@ -84,7 +106,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestValidateBadRfc2136Batch(t *testing.T) {
@@ -98,7 +120,7 @@ func TestValidateBadRfc2136Batch(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestValidateGoodRfc2136Config(t *testing.T) {
@@ -112,7 +134,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
@@ -201,7 +223,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range invalidRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 }
 
@@ -224,6 +246,108 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range validRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
+}
+
+func TestValidateBadAkamaiConfig(t *testing.T) {
+	invalidAkamaiConfigs := []*externaldns.Config{
+		{
+			LogFormat:          "json",
+			Sources:            []string{"test-source"},
+			Provider:           "akamai",
+			AkamaiClientToken:  "test-token",
+			AkamaiClientSecret: "test-secret",
+			AkamaiAccessToken:  "test-access-token",
+			AkamaiEdgercPath:   "/path/to/edgerc",
+			// Missing AkamaiServiceConsumerDomain
+		},
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientSecret:          "test-secret",
+			AkamaiAccessToken:           "test-access-token",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			// Missing AkamaiClientToken
+		},
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientToken:           "test-token",
+			AkamaiAccessToken:           "test-access-token",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			// Missing AkamaiClientSecret
+		},
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientToken:           "test-token",
+			AkamaiClientSecret:          "test-secret",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			// Missing AkamaiAccessToken
+		},
+	}
+
+	for _, cfg := range invalidAkamaiConfigs {
+		err := ValidateConfig(cfg)
+		assert.Error(t, err)
+	}
+}
+
+func TestValidateGoodAkamaiConfig(t *testing.T) {
+	validAkamaiConfigs := []*externaldns.Config{
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientToken:           "test-token",
+			AkamaiClientSecret:          "test-secret",
+			AkamaiAccessToken:           "test-access-token",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+		},
+		{
+			LogFormat: "json",
+			Sources:   []string{"test-source"},
+			Provider:  "akamai",
+			// All Akamai fields can be empty if AkamaiEdgercPath is not specified
+		},
+	}
+
+	for _, cfg := range validAkamaiConfigs {
+		err := ValidateConfig(cfg)
+		assert.NoError(t, err)
+	}
+}
+
+func TestValidateBadAzureConfig(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "azure"
+	// AzureConfigFile is empty
+
+	err := ValidateConfig(cfg)
+
+	assert.Error(t, err)
+}
+
+func TestValidateGoodAzureConfig(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "azure"
+	cfg.AzureConfigFile = "/path/to/azure.json"
+
+	err := ValidateConfig(cfg)
+
+	assert.NoError(t, err)
 }

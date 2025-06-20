@@ -14,6 +14,23 @@ We have full documentation on how to get started contributing here:
 
 This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification on PR title. The explicit commit history is used, among other things, to provide a readable changelog in release notes.
 
+## How to test a PR
+
+On Linux (or WSL), a PR can be tested following this instruction with [gh](https://cli.github.com/) and [golang](https://go.dev/):
+
+```bash
+gh repo clone kubernetes-sigs/external-dns
+cd external-dns
+gh pr checkout XXX # <=== Set PR number here
+go run main.go \
+  --kubeconfig=<kubeconfig_path> \
+  --log-format=text \
+  --log-level=debug \
+  --interval=1m
+  --provider=xxx
+  --source=yyy
+```
+
 ## Mentorship
 
 - [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!

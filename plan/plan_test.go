@@ -17,9 +17,13 @@ limitations under the License.
 package plan
 
 import (
+	"bytes"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -245,6 +249,48 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 }
 
+func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
+	ch := &Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName: "foo",
+			},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName: "bar",
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName: "baz",
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName: "qux",
+			},
+		},
+	}
+	jsonBytes, err := json.Marshal(ch)
+	require.NoError(t, err)
+	assert.JSONEq(t,
+		`{"create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"delete":[{"dnsName":"qux"}]}`,
+		string(jsonBytes))
+	var changes Changes
+	err = json.NewDecoder(bytes.NewBuffer(jsonBytes)).Decode(&changes)
+	require.NoError(t, err)
+	assert.Equal(t, ch, &changes)
+}
+
+func TestPlan_ChangesJson_DecodeMixedCase(t *testing.T) {
+	input := `{"Create":[{"dnsName":"foo"}],"UpdateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux"}]}`
+	var changes Changes
+	err := json.NewDecoder(strings.NewReader(input)).Decode(&changes)
+	require.NoError(t, err)
+	assert.Len(t, changes.Create, 1)
+}
+
 func (suite *PlanTestSuite) TestSyncFirstRound() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
@@ -367,7 +413,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().False(changes.HasChanges())
+	suite.False(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestHasChanges() {
@@ -382,7 +428,7 @@ func (suite *PlanTestSuite) TestHasChanges() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().True(changes.HasChanges())
+	suite.True(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {
@@ -1030,6 +1076,26 @@ func TestNormalizeDNSName(t *testing.T) {
 		{
 			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
 			"my-example-my-example-1214.foo-1235.bar-foo.com.",
+		},
+		{
+			"點看.org.",
+			"xn--c1yn36f.org.",
+		},
+		{
+			"nordic-ø.xn--kitty-點看pd34d.com",
+			"xn--nordic--w1a.xn--xn--kitty-pd34d-hn01b3542b.com.",
+		},
+		{
+			"nordic-ø.kitty😸.com.",
+			"xn--nordic--w1a.xn--kitty-pd34d.com.",
+		},
+		{
+			"  nordic-ø.kitty😸.COM",
+			"xn--nordic--w1a.xn--kitty-pd34d.com.",
+		},
+		{
+			"xn--nordic--w1a.kitty😸.com.",
+			"xn--nordic--w1a.xn--kitty-pd34d.com.",
 		},
 	}
 	for _, r := range records {

@@ -164,4 +164,3 @@ tests:
     asserts:
      - failedTemplate:
           errorMessage: "'txtPrefix' and 'txtSuffix' are mutually exclusive"
-

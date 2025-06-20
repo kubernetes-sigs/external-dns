@@ -123,7 +123,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 
 	resp, err := requestWithRetry(client, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to webhook: %v", err)
+		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
 	// read the serialized DomainFilter from the response body and set it in the webhook provider struct
 	defer resp.Body.Close()
@@ -134,7 +134,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 
 	df := endpoint.DomainFilter{}
 	if err := json.NewDecoder(resp.Body).Decode(&df); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
 	return &WebhookProvider{
@@ -200,7 +200,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
-func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 

@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
+
 	"sigs.k8s.io/external-dns/provider"
 )
 
@@ -178,7 +179,7 @@ func TestPluralApplyChangesCreate(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, len(actual), 0, "expected no entries")
+			assert.Empty(t, actual, "expected no entries")
 
 			err = provider.ApplyChanges(context.Background(), &plan.Changes{Create: test.expectedEndpoints})
 			if err != nil {

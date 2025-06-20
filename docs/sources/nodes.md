@@ -24,7 +24,7 @@ spec:
   serviceAccountName: external-dns
   containers:
   - name: external-dns
-    image: registry.k8s.io/external-dns/external-dns:v0.16.1 # update this to the desired external-dns version
+    image: registry.k8s.io/external-dns/external-dns:v0.17.0 # update this to the desired external-dns version
     args:
     - --source=node # will use nodes as source
     - --provider=aws
@@ -61,7 +61,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.17.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -132,7 +132,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.17.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws

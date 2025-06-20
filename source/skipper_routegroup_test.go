@@ -21,8 +21,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/fqdn"
 )
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
@@ -788,7 +788,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fqdnTemplate != "" {
-				tmpl, err := parseTemplate(tt.fqdnTemplate)
+				tmpl, err := fqdn.ParseTemplate(tt.fqdnTemplate)
 				if err != nil {
 					t.Fatalf("Failed to parse template: %v", err)
 				}
@@ -834,55 +834,5 @@ func TestResourceLabelIsSet(t *testing.T) {
 		if _, ok := ep.Labels[endpoint.ResourceLabelKey]; !ok {
 			t.Errorf("Failed to set resource label on ep %v", ep)
 		}
-	}
-}
-
-func TestParseTemplate(t *testing.T) {
-	for _, tt := range []struct {
-		name                     string
-		annotationFilter         string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		expectError              bool
-	}{
-		{
-			name:         "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			name:        "valid empty template",
-			expectError: false,
-		},
-		{
-			name:         "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			name:         "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-		},
-		{
-			name:                     "valid template",
-			expectError:              false,
-			fqdnTemplate:             "{{.Name}}-{{.Namespace}}.ext-dns.test.com, {{.Name}}-{{.Namespace}}.ext-dna.test.com",
-			combineFQDNAndAnnotation: true,
-		},
-		{
-			name:             "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := parseTemplate(tt.fqdnTemplate)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
 	}
 }

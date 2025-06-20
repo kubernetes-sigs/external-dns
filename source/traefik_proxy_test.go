@@ -19,9 +19,13 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -325,7 +330,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -619,7 +624,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -636,16 +641,16 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRouteTCP)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(ingressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
@@ -654,7 +659,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(context.Background())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
 			assert.Equal(t, ti.expected, endpoints)
 		})
@@ -761,7 +766,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			expected:                 nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1091,7 +1096,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1385,7 +1390,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1527,7 +1532,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			expected:                 nil,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1690,7 +1695,7 @@ func TestTraefikAPIGroupDisableFlags(t *testing.T) {
 			disableNew:    true,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1730,4 +1735,81 @@ func TestTraefikAPIGroupDisableFlags(t *testing.T) {
 			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
+}
+
+func TestAddEventHandler_AllBranches(t *testing.T) {
+	ctx := context.Background()
+	handlerCalled := false
+	handler := func() { handlerCalled = true }
+
+	inf := testInformer{}
+	fakeInformer := new(FakeInformer)
+	fakeInformer.On("Informer").Return(&inf)
+
+	cases := []struct {
+		name string
+		ts   *traefikSource
+		want int
+	}{
+		{"all nil", &traefikSource{}, 0},
+		{"all set", &traefikSource{
+			ingressRouteInformer:       fakeInformer,
+			oldIngressRouteInformer:    fakeInformer,
+			ingressRouteTcpInformer:    fakeInformer,
+			oldIngressRouteTcpInformer: fakeInformer,
+			ingressRouteUdpInformer:    fakeInformer,
+			oldIngressRouteUdpInformer: fakeInformer,
+		}, 6},
+		{"some set", &traefikSource{
+			ingressRouteInformer:       fakeInformer,
+			oldIngressRouteInformer:    fakeInformer,
+			ingressRouteTcpInformer:    nil,
+			oldIngressRouteTcpInformer: fakeInformer,
+			ingressRouteUdpInformer:    nil,
+			oldIngressRouteUdpInformer: nil,
+		}, 3},
+	}
+
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			test.ts.AddEventHandler(ctx, handler)
+			assert.Equal(t, test.want, inf.times)
+			assert.False(t, handlerCalled)
+
+			if test.want > 0 {
+				fakeInformer.AssertExpectations(t)
+				fakeInformer.AssertCalled(t, "Informer")
+			} else {
+				fakeInformer.AssertNotCalled(t, "Informer")
+			}
+			// reset the call count
+			inf.times = 0
+		})
+	}
+}
+
+type FakeInformer struct {
+	mock.Mock
+	informer cache.SharedIndexInformer
+	lister   cache.GenericLister
+}
+
+func (f *FakeInformer) Informer() cache.SharedIndexInformer {
+	args := f.Called()
+	return args.Get(0).(cache.SharedIndexInformer)
+}
+
+func (f *FakeInformer) Lister() cache.GenericLister {
+	return f.lister
+}
+
+type testInformer struct {
+	cache.SharedIndexInformer
+
+	times int
+}
+
+func (t *testInformer) AddEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	t.times += 1
+	return nil, fmt.Errorf("not implemented")
 }

@@ -156,17 +156,17 @@ func testDnsimpleProviderZones(t *testing.T) {
 	ctx := context.Background()
 	mockProvider.accountID = "1"
 	result, err := mockProvider.Zones(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	validateDnsimpleZones(t, result, dnsimpleListZonesResponse.Data)
 
 	mockProvider.accountID = "2"
 	_, err = mockProvider.Zones(ctx)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	mockProvider.accountID = "3"
 	os.Setenv("DNSIMPLE_ZONES", "example-from-env.com")
 	result, err = mockProvider.Zones(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	validateDnsimpleZones(t, result, dnsimpleListZonesFromEnvResponse.Data)
 
 	mockProvider.accountID = "2"
@@ -177,12 +177,12 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	ctx := context.Background()
 	mockProvider.accountID = "1"
 	result, err := mockProvider.Records(ctx)
-	assert.Nil(t, err)
-	assert.Equal(t, len(dnsimpleListRecordsResponse.Data), len(result))
+	assert.NoError(t, err)
+	assert.Len(t, result, len(dnsimpleListRecordsResponse.Data))
 
 	mockProvider.accountID = "2"
 	_, err = mockProvider.Records(ctx)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func testDnsimpleProviderApplyChanges(t *testing.T) {
@@ -223,20 +223,20 @@ func testDnsimpleSuitableZone(t *testing.T) {
 	ctx := context.Background()
 	mockProvider.accountID = "1"
 	zones, err := mockProvider.Zones(ctx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zone := dnsimpleSuitableZone("example-beta.example.com", zones)
-	assert.Equal(t, zone.Name, "example.com")
+	assert.Equal(t, "example.com", zone.Name)
 
 	os.Setenv("DNSIMPLE_ZONES", "environment-example.com,example.environment-example.com")
 	mockProvider.accountID = "3"
 	zones, err = mockProvider.Zones(ctx)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	zone = dnsimpleSuitableZone("hello.example.environment-example.com", zones)
-	assert.Equal(t, zone.Name, "example.environment-example.com")
+	assert.Equal(t, "example.environment-example.com", zone.Name)
 
-	os.Unsetenv("DNSIMPLE_ZONES")
+	_ = os.Unsetenv("DNSIMPLE_ZONES")
 	mockProvider.accountID = "1"
 }
 
@@ -247,7 +247,7 @@ func TestNewDnsimpleProvider(t *testing.T) {
 		t.Errorf("Expected to fail new provider on bad token")
 	}
 
-	os.Unsetenv("DNSIMPLE_OAUTH")
+	_ = os.Unsetenv("DNSIMPLE_OAUTH")
 	_, err = NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on empty token")
@@ -260,7 +260,7 @@ func TestNewDnsimpleProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error thrown when testing NewDnsimpleProvider with the DNSIMPLE_ACCOUNT_ID environment variable set")
 	}
-	assert.Equal(t, dnsimpleTypedProvider.accountID, "12345678")
+	assert.Equal(t, "12345678", dnsimpleTypedProvider.accountID)
 	os.Unsetenv("DNSIMPLE_OAUTH")
 	os.Unsetenv("DNSIMPLE_ACCOUNT_ID")
 }
@@ -271,11 +271,11 @@ func testDnsimpleGetRecordID(t *testing.T) {
 
 	mockProvider.accountID = "1"
 	result, err = mockProvider.GetRecordID(context.Background(), "example.com", "example")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, int64(2), result)
 
 	result, err = mockProvider.GetRecordID(context.Background(), "example.com", "example-beta")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, int64(1), result)
 }
 

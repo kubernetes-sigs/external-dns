@@ -1,6 +1,6 @@
 # Creating TXT record with CRD source
 
-You can create and manage TXT records with the help of [CRD source](../contributing/crd-source.md)
+You can create and manage TXT records with the help of [CRD source](../sources/crd.md)
 and `DNSEndpoint` CRD. Currently, this feature is only supported by `digitalocean` providers.
 
 In order to start managing TXT records you need to set the `--managed-record-types=TXT` flag.
