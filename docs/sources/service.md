@@ -37,7 +37,6 @@ Another way to create per-pod DNS entries is to annotate headless service with
 `external-dns.alpha.kubernetes.io/service-pod-endpoints` and values `pod-name` or `fqdn-template`. The former prefixes
 service domain name with pod name, the latter uses `--fqdn-template` to generate the domain name for each pod in the service.
 
-
 ## Targets
 
 If the Service has an `external-dns.alpha.kubernetes.io/target` annotation, uses
