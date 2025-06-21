@@ -820,31 +820,31 @@ func TestNewMXTarget(t *testing.T) {
 	tests := []struct {
 		description string
 		target      string
-		expected    MXTarget
+		expected    *MXTarget
 		expectError bool
 	}{
 		{
 			description: "Valid MX record",
 			target:      "10 example.com",
-			expected:    MXTarget{Priority: 10, Host: "example.com"},
+			expected:    &MXTarget{Priority: 10, Host: "example.com"},
 			expectError: false,
 		},
 		{
 			description: "Invalid MX record with missing priority",
 			target:      "example.com",
-			expected:    MXTarget{},
+			expected:    &MXTarget{},
 			expectError: true,
 		},
 		{
 			description: "Invalid MX record with non-integer priority",
 			target:      "abc example.com",
-			expected:    MXTarget{},
+			expected:    &MXTarget{},
 			expectError: true,
 		},
 		{
 			description: "Invalid MX record with too many parts",
 			target:      "10 example.com extra",
-			expected:    MXTarget{},
+			expected:    &MXTarget{},
 			expectError: true,
 		},
 	}
