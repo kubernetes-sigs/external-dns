@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -1685,6 +1686,54 @@ func newEndpointWithOwnerResource(dnsName, target, recordType, ownerID, resource
 	return e
 }
 
+// This is primarily used to prevent data races when running tests in parallel (t.Parallel).
+func cloneEndpointsWithOpts(list []*endpoint.Endpoint, opt ...func(*endpoint.Endpoint)) []*endpoint.Endpoint {
+	cloned := make([]*endpoint.Endpoint, len(list))
+	for i, e := range list {
+		cloned[i] = cloneEndpointWithOpts(e, opt...)
+	}
+	return cloned
+}
+
+func cloneEndpointWithOpts(e *endpoint.Endpoint, opt ...func(*endpoint.Endpoint)) *endpoint.Endpoint {
+	targets := make(endpoint.Targets, len(e.Targets))
+	copy(targets, e.Targets)
+
+	// SameEndpoints treats nil and empty maps/slices as different.
+	// To avoid introducing unintended differences, we retain nil when original is nil.
+	var labels endpoint.Labels
+	if e.Labels != nil {
+		labels = make(endpoint.Labels, len(e.Labels))
+		for k, v := range e.Labels {
+			labels[k] = v
+		}
+	}
+
+	var providerSpecific endpoint.ProviderSpecific
+	if e.ProviderSpecific != nil {
+		providerSpecific = make(endpoint.ProviderSpecific, len(e.ProviderSpecific))
+		for i, p := range e.ProviderSpecific {
+			providerSpecific[i] = p
+		}
+	}
+
+	ttl := e.RecordTTL
+
+	ep := &endpoint.Endpoint{
+		DNSName:          e.DNSName,
+		Targets:          targets,
+		RecordType:       e.RecordType,
+		RecordTTL:        ttl,
+		Labels:           labels,
+		ProviderSpecific: providerSpecific,
+		SetIdentifier:    e.SetIdentifier,
+	}
+	for _, o := range opt {
+		o(ep)
+	}
+	return ep
+}
+
 func TestNewTXTRegistryWithNewFormatOnly(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 
@@ -1837,4 +1886,202 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	testutils.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
+}
+
+// TestTXTRegistryRecreatesMissingRecords reproduces issue #4914.
+// It verifies that External‑DNS recreates A/CNAME records that were accidentally deleted while their corresponding TXT records remain.
+// An InMemoryProvider is used because, like Route53, it throws an error when attempting to create a duplicate record.
+func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
+	ownerId := "owner"
+	tests := []struct {
+		name           string
+		desired        []*endpoint.Endpoint
+		existing       []*endpoint.Endpoint
+		expectedCreate []*endpoint.Endpoint
+	}{
+		{
+			name: "Recreate missing A record when TXT exists",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("a-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+			},
+			expectedCreate: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ownerId),
+			},
+		},
+		{
+			name: "Recreate missing AAAA record when TXT exists",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("aaaa-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+			},
+			expectedCreate: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, ownerId),
+			},
+		},
+		{
+			name: "Recreate missing CNAME record when TXT exists",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("cname-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+			},
+			expectedCreate: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ownerId)},
+		},
+		{
+			name: "Recreate missing A and CNAME records when TXT exists",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+				newEndpointWithOwner("new-record-2.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("a-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("cname-new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+			},
+			expectedCreate: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ownerId),
+				newEndpointWithOwner("new-record-2.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ownerId),
+			},
+		},
+		{
+			name: "Recreate missing A records when TXT and CNAME exists",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+				newEndpointWithOwner("new-record-2.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-2.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ownerId),
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("a-new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("cname-new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+			},
+			expectedCreate: []*endpoint.Endpoint{
+				newEndpointWithOwner("new-record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ownerId),
+			},
+		},
+		{
+			name: "Only one A record is missing among several existing records",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+				newEndpointWithOwner("record-2.test-zone.example.org", "1.1.1.2", endpoint.RecordTypeA, ""),
+				newEndpointWithOwner("record-3.test-zone.example.org", "1.1.1.3", endpoint.RecordTypeA, ""),
+				newEndpointWithOwner("record-4.test-zone.example.org", "2001:db8::4", endpoint.RecordTypeAAAA, ""),
+				newEndpointWithOwner("record-5.test-zone.example.org", "cluster-b", endpoint.RecordTypeCNAME, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("a-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+
+				newEndpointWithOwner("record-2.test-zone.example.org", "1.1.1.2", endpoint.RecordTypeA, ownerId),
+				newEndpointWithOwner("record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("a-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+
+				newEndpointWithOwner("record-3.test-zone.example.org", "1.1.1.3", endpoint.RecordTypeA, ownerId),
+				newEndpointWithOwner("record-3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("a-record-3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+
+				newEndpointWithOwner("record-4.test-zone.example.org", "2001:db8::4", endpoint.RecordTypeAAAA, ownerId),
+				newEndpointWithOwner("record-4.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("aaaa-record-4.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+
+				newEndpointWithOwner("record-5.test-zone.example.org", "cluster-b", endpoint.RecordTypeCNAME, ownerId),
+				newEndpointWithOwner("record-5.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+				newEndpointWithOwner("cname-record-5.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+			},
+			expectedCreate: []*endpoint.Endpoint{
+				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ownerId),
+			},
+		},
+		// TODO: Test TXT record regeneration when only A/CNAME records exist.
+		// The regeneration logic will be introduced in a separate PR.
+	}
+	for _, tt := range tests {
+		for _, setIdentifier := range []string{"", "set-identifier"} {
+			for pName, policy := range plan.Policies {
+				// Clone inputs per policy to avoid data races when using t.Parallel.
+				desired := cloneEndpointsWithOpts(tt.desired, func(e *endpoint.Endpoint) {
+					e.WithSetIdentifier(setIdentifier)
+				})
+				existing := cloneEndpointsWithOpts(tt.existing, func(e *endpoint.Endpoint) {
+					e.WithSetIdentifier(setIdentifier)
+				})
+				expectedCreate := cloneEndpointsWithOpts(tt.expectedCreate, func(e *endpoint.Endpoint) {
+					e.WithSetIdentifier(setIdentifier)
+				})
+
+				t.Run(fmt.Sprintf("%s with %s policy and setIdentifier=%s", tt.name, pName, setIdentifier), func(t *testing.T) {
+					t.Parallel()
+					ctx := context.Background()
+					p := inmemory.NewInMemoryProvider()
+
+					// Given: Register existing records
+					p.CreateZone(testZone)
+					err := p.ApplyChanges(ctx, &plan.Changes{Create: existing})
+					assert.NoError(t, err)
+
+					// The first ApplyChanges call should create the expected records.
+					// Subsequent calls are expected to be no-ops (i.e., no additional creates).
+					isCalled := false
+					p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+						if isCalled {
+							assert.Empty(t, changes.Create, "ApplyChanges should not be called multiple times with new changes")
+						} else {
+							assert.True(t,
+								testutils.SameEndpoints(changes.Create, expectedCreate),
+								"Expected create changes: %v, but got: %v", expectedCreate, changes.Create,
+							)
+						}
+						assert.Empty(t, changes.UpdateNew, "UpdateNew should be empty")
+						assert.Empty(t, changes.UpdateOld, "UpdateOld should be empty")
+						assert.Empty(t, changes.Delete, "Delete should be empty")
+						isCalled = true
+					}
+
+					// When: Apply changes to recreate missing A records
+					managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
+					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, false)
+					assert.NoError(t, err)
+
+					expectedRecords := append(existing, expectedCreate...)
+
+					// Simulate the reconciliation loop by executing multiple times
+					reconciliationLoops := 3
+					for i := range reconciliationLoops {
+						records, err := registry.Records(ctx)
+						assert.NoError(t, err)
+						plan := &plan.Plan{
+							Policies:       []plan.Policy{policy},
+							Current:        records,
+							Desired:        desired,
+							ManagedRecords: managedRecords,
+							OwnerID:        ownerId,
+						}
+						plan = plan.Calculate()
+						err = registry.ApplyChanges(ctx, plan.Changes)
+						assert.NoError(t, err)
+
+						// Then: Verify that the missing records are recreated or the existing records are not modified
+						records, err = p.Records(ctx)
+						assert.NoError(t, err)
+						assert.True(t, testutils.SameEndpoints(records, expectedRecords),
+							"Expected records after reconciliation loop #%d: %v, but got: %v",
+							i, expectedRecords, records,
+						)
+					}
+				})
+			}
+		}
+	}
 }
