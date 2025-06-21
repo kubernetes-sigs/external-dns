@@ -39,13 +39,6 @@ linters:
       rules:
         - name: confusing-naming
           disabled: true
-    recvcheck:
-      # User-defined method exclusions.
-      # The format is `struct_name.method_name` (ex: `Foo.MethodName`).
-      # A wildcard `*` can use as a struct name (ex: `*.MethodName`).
-      # Default: []
-      exclusions:
-        - "DomainFilter.UnmarshalJSON"
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 51
     testifylint:
