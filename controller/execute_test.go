@@ -83,7 +83,6 @@ func TestSelectRegistry(t *testing.T) {
 				TXTWildcardReplacement: "wildcard",
 				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
 				ExcludeDNSRecordTypes:  []string{"TXT"},
-				TXTNewFormatOnly:       true,
 			},
 			provider: &MockProvider{},
 			wantErr:  false,

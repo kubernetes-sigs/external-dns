@@ -61,7 +61,7 @@ func TestNewTXTRegistryEncryptionConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		actual, err := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, test.encEnabled, test.aesKeyRaw, false)
+		actual, err := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, test.encEnabled, test.aesKeyRaw)
 		if test.errorExpected {
 			require.Error(t, err)
 		} else {
@@ -107,7 +107,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 		for _, k := range withEncryptionKeys {
 			t.Run(fmt.Sprintf("key '%s' with decrypted result '%s'", k, test.decrypted), func(t *testing.T) {
 				key := []byte(k)
-				r, err := NewTXTRegistry(p, "", "", "owner", time.Minute, "", []string{}, []string{}, true, key, false)
+				r, err := NewTXTRegistry(p, "", "", "owner", time.Minute, "", []string{}, []string{}, true, key)
 				assert.NoError(t, err, "Error creating TXT registry")
 				txtRecords := r.generateTXTRecord(test.record)
 				assert.Len(t, txtRecords, len(test.record.Targets))
@@ -144,7 +144,7 @@ func TestApplyRecordsWithEncryption(t *testing.T) {
 
 	key := []byte("ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=")
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, key, false)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, key)
 
 	_ = r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -202,7 +202,7 @@ func TestApplyRecordsWithEncryptionKeyChanged(t *testing.T) {
 	}
 
 	for _, key := range withEncryptionKeys {
-		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key), false)
+		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key))
 		_ = r.ApplyChanges(ctx, &plan.Changes{
 			Create: []*endpoint.Endpoint{
 				newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
@@ -232,7 +232,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 	}
 
 	for i, key := range withEncryptionKeys {
-		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key), false)
+		r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte(key))
 		keyId := fmt.Sprintf("key-id-%d", i)
 		changes := []*endpoint.Endpoint{
 			newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner", "", keyId),
