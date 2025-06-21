@@ -71,6 +71,20 @@ func (ttl TTL) IsConfigured() bool {
 // Targets is a representation of a list of targets for an endpoint.
 type Targets []string
 
+// MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
+type MXTarget struct {
+	Priority uint16
+	Host     string
+}
+
+// SRVTarget represents a single SRV (Service) record target, including its priority, weight, port, and host.
+type SRVTarget struct {
+	Priority uint16
+	Weight   uint16
+	Port     uint16
+	Host     string
+}
+
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings
 func NewTargets(target ...string) Targets {
 	t := make(Targets, 0, len(target))
@@ -396,21 +410,38 @@ func (e *Endpoint) CheckEndpoint() bool {
 
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
-		// MX records must have a preference value to indicate priority, e.g. "10 example.com"
-		// as per https://www.rfc-editor.org/rfc/rfc974.txt
-		targetParts := strings.Fields(strings.TrimSpace(target))
-		if len(targetParts) != 2 {
-			log.Debugf("Invalid MX record target: %s. MX records must have a preference value to indicate priority, e.g. '10 example.com'", target)
-			return false
-		}
-		preferenceRaw := targetParts[0]
-		_, err := strconv.ParseUint(preferenceRaw, 10, 16)
+		_, err := NewMXTarget(target)
 		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
+			log.Debugf("Invalid MX record target: %s. %v", target, err)
 			return false
 		}
 	}
+
 	return true
+}
+
+// NewMXTarget parses a string representation of an MX record target (e.g., "10 mail.example.com")
+// and returns an MXTarget struct. Returns an error if the input is invalid.
+func NewMXTarget(target string) (*MXTarget, error) {
+	mxTarget := &MXTarget{}
+	// MX records must have a preference value to indicate priority, e.g. "10 example.com"
+	// as per https://www.rfc-editor.org/rfc/rfc974.txt
+	targetParts := strings.Fields(strings.TrimSpace(target))
+	if len(targetParts) != 2 {
+		err := fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+		return nil, err
+	}
+
+	parsedPriority, err := strconv.ParseUint(targetParts[0], 10, 16)
+	if err != nil {
+		err := fmt.Errorf("invalid integer value in target: %s", target)
+		return nil, err
+	}
+
+	mxTarget.Priority = uint16(parsedPriority)
+	mxTarget.Host = targetParts[1]
+
+	return mxTarget, nil
 }
 
 func (t Targets) ValidateSRVRecord() bool {
