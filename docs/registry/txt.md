@@ -22,14 +22,14 @@ If you are dealing with APEX domains, example `example.com` and TXT records are 
 1. TXT record with prefix based on requirements. Example `--txt-prefix="%{record_type}-abc-"` or `--txt-prefix="%{record_type}.abc-"`
 2. TXT record with suffix based on requirements. Example `--txt-suffix="-abc-%{record_type}"` or `--txt-suffix="-abc.%{record_type}."`
 
-Example if configured `--txt-prefix="%{record_type}-abc-"` for apex domain `example.com` the expected result is
+Example if configured `--txt-prefix="%{record_type}-abc-"` for apex domain `ex.com` the expected result is
 
 |              Name              |  TYPE   |
 |:------------------------------:|:-------:|
 | `cname-a-abc-nginx-v2.ex.com.` |  `TXT`  |
 |       `nginx-v2.ex.com.`       | `CNAME` |
 
-And if configured `--txt-suffix="-abc.%{record_type}"` for apex domain `example.com` the expected result is
+And if configured `--txt-suffix="-abc.%{record_type}"` for apex domain `ex.com` the expected result is
 
 |              Name              |  TYPE   |
 |:------------------------------:|:-------:|
