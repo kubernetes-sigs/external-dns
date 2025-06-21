@@ -15,26 +15,26 @@ The TXT registry supports single format for storing DNS record metadata:
 
 - Creates a TXT record with record type information (e.g., 'a-' prefix for A records)
 
-The TXT registry would try to guarantee a consistency in between providers and sources, if provider supports the behaviour
+The TXT registry would try to guarantee a consistency in between providers and sources, if provider supports the behaviour.
 
 If you are dealing with APEX domains, example `example.com` and TXT records are failing to be created for managed record types specified by `--managed-record-types`, consider following options:
 
 1. TXT record with prefix based on requirements. Example `--txt-prefix="%{record_type}-abc-"` or `--txt-prefix="%{record_type}.abc-"`
 2. TXT record with suffix based on requirements. Example `--txt-suffix="-abc-%{record_type}"` or `--txt-suffix="-abc.%{record_type}."`
 
-Example when configured `--txt-prefix="%{record_type}-abc-"` for apex domain `example.com` the expected result is
+Example if configured `--txt-prefix="%{record_type}-abc-"` for apex domain `example.com` the expected result is
 
-|             Name              |   TYPE   |
-|:-----------------------------:|:--------:|
-|   `a-abc-nginx-v2.ex.com.`    |  `TXT`   |
-| `nginx-v2.ex.com.`  | `CNAME`  |
+|              Name              |  TYPE   |
+|:------------------------------:|:-------:|
+| `cname-a-abc-nginx-v2.ex.com.` |  `TXT`  |
+|       `nginx-v2.ex.com.`       | `CNAME` |
 
-And when configured `--txt-suffix="-abc.%{record_type}"` for apex domain `example.com` the expected result is
+And if configured `--txt-suffix="-abc.%{record_type}"` for apex domain `example.com` the expected result is
 
-|             Name              |  TYPE   |
-|:-----------------------------:|:-------:|
-|   `nginx-v2-abc.a.ex.com.`    |  `TXT`  |
-| `nginx-v3.ex.com..` | `CNAME` |
+|              Name              |  TYPE   |
+|:------------------------------:|:-------:|
+| `cname-nginx-v2-abc.a.ex.com.` |  `TXT`  |
+|      `nginx-v3.ex.com..`       | `CNAME` |
 
 ### Manually Cleanup Legacy TXT Records
 

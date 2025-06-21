@@ -101,35 +101,17 @@ def records(config: Config) -> None:
     print(f"calculate TXT records to cleanup for 'zone:{config.zone_id}' and 'max records:{config.total_items}'")
     # https://botocore.amazonaws.com/v1/documentation/api/latest/reference/config.html
     cfg = AwsConfig(
-       user_agent=f"ExternalDNS/boto3-{SESSION_ID}",
-
+        user_agent=f"ExternalDNS/boto3-{SESSION_ID}",
     )
     r53client = boto3.client('route53', config=cfg)
     dns_records_to_cleanup = []
     items = 0
     try:
-      params = {
-        'HostedZoneId': config.zone_id,
-        'MaxItems': str(MAX_ITEMS),
-      }
-      dns_in_iteration = r53client.list_resource_record_sets(**params)
-      elements = dns_in_iteration['ResourceRecordSets']
-      for el in elements:
-        if el['Type'] == 'TXT':
-            record = Record(el)
-            if record.is_for_deletion(config.contain):
-                dns_records_to_cleanup.append(record)
-                print("to cleanup >>", record)
-                items += 1
-                if items >= config.total_items:
-                    break
-
-      while len(elements) > 0 and 'NextRecordName' in dns_in_iteration.keys() and items < config.total_items:
-        dns_in_iteration = r53client.list_resource_record_sets(
-            HostedZoneId= config.zone_id,
-            StartRecordName= dns_in_iteration['NextRecordName'],
-            MaxItems= str(MAX_ITEMS),
-        )
+        params = {
+            'HostedZoneId': config.zone_id,
+            'MaxItems': str(MAX_ITEMS),
+        }
+        dns_in_iteration = r53client.list_resource_record_sets(**params)
         elements = dns_in_iteration['ResourceRecordSets']
         for el in elements:
             if el['Type'] == 'TXT':
@@ -141,13 +123,30 @@ def records(config: Config) -> None:
                     if items >= config.total_items:
                         break
 
-      if len(dns_records_to_cleanup) > 0:
-          delete_records(r53client, config, dns_records_to_cleanup)
-      else:
-          print("No 'TXT' records found to cleanup....")
+        while len(elements) > 0 and 'NextRecordName' in dns_in_iteration.keys() and items < config.total_items:
+            dns_in_iteration = r53client.list_resource_record_sets(
+                HostedZoneId= config.zone_id,
+                StartRecordName= dns_in_iteration['NextRecordName'],
+                MaxItems= str(MAX_ITEMS),
+            )
+            elements = dns_in_iteration['ResourceRecordSets']
+            for el in elements:
+                if el['Type'] == 'TXT':
+                    record = Record(el)
+                    if record.is_for_deletion(config.contain):
+                        dns_records_to_cleanup.append(record)
+                        print("to cleanup >>", record)
+                        items += 1
+                        if items >= config.total_items:
+                            break
+
+        if len(dns_records_to_cleanup) > 0:
+            delete_records(r53client, config, dns_records_to_cleanup)
+        else:
+            print("No 'TXT' records found to cleanup....")
     except Exception as e:
-      print(f"An error occurred: {e}")
-      os._exit(os.EX_OSERR)
+        print(f"An error occurred: {e}")
+        os._exit(os.EX_OSERR)
 
 def delete_records(client: boto3.client, config: Config, records: list[Record]) -> None:
     total=len(records)
@@ -198,7 +197,10 @@ if __name__ == "__main__":
     parser.add_argument("--batch-delete-count", type=int, required=False, default=2, help="Number of items to delete in single DELETE batch. Default to 2")
     parser.add_argument("--run", action="store_true", help="Execute the cleanup. The tool will do a dry-run if --run is not specified.")
 
-    print("Run this script at your own RISKS!!!!")
+    answer = input("Run this script at your own RISKS!!! Please enter 'yes' or 'no': ")
+    if answer != 'yes':
+        os._exit(0)
+
     print(f"Session ID  '{SESSION_ID}'")
 
     args = parser.parse_args()

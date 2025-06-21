@@ -66,14 +66,9 @@ type TXTRegistry struct {
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
-	txtEncryptEnabled bool, txtEncryptAESKey []byte,
-	newFormatOnly bool) (*TXTRegistry, error) {
+	txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
-	}
-
-	if newFormatOnly {
-		log.Warn("--txt-new-format-only is left for backward compatibility, it will be removed in future releases")
 	}
 
 	if len(txtEncryptAESKey) == 0 {

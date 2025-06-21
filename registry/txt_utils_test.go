@@ -20,12 +20,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-/**
-
-helper methods
-
-*/
-
 func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
 	return newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID, nil)
 }
