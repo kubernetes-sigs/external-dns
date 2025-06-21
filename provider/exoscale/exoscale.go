@@ -235,7 +235,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		}
 
 		for _, record := range records {
-			if *record.Type != "A" && *record.Type != "CNAME" && *record.Type != "TXT" {
+			if *record.Type != endpoint.RecordTypeA && *record.Type != endpoint.RecordTypeCNAME && *record.Type != endpoint.RecordTypeTXT {
 				continue
 			}
 
