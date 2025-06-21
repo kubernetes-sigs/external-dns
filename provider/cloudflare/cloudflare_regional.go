@@ -80,7 +80,7 @@ func (p *CloudFlareProvider) submitDataLocalizationRegionalHostnameChanges(ctx c
 		logFields := log.Fields{
 			"hostname":   rhChange.Hostname,
 			"region_key": rhChange.RegionKey,
-			"action":     rhChange.action,
+			"action":     rhChange.action.String(),
 			"zone":       resourceContainer.Identifier,
 		}
 		log.WithFields(logFields).Info("Changing regional hostname")
