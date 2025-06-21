@@ -34,21 +34,21 @@ import (
 const (
 	// 60 seconds is the current minimal TTL for TransIP and will replace unconfigured
 	// TTL's for Endpoints
-	transipMinimalValidTTL = 60
+	defaultTTL = 60
 )
 
 // TransIPProvider is an implementation of Provider for TransIP.
 type TransIPProvider struct {
 	provider.BaseProvider
 	domainRepo   domain.Repository
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	dryRun       bool
 
 	zoneMap provider.ZoneIDName
 }
 
 // NewTransIPProvider initializes a new TransIP Provider.
-func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
+func NewTransIPProvider(accountName, privateKeyFile string, domainFilter *endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
 	// check given arguments
 	if accountName == "" {
 		return nil, errors.New("required --transip-account not set")
@@ -97,7 +97,7 @@ func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	// refresh zone mapping
 	zoneMap := provider.ZoneIDName{}
 	for _, zone := range zones {
-		// TransIP API doesn't expose a unique identifier for zones, other than than
+		// TransIP API doesn't expose a unique identifier for zones, other than
 		// the domain name itself
 		zoneMap.Add(zone.Name, zone.Name)
 	}
@@ -336,11 +336,11 @@ func recordNameForEndpoint(ep *endpoint.Endpoint, zoneName string) string {
 }
 
 // getMinimalValidTTL returns max between given Endpoint's RecordTTL and
-// transipMinimalValidTTL
+// defaultTTL
 func getMinimalValidTTL(ep *endpoint.Endpoint) int {
-	// TTL cannot be lower than transipMinimalValidTTL
-	if ep.RecordTTL < transipMinimalValidTTL {
-		return transipMinimalValidTTL
+	// TTL cannot be lower than defaultTTL
+	if ep.RecordTTL < defaultTTL {
+		return defaultTTL
 	}
 
 	return int(ep.RecordTTL)

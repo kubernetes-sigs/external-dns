@@ -45,29 +45,25 @@ type RecordChange struct {
 
 func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 	token := os.Getenv("PLURAL_ACCESS_TOKEN")
-	endpoint := os.Getenv("PLURAL_ENDPOINT")
-
 	if token == "" {
-		return nil, fmt.Errorf("No plural access token provided, you must set the PLURAL_ACCESS_TOKEN env var")
+		return nil, fmt.Errorf("no plural access token provided, you must set the PLURAL_ACCESS_TOKEN env var")
 	}
 
 	config := &Config{
 		Token:    token,
-		Endpoint: endpoint,
+		Endpoint: os.Getenv("PLURAL_ENDPOINT"),
 		Cluster:  cluster,
 		Provider: provider,
 	}
 
-	client, err := NewClient(config)
+	cl, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	prov := &PluralProvider{
-		Client: client,
-	}
-
-	return prov, nil
+	return &PluralProvider{
+		Client: cl,
+	}, nil
 }
 
 func (p *PluralProvider) Records(_ context.Context) (endpoints []*endpoint.Endpoint, err error) {
@@ -89,8 +85,8 @@ func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*end
 
 func (p *PluralProvider) ApplyChanges(_ context.Context, diffs *plan.Changes) error {
 	var changes []*RecordChange
-	for _, endpoint := range diffs.Create {
-		changes = append(changes, makeChange(CreateAction, endpoint.Targets, endpoint))
+	for _, ep := range diffs.Create {
+		changes = append(changes, makeChange(CreateAction, ep.Targets, ep))
 	}
 
 	for _, desired := range diffs.UpdateNew {

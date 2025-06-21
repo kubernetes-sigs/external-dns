@@ -19,8 +19,8 @@ package godaddy
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -32,10 +32,12 @@ import (
 )
 
 const (
-	gdMinimalTTL = 600
-	gdCreate     = 0
-	gdReplace    = 1
-	gdDelete     = 2
+	defaultTTL = 600
+	gdCreate   = 0
+	gdReplace  = 1
+	gdDelete   = 2
+
+	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
 )
 
 var actionNames = []string{
@@ -43,11 +45,6 @@ var actionNames = []string{
 	"replace",
 	"delete",
 }
-
-const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
-
-// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
-var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
 
 type gdClient interface {
 	Patch(string, interface{}, interface{}) error
@@ -61,7 +58,7 @@ type gdClient interface {
 type GDProvider struct {
 	provider.BaseProvider
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	client       gdClient
 	ttl          int64
 	DryRun       bool
@@ -138,7 +135,7 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, su
 }
 
 // NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
+func NewGoDaddyProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
 	client, err := NewClient(useOTE, apiKey, apiSecret)
 	if err != nil {
 		return nil, err
@@ -147,7 +144,7 @@ func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 	return &GDProvider{
 		client:       client,
 		domainFilter: domainFilter,
-		ttl:          maxOf(gdMinimalTTL, ttl),
+		ttl:          maxOf(defaultTTL, ttl),
 		DryRun:       dryRun,
 	}, nil
 }
@@ -294,14 +291,14 @@ func (p *GDProvider) groupByNameAndType(zoneRecords []gdRecords) []*endpoint.End
 				recordName = strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, zoneName), ".")
 			}
 
-			endpoint := endpoint.NewEndpointWithTTL(
+			ep := endpoint.NewEndpointWithTTL(
 				recordName,
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...,
 			)
 
-			endpoints = append(endpoints, endpoint)
+			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -356,7 +353,7 @@ func (p *GDProvider) changeAllRecords(endpoints []gdEndpoint, zoneRecords []*gdR
 				dnsName = "@"
 			}
 
-			e.endpoint.RecordTTL = endpoint.TTL(maxOf(gdMinimalTTL, int64(e.endpoint.RecordTTL)))
+			e.endpoint.RecordTTL = endpoint.TTL(maxOf(defaultTTL, int64(e.endpoint.RecordTTL)))
 
 			if err := zoneRecord.applyEndpoint(e.action, p.client, *e.endpoint, dnsName, p.DryRun); err != nil {
 				log.Errorf("Unable to apply change %s on record %s type %s, %v", actionNames[e.action], dnsName, e.endpoint.RecordType, err)
@@ -584,8 +581,8 @@ func countTargets(p *plan.Changes) int {
 	count := 0
 
 	for _, endpoints := range changes {
-		for _, endpoint := range endpoints {
-			count += len(endpoint.Targets)
+		for _, ep := range endpoints {
+			count += len(ep.Targets)
 		}
 	}
 
@@ -593,15 +590,7 @@ func countTargets(p *plan.Changes) int {
 }
 
 func maxOf(vars ...int64) int64 {
-	max := vars[0]
-
-	for _, i := range vars {
-		if max < i {
-			max = i
-		}
-	}
-
-	return max
+	return slices.Max(vars)
 }
 
 func toString(obj interface{}) string {

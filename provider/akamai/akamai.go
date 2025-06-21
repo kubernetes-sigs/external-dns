@@ -18,6 +18,7 @@ package akamai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -34,9 +35,9 @@ import (
 
 const (
 	// Default Record TTL
-	edgeDNSRecordTTL = 600
-	maxUint          = ^uint(0)
-	maxInt           = int(maxUint >> 1)
+	defaultTTL = 600
+	maxUint    = ^uint(0)
+	maxInt     = int(maxUint >> 1)
 )
 
 // edgeDNSClient is a proxy interface of the Akamai edgegrid configdns-v2 package that can be stubbed for testing.
@@ -50,7 +51,7 @@ type AkamaiDNSService interface {
 }
 
 type AkamaiConfig struct {
-	DomainFilter          endpoint.DomainFilter
+	DomainFilter          *endpoint.DomainFilter
 	ZoneIDFilter          provider.ZoneIDFilter
 	ServiceConsumerDomain string
 	ClientToken           string
@@ -67,7 +68,7 @@ type AkamaiConfig struct {
 type AkamaiProvider struct {
 	provider.BaseProvider
 	// Edgedns zones to filter on
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// Contract Ids to filter on
 	zoneIDFilter provider.ZoneIDFilter
 	// Edgegrid library configuration
@@ -90,14 +91,6 @@ type akamaiZone struct {
 func NewAkamaiProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (provider.Provider, error) {
 	var edgeGridConfig edgegrid.Config
 
-	/*
-		log.Debugf("Host: %s", akamaiConfig.ServiceConsumerDomain)
-		log.Debugf("ClientToken: %s", akamaiConfig.ClientToken)
-		log.Debugf("ClientSecret: %s", akamaiConfig.ClientSecret)
-		log.Debugf("AccessToken: %s", akamaiConfig.AccessToken)
-		log.Debugf("EdgePath: %s", akamaiConfig.EdgercPath)
-		log.Debugf("EdgeSection: %s", akamaiConfig.EdgercSection)
-	*/
 	// environment overrides edgerc file but config needs to be complete
 	if akamaiConfig.ServiceConsumerDomain == "" || akamaiConfig.ClientToken == "" || akamaiConfig.ClientSecret == "" || akamaiConfig.AccessToken == "" {
 		// Kubernetes config incomplete or non existent. Can't mix and match.
@@ -106,7 +99,7 @@ func NewAkamaiProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (
 		edgeGridConfig, err = edgegrid.Init(akamaiConfig.EdgercPath, akamaiConfig.EdgercSection) // use default .edgerc location and section
 		if err != nil {
 			log.Errorf("Edgegrid Init Failed")
-			return &AkamaiProvider{}, err // return empty provider for backward compatibility
+			return &AkamaiProvider{}, err // return an empty provider for backward compatibility
 		}
 		edgeGridConfig.HeaderToSign = append(edgeGridConfig.HeaderToSign, "X-External-DNS")
 	} else {
@@ -321,11 +314,12 @@ func newAkamaiRecordset(dnsName, recordType string, ttl int, targets []string) d
 // cleanTargets preps recordset rdata if necessary for EdgeDNS
 func cleanTargets(rtype string, targets ...string) []string {
 	log.Debugf("Targets to clean: [%v]", targets)
-	if rtype == "CNAME" || rtype == "SRV" {
+	switch rtype {
+	case "CNAME", "SRV":
 		for idx, target := range targets {
 			targets[idx] = strings.TrimSuffix(target, ".")
 		}
-	} else if rtype == "TXT" {
+	case "TXT":
 		for idx, target := range targets {
 			log.Debugf("TXT data to clean: [%s]", target)
 			// need to embed text data in quotes. Make sure not piling on
@@ -359,7 +353,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 func ttlAsInt(src endpoint.TTL) int {
 	var temp interface{} = int64(src)
 	temp64 := temp.(int64)
-	var ttl int = edgeDNSRecordTTL
+	var ttl = defaultTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {
 		ttl = int(temp64)
 	}
@@ -425,7 +419,8 @@ func (p AkamaiProvider) deleteRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 		recName := strings.TrimSuffix(endpoint.DNSName, ".")
 		rec, err := p.client.GetRecord(zoneName, recName, endpoint.RecordType)
 		if err != nil {
-			if _, ok := err.(*dns.RecordError); !ok {
+			recordError := &dns.RecordError{}
+			if errors.As(err, &recordError) {
 				return fmt.Errorf("endpoint deletion. record validation failed. error: %w", err)
 			}
 			log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", recName, endpoint.RecordType)

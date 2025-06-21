@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -49,40 +50,50 @@ var (
 func (c *mockGoDaddyClient) Post(endpoint string, input interface{}, output interface{}) error {
 	log.Infof("POST: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Patch(endpoint string, input interface{}, output interface{}) error {
 	log.Infof("PATCH: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Put(endpoint string, input interface{}, output interface{}) error {
 	log.Infof("PUT: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Get(endpoint string, output interface{}) error {
 	log.Infof("GET: %s", endpoint)
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
 func (c *mockGoDaddyClient) Delete(endpoint string, output interface{}) error {
 	log.Infof("DELETE: %s", endpoint)
 	stub := c.Called(endpoint)
-	data, _ := json.Marshal(stub.Get(0))
-	json.Unmarshal(data, output)
+	data, err := json.Marshal(stub.Get(0))
+	require.NoError(c.currentTest, err)
+	err = json.Unmarshal(data, output)
+	require.NoError(c.currentTest, err)
 	return stub.Error(1)
 }
 
@@ -138,13 +149,13 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "NS",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 	}, nil).Once()
@@ -164,13 +175,13 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 				{
 					Name: "godaddy",
 					Type: "NS",
-					TTL:  gdMinimalTTL,
+					TTL:  defaultTTL,
 					Data: "203.0.113.42",
 				},
 				{
 					Name: "godaddy",
 					Type: "A",
-					TTL:  gdMinimalTTL,
+					TTL:  defaultTTL,
 					Data: "203.0.113.42",
 				},
 			},
@@ -240,13 +251,13 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			Name: "@",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 		{
 			Name: "www",
 			Type: "CNAME",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "example.org",
 		},
 	}, nil).Once()
@@ -255,13 +266,13 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.43",
 		},
 	}, nil).Once()
@@ -278,7 +289,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			DNSName:    "godaddy.example.net",
 			RecordType: "A",
-			RecordTTL:  gdMinimalTTL,
+			RecordTTL:  defaultTTL,
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"203.0.113.42",
@@ -288,7 +299,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			DNSName:    "example.org",
 			RecordType: "A",
-			RecordTTL:  gdMinimalTTL,
+			RecordTTL:  defaultTTL,
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"203.0.113.42",
@@ -297,7 +308,7 @@ func TestGoDaddyRecords(t *testing.T) {
 		{
 			DNSName:    "www.example.org",
 			RecordType: "CNAME",
-			RecordTTL:  gdMinimalTTL,
+			RecordTTL:  defaultTTL,
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"example.org",
@@ -327,7 +338,7 @@ func TestGoDaddyChange(t *testing.T) {
 			{
 				DNSName:    ".example.net",
 				RecordType: "A",
-				RecordTTL:  gdMinimalTTL,
+				RecordTTL:  defaultTTL,
 				Targets: []string{
 					"203.0.113.42",
 				},
@@ -356,7 +367,7 @@ func TestGoDaddyChange(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.43",
 		},
 	}, nil).Once()
@@ -366,7 +377,7 @@ func TestGoDaddyChange(t *testing.T) {
 		{
 			Name: "@",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.42",
 		},
 	}).Return(nil, nil).Once()
@@ -398,7 +409,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 			{
 				DNSName:    ".example.net",
 				RecordType: "A",
-				RecordTTL:  gdMinimalTTL,
+				RecordTTL:  defaultTTL,
 				Targets: []string{
 					"203.0.113.42",
 				},
@@ -427,7 +438,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 		{
 			Name: "godaddy",
 			Type: "A",
-			TTL:  gdMinimalTTL,
+			TTL:  defaultTTL,
 			Data: "203.0.113.43",
 		},
 	}, nil).Once()

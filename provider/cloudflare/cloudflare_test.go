@@ -21,26 +21,29 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go"
+	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/maxatome/go-testdeep/td"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type MockAction struct {
-	Name       string
-	ZoneId     string
-	RecordId   string
-	RecordData cloudflare.DNSRecord
+	Name             string
+	ZoneId           string
+	RecordId         string
+	RecordData       cloudflare.DNSRecord
+	RegionalHostname cloudflare.RegionalHostname
 }
 
 type mockCloudFlareClient struct {
@@ -49,9 +52,10 @@ type mockCloudFlareClient struct {
 	Records               map[string]map[string]cloudflare.DNSRecord
 	Actions               []MockAction
 	listZonesError        error
+	zoneDetailsError      error
 	listZonesContextError error
 	dnsRecordsError       error
-	customHostnames       map[string]map[string]cloudflare.CustomHostname
+	customHostnames       map[string][]cloudflare.CustomHostname
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -62,6 +66,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		TTL:     120,
 		Content: "1.2.3.4",
 		Proxied: proxyDisabled,
+		Comment: "valid comment",
 	},
 	{
 		ID:      "2345678901",
@@ -92,7 +97,7 @@ func NewMockCloudFlareClient() *mockCloudFlareClient {
 			"001": {},
 			"002": {},
 		},
-		customHostnames: map[string]map[string]cloudflare.CustomHostname{},
+		customHostnames: map[string][]cloudflare.CustomHostname{},
 	}
 }
 
@@ -224,6 +229,19 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
+func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "CreateDataLocalizationRegionalHostname",
+		ZoneId:   rc.Identifier,
+		RecordId: "",
+		RegionalHostname: cloudflare.RegionalHostname{
+			Hostname:  rp.Hostname,
+			RegionKey: rp.RegionKey,
+		},
+	})
+	return nil
+}
+
 func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "UpdateDataLocalizationRegionalHostname",
@@ -231,6 +249,18 @@ func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx contex
 		RecordId: "",
 		RecordData: cloudflare.DNSRecord{
 			Name: rp.Hostname,
+		},
+	})
+	return nil
+}
+
+func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "DeleteDataLocalizationRegionalHostname",
+		ZoneId:   rc.Identifier,
+		RecordId: "",
+		RecordData: cloudflare.DNSRecord{
+			Name: hostname,
 		},
 	})
 	return nil
@@ -261,34 +291,48 @@ func (m *mockCloudFlareClient) UserDetails(ctx context.Context) (cloudflare.User
 
 func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflare.CustomHostname) ([]cloudflare.CustomHostname, cloudflare.ResultInfo, error) {
 	var err error = nil
+	perPage := 50 // cloudflare-go v0 API hardcoded
 
 	if strings.HasPrefix(zoneID, "newerror-") {
 		return nil, cloudflare.ResultInfo{}, errors.New("failed to list custom hostnames")
 	}
-
-	if page != 1 || filter.Hostname != "" {
-		err = errors.New("pages and filters are not supported for custom hostnames mock test")
+	if filter.Hostname != "" {
+		err = errors.New("filters are not supported for custom hostnames mock test")
+		return nil, cloudflare.ResultInfo{}, err
+	}
+	if page < 1 {
+		err = errors.New("incorrect page value for custom hostnames list")
+		return nil, cloudflare.ResultInfo{}, err
 	}
 
 	result := []cloudflare.CustomHostname{}
-	if zone, ok := m.customHostnames[zoneID]; ok {
-		for _, ch := range zone {
+	if chs, ok := m.customHostnames[zoneID]; ok {
+		for idx := (page - 1) * perPage; idx < min(len(chs), page*perPage); idx++ {
+			ch := m.customHostnames[zoneID][idx]
 			if strings.HasPrefix(ch.Hostname, "newerror-list-") {
 				m.DeleteCustomHostname(ctx, zoneID, ch.ID)
 				return nil, cloudflare.ResultInfo{}, errors.New("failed to list erroring custom hostname")
 			}
 			result = append(result, ch)
 		}
+		return result,
+			cloudflare.ResultInfo{
+				Page:       page,
+				PerPage:    perPage,
+				Count:      len(result),
+				Total:      len(chs),
+				TotalPages: len(chs)/page + 1,
+			}, err
+	} else {
+		return result,
+			cloudflare.ResultInfo{
+				Page:       page,
+				PerPage:    perPage,
+				Count:      0,
+				Total:      0,
+				TotalPages: 0,
+			}, err
 	}
-
-	return result,
-		cloudflare.ResultInfo{
-			Page:       1,
-			PerPage:    100,
-			Count:      len(result),
-			Total:      len(result),
-			TotalPages: 1,
-		}, err
 }
 
 func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflare.CustomHostname) (*cloudflare.CustomHostnameResponse, error) {
@@ -296,20 +340,22 @@ func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID 
 		return nil, fmt.Errorf("Invalid custom hostname or origin hostname")
 	}
 	if _, ok := m.customHostnames[zoneID]; !ok {
-		m.customHostnames[zoneID] = map[string]cloudflare.CustomHostname{}
+		m.customHostnames[zoneID] = []cloudflare.CustomHostname{}
 	}
 	var newCustomHostname cloudflare.CustomHostname = ch
 	newCustomHostname.ID = fmt.Sprintf("ID-%s", ch.Hostname)
-	m.customHostnames[zoneID][newCustomHostname.ID] = newCustomHostname
+	m.customHostnames[zoneID] = append(m.customHostnames[zoneID], newCustomHostname)
 	return &cloudflare.CustomHostnameResponse{}, nil
 }
 
 func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, zoneID string, customHostnameID string) error {
-	if zone, ok := m.customHostnames[zoneID]; ok {
-		if _, ok := zone[customHostnameID]; ok {
-			delete(zone, customHostnameID)
-		}
+	idx := 0
+	if idx = getCustomHostnameIdxByID(m.customHostnames[zoneID], customHostnameID); idx < 0 {
+		return fmt.Errorf("Invalid custom hostname ID to delete")
 	}
+
+	m.customHostnames[zoneID] = append(m.customHostnames[zoneID][:idx], m.customHostnames[zoneID][idx+1:]...)
+
 	if customHostnameID == "ID-newerror-delete.foo.fancybar.com" {
 		return fmt.Errorf("Invalid custom hostname to delete")
 	}
@@ -367,11 +413,16 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 }
 
 func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (cloudflare.Zone, error) {
+	if m.zoneDetailsError != nil {
+		return cloudflare.Zone{}, m.zoneDetailsError
+	}
+
 	for id, zoneName := range m.Zones {
 		if zoneID == id {
 			return cloudflare.Zone{
 				ID:   zoneID,
 				Name: zoneName,
+				Plan: cloudflare.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")},
 			}, nil
 		}
 	}
@@ -379,14 +430,13 @@ func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (
 	return cloudflare.Zone{}, errors.New("Unknown zoneID: " + zoneID)
 }
 
-func (p *CloudFlareProvider) getCustomHostnameIDbyCustomHostnameAndOrigin(chs []cloudflare.CustomHostname, customHostname string, origin string) (string, string) {
-	for _, zoneCh := range chs {
-		if zoneCh.Hostname == customHostname && zoneCh.CustomOriginServer == origin {
-			return zoneCh.ID, zoneCh.Hostname
-
+func getCustomHostnameIdxByID(chs []cloudflare.CustomHostname, customHostnameID string) int {
+	for idx, ch := range chs {
+		if ch.ID == customHostnameID {
+			return idx
 		}
 	}
-	return "", ""
+	return -1
 }
 
 func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...interface{}) {
@@ -414,7 +464,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: managedRecords,
 	}
 
@@ -729,6 +779,110 @@ func TestCloudflareSetProxied(t *testing.T) {
 	}
 }
 
+func TestCloudflareRegionalHostname(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+					Value: "eu",
+				},
+			},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{RegionKey: "us"}, endpoints, []MockAction{
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.2",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:   "CreateDataLocalizationRegionalHostname",
+			ZoneId: "001",
+			RegionalHostname: cloudflare.RegionalHostname{
+				Hostname:  "bar.com",
+				RegionKey: "eu",
+			},
+		},
+	},
+		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	)
+}
+
+func TestCloudflareRegionalHostnameDefaults(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{RegionKey: "us"}, endpoints, []MockAction{
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+			RecordData: cloudflare.DNSRecord{
+				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.2",
+				TTL:     1,
+				Proxied: proxyDisabled,
+			},
+		},
+		{
+			Name:   "CreateDataLocalizationRegionalHostname",
+			ZoneId: "001",
+			RegionalHostname: cloudflare.RegionalHostname{
+				Hostname:  "bar.com",
+				RegionKey: "us",
+			},
+		},
+	},
+		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	)
+}
+
 func TestCloudflareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       NewMockCloudFlareClient(),
@@ -741,8 +895,26 @@ func TestCloudflareZones(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, 1, len(zones))
+	assert.Len(t, zones, 1)
 	assert.Equal(t, "bar.com", zones[0].Name)
+}
+
+// test failures on zone lookup
+func TestCloudflareZonesFailed(t *testing.T) {
+
+	client := NewMockCloudFlareClient()
+	client.zoneDetailsError = errors.New("zone lookup failed")
+
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
+	}
+
+	_, err := provider.Zones(context.Background())
+	if err == nil {
+		t.Errorf("should fail, %s", err)
+	}
 }
 
 func TestCloudFlareZonesWithIDFilter(t *testing.T) {
@@ -760,7 +932,7 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	}
 
 	// foo.com should *not* be returned as it doesn't match ZoneID filter
-	assert.Equal(t, 1, len(zones))
+	assert.Len(t, zones, 1)
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
@@ -781,6 +953,19 @@ func TestCloudflareListZonesRateLimited(t *testing.T) {
 	if !errors.Is(err, provider.SoftError) {
 		t.Error("expected a rate limit error")
 	}
+}
+
+func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
+	// Create a mock client that returns a rate limit error
+	client := NewMockCloudFlareClient()
+	client.listZonesContextError = errors.New("exceeded available rate limit retries")
+	p := &CloudFlareProvider{Client: client}
+
+	// Call the Zones function
+	_, err := p.Zones(context.Background())
+
+	// Assert that a soft error was returned
+	assert.ErrorIs(t, err, provider.SoftError, "expected a rate limit error")
 }
 
 func TestCloudflareListZoneInternalErrors(t *testing.T) {
@@ -810,8 +995,8 @@ func TestCloudflareRecords(t *testing.T) {
 
 	// Set DNSRecordsPerPage to 1 test the pagination behaviour
 	p := &CloudFlareProvider{
-		Client:            client,
-		DNSRecordsPerPage: 1,
+		Client:           client,
+		DNSRecordsConfig: DNSRecordsConfig{PerPage: 1},
 	}
 	ctx := context.Background()
 
@@ -819,7 +1004,7 @@ func TestCloudflareRecords(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	assert.Equal(t, 2, len(records))
+	assert.Len(t, records, 2)
 	client.dnsRecordsError = errors.New("failed to list dns records")
 	_, err = p.Records(ctx)
 	if err == nil {
@@ -856,64 +1041,89 @@ func TestCloudflareRecords(t *testing.T) {
 }
 
 func TestCloudflareProvider(t *testing.T) {
-	_ = os.Setenv("CF_API_TOKEN", "abc123def")
-	_, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+	var err error
+
+	type EnvVar struct {
+		Key   string
+		Value string
 	}
 
-	_ = os.Unsetenv("CF_API_TOKEN")
 	tokenFile := "/tmp/cf_api_token"
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
 	}
-	_ = os.Setenv("CF_API_TOKEN", tokenFile)
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+
+	testCases := []struct {
+		Name        string
+		Environment []EnvVar
+		ShouldFail  bool
+	}{
+		{
+			Name: "use_api_token",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: "abc123def"},
+			},
+			ShouldFail: false,
+		},
+		{
+			Name: "use_api_token_file_contents",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: tokenFile},
+			},
+			ShouldFail: false,
+		},
+		{
+			Name: "use_email_and_key",
+			Environment: []EnvVar{
+				{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
+				{Key: "CF_API_EMAIL", Value: "test@test.com"},
+			},
+			ShouldFail: false,
+		},
+		{
+			Name:        "no_use_email_and_key",
+			Environment: []EnvVar{},
+			ShouldFail:  true,
+		},
+		{
+			Name: "use_credentials_in_missing_file",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: "file://abc"},
+			},
+			ShouldFail: true,
+		},
+		{
+			Name: "use_credentials_in_missing_file",
+			Environment: []EnvVar{
+				{Key: "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
+			},
+			ShouldFail: false,
+		},
 	}
 
-	_ = os.Unsetenv("CF_API_TOKEN")
-	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
-	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			for _, env := range tc.Environment {
+				t.Setenv(env.Key, env.Value)
+			}
 
-	_ = os.Unsetenv("CF_API_KEY")
-	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.NewZoneIDFilter([]string{""}),
-		false,
-		true,
-		5000,
-		"",
-		CustomHostnamesConfig{Enabled: false})
-	if err == nil {
-		t.Errorf("expected to fail")
+			_, err = NewCloudFlareProvider(
+				endpoint.NewDomainFilter([]string{"bar.com"}),
+				provider.NewZoneIDFilter([]string{""}),
+				false,
+				true,
+				"",
+				CustomHostnamesConfig{Enabled: false},
+				DNSRecordsConfig{PerPage: 5000, Comment: ""},
+			)
+			if err != nil && !tc.ShouldFail {
+				t.Errorf("should not fail, %s", err)
+			}
+			if err == nil && tc.ShouldFail {
+				t.Errorf("should fail, %s", err)
+			}
+		})
+
 	}
 }
 
@@ -986,6 +1196,30 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	}
 }
 
+func TestCloudflareDryRunApplyChanges(t *testing.T) {
+	changes := &plan.Changes{}
+	client := NewMockCloudFlareClient()
+
+	provider := &CloudFlareProvider{
+		Client: client,
+		DryRun: true,
+	}
+	changes.Create = []*endpoint.Endpoint{{
+		DNSName: "new.bar.com",
+		Targets: endpoint.Targets{"target"},
+	}}
+	err := provider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	ctx := context.Background()
+	records, err := provider.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	assert.Empty(t, records, "should not have any records")
+}
+
 func TestCloudflareApplyChangesError(t *testing.T) {
 	changes := &plan.Changes{}
 	client := NewMockCloudFlareClient()
@@ -1004,19 +1238,19 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 
 func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
-	records := []cloudflare.DNSRecord{
-		{
+	recordsMap := DNSRecordsMap{
+		{Name: "foo.com", Type: endpoint.RecordTypeCNAME, Content: "foobar"}: {
 			Name:    "foo.com",
 			Type:    endpoint.RecordTypeCNAME,
 			Content: "foobar",
 			ID:      "1",
 		},
-		{
+		{Name: "bar.de", Type: endpoint.RecordTypeA}: {
 			Name: "bar.de",
 			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
-		{
+		{Name: "bar.de", Type: endpoint.RecordTypeA, Content: "1.2.3.4"}: {
 			Name:    "bar.de",
 			Type:    endpoint.RecordTypeA,
 			Content: "1.2.3.4",
@@ -1024,29 +1258,29 @@ func TestCloudflareGetRecordID(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeA,
 		Content: "foobar",
 	}))
 
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "fizfuz",
 	}))
 
-	assert.Equal(t, "1", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "1", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "foo.com",
 		Type:    endpoint.RecordTypeCNAME,
 		Content: "foobar",
 	}))
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Empty(t, p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "2.3.4.5",
 	}))
-	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Equal(t, "2", p.getRecordID(recordsMap, cloudflare.DNSRecord{
 		Name:    "bar.de",
 		Type:    endpoint.RecordTypeA,
 		Content: "1.2.3.4",
@@ -1071,7 +1305,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1080,7 +1314,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1098,14 +1332,14 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1114,7 +1348,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1132,28 +1366,28 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1162,7 +1396,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1175,7 +1409,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "bar.de",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1193,21 +1427,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1216,7 +1450,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1229,7 +1463,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "bar.de",
 					Targets:    endpoint.Targets{"10.10.10.1"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1247,21 +1481,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    "NOT SUPPORTED",
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultTTL,
 					Proxied: proxyDisabled,
 				},
 			},
@@ -1270,7 +1504,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1284,7 +1518,19 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.ElementsMatch(t, groupByNameAndTypeWithCustomHostnames(tc.Records, []cloudflare.CustomHostname{}), tc.ExpectedEndpoints)
+		records := make(DNSRecordsMap)
+		for _, r := range tc.Records {
+			records[newDNSRecordIndex(r)] = r
+		}
+		endpoints := groupByNameAndTypeWithCustomHostnames(records, CustomHostnamesMap{})
+		// Targets order could be random with underlying map
+		for _, ep := range endpoints {
+			slices.Sort(ep.Targets)
+		}
+		for _, ep := range tc.ExpectedEndpoints {
+			slices.Sort(ep.Targets)
+		}
+		assert.ElementsMatch(t, endpoints, tc.ExpectedEndpoints)
 	}
 }
 
@@ -1346,7 +1592,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			if err != nil {
 				t.Errorf("should not fail, %s", err)
 			}
-			assert.Equal(t, 1, len(current))
+			assert.Len(t, current, 1)
 
 			desired := []*endpoint.Endpoint{}
 			for _, c := range current {
@@ -1375,15 +1621,15 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			if plan.Changes == nil {
 				return
 			}
-			assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
-			assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
+			assert.Empty(t, plan.Changes.Create, "should not have creates")
+			assert.Empty(t, plan.Changes.Delete, "should not have deletes")
 
 			if test.ShouldBeUpdated {
-				assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should not have new updates")
-				assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should not have old updates")
+				assert.Len(t, plan.Changes.UpdateNew, 1, "should not have new updates")
+				assert.Len(t, plan.Changes.UpdateOld, 1, "should not have old updates")
 			} else {
-				assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
-				assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
+				assert.Empty(t, plan.Changes.UpdateNew, "should not have new updates")
+				assert.Empty(t, plan.Changes.UpdateOld, "should not have old updates")
 			}
 		})
 	}
@@ -1410,7 +1656,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			DNSName:    "foobar.bar.com",
 			Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
 			RecordType: endpoint.RecordTypeA,
-			RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+			RecordTTL:  endpoint.TTL(defaultTTL),
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
@@ -1424,7 +1670,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -1515,16 +1761,16 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	planned := plan.Calculate()
 
-	assert.Equal(t, 0, len(planned.Changes.Create), "no new changes should be here")
-	assert.Equal(t, 0, len(planned.Changes.UpdateNew), "no new changes should be here")
-	assert.Equal(t, 0, len(planned.Changes.UpdateOld), "no new changes should be here")
-	assert.Equal(t, 0, len(planned.Changes.Delete), "no new changes should be here")
+	assert.Empty(t, planned.Changes.Create, "no new changes should be here")
+	assert.Empty(t, planned.Changes.UpdateNew, "no new changes should be here")
+	assert.Empty(t, planned.Changes.UpdateOld, "no new changes should be here")
+	assert.Empty(t, planned.Changes.Delete, "no new changes should be here")
 }
 
 func TestCloudFlareProvider_Region(t *testing.T) {
@@ -1535,9 +1781,10 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		50,
 		"us",
-		CustomHostnamesConfig{Enabled: false})
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{PerPage: 50, Comment: ""},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1547,47 +1794,146 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	}
 }
 
-func TestCloudFlareProvider_updateDataLocalizationRegionalHostnameParams(t *testing.T) {
-	change := &cloudFlareChange{
-		RegionalHostname: cloudflare.RegionalHostname{
-			Hostname:  "example.com",
-			RegionKey: "us",
-		},
-	}
-
-	params := updateDataLocalizationRegionalHostnameParams(*change)
-	if params.Hostname != "example.com" {
-		t.Errorf("expected hostname to be 'example.com', but got '%s'", params.Hostname)
-	}
-
-	if params.RegionKey != "us" {
-		t.Errorf("expected region key to be 'us', but got '%s'", params.RegionKey)
-	}
-}
-
 func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	provider, err := NewCloudFlareProvider(
+
+	p, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"example.com"}),
 		provider.ZoneIDFilter{},
 		true,
 		false,
-		50,
 		"us",
-		CustomHostnamesConfig{Enabled: false})
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{PerPage: 50},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	endpoint := &endpoint.Endpoint{
-		DNSName: "example.com",
-		Targets: []string{"192.0.2.1"},
+	ep := &endpoint.Endpoint{
+		DNSName:    "example.com",
+		RecordType: "A",
+		Targets:    []string{"192.0.2.1"},
 	}
 
-	change := provider.newCloudFlareChange(cloudFlareCreate, endpoint, endpoint.Targets[0], nil)
+	change := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
 	if change.RegionalHostname.RegionKey != "us" {
 		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.RegionKey)
+	}
+
+	var freeValidCommentBuilder strings.Builder
+	for range freeZoneMaxCommentLength {
+		freeValidCommentBuilder.WriteString("x")
+	}
+
+	var freeInvalidCommentBuilder strings.Builder
+	for range freeZoneMaxCommentLength + 1 {
+		freeInvalidCommentBuilder.WriteString("x")
+	}
+
+	var paidValidCommentBuilder strings.Builder
+	for range paidZoneMaxCommentLength {
+		paidValidCommentBuilder.WriteString("x")
+	}
+	var paidInvalidCommentBuilder strings.Builder
+	for range paidZoneMaxCommentLength + 1 {
+		paidInvalidCommentBuilder.WriteString("x")
+	}
+
+	paidProvider, err := NewCloudFlareProvider(
+		endpoint.NewDomainFilter([]string{"bar.com"}),
+		provider.ZoneIDFilter{},
+		true,
+		false,
+		"us",
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{PerPage: 50, Comment: paidValidCommentBuilder.String()},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	paidProvider.Client = NewMockCloudFlareClient()
+	commentTestCases := []struct {
+		name     string
+		provider *CloudFlareProvider
+		endpoint *endpoint.Endpoint
+		expected int
+	}{
+		{
+			name:     "For free Zone respecting comment length, expect no trimming",
+			provider: p,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "example.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordCommentKey,
+						Value: freeValidCommentBuilder.String(),
+					},
+				},
+			},
+			expected: len(freeValidCommentBuilder.String()),
+		},
+		{
+			name:     "For free Zones not respecting comment length, expect trimmed comments",
+			provider: p,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "example.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordCommentKey,
+						Value: freeInvalidCommentBuilder.String(),
+					},
+				},
+			},
+			expected: freeZoneMaxCommentLength,
+		},
+		{
+			name:     "For paid Zones respecting comment length, expect no trimming",
+			provider: paidProvider,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "bar.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordCommentKey,
+						Value: paidValidCommentBuilder.String(),
+					},
+				},
+			},
+			expected: len(paidValidCommentBuilder.String()),
+		},
+		{
+			name:     "For paid Zones not respecting comment length, expect trimmed comments",
+			provider: paidProvider,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "bar.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordCommentKey,
+						Value: paidInvalidCommentBuilder.String(),
+					},
+				},
+			},
+			expected: paidZoneMaxCommentLength,
+		},
+	}
+
+	for _, test := range commentTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			change := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
+			if len(change.ResourceRecord.Comment) != test.expected {
+				t.Errorf("expected comment to be %d characters long, but got %d", test.expected, len(change.ResourceRecord.Comment))
+			}
+		})
 	}
 }
 
@@ -1720,7 +2066,7 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 			"newerror-001": "bar.com",
 		},
 		Records:         map[string]map[string]cloudflare.DNSRecord{},
-		customHostnames: map[string]map[string]cloudflare.CustomHostname{},
+		customHostnames: map[string][]cloudflare.CustomHostname{},
 	}
 	failingProvider := &CloudFlareProvider{
 		Client:                client,
@@ -1732,6 +2078,44 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 	if err == nil {
 		t.Errorf("should fail - invalid zone id, %s", err)
 	}
+}
+
+// TestCloudflareLongRecordsErrorLog checks if the error is logged when a record name exceeds 63 characters
+// it's not likely to happen in practice, as the Cloudflare API should reject having it
+func TestCloudflareLongRecordsErrorLog(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": {
+			{
+				ID:      "1234567890",
+				Name:    "very-very-very-very-very-very-very-long-name-more-than-63-bytes-long.bar.com",
+				Type:    endpoint.RecordTypeTXT,
+				TTL:     120,
+				Content: "some-content",
+			},
+		},
+	})
+	hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+	p := &CloudFlareProvider{
+		Client:                client,
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+	}
+	ctx := context.Background()
+	_, err := p.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail - too long record, %s", err)
+	}
+	testutils.TestHelperLogContains("s longer than 63 characters. Cannot create endpoint", hook, t)
+}
+
+// check if the error is expected
+func checkFailed(name string, err error, shouldFail bool) error {
+	if errors.Is(err, nil) && shouldFail {
+		return fmt.Errorf("should fail - %q", name)
+	}
+	if !errors.Is(err, nil) && !shouldFail {
+		return fmt.Errorf("should not fail - %q, %w", name, err)
+	}
+	return nil
 }
 
 func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
@@ -1756,23 +2140,28 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 					DNSName:    "newerror.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
 			shouldFail: true,
 		},
 		{
-			Name: "failing to list DNS record",
+			Name: "adding failing to list DNS record",
 			Endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "newerror-list-1.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
+			shouldFail: false,
+		},
+		{
+			Name:       "causing to list failing to list DNS record",
+			Endpoints:  []*endpoint.Endpoint{},
 			shouldFail: true,
 		},
 		{
@@ -1782,7 +2171,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 					DNSName:    "newerror-update-1.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -1822,28 +2211,25 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 	}
 
 	for _, tc := range testFailCases {
-		records, err := provider.Records(ctx)
-		if err != nil {
-			t.Errorf("should not fail, %s", err)
+		var err error
+		var records, endpoints []*endpoint.Endpoint
+
+		records, err = provider.Records(ctx)
+		if errors.Is(err, nil) {
+			endpoints, err = provider.AdjustEndpoints(tc.Endpoints)
 		}
-
-		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
-
-		assert.NoError(t, err)
-		plan := &plan.Plan{
-			Current:        records,
-			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		if errors.Is(err, nil) {
+			plan := &plan.Plan{
+				Current:        records,
+				Desired:        endpoints,
+				DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			}
+			planned := plan.Calculate()
+			err = provider.ApplyChanges(context.Background(), planned.Changes)
 		}
-
-		planned := plan.Calculate()
-
-		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err == nil && tc.shouldFail {
-			t.Errorf("should fail - %s, %s", tc.Name, err)
-		} else if err != nil && !tc.shouldFail {
-			t.Errorf("should not fail - %s, %s", tc.Name, err)
+		if e := checkFailed(tc.Name, err, tc.shouldFail); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 	}
 }
@@ -1858,10 +2244,9 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 
 	testFailCases := []struct {
-		Name                    string
-		Endpoints               []*endpoint.Endpoint
-		ExpectedCustomHostnames map[string]string
-		shouldFail              bool
+		Name       string
+		Endpoints  []*endpoint.Endpoint
+		shouldFail bool
 	}{
 		{
 			Name: "failing to create custom hostname on record creation",
@@ -1870,7 +2255,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "create.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1883,23 +2268,76 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			Name: "add custom hostname to more than one endpoint",
+			Name: "same custom hostname to the same origin",
 			Endpoints: []*endpoint.Endpoint{
 				{
-					DNSName:    "fail.foo.bar.com",
+					DNSName:    "origin.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "fail.foo.fancybar.com",
+							Value: "custom.foo.fancybar.com",
+						},
+					},
+				},
+				{
+					DNSName:    "another-origin.foo.bar.com",
+					Targets:    endpoint.Targets{"3.4.5.6"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "custom.foo.fancybar.com",
 						},
 					},
 				},
 			},
 			shouldFail: true,
+		},
+		{
+			Name: "create CNAME records with custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "c.foo.bar.com",
+					Targets:    endpoint.Targets{"c.cname.foo.bar.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			shouldFail: false,
+		},
+		{
+			Name: "TXT registry record should not attempt to create custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "cname-c.foo.bar.com",
+					Targets: endpoint.Targets{
+						"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
+					},
+					RecordType: endpoint.RecordTypeTXT,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			shouldFail: false,
 		},
 		{
 			Name: "failing to update custom hostname",
@@ -1908,7 +2346,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "fail.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1927,7 +2365,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "fail.list.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1937,6 +2375,11 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					},
 				},
 			},
+			shouldFail: false,
+		},
+		{
+			Name:       "causing to list failing to list custom hostname",
+			Endpoints:  []*endpoint.Endpoint{},
 			shouldFail: true,
 		},
 		{
@@ -1946,7 +2389,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1965,7 +2408,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1984,7 +2427,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2003,7 +2446,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
@@ -2016,7 +2459,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "b.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2047,13 +2490,11 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "nocustomhostname.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 				},
 			},
-			ExpectedCustomHostnames: map[string]string{
-				"nocustomhostname.foo.bar.com": "",
-			},
+			ExpectedCustomHostnames: map[string]string{},
 		},
 		{
 			Name: "add custom hostname",
@@ -2062,7 +2503,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2075,7 +2516,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "txt.foo.bar.com",
 					Targets:    endpoint.Targets{"value"},
 					RecordType: endpoint.RecordTypeTXT,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2086,8 +2527,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 				},
 			},
 			ExpectedCustomHostnames: map[string]string{
-				"a.foo.bar.com":   "a.foo.fancybar.com",
-				"txt.foo.bar.com": "",
+				"a.foo.fancybar.com": "a.foo.bar.com",
 			},
 		},
 		{
@@ -2097,7 +2537,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2108,57 +2548,119 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 				},
 			},
 			ExpectedCustomHostnames: map[string]string{
-				"a.foo.bar.com": "a2.foo.fancybar.com",
+				"a2.foo.fancybar.com": "a.foo.bar.com",
 			},
 		},
 		{
-			Name: "delete custom hostname",
+			Name: "add another unsorted custom hostnames",
 			Endpoints: []*endpoint.Endpoint{
-
 				{
 					DNSName:    "a.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a3.foo.fancybar.com,a4.foo.fancybar.com,a2.foo.fancybar.com",
+						},
+					},
 				},
 			},
 			ExpectedCustomHostnames: map[string]string{
-				"a.foo.bar.com": "",
+				"a2.foo.fancybar.com": "a.foo.bar.com",
+				"a3.foo.fancybar.com": "a.foo.bar.com",
+				"a4.foo.fancybar.com": "a.foo.bar.com",
 			},
+		},
+		{
+			Name: "rename custom hostnames",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a3.foo.fancybar.com,a44.foo.fancybar.com,a22.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			ExpectedCustomHostnames: map[string]string{
+				"a22.foo.fancybar.com": "a.foo.bar.com",
+				"a3.foo.fancybar.com":  "a.foo.bar.com",
+				"a44.foo.fancybar.com": "a.foo.bar.com",
+			},
+		},
+		{
+			Name: "remove some custom hostnames",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a3.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			ExpectedCustomHostnames: map[string]string{
+				"a3.foo.fancybar.com": "a.foo.bar.com",
+			},
+		},
+		{
+			Name: "delete custom hostnames",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+				},
+			},
+			ExpectedCustomHostnames: map[string]string{},
 		},
 	}
 
 	for _, tc := range testFailCases {
-		records, err := provider.Records(ctx)
-		if err != nil {
-			t.Errorf("should not fail, %s", err)
+		var err error
+		var records, endpoints []*endpoint.Endpoint
+
+		records, err = provider.Records(ctx)
+		if errors.Is(err, nil) {
+			endpoints, err = provider.AdjustEndpoints(tc.Endpoints)
 		}
+		if errors.Is(err, nil) {
+			plan := &plan.Plan{
+				Current:        records,
+				Desired:        endpoints,
+				DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
+			}
+			planned := plan.Calculate()
+			err = provider.ApplyChanges(context.Background(), planned.Changes)
 
-		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
-
-		assert.NoError(t, err)
-		plan := &plan.Plan{
-			Current:        records,
-			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
-			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
-
-		planned := plan.Calculate()
-
-		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err == nil && tc.shouldFail {
-			t.Errorf("should fail - %s, %s", tc.Name, err)
-		} else if err != nil && !tc.shouldFail {
-			t.Errorf("should not fail - %s, %s", tc.Name, err)
+		if e := checkFailed(tc.Name, err, tc.shouldFail); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 	}
 
 	for _, tc := range testCases {
 		records, err := provider.Records(ctx)
 		if err != nil {
-			t.Errorf("should not fail, %s", err)
+			t.Errorf("should not fail, %v", err)
 		}
 
 		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
@@ -2167,25 +2669,146 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		plan := &plan.Plan{
 			Current:        records,
 			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
 
 		planned := plan.Calculate()
 
 		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err != nil {
-			t.Errorf("should not fail - %s, %s", tc.Name, err)
+		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 
 		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, "001")
-		if chErr != nil {
-			t.Errorf("should not fail - %s, %s", tc.Name, chErr)
+		if e := checkFailed(tc.Name, chErr, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 
-		for expectedOrigin, expectedCustomHostname := range tc.ExpectedCustomHostnames {
-			_, ch := provider.getCustomHostnameIDbyCustomHostnameAndOrigin(chs, expectedCustomHostname, expectedOrigin)
-			assert.Equal(t, expectedCustomHostname, ch)
+		actualCustomHostnames := map[string]string{}
+		for _, ch := range chs {
+			actualCustomHostnames[ch.Hostname] = ch.CustomOriginServer
+		}
+		assert.Equal(t, tc.ExpectedCustomHostnames, actualCustomHostnames, "custom hostnames should be the same")
+	}
+}
+
+func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client:                client,
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: false},
+	}
+	ctx := context.Background()
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
+
+	testCases := []struct {
+		Name        string
+		Endpoints   []*endpoint.Endpoint
+		testChanges bool
+	}{
+		{
+			Name: "add custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.11"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a.foo.fancybar.com",
+						},
+					},
+				},
+				{
+					DNSName:    "b.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.12"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+				},
+				{
+					DNSName:    "c.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.13"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c1.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			testChanges: false,
+		},
+		{
+			Name: "add custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.11"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+				},
+				{
+					DNSName:    "b.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.12"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "b.foo.fancybar.com",
+						},
+					},
+				},
+				{
+					DNSName:    "c.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.13"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "c2.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			testChanges: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		records, err := provider.Records(ctx)
+		if err != nil {
+			t.Errorf("should not fail, %v", err)
+		}
+
+		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
+
+		assert.NoError(t, err)
+		plan := &plan.Plan{
+			Current:        records,
+			Desired:        endpoints,
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		}
+		planned := plan.Calculate()
+		err = provider.ApplyChanges(context.Background(), planned.Changes)
+		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
+			t.Error(e)
+		}
+		if tc.testChanges {
+			assert.False(t, planned.Changes.HasChanges(), "no new changes should be here")
 		}
 	}
 }
@@ -2204,7 +2827,8 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 		Name                    string
 		Endpoints               []*endpoint.Endpoint
 		ExpectedCustomHostnames map[string]string
-		preApplyHook            bool
+		preApplyHook            string
+		logOutput               string
 	}{
 		{
 			Name: "create DNS record with custom hostname",
@@ -2213,7 +2837,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					DNSName:    "create.foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -2223,20 +2847,49 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					},
 				},
 			},
-			preApplyHook: false,
+			preApplyHook: "",
+			logOutput:    "",
 		},
 		{
 			Name:         "remove DNS record with unexpectedly missing custom hostname",
 			Endpoints:    []*endpoint.Endpoint{},
-			preApplyHook: true,
+			preApplyHook: "corrupt",
+			logOutput:    "failed to delete custom hostname \"newerror-getCustomHostnameOrigin.foo.fancybar.com\": failed to get custom hostname: \"newerror-getCustomHostnameOrigin.foo.fancybar.com\" not found",
+		},
+		{
+			Name:         "duplicate custom hostname",
+			Endpoints:    []*endpoint.Endpoint{},
+			preApplyHook: "duplicate",
+			logOutput:    "",
+		},
+		{
+			Name: "create DNS record with custom hostname",
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.foo.bar.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "a.foo.fancybar.com",
+						},
+					},
+				},
+			},
+			preApplyHook: "",
+			logOutput:    "custom hostname \"a.foo.fancybar.com\" already exists with the same origin \"a.foo.bar.com\", continue",
 		},
 	}
 
-	b := testutils.LogsToBuffer(log.InfoLevel, t)
 	for _, tc := range testCases {
+		hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+
 		records, err := provider.Records(ctx)
 		if err != nil {
-			t.Errorf("should not fail, %s", err)
+			t.Errorf("should not fail, %v", err)
 		}
 
 		endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
@@ -2245,7 +2898,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 		plan := &plan.Plan{
 			Current:        records,
 			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
 
@@ -2253,28 +2906,116 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 
 		// manually corrupt custom hostname before the deletion step
 		// the purpose is to cause getCustomHostnameOrigin() to fail on change.Action == cloudFlareDelete
-		if tc.preApplyHook {
-			chs, chErr := provider.listCustomHostnamesWithPagination(ctx, zoneID)
-			if chErr != nil {
-				t.Errorf("should not fail - %s, %s", tc.Name, chErr)
-			}
-			chID, _ := provider.getCustomHostnameOrigin(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com")
-			if chID != "" {
-				t.Logf("corrupting custom hostname %v", chID)
-				oldCh := client.customHostnames[zoneID][chID]
+		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, zoneID)
+		if e := checkFailed(tc.Name, chErr, false); !errors.Is(e, nil) {
+			t.Error(e)
+		}
+		if tc.preApplyHook == "corrupt" {
+			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
+				chID := ch.ID
+				t.Logf("corrupting custom hostname %q", chID)
+				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
+				oldCh := client.customHostnames[zoneID][oldIdx]
 				ch := cloudflare.CustomHostname{
 					Hostname:           "corrupted-newerror-getCustomHostnameOrigin.foo.fancybar.com",
 					CustomOriginServer: oldCh.CustomOriginServer,
 					SSL:                oldCh.SSL,
 				}
-				client.customHostnames[zoneID][chID] = ch
+				client.customHostnames[zoneID][oldIdx] = ch
 			}
+		} else if tc.preApplyHook == "duplicate" { // manually inject duplicating custom hostname with the same name and origin
+			ch := cloudflare.CustomHostname{
+				ID:                 "ID-random-123",
+				Hostname:           "a.foo.fancybar.com",
+				CustomOriginServer: "a.foo.bar.com",
+			}
+			client.customHostnames[zoneID] = append(client.customHostnames[zoneID], ch)
+		}
+		err = provider.ApplyChanges(context.Background(), planned.Changes)
+		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
+			t.Error(e)
 		}
 
-		err = provider.ApplyChanges(context.Background(), planned.Changes)
-		if err != nil {
-			t.Errorf("should not fail - %s, %s", tc.Name, err)
-		}
+		testutils.TestHelperLogContains(tc.logOutput, hook, t)
 	}
-	assert.Contains(t, b.String(), "level=info msg=\"Custom hostname newerror-getCustomHostnameOrigin.foo.fancybar.com not found\" action=DELETE record=create.foo.bar.com")
+}
+
+func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client:                client,
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+	}
+	ctx := context.Background()
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
+
+	const CustomHostnamesNumber = 342
+	var generatedEndpoints []*endpoint.Endpoint
+	for i := 0; i < CustomHostnamesNumber; i++ {
+		ep := []*endpoint.Endpoint{
+			{
+				DNSName:    fmt.Sprintf("host-%d.foo.bar.com", i),
+				Targets:    endpoint.Targets{fmt.Sprintf("cname-%d.foo.bar.com", i)},
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  endpoint.TTL(defaultTTL),
+				Labels:     endpoint.Labels{},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+						Value: fmt.Sprintf("host-%d.foo.fancybar.com", i),
+					},
+				},
+			},
+		}
+		generatedEndpoints = append(generatedEndpoints, ep...)
+	}
+
+	records, err := provider.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail, %v", err)
+	}
+
+	endpoints, err := provider.AdjustEndpoints(generatedEndpoints)
+
+	assert.NoError(t, err)
+	plan := &plan.Plan{
+		Current:        records,
+		Desired:        endpoints,
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	planned := plan.Calculate()
+
+	err = provider.ApplyChanges(context.Background(), planned.Changes)
+	if err != nil {
+		t.Errorf("should not fail - %v", err)
+	}
+
+	chs, chErr := provider.listCustomHostnamesWithPagination(ctx, "001")
+	if chErr != nil {
+		t.Errorf("should not fail - %v", chErr)
+	}
+	assert.Len(t, chs, CustomHostnamesNumber)
+}
+
+func TestZoneHasPaidPlan(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	cfprovider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	assert.False(t, cfprovider.ZoneHasPaidPlan("subdomain.foo.com"))
+	assert.True(t, cfprovider.ZoneHasPaidPlan("subdomain.bar.com"))
+	assert.False(t, cfprovider.ZoneHasPaidPlan("invaliddomain"))
+
+	client.zoneDetailsError = errors.New("zone lookup failed")
+	cfproviderWithZoneError := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+	assert.False(t, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }

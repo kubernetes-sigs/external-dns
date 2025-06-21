@@ -18,10 +18,10 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,12 +31,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var kongGroupdVersionResource = schema.GroupVersionResource{
@@ -50,7 +52,7 @@ type kongTCPIngressSource struct {
 	annotationFilter         string
 	ignoreHostnameAnnotation bool
 	dynamicKubeClient        dynamic.Interface
-	kongTCPIngressInformer   informers.GenericInformer
+	kongTCPIngressInformer   kubeinformers.GenericInformer
 	kubeClient               kubernetes.Interface
 	namespace                string
 	unstructuredConverter    *unstructuredConverter
@@ -76,13 +78,13 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
 	uc, err := newKongUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup Unstructured Converter")
+		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
 	return &kongTCPIngressSource{
@@ -121,12 +123,12 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	tcpIngresses, err = sc.filterByAnnotations(tcpIngresses)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter TCPIngresses")
+		return nil, fmt.Errorf("failed to filter TCPIngresses: %w", err)
 	}
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		targets := getTargetsFromTargetAnnotation(tcpIngress.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)
 		if len(targets) == 0 {
 			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
 				if lb.IP != "" {
@@ -162,11 +164,7 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 // filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
 func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -176,14 +174,11 @@ func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) 
 		return tcpIngresses, nil
 	}
 
-	filteredList := []*TCPIngress{}
+	var filteredList []*TCPIngress
 
 	for _, tcpIngress := range tcpIngresses {
-		// convert the TCPIngress's annotations to an equivalent label selector
-		annotations := labels.Set(tcpIngress.Annotations)
-
 		// include TCPIngress if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(tcpIngress.Annotations)) {
 			filteredList = append(filteredList, tcpIngress)
 		}
 	}
@@ -197,12 +192,12 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 
 	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
+	ttl := annotations.TTLFromAnnotations(tcpIngress.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(tcpIngress.Annotations)
 
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
+		hostnameList := annotations.HostnamesFromAnnotations(tcpIngress.Annotations)
 		for _, hostname := range hostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}

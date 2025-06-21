@@ -19,7 +19,6 @@ package externaldns
 import (
 	"os"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -73,11 +72,13 @@ var (
 		AzureConfigFile:                        "/etc/kubernetes/azure.json",
 		AzureResourceGroup:                     "",
 		AzureSubscriptionID:                    "",
+		AzureMaxRetriesCount:                   3,
 		CloudflareProxied:                      false,
 		CloudflareCustomHostnames:              false,
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
-		CloudflareCustomHostnamesCertificateAuthority: "google",
+		CloudflareCustomHostnamesCertificateAuthority: "none",
 		CloudflareDNSRecordsPerPage:                   100,
+		CloudflareDNSRecordsComment:                   "",
 		CloudflareRegionKey:                           "",
 		CoreDNSPrefix:                                 "/skydns/",
 		AkamaiServiceConsumerDomain:                   "",
@@ -124,13 +125,11 @@ var (
 		RFC2136Host:                                   []string{""},
 		RFC2136LoadBalancingStrategy:                  "disabled",
 		OCPRouterName:                                 "default",
-		IBMCloudProxied:                               false,
-		IBMCloudConfigFile:                            "/etc/kubernetes/ibmcloud.json",
-		TencentCloudConfigFile:                        "/etc/kubernetes/tencent-cloud.json",
-		TencentCloudZoneType:                          "",
+		PiholeApiVersion:                              "5",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		ExcludeUnschedulable:                          true,
 	}
 
 	overriddenConfig = &Config{
@@ -142,7 +141,7 @@ var (
 		Sources:                                []string{"service", "ingress", "connector"},
 		Namespace:                              "namespace",
 		IgnoreHostnameAnnotation:               true,
-		IgnoreNonHostNetworkPods:               false,
+		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
 		IgnoreIngressRulesSpec:                 true,
 		FQDNTemplate:                           "{{.Name}}.service.example.com",
@@ -181,6 +180,7 @@ var (
 		AzureConfigFile:                        "azure.json",
 		AzureResourceGroup:                     "arg",
 		AzureSubscriptionID:                    "arg",
+		AzureMaxRetriesCount:                   4,
 		CloudflareProxied:                      true,
 		CloudflareCustomHostnames:              true,
 		CloudflareCustomHostnamesMinTLSVersion: "1.3",
@@ -238,13 +238,11 @@ var (
 		RFC2136BatchChangeSize:                        100,
 		RFC2136Host:                                   []string{"rfc2136-host1", "rfc2136-host2"},
 		RFC2136LoadBalancingStrategy:                  "round-robin",
-		IBMCloudProxied:                               true,
-		IBMCloudConfigFile:                            "ibmcloud.json",
-		TencentCloudConfigFile:                        "tencent-cloud.json",
-		TencentCloudZoneType:                          "private",
+		PiholeApiVersion:                              "6",
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		ExcludeUnschedulable:                          false,
 	}
 )
 
@@ -279,7 +277,7 @@ func TestParseFlags(t *testing.T) {
 				"--source=connector",
 				"--namespace=namespace",
 				"--fqdn-template={{.Name}}.service.example.com",
-				"--no-ignore-non-host-network-pods",
+				"--ignore-non-host-network-pods",
 				"--ignore-hostname-annotation",
 				"--ignore-ingress-tls-spec",
 				"--ignore-ingress-rules-spec",
@@ -292,6 +290,7 @@ func TestParseFlags(t *testing.T) {
 				"--azure-config-file=azure.json",
 				"--azure-resource-group=arg",
 				"--azure-subscription-id=arg",
+				"--azure-maxretries-count=4",
 				"--cloudflare-proxied",
 				"--cloudflare-custom-hostnames",
 				"--cloudflare-custom-hostnames-min-tls-version=1.3",
@@ -352,6 +351,7 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
 				"--no-aws-evaluate-target-health",
+				"--pihole-api-version=6",
 				"--policy=upsert-only",
 				"--registry=noop",
 				"--txt-owner-id=owner-1",
@@ -383,14 +383,11 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
+				"--no-exclude-unschedulable",
 				"--rfc2136-batch-change-size=100",
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
-				"--ibmcloud-proxied",
-				"--ibmcloud-config-file=ibmcloud.json",
-				"--tencent-cloud-config-file=tencent-cloud.json",
-				"--tencent-cloud-zone-type=private",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -408,7 +405,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_SOURCE":                                            "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                                         "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":                                     "{{.Name}}.service.example.com",
-				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "0",
+				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "1",
 				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":                        "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":                           "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_RULES_SPEC":                         "1",
@@ -421,6 +418,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AZURE_CONFIG_FILE":                                 "azure.json",
 				"EXTERNAL_DNS_AZURE_RESOURCE_GROUP":                              "arg",
 				"EXTERNAL_DNS_AZURE_SUBSCRIPTION_ID":                             "arg",
+				"EXTERNAL_DNS_AZURE_MAXRETRIES_COUNT":                            "4",
 				"EXTERNAL_DNS_CLOUDFLARE_PROXIED":                                "1",
 				"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES":                       "1",
 				"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES_MIN_TLS_VERSION":       "1.3",
@@ -474,6 +472,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AWS_SD_SERVICE_CLEANUP":                            "true",
 				"EXTERNAL_DNS_AWS_SD_CREATE_TAG":                                 "key1=value1\nkey2=value2",
 				"EXTERNAL_DNS_DYNAMODB_TABLE":                                    "custom-table",
+				"EXTERNAL_DNS_PIHOLE_API_VERSION":                                "6",
 				"EXTERNAL_DNS_POLICY":                                            "upsert-only",
 				"EXTERNAL_DNS_REGISTRY":                                          "noop",
 				"EXTERNAL_DNS_TXT_OWNER_ID":                                      "owner-1",
@@ -501,13 +500,10 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
+				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
-				"EXTERNAL_DNS_IBMCLOUD_PROXIED":                                  "1",
-				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":                              "ibmcloud.json",
-				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":                         "tencent-cloud.json",
-				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":                           "private",
 			},
 			expected: overriddenConfig,
 		},
@@ -550,6 +546,6 @@ func TestPasswordsNotLogged(t *testing.T) {
 
 	s := cfg.String()
 
-	assert.False(t, strings.Contains(s, "pdns-api-key"))
-	assert.False(t, strings.Contains(s, "tsig-secret"))
+	assert.NotContains(t, s, "pdns-api-key")
+	assert.NotContains(t, s, "tsig-secret")
 }

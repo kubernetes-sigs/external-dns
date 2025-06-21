@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 // LinodeDomainClient interface to ease testing
@@ -46,7 +48,7 @@ type LinodeDomainClient interface {
 type LinodeProvider struct {
 	provider.BaseProvider
 	Client       LinodeDomainClient
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	DryRun       bool
 }
 
@@ -77,7 +79,7 @@ type LinodeChangeDelete struct {
 }
 
 // NewLinodeProvider initializes a new Linode DNS based Provider.
-func NewLinodeProvider(domainFilter endpoint.DomainFilter, dryRun bool, appVersion string) (*LinodeProvider, error) {
+func NewLinodeProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*LinodeProvider, error) {
 	token, ok := os.LookupEnv("LINODE_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
@@ -92,17 +94,16 @@ func NewLinodeProvider(domainFilter endpoint.DomainFilter, dryRun bool, appVersi
 	}
 
 	linodeClient := linodego.NewClient(oauth2Client)
-	linodeClient.SetUserAgent(fmt.Sprintf("ExternalDNS/%s linodego/%s", appVersion, linodego.Version))
+	linodeClient.SetUserAgent(fmt.Sprintf("%s linodego/%s", externaldns.UserAgent(), linodego.Version))
 
-	provider := &LinodeProvider{
+	return &LinodeProvider{
 		Client:       &linodeClient,
 		domainFilter: domainFilter,
 		DryRun:       dryRun,
-	}
-	return provider, nil
+	}, nil
 }
 
-// Zones returns the list of hosted zones.
+// Zones return the list of hosted zones.
 func (p *LinodeProvider) Zones(ctx context.Context) ([]linodego.Domain, error) {
 	zones, err := p.fetchZones(ctx)
 	if err != nil {

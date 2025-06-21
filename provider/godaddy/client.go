@@ -34,17 +34,16 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
-// DefaultTimeout api requests after 180s
-const DefaultTimeout = 180 * time.Second
+const (
+	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
+
+	// DefaultTimeout api requests after
+	DefaultTimeout = 180 * time.Second
+)
 
 // Errors
 var (
 	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
-)
-
-// error codes
-const (
-	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
 )
 
 // APIError error
@@ -224,7 +223,7 @@ func (c *Client) NewRequest(method, path string, reqBody interface{}) (*http.Req
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("sso-key %s:%s", c.APIKey, c.APISecret))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "ExternalDNS/"+externaldns.Version)
+	req.Header.Set("User-Agent", externaldns.UserAgent())
 
 	// Send the request with requested timeout
 	c.Client.Timeout = c.Timeout
@@ -244,7 +243,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	// In case of several clients behind NAT we still can hit rate limit
-	for i := 1; i < 3 && resp != nil && resp.StatusCode == 429; i++ {
+	for i := 1; i < 3 && resp != nil && resp.StatusCode == http.StatusTooManyRequests; i++ {
 		retryAfter, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
 		if err != nil {
 			log.Error("Rate-limited response did not contain a valid Retry-After header, quota likely exceeded")

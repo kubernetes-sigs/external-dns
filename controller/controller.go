@@ -105,52 +105,43 @@ var (
 			Help:      "Number of Source errors.",
 		},
 	)
-	registryARecords = metrics.NewGaugeWithOpts(
+
+	registryRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "registry",
-			Name:      "a_records",
-			Help:      "Number of Registry A records.",
+			Name:      "records",
+			Help:      "Number of registry records partitioned by label name (vector).",
 		},
+		[]string{"record_type"},
 	)
-	registryAAAARecords = metrics.NewGaugeWithOpts(
-		prometheus.GaugeOpts{
-			Namespace: "external_dns",
-			Subsystem: "registry",
-			Name:      "aaaa_records",
-			Help:      "Number of Registry AAAA records.",
-		},
-	)
-	sourceARecords = metrics.NewGaugeWithOpts(
+
+	sourceRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "source",
-			Name:      "a_records",
-			Help:      "Number of Source A records.",
+			Name:      "records",
+			Help:      "Number of source records partitioned by label name (vector).",
 		},
+		[]string{"record_type"},
 	)
-	sourceAAAARecords = metrics.NewGaugeWithOpts(
-		prometheus.GaugeOpts{
-			Namespace: "external_dns",
-			Subsystem: "source",
-			Name:      "aaaa_records",
-			Help:      "Number of Source AAAA records.",
-		},
-	)
-	verifiedARecords = metrics.NewGaugeWithOpts(
+
+	verifiedRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
-			Name:      "verified_a_records",
-			Help:      "Number of DNS A-records that exists both in source and registry.",
+			Name:      "verified_records",
+			Help:      "Number of DNS records that exists both in source and registry (vector).",
 		},
+		[]string{"record_type"},
 	)
-	verifiedAAAARecords = metrics.NewGaugeWithOpts(
+
+	consecutiveSoftErrors = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "controller",
-			Name:      "verified_aaaa_records",
-			Help:      "Number of DNS AAAA-records that exists both in source and registry.",
+			Name:      "consecutive_soft_errors",
+			Help:      "Number of consecutive soft errors in reconciliation loop.",
 		},
 	)
 )
@@ -165,24 +156,24 @@ func init() {
 	metrics.RegisterMetric.MustRegister(deprecatedRegistryErrors)
 	metrics.RegisterMetric.MustRegister(deprecatedSourceErrors)
 	metrics.RegisterMetric.MustRegister(controllerNoChangesTotal)
-	metrics.RegisterMetric.MustRegister(registryARecords)
-	metrics.RegisterMetric.MustRegister(registryAAAARecords)
-	metrics.RegisterMetric.MustRegister(sourceARecords)
-	metrics.RegisterMetric.MustRegister(sourceAAAARecords)
-	metrics.RegisterMetric.MustRegister(verifiedARecords)
-	metrics.RegisterMetric.MustRegister(verifiedAAAARecords)
+
+	metrics.RegisterMetric.MustRegister(registryRecords)
+	metrics.RegisterMetric.MustRegister(sourceRecords)
+	metrics.RegisterMetric.MustRegister(verifiedRecords)
+
+	metrics.RegisterMetric.MustRegister(consecutiveSoftErrors)
 }
 
 // Controller is responsible for orchestrating the different components.
 // It works in the following way:
-// * Ask the DNS provider for current list of endpoints.
+// * Ask the DNS provider for the current list of endpoints.
 // * Ask the Source for the desired list of endpoints.
-// * Take both lists and calculate a Plan to move current towards desired state.
+// * Take both lists and calculate a Plan to move current towards the desired state.
 // * Tell the DNS provider to apply the changes calculated by the Plan.
 type Controller struct {
 	Source   source.Source
 	Registry registry.Registry
-	// The policy that defines which changes to DNS records are allowed
+	// The policy that defines which change to DNS records is allowed
 	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
@@ -198,7 +189,7 @@ type Controller struct {
 	ManagedRecordTypes []string
 	// ExcludeRecordTypes are DNS record types that will be excluded from management.
 	ExcludeRecordTypes []string
-	// MinEventSyncInterval is used as window for batching events
+	// MinEventSyncInterval is used as a window for batching events
 	MinEventSyncInterval time.Duration
 }
 
@@ -210,33 +201,37 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	c.lastRunAt = time.Now()
 	c.runAtMutex.Unlock()
 
-	records, err := c.Registry.Records(ctx)
+	regMetrics := newMetricsRecorder()
+
+	regRecords, err := c.Registry.Records(ctx)
 	if err != nil {
 		registryErrorsTotal.Counter.Inc()
 		deprecatedRegistryErrors.Counter.Inc()
 		return err
 	}
 
-	registryEndpointsTotal.Gauge.Set(float64(len(records)))
-	regARecords, regAAAARecords := countAddressRecords(records)
-	registryARecords.Gauge.Set(float64(regARecords))
-	registryAAAARecords.Gauge.Set(float64(regAAAARecords))
-	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
+	registryEndpointsTotal.Gauge.Set(float64(len(regRecords)))
 
-	endpoints, err := c.Source.Endpoints(ctx)
+	countAddressRecords(regMetrics, regRecords, registryRecords)
+
+	ctx = context.WithValue(ctx, provider.RecordsContextKey, regRecords)
+
+	sourceEndpoints, err := c.Source.Endpoints(ctx)
 	if err != nil {
 		sourceErrorsTotal.Counter.Inc()
 		deprecatedSourceErrors.Counter.Inc()
 		return err
 	}
-	sourceEndpointsTotal.Gauge.Set(float64(len(endpoints)))
-	srcARecords, srcAAAARecords := countAddressRecords(endpoints)
-	sourceARecords.Gauge.Set(float64(srcARecords))
-	sourceAAAARecords.Gauge.Set(float64(srcAAAARecords))
-	vARecords, vAAAARecords := countMatchingAddressRecords(endpoints, records)
-	verifiedARecords.Gauge.Set(float64(vARecords))
-	verifiedAAAARecords.Gauge.Set(float64(vAAAARecords))
-	endpoints, err = c.Registry.AdjustEndpoints(endpoints)
+
+	sourceEndpointsTotal.Gauge.Set(float64(len(sourceEndpoints)))
+
+	sourceMetrics := newMetricsRecorder()
+	countAddressRecords(sourceMetrics, sourceEndpoints, sourceRecords)
+
+	vaMetrics := newMetricsRecorder()
+	countMatchingAddressRecords(vaMetrics, sourceEndpoints, regRecords, verifiedRecords)
+
+	endpoints, err := c.Registry.AdjustEndpoints(sourceEndpoints)
 	if err != nil {
 		return fmt.Errorf("adjusting endpoints: %w", err)
 	}
@@ -244,7 +239,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	plan := &plan.Plan{
 		Policies:       []plan.Policy{c.Policy},
-		Current:        records,
+		Current:        regRecords,
 		Desired:        endpoints,
 		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter},
 		ManagedRecords: c.ManagedRecordTypes,
@@ -289,8 +284,8 @@ func latest(r time.Time, times ...time.Time) time.Time {
 	return r
 }
 
-// Counts the intersections of A and AAAA records in endpoint and registry.
-func countMatchingAddressRecords(endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint) (int, int) {
+// Counts the intersections of records in endpoint and registry.
+func countMatchingAddressRecords(rec *metricsRecorder, endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint, metric metrics.GaugeVecMetric) {
 	recordsMap := make(map[string]map[string]struct{})
 	for _, regRecord := range registryRecords {
 		if _, found := recordsMap[regRecord.DNSName]; !found {
@@ -298,35 +293,32 @@ func countMatchingAddressRecords(endpoints []*endpoint.Endpoint, registryRecords
 		}
 		recordsMap[regRecord.DNSName][regRecord.RecordType] = struct{}{}
 	}
-	aCount := 0
-	aaaaCount := 0
+
 	for _, sourceRecord := range endpoints {
 		if _, found := recordsMap[sourceRecord.DNSName]; found {
-			if _, found := recordsMap[sourceRecord.DNSName][sourceRecord.RecordType]; found {
-				switch sourceRecord.RecordType {
-				case endpoint.RecordTypeA:
-					aCount++
-				case endpoint.RecordTypeAAAA:
-					aaaaCount++
-				}
+			if _, ok := recordsMap[sourceRecord.DNSName][sourceRecord.RecordType]; ok {
+				rec.recordEndpointType(sourceRecord.RecordType)
 			}
 		}
 	}
-	return aCount, aaaaCount
+
+	for _, rt := range endpoint.KnownRecordTypes {
+		metric.SetWithLabels(rec.loadFloat64(rt), rt)
+	}
 }
 
-func countAddressRecords(endpoints []*endpoint.Endpoint) (int, int) {
-	aCount := 0
-	aaaaCount := 0
+// countAddressRecords updates the metricsRecorder with the count of each record type
+// found in the provided endpoints slice, and sets the corresponding metrics for each
+// known DNS record type using the sourceRecords metric.
+func countAddressRecords(rec *metricsRecorder, endpoints []*endpoint.Endpoint, metric metrics.GaugeVecMetric) {
+	// compute the number of records per type
 	for _, endPoint := range endpoints {
-		switch endPoint.RecordType {
-		case endpoint.RecordTypeA:
-			aCount++
-		case endpoint.RecordTypeAAAA:
-			aaaaCount++
-		}
+		rec.recordEndpointType(endPoint.RecordType)
 	}
-	return aCount, aaaaCount
+	// set metrics for each record type
+	for _, rt := range endpoint.KnownRecordTypes {
+		metric.SetWithLabels(rec.loadFloat64(rt), rt)
+	}
 }
 
 // ScheduleRunOnce makes sure execution happens at most once per interval.
@@ -356,14 +348,23 @@ func (c *Controller) ShouldRunOnce(now time.Time) bool {
 func (c *Controller) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+	var softErrorCount int
 	for {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
 				if errors.Is(err, provider.SoftError) {
-					log.Errorf("Failed to do run once: %v", err)
+					softErrorCount++
+					consecutiveSoftErrors.Gauge.Set(float64(softErrorCount))
+					log.Errorf("Failed to do run once: %v (consecutive soft errors: %d)", err, softErrorCount)
 				} else {
 					log.Fatalf("Failed to do run once: %v", err)
 				}
+			} else {
+				if softErrorCount > 0 {
+					log.Infof("Reconciliation succeeded after %d consecutive soft errors", softErrorCount)
+				}
+				softErrorCount = 0
+				consecutiveSoftErrors.Gauge.Set(0)
 			}
 		}
 		select {

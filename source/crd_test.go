@@ -22,20 +22,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
-
+	"k8s.io/client-go/tools/cache"
+	cachetesting "k8s.io/client-go/tools/cache/testing"
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -59,10 +65,10 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
-	addKnownTypes(scheme, groupVersion)
+	_ = addKnownTypes(scheme, groupVersion)
 
-	dnsEndpointList := endpoint.DNSEndpointList{}
-	dnsEndpoint := &endpoint.DNSEndpoint{
+	dnsEndpointList := apiv1alpha1.DNSEndpointList{}
+	dnsEndpoint := &apiv1alpha1.DNSEndpoint{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: apiVersion,
 			Kind:       kind,
@@ -74,7 +80,7 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 			Labels:      labels,
 			Generation:  1,
 		},
-		Spec: endpoint.DNSEndpointSpec{
+		Spec: apiv1alpha1.DNSEndpointSpec{
 			Endpoints: endpoints,
 		},
 	}
@@ -82,7 +88,6 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 	codecFactory := serializer.WithoutConversionCodecFactory{
 		CodecFactory: serializer.NewCodecFactory(scheme),
 	}
-
 	client := &fake.RESTClient{
 		GroupVersion:         groupVersion,
 		VersionedAPIPath:     "/apis/" + apiVersion,
@@ -101,8 +106,11 @@ func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace,
 			case p == "/apis/"+apiVersion+"/namespaces/"+namespace+"/"+strings.ToLower(kind)+"s/"+name+"/status" && m == http.MethodPut:
 				decoder := json.NewDecoder(req.Body)
 
-				var body endpoint.DNSEndpoint
-				decoder.Decode(&body)
+				var body apiv1alpha1.DNSEndpoint
+				err := decoder.Decode(&body)
+				if err != nil {
+					return nil, err
+				}
 				dnsEndpoint.Status.ObservedGeneration = body.Status.ObservedGeneration
 				return &http.Response{StatusCode: http.StatusOK, Header: defaultHeader(), Body: objBody(codec, dnsEndpoint)}, nil
 			default:
@@ -216,7 +224,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "invalid crd with no targets",
+			title:                "valid crd with no targets (relies on default-targets)",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
 			apiVersion:           "test.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
@@ -225,13 +233,13 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
-					DNSName:    "abc.example.org",
+					DNSName:    "no-targets.example.org",
 					Targets:    endpoint.Targets{},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
+			expectEndpoints: true,
 			expectError:     false,
 		},
 		{
@@ -468,16 +476,17 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 	} {
-		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
 			restClient := fakeRESTClient(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
+			require.NotNil(t, groupVersion)
 
 			scheme := runtime.NewScheme()
-			require.NoError(t, addKnownTypes(scheme, groupVersion))
+			err = addKnownTypes(scheme, groupVersion)
+			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(ti.labelFilter)
 			require.NoError(t, err)
@@ -485,12 +494,10 @@ func testCRDSourceEndpoints(t *testing.T) {
 			// At present, client-go's fake.RESTClient (used by crd_test.go) is known to cause race conditions when used
 			// with informers: https://github.com/kubernetes/kubernetes/issues/95372
 			// So don't start the informer during testing.
-			startInformer := false
-
-			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, startInformer)
+			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, false)
 			require.NoError(t, err)
 
-			receivedEndpoints, err := cs.Endpoints(context.Background())
+			receivedEndpoints, err := cs.Endpoints(t.Context())
 			if ti.expectError {
 				require.Errorf(t, err, "Received err %v", err)
 			} else {
@@ -507,11 +514,143 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 			// Validate received endpoints against expected endpoints.
 			validateEndpoints(t, receivedEndpoints, ti.endpoints)
+
+			for _, e := range receivedEndpoints {
+				// TODO: at the moment not all sources apply ResourceLabelKey
+				require.GreaterOrEqual(t, len(e.Labels), 1, "endpoint must have at least one label")
+				require.Contains(t, e.Labels, endpoint.ResourceLabelKey, "endpoint must include the ResourceLabelKey label")
+			}
 		})
 	}
 }
 
+func TestCRDSource_NoInformer(t *testing.T) {
+	cs := &crdSource{informer: nil}
+	called := false
+
+	cs.AddEventHandler(context.Background(), func() { called = true })
+	require.False(t, called, "handler must not be called when informer is nil")
+}
+
+func TestCRDSource_AddEventHandler_Add(t *testing.T) {
+	ctx := t.Context()
+	watcher, cs := helperCreateWatcherWithInformer(t)
+
+	var counter atomic.Int32
+	cs.AddEventHandler(ctx, func() {
+		counter.Add(1)
+	})
+
+	obj := &unstructured.Unstructured{}
+	obj.SetName("test")
+
+	watcher.Add(obj)
+
+	require.Eventually(t, func() bool {
+		return counter.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCRDSource_AddEventHandler_Update(t *testing.T) {
+	ctx := t.Context()
+	watcher, cs := helperCreateWatcherWithInformer(t)
+
+	var counter atomic.Int32
+	cs.AddEventHandler(ctx, func() {
+		counter.Add(1)
+	})
+
+	obj := unstructured.Unstructured{}
+	obj.SetName("test")
+	obj.SetNamespace("default")
+	obj.SetUID("9be5b64e-3ee9-11f0-88ee-1eb95c6fd730")
+
+	watcher.Add(&obj)
+
+	require.Eventually(t, func() bool {
+		return len(watcher.Items) == 1
+	}, time.Second, 10*time.Millisecond)
+
+	modified := obj.DeepCopy()
+	modified.SetLabels(map[string]string{"new-label": "this"})
+	watcher.Modify(modified)
+
+	require.Eventually(t, func() bool {
+		return len(watcher.Items) == 1
+	}, time.Second, 10*time.Millisecond)
+
+	require.Eventually(t, func() bool {
+		return counter.Load() == 2
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
+	ctx := t.Context()
+	watcher, cs := helperCreateWatcherWithInformer(t)
+
+	var counter atomic.Int32
+	cs.AddEventHandler(ctx, func() {
+		counter.Add(1)
+	})
+
+	obj := &unstructured.Unstructured{}
+	obj.SetName("test")
+
+	watcher.Delete(obj)
+
+	require.Eventually(t, func() bool {
+		return counter.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCRDSource_Watch(t *testing.T) {
+	scheme := runtime.NewScheme()
+	err := apiv1alpha1.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	var watchCalled bool
+
+	codecFactory := serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme),
+	}
+
+	versionApiPath := fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String())
+
+	client := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		VersionedAPIPath:     versionApiPath,
+		NegotiatedSerializer: codecFactory,
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			if req.URL.Path == fmt.Sprintf("%s/namespaces/test-ns/dnsendpoints", versionApiPath) &&
+				req.URL.Query().Get("watch") == "true" {
+				watchCalled = true
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     make(http.Header),
+				}, nil
+			}
+			t.Errorf("unexpected request: %v", req.URL)
+			return nil, fmt.Errorf("unexpected request: %v", req.URL)
+		}),
+	}
+
+	cs := &crdSource{
+		crdClient:   client,
+		namespace:   "test-ns",
+		crdResource: "dnsendpoints",
+		codec:       runtime.NewParameterCodec(scheme),
+	}
+
+	opts := &metav1.ListOptions{}
+
+	_, err = cs.watch(t.Context(), opts)
+	require.NoError(t, err)
+	require.True(t, watchCalled)
+	require.True(t, opts.Watch)
+}
+
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
+	t.Helper()
 	cs := src.(*crdSource)
 	result, err := cs.List(context.Background(), &metav1.ListOptions{})
 	if expectError {
@@ -524,5 +663,117 @@ func validateCRDResource(t *testing.T, src Source, expectError bool) {
 		if dnsEndpoint.Status.ObservedGeneration != dnsEndpoint.Generation {
 			require.Errorf(t, err, "Unexpected CRD resource result: ObservedGenerations <%v> is not equal to Generation<%v>", dnsEndpoint.Status.ObservedGeneration, dnsEndpoint.Generation)
 		}
+	}
+}
+
+func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
+
+	typeCounts := map[string]int{
+		endpoint.RecordTypeA:     3,
+		endpoint.RecordTypeCNAME: 2,
+		endpoint.RecordTypeNS:    7,
+		endpoint.RecordTypeNAPTR: 1,
+	}
+
+	crds := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
+
+	for _, crd := range crds.Items {
+		for _, ep := range crd.Spec.Endpoints {
+			require.Empty(t, ep.Labels, "endpoint not have labels set")
+			require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey, "endpoint must not include the ResourceLabelKey label")
+		}
+	}
+
+	scheme := runtime.NewScheme()
+	err := apiv1alpha1.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	codecFactory := serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme),
+	}
+
+	client := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
+		NegotiatedSerializer: codecFactory,
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       objBody(codecFactory.LegacyCodec(apiv1alpha1.GroupVersion), &crds),
+			}, nil
+		}),
+	}
+
+	cs := &crdSource{
+		crdClient:     client,
+		namespace:     "test-ns",
+		crdResource:   "dnsendpoints",
+		codec:         runtime.NewParameterCodec(scheme),
+		labelSelector: labels.Everything(),
+	}
+
+	res, err := cs.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	for _, ep := range res {
+		require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+	}
+}
+
+func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeControllerSource, crdSource) {
+	t.Helper()
+	ctx := t.Context()
+
+	watcher := cachetesting.NewFakeControllerSource()
+
+	informer := cache.NewSharedInformer(watcher, &unstructured.Unstructured{}, 0)
+
+	go informer.RunWithContext(ctx)
+
+	require.Eventually(t, func() bool {
+		return cache.WaitForCacheSync(ctx.Done(), informer.HasSynced)
+	}, time.Second, 10*time.Millisecond)
+
+	cs := &crdSource{
+		informer: &informer,
+	}
+
+	return watcher, *cs
+}
+
+// generateTestFixtureDNSEndpointsByType generates DNSEndpoint CRDs according to the provided counts per RecordType.
+func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[string]int) apiv1alpha1.DNSEndpointList {
+	var result []apiv1alpha1.DNSEndpoint
+	idx := 0
+	for rt, count := range typeCounts {
+		for i := 0; i < count; i++ {
+			result = append(result, apiv1alpha1.DNSEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("dnsendpoint-%s-%d", rt, idx),
+					Namespace: namespace,
+				},
+				Spec: apiv1alpha1.DNSEndpointSpec{
+					Endpoints: []*endpoint.Endpoint{
+						{
+							DNSName:    strings.ToLower(fmt.Sprintf("%s-%d.example.com", rt, idx)),
+							RecordType: rt,
+							Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},
+							RecordTTL:  300,
+						},
+					},
+				},
+			})
+			idx++
+		}
+	}
+	// Shuffle the result to ensure randomness in the order.
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	rand.Shuffle(len(result), func(i, j int) {
+		result[i], result[j] = result[j], result[i]
+	})
+
+	return apiv1alpha1.DNSEndpointList{
+		Items: result,
 	}
 }

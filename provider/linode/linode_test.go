@@ -145,11 +145,11 @@ func TestLinodeConvertRecordType(t *testing.T) {
 
 func TestNewLinodeProvider(t *testing.T) {
 	_ = os.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
+	_, err := NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("LINODE_TOKEN")
-	_, err = NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
+	_, err = NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.Error(t, err)
 }
 
@@ -160,7 +160,7 @@ func TestLinodeStripRecordName(t *testing.T) {
 		DNSName: "api.example.com",
 	}))
 
-	assert.Equal(t, "", getStrippedRecordName(linodego.Domain{
+	assert.Empty(t, getStrippedRecordName(linodego.Domain{
 		Domain: "example.com",
 	}, endpoint.Endpoint{
 		DNSName: "example.com",
@@ -217,7 +217,7 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 }
 
 func TestLinodeGetStrippedRecordName(t *testing.T) {
-	assert.Equal(t, "", getStrippedRecordName(linodego.Domain{
+	assert.Empty(t, getStrippedRecordName(linodego.Domain{
 		Domain: "foo.com",
 	}, endpoint.Endpoint{
 		DNSName: "foo.com",

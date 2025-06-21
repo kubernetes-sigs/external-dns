@@ -91,6 +91,6 @@ func TestTargetFilterMatchWithEmptyFilter(t *testing.T) {
 
 func TestMatchTargetFilterReturnsProperEmptyVal(t *testing.T) {
 	emptyFilters := []string{}
-	assert.Equal(t, true, matchFilter(emptyFilters, "sometarget.com", true))
-	assert.Equal(t, false, matchFilter(emptyFilters, "sometarget.com", false))
+	assert.True(t, matchFilter(emptyFilters, "sometarget.com", true))
+	assert.False(t, matchFilter(emptyFilters, "sometarget.com", false))
 }

@@ -35,7 +35,7 @@ import (
 type CivoProvider struct {
 	provider.BaseProvider
 	Client       civogo.Client
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	DryRun       bool
 }
 
@@ -71,7 +71,7 @@ type CivoChangeDelete struct {
 }
 
 // NewCivoProvider initializes a new Civo DNS based Provider.
-func NewCivoProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*CivoProvider, error) {
+func NewCivoProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*CivoProvider, error) {
 	token, ok := os.LookupEnv("CIVO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
@@ -87,7 +87,7 @@ func NewCivoProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*CivoProv
 	}
 
 	userAgent := &civogo.Component{
-		Name:    "external-dns",
+		Name:    externaldns.UserAgentProduct,
 		Version: externaldns.Version,
 	}
 	civoClient.SetUserAgent(userAgent)

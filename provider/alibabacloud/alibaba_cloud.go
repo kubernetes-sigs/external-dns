@@ -29,8 +29,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/denverdino/aliyungo/metadata"
+	yaml "github.com/goccy/go-yaml"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	defaultAlibabaCloudRecordTTL            = 600
+	defaultTTL                              = 600
 	defaultAlibabaCloudPrivateZoneRecordTTL = 60
 	defaultAlibabaCloudPageSize             = 50
 	nullHostAlibabaCloud                    = "@"
@@ -70,7 +70,7 @@ type AlibabaCloudPrivateZoneAPI interface {
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
 type AlibabaCloudProvider struct {
 	provider.BaseProvider
-	domainFilter         endpoint.DomainFilter
+	domainFilter         *endpoint.DomainFilter
 	zoneIDFilter         provider.ZoneIDFilter // Private Zone only
 	MaxChangeCount       int
 	EvaluateTargetHealth bool
@@ -85,34 +85,34 @@ type AlibabaCloudProvider struct {
 }
 
 type alibabaCloudConfig struct {
-	RegionID        string    `json:"regionId" yaml:"regionId"`
-	AccessKeyID     string    `json:"accessKeyId" yaml:"accessKeyId"`
+	RegionID        string    `json:"regionId"        yaml:"regionId"`
+	AccessKeyID     string    `json:"accessKeyId"     yaml:"accessKeyId"`
 	AccessKeySecret string    `json:"accessKeySecret" yaml:"accessKeySecret"`
-	VPCID           string    `json:"vpcId" yaml:"vpcId"`
-	RoleName        string    `json:"-" yaml:"-"` // For ECS RAM role only
-	StsToken        string    `json:"-" yaml:"-"`
-	ExpireTime      time.Time `json:"-" yaml:"-"`
+	VPCID           string    `json:"vpcId"           yaml:"vpcId"`
+	RoleName        string    `json:"-"               yaml:"-"` // For ECS RAM role only
+	StsToken        string    `json:"-"               yaml:"-"`
+	ExpireTime      time.Time `json:"-"               yaml:"-"`
 }
 
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
+func NewAlibabaCloudProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
 		contents, err := os.ReadFile(configFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read Alibaba Cloud config file '%s': %v", configFile, err)
+			return nil, fmt.Errorf("failed to read Alibaba Cloud config file '%s': %w", configFile, err)
 		}
 		err = yaml.Unmarshal(contents, &cfg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse Alibaba Cloud config file '%s': %v", configFile, err)
+			return nil, fmt.Errorf("failed to parse Alibaba Cloud config file '%s': %w", configFile, err)
 		}
 	} else {
 		var tmpError error
 		cfg, tmpError = getCloudConfigFromStsToken()
 		if tmpError != nil {
-			return nil, fmt.Errorf("failed to getCloudConfigFromStsToken: %v", tmpError)
+			return nil, fmt.Errorf("failed to getCloudConfigFromStsToken: %w", tmpError)
 		}
 	}
 
@@ -136,7 +136,7 @@ func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilt
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Alibaba Cloud DNS client: %v", err)
+		return nil, fmt.Errorf("failed to create Alibaba Cloud DNS client: %w", err)
 	}
 
 	// Private DNS service
@@ -184,19 +184,19 @@ func getCloudConfigFromStsToken() (alibabaCloudConfig, error) {
 	roleName := ""
 	var err error
 	if roleName, err = m.RoleName(); err != nil {
-		return cfg, fmt.Errorf("failed to get role name from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get role name from Metadata Service: %w", err)
 	}
 	vpcID, err := m.VpcID()
 	if err != nil {
-		return cfg, fmt.Errorf("failed to get VPC ID from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get VPC ID from Metadata Service: %w", err)
 	}
 	regionID, err := m.Region()
 	if err != nil {
-		return cfg, fmt.Errorf("failed to get Region ID from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get Region ID from Metadata Service: %w", err)
 	}
 	role, err := m.RamRoleToken(roleName)
 	if err != nil {
-		return cfg, fmt.Errorf("failed to get STS Token from Metadata Service: %v", err)
+		return cfg, fmt.Errorf("failed to get STS Token from Metadata Service: %w", err)
 	}
 	cfg.RegionID = regionID
 	cfg.RoleName = roleName
@@ -492,13 +492,26 @@ func (p *AlibabaCloudProvider) escapeTXTRecordValue(value string) string {
 
 func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 	if strings.HasPrefix(value, "heritage=") {
-		return fmt.Sprintf("\"%s\"", strings.Replace(value, ";", ",", -1))
+		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, ";", ","))
 	}
 	return value
 }
 
 func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target string, hostedZoneDomains []string) error {
+	if len(hostedZoneDomains) == 0 {
+		log.Errorf("Failed to create %s record named '%s' to '%s' for Alibaba Cloud DNS: zone not found",
+			endpoint.RecordType, endpoint.DNSName, target)
+		return fmt.Errorf("zone not found")
+	}
+
 	rr, domain := p.splitDNSName(endpoint.DNSName, hostedZoneDomains)
+
+	if domain == "" {
+		log.Errorf("Failed to create %s record named '%s' to '%s' for Alibaba Cloud DNS: no corresponding DNS zone found for this domain '%s'",
+			endpoint.RecordType, endpoint.DNSName, target, endpoint.DNSName)
+		return fmt.Errorf("no corresponding DNS zone found for this domain")
+	}
+
 	request := alidns.CreateAddDomainRecordRequest()
 	request.DomainName = domain
 	request.Type = endpoint.RecordType
@@ -606,12 +619,12 @@ func (p *AlibabaCloudProvider) deleteRecords(recordMap map[string][]alidns.Recor
 
 func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.Endpoint) bool {
 	ttl1 := record.TTL
-	if ttl1 == defaultAlibabaCloudRecordTTL {
+	if ttl1 == defaultTTL {
 		ttl1 = 0
 	}
 
 	ttl2 := int64(endpoint.RecordTTL)
-	if ttl2 == defaultAlibabaCloudRecordTTL {
+	if ttl2 == defaultTTL {
 		ttl2 = 0
 	}
 

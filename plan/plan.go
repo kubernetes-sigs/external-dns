@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/idna"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -54,13 +55,13 @@ type Plan struct {
 // Changes holds lists of actions to be executed by dns providers
 type Changes struct {
 	// Records that need to be created
-	Create []*endpoint.Endpoint
+	Create []*endpoint.Endpoint `json:"create,omitempty"`
 	// Records that need to be updated (current data)
-	UpdateOld []*endpoint.Endpoint
+	UpdateOld []*endpoint.Endpoint `json:"updateOld,omitempty"`
 	// Records that need to be updated (desired data)
-	UpdateNew []*endpoint.Endpoint
+	UpdateNew []*endpoint.Endpoint `json:"updateNew,omitempty"`
 	// Records that need to be deleted
-	Delete []*endpoint.Endpoint
+	Delete []*endpoint.Endpoint `json:"delete,omitempty"`
 }
 
 // planKey is a key for a row in `planTable`.
@@ -262,9 +263,11 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	plan := &Plan{
-		Current:        p.Current,
-		Desired:        p.Desired,
-		Changes:        changes,
+		Current: p.Current,
+		Desired: p.Desired,
+		Changes: changes,
+		// The default for ExternalDNS is to always only consider A/AAAA and CNAMEs.
+		// Everything else is an add on or something to be considered.
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	}
 
@@ -337,9 +340,12 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Ma
 }
 
 // normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
-// it: removes space, converts to lower case, ensures there is a trailing dot
+// it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
 func normalizeDNSName(dnsName string) string {
-	s := strings.TrimSpace(strings.ToLower(dnsName))
+	s, err := idna.Lookup.ToASCII(strings.TrimSpace(dnsName))
+	if err != nil {
+		log.Warnf(`Got error while parsing DNSName %s: %v`, dnsName, err)
+	}
 	if !strings.HasSuffix(s, ".") {
 		s += "."
 	}

@@ -15,6 +15,8 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
+> Please be aware that this IAM role grants broad permissions across Route 53, and Service Discovery. For enhanced security, it's strongly recommended to review and restrict the actions and resources to the absolute minimum required for its intended purpose, following the principle of least privilege
+
 ```json
 {
   "Version": "2012-10-17",
@@ -60,6 +62,22 @@ Using tags, your `servicediscovery` policy can become:
 {
   "Version": "2012-10-17",
   "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ],
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
+          "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX"]
+        }
+      }
+    },
     {
       "Effect": "Allow",
       "Action": [
@@ -120,6 +138,10 @@ Using tags, your `servicediscovery` policy can become:
 }
 ```
 
+Additional resources:
+
+* AWS IAM actions [documentation](https://www.awsiamactions.io/?o=servicediscovery%3A)
+
 ## Set up a namespace
 
 Create a DNS namespace using the AWS Cloud Map API:
@@ -159,7 +181,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.15.1
+        image: registry.k8s.io/external-dns/external-dns:v0.17.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -226,7 +248,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.15.1
+        image: registry.k8s.io/external-dns/external-dns:v0.17.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region

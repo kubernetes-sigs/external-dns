@@ -237,13 +237,13 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 }
 
 // newMockedAzureProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzureProvider(domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zones []*dns.Zone, recordSets []*dns.RecordSet) (*AzureProvider, error) {
+func newMockedAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zones []*dns.Zone, recordSets []*dns.RecordSet, maxRetriesCount int) (*AzureProvider, error) {
 	zonesClient := newMockZonesClient(zones)
 	recordSetsClient := newMockRecordSetsClient(recordSets)
-	return newAzureProvider(domainFilter, zoneNameFilter, zoneIDFilter, dryRun, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost, &zonesClient, &recordSetsClient), nil
+	return newAzureProvider(domainFilter, zoneNameFilter, zoneIDFilter, dryRun, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost, &zonesClient, &recordSetsClient, maxRetriesCount), nil
 }
 
-func newAzureProvider(domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
+func newAzureProvider(domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesClient ZonesClient, recordsClient RecordSetsClient, maxRetriesCount int) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:                 domainFilter,
 		zoneNameFilter:               zoneNameFilter,
@@ -255,6 +255,7 @@ func newAzureProvider(domainFilter endpoint.DomainFilter, zoneNameFilter endpoin
 		zonesClient:                  zonesClient,
 		zonesCache:                   &zonesCache[dns.Zone]{duration: 0},
 		recordSetsClient:             recordsClient,
+		maxRetriesCount:              maxRetriesCount,
 	}
 }
 
@@ -280,7 +281,7 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com"),
-		})
+		}, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,7 +326,7 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
-		})
+		}, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,6 +416,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		"",
 		&zonesClient,
 		client,
+		3,
 	)
 
 	createRecords := []*endpoint.Endpoint{
@@ -497,7 +499,7 @@ func TestAzureNameFilter(t *testing.T) {
 			createMockRecordSetWithTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeNS, "ns1.example.com.", 3600),
-		})
+		}, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -555,6 +557,7 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 		"",
 		&zonesClient,
 		client,
+		3,
 	)
 
 	createRecords := []*endpoint.Endpoint{

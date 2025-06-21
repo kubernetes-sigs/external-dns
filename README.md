@@ -27,7 +27,7 @@ This README is a part of the complete documentation, available [here](https://ku
 
 Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers.
 Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records.
-*Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
+_Unlike_ KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
 
 In a broader sense, ExternalDNS allows you to control DNS records dynamically via Kubernetes resources in a DNS provider-agnostic way.
 
@@ -49,7 +49,6 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [CloudFlare](https://www.cloudflare.com/dns)
 - [DigitalOcean](https://www.digitalocean.com/products/networking)
 - [DNSimple](https://dnsimple.com/)
-- [OpenStack Designate](https://docs.openstack.org/designate/latest/)
 - [PowerDNS](https://www.powerdns.com/)
 - [CoreDNS](https://coredns.io/)
 - [Exoscale](https://www.exoscale.com/dns/)
@@ -58,16 +57,15 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [RFC2136](https://tools.ietf.org/html/rfc2136)
 - [NS1](https://ns1.com/)
 - [TransIP](https://www.transip.eu/domain-name/)
-- [OVH](https://www.ovh.com)
+- [OVHcloud](https://www.ovhcloud.com)
 - [Scaleway](https://www.scaleway.com)
 - [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 - [GoDaddy](https://www.godaddy.com)
 - [Gandi](https://www.gandi.net)
 - [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
-- [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
-- [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
+- [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.
 We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster.
@@ -78,7 +76,7 @@ Note that all flags can be replaced with environment variables; for instance,
 
 ## New providers
 
-No new provider will be added to ExternalDNS *in-tree*.
+No new provider will be added to ExternalDNS _in-tree_.
 
 ExternalDNS has introduced a webhook system, which can be used to add a new provider.
 See PR #3063 for all the discussions about it.
@@ -86,12 +84,13 @@ See PR #3063 for all the discussions about it.
 Known providers using webhooks:
 
 | Provider              | Repo                                                                 |
-|-----------------------|----------------------------------------------------------------------|
+| --------------------- | -------------------------------------------------------------------- |
 | Abion                 | https://github.com/abiondevelopment/external-dns-webhook-abion       |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
-| Anexia                | https://github.com/ProbstenHias/external-dns-anexia-webhook          |
+| Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
+| deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
@@ -107,8 +106,10 @@ Known providers using webhooks:
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
 | RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
+| Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
+| Yandex Cloud          | https://github.com/ismailbaskin/external-dns-yandex-webhook/         |
 
 ## Status of in-tree providers
 
@@ -116,7 +117,7 @@ ExternalDNS supports multiple DNS providers which have been implemented by the [
 Maintaining all of those in a central repository is a challenge, which introduces lots of toil and potential risks.
 
 This mean that `external-dns` has begun the process to move providers out of tree. See #4347 for more details.
-Those who are interested can create a webhook provider based on an *in-tree* provider and after submit a PR to reference it here.
+Those who are interested can create a webhook provider based on an _in-tree_ provider and after submit a PR to reference it here.
 
 We define the following stability levels for providers:
 
@@ -126,35 +127,32 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers |
-| -------- | ------ | ----------- |
-| Google Cloud DNS | Stable | |
-| AWS Route 53 | Stable | |
-| AWS Cloud Map | Beta | |
-| Akamai Edge DNS | Beta | |
-| AzureDNS | Stable | |
-| Civo | Alpha | @alejandrojnm |
-| CloudFlare | Beta | |
-| DigitalOcean | Alpha | |
-| DNSimple | Alpha | |
-| OpenStack Designate | Alpha | |
-| PowerDNS | Alpha | |
-| CoreDNS | Alpha | |
-| Exoscale | Alpha | |
-| Oracle Cloud Infrastructure DNS | Alpha | |
-| Linode DNS | Alpha | |
-| RFC2136 | Alpha | |
-| NS1 | Alpha | |
-| TransIP | Alpha | |
-| OVH | Alpha | |
-| Scaleway DNS | Alpha | @Sh4d1 |
-| UltraDNS | Alpha | |
-| GoDaddy | Alpha | |
-| Gandi | Alpha | @packi |
-| IBMCloud | Alpha | @hughhuangzh |
-| TencentCloud | Alpha | @Hyzhou |
-| Plural | Alpha | @michaeljguarino |
-| Pi-hole | Alpha | @tinyzimmer |
+| Provider                        | Status | Maintainers      |
+|---------------------------------| ------ |------------------|
+| Google Cloud DNS                | Stable |                  |
+| AWS Route 53                    | Stable |                  |
+| AWS Cloud Map                   | Beta   |                  |
+| Akamai Edge DNS                 | Beta   |                  |
+| AzureDNS                        | Stable |                  |
+| Civo                            | Alpha  | @alejandrojnm    |
+| CloudFlare                      | Beta   |                  |
+| DigitalOcean                    | Alpha  |                  |
+| DNSimple                        | Alpha  |                  |
+| PowerDNS                        | Alpha  |                  |
+| CoreDNS                         | Alpha  |                  |
+| Exoscale                        | Alpha  |                  |
+| Oracle Cloud Infrastructure DNS | Alpha  |                  |
+| Linode DNS                      | Alpha  |                  |
+| RFC2136                         | Alpha  |                  |
+| NS1                             | Alpha  |                  |
+| TransIP                         | Alpha  |                  |
+| OVHcloud                        | Beta   | @rbeuque74       |
+| Scaleway DNS                    | Alpha  | @Sh4d1           |
+| GoDaddy                         | Alpha  |                  |
+| Gandi                           | Alpha  | @packi           |
+| Plural                          | Alpha  | @michaeljguarino |
+| Pi-hole                         | Alpha  | @tinyzimmer      |
+| Alibaba Cloud DNS               | Alpha  |                  |
 
 ## Kubernetes version compatibility
 
@@ -198,31 +196,28 @@ The following tutorials are provided:
   - [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
   - [Using the Nginx Ingress Controller](docs/tutorials/gke-nginx.md)
 - [Headless Services](docs/tutorials/hostport.md)
+- [IONOS Cloud](docs/tutorials/ionoscloud.md)
 - [Istio Gateway Source](docs/sources/istio.md)
 - [Linode](docs/tutorials/linode.md)
 - [NS1](docs/tutorials/ns1.md)
 - [NS Record Creation with CRD Source](docs/sources/ns-record.md)
 - [MX Record Creation with CRD Source](docs/sources/mx-record.md)
 - [TXT Record Creation with CRD Source](docs/sources/txt-record.md)
-- [OpenStack Designate](docs/tutorials/designate.md)
 - [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 - [PowerDNS](docs/tutorials/pdns.md)
 - [RFC2136](docs/tutorials/rfc2136.md)
 - [TransIP](docs/tutorials/transip.md)
-- [OVH](docs/tutorials/ovh.md)
+- [OVHcloud](docs/tutorials/ovh.md)
 - [Scaleway](docs/tutorials/scaleway.md)
-- [UltraDNS](docs/tutorials/ultradns.md)
 - [GoDaddy](docs/tutorials/godaddy.md)
 - [Gandi](docs/tutorials/gandi.md)
-- [IBM Cloud](docs/tutorials/ibmcloud.md)
 - [Nodes as source](docs/sources/nodes.md)
-- [TencentCloud](docs/tutorials/tencentcloud.md)
 - [Plural](docs/tutorials/plural.md)
 - [Pi-hole](docs/tutorials/pihole.md)
 
 ### Running Locally
 
-See the [contributor guide](docs/contributing/getting-started.md) for details on compiling
+See the [contributor guide](docs/contributing/dev-guide.md) for details on compiling
 from source.
 
 #### Setup Steps
@@ -246,7 +241,7 @@ Optionally, you can customize the TTL value of the resulting DNS record by using
 kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
-For more details on configuring TTL, see [here](docs/ttl.md).
+For more details on configuring TTL, see [here](docs/advanced/ttl.md).
 
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
@@ -291,7 +286,7 @@ The **tutorials** section contains examples, including Ingress resources, and sh
 
 # Note
 
-If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
+If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts. Changing `--txt-prefix` will result in lost ownership over previously created records.
 
 If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record.
 It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).

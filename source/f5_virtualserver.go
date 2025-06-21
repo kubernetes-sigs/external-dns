@@ -18,11 +18,11 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
@@ -39,6 +39,8 @@ import (
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var f5VirtualServerGVR = schema.GroupVersionResource{
@@ -50,7 +52,7 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
 type f5VirtualServerSource struct {
 	dynamicKubeClient     dynamic.Interface
-	virtualServerInformer informers.GenericInformer
+	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
 	annotationFilter      string
 	namespace             string
@@ -77,13 +79,13 @@ func NewF5VirtualServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
 
 	uc, err := newVSUnstructuredConverter()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to setup unstructured converter")
+		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
 	return &f5VirtualServerSource{
@@ -121,7 +123,7 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 
 	virtualServers, err = vs.filterByAnnotations(virtualServers)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter VirtualServers")
+		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
 
 	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)
@@ -148,17 +150,17 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		if !isVirtualServerReady(virtualServer) {
-			log.Warnf("F5 VirtualServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+		if !hasValidVirtualServerIP(virtualServer) {
+			log.Warnf("F5 VirtualServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				virtualServer.Namespace, virtualServer.Name)
 			continue
 		}
 
 		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
 
-		ttl := getTTLFromAnnotations(virtualServer.Annotations, resource)
+		ttl := annotations.TTLFromAnnotations(virtualServer.Annotations, resource)
 
-		targets := getTargetsFromTargetAnnotation(virtualServer.Annotations)
+		targets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
 		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
 			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
 		}
@@ -208,11 +210,8 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 	filteredList := []*f5.VirtualServer{}
 
 	for _, vs := range virtualServers {
-		// convert the VirtualServer's annotations to an equivalent label selector
-		annotations := labels.Set(vs.Annotations)
-
 		// include VirtualServer if its annotations match the selector
-		if selector.Matches(annotations) {
+		if selector.Matches(labels.Set(vs.Annotations)) {
 			filteredList = append(filteredList, vs)
 		}
 	}
@@ -220,11 +219,7 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 	return filteredList, nil
 }
 
-func isVirtualServerReady(vs *f5.VirtualServer) bool {
-	if strings.ToLower(vs.Status.Status) != "ok" {
-		return false
-	}
-
+func hasValidVirtualServerIP(vs *f5.VirtualServer) bool {
 	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
 	return normalizedAddress != "none" && normalizedAddress != ""
 }

@@ -29,7 +29,7 @@ import (
 func WriteToFile(filename string, content string) error {
 	file, fileErr := os.Create(filename)
 	if fileErr != nil {
-		_ = fmt.Errorf("failed to create file: %v", fileErr)
+		_ = fmt.Errorf("failed to create file: %w", fileErr)
 	}
 	defer file.Close()
 	_, writeErr := file.WriteString(content)

@@ -24,8 +24,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -53,7 +53,7 @@ func providerFilters(client *Route53APIFixtureStub, options ...func(awsProvider 
 		clients:              map[string]Route53API{defaultAWSProfile: client},
 		evaluateTargetHealth: false,
 		dryRun:               false,
-		domainFilter:         endpoint.NewDomainFilter([]string{}),
+		domainFilter:         &endpoint.DomainFilter{},
 		zoneIDFilter:         provider.NewZoneIDFilter([]string{}),
 		zoneTypeFilter:       provider.NewZoneTypeFilter(""),
 		zoneTagFilter:        provider.NewZoneTagFilter([]string{}),

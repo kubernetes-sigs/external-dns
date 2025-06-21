@@ -24,8 +24,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -47,6 +45,19 @@ const (
 	RecordTypeMX = "MX"
 	// RecordTypeNAPTR is a RecordType enum value
 	RecordTypeNAPTR = "NAPTR"
+)
+
+var (
+	KnownRecordTypes = []string{
+		RecordTypeA,
+		RecordTypeAAAA,
+		RecordTypeTXT,
+		RecordTypeSRV,
+		RecordTypeNS,
+		RecordTypePTR,
+		RecordTypeMX,
+		RecordTypeNAPTR,
+	}
 )
 
 // TTL is a structure defining the TTL of a DNS record
@@ -201,9 +212,11 @@ type EndpointKey struct {
 	DNSName       string
 	RecordType    string
 	SetIdentifier string
+	RecordTTL     TTL
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
+// +kubebuilder:object:generate=true
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string `json:"dnsName,omitempty"`
@@ -235,7 +248,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		cleanTargets[idx] = strings.TrimSuffix(target, ".")
 	}
 
-	for _, label := range strings.Split(dnsName, ".") {
+	for label := range strings.SplitSeq(dnsName, ".") {
 		if len(label) > 63 {
 			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
 			return nil
@@ -302,6 +315,19 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 	}
 }
 
+// WithLabel adds or updates a label for the Endpoint.
+//
+// Example usage:
+//
+//	ep.WithLabel("owner", "user123")
+func (e *Endpoint) WithLabel(key, value string) *Endpoint {
+	if e.Labels == nil {
+		e.Labels = NewLabels()
+	}
+	e.Labels[key] = value
+	return e
+}
+
 // Key returns the EndpointKey of the Endpoint.
 func (e *Endpoint) Key() EndpointKey {
 	return EndpointKey{
@@ -336,47 +362,6 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	return filtered
 }
 
-// DNSEndpointSpec defines the desired state of DNSEndpoint
-type DNSEndpointSpec struct {
-	Endpoints []*Endpoint `json:"endpoints,omitempty"`
-}
-
-// DNSEndpointStatus defines the observed state of DNSEndpoint
-type DNSEndpointStatus struct {
-	// The generation observed by the external-dns controller.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// DNSEndpoint is a contract that a user-specified CRD must implement to be used as a source for external-dns.
-// The user-specified CRD should also have the status sub-resource.
-// +k8s:openapi-gen=true
-// +groupName=externaldns.k8s.io
-// +kubebuilder:resource:path=dnsendpoints
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/2007"
-// +versionName=v1alpha1
-
-type DNSEndpoint struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   DNSEndpointSpec   `json:"spec,omitempty"`
-	Status DNSEndpointStatus `json:"status,omitempty"`
-}
-
-// +kubebuilder:object:root=true
-// DNSEndpointList is a list of DNSEndpoint objects
-type DNSEndpointList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []DNSEndpoint `json:"items"`
-}
-
 // RemoveDuplicates returns a slice holding the unique endpoints.
 // This function doesn't contemplate the Targets of an Endpoint
 // as part of the primary Key
@@ -398,7 +383,7 @@ func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
-// Check endpoint if is it properly formatted according to RFC standards
+// CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeMX:

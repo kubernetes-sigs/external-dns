@@ -40,11 +40,11 @@ const (
 	ns1Delete = "DELETE"
 	// ns1Update is a ChangeAction enum value
 	ns1Update = "UPDATE"
-	// ns1DefaultTTL is the default ttl for ttls that are not set
-	ns1DefaultTTL = 10
+	// defaultTTL is the default ttl for ttls that are not set
+	defaultTTL = 10
 )
 
-// NS1DomainClient is a subset of the NS1 API the the provider uses, to ease testing
+// NS1DomainClient is a subset of the NS1 API the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
 	DeleteRecord(zone string, domain string, t string) (*http.Response, error)
@@ -85,7 +85,7 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
-	DomainFilter  endpoint.DomainFilter
+	DomainFilter  *endpoint.DomainFilter
 	ZoneIDFilter  provider.ZoneIDFilter
 	NS1Endpoint   string
 	NS1IgnoreSSL  bool
@@ -97,7 +97,7 @@ type NS1Config struct {
 type NS1Provider struct {
 	provider.BaseProvider
 	client        NS1DomainClient
-	domainFilter  endpoint.DomainFilter
+	domainFilter  *endpoint.DomainFilter
 	zoneIDFilter  provider.ZoneIDFilter
 	dryRun        bool
 	minTTLSeconds int
@@ -136,13 +136,12 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 
 	apiClient := api.NewClient(client, clientArgs...)
 
-	provider := &NS1Provider{
+	return &NS1Provider{
 		client:        NS1DomainService{apiClient},
 		domainFilter:  config.DomainFilter,
 		zoneIDFilter:  config.ZoneIDFilter,
 		minTTLSeconds: config.MinTTLSeconds,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Records returns the endpoints this provider knows about
@@ -184,7 +183,7 @@ func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Re
 		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
 	}
 	// set default ttl, but respect minTTLSeconds
-	ttl := ns1DefaultTTL
+	ttl := defaultTTL
 	if p.minTTLSeconds > ttl {
 		ttl = p.minTTLSeconds
 	}
@@ -257,7 +256,7 @@ func (p *NS1Provider) zonesFiltered() ([]*dns.Zone, error) {
 		return nil, err
 	}
 
-	toReturn := []*dns.Zone{}
+	var toReturn []*dns.Zone
 
 	for _, z := range zones {
 		if p.domainFilter.Match(z.Zone) && p.zoneIDFilter.Match(z.ID) {
@@ -292,10 +291,10 @@ func (p *NS1Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 func newNS1Changes(action string, endpoints []*endpoint.Endpoint) []*ns1Change {
 	changes := make([]*ns1Change, 0, len(endpoints))
 
-	for _, endpoint := range endpoints {
+	for _, ep := range endpoints {
 		changes = append(changes, &ns1Change{
 			Action:   action,
-			Endpoint: endpoint,
+			Endpoint: ep,
 		},
 		)
 	}

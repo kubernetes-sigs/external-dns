@@ -60,8 +60,9 @@ func TestMustRegister(t *testing.T) {
 				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "test_gauge_3"}),
 				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_3"}),
 				NewCounterVecWithOpts(prometheus.CounterOpts{Name: "test_counter_vec_3"}, []string{"label"}),
+				NewGaugedVectorOpts(prometheus.GaugeOpts{Name: "test_gauge_v_3"}, []string{"label"}),
 			},
-			expected: 3,
+			expected: 4,
 		},
 		{
 			name: "unsupported metric",
@@ -84,13 +85,13 @@ func TestMustRegister(t *testing.T) {
 }
 
 func TestUnsupportedMetricWarning(t *testing.T) {
-	buf := testutils.LogsToBuffer(log.WarnLevel, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	registry := NewMetricsRegister()
 	mockUnsupported := &MockMetric{FQDN: "unsupported_metric"}
 	registry.MustRegister(mockUnsupported)
 	assert.NotContains(t, registry.mName, "unsupported_metric")
 
-	assert.Contains(t, buf.String(), "Unsupported metric type: *metrics.MockMetric")
+	testutils.TestHelperLogContains("Unsupported metric type: *metrics.MockMetric", hook, t)
 }
 
 func TestNewMetricsRegister(t *testing.T) {
