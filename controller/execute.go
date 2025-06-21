@@ -145,7 +145,7 @@ func Execute() {
 func buildProvider(
 	ctx context.Context,
 	cfg *externaldns.Config,
-	domainFilter endpoint.DomainFilter,
+	domainFilter *endpoint.DomainFilter,
 ) (provider.Provider, error) {
 	var p provider.Provider
 	var err error
@@ -339,7 +339,7 @@ func buildProvider(
 	return p, err
 }
 
-func buildController(cfg *externaldns.Config, src source.Source, p provider.Provider, filter endpoint.DomainFilter) (*Controller, error) {
+func buildController(cfg *externaldns.Config, src source.Source, p provider.Provider, filter *endpoint.DomainFilter) (*Controller, error) {
 	policy, ok := plan.Policies[cfg.Policy]
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
@@ -429,7 +429,7 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 }
 
 // RegexDomainFilter overrides DomainFilter
-func createDomainFilter(cfg *externaldns.Config) endpoint.DomainFilter {
+func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
 	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
 		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
 	} else {

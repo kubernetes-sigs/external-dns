@@ -621,7 +621,7 @@ func TestOvhRecordString(t *testing.T) {
 }
 
 func TestNewOvhProvider(t *testing.T) {
-	var domainFilter endpoint.DomainFilter
+	domainFilter := &endpoint.DomainFilter{}
 	_, err := NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
 	td.CmpError(t, err)
 

@@ -44,7 +44,7 @@ type PiholeConfig struct {
 	// Disable verification of TLS certificates.
 	TLSInsecureSkipVerify bool
 	// A filter to apply when looking up and applying records.
-	DomainFilter endpoint.DomainFilter
+	DomainFilter *endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
 	DryRun bool
 	// PiHole API version =<5 or >=6, default is 5

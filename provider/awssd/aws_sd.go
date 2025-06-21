@@ -76,7 +76,7 @@ type AWSSDProvider struct {
 	client AWSSDClient
 	dryRun bool
 	// only consider namespaces ending in this suffix
-	namespaceFilter endpoint.DomainFilter
+	namespaceFilter *endpoint.DomainFilter
 	// filter namespace by type (private or public)
 	namespaceTypeFilter sdtypes.NamespaceFilter
 	// enables service without instances cleanup
@@ -88,7 +88,7 @@ type AWSSDProvider struct {
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, tags map[string]string, client AWSSDClient) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter *endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, tags map[string]string, client AWSSDClient) (*AWSSDProvider, error) {
 	p := &AWSSDProvider{
 		client:              client,
 		dryRun:              dryRun,
