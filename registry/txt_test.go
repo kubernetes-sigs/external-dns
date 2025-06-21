@@ -1623,18 +1623,6 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 	}
 }
 
-func TestNewTXTRegistryWithNewFormatOnly(t *testing.T) {
-	p := inmemory.NewInMemoryProvider()
-
-	buf := testutils.LogsToBuffer(log.DebugLevel, t)
-	_, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
-	require.NoError(t, err)
-	assert.NotContains(t, buf.String(), "--txt-new-format-only is left for backward compatibility")
-
-	_, err = NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
-	require.NoError(t, err)
-}
-
 func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	testCases := []struct {
@@ -1753,7 +1741,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
 	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)

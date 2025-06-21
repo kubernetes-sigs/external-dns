@@ -145,7 +145,6 @@ type Config struct {
 	TXTSuffix                                     string
 	TXTEncryptEnabled                             bool
 	TXTEncryptAESKey                              string `secure:"yes"`
-	TXTNewFormatOnly                              bool
 	Interval                                      time.Duration
 	MinEventSyncInterval                          time.Duration
 	Once                                          bool
@@ -365,7 +364,6 @@ var defaultConfig = &Config{
 	TXTCacheInterval:             0,
 	TXTEncryptAESKey:             "",
 	TXTEncryptEnabled:            false,
-	TXTNewFormatOnly:             false,
 	TXTOwnerID:                   "default",
 	TXTPrefix:                    "",
 	TXTSuffix:                    "",

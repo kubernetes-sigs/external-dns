@@ -9,7 +9,7 @@ If you plan to manage apex domains with external-dns whilst using a txt registry
 
 ## Record Format Options
 
-### For version `v0.16.2+`
+### For version `v0.18+`
 
 The TXT registry supports single format for storing DNS record metadata:
 
