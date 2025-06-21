@@ -47,7 +47,7 @@ linters:
       exclusions:
         - "DomainFilter.UnmarshalJSON"
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
-      max-complexity: 52
+      max-complexity: 51
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
       # Default: false

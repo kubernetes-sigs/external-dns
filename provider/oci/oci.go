@@ -63,7 +63,7 @@ type OCIProvider struct {
 	client ociDNSClient
 	cfg    OCIConfig
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
 	zoneScope    string
 	zoneCache    *zoneCache
@@ -93,7 +93,7 @@ func LoadOCIConfig(path string) (*OCIConfig, error) {
 }
 
 // NewOCIProvider initializes a new OCI DNS based Provider.
-func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
+func NewOCIProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
 	var err error
 	var configProvider common.ConfigurationProvider

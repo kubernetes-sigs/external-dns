@@ -213,6 +213,7 @@ type Config struct {
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
+	ForceDefaultTargets                           bool
 }
 
 var defaultConfig = &Config{
@@ -375,6 +376,7 @@ var defaultConfig = &Config{
 	WebhookProviderWriteTimeout:  10 * time.Second,
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
+	ForceDefaultTargets:          false,
 }
 
 // NewConfig returns new Config object
@@ -436,7 +438,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 	app.Flag("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs").BoolVar(&cfg.ResolveServiceLoadBalancerHostname)
-	app.Flag("listen-endpoint-events", "Trigger a reconcile on changes to Endpoints, for Service source (default: false)").BoolVar(&cfg.ListenEndpointEvents)
+	app.Flag("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)").BoolVar(&cfg.ListenEndpointEvents)
 
 	// Flags related to cloud foundry
 	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
@@ -458,6 +460,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
+	app.Flag("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)").Default(strconv.FormatBool(defaultConfig.ForceDefaultTargets)).BoolVar(&cfg.ForceDefaultTargets)
 	app.Flag("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)").Default().StringsVar(&cfg.ExcludeDNSRecordTypes)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 	app.Flag("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)").Default(strconv.FormatBool(defaultConfig.ExcludeUnschedulable)).BoolVar(&cfg.ExcludeUnschedulable)

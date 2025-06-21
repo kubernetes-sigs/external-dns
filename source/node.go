@@ -38,9 +38,11 @@ import (
 const warningMsg = "The default behavior of exposing internal IPv6 addresses will change in the next minor version. Use --no-expose-internal-ipv6 flag to opt-in to the new behavior."
 
 type nodeSource struct {
-	client               kubernetes.Interface
-	annotationFilter     string
-	fqdnTemplate         *template.Template
+	client                kubernetes.Interface
+	annotationFilter      string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
+
 	nodeInformer         coreinformers.NodeInformer
 	labelSelector        labels.Selector
 	excludeUnschedulable bool
@@ -48,7 +50,14 @@ type nodeSource struct {
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, exposeInternalIPv6, excludeUnschedulable bool) (Source, error) {
+func NewNodeSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	annotationFilter, fqdnTemplate string,
+	labelSelector labels.Selector,
+	exposeInternalIPv6,
+	excludeUnschedulable bool,
+	combineFQDNAnnotation bool) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -76,18 +85,19 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	}
 
 	return &nodeSource{
-		client:               kubeClient,
-		annotationFilter:     annotationFilter,
-		fqdnTemplate:         tmpl,
-		nodeInformer:         nodeInformer,
-		labelSelector:        labelSelector,
-		excludeUnschedulable: excludeUnschedulable,
-		exposeInternalIPv6:   exposeInternalIPv6,
+		client:                kubeClient,
+		annotationFilter:      annotationFilter,
+		fqdnTemplate:          tmpl,
+		combineFQDNAnnotation: combineFQDNAnnotation,
+		nodeInformer:          nodeInformer,
+		labelSelector:         labelSelector,
+		excludeUnschedulable:  excludeUnschedulable,
+		exposeInternalIPv6:    exposeInternalIPv6,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	nodes, err := ns.nodeInformer.Lister().List(ns.labelSelector)
 	if err != nil {
 		return nil, err
@@ -127,21 +137,9 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			}
 		}
 
-		dnsNames := make(map[string]bool)
-
-		if ns.fqdnTemplate != nil {
-			hostnames, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
-			if err != nil {
-				return nil, err
-			}
-
-			for _, name := range hostnames {
-				dnsNames[name] = true
-				log.Debugf("applied template for %s, converting to %s", node.Name, name)
-			}
-		} else {
-			dnsNames[node.Name] = true
-			log.Debugf("not applying template for %s", node.Name)
+		dnsNames, err := ns.collectDNSNames(node)
+		if err != nil {
+			return nil, err
 		}
 
 		for dns := range dnsNames {
@@ -232,4 +230,37 @@ func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) 
 	}
 
 	return filteredList, nil
+}
+
+// collectDNSNames returns a set of DNS names associated with the given Kubernetes Node.
+// If an FQDN template is configured, it renders the template using the Node object
+// to generate one or more DNS names.
+// If combineFQDNAnnotation is enabled, the Node's name is also included alongside
+// the templated names. If no FQDN template is provided, the result will include only
+// the Node's name.
+//
+// Returns an error if template rendering fails.
+func (ns *nodeSource) collectDNSNames(node *v1.Node) (map[string]bool, error) {
+	dnsNames := make(map[string]bool)
+	// If no FQDN template is configured, fallback to the node name
+	if ns.fqdnTemplate == nil {
+		dnsNames[node.Name] = true
+		return dnsNames, nil
+	}
+
+	names, err := fqdn.ExecTemplate(ns.fqdnTemplate, node)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, name := range names {
+		dnsNames[name] = true
+		log.Debugf("applied template for %s, converting to %s", node.Name, name)
+	}
+
+	if ns.combineFQDNAnnotation {
+		dnsNames[node.Name] = true
+	}
+
+	return dnsNames, nil
 }

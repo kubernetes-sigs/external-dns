@@ -95,6 +95,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				labels.Everything(),
 				true,
 				true,
+				false,
 			)
 
 			if ti.expectError {
@@ -440,6 +441,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				labelSelector,
 				tc.exposeInternalIPv6,
 				tc.excludeUnschedulable,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -557,6 +559,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			labelSelector,
 			tc.exposeInternalIPv6,
 			tc.excludeUnschedulable,
+			false,
 		)
 		require.NoError(t, err)
 
@@ -604,6 +607,7 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 		labels.Everything(),
 		false,
 		true,
+		false,
 	)
 	require.NoError(t, err)
 

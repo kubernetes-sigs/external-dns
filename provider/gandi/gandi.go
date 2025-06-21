@@ -47,11 +47,11 @@ type GandiProvider struct {
 	provider.BaseProvider
 	LiveDNSClient LiveDNSClientAdapter
 	DomainClient  DomainClientAdapter
-	domainFilter  endpoint.DomainFilter
+	domainFilter  *endpoint.DomainFilter
 	DryRun        bool
 }
 
-func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
+func NewGandiProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
 	key, ok_key := os.LookupEnv("GANDI_KEY")
 	pat, ok_pat := os.LookupEnv("GANDI_PAT")
 	if !ok_key && !ok_pat {

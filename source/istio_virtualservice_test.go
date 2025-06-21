@@ -2035,7 +2035,7 @@ func testGatewaySelectorMatchesService(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			require.Equal(t, ti.expected, gatewaySelectorMatchesServiceSelector(ti.gwSelector, ti.lbSelector))
+			require.Equal(t, ti.expected, MatchesServiceSelector(ti.gwSelector, ti.lbSelector))
 		})
 	}
 }

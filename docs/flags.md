@@ -11,7 +11,7 @@
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
-| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to Endpoints, for Service source (default: false) |
+| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to EndpointSlices, for Service source (default: false) |
 | `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
 | `--cf-username=""` | The username to log into the cloud foundry API |
 | `--cf-password=""` | The password to log into the cloud foundry API |
@@ -25,6 +25,7 @@
 | `--crd-source-apiversion="externaldns.k8s.io/v1alpha1"` | API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source |
 | `--crd-source-kind="DNSEndpoint"` | Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion |
 | `--default-targets=DEFAULT-TARGETS` | Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional) |
+| `--[no-]force-default-targets` | Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state) |
 | `--exclude-record-types=EXCLUDE-RECORD-TYPES` | Record types to exclude from management; specify multiple times to exclude many; (optional) |
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |

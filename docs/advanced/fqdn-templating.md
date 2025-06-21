@@ -33,33 +33,33 @@ The template uses the following data from the source object (e.g., a `Service` o
 
 <!-- TODO: generate from code -->
 
-| Source                 | Description                                                     | FQDN Supported |
-|:-----------------------|:----------------------------------------------------------------|:--------------:|
-| `ambassador-host`      | Queries Ambassador Host resources for endpoints.                |       ❌        |
-| `cloudfoundry`         | Queries Cloud Foundry resources for endpoints.                  |       ❌        |
-| `connector`            | Queries a custom connector source for endpoints.                |       ❌        |
-| `contour-httpproxy`    | Queries Contour HTTPProxy resources for endpoints.              |       ✅        |
-| `crd`                  | Queries Custom Resource Definitions (CRDs) for endpoints.       |       ❌        |
-| `empty`                | Uses an empty source, typically for testing or no-op scenarios. |       ❌        |
-| `f5-transportserver`   | Queries F5 TransportServer resources for endpoints.             |       ❌        |
-| `f5-virtualserver`     | Queries F5 VirtualServer resources for endpoints.               |       ❌        |
-| `fake`                 | Uses a fake source for testing purposes.                        |       ❌        |
-| `gateway-grpcroute`    | Queries GRPCRoute resources from the Gateway API.               |       ✅        |
-| `gateway-httproute`    | Queries HTTPRoute resources from the Gateway API.               |       ✅        |
-| `gateway-tcproute`     | Queries TCPRoute resources from the Gateway API.                |       ✅        |
-| `gateway-tlsroute`     | Queries TLSRoute resources from the Gateway API.                |       ❌        |
-| `gateway-udproute`     | Queries UDPRoute resources from the Gateway API.                |       ❌        |
-| `gloo-proxy`           | Queries Gloo Proxy resources for endpoints.                     |       ❌        |
-| `ingress`              | Queries Kubernetes Ingress resources for endpoints.             |       ✅        |
-| `istio-gateway`        | Queries Istio Gateway resources for endpoints.                  |       ✅        |
-| `istio-virtualservice` | Queries Istio VirtualService resources for endpoints.           |       ✅        |
-| `kong-tcpingress`      | Queries Kong TCPIngress resources for endpoints.                |       ❌        |
-| `node`                 | Queries Kubernetes Node resources for endpoints.                |       ✅        |
-| `openshift-route`      | Queries OpenShift Route resources for endpoints.                |       ✅        |
-| `pod`                  | Queries Kubernetes Pod resources for endpoints.                 |       ❌        |
-| `service`              | Queries Kubernetes Service resources for endpoints.             |       ✅        |
-| `skipper-routegroup`   | Queries Skipper RouteGroup resources for endpoints.             |       ✅        |
-| `traefik-proxy`        | Queries Traefik Proxy resources for endpoints.                  |       ❌        |
+| Source                 | Description                                                     | FQDN Supported | FQDN Combine |
+|:-----------------------|:----------------------------------------------------------------|:--------------:|:------------:|
+| `ambassador-host`      | Queries Ambassador Host resources for endpoints.                |       ❌        |      ❌       |
+| `cloudfoundry`         | Queries Cloud Foundry resources for endpoints.                  |       ❌        |      ❌       |
+| `connector`            | Queries a custom connector source for endpoints.                |       ❌        |      ❌       |
+| `contour-httpproxy`    | Queries Contour HTTPProxy resources for endpoints.              |       ✅        |      ✅       |
+| `crd`                  | Queries Custom Resource Definitions (CRDs) for endpoints.       |       ❌        |      ❌       |
+| `empty`                | Uses an empty source, typically for testing or no-op scenarios. |       ❌        |      ❌       |
+| `f5-transportserver`   | Queries F5 TransportServer resources for endpoints.             |       ❌        |      ❌       |
+| `f5-virtualserver`     | Queries F5 VirtualServer resources for endpoints.               |       ❌        |      ❌       |
+| `fake`                 | Uses a fake source for testing purposes.                        |       ❌        |      ❌       |
+| `gateway-grpcroute`    | Queries GRPCRoute resources from the Gateway API.               |       ✅        |      ❌       |
+| `gateway-httproute`    | Queries HTTPRoute resources from the Gateway API.               |       ✅        |      ❌       |
+| `gateway-tcproute`     | Queries TCPRoute resources from the Gateway API.                |       ✅        |      ❌       |
+| `gateway-tlsroute`     | Queries TLSRoute resources from the Gateway API.                |       ❌        |      ❌       |
+| `gateway-udproute`     | Queries UDPRoute resources from the Gateway API.                |       ❌        |      ❌       |
+| `gloo-proxy`           | Queries Gloo Proxy resources for endpoints.                     |       ❌        |      ❌       |
+| `ingress`              | Queries Kubernetes Ingress resources for endpoints.             |       ✅        |      ✅       |
+| `istio-gateway`        | Queries Istio Gateway resources for endpoints.                  |       ✅        |      ✅       |
+| `istio-virtualservice` | Queries Istio VirtualService resources for endpoints.           |       ✅        |      ✅       |
+| `kong-tcpingress`      | Queries Kong TCPIngress resources for endpoints.                |       ❌        |      ❌       |
+| `node`                 | Queries Kubernetes Node resources for endpoints.                |       ✅        |      ✅       |
+| `openshift-route`      | Queries OpenShift Route resources for endpoints.                |       ✅        |      ✅       |
+| `pod`                  | Queries Kubernetes Pod resources for endpoints.                 |       ✅        |      ✅       |
+| `service`              | Queries Kubernetes Service resources for endpoints.             |       ✅        |      ✅       |
+| `skipper-routegroup`   | Queries Skipper RouteGroup resources for endpoints.             |       ✅        |      ✅       |
+| `traefik-proxy`        | Queries Traefik IngressRoute resources for endpoints.                  |       ❌        |      ❌       |
 
 ## Custom Functions
 

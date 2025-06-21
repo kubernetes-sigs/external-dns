@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/signal"
 	"reflect"
@@ -133,7 +134,7 @@ func TestCreateDomainFilter(t *testing.T) {
 	tests := []struct {
 		name                 string
 		cfg                  *externaldns.Config
-		expectedDomainFilter endpoint.DomainFilter
+		expectedDomainFilter *endpoint.DomainFilter
 		isConfigured         bool
 	}{
 		{
@@ -322,6 +323,156 @@ func TestConfigureLogger(t *testing.T) {
 				} else {
 					assert.IsType(t, &log.TextFormatter{}, log.StandardLogger().Formatter)
 				}
+			}
+		})
+	}
+}
+
+func TestBuildProvider(t *testing.T) {
+	tests := []struct {
+		name          string
+		cfg           *externaldns.Config
+		expectedType  string
+		expectedError string
+	}{
+		{
+			name: "aws provider",
+			cfg: &externaldns.Config{
+				Provider: "aws",
+			},
+			expectedType: "*aws.AWSProvider",
+		},
+		{
+			name: "rfc2136 provider",
+			cfg: &externaldns.Config{
+				Provider:             "rfc2136",
+				RFC2136TSIGSecretAlg: "hmac-sha256",
+			},
+			expectedType: "*rfc2136.rfc2136Provider",
+		},
+		{
+			name: "gandi provider",
+			cfg: &externaldns.Config{
+				Provider: "gandi",
+			},
+			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
+		},
+		{
+			name: "inmemory provider",
+			cfg: &externaldns.Config{
+				Provider: "inmemory",
+			},
+			expectedType: "*inmemory.InMemoryProvider",
+		},
+		{
+			name: "inmemory cached provider",
+			cfg: &externaldns.Config{
+				Provider:          "inmemory",
+				ProviderCacheTime: 10 * time.Millisecond,
+			},
+			expectedType: "*provider.CachedProvider",
+		},
+		{
+			name: "coredns provider",
+			cfg: &externaldns.Config{
+				Provider: "coredns",
+			},
+			expectedType: "coredns.coreDNSProvider",
+		},
+		{
+			name: "pihole provider",
+			cfg: &externaldns.Config{
+				Provider:         "pihole",
+				PiholeApiVersion: "6",
+				PiholeServer:     "http://localhost:8080",
+			},
+			expectedType: "*pihole.PiholeProvider",
+		},
+		{
+			name: "dnsimple provider",
+			cfg: &externaldns.Config{
+				Provider: "dnsimple",
+			},
+			expectedError: "no dnsimple oauth token provided",
+		},
+		{
+			name: "unknown provider",
+			cfg: &externaldns.Config{
+				Provider: "unknown",
+			},
+			expectedError: "unknown dns provider: unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
+
+			p, err := buildProvider(t.Context(), tt.cfg, domainFilter)
+
+			if tt.expectedError != "" {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, p)
+				assert.Equal(t, tt.expectedType, reflect.TypeOf(p).String())
+			}
+		})
+	}
+}
+
+func TestBuildSource(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}))
+	defer svr.Close()
+
+	tests := []struct {
+		name          string
+		cfg           *externaldns.Config
+		expectedError bool
+	}{
+		{
+			name: "Valid configuration with sources",
+			cfg: &externaldns.Config{
+				APIServerURL:   svr.URL,
+				Sources:        []string{"fake"},
+				RequestTimeout: 6 * time.Millisecond,
+			},
+			expectedError: false,
+		},
+		{
+			name: "Empty sources configuration",
+			cfg: &externaldns.Config{
+				APIServerURL:   svr.URL,
+				Sources:        []string{},
+				RequestTimeout: 6 * time.Millisecond,
+			},
+			expectedError: false,
+		},
+		{
+			name: "Update events enabled",
+			cfg: &externaldns.Config{
+				KubeConfig:   "path-to-kubeconfig-not-exists",
+				APIServerURL: svr.URL,
+				Sources:      []string{"ingress"},
+				UpdateEvents: true,
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src, err := buildSource(t.Context(), tt.cfg)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Nil(t, src)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, src)
 			}
 		})
 	}

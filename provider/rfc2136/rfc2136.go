@@ -68,7 +68,7 @@ type rfc2136Provider struct {
 	krb5Realm    string
 
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	dryRun       bool
 	actions      rfc2136Actions
 
@@ -110,7 +110,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR bool, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, createPTR bool, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
