@@ -235,10 +235,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		}
 
 		for _, record := range records {
-			switch *record.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
+			if *record.Type != "A" && *record.Type != "CNAME" && *record.Type != "TXT" {
 				continue
 			}
 
