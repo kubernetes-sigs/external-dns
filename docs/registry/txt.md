@@ -17,19 +17,19 @@ The TXT registry supports single format for storing DNS record metadata:
 
 The TXT registry would try to guarantee a consistency in between providers and sources, if provider supports the behaviour.
 
-If you are dealing with APEX domains, example `example.com` and TXT records are failing to be created for managed record types specified by `--managed-record-types`, consider following options:
+If you are dealing with APEX domains, like `example.com` and TXT records are failing to be created for managed record types specified by `--managed-record-types`, consider following options:
 
 1. TXT record with prefix based on requirements. Example `--txt-prefix="%{record_type}-abc-"` or `--txt-prefix="%{record_type}.abc-"`
 2. TXT record with suffix based on requirements. Example `--txt-suffix="-abc-%{record_type}"` or `--txt-suffix="-abc.%{record_type}."`
 
-Example if configured `--txt-prefix="%{record_type}-abc-"` for apex domain `ex.com` the expected result is
+If configured `--txt-prefix="%{record_type}-abc-"` for apex domain `ex.com` the expected result is
 
 |              Name              |  TYPE   |
 |:------------------------------:|:-------:|
 | `cname-a-abc-nginx-v2.ex.com.` |  `TXT`  |
 |       `nginx-v2.ex.com.`       | `CNAME` |
 
-And if configured `--txt-suffix="-abc.%{record_type}"` for apex domain `ex.com` the expected result is
+If configured `--txt-suffix="-abc.%{record_type}"` for apex domain `ex.com` the expected result is
 
 |              Name              |  TYPE   |
 |:------------------------------:|:-------:|
