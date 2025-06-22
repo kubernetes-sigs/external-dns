@@ -357,6 +357,7 @@ func buildController(cfg *externaldns.Config, src source.Source, p provider.Prov
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
 	}, nil
 }
 

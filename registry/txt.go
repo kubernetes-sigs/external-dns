@@ -253,6 +253,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		if txt != nil {
 			txt.WithSetIdentifier(r.SetIdentifier)
 			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+			if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+				r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+			}
 			txt.ProviderSpecific = r.ProviderSpecific
 			endpoints = append(endpoints, txt)
 		}
@@ -268,6 +271,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+		if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		}
 		txtNew.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txtNew)
 	}
@@ -282,6 +288,12 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
+	}
+
+	if im.isMigrationEnabled {
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.UpdateOld)...)
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.UpdateNew)...)
+		filteredChanges.Delete = append(filteredChanges.Delete, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.Delete)...)
 	}
 
 	for _, r := range filteredChanges.Create {
