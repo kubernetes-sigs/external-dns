@@ -363,7 +363,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
-
 	}
 
 	// make sure TXT records are consistently updated as well
