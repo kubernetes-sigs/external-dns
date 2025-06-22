@@ -112,9 +112,7 @@ var recordTypeCustomHostnameSupported = map[string]bool{
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
-	UserDetails(ctx context.Context) (cloudflare.User, error)
 	ZoneIDByName(zoneName string) (string, error)
-	ListZones(ctx context.Context, zoneID ...string) ([]cloudflare.Zone, error)
 	ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error)
 	ZoneDetails(ctx context.Context, zoneID string) (cloudflare.Zone, error)
 	ListDNSRecords(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDNSRecordsParams) ([]cloudflare.DNSRecord, *cloudflare.ResultInfo, error)
@@ -131,14 +129,6 @@ type cloudFlareDNS interface {
 
 type zoneService struct {
 	service *cloudflare.API
-}
-
-func (z zoneService) UserDetails(ctx context.Context) (cloudflare.User, error) {
-	return z.service.UserDetails(ctx)
-}
-
-func (z zoneService) ListZones(ctx context.Context, zoneID ...string) ([]cloudflare.Zone, error) {
-	return z.service.ListZones(ctx, zoneID...)
 }
 
 func (z zoneService) ZoneIDByName(zoneName string) (string, error) {

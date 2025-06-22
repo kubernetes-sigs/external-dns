@@ -47,7 +47,6 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	User                  cloudflare.User
 	Zones                 map[string]string
 	Records               map[string]map[string]cloudflare.DNSRecord
 	Actions               []MockAction
@@ -88,7 +87,6 @@ var ExampleDomain = []cloudflare.DNSRecord{
 
 func NewMockCloudFlareClient() *mockCloudFlareClient {
 	return &mockCloudFlareClient{
-		User: cloudflare.User{ID: "xxxxxxxxxxxxxxxxxxx"},
 		Zones: map[string]string{
 			"001": "bar.com",
 			"002": "foo.com",
@@ -285,10 +283,6 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
-func (m *mockCloudFlareClient) UserDetails(ctx context.Context) (cloudflare.User, error) {
-	return m.User, nil
-}
-
 func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflare.CustomHostname) ([]cloudflare.CustomHostname, cloudflare.ResultInfo, error) {
 	var err error = nil
 	perPage := 50 // cloudflare-go v0 API hardcoded
@@ -370,23 +364,6 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	}
 
 	return "", errors.New("Unknown zone: " + zoneName)
-}
-
-func (m *mockCloudFlareClient) ListZones(ctx context.Context, zoneID ...string) ([]cloudflare.Zone, error) {
-	if m.listZonesError != nil {
-		return nil, m.listZonesError
-	}
-
-	result := []cloudflare.Zone{}
-
-	for zoneID, zoneName := range m.Zones {
-		result = append(result, cloudflare.Zone{
-			ID:   zoneID,
-			Name: zoneName,
-		})
-	}
-
-	return result, nil
 }
 
 func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
