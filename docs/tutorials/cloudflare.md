@@ -128,6 +128,7 @@ spec:
             - --provider=cloudflare
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+            - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
             - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
          env:
@@ -205,6 +206,7 @@ spec:
             - --provider=cloudflare
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+            - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
             - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
           env:
@@ -303,13 +305,19 @@ kubectl delete -f externaldns.yaml
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
 
-## Setting cloudflare-region-key to configure regional services
+## Setting cloudlfare regional services
 
-Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can restrict which data centers can decrypt and serve HTTPS traffic.
+With Cloudflare regional services you can restrict which data centers can decrypt and serve HTTPS traffic.
+
+Configuration of Cloudflare Regional Services is enabled by the `--cloudflare-regional-services` flag.
+A default region can be defined using the `--cloudflare-region-key` flag.
+
+Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on your ingress, you can specify the region for that record.
+
+An empty string will result in no regional hostname configured.
 
 **Accepted values for region key include:**
 
-- `earth` (default): All data centers (global)
 - `eu`: European Union data centers only
 - `us`: United States data centers only
 - `ap`: Asia-Pacific data centers only
@@ -321,13 +329,10 @@ Using the `external-dns.alpha.kubernetes.io/cloudflare-region-key` annotation on
 - `br`: Brazil data centers only
 - `za`: South Africa data centers only
 - `ae`: United Arab Emirates data centers only
-- `global`: Alias for `earth`
 
 For the most up-to-date list and details, see the [Cloudflare Regional Services documentation](https://developers.cloudflare.com/data-localization/regional-services/get-started/).
 
 Currently, requires SuperAdmin or Admin role.
-
-If not set the value will default to `global`.
 
 ## Setting cloudflare-custom-hostname
 
