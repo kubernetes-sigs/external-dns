@@ -206,10 +206,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				return nil, err
 			}
 			for _, record := range records.Data {
-				switch record.Type {
-				case "A", "CNAME", "TXT":
-					break
-				default:
+				if record.Type != endpoint.RecordTypeA && record.Type != endpoint.RecordTypeCNAME && record.Type != endpoint.RecordTypeTXT {
 					continue
 				}
 				// Apex records have an empty string for their name.
