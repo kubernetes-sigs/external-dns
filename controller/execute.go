@@ -382,6 +382,7 @@ func buildController(
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
 	}, nil
 }
