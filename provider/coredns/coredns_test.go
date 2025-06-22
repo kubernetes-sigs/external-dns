@@ -415,9 +415,7 @@ func TestCoreDNSApplyChanges_DomainDoNotMatch(t *testing.T) {
 	coredns := coreDNSProvider{
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
-		domainFilter: endpoint.DomainFilter{
-			Filters: []string{"example.local"},
-		},
+		domainFilter:  endpoint.NewDomainFilter([]string{"example.local"}),
 	}
 
 	changes1 := &plan.Changes{
@@ -755,7 +753,7 @@ func TestNewCoreDNSProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.TestHelperEnvSetter(t, tt.envs)
 
-			provider, err := NewCoreDNSProvider(endpoint.DomainFilter{}, "/prefix/", false)
+			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", false)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.errMsg)

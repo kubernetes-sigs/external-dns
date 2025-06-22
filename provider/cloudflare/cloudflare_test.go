@@ -428,7 +428,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: managedRecords,
 	}
 
@@ -1530,7 +1530,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -1621,7 +1621,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -2078,7 +2078,7 @@ func TestCloudflareDNSRecordsOperationsFail(t *testing.T) {
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
-				DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+				DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
 			planned := plan.Calculate()
@@ -2501,7 +2501,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
-				DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+				DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
 			}
 			planned := plan.Calculate()
@@ -2525,7 +2525,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		plan := &plan.Plan{
 			Current:        records,
 			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
 
@@ -2655,7 +2655,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 		plan := &plan.Plan{
 			Current:        records,
 			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
 		planned := plan.Calculate()
@@ -2754,7 +2754,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 		plan := &plan.Plan{
 			Current:        records,
 			Desired:        endpoints,
-			DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
 
@@ -2837,7 +2837,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 

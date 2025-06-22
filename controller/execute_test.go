@@ -134,7 +134,7 @@ func TestCreateDomainFilter(t *testing.T) {
 	tests := []struct {
 		name                 string
 		cfg                  *externaldns.Config
-		expectedDomainFilter endpoint.DomainFilter
+		expectedDomainFilter *endpoint.DomainFilter
 		isConfigured         bool
 	}{
 		{

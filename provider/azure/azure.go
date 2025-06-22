@@ -53,8 +53,8 @@ type RecordSetsClient interface {
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
 	provider.BaseProvider
-	domainFilter                 endpoint.DomainFilter
-	zoneNameFilter               endpoint.DomainFilter
+	domainFilter                 *endpoint.DomainFilter
+	zoneNameFilter               *endpoint.DomainFilter
 	zoneIDFilter                 provider.ZoneIDFilter
 	dryRun                       bool
 	resourceGroup                string
@@ -69,7 +69,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneNameFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, zonesCacheDuration time.Duration, maxRetriesCount int, dryRun bool) (*AzureProvider, error) {
 	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %w", configFile, err)

@@ -129,7 +129,7 @@ func (c *mockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.Pat
 }
 
 // newOCIProvider creates an OCI provider with API calls mocked out.
-func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) *OCIProvider {
+func newOCIProvider(client ociDNSClient, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) *OCIProvider {
 	return &OCIProvider{
 		client: client,
 		cfg: OCIConfig{
@@ -246,7 +246,7 @@ func TestOCIZones(t *testing.T) {
 	barZoneId := "ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"
 	testCases := []struct {
 		name         string
-		domainFilter endpoint.DomainFilter
+		domainFilter *endpoint.DomainFilter
 		zoneIDFilter provider.ZoneIDFilter
 		zoneScope    string
 		expected     map[string]dns.ZoneSummary
@@ -321,7 +321,7 @@ func TestOCIZones(t *testing.T) {
 func TestOCIRecords(t *testing.T) {
 	testCases := []struct {
 		name         string
-		domainFilter endpoint.DomainFilter
+		domainFilter *endpoint.DomainFilter
 		zoneIDFilter provider.ZoneIDFilter
 		expected     []*endpoint.Endpoint
 	}{

@@ -373,12 +373,12 @@ func TestAWSZonesWithTagFilterError(t *testing.T) {
 }
 
 func TestAWSRecordsFilter(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.DomainFilter{}, provider.ZoneIDFilter{}, provider.ZoneTypeFilter{}, false, false, nil)
+	provider, _ := newAWSProvider(t, &endpoint.DomainFilter{}, provider.ZoneIDFilter{}, provider.ZoneTypeFilter{}, false, false, nil)
 	domainFilter := provider.GetDomainFilter()
 	require.NotNil(t, domainFilter)
-	require.IsType(t, endpoint.DomainFilter{}, domainFilter)
+	require.IsType(t, &endpoint.DomainFilter{}, domainFilter)
 	count := 0
-	filters := domainFilter.(endpoint.DomainFilter).Filters
+	filters := domainFilter.(*endpoint.DomainFilter).Filters
 	for _, tld := range []string{
 		"zone-4.ext-dns-test-3.teapot.zalan.do",
 		".zone-4.ext-dns-test-3.teapot.zalan.do",
@@ -2208,11 +2208,11 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []route53types
 	return resp.ResourceRecordSets
 }
 
-func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
+func newAWSProvider(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
 	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }
 
-func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
+func newAWSProviderWithTagFilter(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []route53types.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{

@@ -70,7 +70,7 @@ type AlibabaCloudPrivateZoneAPI interface {
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
 type AlibabaCloudProvider struct {
 	provider.BaseProvider
-	domainFilter         endpoint.DomainFilter
+	domainFilter         *endpoint.DomainFilter
 	zoneIDFilter         provider.ZoneIDFilter // Private Zone only
 	MaxChangeCount       int
 	EvaluateTargetHealth bool
@@ -97,7 +97,7 @@ type alibabaCloudConfig struct {
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
+func NewAlibabaCloudProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
 		contents, err := os.ReadFile(configFile)

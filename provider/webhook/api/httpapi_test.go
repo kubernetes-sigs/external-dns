@@ -39,7 +39,7 @@ var records []*endpoint.Endpoint
 
 type FakeWebhookProvider struct {
 	err           error
-	domainFilter  endpoint.DomainFilter
+	domainFilter  *endpoint.DomainFilter
 	assertChanges func(*plan.Changes)
 }
 
@@ -334,7 +334,7 @@ func TestNegotiateHandler_Success(t *testing.T) {
 	require.Equal(t, http.StatusOK, res.StatusCode)
 	require.Equal(t, MediaTypeFormatAndVersion, res.Header.Get(ContentTypeHeader))
 
-	var df endpoint.DomainFilter
+	df := &endpoint.DomainFilter{}
 	body, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 	require.NoError(t, df.UnmarshalJSON(body))
