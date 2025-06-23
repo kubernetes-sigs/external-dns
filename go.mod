@@ -64,8 +64,8 @@ require (
 	golang.org/x/time v0.12.0
 	google.golang.org/api v0.238.0
 	gopkg.in/ns1/ns1-go.v2 v2.14.4
-	istio.io/api v1.26.1
-	istio.io/client-go v1.26.1
+	istio.io/api v1.26.2
+	istio.io/client-go v1.26.2
 	k8s.io/api v0.33.2
 	k8s.io/apimachinery v0.33.2
 	k8s.io/client-go v0.33.2
