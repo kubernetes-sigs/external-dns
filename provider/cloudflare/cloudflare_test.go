@@ -2601,18 +2601,28 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		changes *plan.Changes
+		name                   string
+		changes                *plan.Changes
+		customHostnamesEnabled bool
+		errorLogCount          int
 	}{
 		{
-			name: "Create error",
+			name: "Create error (custom hostnames enabled)",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{{
 					DNSName:    "bad-create.bar.com",
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "bad-create-custom.bar.com",
+						},
+					},
 				}},
 			},
+			customHostnamesEnabled: true,
+			errorLogCount:          1,
 		},
 		{
 			name: "Delete error (custom hostnames enabled)",
@@ -2621,23 +2631,74 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					DNSName:    "bad-delete.bar.com",
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "bad-delete-custom.bar.com",
+						},
+					},
 				}},
 			},
+			customHostnamesEnabled: true,
+			errorLogCount:          1,
 		},
 		{
-			name: "Update add/remove/leave error",
+			name: "Update add/remove error (custom hostnames enabled)",
 			changes: &plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{{
-					DNSName:    "bad-update.bar.com",
-					RecordType: "MX",
-					Targets:    endpoint.Targets{"not-a-valid-mx"},
-				}},
 				UpdateNew: []*endpoint.Endpoint{{
-					DNSName:    "bad-update.bar.com",
+					DNSName:    "bad-update-add.bar.com",
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "bad-update-add-custom.bar.com",
+						},
+					},
+				}},
+				UpdateOld: []*endpoint.Endpoint{{
+					DNSName:    "old-bad-update-add.bar.com",
+					RecordType: "MX",
+					Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "bad-update-add-custom.bar.com",
+						},
+					},
 				}},
 			},
+			customHostnamesEnabled: true,
+			errorLogCount:          2,
+		},
+		{
+			name: "Update leave error (custom hostnames enabled)",
+			changes: &plan.Changes{
+				UpdateOld: []*endpoint.Endpoint{{
+					DNSName:    "bad-update-leave.bar.com",
+					RecordType: "MX",
+					Targets:    endpoint.Targets{"not-a-valid-mx"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "bad-update-leave-custom.bar.com",
+						},
+					},
+				}},
+				UpdateNew: []*endpoint.Endpoint{{
+					DNSName:    "bad-update-leave.bar.com",
+					RecordType: "MX",
+					Targets:    endpoint.Targets{"not-a-valid-mx"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+							Value: "bad-update-leave-custom.bar.com",
+						},
+					},
+				}},
+			},
+			customHostnamesEnabled: true,
+			errorLogCount:          1,
 		},
 		{
 			name: "Delete error (custom hostnames disabled)",
@@ -2648,28 +2709,29 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 				}},
 			},
+			customHostnamesEnabled: false,
+			errorLogCount:          1,
 		},
 	}
 
 	// Test with custom hostnames enabled and disabled
-	for i, tc := range cases {
-		if i == 3 {
-			provider.CustomHostnamesConfig.Enabled = false
+	for _, tc := range cases {
+		if tc.customHostnamesEnabled {
+			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: true}
 		} else {
-			provider.CustomHostnamesConfig.Enabled = true
+			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: false}
 		}
 		hook.Reset()
 		err := provider.ApplyChanges(context.Background(), tc.changes)
 		assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
-		found := false
+		errorLogCount := 0
 		for _, entry := range hook.Entries {
 			if entry.Level == log.ErrorLevel &&
 				strings.Contains(entry.Message, "failed to create cloudflare change") {
-				found = true
-				break
+				errorLogCount++
 			}
 		}
-		assert.True(t, found, "expected error log for %s", tc.name)
+		assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
 	}
 }
 
