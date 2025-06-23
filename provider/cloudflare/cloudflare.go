@@ -388,7 +388,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
 		// and record to allow the planner to calculate the correct plan. See #992.
-		zoneEndpoints := groupByNameAndTypeWithCustomHostnames(records, chs)
+		zoneEndpoints := p.groupByNameAndTypeWithCustomHostnames(records, chs)
 
 		if err := p.addEnpointsProviderSpecificRegionKeyProperty(ctx, zone.ID, zoneEndpoints); err != nil {
 			return nil, err
@@ -785,8 +785,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		if err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
-			priority = &mxRecord.Priority
-			target = mxRecord.Host
+			priority = mxRecord.GetPriority()
+			target = *mxRecord.GetHost()
 		}
 	}
 
@@ -915,14 +915,14 @@ func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	return []string{}
 }
 
-func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
+func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// group supported records by name and type
 	groups := map[string][]cloudflare.DNSRecord{}
 
 	for _, r := range records {
-		if !SupportedRecordType(r.Type) {
+		if !p.SupportedAdditionalRecordTypes(r.Type) {
 			continue
 		}
 
@@ -983,9 +983,9 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider
-func SupportedRecordType(recordType string) bool {
+func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case "MX":
+	case endpoint.RecordTypeMX:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)
