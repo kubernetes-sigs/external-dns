@@ -826,25 +826,28 @@ func TestNewMXTarget(t *testing.T) {
 		{
 			description: "Valid MX record",
 			target:      "10 example.com",
-			expected:    &MXTarget{Priority: 10, Host: "example.com"},
+			expected:    &MXTarget{priority: 10, host: "example.com"},
 			expectError: false,
 		},
 		{
 			description: "Invalid MX record with missing priority",
 			target:      "example.com",
-			expected:    &MXTarget{},
 			expectError: true,
 		},
 		{
 			description: "Invalid MX record with non-integer priority",
 			target:      "abc example.com",
-			expected:    &MXTarget{},
 			expectError: true,
 		},
 		{
 			description: "Invalid MX record with too many parts",
 			target:      "10 example.com extra",
-			expected:    &MXTarget{},
+			expectError: true,
+		},
+		{
+			description: "Missing host",
+			target:      "10 ",
+			expected:    nil,
 			expectError: true,
 		},
 	}
