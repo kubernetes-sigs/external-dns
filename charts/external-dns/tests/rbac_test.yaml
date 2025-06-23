@@ -156,3 +156,103 @@ tests:
             - apiGroups: ["gateway.networking.k8s.io"]
               resources: ["udproutes"]
               verbs: ["get","watch","list"]
+
+  - it: should create Role instead of ClusterRole when namespaced is true
+    set:
+      namespaced: true
+      sources:
+        - service
+    asserts:
+      - isKind:
+          of: Role
+        template: clusterrole.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns
+        template: clusterrole.yaml
+
+  - it: should create RoleBinding instead of ClusterRoleBinding when namespaced is true
+    set:
+      namespaced: true
+      sources:
+        - service
+    asserts:
+      - isKind:
+          of: RoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns-viewer
+        template: clusterrolebinding.yaml
+
+  - it: should exclude namespaces permissions from Role when namespaced is true with gateway sources
+    set:
+      namespaced: true
+      sources:
+        - gateway-httproute
+    asserts:
+      - template: clusterrole.yaml
+        documentIndex: 0
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["httproutes"]
+              verbs: ["get","watch","list"]
+
+  - it: should create additional ClusterRole for namespaces when namespaced is true with gateway sources
+    set:
+      namespaced: true
+      sources:
+        - gateway-httproute
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: clusterrole.yaml
+      - isKind:
+          of: Role
+        documentIndex: 0
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 1
+        template: clusterrole.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns-namespaces
+        documentIndex: 1
+        template: clusterrole.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["namespaces"]
+              verbs: ["get","watch","list"]
+        documentIndex: 1
+        template: clusterrole.yaml
+
+  - it: should create additional ClusterRoleBinding for namespaces when namespaced is true with gateway sources
+    set:
+      namespaced: true
+      sources:
+        - gateway-httproute
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: clusterrolebinding.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 0
+        template: clusterrolebinding.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        documentIndex: 1
+        template: clusterrolebinding.yaml
+      - equal:
+          path: metadata.name
+          value: rbac-external-dns-namespaces
+        documentIndex: 1
+        template: clusterrolebinding.yaml

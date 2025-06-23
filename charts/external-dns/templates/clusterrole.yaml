@@ -58,13 +58,15 @@ rules:
     resources: ["dnsendpoints/status"]
     verbs: ["*"]
 {{- end }}
-{{- if or (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) }}
+{{- if include "external-dns.hasGatewaySources" . }}
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
+{{- if not .Values.namespaced }}
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["get","watch","list"]
+{{- end }}
 {{- end }}
 {{- if has "gateway-httproute" .Values.sources }}
   - apiGroups: ["gateway.networking.k8s.io"]
@@ -126,5 +128,18 @@ rules:
 {{- end }}
 {{- with .Values.rbac.additionalPermissions }}
   {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewaySources" .) }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "external-dns.fullname" . }}-namespaces
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get","watch","list"]
 {{- end }}
 {{- end }}
