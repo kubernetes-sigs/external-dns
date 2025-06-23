@@ -302,22 +302,18 @@ func makeDomainEditRequest(domain, name, recordType, data string, ttl int) *godo
 
 	if recordType == endpoint.RecordTypeMX {
 		mxRecord, err := endpoint.NewMXTarget(data)
-
-		if err == nil {
-			priority := mxRecord.Priority
-			host := mxRecord.Host
-			request.Priority = int(priority)
-			request.Data = provider.EnsureTrailingDot(host)
-		} else {
+		if err != nil {
 			log.WithFields(log.Fields{
 				"domain":     domain,
 				"dnsName":    name,
 				"recordType": recordType,
 				"data":       data,
 			}).Warn("Unable to parse MX target")
+			return request
 		}
+		request.Priority = int(*mxRecord.GetPriority())
+		request.Data = provider.EnsureTrailingDot(*mxRecord.GetHost())
 	}
-
 	return request
 }
 
