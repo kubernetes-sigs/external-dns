@@ -400,9 +400,9 @@ func (e *Endpoint) CheckEndpoint() bool {
 	return true
 }
 
-// NewMXTarget parses a string representation of an MX record target (e.g., "10 mail.example.com")
+// NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")
 // and returns an MXTarget struct. Returns an error if the input is invalid.
-func NewMXTarget(target string) (*MXTarget, error) {
+func NewMXRecord(target string) (*MXTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
@@ -431,7 +431,7 @@ func (m *MXTarget) GetHost() *string {
 
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
-		_, err := NewMXTarget(target)
+		_, err := NewMXRecord(target)
 		if err != nil {
 			log.Debugf("Invalid MX record target: %s. %v", target, err)
 			return false

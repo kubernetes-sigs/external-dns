@@ -301,7 +301,7 @@ func makeDomainEditRequest(domain, name, recordType, data string, ttl int) *godo
 	}
 
 	if recordType == endpoint.RecordTypeMX {
-		mxRecord, err := endpoint.NewMXTarget(data)
+		mxRecord, err := endpoint.NewMXRecord(data)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"domain":     domain,

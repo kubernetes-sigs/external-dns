@@ -854,7 +854,7 @@ func TestNewMXTarget(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			actual, err := NewMXTarget(tt.target)
+			actual, err := NewMXRecord(tt.target)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

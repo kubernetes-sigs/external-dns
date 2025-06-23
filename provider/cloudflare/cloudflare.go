@@ -781,7 +781,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	priority := (*uint16)(nil)
 	if ep.RecordType == "MX" {
-		mxRecord, err := endpoint.NewMXTarget(target)
+		mxRecord, err := endpoint.NewMXRecord(target)
 		if err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
