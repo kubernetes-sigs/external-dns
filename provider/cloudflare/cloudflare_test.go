@@ -37,17 +37,11 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
-var proxyEnabled *bool = boolPtr(true)
-
-// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
-var proxyDisabled *bool = boolPtr(false)
-
-// boolPtr is used as a helper function to return a pointer to a boolean
-// Needed because some parameters require a pointer.
-func boolPtr(b bool) *bool {
-	return &b
-}
+// proxyEnabled and proxyDisabled are pointers to bool values used to set if a record should be proxied through Cloudflare.
+var (
+	proxyEnabled  *bool = testutils.ToPtr(true)
+	proxyDisabled *bool = testutils.ToPtr(false)
+)
 
 type MockAction struct {
 	Name             string
