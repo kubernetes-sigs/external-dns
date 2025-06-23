@@ -77,14 +77,6 @@ type MXTarget struct {
 	host     string
 }
 
-// SRVTarget represents a single SRV (Service) record target, including its priority, weight, port, and host.
-type SRVTarget struct {
-	priority uint16
-	weight   uint16
-	port     uint16
-	host     string
-}
-
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings
 func NewTargets(target ...string) Targets {
 	t := make(Targets, 0, len(target))
