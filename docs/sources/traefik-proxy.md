@@ -145,15 +145,11 @@ kubectl delete -f externaldns.yaml
 
 | Flag | Description |
 | --- | --- |
-| --traefik-disable-legacy | Disable listeners on Resources under traefik.containo.us |
+| --traefik-enable-legacy | Enable listeners on Resources under traefik.containo.us |
 | --traefik-disable-new | Disable listeners on Resources under traefik.io |
 
-### Disabling Resource Listeners
+### Resource Listeners
 
-Traefik has deprecated the legacy API group, traefik.containo.us, in favor of traefik.io. By default the traefik-proxy source will listen for resources under both API groups; however, this may cause timeouts with the following message
+Traefik has deprecated the legacy API group, _traefik.containo.us_, in favor of _traefik.io_. By default the traefik-proxy source listen for resources under traefik.io API groups.
 
-```sh
-FATA[0060] failed to sync traefik.io/v1alpha1, Resource=ingressroutes: context deadline exceeded
-```
-
-In this case you can disable one or the other API groups with `--traefik-disable-new` or `--traefik-disable-legacy`
+If needed, you can enable legacy listener with `--traefik-enable-legacy` and also disable new listener with `--traefik-disable-new`.
