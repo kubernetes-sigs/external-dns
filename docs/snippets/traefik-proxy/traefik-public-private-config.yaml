@@ -1,0 +1,16 @@
+---
+type: public
+providers:
+  kubernetesCRD:
+    labelSelector: traffic-type in (public, middleware-public, ...other selectors..)
+
+  kubernetesIngress:
+    labelSelector: traffic-type in (public, middleware-public, ...other selectors..)
+---
+type: private
+providers:
+  kubernetesCRD:
+    labelSelector: traffic-type in (private, middleware-private, ...other selectors..)
+
+  kubernetesIngress:
+    labelSelector: traffic-type in (private, middleware-private, ...other selectors..)
