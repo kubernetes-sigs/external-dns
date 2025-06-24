@@ -82,7 +82,7 @@ type Config struct {
 	OCPRouterName                  string
 	UpdateEvents                   bool
 	ResolveLoadBalancerHostname    bool
-	TraefikDisableLegacy           bool
+	TraefikEnableLegacy            bool
 	TraefikDisableNew              bool
 	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
@@ -128,7 +128,7 @@ func NewSourceConfig(cfg *externaldns.Config) *Config {
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
-		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
+		TraefikEnableLegacy:            cfg.TraefikEnableLegacy,
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
@@ -359,7 +359,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewTraefikSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.IgnoreHostnameAnnotation, cfg.TraefikDisableLegacy, cfg.TraefikDisableNew)
+		return NewTraefikSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter, cfg.IgnoreHostnameAnnotation, cfg.TraefikEnableLegacy, cfg.TraefikDisableNew)
 	case "openshift-route":
 		ocpClient, err := p.OpenShiftClient()
 		if err != nil {

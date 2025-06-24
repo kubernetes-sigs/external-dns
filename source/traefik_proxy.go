@@ -95,7 +95,7 @@ type traefikSource struct {
 	unstructuredConverter      *unstructuredConverter
 }
 
-func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, disableLegacy bool, disableNew bool) (Source, error) {
+func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, enableLegacy bool, disableNew bool) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
@@ -123,7 +123,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 			},
 		)
 	}
-	if !disableLegacy {
+	if enableLegacy {
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressrouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressrouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressrouteUDPGVR)
