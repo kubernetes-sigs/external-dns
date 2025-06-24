@@ -408,9 +408,11 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			zone := findMsgZone(ep, r.zoneNames)
 			m[zone].SetUpdate(zone)
 
-			r.UpdateRecord(m[zone], changes.UpdateOld[i], ep)
+			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
+			j := (c * r.batchChangeSize) + i
+			r.UpdateRecord(m[zone], changes.UpdateOld[j], ep)
 			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(changes.UpdateOld[i].Targets[0], ep.DNSName)
+				r.RemoveReverseRecord(changes.UpdateOld[j].Targets[0], ep.DNSName)
 				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}
