@@ -66,7 +66,7 @@ args:
 ---
 args:
   - --source=traefik-proxy
-  - --annotation-filter="kubernetes.io/ingress.class=traefik-public"
+  - --annotation-filter="kubernetes.io/ingress.class=traefik-private"
 ```
 
 ## Cleanup
