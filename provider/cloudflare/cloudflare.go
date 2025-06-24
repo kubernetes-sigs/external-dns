@@ -65,16 +65,6 @@ func (action changeAction) String() string {
 	return changeActionNames[action]
 }
 
-// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
-// see: https://github.com/cloudflare/cloudflare-go/pull/595
-
-var (
-	// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
-	proxyEnabled *bool = boolPtr(true)
-	// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
-	proxyDisabled *bool = boolPtr(false)
-)
-
 type DNSRecordIndex struct {
 	Name    string
 	Type    string
@@ -226,7 +216,7 @@ type CloudFlareProvider struct {
 	RegionalServicesConfig RegionalServicesConfig
 }
 
-// cloudFlareChange differentiates between ChangActions
+// cloudFlareChange differentiates between ChangeActions
 type cloudFlareChange struct {
 	Action              changeAction
 	ResourceRecord      cloudflare.DNSRecord
@@ -242,24 +232,30 @@ type RecordParamsTypes interface {
 
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams {
-	return cloudflare.UpdateDNSRecordParams{
-		Name:    cfc.ResourceRecord.Name,
-		TTL:     cfc.ResourceRecord.TTL,
-		Proxied: cfc.ResourceRecord.Proxied,
-		Type:    cfc.ResourceRecord.Type,
-		Content: cfc.ResourceRecord.Content,
+	params := cloudflare.UpdateDNSRecordParams{
+		Name:     cfc.ResourceRecord.Name,
+		TTL:      cfc.ResourceRecord.TTL,
+		Proxied:  cfc.ResourceRecord.Proxied,
+		Type:     cfc.ResourceRecord.Type,
+		Content:  cfc.ResourceRecord.Content,
+		Priority: cfc.ResourceRecord.Priority,
 	}
+
+	return params
 }
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordParams {
-	return cloudflare.CreateDNSRecordParams{
-		Name:    cfc.ResourceRecord.Name,
-		TTL:     cfc.ResourceRecord.TTL,
-		Proxied: cfc.ResourceRecord.Proxied,
-		Type:    cfc.ResourceRecord.Type,
-		Content: cfc.ResourceRecord.Content,
+	params := cloudflare.CreateDNSRecordParams{
+		Name:     cfc.ResourceRecord.Name,
+		TTL:      cfc.ResourceRecord.TTL,
+		Proxied:  cfc.ResourceRecord.Proxied,
+		Type:     cfc.ResourceRecord.Type,
+		Content:  cfc.ResourceRecord.Content,
+		Priority: cfc.ResourceRecord.Priority,
 	}
+
+	return params
 }
 
 func convertCloudflareError(err error) error {
@@ -392,7 +388,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
 		// and record to allow the planner to calculate the correct plan. See #992.
-		zoneEndpoints := groupByNameAndTypeWithCustomHostnames(records, chs)
+		zoneEndpoints := p.groupByNameAndTypeWithCustomHostnames(records, chs)
 
 		if err := p.addEnpointsProviderSpecificRegionKeyProperty(ctx, zone.ID, zoneEndpoints); err != nil {
 			return nil, err
@@ -412,14 +408,24 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	if p.CustomHostnamesConfig.Enabled {
 		for _, e := range changes.Delete {
 			for _, target := range e.Targets {
-				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, e, target, nil))
+				change, err := p.newCloudFlareChange(cloudFlareDelete, e, target, nil)
+				if err != nil {
+					log.Errorf("failed to create cloudflare change: %v", err)
+					continue
+				}
+				cloudflareChanges = append(cloudflareChanges, change)
 			}
 		}
 	}
 
 	for _, e := range changes.Create {
 		for _, target := range e.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, e, target, nil))
+			change, err := p.newCloudFlareChange(cloudFlareCreate, e, target, nil)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 	}
 
@@ -429,15 +435,30 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
 		for _, a := range remove {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a, current))
+			change, err := p.newCloudFlareChange(cloudFlareDelete, current, a, current)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 
 		for _, a := range add {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a, current))
+			change, err := p.newCloudFlareChange(cloudFlareCreate, desired, a, current)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 
 		for _, a := range leave {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareUpdate, desired, a, current))
+			change, err := p.newCloudFlareChange(cloudFlareUpdate, desired, a, current)
+			if err != nil {
+				log.Errorf("failed to create cloudflare change: %v", err)
+				continue
+			}
+			cloudflareChanges = append(cloudflareChanges, change)
 		}
 	}
 
@@ -445,7 +466,12 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	if !p.CustomHostnamesConfig.Enabled {
 		for _, e := range changes.Delete {
 			for _, target := range e.Targets {
-				cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, e, target, nil))
+				change, err := p.newCloudFlareChange(cloudFlareDelete, e, target, nil)
+				if err != nil {
+					log.Errorf("failed to create cloudflare change: %v", err)
+					continue
+				}
+				cloudflareChanges = append(cloudflareChanges, change)
 			}
 		}
 	}
@@ -723,7 +749,7 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 	}
 }
 
-func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) *cloudFlareChange {
+func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) (*cloudFlareChange, error) {
 	ttl := defaultTTL
 	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
@@ -753,6 +779,17 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		comment = p.DNSRecordsConfig.trimAndValidateComment(ep.DNSName, comment, p.ZoneHasPaidPlan)
 	}
 
+	priority := (*uint16)(nil)
+	if ep.RecordType == "MX" {
+		mxRecord, err := endpoint.NewMXRecord(target)
+		if err != nil {
+			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
+		} else {
+			priority = mxRecord.GetPriority()
+			target = *mxRecord.GetHost()
+		}
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
@@ -760,15 +797,16 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			TTL:  ttl,
 			// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 			// see: https://github.com/cloudflare/cloudflare-go/pull/595
-			Proxied: &proxied,
-			Type:    ep.RecordType,
-			Content: target,
-			Comment: comment,
+			Proxied:  &proxied,
+			Type:     ep.RecordType,
+			Content:  target,
+			Comment:  comment,
+			Priority: priority,
 		},
 		RegionalHostname:    p.regionalHostname(ep),
 		CustomHostnamesPrev: prevCustomHostnames,
 		CustomHostnames:     newCustomHostnames,
-	}
+	}, nil
 }
 
 func newDNSRecordIndex(r cloudflare.DNSRecord) DNSRecordIndex {
@@ -877,14 +915,14 @@ func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	return []string{}
 }
 
-func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
+func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHostnamesMap) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// group supported records by name and type
 	groups := map[string][]cloudflare.DNSRecord{}
 
 	for _, r := range records {
-		if !provider.SupportedRecordType(r.Type) {
+		if !p.SupportedAdditionalRecordTypes(r.Type) {
 			continue
 		}
 
@@ -910,7 +948,11 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 		}
 		targets := make([]string, len(records))
 		for i, record := range records {
-			targets[i] = record.Content
+			if records[i].Type == "MX" {
+				targets[i] = fmt.Sprintf("%v %v", *record.Priority, record.Content)
+			} else {
+				targets[i] = record.Content
+			}
 		}
 		e := endpoint.NewEndpointWithTTL(
 			records[0].Name,
@@ -937,12 +979,15 @@ func groupByNameAndTypeWithCustomHostnames(records DNSRecordsMap, chs CustomHost
 
 		endpoints = append(endpoints, e)
 	}
-
 	return endpoints
 }
 
-// boolPtr is used as a helper function to return a pointer to a boolean
-// Needed because some parameters require a pointer.
-func boolPtr(b bool) *bool {
-	return &b
+// SupportedRecordType returns true if the record type is supported by the provider
+func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
+	switch recordType {
+	case endpoint.RecordTypeMX:
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
 }
