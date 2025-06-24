@@ -475,7 +475,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressRulesSpec)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
 	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
-	app.Flag("ingress-class", "Require on source ingress to have this class name; specify multiple times for more then one class (optional; defaults to any class)").StringsVar(&cfg.IngressClassNames)
+	app.Flag("ingress-class", "Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	app.Flag("managed-record-types", managedRecordTypesHelp).Default(defaultConfig.ManagedDNSRecordTypes...).StringsVar(&cfg.ManagedDNSRecordTypes)
