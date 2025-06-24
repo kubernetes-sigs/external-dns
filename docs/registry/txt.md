@@ -34,7 +34,7 @@ If configured `--txt-suffix="-abc.%{record_type}"` for apex domain `ex.com` the 
 |              Name              |  TYPE   |
 |:------------------------------:|:-------:|
 | `cname-nginx-v2-abc.a.ex.com.` |  `TXT`  |
-|      `nginx-v3.ex.com..`       | `CNAME` |
+|      `nginx-v3.ex.com.`       | `CNAME` |
 
 ### Manually Cleanup Legacy TXT Records
 
