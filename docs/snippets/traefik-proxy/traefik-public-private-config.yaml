@@ -2,15 +2,15 @@
 type: public
 providers:
   kubernetesCRD:
-    labelSelector: traffic-type in (public, middleware-public, ...other selectors..)
+    ingressClass: traefik-public
 
   kubernetesIngress:
-    labelSelector: traffic-type in (public, middleware-public, ...other selectors..)
+    ingressClass: traefik-public
 ---
 type: private
 providers:
   kubernetesCRD:
-    labelSelector: traffic-type in (private, middleware-private, ...other selectors..)
+    ingressClass: traefik-private
 
   kubernetesIngress:
-    labelSelector: traffic-type in (private, middleware-private, ...other selectors..)
+    ingressClass: traefik-private

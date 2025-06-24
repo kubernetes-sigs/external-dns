@@ -40,7 +40,7 @@ Depending where you run your IngressRoute it can take a little while for Externa
 
 ## Support private and public routing
 
-To create a more robust and manageable Kubernetes environment, leverage separate Ingress classes to finely control public and private routing's security, performance, and operational policies.
+To create a more robust and manageable Kubernetes environment, leverage separate Ingress classes to finely control public and private routing's security, performance, and operational policies. Similar approach could work in multi-tenant environments.
 
 For this we are going to need two instances of `traefik` (public and private) as well as two instances of `external-dns`.
 
