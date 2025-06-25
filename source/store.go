@@ -309,7 +309,7 @@ func ByNames(ctx context.Context, p ClientGenerator, names []string, cfg *Config
 //
 // Supported Source Types:
 // - "node": Kubernetes nodes
-// - "service": Kubernetes services  
+// - "service": Kubernetes services
 // - "ingress": Kubernetes ingresses
 // - "pod": Kubernetes pods
 // - "gateway-*": Gateway API resources (httproute, grpcroute, tlsroute, tcproute, udproute)
@@ -389,17 +389,18 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 // This standardization improves code consistency, maintainability, and readability.
 //
 // Standardized Function Signature Pattern:
-//   func buildXXXSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error)
+//
+//	func buildXXXSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error)
 //
 // Standardized Constructor Parameter Pattern (where applicable):
-//   1. ctx (context.Context) - Always first when supported by the source constructor
-//   2. client(s) (kubernetes.Interface, dynamic.Interface, etc.) - Kubernetes clients
-//   3. namespace (string) - Target namespace for the source
-//   4. annotationFilter (string) - Filter for annotations
-//   5. labelFilter (labels.Selector) - Filter for labels (when applicable)
-//   6. fqdnTemplate (string) - FQDN template for DNS record generation
-//   7. combineFQDNAndAnnotation (bool) - Whether to combine FQDN template with annotations
-//   8. ...other parameters - Source-specific parameters in logical order
+//  1. ctx (context.Context) - Always first when supported by the source constructor
+//  2. client(s) (kubernetes.Interface, dynamic.Interface, etc.) - Kubernetes clients
+//  3. namespace (string) - Target namespace for the source
+//  4. annotationFilter (string) - Filter for annotations
+//  5. labelFilter (labels.Selector) - Filter for labels (when applicable)
+//  6. fqdnTemplate (string) - FQDN template for DNS record generation
+//  7. combineFQDNAndAnnotation (bool) - Whether to combine FQDN template with annotations
+//  8. ...other parameters - Source-specific parameters in logical order
 //
 // Design Principles:
 // - Each source type has its own specific requirements and dependencies
@@ -509,7 +510,7 @@ func buildContourHTTPProxySource(ctx context.Context, p ClientGenerator, cfg *Co
 }
 
 // buildGlooProxySource creates a Gloo source for exposing Gloo proxies as DNS records.
-// Requires both dynamic and standard Kubernetes clients. 
+// Requires both dynamic and standard Kubernetes clients.
 // Note: Does not accept context parameter in constructor (legacy design).
 func buildGlooProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
