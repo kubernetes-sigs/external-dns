@@ -317,6 +317,13 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 }
 
 // Helper functions for each source type
+// Each source type has its own specific requirements and dependencies, so
+// separating the build functions allows for clearer code organization and
+// easier maintenance. It also allows for more straightforward error handling
+// and testing, as each function can be tested independently without needing to
+// mock or handle dependencies for all source types at once. This modularity
+// makes it easier to add new source types or modify existing ones without
+// affecting the overall structure of the codebase.
 func buildNodeSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	client, err := p.KubeClient()
 	if err != nil {
