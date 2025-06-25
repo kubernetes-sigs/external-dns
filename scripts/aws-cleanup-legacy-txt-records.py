@@ -193,7 +193,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cleanup legacy TXT records")
     parser.add_argument("--zone-id", type=str, required=True, help="Hosted Zone ID for which to run a cleanup.")
     parser.add_argument("--record-match", type=str, required=True, help="Record to match specific value. Example 'external-dns/owner=default'")
-    parser.add_argument("--total-items", type=int, required=False, default=100, help="Number of items to delete. Default to 10")
+    parser.add_argument("--total-items", type=int, required=False, default=10, help="Number of items to delete. Default to 10")
     parser.add_argument("--batch-delete-count", type=int, required=False, default=2, help="Number of items to delete in single DELETE batch. Default to 2")
     parser.add_argument("--run", action="store_true", help="Execute the cleanup. The tool will do a dry-run if --run is not specified.")
 
