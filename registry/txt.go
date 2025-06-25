@@ -124,6 +124,10 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("owner id cannot be empty")
 	}
 
+	if isMigrationEnabled && oldOwnerID == "" {
+		return nil, errors.New("oldOwnerID cannot be empty if isMigrationEnabled is true")
+	}
+
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {

@@ -227,7 +227,7 @@ func (p *Plan) Calculate() *Plan {
 					update := t.resolver.ResolveUpdate(records.current, records.candidates)
 
 					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) ||
-						len(p.OldOwnerId) != 0 && records.current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerId {
+						p.isOldOwnerIdSetAndDifferent(records.current) {
 						inheritOwner(records.current, update)
 						changes.UpdateNew = append(changes.UpdateNew, update)
 						changes.UpdateOld = append(changes.UpdateOld, records.current)
@@ -277,6 +277,10 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func (p *Plan) isOldOwnerIdSetAndDifferent(current *endpoint.Endpoint) bool {
+	return len(p.OldOwnerId) != 0 && current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerId
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
