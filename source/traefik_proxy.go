@@ -43,32 +43,32 @@ import (
 )
 
 var (
-	ingressrouteGVR = schema.GroupVersionResource{
+	ingressRouteGVR = schema.GroupVersionResource{
 		Group:    "traefik.io",
 		Version:  "v1alpha1",
 		Resource: "ingressroutes",
 	}
-	ingressrouteTCPGVR = schema.GroupVersionResource{
+	ingressRouteTCPGVR = schema.GroupVersionResource{
 		Group:    "traefik.io",
 		Version:  "v1alpha1",
 		Resource: "ingressroutetcps",
 	}
-	ingressrouteUDPGVR = schema.GroupVersionResource{
+	ingressRouteUDPGVR = schema.GroupVersionResource{
 		Group:    "traefik.io",
 		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
 	}
-	oldIngressrouteGVR = schema.GroupVersionResource{
+	oldIngressRouteGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
 		Resource: "ingressroutes",
 	}
-	oldIngressrouteTCPGVR = schema.GroupVersionResource{
+	oldIngressRouteTCPGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
 		Resource: "ingressroutetcps",
 	}
-	oldIngressrouteUDPGVR = schema.GroupVersionResource{
+	oldIngressRouteUDPGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
@@ -81,21 +81,26 @@ var (
 )
 
 type traefikSource struct {
-	annotationFilter           string
-	ignoreHostnameAnnotation   bool
 	dynamicKubeClient          dynamic.Interface
+	kubeClient                 kubernetes.Interface
+	annotationFilter           string
+	namespace                  string
+	ignoreHostnameAnnotation   bool
 	ingressRouteInformer       kubeinformers.GenericInformer
 	ingressRouteTcpInformer    kubeinformers.GenericInformer
 	ingressRouteUdpInformer    kubeinformers.GenericInformer
 	oldIngressRouteInformer    kubeinformers.GenericInformer
 	oldIngressRouteTcpInformer kubeinformers.GenericInformer
 	oldIngressRouteUdpInformer kubeinformers.GenericInformer
-	kubeClient                 kubernetes.Interface
-	namespace                  string
 	unstructuredConverter      *unstructuredConverter
 }
 
-func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, enableLegacy bool, disableNew bool) (Source, error) {
+func NewTraefikSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface,
+	kubeClient kubernetes.Interface,
+	namespace, annotationFilter string,
+	ignoreHostnameAnnotation, enableLegacy, disableNew bool) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
@@ -104,20 +109,20 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 
 	// Add default resource event handlers to properly initialize informers.
 	if !disableNew {
-		ingressRouteInformer = informerFactory.ForResource(ingressrouteGVR)
-		ingressRouteTcpInformer = informerFactory.ForResource(ingressrouteTCPGVR)
-		ingressRouteUdpInformer = informerFactory.ForResource(ingressrouteUDPGVR)
-		ingressRouteInformer.Informer().AddEventHandler(
+		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
+		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
+		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
+		_, _ = ingressRouteInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
 			},
 		)
-		ingressRouteTcpInformer.Informer().AddEventHandler(
+		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
 			},
 		)
-		ingressRouteUdpInformer.Informer().AddEventHandler(
+		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
 			},
@@ -127,17 +132,17 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressrouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressrouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressrouteUDPGVR)
-		oldIngressRouteInformer.Informer().AddEventHandler(
+		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
 			},
 		)
-		oldIngressRouteTcpInformer.Informer().AddEventHandler(
+		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
 			},
 		)
-		oldIngressRouteUdpInformer.Informer().AddEventHandler(
+		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
 			},
@@ -460,24 +465,24 @@ func (ts *traefikSource) AddEventHandler(ctx context.Context, handler func()) {
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")
 	if ts.ingressRouteInformer != nil {
-		ts.ingressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		_, _ = ts.ingressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteInformer != nil {
-		ts.oldIngressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		_, _ = ts.oldIngressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 	log.Debug("Adding event handler for IngressRouteTCP")
 	if ts.ingressRouteTcpInformer != nil {
-		ts.ingressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		_, _ = ts.ingressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteTcpInformer != nil {
-		ts.oldIngressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		_, _ = ts.oldIngressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 	log.Debug("Adding event handler for IngressRouteUDP")
 	if ts.ingressRouteUdpInformer != nil {
-		ts.ingressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		_, _ = ts.ingressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 	if ts.oldIngressRouteUdpInformer != nil {
-		ts.oldIngressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		_, _ = ts.oldIngressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
 
@@ -488,12 +493,12 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	// Add the core types we need
-	uc.scheme.AddKnownTypes(ingressrouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	uc.scheme.AddKnownTypes(oldIngressrouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	uc.scheme.AddKnownTypes(ingressrouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(oldIngressrouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(ingressrouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-	uc.scheme.AddKnownTypes(oldIngressrouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	uc.scheme.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	uc.scheme.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	uc.scheme.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	uc.scheme.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	uc.scheme.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	uc.scheme.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
 	if err := scheme.AddToScheme(uc.scheme); err != nil {
 		return nil, err
 	}
@@ -917,8 +922,7 @@ func filterResourcesByAnnotations[T any](resources []*T, annotationFilter string
 
 	var filteredList []*T
 	for _, resource := range resources {
-		annotations := getAnnotations(resource)
-		if selector.Matches(labels.Set(annotations)) {
+		if selector.Matches(labels.Set(getAnnotations(resource))) {
 			filteredList = append(filteredList, resource)
 		}
 	}
