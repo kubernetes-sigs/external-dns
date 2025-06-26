@@ -81,7 +81,7 @@
     },
     "extraContainers": {
       "description": "Extra containers to add to the `Deployment`.",
-      "type": "object"
+      "type": "array"
     },
     "extraVolumeMounts": {
       "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container.",
