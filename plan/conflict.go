@@ -59,7 +59,8 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 	})
 	for _, ep := range candidates {
 		if ep.Labels[endpoint.ResourceLabelKey] == currentResource {
-			return ep
+			m := resolveMerger(ep)
+			return m.Merge(ep, current)
 		}
 	}
 	return s.ResolveCreate(candidates)
