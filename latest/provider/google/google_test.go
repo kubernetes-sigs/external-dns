@@ -17,6 +17,7 @@ limitations under the License.
 package google
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -552,7 +553,7 @@ func TestGoogleBatchChangeSet(t *testing.T) {
 
 	batchCs := batchChange(cs, googleDefaultBatchChangeSize)
 
-	require.Equal(t, 1, len(batchCs))
+	require.Len(t, batchCs, 1)
 
 	sortChangesByName(cs)
 	validateChange(t, batchCs[0], cs)
@@ -577,7 +578,7 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 
 	batchCs := batchChange(cs, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 
 	dnsChange := &dns.Change{}
 	for _, c := range batchCs {
@@ -585,8 +586,8 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 		dnsChange.Deletions = append(dnsChange.Deletions, c.Deletions...)
 	}
 
-	require.Equal(t, len(cs.Additions), len(dnsChange.Additions))
-	require.Equal(t, len(cs.Deletions), len(dnsChange.Deletions))
+	require.Len(t, dnsChange.Additions, len(cs.Additions))
+	require.Len(t, dnsChange.Deletions, len(cs.Deletions))
 
 	sortChangesByName(cs)
 	sortChangesByName(dnsChange)
@@ -609,7 +610,7 @@ func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
 
 	batchCs := batchChange(cs, testLimit)
 
-	require.Equal(t, 0, len(batchCs))
+	require.Empty(t, batchCs)
 }
 
 func TestSoftErrListZonesConflict(t *testing.T) {
@@ -676,7 +677,7 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 	assert.Equal(t, expected.Type, record.Type)
 }
 
-func newGoogleProviderZoneOverlap(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, dryRun bool, _ []*endpoint.Endpoint) *GoogleProvider {
+func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, dryRun bool, _ []*endpoint.Endpoint) *GoogleProvider {
 	provider := &GoogleProvider{
 		project:                  "zalando-external-dns-test",
 		dryRun:                   false,
@@ -743,7 +744,7 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter endpoint.DomainFilt
 	return provider
 }
 
-func newGoogleProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint, zonesErr, recordsErr error) *GoogleProvider {
+func newGoogleProvider(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint, zonesErr, recordsErr error) *GoogleProvider {
 	provider := &GoogleProvider{
 		project:      "zalando-external-dns-test",
 		dryRun:       false,
@@ -790,7 +791,8 @@ func createZone(t *testing.T, p *GoogleProvider, zone *dns.ManagedZone) {
 	zone.Description = "Testing zone for kubernetes.io/external-dns"
 
 	if _, err := p.managedZonesClient.Create("zalando-external-dns-test", zone).Do(); err != nil {
-		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusConflict {
+		var errs *googleapi.Error
+		if !errors.As(err, &errs) || errs.Code != http.StatusConflict {
 			require.NoError(t, err)
 		}
 	}

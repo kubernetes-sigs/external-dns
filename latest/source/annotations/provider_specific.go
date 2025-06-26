@@ -45,12 +45,6 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, IBMCloudPrefix) {
-			attr := strings.TrimPrefix(k, IBMCloudPrefix)
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("ibmcloud-%s", attr),
-				Value: v,
-			})
 		} else if strings.HasPrefix(k, WebhookPrefix) {
 			// Support for wildcard annotations for webhook providers
 			attr := strings.TrimPrefix(k, WebhookPrefix)
@@ -72,6 +66,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			} else if strings.Contains(k, CloudflareRegionKey) {
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 					Name:  CloudflareRegionKey,
+					Value: v,
+				})
+			} else if strings.Contains(k, CloudflareRecordCommentKey) {
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  CloudflareRecordCommentKey,
 					Value: v,
 				})
 			}

@@ -23,6 +23,7 @@ import (
 
 // suitableType returns the DNS resource record type suitable for the target.
 // In this case type A/AAAA for IPs and type CNAME for everything else.
+// TODO: move this to the endpoint package?
 func suitableType(target string) string {
 	netIP, err := netip.ParseAddr(target)
 	if err != nil {

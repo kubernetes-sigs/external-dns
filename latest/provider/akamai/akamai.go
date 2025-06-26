@@ -18,6 +18,7 @@ package akamai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -50,7 +51,7 @@ type AkamaiDNSService interface {
 }
 
 type AkamaiConfig struct {
-	DomainFilter          endpoint.DomainFilter
+	DomainFilter          *endpoint.DomainFilter
 	ZoneIDFilter          provider.ZoneIDFilter
 	ServiceConsumerDomain string
 	ClientToken           string
@@ -67,7 +68,7 @@ type AkamaiConfig struct {
 type AkamaiProvider struct {
 	provider.BaseProvider
 	// Edgedns zones to filter on
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// Contract Ids to filter on
 	zoneIDFilter provider.ZoneIDFilter
 	// Edgegrid library configuration
@@ -418,7 +419,8 @@ func (p AkamaiProvider) deleteRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 		recName := strings.TrimSuffix(endpoint.DNSName, ".")
 		rec, err := p.client.GetRecord(zoneName, recName, endpoint.RecordType)
 		if err != nil {
-			if _, ok := err.(*dns.RecordError); !ok {
+			recordError := &dns.RecordError{}
+			if errors.As(err, &recordError) {
 				return fmt.Errorf("endpoint deletion. record validation failed. error: %w", err)
 			}
 			log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", recName, endpoint.RecordType)

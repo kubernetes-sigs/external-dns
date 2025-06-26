@@ -62,7 +62,7 @@ const (
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
-	DomainFilter endpoint.DomainFilter
+	DomainFilter *endpoint.DomainFilter
 	DryRun       bool
 	Server       string
 	ServerID     string
@@ -140,7 +140,7 @@ type PDNSAPIClient struct {
 	serverID     string
 	authCtx      context.Context
 	client       *pgo.APIClient
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -157,7 +157,7 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 		return zones, resp, err
 	}
 
-	return zones, resp, provider.NewSoftError(fmt.Errorf("unable to list zones: %v", err))
+	return zones, resp, provider.NewSoftError(fmt.Errorf("unable to list zones: %w", err))
 }
 
 // PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
@@ -190,7 +190,7 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Respo
 		return zone, resp, err
 	}
 
-	return zone, resp, provider.NewSoftError(fmt.Errorf("unable to list zone: %v", err))
+	return zone, resp, provider.NewSoftError(fmt.Errorf("unable to list zone: %w", err))
 }
 
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
@@ -207,7 +207,7 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *htt
 		return resp, err
 	}
 
-	return resp, provider.NewSoftError(fmt.Errorf("unable to patch zone: %v", err))
+	return resp, provider.NewSoftError(fmt.Errorf("unable to patch zone: %w", err))
 }
 
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
@@ -417,7 +417,7 @@ func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpo
 	for _, zone := range filteredZones {
 		z, _, err := p.client.ListZone(zone.Id)
 		if err != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("unable to fetch records: %v", err))
+			return nil, provider.NewSoftError(fmt.Errorf("unable to fetch records: %w", err))
 		}
 
 		for _, rr := range z.Rrsets {

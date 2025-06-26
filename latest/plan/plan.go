@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/idna"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -123,13 +124,13 @@ func (t planTableRow) String() string {
 	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
 }
 
-func (t planTable) addCurrent(e *endpoint.Endpoint) {
+func (t *planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].current = append(t.rows[key].current, e)
 	t.rows[key].records[e.RecordType].current = e
 }
 
-func (t planTable) addCandidate(e *endpoint.Endpoint) {
+func (t *planTable) addCandidate(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].candidates = append(t.rows[key].candidates, e)
 	t.rows[key].records[e.RecordType].candidates = append(t.rows[key].records[e.RecordType].candidates, e)
@@ -315,7 +316,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
-// Currently this just removes TXT records to prevent them from being
+// Currently, this just removes TXT records to prevent them from being
 // deleted erroneously by the planner (only the TXT registry should do this.)
 //
 // Per RFC 1034, CNAME records conflict with all other records - it is the
@@ -339,9 +340,12 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Ma
 }
 
 // normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
-// it: removes space, converts to lower case, ensures there is a trailing dot
+// it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
 func normalizeDNSName(dnsName string) string {
-	s := strings.TrimSpace(strings.ToLower(dnsName))
+	s, err := idna.Lookup.ToASCII(strings.TrimSpace(dnsName))
+	if err != nil {
+		log.Warnf(`Got error while parsing DNSName %s: %v`, dnsName, err)
+	}
 	if !strings.HasSuffix(s, ".") {
 		s += "."
 	}

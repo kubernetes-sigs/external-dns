@@ -147,6 +147,14 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 			expectedKey:   CloudflareRegionKey,
 			expectedValue: "us",
 		},
+		{
+			title: "Cloudflare DNS record comment annotation is set correctly",
+			annotations: map[string]string{
+				CloudflareRecordCommentKey: "comment",
+			},
+			expectedKey:   CloudflareRecordCommentKey,
+			expectedValue: "comment",
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
@@ -289,19 +297,6 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 			expectedResult: map[string]string{
 				"scw/annotation-1": "value 1",
 				"scw/annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-		{
-			title: "ibmcloud- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/ibmcloud-annotation-1": "value 1",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/ibmcloud-annotation-2": "value 2",
-			},
-			expectedResult: map[string]string{
-				"ibmcloud-annotation-1": "value 1",
-				"ibmcloud-annotation-2": "value 2",
 			},
 			expectedIdentifier: "id1",
 		},

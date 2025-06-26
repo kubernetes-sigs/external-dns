@@ -26,12 +26,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
-	"sigs.k8s.io/external-dns/source/annotations"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -221,46 +222,6 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 			logExpectations: []string{
 				"Gateway gateway-namespace/not-gateway-name does not match gateway-name route-namespace/test",
-			},
-		},
-		{
-			title: "GatewayNameOldGeneration",
-			config: Config{
-				GatewayName: "gateway-name",
-			},
-			namespaces: namespaces("gateway-namespace", "route-namespace"),
-			gateways: []*v1beta1.Gateway{
-				{
-					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
-					Spec: v1.GatewaySpec{
-						Listeners: []v1.Listener{{
-							Protocol:      v1.HTTPProtocolType,
-							AllowedRoutes: allowAllNamespaces,
-						}},
-					},
-					Status: gatewayStatus("1.2.3.4"),
-				},
-			},
-			routes: []*v1beta1.HTTPRoute{{
-				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
-				Spec: v1.HTTPRouteSpec{
-					Hostnames: hostnames("test.example.internal"),
-					CommonRouteSpec: v1.CommonRouteSpec{
-						ParentRefs: []v1.ParentReference{
-							gwParentRef("gateway-namespace", "gateway-name"),
-						},
-					},
-				},
-				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
-					gwParentRef("gateway-namespace", "gateway-name"),
-					gwParentRef("gateway-namespace", "gateway-name"),
-				), 5, 4),
-			}},
-			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
-			},
-			logExpectations: []string{
-				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test",
 			},
 		},
 		{
@@ -1581,7 +1542,6 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.title, func(t *testing.T) {
 			if len(tt.logExpectations) == 0 {
 				t.Parallel()

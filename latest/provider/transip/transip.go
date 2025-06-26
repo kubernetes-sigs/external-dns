@@ -41,14 +41,14 @@ const (
 type TransIPProvider struct {
 	provider.BaseProvider
 	domainRepo   domain.Repository
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	dryRun       bool
 
 	zoneMap provider.ZoneIDName
 }
 
 // NewTransIPProvider initializes a new TransIP Provider.
-func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
+func NewTransIPProvider(accountName, privateKeyFile string, domainFilter *endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
 	// check given arguments
 	if accountName == "" {
 		return nil, errors.New("required --transip-account not set")
@@ -97,7 +97,7 @@ func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	// refresh zone mapping
 	zoneMap := provider.ZoneIDName{}
 	for _, zone := range zones {
-		// TransIP API doesn't expose a unique identifier for zones, other than than
+		// TransIP API doesn't expose a unique identifier for zones, other than
 		// the domain name itself
 		zoneMap.Add(zone.Name, zone.Name)
 	}

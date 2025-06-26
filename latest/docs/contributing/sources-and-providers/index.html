@@ -525,6 +525,8 @@
       
         
       
+        
+      
     
     
       
@@ -661,6 +663,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -676,10 +699,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -1068,6 +1087,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorials/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Using CRD Source for DNS Records
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorials/digitalocean/" class="md-nav__link">
         
   
@@ -1241,27 +1281,6 @@
   
   <span class="md-ellipsis">
     Headless Services
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/ibmcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    IBMCloud
   </span>
   
 
@@ -1551,53 +1570,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/tencentcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Tencent Cloud
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../tutorials/transip/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     TransIP
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/ultradns/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    UltraDNS
   </span>
   
 
@@ -2307,6 +2284,8 @@
       
         
       
+        
+      
     
     
       
@@ -2570,6 +2549,100 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_9" id="__nav_8_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Decisions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_9">
+            <span class="md-nav__icon md-icon"></span>
+            Decisions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/002-internal-ipv6-handling-rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    002 internal ipv6 handling rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/003-dnsendpoint-graduation-to-beta/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    003 dnsendpoint graduation to beta
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2676,7 +2749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../release." class="md-nav__link">
+      <a href="../../release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2964,7 +3037,7 @@
 <li><code>ContourIngressRouteSource</code>: collects all Contour IngressRoutes and returns them as Endpoint objects. The desired DNS name corresponds to the <code>virtualhost.fqdn</code> listed within the spec of each IngressRoute object.</li>
 <li><code>FakeSource</code>: returns a random list of Endpoints for the purpose of testing providers without having access to a Kubernetes cluster.</li>
 <li><code>ConnectorSource</code>: returns a list of Endpoint objects which are served by a tcp server configured through <code>connector-source-server</code> flag.</li>
-<li><code>CRDSource</code>: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to <a href="crd-source.md">CRD source</a> documentation.</li>
+<li><code>CRDSource</code>: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to <a href="../../sources/crd/">CRD source</a> documentation.</li>
 <li><code>EmptySource</code>: returns an empty list of Endpoint objects for the purpose of testing and cleaning out entries.</li>
 </ul>
 <h2 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h2>
@@ -3017,7 +3090,7 @@ Given a cluster on AWS you would most likely want to use the Service and Ingress
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 9, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 19, 2025</span>
   </span>
 
     

@@ -17,19 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"reflect"
-	"strings"
-	"text/template"
-	"time"
-	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -63,20 +55,6 @@ type kubeObject interface {
 	metav1.Object
 }
 
-func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, err error) {
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, obj); err != nil {
-		kind := obj.GetObjectKind().GroupVersionKind().Kind
-		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
-	}
-	for _, name := range strings.Split(buf.String(), ",") {
-		name = strings.TrimFunc(name, unicode.IsSpace)
-		name = strings.TrimSuffix(name, ".")
-		hostnames = append(hostnames, name)
-	}
-	return hostnames, nil
-}
-
 func getAccessFromAnnotations(input map[string]string) string {
 	return input[accessAnnotationKey]
 }
@@ -102,43 +80,3 @@ type eventHandlerFunc func()
 func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
 func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
 func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
-
-type informerFactory interface {
-	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
-}
-
-func waitForCacheSync(ctx context.Context, factory informerFactory) error {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
-		if !done {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
-			default:
-				return fmt.Errorf("failed to sync %v", typ)
-			}
-		}
-	}
-	return nil
-}
-
-type dynamicInformerFactory interface {
-	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
-}
-
-func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
-		if !done {
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
-			default:
-				return fmt.Errorf("failed to sync %v", typ)
-			}
-		}
-	}
-	return nil
-}

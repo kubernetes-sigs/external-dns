@@ -46,7 +46,7 @@ type GatewaySuite struct {
 }
 
 func (suite *GatewaySuite) SetupTest() {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
@@ -160,13 +160,13 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			annotationFilter: "kubernetes.io/gateway.class=nginx",
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioGatewaySource(
 				context.TODO(),
-				fake.NewSimpleClientset(),
+				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
@@ -492,7 +492,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -1473,7 +1473,7 @@ func testGatewayEndpoints(t *testing.T) {
 			expectError: true,
 		},
 	} {
-		ti := ti
+
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 

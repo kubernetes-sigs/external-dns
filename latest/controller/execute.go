@@ -53,7 +53,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
-	"sigs.k8s.io/external-dns/provider/ibmcloud"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
 	"sigs.k8s.io/external-dns/provider/ns1"
@@ -64,9 +63,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/plural"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/scaleway"
-	"sigs.k8s.io/external-dns/provider/tencentcloud"
 	"sigs.k8s.io/external-dns/provider/transip"
-	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/webhook"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
@@ -103,40 +100,61 @@ func Execute() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
-	// Create a source.Config from the flags passed by the user.
-	sourceCfg := source.NewSourceConfig(cfg)
-
-	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
-		KubeConfig:   cfg.KubeConfig,
-		APIServerURL: cfg.APIServerURL,
-		// If update events are enabled, disable timeout.
-		RequestTimeout: func() time.Duration {
-			if cfg.UpdateEvents {
-				return 0
-			}
-			return cfg.RequestTimeout
-		}(),
-	}, cfg.Sources, sourceCfg)
+	endpointsSource, err := buildSource(ctx, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Filter targets
-	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-
-	// Combine multiple sources into a single, deduplicated source.
-	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
-	endpointsSource = source.NewNAT64Source(endpointsSource, cfg.NAT64Networks)
-	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
-
 	domainFilter := createDomainFilter(cfg)
+
+	prvdr, err := buildProvider(ctx, cfg, domainFilter)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if cfg.WebhookServer {
+		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		os.Exit(0)
+	}
+
+	ctrl, err := buildController(cfg, endpointsSource, prvdr, domainFilter)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if cfg.Once {
+		err := ctrl.RunOnce(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
+	}
+
+	if cfg.UpdateEvents {
+		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
+		// Note that k8s Informers will perform an initial list operation, which results in the handler
+		// function initially being called for every Service/Ingress that exists
+		ctrl.Source.AddEventHandler(ctx, func() { ctrl.ScheduleRunOnce(time.Now()) })
+	}
+
+	ctrl.ScheduleRunOnce(time.Now())
+	ctrl.Run(ctx)
+}
+
+func buildProvider(
+	ctx context.Context,
+	cfg *externaldns.Config,
+	domainFilter *endpoint.DomainFilter,
+) (provider.Provider, error) {
+	var p provider.Provider
+	var err error
+
 	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
-	var p provider.Provider
 	switch cfg.Provider {
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
@@ -186,11 +204,9 @@ func Execute() {
 		}
 		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, cfg.AWSSDCreateTag, sd.NewFromConfig(aws.CreateDefaultV2Config(cfg)))
 	case "azure-dns", "azure":
-		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.DryRun)
+		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
 	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.DryRun)
-	case "ultradns":
-		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
+		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.AzureActiveDirectoryAuthorityHost, cfg.AzureZonesCacheDuration, cfg.AzureMaxRetriesCount, cfg.DryRun)
 	case "civo":
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
@@ -199,12 +215,18 @@ func Execute() {
 			zoneIDFilter,
 			cfg.CloudflareProxied,
 			cfg.DryRun,
-			cfg.CloudflareDNSRecordsPerPage,
-			cfg.CloudflareRegionKey,
+			cloudflare.RegionalServicesConfig{
+				Enabled:   cfg.CloudflareRegionalServices,
+				RegionKey: cfg.CloudflareRegionKey,
+			},
 			cloudflare.CustomHostnamesConfig{
 				Enabled:              cfg.CloudflareCustomHostnames,
 				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
 				CertificateAuthority: cfg.CloudflareCustomHostnamesCertificateAuthority,
+			},
+			cloudflare.DNSRecordsConfig{
+				PerPage: cfg.CloudflareDNSRecordsPerPage,
+				Comment: cfg.CloudflareDNSRecordsComment,
 			})
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
@@ -304,72 +326,41 @@ func Execute() {
 				APIVersion:            cfg.PiholeApiVersion,
 			},
 		)
-	case "ibmcloud":
-		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
 	case "plural":
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
-	case "tencentcloud":
-		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
 	case "webhook":
 		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
 	default:
-		log.Fatalf("unknown dns provider: %s", cfg.Provider)
+		err = fmt.Errorf("unknown dns provider: %s", cfg.Provider)
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if cfg.WebhookServer {
-		webhookapi.StartHTTPApi(p, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
-		os.Exit(0)
-	}
-
-	if cfg.ProviderCacheTime > 0 {
+	if p != nil && cfg.ProviderCacheTime > 0 {
 		p = provider.NewCachedProvider(
 			p,
 			cfg.ProviderCacheTime,
 		)
 	}
+	return p, err
+}
 
+func buildController(cfg *externaldns.Config, src source.Source, p provider.Provider, filter *endpoint.DomainFilter) (*Controller, error) {
+	policy, ok := plan.Policies[cfg.Policy]
+	if !ok {
+		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
+	}
 	reg, err := selectRegistry(cfg, p)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-
-	policy, exists := plan.Policies[cfg.Policy]
-	if !exists {
-		log.Fatalf("unknown policy: %s", cfg.Policy)
-	}
-
-	ctrl := Controller{
-		Source:               endpointsSource,
+	return &Controller{
+		Source:               src,
 		Registry:             reg,
 		Policy:               policy,
 		Interval:             cfg.Interval,
-		DomainFilter:         domainFilter,
+		DomainFilter:         filter,
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
-	}
-
-	if cfg.Once {
-		err := ctrl.RunOnce(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		os.Exit(0)
-	}
-
-	if cfg.UpdateEvents {
-		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
-		// Note that k8s Informers will perform an initial list operation, which results in the handler
-		// function initially being called for every Service/Ingress that exists
-		ctrl.Source.AddEventHandler(ctx, func() { ctrl.ScheduleRunOnce(time.Now()) })
-	}
-
-	ctrl.ScheduleRunOnce(time.Now())
-	ctrl.Run(ctx)
+	}, nil
 }
 
 // This function configures the logger format and level based on the provided configuration.
@@ -404,7 +395,7 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTNewFormatOnly)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
@@ -413,8 +404,35 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	return r, err
 }
 
+// buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
+// It initializes the source configuration, generates the required sources, and combines them into a single,
+// deduplicated source. Returns the combined source or an error if source creation fails.
+func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, error) {
+	sourceCfg := source.NewSourceConfig(cfg)
+	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
+		KubeConfig:   cfg.KubeConfig,
+		APIServerURL: cfg.APIServerURL,
+		RequestTimeout: func() time.Duration {
+			if cfg.UpdateEvents {
+				return 0
+			}
+			return cfg.RequestTimeout
+		}(),
+	}, cfg.Sources, sourceCfg)
+	if err != nil {
+		return nil, err
+	}
+	// Combine multiple sources into a single, deduplicated source.
+	combinedSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
+	// Filter targets
+	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
+	combinedSource = source.NewNAT64Source(combinedSource, cfg.NAT64Networks)
+	combinedSource = source.NewTargetFilterSource(combinedSource, targetFilter)
+	return combinedSource, nil
+}
+
 // RegexDomainFilter overrides DomainFilter
-func createDomainFilter(cfg *externaldns.Config) endpoint.DomainFilter {
+func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
 	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
 		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
 	} else {
@@ -442,8 +460,8 @@ func serveMetrics(address string) {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	log.Debugf("serving 'healthz' on 'localhost:%s/healthz'", address)
-	log.Debugf("serving 'metrics' on 'localhost:%s/metrics'", address)
+	log.Debugf("serving 'healthz' on '%s/healthz'", address)
+	log.Debugf("serving 'metrics' on '%s/metrics'", address)
 	log.Debugf("registered '%d' metrics", len(metrics.RegisterMetric.Metrics))
 
 	http.Handle("/metrics", promhttp.Handler())

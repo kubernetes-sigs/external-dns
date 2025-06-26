@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/annotations"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,6 +38,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -53,8 +56,8 @@ type crdSource struct {
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
 	scheme.AddKnownTypes(groupVersion,
-		&endpoint.DNSEndpoint{},
-		&endpoint.DNSEndpointList{},
+		&apiv1alpha1.DNSEndpoint{},
+		&apiv1alpha1.DNSEndpointList{},
 	)
 	metav1.AddToGroupVersion(scheme, groupVersion)
 	return nil
@@ -94,7 +97,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 	}
 
 	scheme := runtime.NewScheme()
-	addKnownTypes(scheme, groupVersion)
+	_ = addKnownTypes(scheme, groupVersion)
 
 	config.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
@@ -119,17 +122,17 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	}
 	if startInformer {
 		// external-dns already runs its sync-handler periodically (controlled by `--interval` flag) to ensure any
-		// missed or dropped events are handled.  specify a resync period 0 to avoid unnecessary sync handler invocations.
+		// missed or dropped events are handled. specify resync period 0 to avoid unnecessary sync handler invocations.
 		informer := cache.NewSharedInformer(
 			&cache.ListWatch{
-				ListFunc: func(lo metav1.ListOptions) (result runtime.Object, err error) {
-					return sourceCrd.List(context.TODO(), &lo)
+				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (result runtime.Object, err error) {
+					return sourceCrd.List(ctx, &lo)
 				},
-				WatchFunc: func(lo metav1.ListOptions) (watch.Interface, error) {
-					return sourceCrd.watch(context.TODO(), &lo)
+				WatchFuncWithContext: func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
+					return sourceCrd.watch(ctx, &lo)
 				},
 			},
-			&endpoint.DNSEndpoint{},
+			&apiv1alpha1.DNSEndpoint{},
 			0)
 		sourceCrd.informer = &informer
 		go informer.Run(wait.NeverStop)
@@ -137,13 +140,13 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	return &sourceCrd, nil
 }
 
-func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
+func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 	if cs.informer != nil {
 		log.Debug("Adding event handler for CRD")
 		// Right now there is no way to remove event handler from informer, see:
 		// https://github.com/kubernetes/kubernetes/issues/79610
 		informer := *cs.informer
-		informer.AddEventHandler(
+		_, _ = informer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
 					handler()
@@ -164,7 +167,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	endpoints := []*endpoint.Endpoint{}
 
 	var (
-		result *endpoint.DNSEndpointList
+		result *apiv1alpha1.DNSEndpointList
 		err    error
 	)
 
@@ -174,44 +177,38 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	result, err = cs.filterByAnnotations(result)
-
 	if err != nil {
 		return nil, err
 	}
 
 	for _, dnsEndpoint := range result.Items {
-		// Make sure that all endpoints have targets for A or CNAME type
-		crdEndpoints := []*endpoint.Endpoint{}
+		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
-			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
-				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.Name, ep.DNSName)
-				continue
+			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
+				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
 
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if ep.RecordType != "NAPTR" && strings.HasSuffix(target, ".") {
+				if ep.RecordType != endpoint.RecordTypeNAPTR && strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
-				if ep.RecordType == "NAPTR" && !strings.HasSuffix(target, ".") {
+				if ep.RecordType == endpoint.RecordTypeNAPTR && !strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
 			}
 			if illegalTarget {
-				log.Warnf("Endpoint %s with DNSName %s has an illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.Name, ep.DNSName)
+				log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target format.", dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName)
 				continue
 			}
 
-			if ep.Labels == nil {
-				ep.Labels = endpoint.NewLabels()
-			}
+			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
 
 			crdEndpoints = append(crdEndpoints, ep)
 		}
 
-		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
 		endpoints = append(endpoints, crdEndpoints...)
 
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
@@ -229,12 +226,6 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-func (cs *crdSource) setResourceLabel(crd *endpoint.DNSEndpoint, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("crd/%s/%s", crd.Namespace, crd.Name)
-	}
-}
-
 func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch.Interface, error) {
 	opts.Watch = true
 	return cs.crdClient.Get().
@@ -244,8 +235,8 @@ func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch
 		Watch(ctx)
 }
 
-func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result *endpoint.DNSEndpointList, err error) {
-	result = &endpoint.DNSEndpointList{}
+func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result *apiv1alpha1.DNSEndpointList, err error) {
+	result = &apiv1alpha1.DNSEndpointList{}
 	err = cs.crdClient.Get().
 		Namespace(cs.namespace).
 		Resource(cs.crdResource).
@@ -255,8 +246,8 @@ func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result
 	return
 }
 
-func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *endpoint.DNSEndpoint) (result *endpoint.DNSEndpoint, err error) {
-	result = &endpoint.DNSEndpoint{}
+func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (result *apiv1alpha1.DNSEndpoint, err error) {
+	result = &apiv1alpha1.DNSEndpoint{}
 	err = cs.crdClient.Put().
 		Namespace(dnsEndpoint.Namespace).
 		Resource(cs.crdResource).
@@ -269,22 +260,17 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *endpoint.DNS
 }
 
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
-func (cs *crdSource) filterByAnnotations(dnsendpoints *endpoint.DNSEndpointList) (*endpoint.DNSEndpointList, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(cs.annotationFilter)
+func (cs *crdSource) filterByAnnotations(dnsendpoints *apiv1alpha1.DNSEndpointList) (*apiv1alpha1.DNSEndpointList, error) {
+	selector, err := annotations.ParseFilter(cs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
 	// empty filter returns original list
 	if selector.Empty() {
 		return dnsendpoints, nil
 	}
 
-	filteredList := endpoint.DNSEndpointList{}
+	filteredList := apiv1alpha1.DNSEndpointList{}
 
 	for _, dnsendpoint := range dnsendpoints.Items {
 		// include dnsendpoint if its annotations match the selector

@@ -58,7 +58,7 @@ type gdClient interface {
 type GDProvider struct {
 	provider.BaseProvider
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	client       gdClient
 	ttl          int64
 	DryRun       bool
@@ -135,7 +135,7 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, su
 }
 
 // NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
+func NewGoDaddyProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
 	client, err := NewClient(useOTE, apiKey, apiSecret)
 	if err != nil {
 		return nil, err

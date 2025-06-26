@@ -87,7 +87,7 @@ type dnsimpleProvider struct {
 	client       dnsimpleZoneServiceInterface
 	identity     dnsimpleIdentityService
 	accountID    string
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
 	dryRun       bool
 }
@@ -98,7 +98,7 @@ type dnsimpleChange struct {
 }
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
-func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
+func NewDnsimpleProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")
@@ -206,10 +206,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				return nil, err
 			}
 			for _, record := range records.Data {
-				switch record.Type {
-				case "A", "CNAME", "TXT":
-					break
-				default:
+				if record.Type != endpoint.RecordTypeA && record.Type != endpoint.RecordTypeCNAME && record.Type != endpoint.RecordTypeTXT {
 					continue
 				}
 				// Apex records have an empty string for their name.

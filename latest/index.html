@@ -669,6 +669,8 @@
       
         
       
+        
+      
     
     
       
@@ -805,6 +807,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="docs/providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -820,10 +843,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -1212,6 +1231,27 @@
   
   
     <li class="md-nav__item">
+      <a href="docs/tutorials/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Using CRD Source for DNS Records
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="docs/tutorials/digitalocean/" class="md-nav__link">
         
   
@@ -1385,27 +1425,6 @@
   
   <span class="md-ellipsis">
     Headless Services
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="docs/tutorials/ibmcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    IBMCloud
   </span>
   
 
@@ -1695,53 +1714,11 @@
   
   
     <li class="md-nav__item">
-      <a href="docs/tutorials/tencentcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Tencent Cloud
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="docs/tutorials/transip/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     TransIP
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="docs/tutorials/ultradns/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    UltraDNS
   </span>
   
 
@@ -2451,6 +2428,8 @@
       
         
       
+        
+      
     
     
       
@@ -2714,6 +2693,100 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_9" id="__nav_8_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Decisions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_9">
+            <span class="md-nav__icon md-icon"></span>
+            Decisions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="docs/proposal/002-internal-ipv6-handling-rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    002 internal ipv6 handling rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="docs/proposal/003-dnsendpoint-graduation-to-beta/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    003 dnsendpoint graduation to beta
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2815,7 +2888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="docs/release." class="md-nav__link">
+      <a href="docs/release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3140,10 +3213,9 @@ Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from 
 <li><a href="https://www.godaddy.com">GoDaddy</a></li>
 <li><a href="https://www.gandi.net">Gandi</a></li>
 <li><a href="https://www.ibm.com/cloud/dns">IBM Cloud DNS</a></li>
-<li><a href="https://cloud.tencent.com/product/privatedns">TencentCloud PrivateDNS</a></li>
-<li><a href="https://cloud.tencent.com/product/cns">TencentCloud DNSPod</a></li>
 <li><a href="https://www.plural.sh/">Plural</a></li>
 <li><a href="https://pi-hole.net/">Pi-hole</a></li>
+<li><a href="https://www.alibabacloud.com/help/en/dns">Alibaba Cloud DNS</a></li>
 </ul>
 <p>ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.<br />
 We strongly encourage you to set <code>--txt-owner-id</code> to a unique value that doesn&rsquo;t change for the lifetime of your cluster.<br />
@@ -3182,6 +3254,10 @@ See PR #3063 for all the discussions about it.</p>
 <tr>
 <td>ClouDNS</td>
 <td>https://github.com/rwunderer/external-dns-cloudns-webhook</td>
+</tr>
+<tr>
+<td>deSEC</td>
+<td>https://github.com/michelangelomo/external-dns-desec-provider</td>
 </tr>
 <tr>
 <td>Dreamhost</td>
@@ -3242,6 +3318,10 @@ See PR #3063 for all the discussions about it.</p>
 <tr>
 <td>STACKIT</td>
 <td>https://github.com/stackitcloud/external-dns-stackit-webhook</td>
+</tr>
+<tr>
+<td>Unbound</td>
+<td>https://github.com/guillomep/external-dns-unbound-webhook</td>
 </tr>
 <tr>
 <td>Unifi</td>
@@ -3374,11 +3454,6 @@ Those who are interested can create a webhook provider based on an <em>in-tree</
 <td>@Sh4d1</td>
 </tr>
 <tr>
-<td>UltraDNS</td>
-<td>Alpha</td>
-<td></td>
-</tr>
-<tr>
 <td>GoDaddy</td>
 <td>Alpha</td>
 <td></td>
@@ -3389,16 +3464,6 @@ Those who are interested can create a webhook provider based on an <em>in-tree</
 <td>@packi</td>
 </tr>
 <tr>
-<td>IBMCloud</td>
-<td>Alpha</td>
-<td>@hughhuangzh</td>
-</tr>
-<tr>
-<td>TencentCloud</td>
-<td>Alpha</td>
-<td>@Hyzhou</td>
-</tr>
-<tr>
 <td>Plural</td>
 <td>Alpha</td>
 <td>@michaeljguarino</td>
@@ -3407,6 +3472,11 @@ Those who are interested can create a webhook provider based on an <em>in-tree</
 <td>Pi-hole</td>
 <td>Alpha</td>
 <td>@tinyzimmer</td>
+</tr>
+<tr>
+<td>Alibaba Cloud DNS</td>
+<td>Alpha</td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -3470,6 +3540,7 @@ Those who are interested can create a webhook provider based on an <em>in-tree</
 <li><a href="docs/tutorials/gke/">Using Google&rsquo;s Default Ingress Controller</a></li>
 <li><a href="docs/tutorials/gke-nginx/">Using the Nginx Ingress Controller</a></li>
 <li><a href="docs/tutorials/hostport/">Headless Services</a></li>
+<li><a href="docs/tutorials/ionoscloud/">IONOS Cloud</a></li>
 <li><a href="docs/sources/istio/">Istio Gateway Source</a></li>
 <li><a href="docs/tutorials/linode/">Linode</a></li>
 <li><a href="docs/tutorials/ns1/">NS1</a></li>
@@ -3482,17 +3553,14 @@ Those who are interested can create a webhook provider based on an <em>in-tree</
 <li><a href="docs/tutorials/transip/">TransIP</a></li>
 <li><a href="docs/tutorials/ovh/">OVHcloud</a></li>
 <li><a href="docs/tutorials/scaleway/">Scaleway</a></li>
-<li><a href="docs/tutorials/ultradns/">UltraDNS</a></li>
 <li><a href="docs/tutorials/godaddy/">GoDaddy</a></li>
 <li><a href="docs/tutorials/gandi/">Gandi</a></li>
-<li><a href="docs/tutorials/ibmcloud/">IBM Cloud</a></li>
 <li><a href="docs/sources/nodes/">Nodes as source</a></li>
-<li><a href="docs/tutorials/tencentcloud/">TencentCloud</a></li>
 <li><a href="docs/tutorials/plural/">Plural</a></li>
 <li><a href="docs/tutorials/pihole/">Pi-hole</a></li>
 </ul>
 <h3 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h3>
-<p>See the <a href="docs/contributing/getting-started.md">contributor guide</a> for details on compiling<br />
+<p>See the <a href="docs/contributing/dev-guide/">contributor guide</a> for details on compiling<br />
 from source.</p>
 <h4 id="setup-steps">Setup Steps<a class="headerlink" href="#setup-steps" title="Permanent link">&para;</a></h4>
 <p>Next, run an application and expose it via a Kubernetes Service:</p>
@@ -3505,7 +3573,7 @@ from source.</p>
 <p>Optionally, you can customize the TTL value of the resulting DNS record by using the <code>external-dns.alpha.kubernetes.io/ttl</code> annotation:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">kubectl annotate service nginx &quot;external-dns.alpha.kubernetes.io/ttl=10&quot;</span>
 </code></pre></div>
-<p>For more details on configuring TTL, see <a href="docs/ttl.md">here</a>.</p>
+<p>For more details on configuring TTL, see <a href="docs/advanced/ttl/">here</a>.</p>
 <p>Use the internal-hostname annotation to create DNS records with ClusterIP as the target.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">kubectl annotate service nginx &quot;external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org.&quot;</span>
 </code></pre></div>
@@ -3532,7 +3600,7 @@ It also assumes you are running in the <code>default</code> namespace. See the <
 </ul>
 <p>The <strong>tutorials</strong> section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.</p>
 <h1 id="note">Note<a class="headerlink" href="#note" title="Permanent link">&para;</a></h1>
-<p>If using a txt registry and attempting to use a CNAME the <code>--txt-prefix</code> must be set to avoid conflicts.  Changing <code>--txt-prefix</code> will result in lost ownership over previously created records.</p>
+<p>If using a txt registry and attempting to use a CNAME the <code>--txt-prefix</code> must be set to avoid conflicts. Changing <code>--txt-prefix</code> will result in lost ownership over previously created records.</p>
 <p>If <code>externalIPs</code> list is defined for a <code>LoadBalancer</code> service, this list will be used instead of an assigned load balancer IP to create a DNS record.<br />
 It&rsquo;s useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with <a href="https://metallb.universe.tf">MetalLB</a>).</p>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
@@ -3583,7 +3651,7 @@ that do not have a maintainer listed are in need of assistance.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">April 1, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 28, 2025</span>
   </span>
 
     

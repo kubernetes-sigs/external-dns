@@ -527,6 +527,8 @@
       
         
       
+        
+      
     
     
       
@@ -663,6 +665,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -678,10 +701,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -1070,6 +1089,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorials/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Using CRD Source for DNS Records
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorials/digitalocean/" class="md-nav__link">
         
   
@@ -1243,27 +1283,6 @@
   
   <span class="md-ellipsis">
     Headless Services
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/ibmcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    IBMCloud
   </span>
   
 
@@ -1553,53 +1572,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/tencentcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Tencent Cloud
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../tutorials/transip/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     TransIP
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/ultradns/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    UltraDNS
   </span>
   
 
@@ -2324,6 +2301,8 @@
       
         
       
+        
+      
     
     
       
@@ -2587,6 +2566,100 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_9" id="__nav_8_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Decisions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_9">
+            <span class="md-nav__icon md-icon"></span>
+            Decisions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/002-internal-ipv6-handling-rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    002 internal ipv6 handling rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/003-dnsendpoint-graduation-to-beta/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    003 dnsendpoint graduation to beta
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2688,7 +2761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../release." class="md-nav__link">
+      <a href="../../release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2853,6 +2926,8 @@
 
 
 <h1 id="about">About<a class="headerlink" href="#about" title="Permanent link">&para;</a></h1>
+<p>A source in ExternalDNS defines where DNS records are discovered from within your infrastructure. Each source corresponds to a specific Kubernetes resource or external system that declares DNS names.</p>
+<p>ExternalDNS watches the specified sources for hostname information and uses it to create, update, or delete DNS records accordingly. Multiple sources can be configured simultaneously to support diverse environments.</p>
 <table>
 <thead>
 <tr>
@@ -2888,13 +2963,13 @@
 <td></td>
 </tr>
 <tr>
-<td>crd</td>
+<td><a href="../crd/">crd</a></td>
 <td>DNSEndpoint.externaldns.k8s.io</td>
 <td>Yes</td>
 <td>Yes</td>
 </tr>
 <tr>
-<td>f5-virtualserver</td>
+<td><a href="../f5-virtualserver/">f5-virtualserver</a></td>
 <td>VirtualServer.cis.f5.com</td>
 <td>Yes</td>
 <td></td>
@@ -2930,7 +3005,7 @@
 <td>Yes</td>
 </tr>
 <tr>
-<td>gloo-proxy</td>
+<td><a href="../gloo-proxy/">gloo-proxy</a></td>
 <td>Proxy.gloo.solo.io</td>
 <td></td>
 <td></td>
@@ -2942,37 +3017,37 @@
 <td>Yes</td>
 </tr>
 <tr>
-<td>istio-gateway</td>
+<td><a href="../istio/">istio-gateway</a></td>
 <td>Gateway.networking.istio.io</td>
 <td>Yes</td>
 <td></td>
 </tr>
 <tr>
-<td>istio-virtualservice</td>
+<td><a href="../istio/">istio-virtualservice</a></td>
 <td>VirtualService.networking.istio.io</td>
 <td>Yes</td>
 <td></td>
 </tr>
 <tr>
-<td>kong-tcpingress</td>
+<td><a href="../kong/">kong-tcpingress</a></td>
 <td>TCPIngress.configuration.konghq.com</td>
 <td>Yes</td>
 <td></td>
 </tr>
 <tr>
-<td>node</td>
+<td><a href="../nodes/">node</a></td>
 <td>Node</td>
 <td>Yes</td>
 <td>Yes</td>
 </tr>
 <tr>
-<td>openshift-route</td>
+<td><a href="../openshift/">openshift-route</a></td>
 <td>Route.route.openshift.io</td>
 <td>Yes</td>
 <td>Yes</td>
 </tr>
 <tr>
-<td>pod</td>
+<td><a href="../pod/">pod</a></td>
 <td>Pod</td>
 <td></td>
 <td></td>
@@ -2990,7 +3065,7 @@
 <td></td>
 </tr>
 <tr>
-<td>traefik-proxy</td>
+<td><a href="../traefik-proxy/">traefik-proxy</a></td>
 <td>IngressRoute.traefik.io IngressRouteTCP.traefik.io IngressRouteUDP.traefik.io</td>
 <td>Yes</td>
 <td></td>
@@ -3017,7 +3092,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 5, 2024</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 19, 2025</span>
   </span>
 
     

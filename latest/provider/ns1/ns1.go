@@ -44,7 +44,7 @@ const (
 	defaultTTL = 10
 )
 
-// NS1DomainClient is a subset of the NS1 API the the provider uses, to ease testing
+// NS1DomainClient is a subset of the NS1 API the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
 	DeleteRecord(zone string, domain string, t string) (*http.Response, error)
@@ -85,7 +85,7 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
-	DomainFilter  endpoint.DomainFilter
+	DomainFilter  *endpoint.DomainFilter
 	ZoneIDFilter  provider.ZoneIDFilter
 	NS1Endpoint   string
 	NS1IgnoreSSL  bool
@@ -97,7 +97,7 @@ type NS1Config struct {
 type NS1Provider struct {
 	provider.BaseProvider
 	client        NS1DomainClient
-	domainFilter  endpoint.DomainFilter
+	domainFilter  *endpoint.DomainFilter
 	zoneIDFilter  provider.ZoneIDFilter
 	dryRun        bool
 	minTTLSeconds int

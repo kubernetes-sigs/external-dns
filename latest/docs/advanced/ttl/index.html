@@ -527,6 +527,8 @@
       
         
       
+        
+      
     
     
       
@@ -663,6 +665,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -678,10 +701,6 @@
   
     
     
-      
-        
-      
-        
       
         
       
@@ -1070,6 +1089,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorials/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Using CRD Source for DNS Records
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorials/digitalocean/" class="md-nav__link">
         
   
@@ -1243,27 +1283,6 @@
   
   <span class="md-ellipsis">
     Headless Services
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/ibmcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    IBMCloud
   </span>
   
 
@@ -1553,53 +1572,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/tencentcloud/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Tencent Cloud
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../tutorials/transip/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     TransIP
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tutorials/ultradns/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    UltraDNS
   </span>
   
 
@@ -2311,6 +2288,8 @@
       
         
       
+        
+      
     
     
       
@@ -2588,11 +2567,35 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ttl-annotation-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      TTL annotation support
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TTL annotation support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#providers" class="md-nav__link">
     <span class="md-ellipsis">
       Providers
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2678,10 +2681,70 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#ultradns" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-cases-for-external-dnsalphakubernetesiottl-annotation" class="md-nav__link">
     <span class="md-ellipsis">
-      UltraDNS
+      Use Cases for external-dns.alpha.kubernetes.io/ttl annotation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Cases for external-dns.alpha.kubernetes.io/ttl annotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fast-failover-for-critical-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fast Failover for Critical Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#long-ttl-for-static-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Long TTL for Static Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#canary-or-experimental-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Canary or Experimental Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-specific-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provider-Specific Optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#regulatory-or-contractual-slas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Regulatory or Contractual SLAs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#autoscaling-node-pools-in-gcp-or-other-cloud-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Autoscaling Node Pools in GCP (or Other Cloud Providers)
     </span>
   </a>
   
@@ -2717,6 +2780,100 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_9" id="__nav_8_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Decisions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_9">
+            <span class="md-nav__icon md-icon"></span>
+            Decisions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/002-internal-ipv6-handling-rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    002 internal ipv6 handling rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../proposal/003-dnsendpoint-graduation-to-beta/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    003 dnsendpoint graduation to beta
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2823,7 +2980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../release." class="md-nav__link">
+      <a href="../../release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2978,11 +3135,35 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ttl-annotation-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      TTL annotation support
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TTL annotation support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#providers" class="md-nav__link">
     <span class="md-ellipsis">
       Providers
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3068,10 +3249,70 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#ultradns" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-cases-for-external-dnsalphakubernetesiottl-annotation" class="md-nav__link">
     <span class="md-ellipsis">
-      UltraDNS
+      Use Cases for external-dns.alpha.kubernetes.io/ttl annotation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Cases for external-dns.alpha.kubernetes.io/ttl annotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fast-failover-for-critical-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fast Failover for Critical Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#long-ttl-for-static-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Long TTL for Static Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#canary-or-experimental-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Canary or Experimental Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-specific-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provider-Specific Optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#regulatory-or-contractual-slas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Regulatory or Contractual SLAs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#autoscaling-node-pools-in-gcp-or-other-cloud-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Autoscaling Node Pools in GCP (or Other Cloud Providers)
     </span>
   </a>
   
@@ -3123,21 +3364,236 @@ TTL is specified as an integer encoded as string representing seconds.</p>
 </code></pre></div>
 <p>Both examples result in the same value of 60 seconds TTL.</p>
 <p>TTL must be a positive value.</p>
-<h2 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h2>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> AWS (Route53)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Azure</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Cloudflare</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> DigitalOcean</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> DNSimple</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Google</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> InMemory</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Linode</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> TransIP</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> RFC2136</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> UltraDNS</li>
-</ul>
-<p>PRs welcome!</p>
+<h2 id="ttl-annotation-support">TTL annotation support<a class="headerlink" href="#ttl-annotation-support" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Note: For TTL annotations to work, the <code>external-dns.alpha.kubernetes.io/hostname</code> annotation must be set on the resource and be supported by the provider as well as the source.</p>
+</blockquote>
+<h3 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Provider</th>
+<th style="text-align: center;">Supported</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>Akamai</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>AlibabaCloud</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>AWS</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>AWSSD</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Azure</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Civo</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Cloudflare</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CoreDNS</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>DigitalOcean</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>DNSSimple</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Exoscale</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Gandi</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GoDaddy</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Google GCP</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>InMemory</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Linode</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NS1</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>OCI</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>OVH</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PDNS</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PiHole</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Plural</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>RFC2136</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Scaleway</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Transip</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Webhook</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Source</th>
+<th style="text-align: center;">Supported</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>ambassador-host</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cloudfoundry</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>connector</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>contour-httpproxy</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>crd</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>empty</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>f5-transportserver</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>f5-virtualserver</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>fake</code></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>gateway-grpcroute</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>gateway-httproute</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>gateway-tcproute</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>gateway-tlsroute</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>gateway-udproute</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>gloo-proxy</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ingress</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>istio-gateway</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>istio-virtualservice</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>kong-tcpingress</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>node</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>openshift-route</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>pod</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>service</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>skipper-routegroup</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>traefik-proxy</code></td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
 <h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <p>When the <code>external-dns.alpha.kubernetes.io/ttl</code> annotation is not provided, the TTL will default to 0 seconds and <code>endpoint.TTL.isConfigured()</code> will be false.</p>
 <h3 id="aws-provider">AWS Provider<a class="headerlink" href="#aws-provider" title="Permanent link">&para;</a></h3>
@@ -3163,8 +3619,62 @@ This behavior may change in the future.</p>
 <p>The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours</p>
 <h3 id="transip-provider">TransIP Provider<a class="headerlink" href="#transip-provider" title="Permanent link">&para;</a></h3>
 <p>The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.</p>
-<h3 id="ultradns">UltraDNS<a class="headerlink" href="#ultradns" title="Permanent link">&para;</a></h3>
-<p>The UltraDNS provider minimal TTL is used when the TTL is not provided. The default TTL is account level default TTL, if defined, otherwise 24 hours.</p>
+<h2 id="use-cases-for-external-dnsalphakubernetesiottl-annotation">Use Cases for <code>external-dns.alpha.kubernetes.io/ttl</code> annotation<a class="headerlink" href="#use-cases-for-external-dnsalphakubernetesiottl-annotation" title="Permanent link">&para;</a></h2>
+<p>The <code>external-dns.alpha.kubernetes.io/ttl</code> annotation allows you to set a custom <strong>TTL (Time To Live)</strong> for DNS records managed by <code>external-dns</code>.</p>
+<p>Use the <code>external-dns.alpha.kubernetes.io/tt</code> annotation to fine-tune DNS caching behavior per record, balancing between update frequency and performance.</p>
+<p>This is useful in several real-world scenarios depending on how frequently DNS records are expected to change.</p>
+<hr />
+<h3 id="fast-failover-for-critical-services">Fast Failover for Critical Services<a class="headerlink" href="#fast-failover-for-critical-services" title="Permanent link">&para;</a></h3>
+<p>For services that must be highly available—like APIs, databases, or external load balancers—set a <strong>low TTL</strong> (e.g., 30 seconds) so DNS clients quickly update to new IPs during:</p>
+<ul>
+<li>Node failures</li>
+<li>Region failovers</li>
+<li>Blue/green deployments</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">external-dns.alpha.kubernetes.io/ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;30s&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="long-ttl-for-static-services">Long TTL for Static Services<a class="headerlink" href="#long-ttl-for-static-services" title="Permanent link">&para;</a></h3>
+<p>If your service’s IP or endpoint rarely changes (e.g., static websites, internal dashboards), you can set a long TTL (e.g., 86400 seconds = 24 hours) to:</p>
+<ul>
+<li>Reduce DNS query load</li>
+<li>Improve cache performance</li>
+<li>Lower cost with some DNS providers</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>annotations:
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  external-dns.alpha.kubernetes.io/ttl: &quot;24h&quot;
+</code></pre></div>
+<hr />
+<h3 id="canary-or-experimental-services">Canary or Experimental Services<a class="headerlink" href="#canary-or-experimental-services" title="Permanent link">&para;</a></h3>
+<p>Use a short TTL for services under test or experimentation to allow fast DNS propagation when making changes, allowing easy rollback and testing.</p>
+<hr />
+<h3 id="provider-specific-optimization">Provider-Specific Optimization<a class="headerlink" href="#provider-specific-optimization" title="Permanent link">&para;</a></h3>
+<p>Some DNS providers charge per query or have query rate limits. Adjusting the TTL lets you:</p>
+<ul>
+<li>Reduce costs</li>
+<li>Avoid throttling</li>
+<li>Manage DNS traffic load efficiently</li>
+</ul>
+<hr />
+<h3 id="regulatory-or-contractual-slas">Regulatory or Contractual SLAs<a class="headerlink" href="#regulatory-or-contractual-slas" title="Permanent link">&para;</a></h3>
+<p>Certain environments may require TTL values to align with:</p>
+<ul>
+<li>Regulatory guidelines</li>
+<li>Legacy system compatibility</li>
+<li>Contractual service-level agreements</li>
+</ul>
+<hr />
+<h3 id="autoscaling-node-pools-in-gcp-or-other-cloud-providers">Autoscaling Node Pools in GCP (or Other Cloud Providers)<a class="headerlink" href="#autoscaling-node-pools-in-gcp-or-other-cloud-providers" title="Permanent link">&para;</a></h3>
+<p>In environments like Google Cloud Platform (GCP) using private node IPs for DNS resolution, ExternalDNS may register node IPs with a default TTL of 300 seconds.</p>
+<p>During autoscaling events (e.g., node addition/removal or upgrades), DNS records may remain stale for several minutes, causing traffic to be routed to non-existent nodes.</p>
+<p>By using the TTL annotation you can:</p>
+<ul>
+<li>Reduce TTL to allow faster DNS propagation</li>
+<li>Ensure quicker routing updates when node IPs change</li>
+<li>Improve resiliency during frequent cluster topology changes</li>
+<li>Fine-grained TTL control helps avoid downtime or misrouting in dynamic, autoscaling environments.</li>
+</ul>
 
 
 
@@ -3185,7 +3695,7 @@ This behavior may change in the future.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 10, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 20, 2025</span>
   </span>
 
     
