@@ -1,0 +1,18 @@
+***********************************************************************
+* External DNS                                                        *
+***********************************************************************
+  Chart version: {{ .Chart.Version }}
+  App version:   {{ .Chart.AppVersion }}
+  Image tag:     {{ include "external-dns.image" . }}
+***********************************************************************
+
+{{- if eq (typeOf .Values.provider) "string" }}
+🚧 DEPRECATIONS 🚧
+
+The following features, functions, or methods are deprecated and no longer recommended for use.
+
+{{/* The deprecation message for legacy 'provider: name'. */}}
+{{- if eq (typeOf .Values.provider) "string" -}}
+❗❗❗ DEPRECATED ❗❗❗ The legacy 'provider: <name>' configuration is in use. Support will be removed in future releases.
+{{- end -}}
+{{- end }}

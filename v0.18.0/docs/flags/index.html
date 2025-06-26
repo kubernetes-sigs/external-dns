@@ -1,0 +1,3745 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="external-dns maintainers">
+      
+      
+      
+        <link rel="prev" href="../faq/">
+      
+      
+        <link rel="next" href="../20190708-external-dns-incubator/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>Flags - external-dns</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bcfcd587.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#flags" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="external-dns" class="md-header__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            external-dns
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Flags
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../charts/external-dns/" class="md-tabs__link">
+          
+  
+    
+  
+  Chart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../faq/" class="md-tabs__link">
+          
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/akamai-edgedns/" class="md-tabs__link">
+          
+  
+    
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../annotations/annotations/" class="md-tabs__link">
+          
+  
+    
+  
+  Annotations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sources/about/" class="md-tabs__link">
+          
+  
+    
+  
+  Sources
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../registry/registry/" class="md-tabs__link">
+          
+  
+    
+  
+  Registries
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../initial-design/" class="md-tabs__link">
+          
+  
+    
+  
+  Advanced Topics
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../CONTRIBUTING/" class="md-tabs__link">
+          
+  
+    
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="external-dns" class="md-nav__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    external-dns
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../charts/external-dns/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Chart
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Chart
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../charts/external-dns/CHANGELOG/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Flags
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20190708-external-dns-incubator/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Out of Incubator
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code-of-conduct/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Code of Conduct
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../LICENSE/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Tutorials
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/akamai-edgedns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Akamai Edge DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/alibabacloud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Alibaba Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/aws-filters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Filters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/aws-load-balancer-controller/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Load Balancer Controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/aws-public-private-route53/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Route53 with same domain for public and private zones
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/aws-sd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS Cloud Map API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/aws/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AWS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/azure-private-dns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure Private DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/azure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Azure DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/civo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Civo DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/cloudflare/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cloudflare DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/contour/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contour HTTPProxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/coredns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CoreDNS with minikube
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Using CRD Source for DNS Records
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/digitalocean/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DigitalOcean DNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/dnsimple/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DNSimple
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/exoscale/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exoscale
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/externalname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ExternalName Services
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/gandi/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gandi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/gke-nginx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GKE with nginx-ingress-controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/gke/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GKE with default controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/godaddy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GoDaddy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/hostport/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Headless Services
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/ionoscloud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IONOS Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/kops-dns-controller/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kOps dns-controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/kube-ingress-aws/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kube-ingress-aws-controller
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/linode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/ns1/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NS1
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/oracle/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Oracle Cloud Infrastructure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/ovh/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OVHcloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/pdns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    PowerDNS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/pihole/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pi-hole
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/plural/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plural
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/rfc2136/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    RFC2136 provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/scaleway/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scaleway
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/security-context/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running ExternalDNS with limited privileges
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/transip/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TransIP
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/webhook-provider/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Webhook provider
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Annotations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Annotations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../annotations/annotations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Sources
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Sources
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/about/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CRD Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/f5-transportserver/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    F5 Networks TransportServer Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/f5-virtualserver/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    F5 Networks VirtualServer Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/gateway-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gateway API Route Sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/gateway/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gateway sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/gloo-proxy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gloo Proxy Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/ingress/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Ingress source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/istio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Istio Gateway / Virtual Service Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/kong/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kong TCPIngress Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/mx-record/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MX record with CRD source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/nodes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster Nodes as Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/ns-record/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NS record with CRD source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/openshift/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OpenShift Route Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/pod/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pod Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/service/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Service source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/traefik-proxy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Traefik Proxy Source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sources/txt-record/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating TXT record with CRD source
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Registries
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Registries
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../registry/registry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../registry/txt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TXT
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../registry/dynamodb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DynamoDB
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../initial-design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Initial Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/001-leader-election/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Leader Election
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../monitoring/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Monitoring
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8_3" id="__nav_8_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_3">
+            <span class="md-nav__icon md-icon"></span>
+            Monitoring
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Available Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/multi-target/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MultiTarget
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/nat64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    NAT64
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/rate-limits/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rate Limits
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/ttl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    TTL
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/fqdn-templating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FQDN Templating
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_9" id="__nav_8_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Decisions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_9">
+            <span class="md-nav__icon md-icon"></span>
+            Decisions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/002-internal-ipv6-handling-rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    002 internal ipv6 handling rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/003-dnsendpoint-graduation-to-beta/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    003 dnsendpoint graduation to beta
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../contributing/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Contributing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubernetes Contributions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecation Policy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/chart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Helm Chart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/dev-guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/sources-and-providers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sources and Providers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h1>
+<!-- THIS FILE MUST NOT BE EDITED BY HAND -->
+<!-- ON NEW FLAG ADDED PLEASE RUN 'make generate-flags-documentation' -->
+<!-- markdownlint-disable MD013 -->
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Flag</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>--[no-]version</code></td>
+<td style="text-align: left;">Show application version.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--server=""</code></td>
+<td style="text-align: left;">The Kubernetes API server to connect to (default: auto-detect)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--kubeconfig=""</code></td>
+<td style="text-align: left;">Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--request-timeout=30s</code></td>
+<td style="text-align: left;">Request timeout when calling Kubernetes APIs. 0s means no timeout</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]resolve-service-load-balancer-hostname</code></td>
+<td style="text-align: left;">Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]listen-endpoint-events</code></td>
+<td style="text-align: left;">Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cf-api-endpoint=""</code></td>
+<td style="text-align: left;">The fully-qualified domain name of the cloud foundry instance you are targeting</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cf-username=""</code></td>
+<td style="text-align: left;">The username to log into the cloud foundry API</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cf-password=""</code></td>
+<td style="text-align: left;">The password to log into the cloud foundry API</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--gloo-namespace=gloo-system</code></td>
+<td style="text-align: left;">The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--skipper-routegroup-groupversion="zalando.org/v1"</code></td>
+<td style="text-align: left;">The resource version for skipper routegroup</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]always-publish-not-ready-addresses</code></td>
+<td style="text-align: left;">Always publish also not ready addresses for headless services (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--annotation-filter=""</code></td>
+<td style="text-align: left;">Filter resources queried for endpoints by annotation, using label selector semantics</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]combine-fqdn-annotation</code></td>
+<td style="text-align: left;">Combine FQDN template and Annotations instead of overwriting (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--compatibility=</code></td>
+<td style="text-align: left;">Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--connector-source-server="localhost:8080"</code></td>
+<td style="text-align: left;">The server to connect for connector source, valid only when using connector source</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--crd-source-apiversion="externaldns.k8s.io/v1alpha1"</code></td>
+<td style="text-align: left;">API version of the CRD for crd source, e.g. <code>externaldns.k8s.io/v1alpha1</code>, valid only when using crd source</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--crd-source-kind="DNSEndpoint"</code></td>
+<td style="text-align: left;">Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--default-targets=DEFAULT-TARGETS</code></td>
+<td style="text-align: left;">Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]force-default-targets</code></td>
+<td style="text-align: left;">Force the application of &ndash;default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exclude-record-types=EXCLUDE-RECORD-TYPES</code></td>
+<td style="text-align: left;">Record types to exclude from management; specify multiple times to exclude many; (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exclude-target-net=EXCLUDE-TARGET-NET</code></td>
+<td style="text-align: left;">Exclude target nets (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]exclude-unschedulable</code></td>
+<td style="text-align: left;">Exclude nodes that are considered unschedulable (default: true)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]expose-internal-ipv6</code></td>
+<td style="text-align: left;">When using the node source, expose internal IPv6 addresses (optional). Default is true.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--fqdn-template=""</code></td>
+<td style="text-align: left;">A templated string that&rsquo;s used to generate DNS names from sources that don&rsquo;t define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--gateway-label-filter=GATEWAY-LABEL-FILTER</code></td>
+<td style="text-align: left;">Filter Gateways of Route endpoints via label selector (default: all gateways)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--gateway-name=GATEWAY-NAME</code></td>
+<td style="text-align: left;">Limit Gateways of Route endpoints to a specific name (default: all names)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--gateway-namespace=GATEWAY-NAMESPACE</code></td>
+<td style="text-align: left;">Limit Gateways of Route endpoints to a specific namespace (default: all namespaces)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]ignore-hostname-annotation</code></td>
+<td style="text-align: left;">Ignore hostname annotation when generating DNS names, valid only when &ndash;fqdn-template is set (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]ignore-ingress-rules-spec</code></td>
+<td style="text-align: left;">Ignore the spec.rules section in Ingress resources (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]ignore-ingress-tls-spec</code></td>
+<td style="text-align: left;">Ignore the spec.tls section in Ingress resources (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]ignore-non-host-network-pods</code></td>
+<td style="text-align: left;">Ignore pods not running on host network when using pod source (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--ingress-class=INGRESS-CLASS</code></td>
+<td style="text-align: left;">Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--label-filter=""</code></td>
+<td style="text-align: left;">Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--managed-record-types=A...</code></td>
+<td style="text-align: left;">Record types to manage; specify multiple times to include many; (default: A,AAAA,CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--namespace=""</code></td>
+<td style="text-align: left;">Limit resources queried for endpoints to a specific namespace (default: all namespaces)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--nat64-networks=NAT64-NETWORKS</code></td>
+<td style="text-align: left;">Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--openshift-router-name=OPENSHIFT-ROUTER-NAME</code></td>
+<td style="text-align: left;">if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pod-source-domain=""</code></td>
+<td style="text-align: left;">Domain to use for pods records (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]publish-host-ip</code></td>
+<td style="text-align: left;">Allow external-dns to publish host-ip for headless services (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]publish-internal-services</code></td>
+<td style="text-align: left;">Allow external-dns to publish DNS records for ClusterIP services (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--service-type-filter=SERVICE-TYPE-FILTER</code></td>
+<td style="text-align: left;">The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--source=source</code></td>
+<td style="text-align: left;">The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--target-net-filter=TARGET-NET-FILTER</code></td>
+<td style="text-align: left;">Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]traefik-disable-legacy</code></td>
+<td style="text-align: left;">Disable listeners on Resources under the traefik.containo.us API Group</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]traefik-disable-new</code></td>
+<td style="text-align: left;">Disable listeners on Resources under the traefik.io API Group</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--provider=provider</code></td>
+<td style="text-align: left;">The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--provider-cache-time=0s</code></td>
+<td style="text-align: left;">The time to cache the DNS provider record list requests.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--domain-filter=</code></td>
+<td style="text-align: left;">Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exclude-domains=</code></td>
+<td style="text-align: left;">Exclude subdomains (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--regex-domain-filter=</code></td>
+<td style="text-align: left;">Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--regex-domain-exclusion=</code></td>
+<td style="text-align: left;">Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); Require &lsquo;regex-domain-filter&rsquo;</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--zone-name-filter=</code></td>
+<td style="text-align: left;">Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--zone-id-filter=</code></td>
+<td style="text-align: left;">Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--google-project=""</code></td>
+<td style="text-align: left;">When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--google-batch-change-size=1000</code></td>
+<td style="text-align: left;">When using the Google provider, set the maximum number of changes that will be applied in each batch.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--google-batch-change-interval=1s</code></td>
+<td style="text-align: left;">When using the Google provider, set the interval between batch changes.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--google-zone-visibility=</code></td>
+<td style="text-align: left;">When using the Google provider, filter for zones with this visibility (optional, options: public, private)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--alibaba-cloud-config-file="/etc/kubernetes/alibaba-cloud.json"</code></td>
+<td style="text-align: left;">When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when &ndash;provider=alibabacloud)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--alibaba-cloud-zone-type=</code></td>
+<td style="text-align: left;">When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-zone-type=</code></td>
+<td style="text-align: left;">When using the AWS provider, filter for zones of this type (optional, options: public, private)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-zone-tags=</code></td>
+<td style="text-align: left;">When using the AWS provider, filter for zones with these tags</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-profile=</code></td>
+<td style="text-align: left;">When using the AWS provider, name of the profile to use</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-assume-role=""</code></td>
+<td style="text-align: left;">When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. <code>arn:aws:iam::123455567:role/external-dns</code> (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-assume-role-external-id=""</code></td>
+<td style="text-align: left;">When using the AWS API and assuming a role then specify this external ID` (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-batch-change-size=1000</code></td>
+<td style="text-align: left;">When using the AWS provider, set the maximum number of changes that will be applied in each batch.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-batch-change-size-bytes=32000</code></td>
+<td style="text-align: left;">When using the AWS provider, set the maximum byte size that will be applied in each batch.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-batch-change-size-values=1000</code></td>
+<td style="text-align: left;">When using the AWS provider, set the maximum total record values that will be applied in each batch.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-batch-change-interval=1s</code></td>
+<td style="text-align: left;">When using the AWS provider, set the interval between batch changes.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]aws-evaluate-target-health</code></td>
+<td style="text-align: left;">When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with &ndash;no-aws-evaluate-target-health)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-api-retries=3</code></td>
+<td style="text-align: left;">When using the AWS API, set the maximum number of retries before giving up.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]aws-prefer-cname</code></td>
+<td style="text-align: left;">When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-zones-cache-duration=0s</code></td>
+<td style="text-align: left;">When using the AWS provider, set the zones list cache TTL (0s to disable).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]aws-zone-match-parent</code></td>
+<td style="text-align: left;">Expand limit possible target by sub-domains (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]aws-sd-service-cleanup</code></td>
+<td style="text-align: left;">When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--aws-sd-create-tag=AWS-SD-CREATE-TAG</code></td>
+<td style="text-align: left;">When using the AWS CloudMap provider, add tag to created services. The flag can be used multiple times</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--azure-config-file="/etc/kubernetes/azure.json"</code></td>
+<td style="text-align: left;">When using the Azure provider, specify the Azure configuration file (required when &ndash;provider=azure)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--azure-resource-group=""</code></td>
+<td style="text-align: left;">When using the Azure provider, override the Azure resource group to use (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--azure-subscription-id=""</code></td>
+<td style="text-align: left;">When using the Azure provider, override the Azure subscription to use (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--azure-user-assigned-identity-client-id=""</code></td>
+<td style="text-align: left;">When using the Azure provider, override the client id of user assigned identity in config file (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--azure-zones-cache-duration=0s</code></td>
+<td style="text-align: left;">When using the Azure provider, set the zones list cache TTL (0s to disable).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--azure-maxretries-count=3</code></td>
+<td style="text-align: left;">When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]cloudflare-proxied</code></td>
+<td style="text-align: left;">When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]cloudflare-custom-hostnames</code></td>
+<td style="text-align: left;">When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires &ldquo;Cloudflare for SaaS&rdquo; enabled. (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cloudflare-custom-hostnames-min-tls-version=1.0</code></td>
+<td style="text-align: left;">When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cloudflare-custom-hostnames-certificate-authority=none</code></td>
+<td style="text-align: left;">When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cloudflare-dns-records-per-page=100</code></td>
+<td style="text-align: left;">When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]cloudflare-regional-services</code></td>
+<td style="text-align: left;">When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cloudflare-region-key=CLOUDFLARE-REGION-KEY</code></td>
+<td style="text-align: left;">When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--cloudflare-record-comment=""</code></td>
+<td style="text-align: left;">When using the Cloudflare provider, specify the comment for the DNS records (default: &lsquo;&rsquo;)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--coredns-prefix="/skydns/"</code></td>
+<td style="text-align: left;">When using the CoreDNS provider, specify the prefix name</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--akamai-serviceconsumerdomain=""</code></td>
+<td style="text-align: left;">When using the Akamai provider, specify the base URL (required when &ndash;provider=akamai and edgerc-path not specified)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--akamai-client-token=""</code></td>
+<td style="text-align: left;">When using the Akamai provider, specify the client token (required when &ndash;provider=akamai and edgerc-path not specified)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--akamai-client-secret=""</code></td>
+<td style="text-align: left;">When using the Akamai provider, specify the client secret (required when &ndash;provider=akamai and edgerc-path not specified)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--akamai-access-token=""</code></td>
+<td style="text-align: left;">When using the Akamai provider, specify the access token (required when &ndash;provider=akamai and edgerc-path not specified)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--akamai-edgerc-path=""</code></td>
+<td style="text-align: left;">When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when &ndash;provider=akamai and *-token, secret serviceconsumerdomain not specified)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--akamai-edgerc-section=""</code></td>
+<td style="text-align: left;">When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--oci-config-file="/etc/kubernetes/oci.yaml"</code></td>
+<td style="text-align: left;">When using the OCI provider, specify the OCI configuration file (required when &ndash;provider=oci</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--oci-compartment-ocid=OCI-COMPARTMENT-OCID</code></td>
+<td style="text-align: left;">When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--oci-zone-scope=GLOBAL</code></td>
+<td style="text-align: left;">When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]oci-auth-instance-principal</code></td>
+<td style="text-align: left;">When using the OCI provider, specify whether OCI IAM instance principal authentication should be used (instead of key-based auth via the OCI config file).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--oci-zones-cache-duration=0s</code></td>
+<td style="text-align: left;">When using the OCI provider, set the zones list cache TTL (0s to disable).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--inmemory-zone=</code></td>
+<td style="text-align: left;">Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--ovh-endpoint="ovh-eu"</code></td>
+<td style="text-align: left;">When using the OVH provider, specify the endpoint (default: ovh-eu)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--ovh-api-rate-limit=20</code></td>
+<td style="text-align: left;">When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]ovh-enable-cname-relative</code></td>
+<td style="text-align: left;">When using the OVH provider, specify if CNAME should be treated as relative on target without final dot (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pdns-server="http://localhost:8081"</code></td>
+<td style="text-align: left;">When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when &ndash;provider=pdns)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pdns-server-id="localhost"</code></td>
+<td style="text-align: left;">When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be <code>localhost</code> except when the server is behind a proxy (optional when &ndash;provider=pdns) (default: localhost)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pdns-api-key=""</code></td>
+<td style="text-align: left;">When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when &ndash;provider=pdns)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]pdns-skip-tls-verify</code></td>
+<td style="text-align: left;">When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when &ndash;provider=pdns) (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--ns1-endpoint=""</code></td>
+<td style="text-align: left;">When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]ns1-ignoressl</code></td>
+<td style="text-align: left;">When using the NS1 provider, specify whether to verify the SSL certificate (default: false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--ns1-min-ttl=NS1-MIN-TTL</code></td>
+<td style="text-align: left;">Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--digitalocean-api-page-size=50</code></td>
+<td style="text-align: left;">Configure the page size used when querying the DigitalOcean API.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--godaddy-api-key=""</code></td>
+<td style="text-align: left;">When using the GoDaddy provider, specify the API Key (required when &ndash;provider=godaddy)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--godaddy-api-secret=""</code></td>
+<td style="text-align: left;">When using the GoDaddy provider, specify the API secret (required when &ndash;provider=godaddy)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--godaddy-api-ttl=GODADDY-API-TTL</code></td>
+<td style="text-align: left;">TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]godaddy-api-ote</code></td>
+<td style="text-align: left;">When using the GoDaddy provider, use OTE api (optional, default: false, when &ndash;provider=godaddy)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--tls-ca=""</code></td>
+<td style="text-align: left;">When using TLS communication, the path to the certificate authority to verify server communications (optionally specify &ndash;tls-client-cert for two-way TLS)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--tls-client-cert=""</code></td>
+<td style="text-align: left;">When using TLS communication, the path to the certificate to present as a client (not required for TLS)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--tls-client-cert-key=""</code></td>
+<td style="text-align: left;">When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exoscale-apienv="api"</code></td>
+<td style="text-align: left;">When using Exoscale provider, specify the API environment (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exoscale-apizone="ch-gva-2"</code></td>
+<td style="text-align: left;">When using Exoscale provider, specify the API Zone (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exoscale-apikey=""</code></td>
+<td style="text-align: left;">Provide your API Key for the Exoscale provider</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--exoscale-apisecret=""</code></td>
+<td style="text-align: left;">Provide your API Secret for the Exoscale provider</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-host=</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using &ndash;rfc2136-load-balancing-strategy)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-port=0</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the port of the DNS server</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-zone=RFC2136-ZONE</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]rfc2136-create-ptr</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, enable PTR management</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]rfc2136-insecure</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires &ndash;rfc2136-tsig-keyname and rfc2136-tsig-secret)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-tsig-keyname=""</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when &ndash;rfc2136-insecure=false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-tsig-secret=""</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when &ndash;rfc2136-insecure=false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-tsig-secret-alg=""</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when &ndash;rfc2136-insecure=false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]rfc2136-tsig-axfr</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when &ndash;rfc2136-insecure=false)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-min-ttl=0s</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]rfc2136-gss-tsig</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires &ndash;rfc2136-kerberos-realm, &ndash;rfc2136-kerberos-username, and rfc2136-kerberos-password)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-kerberos-username=""</code></td>
+<td style="text-align: left;">When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when &ndash;rfc2136-gss-tsig=true)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-kerberos-password=""</code></td>
+<td style="text-align: left;">When using the RFC2136 provider with GSS-TSIG, specify the password of the user with permissions to update DNS records (required when &ndash;rfc2136-gss-tsig=true)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-kerberos-realm=""</code></td>
+<td style="text-align: left;">When using the RFC2136 provider with GSS-TSIG, specify the realm of the user with permissions to update DNS records (required when &ndash;rfc2136-gss-tsig=true)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-batch-change-size=50</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]rfc2136-use-tls</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, communicate with name server over tls</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]rfc2136-skip-tls-verify</code></td>
+<td style="text-align: left;">When using TLS with the RFC2136 provider, disable verification of any TLS certificates</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--rfc2136-load-balancing-strategy=disabled</code></td>
+<td style="text-align: left;">When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--transip-account=""</code></td>
+<td style="text-align: left;">When using the TransIP provider, specify the account name (required when &ndash;provider=transip)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--transip-keyfile=""</code></td>
+<td style="text-align: left;">When using the TransIP provider, specify the path to the private key file (required when &ndash;provider=transip)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pihole-server=""</code></td>
+<td style="text-align: left;">When using the Pihole provider, the base URL of the Pihole web server (required when &ndash;provider=pihole)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pihole-password=""</code></td>
+<td style="text-align: left;">When using the Pihole provider, the password to the server if it is protected</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]pihole-tls-skip-verify</code></td>
+<td style="text-align: left;">When using the Pihole provider, disable verification of any TLS certificates</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--pihole-api-version="5"</code></td>
+<td style="text-align: left;">When using the Pihole provider, specify the pihole API version (default: 5, options: 5, 6)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--plural-cluster=""</code></td>
+<td style="text-align: left;">When using the plural provider, specify the cluster name you&rsquo;re running with</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--plural-provider=""</code></td>
+<td style="text-align: left;">When using the plural provider, specify the provider name you&rsquo;re running with</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--policy=sync</code></td>
+<td style="text-align: left;">Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--registry=txt</code></td>
+<td style="text-align: left;">The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--txt-owner-id="default"</code></td>
+<td style="text-align: left;">When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--txt-prefix=""</code></td>
+<td style="text-align: left;">When using the TXT registry, a custom string that&rsquo;s prefixed to each ownership DNS record (optional). Could contain record type template like &lsquo;%{record_type}-prefix-&lsquo;. Mutual exclusive with txt-suffix!</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--txt-suffix=""</code></td>
+<td style="text-align: left;">When using the TXT registry, a custom string that&rsquo;s suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like &lsquo;-%{record_type}-suffix&rsquo;. Mutual exclusive with txt-prefix!</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--txt-wildcard-replacement=""</code></td>
+<td style="text-align: left;">When using the TXT registry, a custom string that&rsquo;s used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]txt-encrypt-enabled</code></td>
+<td style="text-align: left;">When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--txt-encrypt-aes-key=""</code></td>
+<td style="text-align: left;">When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when &ndash;txt-encrypt=true)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--dynamodb-region=""</code></td>
+<td style="text-align: left;">When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--dynamodb-table="external-dns"</code></td>
+<td style="text-align: left;">When using the DynamoDB registry, the name of the DynamoDB table (default: &ldquo;external-dns&rdquo;)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--txt-cache-interval=0s</code></td>
+<td style="text-align: left;">The interval between cache synchronizations in duration format (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--interval=1m0s</code></td>
+<td style="text-align: left;">The interval between two consecutive synchronizations in duration format (default: 1m)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--min-event-sync-interval=5s</code></td>
+<td style="text-align: left;">The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]once</code></td>
+<td style="text-align: left;">When enabled, exits the synchronization loop after the first iteration (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]dry-run</code></td>
+<td style="text-align: left;">When enabled, prints DNS record changes rather than actually performing them (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]events</code></td>
+<td style="text-align: left;">When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--log-format=text</code></td>
+<td style="text-align: left;">The format in which log messages are printed (default: text, options: text, json)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--metrics-address=":7979"</code></td>
+<td style="text-align: left;">Specify where to serve the metrics and health check endpoint (default: :7979)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--log-level=info</code></td>
+<td style="text-align: left;">Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--webhook-provider-url="http://localhost:8888"</code></td>
+<td style="text-align: left;">The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--webhook-provider-read-timeout=5s</code></td>
+<td style="text-align: left;">The read timeout for the webhook provider in duration format (default: 5s)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--webhook-provider-write-timeout=10s</code></td>
+<td style="text-align: left;">The write timeout for the webhook provider in duration format (default: 10s)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>--[no-]webhook-server</code></td>
+<td style="text-align: left;">When enabled, runs as a webhook server instead of a controller. (default: false).</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 25, 2025</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <!--
+  Copyright (c) 2016-2024 Martin Donath <martin.donath@squidfunk.com>
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+-->
+
+<!-- Copyright and theme information -->
+<div class="md-copyright">
+  
+  
+    Made with
+    <a
+      href="https://squidfunk.github.io/mkdocs-material/"
+      target="_blank" rel="noopener"
+    >
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "navigation.top", "navigation.tracking", "navigation.indexes", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>
