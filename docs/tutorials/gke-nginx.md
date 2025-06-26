@@ -278,7 +278,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.18.0
         args:
         - --source=ingress
         - --domain-filter=external-dns-test.gcp.zalan.do
@@ -573,7 +573,7 @@ spec:
             - --google-project=zalando-external-dns-test
             - --registry=txt
             - --txt-owner-id=my-identifier
-          image: registry.k8s.io/external-dns/external-dns:v0.17.0
+          image: registry.k8s.io/external-dns/external-dns:v0.18.0
           name: external-dns
       securityContext:
         fsGroup: 65534
