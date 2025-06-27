@@ -1080,7 +1080,6 @@ func (gp *geoProximity) build() *route53types.GeoProximityLocation {
 }
 
 func withChangeForGeoProximityEndpoint(change *Route53Change, ep *endpoint.Endpoint) {
-
 	geoProx := newGeoProximity(ep).
 		withAWSRegion().
 		withCoordinates().
@@ -1088,7 +1087,6 @@ func withChangeForGeoProximityEndpoint(change *Route53Change, ep *endpoint.Endpo
 		withBias()
 
 	change.ResourceRecordSet.GeoProximityLocation = geoProx.build()
-
 }
 
 // searches for `changes` that are contained in `queue` and returns the `changes` separated by whether they were found in the queue (`foundChanges`) or not (`notFoundChanges`)
