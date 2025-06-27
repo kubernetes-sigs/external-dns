@@ -19,6 +19,7 @@ package aws
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,16 +29,63 @@ import (
 func Test_newV2Config(t *testing.T) {
 	t.Run("should use profile from credentials file", func(t *testing.T) {
 		// setup
-		credsFile, err := prepareCredentialsFile(t)
-		defer os.Remove(credsFile.Name())
+		dir := t.TempDir()
+		credsFile := filepath.Join(dir, "credentials")
+		err := os.WriteFile(credsFile, []byte(`
+[profile1]
+aws_access_key_id=AKID1234
+aws_secret_access_key=SECRET1
+
+[profile2]
+aws_access_key_id=AKID2345
+aws_secret_access_key=SECRET2
+`), 0777)
 		require.NoError(t, err)
-		os.Setenv("AWS_SHARED_CREDENTIALS_FILE", credsFile.Name())
-		defer os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE")
+
+		t.Setenv("AWS_SHARED_CREDENTIALS_FILE", credsFile)
 
 		// when
 		cfg, err := newV2Config(AWSSessionConfig{Profile: "profile2"})
 		require.NoError(t, err)
 		creds, err := cfg.Credentials.Retrieve(context.Background())
+
+		// then
+		assert.NoError(t, err)
+		assert.Equal(t, "AKID2345", creds.AccessKeyID)
+		assert.Equal(t, "SECRET2", creds.SecretAccessKey)
+	})
+
+	t.Run("should respect updates to the credentials file", func(t *testing.T) {
+		// setup
+		dir := t.TempDir()
+		credsFile := filepath.Join(dir, "credentials")
+		err := os.WriteFile(credsFile, []byte(`
+[default]
+aws_access_key_id=AKID1234
+aws_secret_access_key=SECRET1
+`), 0777)
+		require.NoError(t, err)
+
+		t.Setenv("AWS_SHARED_CREDENTIALS_FILE", credsFile)
+
+		cfg, err := newV2Config(AWSSessionConfig{})
+		require.NoError(t, err)
+		creds, err := cfg.Credentials.Retrieve(context.Background())
+		require.NoError(t, err)
+
+		assert.Equal(t, "AKID1234", creds.AccessKeyID)
+		assert.Equal(t, "SECRET1", creds.SecretAccessKey)
+
+		// given
+		err = os.WriteFile(credsFile, []byte(`
+[default]
+aws_access_key_id=AKID2345
+aws_secret_access_key=SECRET2
+`), 0777)
+		require.NoError(t, err)
+
+		// when
+		creds, err = cfg.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)
@@ -62,14 +110,4 @@ func Test_newV2Config(t *testing.T) {
 		assert.Equal(t, "AKIAIOSFODNN7EXAMPLE", creds.AccessKeyID)
 		assert.Equal(t, "topsecret", creds.SecretAccessKey)
 	})
-}
-
-func prepareCredentialsFile(t *testing.T) (*os.File, error) {
-	credsFile, err := os.CreateTemp("", "aws-*.creds")
-	require.NoError(t, err)
-	_, err = credsFile.WriteString("[profile1]\naws_access_key_id=AKID1234\naws_secret_access_key=SECRET1\n\n[profile2]\naws_access_key_id=AKID2345\naws_secret_access_key=SECRET2\n")
-	require.NoError(t, err)
-	err = credsFile.Close()
-	require.NoError(t, err)
-	return credsFile, err
 }
