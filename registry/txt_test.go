@@ -1538,7 +1538,31 @@ func TestGenerateTXT(t *testing.T) {
 
 func TestGenerateTXTWithMigration(t *testing.T) {
 	record := newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner")
-	expectedTXT := []*endpoint.Endpoint{
+	expectedTXTBeforeMigration := []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
+		{
+			DNSName:    "a-foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
+	}
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false, false, "")
+	gotTXTBeforeMigration := r.generateTXTRecord(record)
+	assert.Equal(t, expectedTXTBeforeMigration, gotTXTBeforeMigration)
+
+	expectedTXTAfterMigration := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.test-zone.example.org",
 			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foobar\""},
@@ -1556,11 +1580,11 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 			},
 		},
 	}
-	p := inmemory.NewInMemoryProvider()
-	p.CreateZone(testZone)
-	r, _ := NewTXTRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, false, true, "owner")
-	gotTXT := r.generateTXTRecord(record)
-	assert.Equal(t, expectedTXT, gotTXT)
+
+	rMigrated, _ := NewTXTRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, false, true, "owner")
+	gotTXTAfterMigration := rMigrated.generateTXTRecord(record)
+	assert.Equal(t, expectedTXTAfterMigration, gotTXTAfterMigration)
+
 }
 
 func TestGenerateTXTForAAAA(t *testing.T) {
