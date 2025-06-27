@@ -24,7 +24,7 @@ RUN git config --global --add safe.directory /workspace
 # Build
 RUN make build
 
-FROM registry.redhat.io/rhel9-4-els/rhel:9.4-943.1729773477
+FROM registry.access.redhat.com/ubi9/ubi:9.6-1751287003
 LABEL maintainer="Red Hat, Inc."
 LABEL com.redhat.component="external-dns-container"
 LABEL name="external-dns"
