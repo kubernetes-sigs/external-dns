@@ -187,19 +187,27 @@ func (c *DNSRecordsConfig) trimAndValidateComment(dnsName, comment string, paidZ
 	return comment
 }
 
-func (c *DNSRecordsConfig) validTags(dnsName string, paidZone func(string) bool) []string {
-	if c.Tags == "" {
-		return nil
+func (c *DNSRecordsConfig) validTags(dnsName string, paidZone func(string) bool, tagsFromAnnotation []string) []string {
+	if len(tagsFromAnnotation) > 0 || c.Tags != "" {
+		paidZone := paidZone(dnsName)
+		if !paidZone {
+			log.Warnf("DNS record tags are not supported for free zones. Skipping for %s", dnsName)
+			c.Tags = ""
+			return nil
+		}
 	}
 
-	if paidZone(dnsName) {
+	if len(tagsFromAnnotation) > 0 {
+		sort.Strings(tagsFromAnnotation)
+		return tagsFromAnnotation
+	}
+
+	if c.Tags != "" {
 		tags := strings.Split(c.Tags, ",")
 		sort.Strings(tags)
 		return tags
 	}
 
-	log.Warnf("DNS record tags are not supported for free zones. Skipping for %s", dnsName)
-	c.Tags = ""
 	return nil
 }
 
@@ -261,6 +269,8 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 		Type:     cfc.ResourceRecord.Type,
 		Content:  cfc.ResourceRecord.Content,
 		Priority: cfc.ResourceRecord.Priority,
+		Comment:  &cfc.ResourceRecord.Comment,
+		Tags:     cfc.ResourceRecord.Tags,
 	}
 
 	return params
@@ -275,6 +285,8 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 		Type:     cfc.ResourceRecord.Type,
 		Content:  cfc.ResourceRecord.Content,
 		Priority: cfc.ResourceRecord.Priority,
+		Comment:  cfc.ResourceRecord.Comment,
+		Tags:     cfc.ResourceRecord.Tags,
 	}
 
 	return params
@@ -328,10 +340,6 @@ func NewCloudFlareProvider(
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
 	}
-
-  tags := strings.Split(dnsRecordsConfig.Tags, ",")
-	sort.Strings(tags)
-	dnsRecordsConfig.Tags = strings.Join(tags, ",")
 
 	if regionalServicesConfig.RegionKey != "" {
 		regionalServicesConfig.Enabled = true
@@ -602,11 +610,13 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
-				"record": change.ResourceRecord.Name,
-				"type":   change.ResourceRecord.Type,
-				"ttl":    change.ResourceRecord.TTL,
-				"action": change.Action,
-				"zone":   zoneID,
+				"record":  change.ResourceRecord.Name,
+				"type":    change.ResourceRecord.Type,
+				"ttl":     change.ResourceRecord.TTL,
+				"action":  change.Action,
+				"zone":    zoneID,
+				"comment": change.ResourceRecord.Comment,
+				"tags":    change.ResourceRecord.Tags,
 			}
 
 			log.WithFields(logFields).Info("Changing record.")
@@ -723,6 +733,14 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			}
 		}
 
+		// if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !ok {
+		// 	e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
+		// }
+
+		// if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); !ok {
+		// 	e.SetProviderSpecificProperty(annotations.CloudflareRecordTagsKey, p.DNSRecordsConfig.Tags)
+		// }
+
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
@@ -813,15 +831,14 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		} else {
 			priority = mxRecord.GetPriority()
 			target = *mxRecord.GetHost()
-		} 
-  }
-    
-  // Load tags from program flag
+		}
+	}
+
+	var tagsFromAnnotation []string
+	// Load tags from program flag
 	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); ok {
 		// Replace comment with Ingress annotation
-		t := strings.Split(val, ",")
-		sort.Strings(t)
-		p.DNSRecordsConfig.Tags = strings.Join(t, ",")
+		tagsFromAnnotation = strings.Split(val, ",")
 	}
 
 	return &cloudFlareChange{
@@ -836,7 +853,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			Content:  target,
 			Comment:  comment,
 			Priority: priority,
-      Tags:    p.DNSRecordsConfig.validTags(ep.DNSName, p.ZoneHasPaidPlan),
+			Tags:     p.DNSRecordsConfig.validTags(ep.DNSName, p.ZoneHasPaidPlan, tagsFromAnnotation),
 		},
 		RegionalHostname:    p.regionalHostname(ep),
 		CustomHostnamesPrev: prevCustomHostnames,
@@ -1010,6 +1027,10 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 
 		if records[0].Comment != "" {
 			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
+		}
+
+		if len(records[0].Tags) > 0 {
+			e = e.WithProviderSpecific(annotations.CloudflareRecordTagsKey, strings.Join(records[0].Tags, ","))
 		}
 
 		endpoints = append(endpoints, e)
