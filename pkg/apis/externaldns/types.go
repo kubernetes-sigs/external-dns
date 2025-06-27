@@ -277,7 +277,7 @@ var defaultConfig = &Config{
 	ExoscaleAPIKey:               "",
 	ExoscaleAPISecret:            "",
 	ExoscaleAPIZone:              "ch-gva-2",
-	ExposeInternalIPV6:           true,
+	ExposeInternalIPV6:           false,
 	FQDNTemplate:                 "",
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
@@ -464,7 +464,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)").Default().StringsVar(&cfg.ExcludeDNSRecordTypes)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 	app.Flag("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)").Default(strconv.FormatBool(defaultConfig.ExcludeUnschedulable)).BoolVar(&cfg.ExcludeUnschedulable)
-	app.Flag("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional). Default is true.").BoolVar(&cfg.ExposeInternalIPV6)
+	app.Flag("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)").BoolVar(&cfg.ExposeInternalIPV6)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)").StringVar(&cfg.GatewayLabelFilter)
 	app.Flag("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)").StringVar(&cfg.GatewayName)

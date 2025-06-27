@@ -13,11 +13,10 @@ In case you want to override the default, for example if you manage per-host DNS
 
 ## IPv6 Behavior
 
-By default, ExternalDNS exposes the IPv6 `InternalIP` of the nodes. To prevent this, you can use the `--no-expose-internal-ipv6` flag.
-**The default behavior will change in the next minor release.** ExternalDNS will no longer expose the IPv6 `InternalIP` addresses by default.
-You can still explicitly expose the internal ipv6 addresses by using the `--expose-internal-ipv6` flag, if needed.
+By default, ExternalDNS exposes the IPv6 `ExternalIP` of the nodes.
+If needed, one can still explicitly expose the internal ipv6 addresses by using the `--expose-internal-ipv6` flag.
 
-### Example spec (without exposing IPv6 `InternalIP` addresses)
+### Example spec
 
 ```yaml
 spec:
@@ -36,7 +35,6 @@ spec:
     - --txt-owner-id=my-identifier
     - --policy=sync
     - --log-level=debug
-    - --no-expose-internal-ipv6
 ```
 
 ## Manifest (for cluster without RBAC enabled)
