@@ -100,7 +100,8 @@ func NewTraefikSource(
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	namespace, annotationFilter string,
-	ignoreHostnameAnnotation, enableLegacy, disableNew bool) (Source, error) {
+	ignoreHostnameAnnotation, enableLegacy, disableNew bool,
+) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
@@ -129,9 +130,9 @@ func NewTraefikSource(
 		)
 	}
 	if enableLegacy {
-		oldIngressRouteInformer = informerFactory.ForResource(oldIngressrouteGVR)
-		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressrouteTCPGVR)
-		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressrouteUDPGVR)
+		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
+		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
+		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
 		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {},
