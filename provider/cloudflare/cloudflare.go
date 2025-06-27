@@ -217,6 +217,11 @@ func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
 		log.Errorf("Failed to get effective TLD+1 for hostname %s %v", hostname, err)
 		return false
 	}
+
+	if paidZone, ok := p.PaidZones[zone]; ok {
+		return paidZone
+	}
+
 	zoneID, err := p.Client.ZoneIDByName(zone)
 	if err != nil {
 		log.Errorf("Failed to get zone %s by name %v", zone, err)
@@ -229,7 +234,8 @@ func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
 		return false
 	}
 
-	return zoneDetails.Plan.IsSubscribed
+	p.PaidZones[zone] = zoneDetails.Plan.IsSubscribed
+	return p.PaidZones[zone]
 }
 
 // CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
@@ -244,6 +250,7 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig  CustomHostnamesConfig
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
+	PaidZones              map[string]bool
 }
 
 // cloudFlareChange differentiates between ChangeActions

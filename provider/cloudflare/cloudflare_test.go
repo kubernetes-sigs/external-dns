@@ -1973,7 +1973,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 
 	for _, test := range tagsTestCases {
 		t.Run(test.name, func(t *testing.T) {
-			change := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
+			change, _ := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
 			if test.expected == nil && len(change.ResourceRecord.Tags) != 0 {
 				t.Errorf("expected tags to be %v, but got %v", test.expected, change.ResourceRecord.Tags)
 			} else if !reflect.DeepEqual(change.ResourceRecord.Tags, test.expected) {
