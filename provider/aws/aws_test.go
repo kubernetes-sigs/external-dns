@@ -2480,3 +2480,340 @@ func TestConvertOctalToAscii(t *testing.T) {
 		})
 	}
 }
+
+func TestGeoProximityWithAWSRegion(t *testing.T) {
+	tests := []struct {
+		name           string
+		region         string
+		hasRegion      bool
+		expectedSet    bool
+		expectedRegion string
+	}{
+		{
+			name:           "valid AWS region",
+			region:         "us-west-2",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "us-west-2",
+		},
+		{
+			name:           "another valid AWS region",
+			region:         "eu-central-1",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "eu-central-1",
+		},
+		{
+			name:           "empty region string",
+			region:         "",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "",
+		},
+		{
+			name:           "no region property set",
+			region:         "",
+			hasRegion:      false,
+			expectedSet:    false,
+			expectedRegion: "",
+		},
+		{
+			name:           "region with special characters",
+			region:         "us-gov-west-1",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "us-gov-west-1",
+		},
+		{
+			name:           "region with numbers",
+			region:         "ap-southeast-3",
+			hasRegion:      true,
+			expectedSet:    true,
+			expectedRegion: "ap-southeast-3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				DNSName:       "test.example.com",
+				SetIdentifier: "test-set",
+			}
+
+			if tt.hasRegion {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion, tt.region)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withAWSRegion()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.expectedSet {
+				assert.NotNil(t, result.location.AWSRegion)
+				assert.Equal(t, tt.expectedRegion, *result.location.AWSRegion)
+			} else {
+				assert.Nil(t, result.location.AWSRegion)
+			}
+
+			// Verify the method returns the same instance for chaining
+			assert.Equal(t, gp, result)
+		})
+	}
+}
+
+func TestGeoProximityWithLocalZoneGroup(t *testing.T) {
+	tests := []struct {
+		name                   string
+		localZoneGroup         string
+		hasLocalZoneGroup      bool
+		expectedSet            bool
+		expectedLocalZoneGroup string
+	}{
+		{
+			name:                   "valid local zone group",
+			localZoneGroup:         "usw2-lax1-az1",
+			hasLocalZoneGroup:      true,
+			expectedSet:            true,
+			expectedLocalZoneGroup: "usw2-lax1-az1",
+		},
+		{
+			name:                   "empty local zone group",
+			localZoneGroup:         "",
+			hasLocalZoneGroup:      true,
+			expectedSet:            true,
+			expectedLocalZoneGroup: "",
+		},
+		{
+			name:                   "no local zone group property",
+			localZoneGroup:         "",
+			hasLocalZoneGroup:      false,
+			expectedSet:            false,
+			expectedLocalZoneGroup: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				DNSName:       "test.example.com",
+				SetIdentifier: "test-set",
+			}
+
+			if tt.hasLocalZoneGroup {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup, tt.localZoneGroup)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withLocalZoneGroup()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.expectedSet {
+				assert.NotNil(t, result.location.LocalZoneGroup)
+				assert.Equal(t, tt.expectedLocalZoneGroup, *result.location.LocalZoneGroup)
+			} else {
+				assert.Nil(t, result.location.LocalZoneGroup)
+			}
+
+			// Verify method returns same instance for chaining
+			assert.Equal(t, gp, result)
+		})
+	}
+}
+
+func TestGeoProximityWithCoordinates(t *testing.T) {
+	tests := []struct {
+		name             string
+		coordinates      string
+		expectedSet      bool
+		expectedLat      string
+		expectedLong     string
+		shouldHaveCoords bool
+	}{
+		{
+			name:             "valid coordinates",
+			coordinates:      "45.0,90.0",
+			expectedSet:      true,
+			expectedLat:      "45.0",
+			expectedLong:     "90.0",
+			shouldHaveCoords: true,
+		},
+		{
+			name:             "edge case min coordinates",
+			coordinates:      "-90.0,-180.0",
+			expectedSet:      true,
+			expectedLat:      "-90.0",
+			expectedLong:     "-180.0",
+			shouldHaveCoords: true,
+		},
+		{
+			name:             "edge case max coordinates",
+			coordinates:      "90.0,180.0",
+			expectedSet:      true,
+			expectedLat:      "90.0",
+			expectedLong:     "180.0",
+			shouldHaveCoords: true,
+		},
+		{
+			name:             "invalid latitude too high",
+			coordinates:      "91.0,90.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid longitude too low",
+			coordinates:      "45.0,-181.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid format - single value",
+			coordinates:      "45.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid format - three values",
+			coordinates:      "45.0,90.0,10.0",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "invalid format - non-numeric",
+			coordinates:      "abc,def",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+		{
+			name:             "no coordinates property",
+			coordinates:      "",
+			expectedSet:      false,
+			shouldHaveCoords: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{}
+			if tt.coordinates != "" {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates, tt.coordinates)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withCoordinates()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.shouldHaveCoords {
+				assert.NotNil(t, result.location.Coordinates)
+				assert.Equal(t, tt.expectedLat, *result.location.Coordinates.Latitude)
+				assert.Equal(t, tt.expectedLong, *result.location.Coordinates.Longitude)
+			} else {
+				assert.Nil(t, result.location.Coordinates)
+			}
+		})
+	}
+}
+
+func TestGeoProximityWithBias(t *testing.T) {
+	tests := []struct {
+		name         string
+		bias         string
+		hasBias      bool
+		expectedSet  bool
+		expectedBias int32
+	}{
+		{
+			name:         "valid positive bias",
+			bias:         "10",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 10,
+		},
+		{
+			name:         "valid negative bias",
+			bias:         "-5",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: -5,
+		},
+		{
+			name:         "zero bias",
+			bias:         "0",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0,
+		},
+		{
+			name:         "large positive bias",
+			bias:         "99",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 99,
+		},
+		{
+			name:         "large negative bias",
+			bias:         "-99",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: -99,
+		},
+		{
+			name:         "invalid bias - non-numeric",
+			bias:         "abc",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0, // defaults to 0 on error
+		},
+		{
+			name:         "invalid bias - float",
+			bias:         "10.5",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0, // defaults to 0 on error
+		},
+		{
+			name:         "empty bias string",
+			bias:         "",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 0, // defaults to 0 on error
+		},
+		{
+			name:         "no bias property",
+			bias:         "",
+			hasBias:      false,
+			expectedSet:  false,
+			expectedBias: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{
+				DNSName:       "test.example.com",
+				SetIdentifier: "test-set",
+			}
+
+			if tt.hasBias {
+				ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationBias, tt.bias)
+			}
+
+			gp := newGeoProximity(ep)
+			result := gp.withBias()
+
+			assert.Equal(t, tt.expectedSet, result.isSet)
+
+			if tt.expectedSet {
+				assert.NotNil(t, result.location.Bias)
+				assert.Equal(t, tt.expectedBias, *result.location.Bias)
+			} else {
+				assert.Nil(t, result.location.Bias)
+			}
+
+			// Verify method returns same instance for chaining
+			assert.Equal(t, gp, result)
+		})
+	}
+}
