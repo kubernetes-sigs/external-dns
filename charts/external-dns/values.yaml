@@ -205,6 +205,9 @@ triggerLoopOnEvent: false
 # -- if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).
 namespaced: false
 
+# -- _Gateway API_ gateway namespace to watch.
+gatewayNamespace: # @schema type:[string, null]; default: null
+
 # -- _Kubernetes_ resources to monitor for DNS entries.
 sources:
   - service

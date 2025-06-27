@@ -29,5 +29,23 @@ subjects:
   - kind: ServiceAccount
     name: {{ template "external-dns.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- if .Values.gatewayNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "external-dns.fullname" . }}-gateway
+  namespace: {{ .Values.gatewayNamespace }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "external-dns.fullname" . }}-gateway
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "external-dns.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
 {{- end }}
 {{- end }}
