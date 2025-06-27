@@ -6,7 +6,7 @@ COPY Dockerfile.openshift Dockerfile
 # If the command below fails it means that the Dockerfile from this repository changed.
 # You have to update the Konflux Containerfile accordingly.
 # drift-cache/Dockerfile can be updated with the upstream contents once the Konflux version is aligned.
-RUN [ "$(sha1sum Dockerfile.cached | cut -d' ' -f1)" = "$(sha1sum Dockerfile | cut -d' ' -f1)" ]
+RUN test "$(sha1sum Dockerfile.cached | cut -d' ' -f1)" = "$(sha1sum Dockerfile | cut -d' ' -f1)"
 
 FROM registry.access.redhat.com/ubi9/go-toolset:1.22 as builder
 # dummy copy to trigger the drift detection
