@@ -55,7 +55,7 @@ type coreDNSProvider struct {
 	provider.BaseProvider
 	dryRun        bool
 	coreDNSPrefix string
-	domainFilter  endpoint.DomainFilter
+	domainFilter  *endpoint.DomainFilter
 	client        coreDNSClient
 }
 
@@ -124,7 +124,6 @@ func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
 		}
 		svcs = append(svcs, svc)
 	}
-
 	return svcs, nil
 }
 
@@ -196,7 +195,7 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRun bool) (provider.Provider, error) {
+func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix string, dryRun bool) (provider.Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
@@ -281,9 +280,24 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return result, nil
 }
 
-// ApplyChanges stores changes back to etcd converting them to CoreDNS format and aggregating A/CNAME and TXT records
-func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	grouped := map[string][]*endpoint.Endpoint{}
+func (p coreDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+	grouped := p.groupEndpoints(changes)
+
+	for dnsName, group := range grouped {
+		if !p.domainFilter.Match(dnsName) {
+			log.Debugf("Skipping record %q due to domain filter", dnsName)
+			continue
+		}
+		if err := p.applyGroup(dnsName, group); err != nil {
+			return err
+		}
+	}
+
+	return p.deleteEndpoints(changes.Delete)
+}
+
+func (p coreDNSProvider) groupEndpoints(changes *plan.Changes) map[string][]*endpoint.Endpoint {
+	grouped := make(map[string][]*endpoint.Endpoint)
 	for _, ep := range changes.Create {
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
@@ -292,112 +306,125 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Updating labels (%s) with old labels(%s)", ep.Labels, changes.UpdateOld[i].Labels)
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
-	for dnsName, group := range grouped {
-		if !p.domainFilter.Match(dnsName) {
-			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", dnsName)
-			continue
-		}
-		var services []Service
-		for _, ep := range group {
-			if ep.RecordType == endpoint.RecordTypeTXT {
-				continue
-			}
+	return grouped
+}
 
-			for _, target := range ep.Targets {
-				prefix := ep.Labels[target]
-				log.Debugf("Getting prefix(%s) from label(%s)", prefix, target)
-				if prefix == "" {
-					prefix = fmt.Sprintf("%08x", rand.Int31())
-					log.Infof("Generating new prefix: (%s)", prefix)
-				}
+func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) error {
+	var services []*Service
 
-				service := Service{
-					Host:        target,
-					Text:        ep.Labels["originalText"],
-					Key:         p.etcdKeyFor(prefix + "." + dnsName),
-					TargetStrip: strings.Count(prefix, ".") + 1,
-					TTL:         uint32(ep.RecordTTL),
-				}
-				services = append(services, service)
-				ep.Labels[target] = prefix
-				log.Debugf("Putting prefix(%s) to label(%s)", prefix, target)
-				log.Debugf("Ep labels structure now: (%v)", ep.Labels)
+	for _, ep := range group {
+		if ep.RecordType != endpoint.RecordTypeTXT {
+			srvs, err := p.createServicesForEndpoint(dnsName, ep)
+			if err != nil {
+				return err
 			}
-
-			// Clean outdated targets
-			for label, labelPrefix := range ep.Labels {
-				// Skip non Target related labels
-				labelsToSkip := []string{"originalText", "prefix", "resource"}
-				if _, ok := findLabelInTargets(labelsToSkip, label); ok {
-					continue
-				}
-
-				log.Debugf("Finding label (%s) in targets(%v)", label, ep.Targets)
-				if _, ok := findLabelInTargets(ep.Targets, label); !ok {
-					log.Debugf("Found non existing label(%s) in targets(%v)", label, ep.Targets)
-					dnsName := ep.DNSName
-					dnsName = labelPrefix + "." + dnsName
-					key := p.etcdKeyFor(dnsName)
-					log.Infof("Delete key %s", key)
-					if !p.dryRun {
-						err := p.client.DeleteService(key)
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-		index := 0
-		for _, ep := range group {
-			if ep.RecordType != endpoint.RecordTypeTXT {
-				continue
-			}
-			if index >= len(services) {
-				prefix := ep.Labels[randomPrefixLabel]
-				if prefix == "" {
-					prefix = fmt.Sprintf("%08x", rand.Int31())
-				}
-				services = append(services, Service{
-					Key:         p.etcdKeyFor(prefix + "." + dnsName),
-					TargetStrip: strings.Count(prefix, ".") + 1,
-					TTL:         uint32(ep.RecordTTL),
-				})
-			}
-			services[index].Text = ep.Targets[0]
-			index++
-		}
-
-		for i := index; index > 0 && i < len(services); i++ {
-			services[i].Text = ""
-		}
-
-		for _, service := range services {
-			log.Infof("Add/set key %s to Host=%s, Text=%s, TTL=%d", service.Key, service.Host, service.Text, service.TTL)
-			if !p.dryRun {
-				err := p.client.SaveService(&service)
-				if err != nil {
-					return err
-				}
-			}
+			services = append(services, srvs...)
 		}
 	}
 
-	for _, ep := range changes.Delete {
+	services = p.updateTXTRecords(dnsName, group, services)
+
+	for _, service := range services {
+		log.Infof("Add/set key %s to Host=%s, Text=%s, TTL=%d", service.Key, service.Host, service.Text, service.TTL)
+		if p.dryRun {
+			continue
+		}
+		if err := p.client.SaveService(service); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p coreDNSProvider) createServicesForEndpoint(dnsName string, ep *endpoint.Endpoint) ([]*Service, error) {
+	var services []*Service
+
+	for _, target := range ep.Targets {
+		prefix := ep.Labels[target]
+		if prefix == "" {
+			prefix = fmt.Sprintf("%08x", rand.Int31())
+			log.Infof("Generating new prefix: (%s)", prefix)
+		}
+		service := Service{
+			Host:        target,
+			Text:        ep.Labels["originalText"],
+			Key:         p.etcdKeyFor(prefix + "." + dnsName),
+			TargetStrip: strings.Count(prefix, ".") + 1,
+			TTL:         uint32(ep.RecordTTL),
+		}
+		services = append(services, &service)
+		ep.Labels[target] = prefix
+	}
+
+	// Clean outdated labels
+	for label, labelPrefix := range ep.Labels {
+		if shouldSkipLabel(label) {
+			continue
+		}
+		if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
+			log.Infof("Delete key %s", key)
+			if p.dryRun {
+				continue
+			}
+			if err := p.client.DeleteService(key); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return services, nil
+}
+
+func shouldSkipLabel(label string) bool {
+	skip := []string{"originalText", "prefix", "resource"}
+	_, ok := findLabelInTargets(skip, label)
+	return ok
+}
+
+// updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
+func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endpoint, services []*Service) []*Service {
+	index := 0
+	for _, ep := range group {
+		if ep.RecordType != endpoint.RecordTypeTXT {
+			continue
+		}
+		if index >= len(services) {
+			prefix := ep.Labels[randomPrefixLabel]
+			if prefix == "" {
+				prefix = fmt.Sprintf("%08x", rand.Int31())
+			}
+			services = append(services, &Service{
+				Key:         p.etcdKeyFor(prefix + "." + dnsName),
+				TargetStrip: strings.Count(prefix, ".") + 1,
+				TTL:         uint32(ep.RecordTTL),
+			})
+		}
+		services[index].Text = ep.Targets[0]
+		index++
+	}
+
+	for i := index; index > 0 && i < len(services); i++ {
+		services[i].Text = ""
+	}
+	return services
+}
+
+func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
+	for _, ep := range endpoints {
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
 		key := p.etcdKeyFor(dnsName)
 		log.Infof("Delete key %s", key)
-		if !p.dryRun {
-			err := p.client.DeleteService(key)
-			if err != nil {
-				return err
-			}
+		if p.dryRun {
+			continue
+		}
+		if err := p.client.DeleteService(key); err != nil {
+			return err
 		}
 	}
-
 	return nil
 }
 
@@ -415,7 +442,7 @@ func guessRecordType(target string) string {
 }
 
 func reverse(slice []string) {
-	for i := 0; i < len(slice)/2; i++ {
+	for i := range len(slice) / 2 {
 		j := len(slice) - i - 1
 		slice[i], slice[j] = slice[j], slice[i]
 	}

@@ -114,6 +114,7 @@ type Config struct {
 	CloudflareDNSRecordsTags                      string
 	CloudflareCustomHostnamesMinTLSVersion        string
 	CloudflareCustomHostnamesCertificateAuthority string
+	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
@@ -145,7 +146,6 @@ type Config struct {
 	TXTSuffix                                     string
 	TXTEncryptEnabled                             bool
 	TXTEncryptAESKey                              string `secure:"yes"`
-	TXTNewFormatOnly                              bool
 	Interval                                      time.Duration
 	MinEventSyncInterval                          time.Duration
 	Once                                          bool
@@ -213,6 +213,7 @@ type Config struct {
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
+	ForceDefaultTargets                           bool
 }
 
 var defaultConfig = &Config{
@@ -255,6 +256,7 @@ var defaultConfig = &Config{
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
 	CloudflareDNSRecordsPerPage:                   100,
 	CloudflareProxied:                             false,
+	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
 
 	CombineFQDNAndAnnotation:     false,
@@ -275,7 +277,7 @@ var defaultConfig = &Config{
 	ExoscaleAPIKey:               "",
 	ExoscaleAPISecret:            "",
 	ExoscaleAPIZone:              "ch-gva-2",
-	ExposeInternalIPV6:           true,
+	ExposeInternalIPV6:           false,
 	FQDNTemplate:                 "",
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
@@ -364,7 +366,6 @@ var defaultConfig = &Config{
 	TXTCacheInterval:             0,
 	TXTEncryptAESKey:             "",
 	TXTEncryptEnabled:            false,
-	TXTNewFormatOnly:             false,
 	TXTOwnerID:                   "default",
 	TXTPrefix:                    "",
 	TXTSuffix:                    "",
@@ -375,6 +376,7 @@ var defaultConfig = &Config{
 	WebhookProviderWriteTimeout:  10 * time.Second,
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
+	ForceDefaultTargets:          false,
 }
 
 // NewConfig returns new Config object
@@ -436,7 +438,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 	app.Flag("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs").BoolVar(&cfg.ResolveServiceLoadBalancerHostname)
-	app.Flag("listen-endpoint-events", "Trigger a reconcile on changes to Endpoints, for Service source (default: false)").BoolVar(&cfg.ListenEndpointEvents)
+	app.Flag("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)").BoolVar(&cfg.ListenEndpointEvents)
 
 	// Flags related to cloud foundry
 	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
@@ -458,10 +460,11 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
+	app.Flag("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)").Default(strconv.FormatBool(defaultConfig.ForceDefaultTargets)).BoolVar(&cfg.ForceDefaultTargets)
 	app.Flag("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)").Default().StringsVar(&cfg.ExcludeDNSRecordTypes)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 	app.Flag("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)").Default(strconv.FormatBool(defaultConfig.ExcludeUnschedulable)).BoolVar(&cfg.ExcludeUnschedulable)
-	app.Flag("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional). Default is true.").BoolVar(&cfg.ExposeInternalIPV6)
+	app.Flag("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)").BoolVar(&cfg.ExposeInternalIPV6)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)").StringVar(&cfg.GatewayLabelFilter)
 	app.Flag("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)").StringVar(&cfg.GatewayName)
@@ -470,7 +473,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressRulesSpec)
 	app.Flag("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
 	app.Flag("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)").BoolVar(&cfg.IgnoreNonHostNetworkPods)
-	app.Flag("ingress-class", "Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
+	app.Flag("ingress-class", "Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	app.Flag("managed-record-types", managedRecordTypesHelp).Default(defaultConfig.ManagedDNSRecordTypes...).StringsVar(&cfg.ManagedDNSRecordTypes)
@@ -530,8 +533,9 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-custom-hostnames-min-tls-version", "When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)").Default("1.0").EnumVar(&cfg.CloudflareCustomHostnamesMinTLSVersion, "1.0", "1.1", "1.2", "1.3")
 	app.Flag("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none)").Default("none").EnumVar(&cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt", "none")
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
-	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the region (default: earth)").StringVar(&cfg.CloudflareRegionKey)
-	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareDNSRecordsComment)
+	app.Flag("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)").Default(strconv.FormatBool(defaultConfig.CloudflareRegionalServices)).BoolVar(&cfg.CloudflareRegionalServices)
+	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)").StringVar(&cfg.CloudflareRegionKey)
+	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
 	app.Flag("cloudflare-record-tags", "When using the Cloudflare provider for a paid zone, specify the tags for the DNS records as a comma-separated string (default: '')").Default("").StringVar(&cfg.CloudflareDNSRecordsTags)
 
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
@@ -620,7 +624,6 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
 	app.Flag("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)").BoolVar(&cfg.TXTEncryptEnabled)
 	app.Flag("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)").Default(defaultConfig.TXTEncryptAESKey).StringVar(&cfg.TXTEncryptAESKey)
-	app.Flag("txt-new-format-only", "When using the TXT registry, only use new format records which include record type information (e.g., prefix: 'a-'). Reduces number of TXT records (default: disabled)").BoolVar(&cfg.TXTNewFormatOnly)
 	app.Flag("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)").Default(cfg.AWSDynamoDBRegion).StringVar(&cfg.AWSDynamoDBRegion)
 	app.Flag("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")").Default(defaultConfig.AWSDynamoDBTable).StringVar(&cfg.AWSDynamoDBTable)
 

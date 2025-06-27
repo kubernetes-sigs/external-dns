@@ -469,3 +469,23 @@ func TestNewTargetsFromAddr(t *testing.T) {
 		})
 	}
 }
+
+func TestWithLabel(t *testing.T) {
+	e := &endpoint.Endpoint{}
+	// should initialize Labels and set the key
+	returned := e.WithLabel("foo", "bar")
+	assert.Equal(t, e, returned)
+	assert.NotNil(t, e.Labels)
+	assert.Equal(t, "bar", e.Labels["foo"])
+
+	// overriding an existing key
+	e2 := e.WithLabel("foo", "baz")
+	assert.Equal(t, e, e2)
+	assert.Equal(t, "baz", e.Labels["foo"])
+
+	// adding a new key without wiping others
+	e.Labels["existing"] = "orig"
+	e.WithLabel("new", "val")
+	assert.Equal(t, "orig", e.Labels["existing"])
+	assert.Equal(t, "val", e.Labels["new"])
+}

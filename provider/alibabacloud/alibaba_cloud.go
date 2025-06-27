@@ -70,7 +70,7 @@ type AlibabaCloudPrivateZoneAPI interface {
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
 type AlibabaCloudProvider struct {
 	provider.BaseProvider
-	domainFilter         endpoint.DomainFilter
+	domainFilter         *endpoint.DomainFilter
 	zoneIDFilter         provider.ZoneIDFilter // Private Zone only
 	MaxChangeCount       int
 	EvaluateTargetHealth bool
@@ -97,7 +97,7 @@ type alibabaCloudConfig struct {
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
+func NewAlibabaCloudProvider(configFile string, domainFilter *endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
 		contents, err := os.ReadFile(configFile)
@@ -498,7 +498,20 @@ func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 }
 
 func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target string, hostedZoneDomains []string) error {
+	if len(hostedZoneDomains) == 0 {
+		log.Errorf("Failed to create %s record named '%s' to '%s' for Alibaba Cloud DNS: zone not found",
+			endpoint.RecordType, endpoint.DNSName, target)
+		return fmt.Errorf("zone not found")
+	}
+
 	rr, domain := p.splitDNSName(endpoint.DNSName, hostedZoneDomains)
+
+	if domain == "" {
+		log.Errorf("Failed to create %s record named '%s' to '%s' for Alibaba Cloud DNS: no corresponding DNS zone found for this domain '%s'",
+			endpoint.RecordType, endpoint.DNSName, target, endpoint.DNSName)
+		return fmt.Errorf("no corresponding DNS zone found for this domain")
+	}
+
 	request := alidns.CreateAddDomainRecordRequest()
 	request.DomainName = domain
 	request.Type = endpoint.RecordType

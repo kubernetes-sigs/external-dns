@@ -390,18 +390,18 @@ func TestOvhNewChange(t *testing.T) {
 
 	// Delete change
 	endpoints = []*endpoint.Endpoint{
-		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42", "203.0.113.42", "203.0.113.42"}},
+		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42", "203.0.113.42", "203.0.113.43"}},
 	}
 	records := []ovhRecord{
-		{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.42"}}},
+		{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.43"}}},
 		{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.42"}}},
 		{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", Target: "203.0.113.42"}}},
 	}
 	changes, _ = provider.newOvhChangeCreateDelete(ovhDelete, endpoints, "example.net", records)
 	td.Cmp(t, changes, []ovhChange{
-		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
 		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 43, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
 		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 44, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.42"}}}},
+		{Action: ovhDelete, ovhRecord: ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.43"}}}},
 	})
 
 	// Create change with CNAME relative
@@ -621,7 +621,7 @@ func TestOvhRecordString(t *testing.T) {
 }
 
 func TestNewOvhProvider(t *testing.T) {
-	var domainFilter endpoint.DomainFilter
+	domainFilter := &endpoint.DomainFilter{}
 	_, err := NewOVHProvider(t.Context(), domainFilter, "ovh-eu", 20, false, true)
 	td.CmpError(t, err)
 

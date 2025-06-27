@@ -279,7 +279,7 @@ type AWSProvider struct {
 	batchChangeInterval   time.Duration
 	evaluateTargetHealth  bool
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// filter hosted zones by id
 	zoneIDFilter provider.ZoneIDFilter
 	// filter hosted zones by type (e.g. private or public)
@@ -296,7 +296,7 @@ type AWSProvider struct {
 
 // AWSConfig contains configuration to create a new AWS provider.
 type AWSConfig struct {
-	DomainFilter          endpoint.DomainFilter
+	DomainFilter          *endpoint.DomainFilter
 	ZoneIDFilter          provider.ZoneIDFilter
 	ZoneTypeFilter        provider.ZoneTypeFilter
 	ZoneTagFilter         provider.ZoneTagFilter
@@ -624,7 +624,7 @@ func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	zones, err := p.Zones(context.Background())
 	if err != nil {
 		log.Errorf("failed to list zones: %v", err)
-		return endpoint.DomainFilter{}
+		return &endpoint.DomainFilter{}
 	}
 	zoneNames := []string(nil)
 	for _, z := range zones {

@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -137,7 +138,6 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
-			wantErr:   false,
 		},
 		{
 			name: "matching service with external IPs",
@@ -156,7 +156,23 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"192.0.2.1", "158.123.32.23"},
-			wantErr:   false,
+		},
+		{
+			name: "no matching service as service without selector",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc1",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						ExternalIPs: []string{"192.0.2.1"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{},
 		},
 		{
 			name: "matching service with load balancer IP",
@@ -181,7 +197,6 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"192.0.2.2"},
-			wantErr:   false,
 		},
 		{
 			name: "matching service with load balancer hostname",
@@ -206,7 +221,6 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"lb.example.com"},
-			wantErr:   false,
 		},
 		{
 			name: "no matching services",
@@ -224,13 +238,12 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
-			wantErr:   false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := fake.NewSimpleClientset()
+			client := fake.NewClientset()
 			informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0,
 				kubeinformers.WithNamespace(tt.namespace))
 			serviceInformer := informerFactory.Core().V1().Services()
@@ -252,4 +265,15 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEndpointTargetsFromServicesWithFixtures(t *testing.T) {
+	svcInformer, err := svcInformerWithServices(2, 9)
+	assert.NoError(t, err)
+
+	sel := map[string]string{"app": "nginx", "env": "prod"}
+
+	targets, err := EndpointTargetsFromServices(svcInformer, "default", sel)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, targets.Len())
 }

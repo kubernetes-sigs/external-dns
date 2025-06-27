@@ -53,7 +53,7 @@ func providerFilters(client *Route53APIFixtureStub, options ...func(awsProvider 
 		clients:              map[string]Route53API{defaultAWSProfile: client},
 		evaluateTargetHealth: false,
 		dryRun:               false,
-		domainFilter:         endpoint.NewDomainFilter([]string{}),
+		domainFilter:         &endpoint.DomainFilter{},
 		zoneIDFilter:         provider.NewZoneIDFilter([]string{}),
 		zoneTypeFilter:       provider.NewZoneTypeFilter(""),
 		zoneTagFilter:        provider.NewZoneTagFilter([]string{}),

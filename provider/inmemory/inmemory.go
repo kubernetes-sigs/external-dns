@@ -77,7 +77,7 @@ func InMemoryWithLogging() InMemoryOption {
 }
 
 // InMemoryWithDomain modifies the domain on which dns zones are filtered
-func InMemoryWithDomain(domainFilter endpoint.DomainFilter) InMemoryOption {
+func InMemoryWithDomain(domainFilter *endpoint.DomainFilter) InMemoryOption {
 	return func(p *InMemoryProvider) {
 		p.domain = domainFilter
 	}

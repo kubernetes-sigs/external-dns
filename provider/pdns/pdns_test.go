@@ -597,35 +597,15 @@ var (
 		},
 	}
 
-	DomainFilterListSingle = endpoint.DomainFilter{
-		Filters: []string{
-			"example.com",
-		},
-	}
+	DomainFilterListSingle = endpoint.NewDomainFilter([]string{"example.com"})
 
-	DomainFilterChildListSingle = endpoint.DomainFilter{
-		Filters: []string{
-			"a.example.com",
-		},
-	}
+	DomainFilterChildListSingle = endpoint.NewDomainFilter([]string{"a.example.com"})
 
-	DomainFilterListMultiple = endpoint.DomainFilter{
-		Filters: []string{
-			"example.com",
-			"mock.com",
-		},
-	}
+	DomainFilterListMultiple = endpoint.NewDomainFilter([]string{"example.com", "mock.com"})
 
-	DomainFilterChildListMultiple = endpoint.DomainFilter{
-		Filters: []string{
-			"a.example.com",
-			"c.example.com",
-		},
-	}
+	DomainFilterChildListMultiple = endpoint.NewDomainFilter([]string{"a.example.com", "c.example.com"})
 
-	DomainFilterListEmpty = endpoint.DomainFilter{
-		Filters: []string{},
-	}
+	DomainFilterListEmpty = endpoint.NewDomainFilter([]string{})
 
 	RegexDomainFilter = endpoint.NewRegexDomainFilter(regexp.MustCompile("example.com"), nil)
 

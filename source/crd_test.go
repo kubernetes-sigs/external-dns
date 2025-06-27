@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -64,7 +65,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
-	addKnownTypes(scheme, groupVersion)
+	_ = addKnownTypes(scheme, groupVersion)
 
 	dnsEndpointList := apiv1alpha1.DNSEndpointList{}
 	dnsEndpoint := &apiv1alpha1.DNSEndpoint{
@@ -223,7 +224,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "invalid crd with no targets",
+			title:                "valid crd with no targets (relies on default-targets)",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
 			apiVersion:           "test.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
@@ -232,13 +233,13 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
-					DNSName:    "abc.example.org",
+					DNSName:    "no-targets.example.org",
 					Targets:    endpoint.Targets{},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: false,
+			expectEndpoints: true,
 			expectError:     false,
 		},
 		{
@@ -513,6 +514,12 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 			// Validate received endpoints against expected endpoints.
 			validateEndpoints(t, receivedEndpoints, ti.endpoints)
+
+			for _, e := range receivedEndpoints {
+				// TODO: at the moment not all sources apply ResourceLabelKey
+				require.GreaterOrEqual(t, len(e.Labels), 1, "endpoint must have at least one label")
+				require.Contains(t, e.Labels, endpoint.ResourceLabelKey, "endpoint must include the ResourceLabelKey label")
+			}
 		})
 	}
 }
@@ -659,6 +666,61 @@ func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	}
 }
 
+func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
+
+	typeCounts := map[string]int{
+		endpoint.RecordTypeA:     3,
+		endpoint.RecordTypeCNAME: 2,
+		endpoint.RecordTypeNS:    7,
+		endpoint.RecordTypeNAPTR: 1,
+	}
+
+	crds := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
+
+	for _, crd := range crds.Items {
+		for _, ep := range crd.Spec.Endpoints {
+			require.Empty(t, ep.Labels, "endpoint not have labels set")
+			require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey, "endpoint must not include the ResourceLabelKey label")
+		}
+	}
+
+	scheme := runtime.NewScheme()
+	err := apiv1alpha1.AddToScheme(scheme)
+	require.NoError(t, err)
+
+	codecFactory := serializer.WithoutConversionCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme),
+	}
+
+	client := &fake.RESTClient{
+		GroupVersion:         apiv1alpha1.GroupVersion,
+		VersionedAPIPath:     fmt.Sprintf("/apis/%s", apiv1alpha1.GroupVersion.String()),
+		NegotiatedSerializer: codecFactory,
+		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       objBody(codecFactory.LegacyCodec(apiv1alpha1.GroupVersion), &crds),
+			}, nil
+		}),
+	}
+
+	cs := &crdSource{
+		crdClient:     client,
+		namespace:     "test-ns",
+		crdResource:   "dnsendpoints",
+		codec:         runtime.NewParameterCodec(scheme),
+		labelSelector: labels.Everything(),
+	}
+
+	res, err := cs.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	for _, ep := range res {
+		require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
+	}
+}
+
 func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeControllerSource, crdSource) {
 	t.Helper()
 	ctx := t.Context()
@@ -678,4 +740,40 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	}
 
 	return watcher, *cs
+}
+
+// generateTestFixtureDNSEndpointsByType generates DNSEndpoint CRDs according to the provided counts per RecordType.
+func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[string]int) apiv1alpha1.DNSEndpointList {
+	var result []apiv1alpha1.DNSEndpoint
+	idx := 0
+	for rt, count := range typeCounts {
+		for i := 0; i < count; i++ {
+			result = append(result, apiv1alpha1.DNSEndpoint{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("dnsendpoint-%s-%d", rt, idx),
+					Namespace: namespace,
+				},
+				Spec: apiv1alpha1.DNSEndpointSpec{
+					Endpoints: []*endpoint.Endpoint{
+						{
+							DNSName:    strings.ToLower(fmt.Sprintf("%s-%d.example.com", rt, idx)),
+							RecordType: rt,
+							Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},
+							RecordTTL:  300,
+						},
+					},
+				},
+			})
+			idx++
+		}
+	}
+	// Shuffle the result to ensure randomness in the order.
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	rand.Shuffle(len(result), func(i, j int) {
+		result[i], result[j] = result[j], result[i]
+	})
+
+	return apiv1alpha1.DNSEndpointList{
+		Items: result,
+	}
 }

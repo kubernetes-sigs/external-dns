@@ -47,6 +47,19 @@ const (
 	RecordTypeNAPTR = "NAPTR"
 )
 
+var (
+	KnownRecordTypes = []string{
+		RecordTypeA,
+		RecordTypeAAAA,
+		RecordTypeTXT,
+		RecordTypeSRV,
+		RecordTypeNS,
+		RecordTypePTR,
+		RecordTypeMX,
+		RecordTypeNAPTR,
+	}
+)
+
 // TTL is a structure defining the TTL of a DNS record
 type TTL int64
 
@@ -57,6 +70,12 @@ func (ttl TTL) IsConfigured() bool {
 
 // Targets is a representation of a list of targets for an endpoint.
 type Targets []string
+
+// MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
+type MXTarget struct {
+	priority uint16
+	host     string
+}
 
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings
 func NewTargets(target ...string) Targets {
@@ -199,6 +218,7 @@ type EndpointKey struct {
 	DNSName       string
 	RecordType    string
 	SetIdentifier string
+	RecordTTL     TTL
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
@@ -234,7 +254,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		cleanTargets[idx] = strings.TrimSuffix(target, ".")
 	}
 
-	for _, label := range strings.Split(dnsName, ".") {
+	for label := range strings.SplitSeq(dnsName, ".") {
 		if len(label) > 63 {
 			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
 			return nil
@@ -299,6 +319,19 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 			return
 		}
 	}
+}
+
+// WithLabel adds or updates a label for the Endpoint.
+//
+// Example usage:
+//
+//	ep.WithLabel("owner", "user123")
+func (e *Endpoint) WithLabel(key, value string) *Endpoint {
+	if e.Labels == nil {
+		e.Labels = NewLabels()
+	}
+	e.Labels[key] = value
+	return e
 }
 
 // Key returns the EndpointKey of the Endpoint.
@@ -367,22 +400,44 @@ func (e *Endpoint) CheckEndpoint() bool {
 	return true
 }
 
+// NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")
+// and returns an MXTarget struct. Returns an error if the input is invalid.
+func NewMXRecord(target string) (*MXTarget, error) {
+	parts := strings.Fields(strings.TrimSpace(target))
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+	}
+
+	priority, err := strconv.ParseUint(parts[0], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("invalid integer value in target: %s", target)
+	}
+
+	return &MXTarget{
+		priority: uint16(priority),
+		host:     parts[1],
+	}, nil
+}
+
+// GetPriority returns the priority of the MX record target.
+func (m *MXTarget) GetPriority() *uint16 {
+	return &m.priority
+}
+
+// GetHost returns the host of the MX record target.
+func (m *MXTarget) GetHost() *string {
+	return &m.host
+}
+
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
-		// MX records must have a preference value to indicate priority, e.g. "10 example.com"
-		// as per https://www.rfc-editor.org/rfc/rfc974.txt
-		targetParts := strings.Fields(strings.TrimSpace(target))
-		if len(targetParts) != 2 {
-			log.Debugf("Invalid MX record target: %s. MX records must have a preference value to indicate priority, e.g. '10 example.com'", target)
-			return false
-		}
-		preferenceRaw := targetParts[0]
-		_, err := strconv.ParseUint(preferenceRaw, 10, 16)
+		_, err := NewMXRecord(target)
 		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
+			log.Debugf("Invalid MX record target: %s. %v", target, err)
 			return false
 		}
 	}
+
 	return true
 }
 

@@ -60,7 +60,7 @@ type OVHProvider struct {
 
 	apiRateLimiter ratelimit.Limiter
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 
 	// DryRun enables dry-run mode
 	DryRun bool
@@ -123,7 +123,7 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) map[string]*pl
 	return output
 }
 
-func (p OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
+func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
 	allChanges := []ovhChange{}
 	var computedChanges []ovhChange
 
@@ -371,7 +371,7 @@ func (p *OVHProvider) zones(ctx context.Context) ([]string, error) {
 	}
 
 	for _, zoneName := range zones {
-		if p.domainFilter.Match(zoneName) {
+		if p.domainFilter == nil || p.domainFilter.Match(zoneName) {
 			filteredZones = append(filteredZones, zoneName)
 		}
 	}
@@ -496,7 +496,7 @@ func ovhGroupByNameAndType(records []ovhRecord) []*endpoint.Endpoint {
 	return endpoints
 }
 
-func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, []ovhRecord) {
+func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, []ovhRecord) {
 	var ovhChanges []ovhChange
 	var toDeleteIds []int
 
@@ -539,12 +539,14 @@ func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.
 
 	if len(toDeleteIds) > 0 {
 		// Copy the records because we need to mutate the list.
-		existingRecords = slices.Clone(existingRecords)
-		alreadyRemoved := 0
-		for _, id := range toDeleteIds {
-			existingRecords = slices.Delete(existingRecords, id-alreadyRemoved, id-alreadyRemoved+1)
-			alreadyRemoved++
+		newExistingRecords := make([]ovhRecord, 0, len(existingRecords)-len(toDeleteIds))
+		for id := range existingRecords {
+			if slices.Contains(toDeleteIds, id) {
+				continue
+			}
+			newExistingRecords = append(newExistingRecords, existingRecords[id])
 		}
+		existingRecords = newExistingRecords
 	}
 
 	return ovhChanges, existingRecords
@@ -562,7 +564,7 @@ func normalizeDNSName(dnsName string) string {
 	return strings.TrimSpace(strings.ToLower(dnsName))
 }
 
-func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
+func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zoneNameIDMapper.Add(zone, zone)
 
@@ -615,7 +617,7 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 			}
 		}
 
-		toInsertTargetToDelete := []int{}
+		createChangeConvertedToUpdateChange := []int{}
 		for i, target := range toInsertTarget {
 			if len(oldRecords) == 0 {
 				break
@@ -637,11 +639,17 @@ func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpo
 			}
 			p.formatCNAMETarget(&change)
 			changes = append(changes, change)
-			toInsertTargetToDelete = append(toInsertTargetToDelete, i)
+			createChangeConvertedToUpdateChange = append(createChangeConvertedToUpdateChange, i)
 		}
-		for _, i := range toInsertTargetToDelete {
-			toInsertTarget = slices.Delete(toInsertTarget, i, i+1)
+
+		newToInsertTarget := make([]string, 0, len(toInsertTarget)-len(createChangeConvertedToUpdateChange))
+		for i := range toInsertTarget {
+			if slices.Contains(createChangeConvertedToUpdateChange, i) {
+				continue
+			}
+			newToInsertTarget = append(newToInsertTarget, toInsertTarget[i])
 		}
+		toInsertTarget = newToInsertTarget
 
 		if len(toInsertTarget) > 0 {
 			for _, target := range toInsertTarget {
@@ -701,7 +709,7 @@ func (c *ovhChange) String() string {
 	return fmt.Sprintf("%s zone action(%s) : %s %d IN %s %s", c.Zone, action, c.SubDomain, c.TTL, c.FieldType, c.Target)
 }
 
-func (p OVHProvider) formatCNAMETarget(change *ovhChange) {
+func (p *OVHProvider) formatCNAMETarget(change *ovhChange) {
 	if change.FieldType != endpoint.RecordTypeCNAME {
 		return
 	}

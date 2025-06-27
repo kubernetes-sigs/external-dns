@@ -7,24 +7,29 @@ function generate_changelog {
   MERGED_PRS="$1"
 
   echo
+  echo "## :warning: Breaking Changes"
+  echo
+  cat "${MERGED_PRS}" | grep "\!"
+
+  echo
   echo "## :rocket: Features"
   echo
-  cat "${MERGED_PRS}" | grep feat
+  cat "${MERGED_PRS}" | grep feat[:\(]
 
   echo
   echo "## :bug: Bug fixes"
   echo
-  cat "${MERGED_PRS}" | grep fix
+  cat "${MERGED_PRS}" | grep fix[:\(]
 
   echo
   echo "## :memo: Documentation"
   echo
-  cat "${MERGED_PRS}" | grep doc
+  cat "${MERGED_PRS}" | grep docs[:\(]
 
   echo
   echo "## :package: Others"
   echo
-  cat "${MERGED_PRS}" | grep -v feat | grep -v fix | grep -v doc
+  cat "${MERGED_PRS}" | grep -v "\!" | grep -v feat[:\(] | grep -v fix[:\(] | grep -v docs[:\(]
 }
 
 function create_release {
@@ -66,7 +71,7 @@ if [ $# -ne 1 ]; then
   echo
   echo "To create a release: ./releaser.sh v0.17.0"
 else
-  generate_changelog "${MERGED_PRS}" | gh release create "$1" -t "$1" -F -
+  generate_changelog "${MERGED_PRS}" | gh release create "$1" -t "$1" -p -F -
 fi
 
 rm -f "${MERGED_PRS}"

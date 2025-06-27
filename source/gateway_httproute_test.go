@@ -225,46 +225,6 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title: "GatewayNameOldGeneration",
-			config: Config{
-				GatewayName: "gateway-name",
-			},
-			namespaces: namespaces("gateway-namespace", "route-namespace"),
-			gateways: []*v1beta1.Gateway{
-				{
-					ObjectMeta: omWithGeneration(objectMeta("gateway-namespace", "gateway-name"), 2),
-					Spec: v1.GatewaySpec{
-						Listeners: []v1.Listener{{
-							Protocol:      v1.HTTPProtocolType,
-							AllowedRoutes: allowAllNamespaces,
-						}},
-					},
-					Status: gatewayStatus("1.2.3.4"),
-				},
-			},
-			routes: []*v1beta1.HTTPRoute{{
-				ObjectMeta: omWithGeneration(objectMeta("route-namespace", "old-test"), 5),
-				Spec: v1.HTTPRouteSpec{
-					Hostnames: hostnames("test.example.internal"),
-					CommonRouteSpec: v1.CommonRouteSpec{
-						ParentRefs: []v1.ParentReference{
-							gwParentRef("gateway-namespace", "gateway-name"),
-						},
-					},
-				},
-				Status: rsWithGeneration(httpRouteStatus( // The route was previously attached in a different generation
-					gwParentRef("gateway-namespace", "gateway-name"),
-					gwParentRef("gateway-namespace", "gateway-name"),
-				), 5, 4),
-			}},
-			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "1.2.3.4"),
-			},
-			logExpectations: []string{
-				"Gateway gateway-namespace/gateway-name has not accepted the current generation HTTPRoute route-namespace/old-test",
-			},
-		},
-		{
 			title: "GatewayNameNoneAccepted",
 			config: Config{
 				GatewayName: "gateway-name",
@@ -1582,7 +1542,6 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.title, func(t *testing.T) {
 			if len(tt.logExpectations) == 0 {
 				t.Parallel()

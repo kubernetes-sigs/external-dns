@@ -18,13 +18,17 @@ package source
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -298,8 +302,8 @@ func TestPodSource(t *testing.T) {
 			true,
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(5400)},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1"}, RecordType: endpoint.RecordTypeAAAA, RecordTTL: endpoint.TTL(5400)},
 				{DNSName: "b.foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -335,6 +339,7 @@ func TestPodSource(t *testing.T) {
 						Namespace: "kube-system",
 						Annotations: map[string]string{
 							hostnameAnnotationKey: "a.foo.example.org",
+							ttlAnnotationKey:      "1h30m",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -370,8 +375,8 @@ func TestPodSource(t *testing.T) {
 			true,
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(1)},
 			},
 			false,
 			nodesFixturesIPv4(),
@@ -383,6 +388,7 @@ func TestPodSource(t *testing.T) {
 						Annotations: map[string]string{
 							internalHostnameAnnotationKey: "internal.a.foo.example.org",
 							hostnameAnnotationKey:         "a.foo.example.org",
+							ttlAnnotationKey:              "1s",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -449,6 +455,7 @@ func TestPodSource(t *testing.T) {
 						Annotations: map[string]string{
 							internalHostnameAnnotationKey: "internal.a.foo.example.org",
 							hostnameAnnotationKey:         "a.foo.example.org",
+							ttlAnnotationKey:              "1s",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -510,7 +517,7 @@ func TestPodSource(t *testing.T) {
 			false,
 			"example.org",
 			[]*endpoint.Endpoint{
-				{DNSName: "my-pod1.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "my-pod1.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(60)},
 				{DNSName: "my-pod2.example.org", Targets: endpoint.Targets{"192.168.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -518,9 +525,11 @@ func TestPodSource(t *testing.T) {
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:        "my-pod1",
-						Namespace:   "kube-system",
-						Annotations: map[string]string{},
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							ttlAnnotationKey: "1m",
+						},
 					},
 					Spec: corev1.PodSpec{
 						HostNetwork: false,
@@ -599,13 +608,38 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"host network pod on a missing node",
+			"",
+			"",
+			true,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "missing-node",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+		},
 	} {
-
 		t.Run(tc.title, func(t *testing.T) {
-			t.Parallel()
-
 			kubernetes := fake.NewClientset()
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// Create the nodes
 			for _, node := range tc.nodes {
@@ -614,6 +648,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
+			// Create the pods
 			for _, pod := range tc.pods {
 				pods := kubernetes.CoreV1().Pods(pod.Namespace)
 
@@ -622,7 +657,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain)
+			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -631,8 +666,245 @@ func TestPodSource(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			for _, ep := range endpoints {
+				// TODO: source should always set the resource label key. currently not supported by the pod source.
+				require.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+				require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
+		})
+	}
+}
+
+func TestPodSourceLogs(t *testing.T) {
+	t.Parallel()
+	// Generate unique pod names to avoid log conflicts across parallel tests.
+	// Since logs are globally shared, using the same pod names could cause
+	// false positives in unexpectedDebugLogs assertions.
+	suffix := fmt.Sprintf("%d", rand.Intn(100000))
+	for _, tc := range []struct {
+		title                    string
+		ignoreNonHostNetworkPods bool
+		pods                     []*corev1.Pod
+		nodes                    []*corev1.Node
+		expectedDebugLogs        []string
+		unexpectedDebugLogs      []string
+	}{
+		{
+			"pods with hostNetwore=false should be skipped logging",
+			true,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("my-pod1-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "100.0.1.1",
+					},
+				},
+			},
+			nodesFixturesIPv4(),
+			[]string{fmt.Sprintf("skipping pod my-pod1-%s. hostNetwork=false", suffix)},
+			nil,
+		},
+		{
+			"host network pod on a missing node",
+			true,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("missing-node-pod-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "missing-node",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+			nodesFixturesIPv4(),
+			[]string{
+				fmt.Sprintf(`Get node[missing-node] of pod[missing-node-pod-%s] error: node "missing-node" not found; ignoring`, suffix),
+			},
+			nil,
+		},
+		{
+			"mixed valid and hostNetwork=false pods with missing node",
+			true,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("valid-pod-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "valid.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("non-hostnet-pod-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "nonhost.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "100.0.1.2",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("missing-node-pod-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "missing.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "missing-node",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.3",
+					},
+				},
+			},
+			nodesFixturesIPv4(),
+			[]string{
+				fmt.Sprintf("skipping pod non-hostnet-pod-%s. hostNetwork=false", suffix),
+				fmt.Sprintf(`Get node[missing-node] of pod[missing-node-pod-%s] error: node "missing-node" not found; ignoring`, suffix),
+			},
+			[]string{
+				fmt.Sprintf("skipping pod valid-pod-%s. hostNetwork=false", suffix),
+				fmt.Sprintf(`Get node[my-node1] of pod[valid-pod-%s] error: node "my-node1" not found; ignoring`, suffix),
+			},
+		},
+		{
+			"valid pods with hostNetwork=true should not generate logs",
+			true,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("valid-pod-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							hostnameAnnotationKey: "valid.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+			nodesFixturesIPv4(),
+			nil,
+			[]string{
+				fmt.Sprintf("skipping pod valid-pod-%s. hostNetwork=false", suffix),
+				fmt.Sprintf(`Get node[my-node1] of pod[valid-pod-%s] error: node "my-node1" not found; ignoring`, suffix),
+			},
+		},
+		{
+			"when ignoreNonHostNetworkPods=false, no skip logs should be generated",
+			false,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("my-pod1-%s", suffix),
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+			nodesFixturesIPv4(),
+			nil,
+			[]string{
+				fmt.Sprintf("skipping pod my-pod1-%s. hostNetwork=false", suffix),
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			kubernetes := fake.NewClientset()
+			ctx := context.Background()
+			// Create the nodes
+			for _, node := range tc.nodes {
+				if _, err := kubernetes.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{}); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Create the pods
+			for _, pod := range tc.pods {
+				pods := kubernetes.CoreV1().Pods(pod.Namespace)
+
+				if _, err := pods.Create(ctx, pod, metav1.CreateOptions{}); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false)
+			require.NoError(t, err)
+
+			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+			_, err = client.Endpoints(ctx)
+			require.NoError(t, err)
+
+			// Check if all expected logs are present in actual logs.
+			// We don't do an exact match because logs are globally shared,
+			// making precise comparisons difficult
+			for _, expectedLog := range tc.expectedDebugLogs {
+				testutils.TestHelperLogContains(expectedLog, hook, t)
+			}
+
+			// Check that no unexpected logs are present.
+			// This ensures that logs are not generated inappropriately.
+			for _, unexpectedLog := range tc.unexpectedDebugLogs {
+				testutils.TestHelperLogNotContains(unexpectedLog, hook, t)
+			}
 		})
 	}
 }

@@ -23,6 +23,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/idna"
 )
 
 type MatchAllDomainFilters []DomainFilterInterface
@@ -69,7 +72,7 @@ type domainFilterSerde struct {
 func prepareFilters(filters []string) []string {
 	var fs []string
 	for _, filter := range filters {
-		if domain := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(filter), ".")); domain != "" {
+		if domain := normalizeDomain(strings.TrimSpace(filter)); domain != "" {
 			fs = append(fs, domain)
 		}
 	}
@@ -77,23 +80,26 @@ func prepareFilters(filters []string) []string {
 }
 
 // NewDomainFilterWithExclusions returns a new DomainFilter, given a list of matches and exclusions
-func NewDomainFilterWithExclusions(domainFilters []string, excludeDomains []string) DomainFilter {
-	return DomainFilter{Filters: prepareFilters(domainFilters), exclude: prepareFilters(excludeDomains)}
+func NewDomainFilterWithExclusions(domainFilters []string, excludeDomains []string) *DomainFilter {
+	return &DomainFilter{Filters: prepareFilters(domainFilters), exclude: prepareFilters(excludeDomains)}
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
-func NewDomainFilter(domainFilters []string) DomainFilter {
-	return DomainFilter{Filters: prepareFilters(domainFilters)}
+func NewDomainFilter(domainFilters []string) *DomainFilter {
+	return &DomainFilter{Filters: prepareFilters(domainFilters)}
 }
 
 // NewRegexDomainFilter returns a new DomainFilter given a regular expression
-func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion *regexp.Regexp) DomainFilter {
-	return DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
+func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion *regexp.Regexp) *DomainFilter {
+	return &DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
 }
 
 // Match checks whether a domain can be found in the DomainFilter.
 // RegexFilter takes precedence over Filters
-func (df DomainFilter) Match(domain string) bool {
+func (df *DomainFilter) Match(domain string) bool {
+	if df == nil {
+		return true // nil filter matches everything
+	}
 	if df.regex != nil && df.regex.String() != "" || df.regexExclusion != nil && df.regexExclusion.String() != "" {
 		return matchRegex(df.regex, df.regexExclusion, domain)
 	}
@@ -109,7 +115,7 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 		return emptyval
 	}
 
-	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	strippedDomain := normalizeDomain(domain)
 	for _, filter := range filters {
 		if filter == "" {
 			continue
@@ -133,7 +139,7 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 // only regex regular expression matches the domain
 // Otherwise, if either negativeRegex matches or regex does not match the domain, it returns false
 func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain string) bool {
-	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	strippedDomain := normalizeDomain(domain)
 
 	if negativeRegex != nil && negativeRegex.String() != "" {
 		return !negativeRegex.MatchString(strippedDomain)
@@ -142,7 +148,10 @@ func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain strin
 }
 
 // IsConfigured returns true if any inclusion or exclusion rules have been specified.
-func (df DomainFilter) IsConfigured() bool {
+func (df *DomainFilter) IsConfigured() bool {
+	if df == nil {
+		return false // nil filter is not configured
+	}
 	if df.regex != nil && df.regex.String() != "" {
 		return true
 	} else if df.regexExclusion != nil && df.regexExclusion.String() != "" {
@@ -151,7 +160,14 @@ func (df DomainFilter) IsConfigured() bool {
 	return len(df.Filters) > 0 || len(df.exclude) > 0
 }
 
-func (df DomainFilter) MarshalJSON() ([]byte, error) {
+func (df *DomainFilter) MarshalJSON() ([]byte, error) {
+	if df == nil {
+		// compatibility with nil DomainFilter
+		return json.Marshal(domainFilterSerde{
+			Include: nil,
+			Exclude: nil,
+		})
+	}
 	if df.regex != nil || df.regexExclusion != nil {
 		var include, exclude string
 		if df.regex != nil {
@@ -181,7 +197,7 @@ func (df *DomainFilter) UnmarshalJSON(b []byte) error {
 	}
 
 	if deserialized.RegexInclude == "" && deserialized.RegexExclude == "" {
-		*df = NewDomainFilterWithExclusions(deserialized.Include, deserialized.Exclude)
+		*df = *NewDomainFilterWithExclusions(deserialized.Include, deserialized.Exclude)
 		return nil
 	}
 
@@ -202,11 +218,14 @@ func (df *DomainFilter) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("invalid regexExclude: %w", err)
 		}
 	}
-	*df = NewRegexDomainFilter(include, exclude)
+	*df = *NewRegexDomainFilter(include, exclude)
 	return nil
 }
 
-func (df DomainFilter) MatchParent(domain string) bool {
+func (df *DomainFilter) MatchParent(domain string) bool {
+	if df == nil {
+		return true // nil filter matches everything
+	}
 	if matchFilter(df.exclude, domain, false) {
 		return false
 	}
@@ -214,7 +233,7 @@ func (df DomainFilter) MatchParent(domain string) bool {
 		return true
 	}
 
-	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	strippedDomain := normalizeDomain(domain)
 	for _, filter := range df.Filters {
 		if filter == "" || strings.HasPrefix(filter, ".") {
 			// We don't check parents if the filter is prefixed with "."
@@ -225,4 +244,14 @@ func (df DomainFilter) MatchParent(domain string) bool {
 		}
 	}
 	return false
+}
+
+// normalizeDomain converts a domain to a canonical form, so that we can filter on it
+// it: trim "." suffix, get Unicode version of domain complient with Section 5 of RFC 5891
+func normalizeDomain(domain string) string {
+	s, err := idna.Lookup.ToUnicode(strings.TrimSuffix(domain, "."))
+	if err != nil {
+		log.Warnf(`Got error while parsing domain %s: %v`, domain, err)
+	}
+	return s
 }

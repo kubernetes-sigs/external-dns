@@ -300,7 +300,7 @@ func TestAWSSDProvider_ListNamespaces(t *testing.T) {
 
 	for _, tc := range []struct {
 		msg                 string
-		domainFilter        endpoint.DomainFilter
+		domainFilter        *endpoint.DomainFilter
 		namespaceTypeFilter string
 		expectedNamespaces  []*sdtypes.NamespaceSummary
 	}{

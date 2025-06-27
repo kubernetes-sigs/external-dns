@@ -64,7 +64,7 @@ func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 }
 
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-	return endpoint.DomainFilter{}
+	return &endpoint.DomainFilter{}
 }
 
 type contextKey struct {

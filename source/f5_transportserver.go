@@ -145,8 +145,8 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 	var endpoints []*endpoint.Endpoint
 
 	for _, transportServer := range transportServers {
-		if !isTransportServerReady(transportServer) {
-			log.Warnf("F5 TransportServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+		if !hasValidTransportServerIP(transportServer) {
+			log.Warnf("F5 TransportServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				transportServer.Namespace, transportServer.Name)
 			continue
 		}
@@ -213,11 +213,7 @@ func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.Tr
 	return filteredList, nil
 }
 
-func isTransportServerReady(vs *f5.TransportServer) bool {
-	if strings.ToLower(vs.Status.Status) != "ok" {
-		return false
-	}
-
+func hasValidTransportServerIP(vs *f5.TransportServer) bool {
 	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
 	return normalizedAddress != "none" && normalizedAddress != ""
 }
