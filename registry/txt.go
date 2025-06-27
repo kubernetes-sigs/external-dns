@@ -250,6 +250,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
+	if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+	}
+
 	// Create legacy format record by default unless newFormatOnly is true
 	if !im.newFormatOnly && !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
@@ -257,9 +261,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		if txt != nil {
 			txt.WithSetIdentifier(r.SetIdentifier)
 			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-			if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
-				r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-			}
 			txt.ProviderSpecific = r.ProviderSpecific
 			endpoints = append(endpoints, txt)
 		}
@@ -275,9 +276,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
-			r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		}
 		txtNew.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txtNew)
 	}
