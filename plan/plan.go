@@ -124,13 +124,13 @@ func (t planTableRow) String() string {
 	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
 }
 
-func (t planTable) addCurrent(e *endpoint.Endpoint) {
+func (t *planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].current = append(t.rows[key].current, e)
 	t.rows[key].records[e.RecordType].current = e
 }
 
-func (t planTable) addCandidate(e *endpoint.Endpoint) {
+func (t *planTable) addCandidate(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].candidates = append(t.rows[key].candidates, e)
 	t.rows[key].records[e.RecordType].candidates = append(t.rows[key].records[e.RecordType].candidates, e)
@@ -316,7 +316,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
-// Currently this just removes TXT records to prevent them from being
+// Currently, this just removes TXT records to prevent them from being
 // deleted erroneously by the planner (only the TXT registry should do this.)
 //
 // Per RFC 1034, CNAME records conflict with all other records - it is the

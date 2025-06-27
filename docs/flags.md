@@ -11,7 +11,7 @@
 | `--kubeconfig=""` | Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect) |
 | `--request-timeout=30s` | Request timeout when calling Kubernetes APIs. 0s means no timeout |
 | `--[no-]resolve-service-load-balancer-hostname` | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs |
-| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to Endpoints, for Service source (default: false) |
+| `--[no-]listen-endpoint-events` | Trigger a reconcile on changes to EndpointSlices, for Service source (default: false) |
 | `--cf-api-endpoint=""` | The fully-qualified domain name of the cloud foundry instance you are targeting |
 | `--cf-username=""` | The username to log into the cloud foundry API |
 | `--cf-password=""` | The password to log into the cloud foundry API |
@@ -25,10 +25,11 @@
 | `--crd-source-apiversion="externaldns.k8s.io/v1alpha1"` | API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source |
 | `--crd-source-kind="DNSEndpoint"` | Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion |
 | `--default-targets=DEFAULT-TARGETS` | Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional) |
+| `--[no-]force-default-targets` | Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state) |
 | `--exclude-record-types=EXCLUDE-RECORD-TYPES` | Record types to exclude from management; specify multiple times to exclude many; (optional) |
 | `--exclude-target-net=EXCLUDE-TARGET-NET` | Exclude target nets (optional) |
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
-| `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional). Default is true. |
+| `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional, default: false) |
 | `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
 | `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--gateway-name=GATEWAY-NAME` | Limit Gateways of Route endpoints to a specific name (default: all names) |
@@ -37,7 +38,7 @@
 | `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
 | `--[no-]ignore-non-host-network-pods` | Ignore pods not running on host network when using pod source (default: false) |
-| `--ingress-class=INGRESS-CLASS` | Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class) |
+| `--ingress-class=INGRESS-CLASS` | Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class) |
 | `--label-filter=""` | Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host |
 | `--managed-record-types=A...` | Record types to manage; specify multiple times to include many; (default: A,AAAA,CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT) |
 | `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
@@ -92,7 +93,8 @@
 | `--cloudflare-custom-hostnames-min-tls-version=1.0` | When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3) |
 | `--cloudflare-custom-hostnames-certificate-authority=none` | When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
-| `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the region (default: earth) |
+| `--[no-]cloudflare-regional-services` | When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled) |
+| `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
@@ -163,7 +165,6 @@
 | `--txt-wildcard-replacement=""` | When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional) |
 | `--[no-]txt-encrypt-enabled` | When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled) |
 | `--txt-encrypt-aes-key=""` | When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true) |
-| `--[no-]txt-new-format-only` | When using the TXT registry, only use new format records which include record type information (e.g., prefix: 'a-'). Reduces number of TXT records (default: disabled) |
 | `--dynamodb-region=""` | When using the DynamoDB registry, the AWS region of the DynamoDB table (optional) |
 | `--dynamodb-table="external-dns"` | When using the DynamoDB registry, the name of the DynamoDB table (default: "external-dns") |
 | `--txt-cache-interval=0s` | The interval between cache synchronizations in duration format (default: disabled) |

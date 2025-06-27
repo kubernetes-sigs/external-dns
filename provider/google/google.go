@@ -109,7 +109,7 @@ type GoogleProvider struct {
 	// Interval between batch updates.
 	batchChangeInterval time.Duration
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// filter for zones based on visibility
 	zoneTypeFilter provider.ZoneTypeFilter
 	// only consider hosted zones ending with this zone id
@@ -125,7 +125,7 @@ type GoogleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
+func NewGoogleProvider(ctx context.Context, project string, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err

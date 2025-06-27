@@ -23,5 +23,6 @@ repos:
     rev: v0.44.0
     hooks:
     - id: markdownlint
+      args: ["--fix"]
 
 minimum_pre_commit_version: !!str 3.2

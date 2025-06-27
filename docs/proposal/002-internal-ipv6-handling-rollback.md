@@ -1,11 +1,12 @@
 <!-- clone me -->
+
 ```yaml
 ---
 title: "Proposal: Rollback IPv6 internal Node IP exposure"
 version: if applicable
 authors: @ivankatliarchuk, @szuecs, @mloiseleur
 creation-date: 2025-01-01
-status: approved
+status: implemented
 ---
 ```
 
@@ -47,7 +48,7 @@ Proposed Changes in `source/node.go` file.
 ```go
 // IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 if addr.Type == v1.NodeInternalIP && ns.exposeInternalIP && ... {
-	pv6Addresses = append(ipv6Addresses, addr.Address)
+    ipv6Addresses = append(ipv6Addresses, addr.Address)
 }
 ```
 

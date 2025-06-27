@@ -902,7 +902,7 @@ func (suite *PlanTestSuite) TestDomainFiltersInitial() {
 		Policies:       []Policy{&SyncPolicy{}},
 		Current:        current,
 		Desired:        desired,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -926,7 +926,7 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 		Policies:       []Policy{&SyncPolicy{}},
 		Current:        current,
 		Desired:        desired,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 

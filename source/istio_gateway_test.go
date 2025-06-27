@@ -46,7 +46,7 @@ type GatewaySuite struct {
 }
 
 func (suite *GatewaySuite) SetupTest() {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
@@ -166,7 +166,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 
 			_, err := NewIstioGatewaySource(
 				context.TODO(),
-				fake.NewSimpleClientset(),
+				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,

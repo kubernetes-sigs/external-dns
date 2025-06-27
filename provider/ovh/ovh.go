@@ -60,7 +60,7 @@ type OVHProvider struct {
 
 	apiRateLimiter ratelimit.Limiter
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 
 	// DryRun enables dry-run mode
 	DryRun bool
@@ -123,7 +123,7 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, endpoint string, apiRateLimit int, enableCNAMERelative, dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) map[string]*pl
 	return output
 }
 
-func (p OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
+func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
 	allChanges := []ovhChange{}
 	var computedChanges []ovhChange
 
@@ -371,7 +371,7 @@ func (p *OVHProvider) zones(ctx context.Context) ([]string, error) {
 	}
 
 	for _, zoneName := range zones {
-		if p.domainFilter.Match(zoneName) {
+		if p.domainFilter == nil || p.domainFilter.Match(zoneName) {
 			filteredZones = append(filteredZones, zoneName)
 		}
 	}
@@ -496,7 +496,7 @@ func ovhGroupByNameAndType(records []ovhRecord) []*endpoint.Endpoint {
 	return endpoints
 }
 
-func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, []ovhRecord) {
+func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, []ovhRecord) {
 	var ovhChanges []ovhChange
 	var toDeleteIds []int
 
@@ -564,7 +564,7 @@ func normalizeDNSName(dnsName string) string {
 	return strings.TrimSpace(strings.ToLower(dnsName))
 }
 
-func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
+func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zoneNameIDMapper.Add(zone, zone)
 
@@ -709,7 +709,7 @@ func (c *ovhChange) String() string {
 	return fmt.Sprintf("%s zone action(%s) : %s %d IN %s %s", c.Zone, action, c.SubDomain, c.TTL, c.FieldType, c.Target)
 }
 
-func (p OVHProvider) formatCNAMETarget(change *ovhChange) {
+func (p *OVHProvider) formatCNAMETarget(change *ovhChange) {
 	if change.FieldType != endpoint.RecordTypeCNAME {
 		return
 	}

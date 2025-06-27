@@ -94,7 +94,7 @@ var (
 type WebhookProvider struct {
 	client          *http.Client
 	remoteServerURL *url.URL
-	DomainFilter    endpoint.DomainFilter
+	DomainFilter    *endpoint.DomainFilter
 }
 
 func init() {
@@ -132,8 +132,8 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, fmt.Errorf("wrong content type returned from server: %s", ct)
 	}
 
-	df := endpoint.DomainFilter{}
-	if err := json.NewDecoder(resp.Body).Decode(&df); err != nil {
+	df := &endpoint.DomainFilter{}
+	if err := json.NewDecoder(resp.Body).Decode(df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 

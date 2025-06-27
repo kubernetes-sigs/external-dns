@@ -302,8 +302,8 @@ func TestPodSource(t *testing.T) {
 			true,
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(5400)},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1"}, RecordType: endpoint.RecordTypeAAAA, RecordTTL: endpoint.TTL(5400)},
 				{DNSName: "b.foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -339,6 +339,7 @@ func TestPodSource(t *testing.T) {
 						Namespace: "kube-system",
 						Annotations: map[string]string{
 							hostnameAnnotationKey: "a.foo.example.org",
+							ttlAnnotationKey:      "1h30m",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -374,8 +375,8 @@ func TestPodSource(t *testing.T) {
 			true,
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(1)},
 			},
 			false,
 			nodesFixturesIPv4(),
@@ -387,6 +388,7 @@ func TestPodSource(t *testing.T) {
 						Annotations: map[string]string{
 							internalHostnameAnnotationKey: "internal.a.foo.example.org",
 							hostnameAnnotationKey:         "a.foo.example.org",
+							ttlAnnotationKey:              "1s",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -453,6 +455,7 @@ func TestPodSource(t *testing.T) {
 						Annotations: map[string]string{
 							internalHostnameAnnotationKey: "internal.a.foo.example.org",
 							hostnameAnnotationKey:         "a.foo.example.org",
+							ttlAnnotationKey:              "1s",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -514,7 +517,7 @@ func TestPodSource(t *testing.T) {
 			false,
 			"example.org",
 			[]*endpoint.Endpoint{
-				{DNSName: "my-pod1.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "my-pod1.example.org", Targets: endpoint.Targets{"192.168.1.1"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(60)},
 				{DNSName: "my-pod2.example.org", Targets: endpoint.Targets{"192.168.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -522,9 +525,11 @@ func TestPodSource(t *testing.T) {
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:        "my-pod1",
-						Namespace:   "kube-system",
-						Annotations: map[string]string{},
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							ttlAnnotationKey: "1m",
+						},
 					},
 					Spec: corev1.PodSpec{
 						HostNetwork: false,
@@ -634,7 +639,7 @@ func TestPodSource(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			kubernetes := fake.NewClientset()
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// Create the nodes
 			for _, node := range tc.nodes {
@@ -652,7 +657,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain)
+			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -664,6 +669,12 @@ func TestPodSource(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			for _, ep := range endpoints {
+				// TODO: source should always set the resource label key. currently not supported by the pod source.
+				require.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
+				require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+			}
 		})
 	}
 }
@@ -874,7 +885,7 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "")
+			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false)
 			require.NoError(t, err)
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)

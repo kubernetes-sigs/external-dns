@@ -29,6 +29,28 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install YQ
+        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        with:
+          github_token: ${{ github.token }}
+          owner: mikefarah
+          repository: yq
+          extract: false
+          filename_format: "{name}_{os}_{arch}"
+          check_command: yq --version
+          version: latest
+
+      - name: Install MDQ
+        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        with:
+          github_token: ${{ github.token }}
+          owner: yshavit
+          repository: mdq
+          arch_amd64: x64
+          filename_format: "{name}-{os}-{arch}.{ext}"
+          check_command: mdq --version
+          version: latest
+
       - name: Get chart version
         id: chart_version
         run: |
@@ -98,7 +120,7 @@ jobs:
           IFS="${old_ifs}"
 
           if [[ -f "${changes_path}" ]]; then
-            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/external-dns/Chart.yaml"
+            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/external-dns/Chart.yaml
             rm -f "${changes_path}"
           fi
 
