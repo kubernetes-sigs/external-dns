@@ -100,7 +100,8 @@ func NewTraefikSource(
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	namespace, annotationFilter string,
-	ignoreHostnameAnnotation, disableLegacy, disableNew bool) (Source, error) {
+	ignoreHostnameAnnotation, enableLegacy, disableNew bool,
+) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
@@ -128,7 +129,7 @@ func NewTraefikSource(
 			},
 		)
 	}
-	if !disableLegacy {
+	if enableLegacy {
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressRouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressRouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
@@ -232,7 +233,7 @@ func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
-	return extractEndpoints[IngressRoute](
+	return extractEndpoints(
 		ts.ingressRouteInformer.Lister(),
 		ts.namespace,
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
@@ -297,7 +298,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 
 // ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
-	return extractEndpoints[IngressRouteUDP](
+	return extractEndpoints(
 		ts.ingressRouteUdpInformer.Lister(),
 		ts.namespace,
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
@@ -311,7 +312,7 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 
 // oldIngressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error) {
-	return extractEndpoints[IngressRoute](
+	return extractEndpoints(
 		ts.oldIngressRouteInformer.Lister(),
 		ts.namespace,
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
@@ -327,7 +328,7 @@ func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error
 
 // oldIngressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
 func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
-	return extractEndpoints[IngressRouteTCP](
+	return extractEndpoints(
 		ts.oldIngressRouteTcpInformer.Lister(),
 		ts.namespace,
 		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
@@ -341,7 +342,7 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, er
 
 // oldIngressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
-	return extractEndpoints[IngressRouteUDP](
+	return extractEndpoints(
 		ts.oldIngressRouteUdpInformer.Lister(),
 		ts.namespace,
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {

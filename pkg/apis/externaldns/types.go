@@ -209,7 +209,7 @@ type Config struct {
 	WebhookProviderReadTimeout                    time.Duration
 	WebhookProviderWriteTimeout                   time.Duration
 	WebhookServer                                 bool
-	TraefikDisableLegacy                          bool
+	TraefikEnableLegacy                           bool
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
@@ -359,7 +359,7 @@ var defaultConfig = &Config{
 	TLSCA:                        "",
 	TLSClientCert:                "",
 	TLSClientCertKey:             "",
-	TraefikDisableLegacy:         false,
+	TraefikEnableLegacy:          false,
 	TraefikDisableNew:            false,
 	TransIPAccountName:           "",
 	TransIPPrivateKeyFile:        "",
@@ -486,7 +486,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").Default(defaultConfig.ServiceTypeFilter...).StringsVar(&cfg.ServiceTypeFilter)
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy")
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
-	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
+	app.Flag("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikEnableLegacy)).BoolVar(&cfg.TraefikEnableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
 	// Flags related to providers
