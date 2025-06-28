@@ -717,6 +717,10 @@ func TestCreateRecordV6(t *testing.T) {
 		if r.Method == http.MethodPut && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
 			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
 			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
+			r.URL.Path == "/api/config/dns/hosts/192.168.1.2 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/192.168.1.3 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:2 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:3 test.example.com" ||
 			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
 
 			// Return A records
@@ -748,10 +752,30 @@ func TestCreateRecordV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Test create multiple A records
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.2", "192.168.1.3"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
 	// Test create AAAA record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
 		Targets:    []string{"fc00::1:192:168:1:1"},
+		RecordType: endpoint.RecordTypeAAAA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create multiple AAAA records
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"fc00::1:192:168:1:2", "fc00::1:192:168:1:3"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
@@ -776,6 +800,16 @@ func TestCreateRecordV6(t *testing.T) {
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record with multiple targets and ensure it fails
+	ep = &endpoint.Endpoint{
+		DNSName:    "source3.example.com",
+		Targets:    []string{"target3.domain.com", "target4.domain.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.createRecord(context.Background(), ep); err == nil {
 		t.Fatal(err)
 	}
 

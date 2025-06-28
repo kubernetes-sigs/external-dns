@@ -277,32 +277,39 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 		return nil
 	}
 
-	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
-
 	// Get the current record
 	if strings.Contains(ep.DNSName, "*") {
 		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole DNS names cannot return wildcard"))
 	}
 
-	switch ep.RecordType {
-	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s %s", ep.Targets, ep.DNSName))
-	case endpoint.RecordTypeCNAME:
-		if ep.RecordTTL.IsConfigured() {
-			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL))
-		} else {
-			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets))
+	if ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 1 {
+		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole CNAME records cannot have multiple targets"))
+	}
+
+	for _, target := range ep.Targets {
+		log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, target)
+
+		targetApiUrl := apiUrl
+
+		switch ep.RecordType {
+		case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
+			targetApiUrl = p.generateApiUrl(targetApiUrl, fmt.Sprintf("%s %s", target, ep.DNSName))
+		case endpoint.RecordTypeCNAME:
+			if ep.RecordTTL.IsConfigured() {
+				targetApiUrl = p.generateApiUrl(targetApiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, target, ep.RecordTTL))
+			} else {
+				targetApiUrl = p.generateApiUrl(targetApiUrl, fmt.Sprintf("%s,%s", ep.DNSName, target))
+			}
 		}
-	}
+		req, err := http.NewRequestWithContext(ctx, action, targetApiUrl, nil)
+		if err != nil {
+			return err
+		}
 
-	req, err := http.NewRequestWithContext(ctx, action, apiUrl, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = p.do(req)
-	if err != nil {
-		return err
+		_, err = p.do(req)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
