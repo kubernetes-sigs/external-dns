@@ -131,7 +131,9 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
 | policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
+| provider | object | See _values.yaml_ | Provider configuration |
 | provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
+| provider.webhook | object | See _values.yaml_ | Webhook configuration |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
 | provider.webhook.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
 | provider.webhook.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container. |
@@ -139,11 +141,28 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | provider.webhook.image.repository | string | `nil` | Image repository for the `webhook` container. |
 | provider.webhook.image.tag | string | `nil` | Image tag for the `webhook` container. |
 | provider.webhook.livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
+| provider.webhook.readTimeout | integer | `nil` | Webhook read timeout |
 | provider.webhook.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
 | provider.webhook.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container. |
 | provider.webhook.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container. |
 | provider.webhook.service.port | int | `8080` | Webhook exposed HTTP port for the service. |
 | provider.webhook.serviceMonitor | object | See _values.yaml_ | Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container. |
+| provider.webhook.sidecar | object | See _values.yaml_ | Webhook sidecar container configuration |
+| provider.webhook.sidecar.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
+| provider.webhook.sidecar.enabled | boolean | `false` | Whether or not to include a webhook sidecar in the external dns deployment |
+| provider.webhook.sidecar.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
+| provider.webhook.sidecar.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container. |
+| provider.webhook.sidecar.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `webhook` container. |
+| provider.webhook.sidecar.image.repository | string | `nil` | Image repository for the `webhook` container. |
+| provider.webhook.sidecar.image.tag | string | `nil` | Image tag for the `webhook` container. |
+| provider.webhook.sidecar.livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
+| provider.webhook.sidecar.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
+| provider.webhook.sidecar.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container. |
+| provider.webhook.sidecar.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container. |
+| provider.webhook.sidecar.service.port | int | `8080` | Webhook exposed HTTP port for the service. |
+| provider.webhook.sidecar.serviceMonitor | object | See _values.yaml_ | Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container. |
+| provider.webhook.url | string | `nil` | Webhook URL |
+| provider.webhook.writeTimeout | integer | `nil` | Webhook write timeout |
 | rbac.additionalPermissions | list | `[]` | Additional rules to add to the `ClusterRole`. |
 | rbac.create | bool | `true` | If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API. |
 | readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |

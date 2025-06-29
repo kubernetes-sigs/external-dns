@@ -296,6 +296,7 @@
       ]
     },
     "provider": {
+      "description": "Provider configuration",
       "type": [
         "object",
         "string"
@@ -303,10 +304,17 @@
       "properties": {
         "name": {
           "description": "_ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "webhook": {
-          "type": "object",
+          "description": "Webhook configuration",
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
             "args": {
               "description": "Extra arguments to provide for the `webhook` container.",
@@ -407,6 +415,13 @@
                   ]
                 }
               }
+            },
+            "readTimeout": {
+              "description": "Webhook read timeout",
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "readinessProbe": {
               "description": "[Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.",
@@ -516,6 +531,242 @@
                   "type": "object"
                 }
               }
+            },
+            "sidecar": {
+              "description": "Webhook sidecar container configuration",
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "args": {
+                  "description": "Extra arguments to provide for the `webhook` container.",
+                  "type": "array"
+                },
+                "enabled": {
+                  "description": "Whether or not to include a webhook sidecar in the external dns deployment",
+                  "type": "boolean"
+                },
+                "env": {
+                  "description": "[Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.",
+                  "type": "array"
+                },
+                "extraVolumeMounts": {
+                  "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.",
+                  "type": "array"
+                },
+                "image": {
+                  "type": "object",
+                  "properties": {
+                    "pullPolicy": {
+                      "description": "Image pull policy for the `webhook` container.",
+                      "type": "string"
+                    },
+                    "repository": {
+                      "description": "Image repository for the `webhook` container.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "tag": {
+                      "description": "Image tag for the `webhook` container.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "limits": {
+                  "type": "object",
+                  "properties": {
+                    "cpu": {
+                      "type": "string"
+                    },
+                    "memory": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "livenessProbe": {
+                  "description": "[Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.",
+                  "type": "object",
+                  "properties": {
+                    "failureThreshold": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "httpGet": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "port": {
+                          "default": "string",
+                          "type": [
+                            "integer",
+                            "string"
+                          ]
+                        }
+                      }
+                    },
+                    "initialDelaySeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "periodSeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "successThreshold": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "timeoutSeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "readinessProbe": {
+                  "description": "[Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.",
+                  "type": "object",
+                  "properties": {
+                    "failureThreshold": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "httpGet": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "port": {
+                          "default": "string",
+                          "type": [
+                            "integer",
+                            "string"
+                          ]
+                        }
+                      }
+                    },
+                    "initialDelaySeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "periodSeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "successThreshold": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "timeoutSeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "requests": {
+                  "type": "object",
+                  "properties": {
+                    "cpu": {
+                      "type": "string"
+                    },
+                    "memory": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "resources": {
+                  "description": "[Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container.",
+                  "type": "object"
+                },
+                "securityContext": {
+                  "description": "[Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container.",
+                  "type": "object"
+                },
+                "service": {
+                  "type": "object",
+                  "properties": {
+                    "port": {
+                      "description": "Webhook exposed HTTP port for the service.",
+                      "type": "integer"
+                    }
+                  }
+                },
+                "serviceMonitor": {
+                  "description": "Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.",
+                  "type": "object",
+                  "properties": {
+                    "bearerTokenFile": {
+                      "type": "null"
+                    },
+                    "interval": {
+                      "type": "null"
+                    },
+                    "metricRelabelings": {
+                      "type": "array"
+                    },
+                    "relabelings": {
+                      "type": "array"
+                    },
+                    "scheme": {
+                      "type": "null"
+                    },
+                    "scrapeTimeout": {
+                      "type": "null"
+                    },
+                    "tlsConfig": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "url": {
+              "description": "Webhook URL",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "writeTimeout": {
+              "description": "Webhook write timeout",
+              "type": [
+                "integer",
+                "null"
+              ]
             }
           }
         }

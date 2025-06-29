@@ -50,6 +50,36 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     {{- if eq $providerName "webhook" }}
+    {{- if and .Values.provider.webhook.sidecar .Values.provider.webhook.sidecar.enabled }}
+    {{- with .Values.provider.webhook.sidecar.serviceMonitor }}
+    - port: http-webhook
+      path: /metrics
+      {{- with .interval }}
+      interval: {{ . }}
+      {{- end }}
+      {{- with .scheme }}
+      scheme: {{ . }}
+      {{- end }}
+      {{- with .bearerTokenFile }}
+      bearerTokenFile: {{ . }}
+      {{- end }}
+      {{- with .tlsConfig }}
+      tlsConfig:
+        {{- toYaml .| nindent 8 }}
+      {{- end }}
+      {{- with .scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+      {{- with .metricRelabelings }}
+      metricRelabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .relabelings }}
+      relabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- else }}
     {{- with .Values.provider.webhook.serviceMonitor }}
     - port: http-webhook
       path: /metrics
@@ -77,6 +107,7 @@ spec:
       relabelings:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+    {{- end }}
     {{- end }}
     {{- end }}
   {{- with .Values.serviceMonitor.targetLabels }}
