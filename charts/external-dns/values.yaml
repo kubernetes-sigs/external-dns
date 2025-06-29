@@ -206,7 +206,7 @@ triggerLoopOnEvent: false
 namespaced: false
 
 # -- _Gateway API_ gateway namespace to watch.
-gatewayNamespace: # @schema type:[string, null]; default: null
+gatewayNamespace:  # @schema type:[string, null]; default: null
 
 # -- _Kubernetes_ resources to monitor for DNS entries.
 sources:
