@@ -18,6 +18,7 @@ package plan
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -359,15 +360,8 @@ func normalizeDNSName(dnsName string) string {
 }
 
 func IsManagedRecord(record string, managedRecords, excludeRecords []string) bool {
-	for _, r := range excludeRecords {
-		if record == r {
-			return false
-		}
+	if slices.Contains(excludeRecords, record) {
+		return false
 	}
-	for _, r := range managedRecords {
-		if record == r {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(managedRecords, record)
 }
