@@ -199,7 +199,7 @@ tests:
       - hasDocuments:
           count: 3
         template: clusterrolebinding.yaml
-      
+
       # Main role should exist and contain route permissions but NOT gateway permissions
       - isKind:
           of: Role
@@ -227,7 +227,7 @@ tests:
           path: metadata.name
           value: rbac-external-dns
         template: clusterrole.yaml
-      
+
       # ClusterRole for namespaces should exist
       - isKind:
           of: ClusterRole
@@ -235,7 +235,7 @@ tests:
           path: metadata.name
           value: rbac-external-dns-namespaces
         template: clusterrole.yaml
-      
+
       # Gateway role should exist and have gateway permissions only
       - isKind:
           of: Role
@@ -268,7 +268,7 @@ tests:
       sources:
         - gateway-httproute
     asserts:
-      # Should have: main Role + ClusterRole for namespaces  
+      # Should have: main Role + ClusterRole for namespaces
       - hasDocuments:
           count: 2
         template: clusterrole.yaml
