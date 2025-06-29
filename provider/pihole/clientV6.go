@@ -407,6 +407,14 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		if err := json.Unmarshal(jRes, &apiError); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
 		}
+		// Ignore if the entry already exists when adding a record
+		if strings.Contains(apiError.Error.Message, "Item already present") {
+			return jRes, nil
+		}
+		// Ignore if the entry does not exist when deleting a record
+		if res.StatusCode == http.StatusNotFound && req.Method == http.MethodDelete {
+			return jRes, nil
+		}
 		if log.IsLevelEnabled(log.DebugLevel) {
 			log.Debugf("Error on request %s", req.URL)
 			if req.Body != nil {
