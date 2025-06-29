@@ -173,6 +173,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- if eq $providerName "webhook" }}
+        {{- if .Values.provider.webhook.sidecar }}
         {{- with .Values.provider.webhook }}
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
@@ -207,6 +208,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- end }}
         {{- end }}
         {{- end }}
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
