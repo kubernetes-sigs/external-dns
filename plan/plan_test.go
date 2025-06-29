@@ -1028,7 +1028,7 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	}
 }
 
-func TestNormalizeDNSName(t *testing.T) {
+func TestNormalizeDNSName(tt *testing.T) {
 	records := []struct {
 		dnsName string
 		expect  string
@@ -1060,6 +1060,18 @@ func TestNormalizeDNSName(t *testing.T) {
 		{
 			"foo.com.",
 			"foo.com.",
+		},
+		{
+			"_foo.com.",
+			"_foo.com.",
+		},
+		{
+			"\u005Ffoo.com.",
+			"_foo.com.",
+		},
+		{
+			".foo.com.",
+			".foo.com.",
 		},
 		{
 			"foo123.COM",
@@ -1099,8 +1111,10 @@ func TestNormalizeDNSName(t *testing.T) {
 		},
 	}
 	for _, r := range records {
-		gotName := normalizeDNSName(r.dnsName)
-		assert.Equal(t, r.expect, gotName)
+		tt.Run(r.dnsName, func(t *testing.T) {
+			gotName := normalizeDNSName(r.dnsName)
+			assert.Equal(t, r.expect, gotName)
+		})
 	}
 }
 
