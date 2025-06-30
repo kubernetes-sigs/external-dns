@@ -239,19 +239,19 @@ func TestListRecordsV6(t *testing.T) {
 	// Ensure A records were parsed correctly
 	expected := []*endpoint.Endpoint{
 		{
-			DNSName:    "service1.example.com",
+			DNSName: "service1.example.com",
 			Targets: []string{"192.168.178.33"},
 		},
 		{
-			DNSName:    "service2.example.com",
+			DNSName: "service2.example.com",
 			Targets: []string{"192.168.178.34"},
 		},
 		{
-			DNSName:    "service3.example.com",
+			DNSName: "service3.example.com",
 			Targets: []string{"192.168.178.34"},
 		},
 		{
-			DNSName:    "service7.example.com",
+			DNSName: "service7.example.com",
 			Targets: []string{"192.168.20.3"},
 		},
 	}
@@ -276,19 +276,19 @@ func TestListRecordsV6(t *testing.T) {
 	// Ensure AAAA records were parsed correctly
 	expected = []*endpoint.Endpoint{
 		{
-			DNSName:    "service4.example.com",
+			DNSName: "service4.example.com",
 			Targets: []string{"fc00::1:192:168:1:1"},
 		},
 		{
-			DNSName:    "service5.example.com",
+			DNSName: "service5.example.com",
 			Targets: []string{"fc00::1:192:168:1:2"},
 		},
 		{
-			DNSName:    "service6.example.com",
+			DNSName: "service6.example.com",
 			Targets: []string{"fc00::1:192:168:1:3"},
 		},
 		{
-			DNSName:    "service7.example.com",
+			DNSName: "service7.example.com",
 			Targets: []string{"::ffff:192.168.20.3"},
 		},
 	}
@@ -318,18 +318,18 @@ func TestListRecordsV6(t *testing.T) {
 	// Ensure CNAME records were parsed correctly
 	expected = []*endpoint.Endpoint{
 		{
-			DNSName:    "source1.example.com",
-			Targets:    []string{"target1.domain.com"},
-			RecordTTL:  1000,
+			DNSName:   "source1.example.com",
+			Targets:   []string{"target1.domain.com"},
+			RecordTTL: 1000,
 		},
 		{
-			DNSName:    "source2.example.com",
-			Targets:    []string{"target2.domain.com"},
-			RecordTTL:  50,
+			DNSName:   "source2.example.com",
+			Targets:   []string{"target2.domain.com"},
+			RecordTTL: 50,
 		},
 		{
-			DNSName:    "source3.example.com",
-			Targets:    []string{"target3.domain.com"},
+			DNSName: "source3.example.com",
+			Targets: []string{"target3.domain.com"},
 		},
 	}
 
