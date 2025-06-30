@@ -244,7 +244,7 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 		Type:     cfc.ResourceRecord.Type,
 		Content:  cfc.ResourceRecord.Content,
 		Priority: cfc.ResourceRecord.Priority,
-		Comment:  &cfc.ResourceRecord.Comment,
+		Comment:  cloudflare.StringPtr(cfc.ResourceRecord.Comment),
 	}
 
 	return params
