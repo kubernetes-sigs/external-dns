@@ -98,6 +98,7 @@ func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {
 		return awsv2.Config{}, fmt.Errorf("instantiating AWS config: %w", err)
 	}
 
+	var credentials awsv2.CredentialsProvider
 	if awsConfig.AssumeRole != "" {
 		stsSvc := sts.NewFromConfig(cfg)
 		var assumeRoleOpts []func(*stscredsv2.AssumeRoleOptions)
@@ -112,9 +113,39 @@ func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {
 		} else {
 			logrus.Infof("Assuming role: %s", awsConfig.AssumeRole)
 		}
-		creds := stscredsv2.NewAssumeRoleProvider(stsSvc, awsConfig.AssumeRole, assumeRoleOpts...)
-		cfg.Credentials = awsv2.NewCredentialsCache(creds)
+		provider := stscredsv2.NewAssumeRoleProvider(stsSvc, awsConfig.AssumeRole, assumeRoleOpts...)
+		credentials = awsv2.NewCredentialsCache(provider)
+	} else {
+		credentials = newReloadableStaticCredentialsProvider(defaultOpts...)
 	}
 
+	cfg.Credentials = credentials
+
 	return cfg, nil
+}
+
+// reloadableStaticCredentialsProvider is a credentials provider that loads
+// default credentials on each retrieval. This makes it possible to load fresh
+// credentials stored in a file referenced by AWS_SHARED_CREDENTIALS_FILE that
+// is updated by another process.
+type reloadableStaticCredentialsProvider struct {
+	opts []func(*config.LoadOptions) error
+}
+
+func newReloadableStaticCredentialsProvider(opts ...func(*config.LoadOptions) error) awsv2.CredentialsProvider {
+	return &reloadableStaticCredentialsProvider{opts: opts}
+}
+
+func (p *reloadableStaticCredentialsProvider) Retrieve(ctx context.Context) (awsv2.Credentials, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, p.opts...)
+	if err != nil {
+		return awsv2.Credentials{}, fmt.Errorf("instantiating AWS config: %w", err)
+	}
+
+	creds, err := cfg.Credentials.Retrieve(ctx)
+	if err != nil {
+		return awsv2.Credentials{}, fmt.Errorf("retrieving credentials: %w", err)
+	}
+
+	return creds, nil
 }
