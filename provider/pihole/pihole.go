@@ -22,6 +22,7 @@ import (
 	"slices"
 
 	"github.com/google/go-cmp/cmp"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -134,7 +135,6 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					delete(updateNew, key)
 					continue
 				}
-
 			} else {
 				// For API version <= 5, we only check the first target.
 				if newRecord.Targets[0] == ep.Targets[0] {
