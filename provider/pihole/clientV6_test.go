@@ -468,8 +468,34 @@ func TestErrorsV6(t *testing.T) {
 	if len(resp) != 2 {
 		t.Fatal("Expected one records returned, got:", len(resp))
 	}
-	if resp[1].RecordTTL != 0 {
-		t.Fatal("Expected no TTL returned, got:", resp[0].RecordTTL)
+
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName:   "source1.example.com",
+			Targets:   []string{"target1.domain.com"},
+			RecordTTL: 100,
+		},
+		{
+			DNSName: "source2.example.com",
+			Targets: []string{"target2.domain.com"},
+		},
+	}
+
+	expectedMap := make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range resp {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
+			if ep.RecordTTL != rec.RecordTTL {
+				t.Errorf("Got invalid TTL for %s: %d, expected: %d", rec.DNSName, rec.RecordTTL, ep.RecordTTL)
+			}
+		} else {
+			t.Errorf("Unexpected record found: %s", rec.DNSName)
+		}
 	}
 
 }
