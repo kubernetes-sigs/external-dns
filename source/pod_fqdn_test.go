@@ -58,7 +58,9 @@ func TestNewPodSourceWithFqdn(t *testing.T) {
 				false,
 				"",
 				tt.fqdnTemplate,
-				false)
+				false,
+				"",
+				nil)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -405,7 +407,9 @@ func TestPodSourceFqdnTemplatingExamples(t *testing.T) {
 				false,
 				tt.sourceDomain,
 				tt.fqdnTemplate,
-				tt.combineFQDN)
+				tt.combineFQDN,
+				"",
+				nil)
 			require.NoError(t, err)
 
 			endpoints, err := src.Endpoints(t.Context())
@@ -467,7 +471,9 @@ func TestPodSourceFqdnTemplatingExamples_Failed(t *testing.T) {
 				false,
 				tt.sourceDomain,
 				tt.fqdnTemplate,
-				tt.combineFQDN)
+				tt.combineFQDN,
+				"",
+				nil)
 			require.NoError(t, err)
 
 			_, err = src.Endpoints(t.Context())
