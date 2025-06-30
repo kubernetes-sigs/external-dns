@@ -79,20 +79,17 @@ func NewIstioGatewaySource(
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
+
 	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
 	gatewayInformer := istioInformerFactory.Networking().V1alpha3().Gateways()
 
-	// Add default resource event handlers to properly initialize informer.
-	serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("service added")
-			},
-		},
-	)
+	serviceInformer := informerFactory.Core().V1().Services()
+	err = informers.ServiceWithDefaultOptions(serviceInformer, namespace)
+	if err != nil {
+		return nil, err
+	}
 
-	gatewayInformer.Informer().AddEventHandler(
+	_, _ = gatewayInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				log.Debug("gateway added")
@@ -104,10 +101,10 @@ func NewIstioGatewaySource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -195,10 +192,10 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.
-func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
-	sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
