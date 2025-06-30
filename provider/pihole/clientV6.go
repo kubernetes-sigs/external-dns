@@ -143,11 +143,12 @@ func isValidIPv6(ip string) bool {
 }
 
 func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
-	out := make([]*endpoint.Endpoint, 0)
 	results, err := p.getConfigValue(ctx, rtype)
 	if err != nil {
 		return nil, err
 	}
+
+	endpoints := make(map[string]*endpoint.Endpoint)
 
 	for _, rec := range results {
 		recs := strings.FieldsFunc(rec, func(r rune) bool {
@@ -186,7 +187,18 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			}
 		}
 
-		out = append(out, endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target))
+		ep := endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target)
+
+		if oldEp, ok := endpoints[DNSName]; ok {
+			ep.Targets = append(oldEp.Targets, Target)
+		}
+
+		endpoints[DNSName] = ep
+	}
+
+	out := make([]*endpoint.Endpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		out = append(out, ep)
 	}
 	return out, nil
 }
@@ -272,11 +284,6 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 		return nil
 	}
 
-	if p.cfg.DryRun {
-		log.Infof("DRY RUN: %s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
-		return nil
-	}
-
 	// Get the current record
 	if strings.Contains(ep.DNSName, "*") {
 		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole DNS names cannot return wildcard"))
@@ -287,6 +294,11 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 	}
 
 	for _, target := range ep.Targets {
+		if p.cfg.DryRun {
+			log.Infof("DRY RUN: %s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, target)
+			continue
+		}
+
 		log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, target)
 
 		targetApiUrl := apiUrl
