@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -238,4 +239,37 @@ func (suite *ByNamesTestSuite) TestDynamicKubernetesClientFails() {
 
 func TestByNames(t *testing.T) {
 	suite.Run(t, new(ByNamesTestSuite))
+}
+
+type minimalMockClientGenerator struct{}
+
+var errMock = errors.New("mock not implemented")
+
+func (m *minimalMockClientGenerator) KubeClient() (kubernetes.Interface, error) { return nil, errMock }
+func (m *minimalMockClientGenerator) GatewayClient() (gateway.Interface, error) { return nil, errMock }
+func (m *minimalMockClientGenerator) IstioClient() (istioclient.Interface, error) {
+	return nil, errMock
+}
+func (m *minimalMockClientGenerator) CloudFoundryClient(string, string, string) (*cfclient.Client, error) {
+	return nil, errMock
+}
+func (m *minimalMockClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
+	return nil, errMock
+}
+func (m *minimalMockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
+	return nil, errMock
+}
+
+func TestBuildWithConfig_InvalidSource(t *testing.T) {
+	ctx := context.Background()
+	p := &minimalMockClientGenerator{}
+	cfg := &Config{LabelFilter: labels.NewSelector()}
+
+	src, err := BuildWithConfig(ctx, "not-a-source", p, cfg)
+	if src != nil {
+		t.Errorf("expected nil source for invalid type, got: %v", src)
+	}
+	if !errors.Is(err, ErrSourceNotFound) {
+		t.Errorf("expected ErrSourceNotFound, got: %v", err)
+	}
 }

@@ -80,5 +80,5 @@ func TestZoneIDName(t *testing.T) {
 	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	_, _ = z.FindZone("???")
 
-	testutils.TestHelperLogContains("Failed to convert label '???' of hostname '???' to its Unicode form: idna: disallowed rune U+003F", hook, t)
+	testutils.TestHelperLogContains("Failed to convert label \"???\" of hostname \"???\" to its Unicode form: idna: disallowed rune U+003F", hook, t)
 }
