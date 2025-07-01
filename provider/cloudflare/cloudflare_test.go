@@ -48,7 +48,7 @@ type MockAction struct {
 	ZoneId           string
 	RecordId         string
 	RecordData       cloudflare.DNSRecord
-	RegionalHostname cloudflare.RegionalHostname
+	RegionalHostname regionalHostname
 }
 
 type mockCloudFlareClient struct {
@@ -60,7 +60,7 @@ type mockCloudFlareClient struct {
 	listZonesContextError error
 	dnsRecordsError       error
 	customHostnames       map[string][]cloudflare.CustomHostname
-	regionalHostnames     map[string][]cloudflare.RegionalHostname
+	regionalHostnames     map[string][]regionalHostname
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -102,7 +102,7 @@ func NewMockCloudFlareClient() *mockCloudFlareClient {
 			"002": {},
 		},
 		customHostnames:   map[string][]cloudflare.CustomHostname{},
-		regionalHostnames: map[string][]cloudflare.RegionalHostname{},
+		regionalHostnames: map[string][]regionalHostname{},
 	}
 }
 
@@ -1949,7 +1949,7 @@ func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
 				ID:      "1234567890",
 				Content: "my-tunnel-guid-here.cfargotunnel.com",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
+			RegionalHostname: regionalHostname{
 				Hostname: "my-domain-here.app",
 			},
 		},
@@ -1961,7 +1961,7 @@ func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
 				ID:      "9876543210",
 				Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
+			RegionalHostname: regionalHostname{
 				Hostname:  "my-domain-here.app",
 				RegionKey: "",
 			},
@@ -2012,7 +2012,7 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 				ID:      "1234567890",
 				Content: "my-tunnel-guid-here.cfargotunnel.com",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
+			RegionalHostname: regionalHostname{
 				Hostname: "@", // APEX record
 			},
 		},
@@ -2024,7 +2024,7 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 				ID:      "9876543210",
 				Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
+			RegionalHostname: regionalHostname{
 				Hostname:  "@", // APEX record
 				RegionKey: "",
 			},
