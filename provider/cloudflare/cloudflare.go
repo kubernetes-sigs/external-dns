@@ -29,6 +29,8 @@ import (
 	"strings"
 
 	"github.com/cloudflare/cloudflare-go"
+	cloudflarev4 "github.com/cloudflare/cloudflare-go/v4"
+	"github.com/cloudflare/cloudflare-go/v4/option"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -119,7 +121,8 @@ type cloudFlareDNS interface {
 }
 
 type zoneService struct {
-	service *cloudflare.API
+	service   *cloudflare.API
+	serviceV4 *cloudflarev4.Client
 }
 
 func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
@@ -287,8 +290,9 @@ func NewCloudFlareProvider(
 ) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
-		config *cloudflare.API
-		err    error
+		config   *cloudflare.API
+		configV4 *cloudflarev4.Client
+		err      error
 	)
 	if os.Getenv("CF_API_TOKEN") != "" {
 		token := os.Getenv("CF_API_TOKEN")
@@ -300,8 +304,15 @@ func NewCloudFlareProvider(
 			token = strings.TrimSpace(string(tokenBytes))
 		}
 		config, err = cloudflare.NewWithAPIToken(token)
+		configV4 = cloudflarev4.NewClient(
+			option.WithAPIToken(token),
+		)
 	} else {
 		config, err = cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
+		configV4 = cloudflarev4.NewClient(
+			option.WithAPIKey(os.Getenv("CF_API_KEY")),
+			option.WithAPIEmail(os.Getenv("CF_API_EMAIL")),
+		)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %w", err)
@@ -312,7 +323,7 @@ func NewCloudFlareProvider(
 	}
 
 	return &CloudFlareProvider{
-		Client:                 zoneService{config},
+		Client:                 zoneService{config, configV4},
 		domainFilter:           domainFilter,
 		zoneIDFilter:           zoneIDFilter,
 		proxiedByDefault:       proxiedByDefault,
