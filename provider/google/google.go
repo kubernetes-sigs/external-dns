@@ -207,11 +207,13 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 }
 
 // Records returns the list of records in all relevant zones.
-func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *GoogleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
@@ -226,7 +228,7 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, z := range zones {
 		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone %s: %w", z.Name, err))
+			return nil, provider.NewSoftErrorf("failed to list records in zone %s: %v", z.Name, err)
 		}
 	}
 

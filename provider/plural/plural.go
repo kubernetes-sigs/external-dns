@@ -66,17 +66,17 @@ func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 	}, nil
 }
 
-func (p *PluralProvider) Records(_ context.Context) (endpoints []*endpoint.Endpoint, err error) {
+func (p *PluralProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	records, err := p.Client.DnsRecords()
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	endpoints = make([]*endpoint.Endpoint, len(records))
+	endpoints := make([]*endpoint.Endpoint, len(records))
 	for i, record := range records {
 		endpoints[i] = endpoint.NewEndpoint(record.Name, record.Type, record.Records...)
 	}
-	return
+	return endpoints, nil
 }
 
 func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {

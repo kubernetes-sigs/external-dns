@@ -454,10 +454,10 @@ func containsOctalSequence(domain string) bool {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AWSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
-		return nil, provider.NewSoftErrorf("records retrieval failed: %w", err)
+		return nil, provider.NewSoftErrorf("records retrieval failed: %v", err)
 	}
 
 	return p.records(ctx, zones)
@@ -940,10 +940,12 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 }
 
 // searches for `changes` that are contained in `queue` and returns the `changes` separated by whether they were found in the queue (`foundChanges`) or not (`notFoundChanges`)
-func findChangesInQueue(changes Route53Changes, queue Route53Changes) (foundChanges, notFoundChanges Route53Changes) {
+func findChangesInQueue(changes Route53Changes, queue Route53Changes) (Route53Changes, Route53Changes) {
 	if queue == nil {
 		return Route53Changes{}, changes
 	}
+
+	var foundChanges, notFoundChanges Route53Changes
 
 	for _, c := range changes {
 		found := false
@@ -959,7 +961,7 @@ func findChangesInQueue(changes Route53Changes, queue Route53Changes) (foundChan
 		}
 	}
 
-	return
+	return foundChanges, notFoundChanges
 }
 
 // group the given changes by name and ownership relation to ensure these are always submitted in the same transaction to Route53;

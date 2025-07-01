@@ -416,7 +416,10 @@ func virtualServiceBindsToGateway(virtualService *networkingv1alpha3.VirtualServ
 	return false
 }
 
-func parseGateway(gateway string) (namespace, name string, err error) {
+// TODO: similar to ParseIngress
+func parseGateway(gateway string) (string, string, error) {
+	var namespace, name string
+	var err error
 	parts := strings.Split(gateway, "/")
 	if len(parts) == 2 {
 		namespace, name = parts[0], parts[1]
@@ -426,10 +429,10 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 		err = fmt.Errorf("invalid gateway name (name or namespace/name) found '%v'", gateway)
 	}
 
-	return
+	return namespace, name, err
 }
 
-func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -441,8 +444,11 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
-		return
+		return nil, err
 	}
+
+	targets := make(endpoint.Targets, 0)
+
 	for _, lb := range ingress.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			targets = append(targets, lb.IP)
@@ -450,7 +456,7 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 			targets = append(targets, lb.Hostname)
 		}
 	}
-	return
+	return targets, nil
 }
 
 func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {

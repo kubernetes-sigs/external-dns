@@ -125,7 +125,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 		// missed or dropped events are handled. specify resync period 0 to avoid unnecessary sync handler invocations.
 		informer := cache.NewSharedInformer(
 			&cache.ListWatch{
-				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (result runtime.Object, err error) {
+				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (runtime.Object, error) {
 					return sourceCrd.List(ctx, &lo)
 				},
 				WatchFuncWithContext: func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
@@ -235,20 +235,19 @@ func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch
 		Watch(ctx)
 }
 
-func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result *apiv1alpha1.DNSEndpointList, err error) {
-	result = &apiv1alpha1.DNSEndpointList{}
-	err = cs.crdClient.Get().
+func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (*apiv1alpha1.DNSEndpointList, error) {
+	result := &apiv1alpha1.DNSEndpointList{}
+	return result, cs.crdClient.Get().
 		Namespace(cs.namespace).
 		Resource(cs.crdResource).
 		VersionedParams(opts, cs.codec).
 		Do(ctx).
 		Into(result)
-	return
 }
 
-func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (result *apiv1alpha1.DNSEndpoint, err error) {
-	result = &apiv1alpha1.DNSEndpoint{}
-	err = cs.crdClient.Put().
+func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (*apiv1alpha1.DNSEndpoint, error) {
+	result := &apiv1alpha1.DNSEndpoint{}
+	return result, cs.crdClient.Put().
 		Namespace(dnsEndpoint.Namespace).
 		Resource(cs.crdResource).
 		Name(dnsEndpoint.Name).
@@ -256,7 +255,6 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 		Body(dnsEndpoint).
 		Do(ctx).
 		Into(result)
-	return
 }
 
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.

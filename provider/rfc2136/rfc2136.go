@@ -169,13 +169,13 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 }
 
 // KeyData will return TKEY name and TSIG handle to use for followon actions with a secure connection
-func (r *rfc2136Provider) KeyData(nameserver string) (keyName string, handle *gss.Client, err error) {
-	handle, err = gss.NewClient(new(dns.Client))
+func (r *rfc2136Provider) KeyData(nameserver string) (string, *gss.Client, error) {
+	handle, err := gss.NewClient(new(dns.Client))
 	if err != nil {
-		return keyName, handle, err
+		return "", handle, err
 	}
 
-	keyName, _, err = handle.NegotiateContextWithCredentials(nameserver, r.krb5Realm, r.krb5Username, r.krb5Password)
+	keyName, _, err := handle.NegotiateContextWithCredentials(nameserver, r.krb5Realm, r.krb5Username, r.krb5Password)
 	if err != nil {
 		return keyName, handle, err
 	}
@@ -247,7 +247,7 @@ OuterLoop:
 	return eps, nil
 }
 
-func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error) {
+func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
 	if !r.insecure && !r.gssTsig {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}

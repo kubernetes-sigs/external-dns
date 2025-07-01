@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func ParseTemplate(input string) (tmpl *template.Template, err error) {
+func ParseTemplate(input string) (*template.Template, error) {
 	if input == "" {
 		return nil, nil
 	}
