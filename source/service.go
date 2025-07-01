@@ -126,6 +126,48 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		},
 	)
 
+	// Transformer is used to reduce the memory usage of the informer.
+	// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
+	// If watchList is not used it will not prevent memory bursts on the initial informer sync.
+	podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		pod, ok := i.(*v1.Pod)
+		if !ok {
+			return nil, fmt.Errorf("object is not a pod")
+		}
+		if pod.UID == "" {
+			// Pod was already transformed and we must be idempotent.
+			return pod, nil
+		}
+
+		// All pod level annotations we're interested in start with a common prefix
+		podAnnotations := map[string]string{}
+		for key, value := range pod.Annotations {
+			if strings.HasPrefix(key, annotations.AnnotationKeyPrefix) {
+				podAnnotations[key] = value
+			}
+		}
+		return &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				// Name/namespace must always be kept for the informer to work.
+				Name:      pod.Name,
+				Namespace: pod.Namespace,
+				// Used to match services.
+				Labels:            pod.Labels,
+				Annotations:       podAnnotations,
+				DeletionTimestamp: pod.DeletionTimestamp,
+			},
+			Spec: v1.PodSpec{
+				Hostname: pod.Spec.Hostname,
+				NodeName: pod.Spec.NodeName,
+			},
+			Status: v1.PodStatus{
+				HostIP:     pod.Status.HostIP,
+				Phase:      pod.Status.Phase,
+				Conditions: pod.Status.Conditions,
+			},
+		}, nil
+	})
+
 	// Add an indexer to the EndpointSlice informer to index by the service name label
 	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
 		serviceNameIndexKey: func(obj any) ([]string, error) {
