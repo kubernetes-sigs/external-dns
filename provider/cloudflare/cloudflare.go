@@ -30,6 +30,7 @@ import (
 
 	"github.com/cloudflare/cloudflare-go"
 	cloudflarev4 "github.com/cloudflare/cloudflare-go/v4"
+	"github.com/cloudflare/cloudflare-go/v4/addressing"
 	"github.com/cloudflare/cloudflare-go/v4/option"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
@@ -111,10 +112,10 @@ type cloudFlareDNS interface {
 	CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error
-	ListDataLocalizationRegionalHostnames(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDataLocalizationRegionalHostnamesParams) ([]cloudflare.RegionalHostname, error)
-	CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error
-	UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error
-	DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error
+	ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse]
+	CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error
+	UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error
+	DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error
 	CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflare.CustomHostname) ([]cloudflare.CustomHostname, cloudflare.ResultInfo, error)
 	DeleteCustomHostname(ctx context.Context, zoneID string, customHostnameID string) error
 	CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflare.CustomHostname) (*cloudflare.CustomHostnameResponse, error)
@@ -657,12 +658,12 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				return fmt.Errorf("failed to build desired regional hostnames: %w", err)
 			}
 			if len(desiredRegionalHostnames) > 0 {
-				regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, resourceContainer)
+				regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
 				if err != nil {
 					return fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
 				}
 				regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
-				if !p.submitRegionalHostnameChanges(ctx, regionalHostnamesChanges, resourceContainer) {
+				if !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges) {
 					failedChange = true
 				}
 			}
