@@ -131,7 +131,7 @@ func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
 			expectedFilter: func() labels.Selector { s, _ := annotations.ParseFilter("app"); return s }(),
 		},
 		{
-			name:           "poisoned intput",
+			name:           "poisoned input",
 			input:          "=app",
 			expectedFilter: nil,
 		},
