@@ -1095,7 +1095,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
-	td.Cmp(t, client.Actions, []MockAction{
+	td.CmpDeeply(t, client.Actions, []MockAction{
 		{
 			Name:     "Create",
 			ZoneId:   "001",
@@ -2759,4 +2759,71 @@ func TestCloudFlareProvider_SupportedAdditionalRecordTypes(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestCloudflareApplyChanges_UpdateFallbackToCreate(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{})
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       false,
+	}
+
+	current := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("test.bar.com", endpoint.RecordTypeCNAME, endpoint.TTL(120), "example.com"),
+	}
+	desired := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("test.bar.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
+	}
+
+	changes := &plan.Changes{
+		UpdateOld: current,
+		UpdateNew: desired,
+	}
+
+	// Apply the changes - this should fallback to CREATE since no records exist
+	err := provider.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err)
+
+	// Verify that a CREATE operation was performed (not UPDATE)
+	// The mock client should have received a CreateDNSRecord call
+	records := client.Records["001"]
+	assert.Len(t, records, 1, "Should have created one record")
+	
+	// Get the first (and only) record from the map
+	var createdRecord cloudflare.DNSRecord
+	for _, record := range records {
+		createdRecord = record
+		break
+	}
+	
+	assert.Equal(t, "test.bar.com", createdRecord.Name)
+	assert.Equal(t, endpoint.RecordTypeCNAME, createdRecord.Type)
+	assert.Equal(t, "example.com", createdRecord.Content)
+	assert.Equal(t, 300, createdRecord.TTL)
+}
+
+func TestCloudflareApplyChanges_DeleteNonExistentRecord(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{})
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       false,
+	}
+
+	toDelete := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("test.bar.com", endpoint.RecordTypeCNAME, endpoint.TTL(120), "example.com"),
+	}
+
+	changes := &plan.Changes{
+		Delete: toDelete,
+	}
+
+	// Apply the changes - this should gracefully handle the missing record
+	err := provider.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err, "DELETE operation should not fail when record doesn't exist")
+
+	// Verify no records exist after the operation
+	records := client.Records["001"]
+	assert.Len(t, records, 0, "Should have no records")
 }
