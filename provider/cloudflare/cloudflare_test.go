@@ -2789,14 +2789,14 @@ func TestCloudflareApplyChanges_UpdateFallbackToCreate(t *testing.T) {
 	// The mock client should have received a CreateDNSRecord call
 	records := client.Records["001"]
 	assert.Len(t, records, 1, "Should have created one record")
-	
+
 	// Get the first (and only) record from the map
 	var createdRecord cloudflare.DNSRecord
 	for _, record := range records {
 		createdRecord = record
 		break
 	}
-	
+
 	assert.Equal(t, "test.bar.com", createdRecord.Name)
 	assert.Equal(t, endpoint.RecordTypeCNAME, createdRecord.Type)
 	assert.Equal(t, "example.com", createdRecord.Content)
