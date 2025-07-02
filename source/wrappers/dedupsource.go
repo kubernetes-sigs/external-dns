@@ -14,24 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	source2 "sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
 type dedupSource struct {
-	source Source
+	source source2.Source
 }
 
 // NewDedupSource creates a new dedupSource wrapping the provided Source.
-func NewDedupSource(source Source) Source {
+func NewDedupSource(source source2.Source) source2.Source {
 	return &dedupSource{source: source}
 }
 

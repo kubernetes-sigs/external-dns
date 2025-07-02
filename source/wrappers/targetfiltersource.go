@@ -14,24 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
+	source2 "sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // targetFilterSource is a Source that removes endpoints matching the target filter from its wrapped source.
 type targetFilterSource struct {
-	source       Source
+	source       source2.Source
 	targetFilter endpoint.TargetFilterInterface
 }
 
 // NewTargetFilterSource creates a new targetFilterSource wrapping the provided Source.
-func NewTargetFilterSource(source Source, targetFilter endpoint.TargetFilterInterface) Source {
+func NewTargetFilterSource(source source2.Source, targetFilter endpoint.TargetFilterInterface) source2.Source {
 	return &targetFilterSource{source: source, targetFilter: targetFilter}
 }
 
