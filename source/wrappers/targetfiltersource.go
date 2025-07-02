@@ -20,6 +20,7 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
+
 	source2 "sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"

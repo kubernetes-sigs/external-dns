@@ -32,6 +32,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
+
 	"sigs.k8s.io/external-dns/source/wrappers"
 
 	"sigs.k8s.io/external-dns/endpoint"
