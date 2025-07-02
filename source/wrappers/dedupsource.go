@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
