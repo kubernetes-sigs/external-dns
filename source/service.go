@@ -527,7 +527,7 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 	return result
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) (endpoints []*endpoint.Endpoint) {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
@@ -535,6 +535,8 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
 
 	targets := annotations.TargetsFromTargetAnnotation(svc.Annotations)
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	if len(targets) == 0 {
 		switch svc.Spec.Type {

@@ -41,7 +41,7 @@ func (z ZoneIDName) Add(zoneID, zoneName string) {
 // SRV records as per RFC 2782, or TXT record for services) that are not
 // IDNA-aware and cannot represent non-ASCII labels. Skipping these labels
 // ensures compatibility with such use cases.
-func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
+func (z ZoneIDName) FindZone(hostname string) (string, string) {
 	var name string
 	domainLabels := strings.Split(hostname, ".")
 	for i, label := range domainLabels {
@@ -57,6 +57,8 @@ func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName 
 	}
 	name = strings.Join(domainLabels, ".")
 
+	var suitableZoneID, suitableZoneName string
+
 	for zoneID, zoneName := range z {
 		if name == zoneName || strings.HasSuffix(name, "."+zoneName) {
 			if suitableZoneName == "" || len(zoneName) > len(suitableZoneName) {
@@ -65,5 +67,5 @@ func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName 
 			}
 		}
 	}
-	return
+	return suitableZoneID, suitableZoneName
 }

@@ -130,7 +130,7 @@ func NewDnsimpleProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provi
 }
 
 // GetAccountID returns the account ID given DNSimple credentials.
-func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, err error) {
+func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (string, error) {
 	// get DNSimple client accountID
 	whoamiResponse, err := p.identity.Whoami(ctx)
 	if err != nil {
@@ -191,11 +191,12 @@ func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone,
 }
 
 // Records returns a list of endpoints in a given zone
-func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *dnsimpleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
+	endpoints := make([]*endpoint.Endpoint, 0)
 	for _, zone := range zones {
 		page := 1
 		listOptions := &dnsimple.ZoneRecordListOptions{}
@@ -318,7 +319,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 }
 
 // GetRecordID returns the record ID for a given record name and zone.
-func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string) (recordID int64, err error) {
+func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string) (int64, error) {
 	page := 1
 	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName}
 	for {

@@ -1169,7 +1169,7 @@ func TestCivoChangesEmpty(t *testing.T) {
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs. It also ignores ordering when comparing unlike cmp.Equal.
-func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) (ok bool) {
+func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) bool {
 	if listA == nil && listB == nil {
 		return true
 	} else if listA == nil {

@@ -338,7 +338,7 @@ func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMap
 
 // extractRecordTypeDefaultPosition extracts record type from the default position
 // when not using '%{record_type}' in the prefix/suffix
-func extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
+func extractRecordTypeDefaultPosition(name string) (string, string) {
 	nameS := strings.Split(name, "-")
 	for _, t := range getSupportedTypes() {
 		if nameS[0] == strings.ToLower(t) {
@@ -350,7 +350,7 @@ func extractRecordTypeDefaultPosition(name string) (baseName, recordType string)
 
 // dropAffixExtractType strips TXT record to find an endpoint name it manages
 // it also returns the record type
-func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordType string) {
+func (pr affixNameMapper) dropAffixExtractType(name string) (string, string) {
 	prefix := pr.prefix
 	suffix := pr.suffix
 
@@ -397,7 +397,7 @@ func (pr affixNameMapper) isSuffix() bool {
 	return len(pr.prefix) == 0 && len(pr.suffix) > 0
 }
 
-func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string, recordType string) {
+func (pr affixNameMapper) toEndpointName(txtDNSName string) (string, string) {
 	lowerDNSName := strings.ToLower(txtDNSName)
 
 	// drop prefix

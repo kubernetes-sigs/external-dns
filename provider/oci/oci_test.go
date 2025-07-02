@@ -70,7 +70,7 @@ func buildZoneResponseItems(scope dns.ListZonesScopeEnum, privateZones, globalZo
 	}
 }
 
-func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesRequest) (response dns.ListZonesResponse, err error) {
+func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesRequest) (dns.ListZonesResponse, error) {
 	if request.Page == nil || *request.Page == "0" {
 		return dns.ListZonesResponse{
 			Items:       buildZoneResponseItems(request.Scope, []dns.ZoneSummary{testPrivateZoneSummaryBaz}, []dns.ZoneSummary{testGlobalZoneSummaryFoo}),
@@ -82,9 +82,11 @@ func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesReq
 	}, nil
 }
 
-func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (response dns.GetZoneRecordsResponse, err error) {
+func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
+	var response dns.GetZoneRecordsResponse
+	var err error
 	if request.ZoneNameOrId == nil {
-		return
+		return response, err
 	}
 
 	switch *request.ZoneNameOrId {
@@ -120,12 +122,11 @@ func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZo
 			}}
 		}
 	}
-
-	return
+	return response, err
 }
 
-func (c *mockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error) {
-	return // Provider does not use the response so nothing to do here.
+func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+	return dns.PatchZoneRecordsResponse{}, nil
 }
 
 // newOCIProvider creates an OCI provider with API calls mocked out.
@@ -549,7 +550,7 @@ func newMutableMockOCIDNSClient(zones []dns.ZoneSummary, recordsByZone map[strin
 	return c
 }
 
-func (c *mutableMockOCIDNSClient) ListZones(ctx context.Context, request dns.ListZonesRequest) (response dns.ListZonesResponse, err error) {
+func (c *mutableMockOCIDNSClient) ListZones(_ context.Context, _ dns.ListZonesRequest) (dns.ListZonesResponse, error) {
 	var zones []dns.ZoneSummary
 	for _, v := range c.zones {
 		zones = append(zones, v)
@@ -557,16 +558,15 @@ func (c *mutableMockOCIDNSClient) ListZones(ctx context.Context, request dns.Lis
 	return dns.ListZonesResponse{Items: zones}, nil
 }
 
-func (c *mutableMockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (response dns.GetZoneRecordsResponse, err error) {
+func (c *mutableMockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
+	var response dns.GetZoneRecordsResponse
 	if request.ZoneNameOrId == nil {
-		err = errors.New("no name or id")
-		return
+		return response, errors.New("no name or id")
 	}
 
 	records, ok := c.records[*request.ZoneNameOrId]
 	if !ok {
-		err = errors.New("zone not found")
-		return
+		return response, errors.New("zone not found")
 	}
 
 	var items []dns.Record
@@ -575,7 +575,7 @@ func (c *mutableMockOCIDNSClient) GetZoneRecords(ctx context.Context, request dn
 	}
 
 	response.Items = items
-	return
+	return response, nil
 }
 
 func ociRecordKey(rType, domain string, ip string) string {
@@ -592,16 +592,15 @@ func sortEndpointTargets(endpoints []*endpoint.Endpoint) {
 	}
 }
 
-func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error) {
+func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+	var response dns.PatchZoneRecordsResponse
 	if request.ZoneNameOrId == nil {
-		err = errors.New("no name or id")
-		return
+		return response, errors.New("no name or id")
 	}
 
 	records, ok := c.records[*request.ZoneNameOrId]
 	if !ok {
-		err = errors.New("zone not found")
-		return
+		return response, errors.New("zone not found")
 	}
 
 	// Ensure that ADD operations occur after REMOVE.
@@ -622,11 +621,10 @@ func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request 
 		case dns.RecordOperationOperationRemove:
 			delete(records, k)
 		default:
-			err = fmt.Errorf("unsupported operation %q", op.Operation)
-			return
+			return response, fmt.Errorf("unsupported operation %q", op.Operation)
 		}
 	}
-	return
+	return response, nil
 }
 
 // TestMutableMockOCIDNSClient exists because one must always test one's tests
