@@ -597,7 +597,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			if chErr != nil {
 				return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
 			}
-			if change.Action == cloudFlareUpdate {
+			switch change.Action {
+			case cloudFlareUpdate:
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
 				}
@@ -620,7 +621,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 						log.WithFields(logFields).Errorf("failed to update record: %v", err)
 					}
 				}
-			} else if change.Action == cloudFlareDelete {
+			case cloudFlareDelete:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
 					log.WithFields(logFields).Warnf("failed to find record for deletion, record may already be deleted: %v", change.ResourceRecord)
@@ -635,7 +636,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
 				}
-			} else if change.Action == cloudFlareCreate {
+			case cloudFlareCreate:
 				recordParam := getCreateDNSRecordParam(*change)
 				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {

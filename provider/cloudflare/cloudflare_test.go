@@ -2825,5 +2825,5 @@ func TestCloudflareApplyChanges_DeleteNonExistentRecord(t *testing.T) {
 
 	// Verify no records exist after the operation
 	records := client.Records["001"]
-	assert.Len(t, records, 0, "Should have no records")
+	assert.Empty(t, records, "Should have no records")
 }
