@@ -81,7 +81,11 @@ No new provider will be added to ExternalDNS _in-tree_.
 ExternalDNS has introduced a webhook system, which can be used to add a new provider.
 See PR #3063 for all the discussions about it.
 
-Known providers using webhooks:
+Some known providers using webhooks are the ones in the table below.
+
+**NOTE**: the maintainers of ExternalDNS have not reviewed those providers, use them at your own risk and following the license 
+and usage recommendations provided by the respective projects. The maintainers of ExternalDNS take no responsibility for any issue or damage 
+from the usage of any externally developed webhook.
 
 | Provider              | Repo                                                                 |
 | --------------------- | -------------------------------------------------------------------- |
