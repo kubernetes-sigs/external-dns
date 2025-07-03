@@ -448,7 +448,7 @@ func buildPodSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 	if err != nil {
 		return nil, err
 	}
-	return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility, cfg.IgnoreNonHostNetworkPods, cfg.PodSourceDomain, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
+	return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility, cfg.IgnoreNonHostNetworkPods, cfg.PodSourceDomain, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.AnnotationFilter, cfg.LabelFilter)
 }
 
 // buildIstioGatewaySource creates an Istio Gateway source for exposing Istio gateways as DNS records.
