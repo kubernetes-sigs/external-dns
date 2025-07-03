@@ -68,7 +68,7 @@ func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error
 
 // DecryptText decrypt gziped data using a supplied AES encryption key ang ungzip it
 // in case of decryption failed, will return original input and decryption error
-func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce string, err error) {
+func DecryptText(text string, aesKey []byte) (string, string, error) {
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return "", "", err
@@ -100,7 +100,7 @@ func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce
 }
 
 // decompressData gzip compressed data
-func decompressData(data []byte) (resData []byte, err error) {
+func decompressData(data []byte) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func decompressData(data []byte) (resData []byte, err error) {
 }
 
 // compressData by gzip, for minify data stored in registry
-func compressData(data []byte) (compressedData []byte, err error) {
+func compressData(data []byte) ([]byte, error) {
 	var b bytes.Buffer
 	gz, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
 	if err != nil {

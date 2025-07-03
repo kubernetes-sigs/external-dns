@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -22,16 +22,17 @@ import (
 	"net/netip"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // nat64Source is a Source that adds A endpoints for AAAA records including an NAT64 address.
 type nat64Source struct {
-	source        Source
+	source        source.Source
 	nat64Prefixes []string
 }
 
 // NewNAT64Source creates a new nat64Source wrapping the provided Source.
-func NewNAT64Source(source Source, nat64Prefixes []string) Source {
+func NewNAT64Source(source source.Source, nat64Prefixes []string) source.Source {
 	return &nat64Source{source: source, nat64Prefixes: nat64Prefixes}
 }
 

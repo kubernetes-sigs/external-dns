@@ -225,7 +225,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -234,10 +234,12 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 		namespace = gateway.Namespace
 	}
 
+	targets := make(endpoint.Targets, 0)
+
 	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
-		return
+		return nil, err
 	}
 	for _, lb := range ingress.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
@@ -246,7 +248,7 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 			targets = append(targets, lb.Hostname)
 		}
 	}
-	return
+	return targets, nil
 }
 
 func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {

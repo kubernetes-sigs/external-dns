@@ -60,7 +60,7 @@ rbac:  # @schema additionalProperties: true
 deploymentAnnotations: {}
 
 # -- Extra containers to add to the `Deployment`.
-extraContainers: {}
+extraContainers: []
 
 # -- [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).
 deploymentStrategy:  # @schema additionalProperties: true

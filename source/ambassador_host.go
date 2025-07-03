@@ -228,7 +228,7 @@ func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Co
 //
 // Returns namespace, name, error.
 
-func parseAmbLoadBalancerService(service string) (namespace, name string, err error) {
+func parseAmbLoadBalancerService(service string) (string, string, error) {
 	// Start by assuming that we have namespace/name.
 	parts := strings.Split(service, "/")
 

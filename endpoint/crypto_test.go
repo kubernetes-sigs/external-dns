@@ -87,6 +87,6 @@ func TestGenerateNonceError(t *testing.T) {
 
 type faultyReader struct{}
 
-func (f *faultyReader) Read(p []byte) (n int, err error) {
+func (f *faultyReader) Read(p []byte) (int, error) {
 	return 0, io.ErrUnexpectedEOF
 }

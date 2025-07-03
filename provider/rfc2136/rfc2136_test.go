@@ -149,7 +149,7 @@ func (r *rfc2136Stub) setOutput(output []string) error {
 	return nil
 }
 
-func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelope, err error) {
+func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (chan *dns.Envelope, error) {
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {
@@ -254,6 +254,17 @@ func createRfc2136StubProviderWithStrategy(stub *rfc2136Stub, strategy string) (
 		ClientCertKeyFilePath: "",
 	}
 	return NewRfc2136Provider([]string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", 50, tlsConfig, strategy, stub)
+}
+
+func createRfc2136StubProviderWithBatchChangeSize(stub *rfc2136Stub, batchChangeSize int) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+	return NewRfc2136Provider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, false, "", "", "", batchChangeSize, tlsConfig, "", stub)
 }
 
 func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
@@ -958,4 +969,45 @@ func TestRandomLoadBalancing(t *testing.T) {
 	}
 
 	assert.Greater(t, len(nameserverCounts), 1, "Expected multiple nameservers to be used in random strategy")
+}
+
+// TestRfc2136ApplyChangesWithMultipleChunks tests Updates with multiple chunks
+func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
+	stub := newStub()
+
+	provider, err := createRfc2136StubProviderWithBatchChangeSize(stub, 2)
+	assert.NoError(t, err)
+
+	var oldRecords []*endpoint.Endpoint
+	var newRecords []*endpoint.Endpoint
+
+	for i := 1; i <= 4; i++ {
+		oldRecords = append(oldRecords, &endpoint.Endpoint{
+			DNSName:    fmt.Sprintf("%s%d%s", "v", i, ".foo.com"),
+			RecordType: "A",
+			Targets:    []string{fmt.Sprintf("10.0.0.%d", i)},
+			RecordTTL:  endpoint.TTL(400),
+		})
+		newRecords = append(newRecords, &endpoint.Endpoint{
+			DNSName:    fmt.Sprintf("%s%d%s", "v", i, ".foo.com"),
+			RecordType: "A",
+			Targets:    []string{fmt.Sprintf("10.0.1.%d", i)},
+			RecordTTL:  endpoint.TTL(400),
+		})
+	}
+
+	p := &plan.Changes{
+		UpdateOld: oldRecords,
+		UpdateNew: newRecords,
+	}
+
+	err = provider.ApplyChanges(context.Background(), p)
+	assert.NoError(t, err)
+
+	assert.Len(t, stub.updateMsgs, 4)
+
+	assert.Contains(t, stub.updateMsgs[0].String(), "\nv1.foo.com.\t0\tNONE\tA\t10.0.0.1\nv1.foo.com.\t400\tIN\tA\t10.0.1.1\n")
+	assert.Contains(t, stub.updateMsgs[0].String(), "\nv2.foo.com.\t0\tNONE\tA\t10.0.0.2\nv2.foo.com.\t400\tIN\tA\t10.0.1.2\n")
+	assert.Contains(t, stub.updateMsgs[2].String(), "\nv3.foo.com.\t0\tNONE\tA\t10.0.0.3\nv3.foo.com.\t400\tIN\tA\t10.0.1.3\n")
+	assert.Contains(t, stub.updateMsgs[2].String(), "\nv4.foo.com.\t0\tNONE\tA\t10.0.0.4\nv4.foo.com.\t400\tIN\tA\t10.0.1.4\n")
 }

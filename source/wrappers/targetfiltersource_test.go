@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
+	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -55,7 +56,7 @@ func (e *echoSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 // NewEchoSource creates a new echoSource.
-func NewEchoSource(endpoints []*endpoint.Endpoint) Source {
+func NewEchoSource(endpoints []*endpoint.Endpoint) source.Source {
 	return &echoSource{endpoints: endpoints}
 }
 
@@ -90,7 +91,7 @@ func TestTargetFilterSource(t *testing.T) {
 
 // TestTargetFilterSourceImplementsSource tests that targetFilterSource is a valid Source.
 func TestTargetFilterSourceImplementsSource(t *testing.T) {
-	var _ Source = &targetFilterSource{}
+	var _ source.Source = &targetFilterSource{}
 }
 
 func TestTargetFilterSourceEndpoints(t *testing.T) {

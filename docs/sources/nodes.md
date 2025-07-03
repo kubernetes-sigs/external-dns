@@ -13,18 +13,17 @@ In case you want to override the default, for example if you manage per-host DNS
 
 ## IPv6 Behavior
 
-By default, ExternalDNS exposes the IPv6 `InternalIP` of the nodes. To prevent this, you can use the `--no-expose-internal-ipv6` flag.
-**The default behavior will change in the next minor release.** ExternalDNS will no longer expose the IPv6 `InternalIP` addresses by default.
-You can still explicitly expose the internal ipv6 addresses by using the `--expose-internal-ipv6` flag, if needed.
+By default, ExternalDNS exposes the IPv6 `ExternalIP` of the nodes.
+If needed, one can still explicitly expose the internal ipv6 addresses by using the `--expose-internal-ipv6` flag.
 
-### Example spec (without exposing IPv6 `InternalIP` addresses)
+### Example spec
 
 ```yaml
 spec:
   serviceAccountName: external-dns
   containers:
   - name: external-dns
-    image: registry.k8s.io/external-dns/external-dns:v0.17.0 # update this to the desired external-dns version
+    image: registry.k8s.io/external-dns/external-dns:v0.18.0 # update this to the desired external-dns version
     args:
     - --source=node # will use nodes as source
     - --provider=aws
@@ -36,7 +35,6 @@ spec:
     - --txt-owner-id=my-identifier
     - --policy=sync
     - --log-level=debug
-    - --no-expose-internal-ipv6
 ```
 
 ## Manifest (for cluster without RBAC enabled)
@@ -61,7 +59,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.18.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -92,7 +90,10 @@ rules:
   resources: ["routes"]
   verbs: ["get", "watch", "list"]
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -132,7 +133,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.18.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
