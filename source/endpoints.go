@@ -81,6 +81,17 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	return endpoints
 }
 
+func EndpointsForHostname(
+	hostname string,
+	targets endpoint.Targets,
+	ttl endpoint.TTL,
+	providerSpecific endpoint.ProviderSpecific,
+	setIdentifier string,
+	resource string,
+) []*endpoint.Endpoint {
+	return endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)
+}
+
 func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, namespace string, selector map[string]string) (endpoint.Targets, error) {
 	targets := endpoint.Targets{}
 
