@@ -5,7 +5,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 **Note:** Using the Istio Gateway source requires Istio >=1.0.0.
 
-**Note:** Currently supported version is `1.22` with `v1beta1` stored version.
+**Note:** Currently supported versions are `1.25` and `1.26` with `v1beta1` stored version.
 
 - [Support status of Istio releases](https://istio.io/latest/docs/releases/supported-releases/)
 
@@ -152,13 +152,13 @@ The following are relevant snippets from that tutorial.
 With automatic sidecar injection:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.22/samples/httpbin/httpbin.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/httpbin/httpbin.yaml
 ```
 
 Otherwise:
 
 ```bash
-kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.22/samples/httpbin/httpbin.yaml)
+kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/httpbin/httpbin.yaml)
 ```
 
 ### Using a Gateway as a source
