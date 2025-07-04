@@ -5,6 +5,10 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 **Note:** Using the Istio Gateway source requires Istio >=1.0.0.
 
+**Note:** Currently supported version is `1.22` with `v1beta1` stored version.
+
+- [Support status of Istio releases ](https://istio.io/latest/docs/releases/supported-releases/)
+
 * Manifest (for clusters without RBAC enabled)
 * Manifest (for clusters with RBAC enabled)
 * Update existing ExternalDNS Deployment
