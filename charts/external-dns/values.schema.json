@@ -506,6 +506,10 @@
                   "type": "object"
                 }
               }
+            },
+            "sidecar": {
+              "description": "If false, then do not add a webhook sidecar to the external-dns deployment.",
+              "type": "boolean"
             }
           }
         }
