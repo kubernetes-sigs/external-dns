@@ -20,7 +20,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -279,8 +278,10 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*v1beta1.V
 
 // append a target to the list of targets unless it's already in the list
 func appendUnique(targets []string, target string) []string {
-	if slices.Contains(targets, target) {
-		return targets
+	for _, element := range targets {
+		if element == target {
+			return targets
+		}
 	}
 	return append(targets, target)
 }
@@ -345,7 +346,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 			}
 		}
 
-		endpoints = append(endpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
@@ -359,7 +360,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 					return endpoints, err
 				}
 			}
-			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -415,8 +416,24 @@ func virtualServiceBindsToGateway(virtualService *v1beta1.VirtualService, gatewa
 	return false
 }
 
+// TODO: similar to ParseIngress
+func parseGateway(gateway string) (string, string, error) {
+	var namespace, name string
+	var err error
+	parts := strings.Split(gateway, "/")
+	if len(parts) == 2 {
+		namespace, name = parts[0], parts[1]
+	} else if len(parts) == 1 {
+		name = parts[0]
+	} else {
+		err = fmt.Errorf("invalid gateway name (name or namespace/name) found '%v'", gateway)
+	}
+
+	return namespace, name, err
+}
+
 func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
-	namespace, name, err := ParseIngress(ingressStr)
+	namespace, name, err := parseGateway(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}
