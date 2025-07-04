@@ -83,7 +83,7 @@ func (r *requestTrackerV6) clear() {
 func TestErrorHandling(t *testing.T) {
 	requests := requestTrackerV6{}
 	p := &PiholeProvider{
-		api: &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		api:        &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
 		apiVersion: "6",
 	}
 
@@ -123,7 +123,7 @@ func TestNewPiholeProviderV6(t *testing.T) {
 func TestProviderV6(t *testing.T) {
 	requests := requestTrackerV6{}
 	p := &PiholeProvider{
-		api: &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		api:        &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
 		apiVersion: "6",
 	}
 
