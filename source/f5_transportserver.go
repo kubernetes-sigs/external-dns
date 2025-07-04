@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -163,7 +162,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 			targets = append(targets, transportServer.Status.VSAddress)
 		}
 
-		endpoints = append(endpoints, endpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 
 	return endpoints, nil
@@ -186,12 +185,7 @@ func newTSUnstructuredConverter() (*unstructuredConverter, error) {
 
 // filterByAnnotations filters a list of TransportServers by a given annotation selector.
 func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.TransportServer) ([]*f5.TransportServer, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(ts.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
