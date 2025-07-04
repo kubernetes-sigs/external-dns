@@ -192,10 +192,14 @@ func TestListRecordsV6(t *testing.T) {
 							"192.168.178.33 service1.example.com",
 							"192.168.178.34 service2.example.com",
 							"192.168.178.34 service3.example.com",
+							"192.168.178.35 service8.example.com",
+							"192.168.178.36 service8.example.com",
 							"fc00::1:192:168:1:1 service4.example.com",
 							"fc00::1:192:168:1:2 service5.example.com",
 							"fc00::1:192:168:1:3 service6.example.com",
 							"::ffff:192.168.20.3 service7.example.com",
+							"fc00::1:192:168:1:4 service9.example.com",
+							"fc00::1:192:168:1:5 service9.example.com",
 							"192.168.20.3 service7.example.com"
 						]
 					}
@@ -254,6 +258,10 @@ func TestListRecordsV6(t *testing.T) {
 			DNSName: "service7.example.com",
 			Targets: []string{"192.168.20.3"},
 		},
+		{
+			DNSName: "service8.example.com",
+			Targets: []string{"192.168.178.35", "192.168.178.36"},
+		},
 	}
 	// Test retrieve A records unfiltered
 	arecs, err := cl.listRecords(context.Background(), endpoint.RecordTypeA)
@@ -290,6 +298,10 @@ func TestListRecordsV6(t *testing.T) {
 		{
 			DNSName: "service7.example.com",
 			Targets: []string{"::ffff:192.168.20.3"},
+		},
+		{
+			DNSName: "service9.example.com",
+			Targets: []string{"fc00::1:192:168:1:4", "fc00::1:192:168:1:5"},
 		},
 	}
 
