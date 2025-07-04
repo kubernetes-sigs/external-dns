@@ -360,20 +360,23 @@ Due to a limitation within the cloudflare-go v0 API, the custom hostname page si
 The Cloudflare provider includes enhanced error handling to improve reliability in production environments:
 
 ### Graceful Update Operations
+
 When ExternalDNS attempts to update a DNS record that no longer exists (e.g., manually deleted), the provider will automatically fallback to creating the record instead of failing. This ensures your desired DNS state is maintained even when records get out of sync.
 
-```
+```text
 WARN: failed to find previous record for update, attempting to create instead: example.com
 ```
 
-### Idempotent Delete Operations  
+### Idempotent Delete Operations
+
 Delete operations are idempotent - attempting to delete a record that doesn't exist will not result in an error. This prevents false-positive failures when records are deleted outside of ExternalDNS.
 
-```
+```text
 WARN: failed to find record for deletion, record may already be deleted: example.com
 ```
 
 ### Benefits
+
 - **Reduced operational burden**: Fewer false-positive errors requiring manual intervention
 - **Improved automation reliability**: Graceful handling of edge cases
 - **Better observability**: Clear distinction between warnings (handled gracefully) and errors (requiring attention)
