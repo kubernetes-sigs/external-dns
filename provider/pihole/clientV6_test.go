@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -192,10 +192,14 @@ func TestListRecordsV6(t *testing.T) {
 							"192.168.178.33 service1.example.com",
 							"192.168.178.34 service2.example.com",
 							"192.168.178.34 service3.example.com",
+							"192.168.178.35 service8.example.com",
+							"192.168.178.36 service8.example.com",
 							"fc00::1:192:168:1:1 service4.example.com",
 							"fc00::1:192:168:1:2 service5.example.com",
 							"fc00::1:192:168:1:3 service6.example.com",
 							"::ffff:192.168.20.3 service7.example.com",
+							"fc00::1:192:168:1:4 service9.example.com",
+							"fc00::1:192:168:1:5 service9.example.com",
 							"192.168.20.3 service7.example.com"
 						]
 					}
@@ -237,37 +241,70 @@ func TestListRecordsV6(t *testing.T) {
 	}
 
 	// Ensure A records were parsed correctly
-	expected := [][]string{
-		{"service1.example.com", "192.168.178.33"},
-		{"service2.example.com", "192.168.178.34"},
-		{"service3.example.com", "192.168.178.34"},
-		{"service7.example.com", "192.168.20.3"},
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName: "service1.example.com",
+			Targets: []string{"192.168.178.33"},
+		},
+		{
+			DNSName: "service2.example.com",
+			Targets: []string{"192.168.178.34"},
+		},
+		{
+			DNSName: "service3.example.com",
+			Targets: []string{"192.168.178.34"},
+		},
+		{
+			DNSName: "service7.example.com",
+			Targets: []string{"192.168.20.3"},
+		},
+		{
+			DNSName: "service8.example.com",
+			Targets: []string{"192.168.178.35", "192.168.178.36"},
+		},
 	}
 	// Test retrieve A records unfiltered
 	arecs, err := cl.listRecords(context.Background(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(arecs) != len(expected) {
-		t.Fatalf("Expected %d A records returned, got: %d", len(expected), len(arecs))
-	}
 
-	for idx, rec := range arecs {
-		if rec.DNSName != expected[idx][0] {
-			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
+	expectedMap := make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range arecs {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
 		}
 	}
 
 	// Ensure AAAA records were parsed correctly
-	expected = [][]string{
-		{"service4.example.com", "fc00::1:192:168:1:1"},
-		{"service5.example.com", "fc00::1:192:168:1:2"},
-		{"service6.example.com", "fc00::1:192:168:1:3"},
-		{"service7.example.com", "::ffff:192.168.20.3"},
+	expected = []*endpoint.Endpoint{
+		{
+			DNSName: "service4.example.com",
+			Targets: []string{"fc00::1:192:168:1:1"},
+		},
+		{
+			DNSName: "service5.example.com",
+			Targets: []string{"fc00::1:192:168:1:2"},
+		},
+		{
+			DNSName: "service6.example.com",
+			Targets: []string{"fc00::1:192:168:1:3"},
+		},
+		{
+			DNSName: "service7.example.com",
+			Targets: []string{"::ffff:192.168.20.3"},
+		},
+		{
+			DNSName: "service9.example.com",
+			Targets: []string{"fc00::1:192:168:1:4", "fc00::1:192:168:1:5"},
+		},
 	}
+
 	// Test retrieve AAAA records unfiltered
 	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
 	if err != nil {
@@ -278,20 +315,34 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatalf("Expected %d AAAA records returned, got: %d", len(expected), len(arecs))
 	}
 
-	for idx, rec := range arecs {
-		if rec.DNSName != expected[idx][0] {
-			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
+	expectedMap = make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range arecs {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
 		}
 	}
 
 	// Ensure CNAME records were parsed correctly
-	expected = [][]string{
-		{"source1.example.com", "target1.domain.com", "1000"},
-		{"source2.example.com", "target2.domain.com", "50"},
-		{"source3.example.com", "target3.domain.com"},
+	expected = []*endpoint.Endpoint{
+		{
+			DNSName:   "source1.example.com",
+			Targets:   []string{"target1.domain.com"},
+			RecordTTL: 1000,
+		},
+		{
+			DNSName:   "source2.example.com",
+			Targets:   []string{"target2.domain.com"},
+			RecordTTL: 50,
+		},
+		{
+			DNSName: "source3.example.com",
+			Targets: []string{"target3.domain.com"},
+		},
 	}
 
 	// Test retrieve CNAME records unfiltered
@@ -303,17 +354,14 @@ func TestListRecordsV6(t *testing.T) {
 		t.Fatalf("Expected %d CAME records returned, got: %d", len(expected), len(cnamerecs))
 	}
 
-	for idx, rec := range cnamerecs {
-		if rec.DNSName != expected[idx][0] {
-			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
-		}
-		if len(expected[idx]) == 3 {
-			expectedTTL, _ := strconv.ParseInt(expected[idx][2], 10, 64)
-			if int64(rec.RecordTTL) != expectedTTL {
-				t.Error("Got invalid TTL:", rec.RecordTTL, "expected:", expected[idx][2])
+	expectedMap = make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range arecs {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
 			}
 		}
 	}
@@ -432,8 +480,34 @@ func TestErrorsV6(t *testing.T) {
 	if len(resp) != 2 {
 		t.Fatal("Expected one records returned, got:", len(resp))
 	}
-	if resp[1].RecordTTL != 0 {
-		t.Fatal("Expected no TTL returned, got:", resp[0].RecordTTL)
+
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName:   "source1.example.com",
+			Targets:   []string{"target1.domain.com"},
+			RecordTTL: 100,
+		},
+		{
+			DNSName: "source2.example.com",
+			Targets: []string{"target2.domain.com"},
+		},
+	}
+
+	expectedMap := make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range resp {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
+			if ep.RecordTTL != rec.RecordTTL {
+				t.Errorf("Got invalid TTL for %s: %d, expected: %d", rec.DNSName, rec.RecordTTL, ep.RecordTTL)
+			}
+		} else {
+			t.Errorf("Unexpected record found: %s", rec.DNSName)
+		}
 	}
 
 }
@@ -717,6 +791,10 @@ func TestCreateRecordV6(t *testing.T) {
 		if r.Method == http.MethodPut && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
 			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
 			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
+			r.URL.Path == "/api/config/dns/hosts/192.168.1.2 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/192.168.1.3 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:2 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:3 test.example.com" ||
 			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
 
 			// Return A records
@@ -748,10 +826,30 @@ func TestCreateRecordV6(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Test create multiple A records
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.2", "192.168.1.3"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
 	// Test create AAAA record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
 		Targets:    []string{"fc00::1:192:168:1:1"},
+		RecordType: endpoint.RecordTypeAAAA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create multiple AAAA records
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"fc00::1:192:168:1:2", "fc00::1:192:168:1:3"},
 		RecordType: endpoint.RecordTypeAAAA,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
@@ -776,6 +874,16 @@ func TestCreateRecordV6(t *testing.T) {
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record with multiple targets and ensure it fails
+	ep = &endpoint.Endpoint{
+		DNSName:    "source3.example.com",
+		Targets:    []string{"target3.domain.com", "target4.domain.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.createRecord(context.Background(), ep); err == nil {
 		t.Fatal(err)
 	}
 
