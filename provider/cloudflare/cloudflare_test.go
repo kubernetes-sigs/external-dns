@@ -3038,7 +3038,7 @@ func TestCloudflareSubmitChanges_UpdateFallbackCreateFailure(t *testing.T) {
 	// This test specifically covers the "failed to create record after update failure" log line
 	client := NewMockCloudFlareClient() // No existing records to ensure getRecordID returns ""
 	client.createError = errors.New("create operation failed")
-	
+
 	provider := &CloudFlareProvider{
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
@@ -3064,7 +3064,7 @@ func TestCloudflareSubmitChanges_UpdateFallbackCreateFailure(t *testing.T) {
 	// 4. Fail the create operation
 	// 5. Log "failed to create record after update failure"
 	err := provider.submitChanges(context.Background(), changes)
-	
+
 	// Should return an error since the fallback create failed
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to submit all changes")
