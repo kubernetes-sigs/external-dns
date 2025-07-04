@@ -140,12 +140,14 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 	var endpoints []*endpoint.Endpoint
 
+	log.Debugf("Found %d gateways in namespace %s", len(gateways), sc.namespace)
+
 	for _, gateway := range gateways {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := gateway.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping gateway %s/%s because controller value does not match, found: %s, required: %s",
-				gateway.Namespace, gateway.Name, controller, controllerAnnotationValue)
+			log.Debugf("Skipping gateway %s/%s,%s because controller value does not match, found: %s, required: %s",
+				gateway.Namespace, gateway.APIVersion, gateway.Name, controller, controllerAnnotationValue)
 			continue
 		}
 
@@ -168,6 +170,8 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			}
 		}
 
+		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
+
 		if len(gwHostnames) == 0 {
 			log.Debugf("No hostnames could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
 			continue
@@ -183,10 +187,11 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		log.Debugf("Endpoints generated from gateway: %s/%s: %v", gateway.Namespace, gateway.Name, gwEndpoints)
+		log.Debugf("Endpoints generated from %q '%s/%s.%s': %q", gateway.Kind, gateway.Namespace, gateway.APIVersion, gateway.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
+	// TODO: sort on endpoint creation
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
 	}
@@ -270,18 +275,17 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 	var endpoints []*endpoint.Endpoint
 	var err error
 
-	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
-
-	ttl := annotations.TTLFromAnnotations(gateway.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
-	if len(targets) == 0 {
-		targets, err = sc.targetsFromGateway(ctx, gateway)
-		if err != nil {
-			return nil, err
-		}
+	targets, err := sc.targetsFromGateway(ctx, gateway)
+	if err != nil {
+		return nil, err
 	}
 
+	if len(targets) == 0 {
+		return endpoints, nil
+	}
+
+	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
+	ttl := annotations.TTLFromAnnotations(gateway.Annotations, resource)
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(gateway.Annotations)
 
 	for _, host := range hostnames {

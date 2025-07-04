@@ -20,6 +20,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -58,7 +59,7 @@ type virtualServiceSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
-	virtualserviceInformer   networkingv1beta1informer.VirtualServiceInformer
+	vServiceInformer         networkingv1beta1informer.VirtualServiceInformer
 	gatewayInformer          networkingv1beta1informer.GatewayInformer
 }
 
@@ -131,7 +132,7 @@ func NewIstioVirtualServiceSource(
 		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
-		virtualserviceInformer:   virtualServiceInformer,
+		vServiceInformer:         virtualServiceInformer,
 		gatewayInformer:          gatewayInformer,
 	}, nil
 }
@@ -139,7 +140,7 @@ func NewIstioVirtualServiceSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	virtualServices, err := sc.virtualserviceInformer.Lister().VirtualServices(sc.namespace).List(labels.Everything())
+	virtualServices, err := sc.vServiceInformer.Lister().VirtualServices(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
@@ -150,23 +151,25 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	var endpoints []*endpoint.Endpoint
 
-	for _, virtualService := range virtualServices {
+	log.Debugf("Found %d virtualservice in namespace %s", len(virtualServices), sc.namespace)
+
+	for _, vService := range virtualServices {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := virtualService.Annotations[controllerAnnotationKey]
+		controller, ok := vService.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping VirtualService %s/%s because controller value does not match, found: %s, required: %s",
-				virtualService.Namespace, virtualService.Name, controller, controllerAnnotationValue)
+			log.Debugf("Skipping VirtualService %s/%s.%s because controller value does not match, found: %s, required: %s",
+				vService.Namespace, vService.APIVersion, vService.Name, controller, controllerAnnotationValue)
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, virtualService)
+		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, vService)
 		if err != nil {
 			return nil, err
 		}
 
 		// apply template if host is missing on VirtualService
 		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ctx, virtualService)
+			iEndpoints, err := sc.endpointsFromTemplate(ctx, vService)
 			if err != nil {
 				return nil, err
 			}
@@ -179,14 +182,15 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from VirtualService %s/%s", virtualService.Namespace, virtualService.Name)
+			log.Debugf("No endpoints could be generated from VirtualService %s/%s", vService.Namespace, vService.Name)
 			continue
 		}
 
-		log.Debugf("Endpoints generated from VirtualService: %s/%s: %v", virtualService.Namespace, virtualService.Name, gwEndpoints)
+		log.Debugf("Endpoints generated from %q '%s/%s.%s': %q", vService.Kind, vService.Namespace, vService.APIVersion, vService.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
+	// TODO: sort on endpoint creation
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
 	}
@@ -198,7 +202,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 func (sc *virtualServiceSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio VirtualService")
 
-	_, _ = sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.vServiceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string, virtualService *v1beta1.VirtualService) (*v1beta1.Gateway, error) {
@@ -253,7 +257,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*v1beta1.VirtualService) ([]*v1beta1.VirtualService, error) {
+func (sc *virtualServiceSource) filterByAnnotations(vServices []*v1beta1.VirtualService) ([]*v1beta1.VirtualService, error) {
 	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -261,12 +265,12 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*v1beta1.V
 
 	// empty filter returns original list
 	if selector.Empty() {
-		return virtualservices, nil
+		return vServices, nil
 	}
 
 	var filteredList []*v1beta1.VirtualService
 
-	for _, vs := range virtualservices {
+	for _, vs := range vServices {
 		// include if the annotations match the selector
 		if selector.Matches(labels.Set(vs.Annotations)) {
 			filteredList = append(filteredList, vs)
@@ -278,26 +282,24 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*v1beta1.V
 
 // append a target to the list of targets unless it's already in the list
 func appendUnique(targets []string, target string) []string {
-	for _, element := range targets {
-		if element == target {
-			return targets
-		}
+	if slices.Contains(targets, target) {
+		return targets
 	}
 	return append(targets, target)
 }
 
-func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService *v1beta1.VirtualService, vsHost string) ([]string, error) {
+func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, vService *v1beta1.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
-	for _, gateway := range virtualService.Spec.Gateways {
-		gw, err := sc.getGateway(ctx, gateway, virtualService)
+	for _, gateway := range vService.Spec.Gateways {
+		gw, err := sc.getGateway(ctx, gateway, vService)
 		if err != nil {
 			return nil, err
 		}
 		if gw == nil {
 			continue
 		}
-		if !virtualServiceBindsToGateway(virtualService, gw, vsHost) {
+		if !virtualServiceBindsToGateway(vService, gw, vsHost) {
 			continue
 		}
 		tgs, err := sc.targetsFromGateway(ctx, gw)
@@ -308,7 +310,6 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 			targets = appendUnique(targets, target)
 		}
 	}
-
 	return targets, nil
 }
 
@@ -369,13 +370,13 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 
 // checks if the given VirtualService should actually bind to the given gateway
 // see requirements here: https://istio.io/docs/reference/config/networking/gateway/#Server
-func virtualServiceBindsToGateway(virtualService *v1beta1.VirtualService, gateway *v1beta1.Gateway, vsHost string) bool {
+func virtualServiceBindsToGateway(vService *v1beta1.VirtualService, gateway *v1beta1.Gateway, vsHost string) bool {
 	isValid := false
-	if len(virtualService.Spec.ExportTo) == 0 {
+	if len(vService.Spec.ExportTo) == 0 {
 		isValid = true
 	} else {
-		for _, ns := range virtualService.Spec.ExportTo {
-			if ns == "*" || ns == gateway.Namespace || (ns == "." && gateway.Namespace == virtualService.Namespace) {
+		for _, ns := range vService.Spec.ExportTo {
+			if ns == "*" || ns == gateway.Namespace || (ns == "." && gateway.Namespace == vService.Namespace) {
 				isValid = true
 			}
 		}
@@ -396,7 +397,7 @@ func virtualServiceBindsToGateway(virtualService *v1beta1.VirtualService, gatewa
 				continue
 			}
 
-			if namespace == "*" || namespace == virtualService.Namespace || (namespace == "." && virtualService.Namespace == gateway.Namespace) {
+			if namespace == "*" || namespace == vService.Namespace || (namespace == "." && vService.Namespace == gateway.Namespace) {
 				if host == "*" {
 					return true
 				}
