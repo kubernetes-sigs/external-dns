@@ -780,29 +780,48 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	}
 
 	priority := (*uint16)(nil)
+	var data map[string]interface{}
+
 	if ep.RecordType == "MX" {
 		mxRecord, err := endpoint.NewMXRecord(target)
 		if err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
-		} else {
-			priority = mxRecord.GetPriority()
-			target = *mxRecord.GetHost()
+		}
+		priority = mxRecord.GetPriority()
+		target = *mxRecord.GetHost()
+	} else if ep.RecordType == "SRV" {
+		parts := strings.Fields(target)
+		if len(parts) >= 4 {
+			priorityVal, _ := strconv.Atoi(parts[0])
+			weight, _ := strconv.Atoi(parts[1])
+			port, _ := strconv.Atoi(parts[2])
+			targetHost := strings.Join(parts[3:], " ")
+			data = map[string]interface{}{
+				"priority": priorityVal,
+				"weight":   weight,
+				"port":     port,
+				"target":   targetHost,
+			}
 		}
 	}
 
+	record := cloudflare.DNSRecord{
+		Name:     ep.DNSName,
+		TTL:      ttl,
+		Proxied:  &proxied,
+		Type:     ep.RecordType,
+		Content:  target,
+		Comment:  comment,
+		Priority: priority,
+	}
+
+	if data != nil {
+		record.Data = data
+	}
+
 	return &cloudFlareChange{
-		Action: action,
-		ResourceRecord: cloudflare.DNSRecord{
-			Name: ep.DNSName,
-			TTL:  ttl,
-			// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
-			// see: https://github.com/cloudflare/cloudflare-go/pull/595
-			Proxied:  &proxied,
-			Type:     ep.RecordType,
-			Content:  target,
-			Comment:  comment,
-			Priority: priority,
-		},
+		Action:              action,
+		ResourceRecord:      record,
 		RegionalHostname:    p.regionalHostname(ep),
 		CustomHostnamesPrev: prevCustomHostnames,
 		CustomHostnames:     newCustomHostnames,
