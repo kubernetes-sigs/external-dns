@@ -140,8 +140,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.17 h1:x18
 github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.17/go.mod h1:mC9qMbA6e1pwEq6X3zDGtZRXMG2YaElJkbJlMVHLs5I=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.17 h1:t0E6FzREdtCsiLIoLCWsYliNsRBgyGD/MCK571qk4MI=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.17/go.mod h1:ygpklyoaypuyDvOM5ujWGrYWpAK3h7ugnmKCU/76Ys4=
-github.com/aws/aws-sdk-go-v2/service/route53 v1.52.2 h1:dXHWVVPx2W2fq2PTugj8QXpJ0YTRAGx0KLPKhMBmcsY=
-github.com/aws/aws-sdk-go-v2/service/route53 v1.52.2/go.mod h1:wi1naoiPnCQG3cyjsivwPON1ZmQt/EJGxFqXzubBTAw=
+github.com/aws/aws-sdk-go-v2/service/route53 v1.53.0 h1:UglIEyurCqfzZkjNdYAuXUGFu/FNWMKP5eorzggvXe8=
+github.com/aws/aws-sdk-go-v2/service/route53 v1.53.0/go.mod h1:wi1naoiPnCQG3cyjsivwPON1ZmQt/EJGxFqXzubBTAw=
 github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.7 h1:1eaP4/444jrv04HhJdwTHtgnyxWgxwdLjSYBGq+oMB4=
 github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.7/go.mod h1:czoZQabc2chvmV/ak4oGSNR9CbcUw2bef3tatmwtoIA=
 github.com/aws/aws-sdk-go-v2/service/sso v1.25.5 h1:AIRJ3lfb2w/1/8wOOSqYb9fUKGwQbtysJ2H1MofRUPg=
@@ -676,8 +676,8 @@ github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-b
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
 github.com/linki/instrumented_http v0.3.0 h1:dsN92+mXpfZtjJraartcQ99jnuw7fqsnPDjr85ma2dA=
 github.com/linki/instrumented_http v0.3.0/go.mod h1:pjYbItoegfuVi2GUOMhEqzvm/SJKuEL3H0tc8QRLRFk=
-github.com/linode/linodego v1.52.2 h1:N9ozU27To1LMSrDd8WvJZ5STSz1eGYdyLnxhAR/dIZg=
-github.com/linode/linodego v1.52.2/go.mod h1:bI949fZaVchjWyKIA08hNyvAcV6BAS+PM2op3p7PAWA=
+github.com/linode/linodego v1.53.0 h1:UWr7bUUVMtcfsuapC+6blm6+jJLPd7Tf9MZUpdOERnI=
+github.com/linode/linodego v1.53.0/go.mod h1:bI949fZaVchjWyKIA08hNyvAcV6BAS+PM2op3p7PAWA=
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
 github.com/lyft/protoc-gen-star v0.4.10/go.mod h1:mE8fbna26u7aEA2QCVvvfBU/ZrPgocG1206xAFPcs94=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=

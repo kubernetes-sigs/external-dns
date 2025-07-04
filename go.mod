@@ -18,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.70
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.19.4
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.44.0
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.52.2
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.53.0
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.7
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.0
 	github.com/bodgit/tsig v1.2.2
@@ -38,7 +38,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.52.2
+	github.com/linode/linodego v1.53.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.66
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
