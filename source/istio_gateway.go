@@ -24,10 +24,10 @@ import (
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
-	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
+	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -57,7 +57,7 @@ type gatewaySource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
-	gatewayInformer          networkingv1alpha3informer.GatewayInformer
+	gatewayInformer          networkingv1beta1informer.GatewayInformer
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -81,10 +81,10 @@ func NewIstioGatewaySource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
-	gatewayInformer := istioInformerFactory.Networking().V1alpha3().Gateways()
+	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 
 	// Add default resource event handlers to properly initialize informer.
-	serviceInformer.Informer().AddEventHandler(
+	_, _ = serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				log.Debug("service added")
@@ -92,7 +92,7 @@ func NewIstioGatewaySource(
 		},
 	)
 
-	gatewayInformer.Informer().AddEventHandler(
+	_, _ = gatewayInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				log.Debug("gateway added")
@@ -127,7 +127,7 @@ func NewIstioGatewaySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	gwList, err := sc.istioClient.NetworkingV1alpha3().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
+	gwList, err := sc.istioClient.NetworkingV1beta1().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -198,11 +198,11 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
-	sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gateway) ([]*networkingv1alpha3.Gateway, error) {
+func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1beta1.Gateway) ([]*networkingv1beta1.Gateway, error) {
 	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 		return gateways, nil
 	}
 
-	var filteredList []*networkingv1alpha3.Gateway
+	var filteredList []*networkingv1beta1.Gateway
 
 	for _, gw := range gateways {
 		// include if the annotations match the selector
@@ -225,7 +225,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -251,7 +251,7 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -266,7 +266,7 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
@@ -285,13 +285,13 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(gateway.Annotations)
 
 	for _, host := range hostnames {
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1alpha3.Gateway) ([]string, error) {
+func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1beta1.Gateway) ([]string, error) {
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {

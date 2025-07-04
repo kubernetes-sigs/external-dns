@@ -24,9 +24,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"istio.io/api/meta/v1alpha1"
-	istionetworking "istio.io/api/networking/v1alpha3"
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	v1alpha1 "istio.io/api/meta/v1alpha1"
+	istionetworking "istio.io/api/networking/v1beta1"
+	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
@@ -98,7 +98,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		namespace: "istio-system",
 		dnsnames:  [][]string{{"*"}},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(context.Background(), suite.gwconfig, metav1.CreateOptions{})
+	_, err = fakeIstioClient.NetworkingV1beta1().Gateways(suite.gwconfig.Namespace).Create(context.Background(), suite.gwconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.vsconfig = (fakeVirtualServiceConfig{
@@ -107,7 +107,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		gateways:  []string{"istio-system/foo-gateway-with-targets"},
 		dnsnames:  []string{"foo"},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), suite.vsconfig, metav1.CreateOptions{})
+	_, err = fakeIstioClient.NetworkingV1beta1().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), suite.vsconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.source, err = NewIstioVirtualServiceSource(
@@ -1975,12 +1975,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), gateway, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gateway.Namespace).Create(context.Background(), gateway, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			for _, virtualservice := range virtualservices {
-				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(context.Background(), virtualservice, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1beta1().VirtualServices(virtualservice.Namespace).Create(context.Background(), virtualservice, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -2041,7 +2041,7 @@ func testGatewaySelectorMatchesService(t *testing.T) {
 }
 
 func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress, gwList []fakeGatewayConfig) (*virtualServiceSource, error) {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
@@ -2064,7 +2064,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, i
 		gwObj := gw.Config()
 		// use create instead of add
 		// https://github.com/kubernetes/client-go/blob/92512ee2b8cf6696e9909245624175b7f0c971d9/testing/fixture.go#LL336C3-L336C52
-		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), gwObj, metav1.CreateOptions{})
+		_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gw.namespace).Create(context.Background(), gwObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
