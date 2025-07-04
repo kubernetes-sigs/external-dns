@@ -100,7 +100,7 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, r
 	changeLog := log.WithFields(log.Fields{
 		"hostname":   rhChange.Hostname,
 		"region_key": rhChange.RegionKey,
-		"action":     rhChange.action,
+		"action":     rhChange.action.String(),
 		"zone":       resourceContainer.Identifier,
 	})
 	if p.DryRun {

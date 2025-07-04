@@ -579,7 +579,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				"record": change.ResourceRecord.Name,
 				"type":   change.ResourceRecord.Type,
 				"ttl":    change.ResourceRecord.TTL,
-				"action": change.Action,
+				"action": change.Action.String(),
 				"zone":   zoneID,
 			}
 
