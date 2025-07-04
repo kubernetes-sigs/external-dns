@@ -111,6 +111,9 @@ spec:
             {{- if .Values.namespaced }}
             - --namespace={{ .Release.Namespace }}
             {{- end }}
+            {{- if .Values.gatewayNamespace }}
+            - --gateway-namespace={{ .Values.gatewayNamespace }}
+            {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
