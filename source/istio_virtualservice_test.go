@@ -2168,7 +2168,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			ctx:            context.TODO(),
 			gatewayStr:     "1/2/3/",
 			virtualService: &networkingv1beta1.VirtualService{},
-		}, want: nil, expectedErrStr: "invalid gateway name (name or namespace/name) found '1/2/3/'"},
+		}, want: nil, expectedErrStr: "invalid ingress name (name or namespace/name) found \"1/2/3/\""},
 		{name: "ExistingGateway", fields: fields{
 			virtualServiceSource: func() *virtualServiceSource {
 				vs, _ := newTestVirtualServiceSource(nil, nil, []fakeGatewayConfig{{

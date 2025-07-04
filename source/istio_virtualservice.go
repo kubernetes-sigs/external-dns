@@ -416,24 +416,8 @@ func virtualServiceBindsToGateway(virtualService *v1beta1.VirtualService, gatewa
 	return false
 }
 
-// TODO: similar to ParseIngress
-func parseGateway(gateway string) (string, string, error) {
-	var namespace, name string
-	var err error
-	parts := strings.Split(gateway, "/")
-	if len(parts) == 2 {
-		namespace, name = parts[0], parts[1]
-	} else if len(parts) == 1 {
-		name = parts[0]
-	} else {
-		err = fmt.Errorf("invalid gateway name (name or namespace/name) found '%v'", gateway)
-	}
-
-	return namespace, name, err
-}
-
 func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
-	namespace, name, err := parseGateway(ingressStr)
+	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}
