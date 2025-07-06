@@ -40,12 +40,17 @@ var recordTypeRegionalHostnameSupported = map[string]bool{
 	"CNAME": true,
 }
 
-// RegionalHostnamesMap is a map of regional hostnames keyed by hostname.
-type RegionalHostnamesMap map[string]cloudflare.RegionalHostname
+type regionalHostname struct {
+	hostname  string
+	regionKey string
+}
+
+// regionalHostnamesMap is a map of regional hostnames keyed by hostname.
+type regionalHostnamesMap map[string]regionalHostname
 
 type regionalHostnameChange struct {
 	action changeAction
-	cloudflare.RegionalHostname
+	regionalHostname
 }
 
 func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDataLocalizationRegionalHostnamesParams) ([]cloudflare.RegionalHostname, error) {
@@ -69,16 +74,16 @@ func (z zoneService) DeleteDataLocalizationRegionalHostname(ctx context.Context,
 // createDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func createDataLocalizationRegionalHostnameParams(rhc regionalHostnameChange) cloudflare.CreateDataLocalizationRegionalHostnameParams {
 	return cloudflare.CreateDataLocalizationRegionalHostnameParams{
-		Hostname:  rhc.Hostname,
-		RegionKey: rhc.RegionKey,
+		Hostname:  rhc.hostname,
+		RegionKey: rhc.regionKey,
 	}
 }
 
 // updateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func updateDataLocalizationRegionalHostnameParams(rhc regionalHostnameChange) cloudflare.UpdateDataLocalizationRegionalHostnameParams {
 	return cloudflare.UpdateDataLocalizationRegionalHostnameParams{
-		Hostname:  rhc.Hostname,
-		RegionKey: rhc.RegionKey,
+		Hostname:  rhc.hostname,
+		RegionKey: rhc.regionKey,
 	}
 }
 
@@ -98,8 +103,8 @@ func (p *CloudFlareProvider) submitRegionalHostnameChanges(ctx context.Context, 
 // submitRegionalHostnameChange applies a single regional hostname change, returns false if it fails
 func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, rhChange regionalHostnameChange, resourceContainer *cloudflare.ResourceContainer) bool {
 	changeLog := log.WithFields(log.Fields{
-		"hostname":   rhChange.Hostname,
-		"region_key": rhChange.RegionKey,
+		"hostname":   rhChange.hostname,
+		"region_key": rhChange.regionKey,
 		"action":     rhChange.action.String(),
 		"zone":       resourceContainer.Identifier,
 	})
@@ -124,7 +129,7 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, r
 		}
 	case cloudFlareDelete:
 		changeLog.Debug("Deleting regional hostname")
-		if err := p.Client.DeleteDataLocalizationRegionalHostname(ctx, resourceContainer, rhChange.Hostname); err != nil {
+		if err := p.Client.DeleteDataLocalizationRegionalHostname(ctx, resourceContainer, rhChange.hostname); err != nil {
 			changeLog.Errorf("failed to delete regional hostname: %v", err)
 			return false
 		}
@@ -132,34 +137,37 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, r
 	return true
 }
 
-func (p *CloudFlareProvider) listDataLocalisationRegionalHostnames(ctx context.Context, resourceContainer *cloudflare.ResourceContainer) (RegionalHostnamesMap, error) {
+func (p *CloudFlareProvider) listDataLocalisationRegionalHostnames(ctx context.Context, resourceContainer *cloudflare.ResourceContainer) (regionalHostnamesMap, error) {
 	rhs, err := p.Client.ListDataLocalizationRegionalHostnames(ctx, resourceContainer, cloudflare.ListDataLocalizationRegionalHostnamesParams{})
 	if err != nil {
 		return nil, convertCloudflareError(err)
 	}
-	rhsMap := make(RegionalHostnamesMap)
-	for _, r := range rhs {
-		rhsMap[r.Hostname] = r
+	rhsMap := make(regionalHostnamesMap)
+	for _, rh := range rhs {
+		rhsMap[rh.Hostname] = regionalHostname{
+			hostname:  rh.Hostname,
+			regionKey: rh.RegionKey,
+		}
 	}
 	return rhsMap, nil
 }
 
-// regionalHostname returns a RegionalHostname for the given endpoint.
+// regionalHostname returns a regionalHostname for the given endpoint.
 //
 // If the regional services feature is not enabled or the record type does not support regional hostnames,
-// it returns an empty RegionalHostname.
+// it returns an empty regionalHostname.
 // If the endpoint has a specific region key set, it uses that; otherwise, it defaults to the region key configured in the provider.
-func (p *CloudFlareProvider) regionalHostname(ep *endpoint.Endpoint) cloudflare.RegionalHostname {
+func (p *CloudFlareProvider) regionalHostname(ep *endpoint.Endpoint) regionalHostname {
 	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
-		return cloudflare.RegionalHostname{}
+		return regionalHostname{}
 	}
 	regionKey := p.RegionalServicesConfig.RegionKey
 	if epRegionKey, exists := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); exists {
 		regionKey = epRegionKey
 	}
-	return cloudflare.RegionalHostname{
-		Hostname:  ep.DNSName,
-		RegionKey: regionKey,
+	return regionalHostname{
+		hostname:  ep.DNSName,
+		regionKey: regionKey,
 	}
 }
 
@@ -192,7 +200,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 
 	for _, ep := range supportedEndpoints {
 		if rh, found := regionalHostnames[ep.DNSName]; found {
-			ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, rh.RegionKey)
+			ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, rh.regionKey)
 		}
 	}
 	return nil
@@ -203,67 +211,67 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 // If there is a delete and a create or update action for the same hostname,
 // The create or update takes precedence.
 // Returns an error for conflicting region keys.
-func desiredRegionalHostnames(changes []*cloudFlareChange) ([]cloudflare.RegionalHostname, error) {
-	rhs := make(map[string]cloudflare.RegionalHostname)
+func desiredRegionalHostnames(changes []*cloudFlareChange) ([]regionalHostname, error) {
+	rhs := make(map[string]regionalHostname)
 	for _, change := range changes {
-		if change.RegionalHostname.Hostname == "" {
+		if change.RegionalHostname.hostname == "" {
 			continue
 		}
-		rh, found := rhs[change.RegionalHostname.Hostname]
+		rh, found := rhs[change.RegionalHostname.hostname]
 		if !found {
 			if change.Action == cloudFlareDelete {
-				rhs[change.RegionalHostname.Hostname] = cloudflare.RegionalHostname{
-					Hostname:  change.RegionalHostname.Hostname,
-					RegionKey: "", // Indicate that this regional hostname should not exists
+				rhs[change.RegionalHostname.hostname] = regionalHostname{
+					hostname:  change.RegionalHostname.hostname,
+					regionKey: "", // Indicate that this regional hostname should not exists
 				}
 				continue
 			}
-			rhs[change.RegionalHostname.Hostname] = change.RegionalHostname
+			rhs[change.RegionalHostname.hostname] = change.RegionalHostname
 			continue
 		}
 		if change.Action == cloudFlareDelete {
 			// A previous regional hostname exists so we can skip this delete action
 			continue
 		}
-		if rh.RegionKey == "" {
+		if rh.regionKey == "" {
 			// If the existing regional hostname has no region key, we can overwrite it
-			rhs[change.RegionalHostname.Hostname] = change.RegionalHostname
+			rhs[change.RegionalHostname.hostname] = change.RegionalHostname
 			continue
 		}
-		if rh.RegionKey != change.RegionalHostname.RegionKey {
-			return nil, fmt.Errorf("conflicting region keys for regional hostname %q: %q and %q", change.RegionalHostname.Hostname, rh.RegionKey, change.RegionalHostname.RegionKey)
+		if rh.regionKey != change.RegionalHostname.regionKey {
+			return nil, fmt.Errorf("conflicting region keys for regional hostname %q: %q and %q", change.RegionalHostname.hostname, rh.regionKey, change.RegionalHostname.regionKey)
 		}
 	}
 	return slices.Collect(maps.Values(rhs)), nil
 }
 
 // regionalHostnamesChanges build a list of changes needed to synchronize the current regional hostnames state with the desired state.
-func regionalHostnamesChanges(desired []cloudflare.RegionalHostname, regionalHostnames RegionalHostnamesMap) []regionalHostnameChange {
+func regionalHostnamesChanges(desired []regionalHostname, regionalHostnames regionalHostnamesMap) []regionalHostnameChange {
 	changes := make([]regionalHostnameChange, 0)
 	for _, rh := range desired {
-		current, found := regionalHostnames[rh.Hostname]
-		if rh.RegionKey == "" {
+		current, found := regionalHostnames[rh.hostname]
+		if rh.regionKey == "" {
 			// If the region key is empty, we don't want a regional hostname
 			if !found {
 				continue
 			}
 			changes = append(changes, regionalHostnameChange{
 				action:           cloudFlareDelete,
-				RegionalHostname: rh,
+				regionalHostname: rh,
 			})
 			continue
 		}
 		if !found {
 			changes = append(changes, regionalHostnameChange{
 				action:           cloudFlareCreate,
-				RegionalHostname: rh,
+				regionalHostname: rh,
 			})
 			continue
 		}
-		if rh.RegionKey != current.RegionKey {
+		if rh.regionKey != current.regionKey {
 			changes = append(changes, regionalHostnameChange{
 				action:           cloudFlareUpdate,
-				RegionalHostname: rh,
+				regionalHostname: rh,
 			})
 		}
 	}

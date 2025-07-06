@@ -220,7 +220,7 @@ type CloudFlareProvider struct {
 type cloudFlareChange struct {
 	Action              changeAction
 	ResourceRecord      cloudflare.DNSRecord
-	RegionalHostname    cloudflare.RegionalHostname
+	RegionalHostname    regionalHostname
 	CustomHostnames     map[string]cloudflare.CustomHostname
 	CustomHostnamesPrev []string
 }
