@@ -3,9 +3,11 @@ version: "2"
 linters:
   default: none
   enable: # golangci-lint help linters
+    - bidichk # Checks for dangerous unicode character sequences.. https://golangci-lint.run/usage/linters/#bidichk
     - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/usage/linters/#copyloopvar
     - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/usage/linters/#dogsled
     - dupword # Duplicate word. https://golangci-lint.run/usage/linters/#dupword
+    - goconst # Detects repeated strings and suggests to replace them with constants. https://golangci-lint.run/usage/linters/#goconst
     - goprintffuncname
     - govet
     - ineffassign
