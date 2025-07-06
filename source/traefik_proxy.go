@@ -388,7 +388,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 	if !ts.ignoreHostnameAnnotation {
 		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -399,7 +399,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 
 				// Checking for host = * is required, as Host(`*`) can be set
 				if host != "*" && host != "" {
-					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					endpoints = append(endpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 				}
 			}
 		}
@@ -421,7 +421,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 	if !ts.ignoreHostnameAnnotation {
 		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -432,7 +432,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 				// Checking for host = * is required, as HostSNI(`*`) can be set
 				// in the case of TLS passthrough
 				if host != "*" && host != "" {
-					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+					endpoints = append(endpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 				}
 			}
 		}
@@ -454,7 +454,7 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 	if !ts.ignoreHostnameAnnotation {
 		hostnameList := annotations.HostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -908,11 +908,7 @@ func extractEndpoints[T any](
 // 4. Iterates through the resources and matches their annotations against the selector.
 // 5. Returns the filtered list of resources or an error if any step fails.
 func filterResourcesByAnnotations[T any](resources []*T, annotationFilter string, getAnnotations func(*T) map[string]string) ([]*T, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(annotationFilter)
 	if err != nil {
 		return nil, err
 	}
