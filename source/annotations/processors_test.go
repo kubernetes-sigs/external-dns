@@ -47,6 +47,12 @@ func TestParseAnnotationFilter(t *testing.T) {
 			expectedSelector: labels.Set{}.AsSelector(),
 			expectError:      false,
 		},
+		{
+			name:             "wrong annotation filter",
+			annotationFilter: "=test",
+			expectedSelector: nil,
+			expectError:      true,
+		},
 	}
 
 	for _, tt := range tests {

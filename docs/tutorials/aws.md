@@ -894,6 +894,11 @@ For any given DNS name, only **one** of the following routing policies can be us
   - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
   - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
   - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+- Geoproximity routing:
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-region`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
 - Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ### Associating DNS records with healthchecks

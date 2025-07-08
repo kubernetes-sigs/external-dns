@@ -48,7 +48,7 @@ type MockAction struct {
 	ZoneId           string
 	RecordId         string
 	RecordData       cloudflare.DNSRecord
-	RegionalHostname cloudflare.RegionalHostname
+	RegionalHostname regionalHostname
 }
 
 type mockCloudFlareClient struct {
@@ -65,7 +65,7 @@ type mockCloudFlareClient struct {
 	customHostnamesError   error
 	regionalHostnamesError error
 	customHostnames        map[string][]cloudflare.CustomHostname
-	regionalHostnames      map[string][]cloudflare.RegionalHostname
+	regionalHostnames      map[string][]regionalHostname
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -107,7 +107,7 @@ func NewMockCloudFlareClient() *mockCloudFlareClient {
 			"002": {},
 		},
 		customHostnames:   map[string][]cloudflare.CustomHostname{},
-		regionalHostnames: map[string][]cloudflare.RegionalHostname{},
+		regionalHostnames: map[string][]regionalHostname{},
 	}
 }
 
@@ -1812,8 +1812,8 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	}
 
 	change, _ := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
-	if change.RegionalHostname.RegionKey != "us" {
-		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.RegionKey)
+	if change.RegionalHostname.regionKey != "us" {
+		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.regionKey)
 	}
 
 	var freeValidCommentBuilder strings.Builder
@@ -1966,8 +1966,8 @@ func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
 				ID:      "1234567890",
 				Content: "my-tunnel-guid-here.cfargotunnel.com",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname: "my-domain-here.app",
+			RegionalHostname: regionalHostname{
+				hostname: "my-domain-here.app",
 			},
 		},
 		{
@@ -1978,9 +1978,9 @@ func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
 				ID:      "9876543210",
 				Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname:  "my-domain-here.app",
-				RegionKey: "",
+			RegionalHostname: regionalHostname{
+				hostname:  "my-domain-here.app",
+				regionKey: "",
 			},
 		},
 	}
@@ -2029,8 +2029,8 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 				ID:      "1234567890",
 				Content: "my-tunnel-guid-here.cfargotunnel.com",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname: "@", // APEX record
+			RegionalHostname: regionalHostname{
+				hostname: "@", // APEX record
 			},
 		},
 		{
@@ -2041,9 +2041,9 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 				ID:      "9876543210",
 				Content: "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/external-dns/my-domain-here-app",
 			},
-			RegionalHostname: cloudflare.RegionalHostname{
-				Hostname:  "@", // APEX record
-				RegionKey: "",
+			RegionalHostname: regionalHostname{
+				hostname:  "@", // APEX record
+				regionKey: "",
 			},
 		},
 	}
