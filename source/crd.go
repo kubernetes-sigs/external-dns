@@ -188,11 +188,9 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if ep.RecordType != endpoint.RecordTypeNAPTR && strings.HasSuffix(target, ".") {
-					illegalTarget = true
-					break
-				}
-				if ep.RecordType == endpoint.RecordTypeNAPTR && !strings.HasSuffix(target, ".") {
+				isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
+				hasDot := strings.HasSuffix(target, ".")
+				if (isNAPTR && !hasDot) || (!isNAPTR && hasDot) {
 					illegalTarget = true
 					break
 				}
