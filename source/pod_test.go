@@ -1000,82 +1000,145 @@ func nodesFixturesIPv4() []*corev1.Node {
 }
 
 func TestPodTransformerInPodSource(t *testing.T) {
-	ctx := t.Context()
-	fakeClient := fake.NewClientset()
+	t.Run("transformer set", func(t *testing.T) {
+		ctx := t.Context()
+		fakeClient := fake.NewClientset()
 
-	pod := &v1.Pod{
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{
-				Name: "test",
-			}},
-			Hostname:    "test-hostname",
-			NodeName:    "test-node",
-			HostNetwork: true,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "test-ns",
-			Name:      "test-name",
-			Labels: map[string]string{
-				"label1": "value1",
-				"label2": "value2",
-				"label3": "value3",
+		pod := &v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{{
+					Name: "test",
+				}},
+				Hostname:    "test-hostname",
+				NodeName:    "test-node",
+				HostNetwork: true,
 			},
-			Annotations: map[string]string{
-				"user-annotation": "value",
-				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-				"external-dns.alpha.kubernetes.io/random":   "value",
-				"other/annotation":                          "value",
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test-ns",
+				Name:      "test-name",
+				Labels: map[string]string{
+					"label1": "value1",
+					"label2": "value2",
+					"label3": "value3",
+				},
+				Annotations: map[string]string{
+					"user-annotation": "value",
+					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+					"external-dns.alpha.kubernetes.io/random":   "value",
+					"other/annotation":                          "value",
+				},
+				UID: "someuid",
 			},
-			UID: "someuid",
-		},
-		Status: v1.PodStatus{
-			PodIP:  "127.0.0.1",
-			HostIP: "127.0.0.2",
-			Conditions: []v1.PodCondition{{
-				Type:   v1.PodReady,
-				Status: v1.ConditionTrue,
-			}, {
-				Type:   v1.ContainersReady,
-				Status: v1.ConditionFalse,
-			}},
-		},
-	}
+			Status: v1.PodStatus{
+				PodIP:  "127.0.0.1",
+				HostIP: "127.0.0.2",
+				Conditions: []v1.PodCondition{{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				}, {
+					Type:   v1.ContainersReady,
+					Status: v1.ConditionFalse,
+				}},
+			},
+		}
 
-	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
-	require.NoError(t, err)
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		require.NoError(t, err)
 
-	// Should not error when creating the source
-	src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "", false, "", nil)
-	require.NoError(t, err)
-	ps, ok := src.(*podSource)
-	require.True(t, ok)
+		// Should not error when creating the source
+		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "", false, "", nil)
+		require.NoError(t, err)
+		ps, ok := src.(*podSource)
+		require.True(t, ok)
 
-	retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
-	require.NoError(t, err)
+		retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
+		require.NoError(t, err)
 
-	// Metadata
-	assert.Equal(t, "test-name", retrieved.Name)
-	assert.Equal(t, "test-ns", retrieved.Namespace)
-	assert.Empty(t, retrieved.UID)
-	assert.Empty(t, retrieved.Labels)
-	// Filtered
-	assert.Equal(t, map[string]string{
-		"user-annotation": "value",
-		"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
-		"external-dns.alpha.kubernetes.io/random":   "value",
-		"other/annotation":                          "value",
-	}, retrieved.Annotations)
+		// Metadata
+		assert.Equal(t, "test-name", retrieved.Name)
+		assert.Equal(t, "test-ns", retrieved.Namespace)
+		assert.Empty(t, retrieved.UID)
+		assert.Empty(t, retrieved.Labels)
+		// Filtered
+		assert.Equal(t, map[string]string{
+			"user-annotation": "value",
+			"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+			"external-dns.alpha.kubernetes.io/random":   "value",
+			"other/annotation":                          "value",
+		}, retrieved.Annotations)
 
-	// Spec
-	assert.Empty(t, retrieved.Spec.Containers)
-	assert.Empty(t, retrieved.Spec.Hostname)
-	assert.Equal(t, "test-node", retrieved.Spec.NodeName)
-	assert.True(t, retrieved.Spec.HostNetwork)
+		// Spec
+		assert.Empty(t, retrieved.Spec.Containers)
+		assert.Empty(t, retrieved.Spec.Hostname)
+		assert.Equal(t, "test-node", retrieved.Spec.NodeName)
+		assert.True(t, retrieved.Spec.HostNetwork)
 
-	// Status
-	assert.Empty(t, retrieved.Status.ContainerStatuses)
-	assert.Empty(t, retrieved.Status.InitContainerStatuses)
-	assert.Empty(t, retrieved.Status.HostIP)
-	assert.Equal(t, "127.0.0.1", retrieved.Status.PodIP)
-	assert.Empty(t, retrieved.Status.Conditions)
+		// Status
+		assert.Empty(t, retrieved.Status.ContainerStatuses)
+		assert.Empty(t, retrieved.Status.InitContainerStatuses)
+		assert.Empty(t, retrieved.Status.HostIP)
+		assert.Equal(t, "127.0.0.1", retrieved.Status.PodIP)
+		assert.Empty(t, retrieved.Status.Conditions)
+	})
+
+	t.Run("transormer is not used when fqdnTemplate is set", func(t *testing.T) {
+		ctx := t.Context()
+		fakeClient := fake.NewClientset()
+
+		pod := &v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{{
+					Name: "test",
+				}},
+				Hostname:    "test-hostname",
+				NodeName:    "test-node",
+				HostNetwork: true,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test-ns",
+				Name:      "test-name",
+				Labels: map[string]string{
+					"label1": "value1",
+					"label2": "value2",
+					"label3": "value3",
+				},
+				Annotations: map[string]string{
+					"user-annotation": "value",
+					"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+					"external-dns.alpha.kubernetes.io/random":   "value",
+					"other/annotation":                          "value",
+				},
+				UID: "someuid",
+			},
+			Status: v1.PodStatus{
+				PodIP:  "127.0.0.1",
+				HostIP: "127.0.0.2",
+				Conditions: []v1.PodCondition{{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				}, {
+					Type:   v1.ContainersReady,
+					Status: v1.ConditionFalse,
+				}},
+			},
+		}
+
+		_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		// Should not error when creating the source
+		src, err := NewPodSource(ctx, fakeClient, "", "", false, "", "template", false, "", nil)
+		require.NoError(t, err)
+		ps, ok := src.(*podSource)
+		require.True(t, ok)
+
+		retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
+		require.NoError(t, err)
+
+		// Metadata
+		assert.Equal(t, "test-name", retrieved.Name)
+		assert.Equal(t, "test-ns", retrieved.Namespace)
+		assert.NotEmpty(t, retrieved.UID)
+		assert.NotEmpty(t, retrieved.Labels)
+	})
 }
