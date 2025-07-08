@@ -25,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed the type of `.extraContainers` from `object` to `list` (array). ([#5564](https://github.com/kubernetes-sigs/external-dns/pull/5564)) _@svengreb_
-- Improved Cloudflare provider error handling with graceful fallback for update/delete operations. ([#5604](https://github.com/kubernetes-sigs/external-dns/pull/5604)) _@andrewcharleshay_
-
 ## [v1.17.0] - 2025-06-04
 
 ### Changed

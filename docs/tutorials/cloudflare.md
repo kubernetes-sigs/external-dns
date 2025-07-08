@@ -357,29 +357,29 @@ Due to a limitation within the cloudflare-go v0 API, the custom hostname page si
 
 ## Error Handling and Reliability
 
-The Cloudflare provider includes enhanced error handling to improve reliability in production environments:
+The Cloudflare provider includes some error handling improvements to help with common operational scenarios:
 
-### Graceful Update Operations
+### Update Fallback Behavior
 
-When ExternalDNS attempts to update a DNS record that no longer exists (e.g., manually deleted), the provider will automatically fallback to creating the record instead of failing. This ensures your desired DNS state is maintained even when records get out of sync.
+When ExternalDNS attempts to update a DNS record that no longer exists (e.g., manually deleted), the provider may attempt to fallback to creating the record instead of failing. This behavior depends on both the DNS record and its corresponding TXT registry record state - if only the DNS record is deleted but the TXT record remains, ExternalDNS will recreate the record. Note that this behavior may change in future versions.
 
 ```text
 WARN: failed to find previous record for update, attempting to create instead: example.com
 ```
 
-### Idempotent Delete Operations
+### Delete Operation Behavior
 
-Delete operations are idempotent - attempting to delete a record that doesn't exist will not result in an error. This prevents false-positive failures when records are deleted outside of ExternalDNS.
+Delete operations generally don't fail when attempting to delete a record that doesn't exist. This can help reduce false-positive failures when records are deleted outside of ExternalDNS, though the exact behavior may vary.
 
 ```text
 WARN: failed to find record for deletion, record may already be deleted: example.com
 ```
 
-### Benefits
+### Considerations
 
-- **Reduced operational burden**: Fewer false-positive errors requiring manual intervention
-- **Improved automation reliability**: Graceful handling of edge cases
-- **Better observability**: Clear distinction between warnings (handled gracefully) and errors (requiring attention)
+- **Error handling behavior may change**: The specific error handling described above is current implementation behavior and may be modified in future versions
+- **Best practices recommended**: While ExternalDNS handles some edge cases, following DNS management best practices and avoiding manual DNS changes is still recommended
+- **Monitor logs for warnings**: Pay attention to warning messages which may indicate configuration or operational issues
 
 ## Using CRD source to manage DNS records in Cloudflare
 
