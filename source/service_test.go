@@ -30,10 +30,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -3089,7 +3091,7 @@ func TestHeadlessServices(t *testing.T) {
 			t.Parallel()
 
 			// Create a Kubernetes testing client
-			kubernetes := fake.NewSimpleClientset()
+			kubernetes := fake.NewClientset()
 
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
@@ -3194,6 +3196,378 @@ func TestHeadlessServices(t *testing.T) {
 			validateEndpoints(t, endpoints, tc.expected)
 		})
 	}
+}
+
+func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
+	kubernetes := fake.NewClientset()
+
+	headless := []*v1.Service{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app": "kafka",
+				},
+				Annotations: map[string]string{
+					annotations.HostnameKey: "example.org",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeClusterIP,
+				ClusterIP:             v1.ClusterIPNone,
+				ClusterIPs:            []string{v1.ClusterIPNone},
+				InternalTrafficPolicy: testutils.ToPtr(v1.ServiceInternalTrafficPolicyCluster),
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "web",
+						Port:       80,
+						Protocol:   v1.ProtocolTCP,
+						TargetPort: intstr.FromInt32(80),
+					},
+				},
+				Selector: map[string]string{
+					"app": "kafka",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka-2",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app": "kafka",
+				},
+				Annotations: map[string]string{
+					annotations.HostnameKey: "example.org",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeClusterIP,
+				ClusterIP:             v1.ClusterIPNone,
+				ClusterIPs:            []string{v1.ClusterIPNone},
+				InternalTrafficPolicy: testutils.ToPtr(v1.ServiceInternalTrafficPolicyCluster),
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "web",
+						Port:       80,
+						Protocol:   v1.ProtocolTCP,
+						TargetPort: intstr.FromInt32(80),
+					},
+				},
+				Selector: map[string]string{
+					"app": "kafka",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{},
+			},
+		},
+	}
+
+	assert.NotNil(t, headless)
+
+	pods := []*v1.Pod{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka-0",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":                                 "kafka",
+					appsv1.PodIndexLabel:                  "0",
+					appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
+					appsv1.StatefulSetPodNameLabel:        "kafka-0",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "StatefulSet",
+						Name:       "kafka",
+					},
+				},
+			},
+			Spec: v1.PodSpec{
+				Hostname:  "kafka-0",
+				Subdomain: "kafka",
+				NodeName:  "local-dev-worker",
+				Containers: []v1.Container{
+					{
+						Name: "nginx",
+						Ports: []v1.ContainerPort{
+							{Name: "web", ContainerPort: 80, Protocol: v1.ProtocolTCP},
+						},
+					},
+				},
+			},
+			Status: v1.PodStatus{
+				Phase:   v1.PodRunning,
+				PodIP:   "10.244.1.2",
+				PodIPs:  []v1.PodIP{{IP: "10.244.1.2"}},
+				HostIP:  "172.18.0.2",
+				HostIPs: []v1.HostIP{{IP: "172.18.0.2"}},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka-1",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":                                 "kafka",
+					appsv1.PodIndexLabel:                  "1",
+					appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
+					appsv1.StatefulSetPodNameLabel:        "kafka-1",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "StatefulSet",
+						Name:       "kafka",
+					},
+				},
+			},
+			Spec: v1.PodSpec{
+				Hostname:  "kafka-1",
+				Subdomain: "kafka",
+				NodeName:  "local-dev-worker",
+				Containers: []v1.Container{
+					{
+						Name: "nginx",
+						Ports: []v1.ContainerPort{
+							{Name: "web", ContainerPort: 80, Protocol: v1.ProtocolTCP},
+						},
+					},
+				},
+			},
+			Status: v1.PodStatus{
+				Phase:   v1.PodRunning,
+				PodIP:   "10.244.1.3",
+				PodIPs:  []v1.PodIP{{IP: "10.244.1.3"}},
+				HostIP:  "172.18.0.2",
+				HostIPs: []v1.HostIP{{IP: "172.18.0.2"}},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka-2",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":                                 "kafka",
+					appsv1.PodIndexLabel:                  "2",
+					appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
+					appsv1.StatefulSetPodNameLabel:        "kafka-2",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "apps/v1",
+						Kind:       "StatefulSet",
+						Name:       "kafka",
+					},
+				},
+			},
+			Spec: v1.PodSpec{
+				Hostname:  "kafka-2",
+				Subdomain: "kafka",
+				NodeName:  "local-dev-worker",
+				Containers: []v1.Container{
+					{
+						Name: "nginx",
+						Ports: []v1.ContainerPort{
+							{Name: "web", ContainerPort: 80, Protocol: v1.ProtocolTCP},
+						},
+					},
+				},
+			},
+			Status: v1.PodStatus{
+				Phase:   v1.PodRunning,
+				PodIP:   "10.244.1.4",
+				PodIPs:  []v1.PodIP{{IP: "10.244.1.4"}},
+				HostIP:  "172.18.0.2",
+				HostIPs: []v1.HostIP{{IP: "172.18.0.2"}},
+			},
+		},
+	}
+	assert.Len(t, pods, 3)
+
+	endpoints := []*discoveryv1.EndpointSlice{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka-xhrc9",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":                        "kafka",
+					discoveryv1.LabelServiceName: "kafka",
+					discoveryv1.LabelManagedBy:   "endpointslice-controller.k8s.io",
+					v1.IsHeadlessService:         "",
+				},
+			},
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{
+				{
+					Addresses: []string{"10.244.1.2"},
+					Hostname:  testutils.ToPtr("kafka-0"),
+					NodeName:  testutils.ToPtr("local-dev-worker"),
+					TargetRef: &v1.ObjectReference{
+						Kind:      "Pod",
+						Name:      "kafka-0",
+						Namespace: "default",
+					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready:       testutils.ToPtr(true),
+						Serving:     testutils.ToPtr(true),
+						Terminating: testutils.ToPtr(false),
+					},
+				},
+				{
+					Addresses: []string{"10.244.1.3"},
+					Hostname:  testutils.ToPtr("kafka-1"),
+					NodeName:  testutils.ToPtr("local-dev-worker"),
+					TargetRef: &v1.ObjectReference{
+						Kind:      "Pod",
+						Name:      "kafka-1",
+						Namespace: "default",
+					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready:       testutils.ToPtr(true),
+						Serving:     testutils.ToPtr(true),
+						Terminating: testutils.ToPtr(false),
+					},
+				},
+				{
+					Addresses: []string{"10.244.1.4"},
+					Hostname:  testutils.ToPtr("kafka-2"),
+					NodeName:  testutils.ToPtr("local-dev-worker"),
+					TargetRef: &v1.ObjectReference{
+						Kind:      "Pod",
+						Name:      "kafka-2",
+						Namespace: "default",
+					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready:       testutils.ToPtr(true),
+						Serving:     testutils.ToPtr(true),
+						Terminating: testutils.ToPtr(false),
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kafka-2-svwsg",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":                        "kafka",
+					discoveryv1.LabelServiceName: "kafka-2",
+					discoveryv1.LabelManagedBy:   "endpointslice-controller.k8s.io",
+					v1.IsHeadlessService:         "",
+				},
+			},
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{
+				{
+					Addresses: []string{"10.244.1.2"},
+					Hostname:  testutils.ToPtr("kafka-0"),
+					NodeName:  testutils.ToPtr("local-dev-worker"),
+					TargetRef: &v1.ObjectReference{
+						Kind:      "Pod",
+						Name:      "kafka-0",
+						Namespace: "default",
+					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready:       testutils.ToPtr(true),
+						Serving:     testutils.ToPtr(true),
+						Terminating: testutils.ToPtr(false),
+					},
+				},
+				{
+					Addresses: []string{"10.244.1.3"},
+					Hostname:  testutils.ToPtr("kafka-1"),
+					NodeName:  testutils.ToPtr("local-dev-worker"),
+					TargetRef: &v1.ObjectReference{
+						Kind:      "Pod",
+						Name:      "kafka-1",
+						Namespace: "default",
+					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready:       testutils.ToPtr(true),
+						Serving:     testutils.ToPtr(true),
+						Terminating: testutils.ToPtr(false),
+					},
+				},
+				{
+					Addresses: []string{"10.244.1.4"},
+					Hostname:  testutils.ToPtr("kafka-2"),
+					NodeName:  testutils.ToPtr("local-dev-worker"),
+					TargetRef: &v1.ObjectReference{
+						Kind:      "Pod",
+						Name:      "kafka-2",
+						Namespace: "default",
+					},
+					Conditions: discoveryv1.EndpointConditions{
+						Ready:       testutils.ToPtr(true),
+						Serving:     testutils.ToPtr(true),
+						Terminating: testutils.ToPtr(false),
+					},
+				},
+			},
+		},
+	}
+
+	for _, svc := range headless {
+		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	for _, pod := range pods {
+		_, err := kubernetes.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	for _, ep := range endpoints {
+		_, err := kubernetes.DiscoveryV1().EndpointSlices(ep.Namespace).Create(context.Background(), ep, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewServiceSource(
+		t.Context(),
+		kubernetes,
+		v1.NamespaceAll,
+		"",
+		"",
+		false,
+		"",
+		false,
+		false,
+		false,
+		[]string{},
+		false,
+		labels.Everything(),
+		false,
+		false,
+		false,
+	)
+	require.NoError(t, err)
+	assert.NotNil(t, src)
+
+	got, err := src.Endpoints(context.Background())
+	require.NoError(t, err)
+
+	want := []*endpoint.Endpoint{
+		// TODO: root domain records should not be created. Address them in a follow-up PR.
+		{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.244.1.2", "10.244.1.3", "10.244.1.4"}},
+		{DNSName: "kafka-0.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.244.1.2"}},
+		{DNSName: "kafka-1.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.244.1.3"}},
+		{DNSName: "kafka-2.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.244.1.4"}},
+	}
+
+	validateEndpoints(t, got, want)
 }
 
 // TestHeadlessServices tests that headless services generate the correct endpoints.

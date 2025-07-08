@@ -251,6 +251,29 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		sort.Slice(endpoints, func(i, j int) bool {
 			return endpoints[i].Labels[endpoint.ResourceLabelKey] < endpoints[j].Labels[endpoint.ResourceLabelKey]
 		})
+		mergedEndpoints := make(map[endpoint.EndpointKey][]*endpoint.Endpoint)
+		for _, ep := range endpoints {
+			key := ep.Key()
+			if existing, ok := mergedEndpoints[key]; ok {
+				if existing[0].RecordType == endpoint.RecordTypeCNAME {
+					log.Debugf("CNAME %s with multiple targets found", ep.DNSName)
+					mergedEndpoints[key] = append(existing, ep)
+					continue
+				}
+				existing[0].Targets = append(existing[0].Targets, ep.Targets...)
+				existing[0].UniqueOrderedTargets()
+				mergedEndpoints[key] = existing
+			} else {
+				ep.UniqueOrderedTargets()
+				mergedEndpoints[key] = []*endpoint.Endpoint{ep}
+			}
+		}
+		processed := make([]*endpoint.Endpoint, 0, len(mergedEndpoints))
+		for _, ep := range mergedEndpoints {
+			processed = append(processed, ep...)
+		}
+		endpoints = processed
+
 		// Use stable sort to not disrupt the order of services
 		sort.SliceStable(endpoints, func(i, j int) bool {
 			if endpoints[i].DNSName != endpoints[j].DNSName {
@@ -258,31 +281,6 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			}
 			return endpoints[i].RecordType < endpoints[j].RecordType
 		})
-		mergedEndpoints := []*endpoint.Endpoint{}
-		mergedEndpoints = append(mergedEndpoints, endpoints[0])
-		for i := 1; i < len(endpoints); i++ {
-			lastMergedEndpoint := len(mergedEndpoints) - 1
-			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
-				mergedEndpoints[lastMergedEndpoint].RecordType != endpoint.RecordTypeCNAME && // It is against RFC-1034 for CNAME records to have multiple targets, so skip merging
-				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
-				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
-				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
-			} else {
-				mergedEndpoints = append(mergedEndpoints, endpoints[i])
-			}
-
-			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoint.RecordTypeCNAME {
-				log.Debugf("CNAME %s with multiple targets found", endpoints[i].DNSName)
-			}
-		}
-		endpoints = mergedEndpoints
-	}
-
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil
