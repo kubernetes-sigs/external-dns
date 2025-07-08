@@ -361,7 +361,7 @@ The Cloudflare provider includes some error handling improvements to help with c
 
 ### Update Fallback Behavior
 
-When ExternalDNS attempts to update a DNS record that no longer exists (e.g., manually deleted), the provider may attempt to fallback to creating the record instead of failing. This behavior depends on both the DNS record and its corresponding 
+When ExternalDNS attempts to update a DNS record that no longer exists (e.g., manually deleted), the provider may attempt to fallback to creating the record instead of failing. This behavior depends on both the DNS record and its corresponding
 TXT registry record state - if only the DNS record is deleted but the TXT record remains, ExternalDNS will recreate the record. Note that this behavior may change in future versions.
 
 ```text
