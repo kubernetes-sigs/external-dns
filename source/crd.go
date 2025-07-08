@@ -51,7 +51,7 @@ type crdSource struct {
 	codec            runtime.ParameterCodec
 	annotationFilter string
 	labelSelector    labels.Selector
-	informer         *cache.SharedInformer
+	informer         cache.SharedInformer
 }
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
@@ -123,7 +123,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	if startInformer {
 		// external-dns already runs its sync-handler periodically (controlled by `--interval` flag) to ensure any
 		// missed or dropped events are handled. specify resync period 0 to avoid unnecessary sync handler invocations.
-		informer := cache.NewSharedInformer(
+		sourceCrd.informer = cache.NewSharedInformer(
 			&cache.ListWatch{
 				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (runtime.Object, error) {
 					return sourceCrd.List(ctx, &lo)
@@ -134,8 +134,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 			},
 			&apiv1alpha1.DNSEndpoint{},
 			0)
-		sourceCrd.informer = &informer
-		go informer.Run(wait.NeverStop)
+		go sourceCrd.informer.Run(wait.NeverStop)
 	}
 	return &sourceCrd, nil
 }
@@ -145,8 +144,7 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 		log.Debug("Adding event handler for CRD")
 		// Right now there is no way to remove event handler from informer, see:
 		// https://github.com/kubernetes/kubernetes/issues/79610
-		informer := *cs.informer
-		_, _ = informer.AddEventHandler(
+		_, _ = cs.informer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
 					handler()
