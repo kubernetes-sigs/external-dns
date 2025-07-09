@@ -736,7 +736,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	}, time.Second, 10*time.Millisecond)
 
 	cs := &crdSource{
-		informer: &informer,
+		informer: informer,
 	}
 
 	return watcher, *cs
