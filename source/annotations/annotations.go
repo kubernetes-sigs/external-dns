@@ -51,4 +51,6 @@ const (
 	ControllerValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	InternalHostnameKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+	// The annotation used for defining the desired hostname source for gateways
+	GatewayHostnameSourceKey = "external-dns.alpha.kubernetes.io/gateway-hostname-source"
 )
