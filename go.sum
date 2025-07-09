@@ -250,8 +250,8 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
-github.com/digitalocean/godo v1.156.0 h1:nGod3u9cicC8wcc79e3HiTEix7KHqKjzgqE9cWQTPwk=
-github.com/digitalocean/godo v1.156.0/go.mod h1:tYeiWY5ZXVpU48YaFv0M5irUFHXGorZpDNm7zzdWMzM=
+github.com/digitalocean/godo v1.157.0 h1:ReELaS6FxXNf8gryUiVH0wmyUmZN8/NCmBX4gXd3F0o=
+github.com/digitalocean/godo v1.157.0/go.mod h1:tYeiWY5ZXVpU48YaFv0M5irUFHXGorZpDNm7zzdWMzM=
 github.com/dnaeon/go-vcr v1.0.1/go.mod h1:aBB1+wY4s93YsC3HHjMBMrwTj2R9FHDzUr9KyGc8n1E=
 github.com/dnsimple/dnsimple-go v1.7.0 h1:JKu9xJtZ3SqOC+BuYgAWeab7+EEx0sz422vu8j611ZY=
 github.com/dnsimple/dnsimple-go v1.7.0/go.mod h1:EKpuihlWizqYafSnQHGCd/gyvy3HkEQJ7ODB4KdV8T8=
@@ -819,8 +819,8 @@ github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5/go.mod h1:/wsWhb9smxS
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
 github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
-github.com/oracle/oci-go-sdk/v65 v65.95.0 h1:fI+/mfJOS2DkQ+/AFSyJAfn1XFR4TTGm2AhN6xbsi00=
-github.com/oracle/oci-go-sdk/v65 v65.95.0/go.mod h1:u6XRPsw9tPziBh76K7GrrRXPa8P8W3BQeqJ6ZZt9VLA=
+github.com/oracle/oci-go-sdk/v65 v65.95.1 h1:KCYeX+c+A0ezLVgXKpEcgXNukn6wBkD9oWoSV2FlaUs=
+github.com/oracle/oci-go-sdk/v65 v65.95.1/go.mod h1:u6XRPsw9tPziBh76K7GrrRXPa8P8W3BQeqJ6ZZt9VLA=
 github.com/ovh/go-ovh v1.9.0 h1:6K8VoL3BYjVV3In9tPJUdT7qMx9h0GExN9EXx1r2kKE=
 github.com/ovh/go-ovh v1.9.0/go.mod h1:cTVDnl94z4tl8pP1uZ/8jlVxntjSIf09bNcQ5TJSC7c=
 github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2 h1:CXwSGu/LYmbjEab5aMCs5usQRVBGThelUKBNnoSOuso=
@@ -916,8 +916,8 @@ github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQD
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da/go.mod h1:gi+0XIa01GRL2eRQVjQkKGqKF3SF9vZR/HnPullcV2E=
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33 h1:KhF0WejiUTDbL5X55nXowP7zNopwpowa6qaMAWyIE+0=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33/go.mod h1:792k1RTU+5JeMXm35/e2Wgp71qPH/DmDoZrRc+EFZDk=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34 h1:48+VFHsyVcAHIN2v1Ao9v1/RkjJS5AwctFucBrfYNIA=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34/go.mod h1:zFWiHphneiey3s8HOtAEnGrRlWivNaxW5T6d5Xfco7g=
 github.com/schollz/progressbar/v3 v3.8.6 h1:QruMUdzZ1TbEP++S1m73OqRJk20ON11m6Wqv4EoGg8c=
 github.com/schollz/progressbar/v3 v3.8.6/go.mod h1:W5IEwbJecncFGBvuEh4A7HT1nZZ6WNIL2i3qbnI0WKY=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
