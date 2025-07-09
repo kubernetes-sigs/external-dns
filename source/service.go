@@ -850,10 +850,11 @@ func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
 }
 
 func (sc *serviceTypes) isNodeInformerRequired() bool {
-	if _, ok := sc.types[v1.ServiceTypeNodePort]; !ok {
+	if !sc.enabled {
 		return true
 	}
-	return false
+	_, ok := sc.types[v1.ServiceTypeNodePort]
+	return ok
 }
 
 // conditionToBool converts an EndpointConditions condition to a bool value.

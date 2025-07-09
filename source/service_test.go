@@ -3946,12 +3946,22 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		},
 		{
 			name:      "serviceTypeFilter contains NodePort",
-			svcFilter: []string{string(v1.ServiceTypeNodePort)},
+			svcFilter: []string{string(v1.ServiceTypeClusterIP)},
 			asserts: func(svc *serviceSource) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
 				assert.Nil(t, svc.nodeInformer)
+			},
+		},
+		{
+			name:      "serviceTypeFilter contains NodePort",
+			svcFilter: []string{string(v1.ServiceTypeNodePort)},
+			asserts: func(svc *serviceSource) {
+				assert.NotNil(t, svc)
+				assert.NotNil(t, svc.serviceTypeFilter)
+				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.nodeInformer)
 			},
 		},
 	}
@@ -4243,45 +4253,31 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 func TestServiceTypes_isNodeInformerRequired(t *testing.T) {
 	tests := []struct {
 		name   string
-		filter *serviceTypes
+		filter []string
 		want   bool
 	}{
 		{
-			name: "NodePort type present",
-			filter: &serviceTypes{
-				enabled: true,
-				types: map[v1.ServiceType]bool{
-					v1.ServiceTypeNodePort: true,
-				},
-			},
-			want: false,
+			name:   "NodePort type present",
+			filter: []string{string(v1.ServiceTypeNodePort)},
+			want:   true,
 		},
 		{
-			name: "NodePort type absent, filter enabled",
-			filter: &serviceTypes{
-				enabled: true,
-				types: map[v1.ServiceType]bool{
-					v1.ServiceTypeClusterIP: true,
-				},
-			},
-			want: true,
+			name:   "NodePort type absent, filter enabled",
+			filter: []string{string(v1.ServiceTypeLoadBalancer)},
+			want:   false,
 		},
 		{
-			name: "NodePort type absent, filter disabled",
-			filter: &serviceTypes{
-				enabled: false,
-				types:   map[v1.ServiceType]bool{},
-			},
-			want: true,
+			name:   "NodePort and other filters present",
+			filter: []string{string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeNodePort)},
+			want:   true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.filter.isNodeInformerRequired()
-			if got != tt.want {
-				t.Errorf("isNodeInformerRequired() = %v, want %v", got, tt.want)
-			}
+			filter, _ := newServiceTypesFilter(tt.filter)
+			got := filter.isNodeInformerRequired()
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
