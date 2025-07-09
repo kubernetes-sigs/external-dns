@@ -853,9 +853,6 @@ func (sc *serviceTypes) isNodeInformerRequired() bool {
 	if _, ok := sc.types[v1.ServiceTypeNodePort]; !ok {
 		return true
 	}
-	if _, ok := sc.types[v1.ServiceTypeNodePort]; !ok && sc.enabled {
-		return false
-	}
 	return false
 }
 
