@@ -66,6 +66,18 @@ var targetFilterTests = []targetFilterTest{
 		[]string{"10.1.2.3"},
 		false,
 	},
+	{
+		[]string{},
+		[]string{"10.0.0.0/8"},
+		[]string{"49.13.41.161"},
+		true,
+	},
+	{
+		[]string{},
+		[]string{"10.0.0.0/8"},
+		[]string{"10.0.1.101"},
+		false,
+	},
 }
 
 func TestTargetFilterWithExclusions(t *testing.T) {
@@ -89,8 +101,21 @@ func TestTargetFilterMatchWithEmptyFilter(t *testing.T) {
 	}
 }
 
-func TestMatchTargetFilterReturnsProperEmptyVal(t *testing.T) {
-	emptyFilters := []string{}
-	assert.True(t, matchFilter(emptyFilters, "sometarget.com", true))
-	assert.False(t, matchFilter(emptyFilters, "sometarget.com", false))
+func TestTargetNetFilter_IsEnabled(t *testing.T) {
+	tests := []struct {
+		name        string
+		filterNets  []string
+		excludeNets []string
+		want        bool
+	}{
+		{"both empty", []string{}, []string{}, false},
+		{"filterNets non-empty", []string{"10.0.0.0/8"}, []string{}, true},
+		{"excludeNets non-empty", []string{}, []string{"10.0.0.0/8"}, true},
+		{"both non-empty", []string{"10.0.0.0/8"}, []string{"192.168.0.0/16"}, true},
+	}
+
+	for _, tt := range tests {
+		tf := NewTargetNetFilterWithExclusions(tt.filterNets, tt.excludeNets)
+		assert.Equal(t, tt.want, tf.IsEnabled())
+	}
 }
