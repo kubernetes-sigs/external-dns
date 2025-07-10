@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.18.0] - 2025-07-14
+
 ### Fixed
 
 - Fixed the lack of schema support for `create-only` dns policy in helm values ([#5627](https://github.com/kubernetes-sigs/external-dns/pull/5627)) _@coltonhughes_
@@ -279,6 +281,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.18.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.18.0
 [v1.17.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.17.0
 [v1.16.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.1
 [v1.16.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.0
