@@ -473,7 +473,7 @@ env:
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
 
 ```shell
-helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+helm repo add --force-update external-dns https://kubernetes-sigs.github.io/external-dns/
 
 helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
