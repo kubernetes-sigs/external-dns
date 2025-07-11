@@ -38,10 +38,9 @@ type PostProcessorOption func(*PostProcessorConfig)
 
 func WithTTL(ttl time.Duration) PostProcessorOption {
 	return func(cfg *PostProcessorConfig) {
-		cTTL := int64(ttl.Seconds())
-		if cTTL > 0 {
+		if int64(ttl.Seconds()) > 0 {
 			cfg.isConfigured = true
-			cfg.ttl = cTTL
+			cfg.ttl = int64(ttl.Seconds())
 		}
 	}
 }
