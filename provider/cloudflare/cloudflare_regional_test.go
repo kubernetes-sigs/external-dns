@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v4/addressing"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -33,61 +34,64 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDataLocalizationRegionalHostnamesParams) ([]cloudflare.RegionalHostname, error) {
-	if strings.Contains(rc.Identifier, "rherror") {
-		return nil, fmt.Errorf("failed to list regional hostnames")
+func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
+	zoneID := params.ZoneID.Value
+	if strings.Contains(zoneID, "rherror") {
+		return &mockAutoPager[addressing.RegionalHostnameListResponse]{err: fmt.Errorf("failed to list regional hostnames")}
 	}
-	rhs := make([]cloudflare.RegionalHostname, 0, len(m.regionalHostnames[rc.Identifier]))
-	for _, rh := range m.regionalHostnames[rc.Identifier] {
-		rhs = append(rhs, cloudflare.RegionalHostname{
+	results := make([]addressing.RegionalHostnameListResponse, 0, len(m.regionalHostnames[zoneID]))
+	for _, rh := range m.regionalHostnames[zoneID] {
+		results = append(results, addressing.RegionalHostnameListResponse{
 			Hostname:  rh.hostname,
 			RegionKey: rh.regionKey,
 		})
 	}
-	return rhs, nil
+	return &mockAutoPager[addressing.RegionalHostnameListResponse]{
+		items: results,
+	}
 }
 
-func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
-	if strings.Contains(rp.Hostname, "rherror") {
+func (m *mockCloudFlareClient) CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error {
+	if strings.Contains(params.Hostname.Value, "rherror") {
 		return fmt.Errorf("failed to create regional hostname")
 	}
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "CreateDataLocalizationRegionalHostname",
-		ZoneId:   rc.Identifier,
+		ZoneId:   params.ZoneID.Value,
 		RecordId: "",
 		RegionalHostname: regionalHostname{
-			hostname:  rp.Hostname,
-			regionKey: rp.RegionKey,
+			hostname:  params.Hostname.Value,
+			regionKey: params.RegionKey.Value,
 		},
 	})
 	return nil
 }
 
-func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
-	if strings.Contains(rp.Hostname, "rherror") {
+func (m *mockCloudFlareClient) UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error {
+	if strings.Contains(hostname, "rherror") {
 		return fmt.Errorf("failed to update regional hostname")
 	}
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "UpdateDataLocalizationRegionalHostname",
-		ZoneId:   rc.Identifier,
+		ZoneId:   params.ZoneID.Value,
 		RecordId: "",
 		RegionalHostname: regionalHostname{
-			hostname:  rp.Hostname,
-			regionKey: rp.RegionKey,
+			hostname:  hostname,
+			regionKey: params.RegionKey.Value,
 		},
 	})
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error {
+func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error {
 	if strings.Contains(hostname, "rherror") {
 		return fmt.Errorf("failed to delete regional hostname")
 	}
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "DeleteDataLocalizationRegionalHostname",
-		ZoneId:   rc.Identifier,
+		ZoneId:   params.ZoneID.Value,
 		RecordId: "",
 		RegionalHostname: regionalHostname{
 			hostname: hostname,
