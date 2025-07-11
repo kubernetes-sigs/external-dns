@@ -430,7 +430,7 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
 	combinedSource = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
 	combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
-	// should be the last step, so that the post-processed endpoints are applied
+	// should be the last step, so that the post-processed modifications applied
 	combinedSource = wrappers.NewPostProcessor(combinedSource, wrappers.WithTTL(cfg.MinTTL))
 	return combinedSource, nil
 }
