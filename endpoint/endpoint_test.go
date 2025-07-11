@@ -992,10 +992,11 @@ func TestEndpoint_WithMinTTL(t *testing.T) {
 			isConfigured: true,
 		},
 		{
-			name:        "does not set when input is zero",
-			initialTTL:  30,
-			inputTTL:    0,
-			expectedTTL: 30,
+			name:         "does not set when input is zero",
+			initialTTL:   30,
+			inputTTL:     0,
+			expectedTTL:  30,
+			isConfigured: true,
 		},
 		{
 			name:        "does not set when input is negative",
