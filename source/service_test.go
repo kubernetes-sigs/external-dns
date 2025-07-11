@@ -303,6 +303,18 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:              "with excluded service type should not generate endpoints",
+			svcNamespace:       "testing",
+			svcName:            "foo",
+			svcType:            v1.ServiceTypeLoadBalancer,
+			fqdnTemplate:       "{{.Name}}.fqdn.org,{{.Name}}.fqdn.com",
+			labels:             map[string]string{},
+			annotations:        map[string]string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{string(v1.ServiceTypeNodePort)},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
 			title:                    "FQDN template with multiple hostnames return an endpoint with target IP when ignoring annotations",
 			svcNamespace:             "testing",
 			svcName:                  "foo",
@@ -457,7 +469,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
-			serviceTypesFilter: []string{},
+			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeNodePort)},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
@@ -922,7 +934,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer)},
 			expected:           []*endpoint.Endpoint{},
@@ -4049,6 +4060,7 @@ func TestExternalServices(t *testing.T) {
 		annotations              map[string]string
 		externalName             string
 		externalIPs              []string
+		serviceTypeFilter        []string
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 	}{
@@ -4066,6 +4078,7 @@ func TestExternalServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			"111.111.111.111",
+			[]string{},
 			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
@@ -4087,6 +4100,7 @@ func TestExternalServices(t *testing.T) {
 			},
 			"2001:db8::111",
 			[]string{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"2001:db8::111"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -4106,6 +4120,7 @@ func TestExternalServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			"remote.example.com",
+			[]string{},
 			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"remote.example.com"}, RecordType: endpoint.RecordTypeCNAME},
@@ -4127,6 +4142,7 @@ func TestExternalServices(t *testing.T) {
 			},
 			"service.example.org",
 			[]string{"10.2.3.4", "11.2.3.4"},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4", "11.2.3.4"}},
 			},
@@ -4147,10 +4163,30 @@ func TestExternalServices(t *testing.T) {
 			},
 			"service.example.org",
 			[]string{"10.2.3.4", "11.2.3.4", "2001:db8::1", "2001:db8::2"},
+			[]string{string(v1.ServiceTypeNodePort), string(v1.ServiceTypeExternalName)},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4", "11.2.3.4"}},
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1", "2001:db8::2"}},
 			},
+			false,
+		},
+		{
+			"annotated ExternalName service with externalIPs of dualstack and excluded in serviceTypeFilter",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeExternalName,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			"service.example.org",
+			[]string{"10.2.3.4", "11.2.3.4", "2001:db8::1", "2001:db8::2"},
+			[]string{string(v1.ServiceTypeNodePort), string(v1.ServiceTypeClusterIP)},
+			[]*endpoint.Endpoint{},
 			false,
 		},
 	} {
@@ -4190,7 +4226,7 @@ func TestExternalServices(t *testing.T) {
 				true,
 				false,
 				false,
-				[]string{},
+				tc.serviceTypeFilter,
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
@@ -4264,6 +4300,73 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints(context.Background())
 		require.NoError(b, err)
+	}
+}
+
+func TestNewServiceSourceInformersEnabled(t *testing.T) {
+	tests := []struct {
+		name      string
+		asserts   func(svc *serviceSource)
+		svcFilter []string
+	}{
+		{
+			name: "serviceTypeFilter is set to empty",
+			asserts: func(svc *serviceSource) {
+				assert.NotNil(t, svc)
+				assert.NotNil(t, svc.serviceTypeFilter)
+				assert.False(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.nodeInformer)
+			},
+		},
+		{
+			name:      "serviceTypeFilter contains NodePort",
+			svcFilter: []string{string(v1.ServiceTypeClusterIP)},
+			asserts: func(svc *serviceSource) {
+				assert.NotNil(t, svc)
+				assert.NotNil(t, svc.serviceTypeFilter)
+				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.Nil(t, svc.nodeInformer)
+			},
+		},
+		{
+			name:      "serviceTypeFilter contains NodePort",
+			svcFilter: []string{string(v1.ServiceTypeNodePort)},
+			asserts: func(svc *serviceSource) {
+				assert.NotNil(t, svc)
+				assert.NotNil(t, svc.serviceTypeFilter)
+				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.nodeInformer)
+			},
+		},
+	}
+
+	for _, ts := range tests {
+		t.Run(ts.name, func(t *testing.T) {
+			svc, err := NewServiceSource(
+				t.Context(),
+				fake.NewClientset(),
+				"default",
+				"",
+				"",
+				false,
+				"",
+				true,
+				false,
+				false,
+				ts.svcFilter,
+				false,
+				labels.Everything(),
+				false,
+				false,
+				false,
+			)
+			require.NoError(t, err)
+			svcSrc, ok := svc.(*serviceSource)
+			if !ok {
+				require.Fail(t, "expected serviceSource")
+			}
+			ts.asserts(svcSrc)
+		})
 	}
 }
 
@@ -4519,4 +4622,36 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 		services[i], services[j] = services[j], services[i]
 	})
 	return services
+}
+
+func TestServiceTypes_isNodeInformerRequired(t *testing.T) {
+	tests := []struct {
+		name   string
+		filter []string
+		want   bool
+	}{
+		{
+			name:   "NodePort type present",
+			filter: []string{string(v1.ServiceTypeNodePort)},
+			want:   true,
+		},
+		{
+			name:   "NodePort type absent, filter enabled",
+			filter: []string{string(v1.ServiceTypeLoadBalancer)},
+			want:   false,
+		},
+		{
+			name:   "NodePort and other filters present",
+			filter: []string{string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeNodePort)},
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter, _ := newServiceTypesFilter(tt.filter)
+			got := filter.isNodeInformerRequired()
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
