@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Added `envFrom` property for all pods. ([#5630](https://github.com/kubernetes-sigs/external-dns/pull/5630)) _@oliverbaehler_
+
 ### Changed
 
 - Update RBAC for `Service` source to support `EndpointSlices`. ([#5493](https://github.com/kubernetes-sigs/external-dns/pull/5493)) _@vflaux_

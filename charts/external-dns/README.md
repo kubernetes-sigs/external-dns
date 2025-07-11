@@ -103,6 +103,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | domainFilters | list | `[]` | Limit possible target zones by domain suffixes. |
 | enabled | bool | `nil` | No effect - reserved for use in sub-charting. |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
+| envFrom | list | `[]` | [Environment from Configmaps/Secrets](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | object | `{}` | Extra arguments to provide to _ExternalDNS_. An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times. |
 | extraContainers | list | `[]` | Extra containers to add to the `Deployment`. |
@@ -132,6 +133,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
 | provider.webhook.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
+| provider.webhook.envFrom | list | `[]` | [Environment from Configmaps/Secrets](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
 | provider.webhook.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container. |
 | provider.webhook.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `webhook` container. |
 | provider.webhook.image.repository | string | `nil` | Image repository for the `webhook` container. |
