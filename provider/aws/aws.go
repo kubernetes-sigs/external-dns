@@ -637,11 +637,11 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 	var updates []*endpoint.Endpoint
 
 	for i, newE := range newEndpoints {
-		if i >= len(oldEndpoints) || oldEndpoints[i] == nil {
+		oldE := oldEndpoints[i]
+		if i >= len(oldEndpoints) || oldE == nil {
 			log.Debugf("skip %s as endpoint not found in current endpoints", newE.DNSName)
 			continue
 		}
-		oldE := oldEndpoints[i]
 		if p.requiresDeleteCreate(oldE, newE) {
 			deletes = append(deletes, oldE)
 			creates = append(creates, newE)
