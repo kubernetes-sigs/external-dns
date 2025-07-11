@@ -19,6 +19,9 @@ package pihole
 import (
 	"context"
 	"errors"
+	"slices"
+
+	"github.com/google/go-cmp/cmp"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -32,7 +35,8 @@ var ErrNoPiholeServer = errors.New("no pihole server found in the environment or
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
 	provider.BaseProvider
-	api piholeAPI
+	api        piholeAPI
+	apiVersion string
 }
 
 // PiholeConfig is used for configuring a PiholeProvider.
@@ -70,7 +74,7 @@ func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PiholeProvider{api: api}, nil
+	return &PiholeProvider{api: api, apiVersion: cfg.APIVersion}, nil
 }
 
 // Records implements Provider, populating a slice of endpoints from
@@ -105,6 +109,19 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	updateNew := make(map[piholeEntryKey]*endpoint.Endpoint)
 	for _, ep := range changes.UpdateNew {
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+
+		// If the API version is 6, we need to handle multiple targets for the same DNS name.
+		if p.apiVersion == "6" {
+			if existing, ok := updateNew[key]; ok {
+				existing.Targets = append(existing.Targets, ep.Targets...)
+
+				// Deduplicate targets
+				slices.Sort(existing.Targets)
+				existing.Targets = slices.Compact(existing.Targets)
+
+				ep = existing
+			}
+		}
 		updateNew[key] = ep
 	}
 
@@ -112,14 +129,23 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// Check if this existing entry has an exact match for an updated entry and skip it if so.
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
 		if newRecord := updateNew[key]; newRecord != nil {
-			// PiHole only has a single target; no need to compare other fields.
-			if newRecord.Targets[0] == ep.Targets[0] {
-				delete(updateNew, key)
-				continue
+			// If the API version is 6, we need to handle multiple targets for the same DNS name.
+			if p.apiVersion == "6" {
+				if cmp.Diff(ep.Targets, newRecord.Targets) == "" {
+					delete(updateNew, key)
+					continue
+				}
+			} else {
+				// For API version <= 5, we only check the first target.
+				if newRecord.Targets[0] == ep.Targets[0] {
+					delete(updateNew, key)
+					continue
+				}
 			}
-		}
-		if err := p.api.deleteRecord(ctx, ep); err != nil {
-			return err
+
+			if err := p.api.deleteRecord(ctx, ep); err != nil {
+				return err
+			}
 		}
 	}
 
