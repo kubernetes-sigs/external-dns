@@ -2828,6 +2828,7 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 	newEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
 		endpoint.NewEndpointWithTTL("record2.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "2.2.2.2"),
+		endpoint.NewEndpointWithTTL("record3.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "3.3.3.3"),
 	}
 
 	changes := provider.createUpdateChanges(newEndpoints, oldEndpoints)
