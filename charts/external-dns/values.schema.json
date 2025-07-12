@@ -270,12 +270,13 @@
       }
     },
     "policy": {
-      "description": "How DNS records are synchronized between sources and providers; available values are `sync` \u0026 `upsert-only`.",
+      "description": "How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, \u0026 `upsert-only`.",
       "default": "upsert-only",
       "type": [
         "string"
       ],
       "enum": [
+        "create-only",
         "sync",
         "upsert-only"
       ]
