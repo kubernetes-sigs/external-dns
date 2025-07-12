@@ -355,6 +355,33 @@ Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-
 
 Due to a limitation within the cloudflare-go v0 API, the custom hostname page size is fixed at 50.
 
+## Error Handling and Reliability
+
+The Cloudflare provider includes some error handling improvements to help with common operational scenarios:
+
+### Update Fallback Behavior
+
+When ExternalDNS attempts to update a DNS record that no longer exists (e.g., manually deleted), the provider may attempt to fallback to creating the record instead of failing. This behavior depends on both the DNS record and its corresponding
+TXT registry record state - if only the DNS record is deleted but the TXT record remains, ExternalDNS will recreate the record. Note that this behavior may change in future versions.
+
+```text
+WARN: failed to find previous record for update, attempting to create instead: example.com
+```
+
+### Delete Operation Behavior
+
+Delete operations generally don't fail when attempting to delete a record that doesn't exist. This can help reduce false-positive failures when records are deleted outside of ExternalDNS, though the exact behavior may vary.
+
+```text
+WARN: failed to find record for deletion, record may already be deleted: example.com
+```
+
+### Considerations
+
+- **Error handling behavior may change**: The specific error handling described above is current implementation behavior and may be modified in future versions
+- **Best practices recommended**: While ExternalDNS handles some edge cases, following DNS management best practices and avoiding manual DNS changes is still recommended
+- **Monitor logs for warnings**: Pay attention to warning messages which may indicate configuration or operational issues
+
 ## Using CRD source to manage DNS records in Cloudflare
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
