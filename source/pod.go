@@ -114,7 +114,8 @@ func NewPodSource(
 	}, nil
 }
 
-func (*podSource) AddEventHandler(_ context.Context, _ func()) {
+func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
+	_, _ = ps.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
