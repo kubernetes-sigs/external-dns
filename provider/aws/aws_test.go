@@ -2817,3 +2817,36 @@ func TestGeoProximityWithBias(t *testing.T) {
 		})
 	}
 }
+
+func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"foo.bar."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), true, false, nil)
+
+	oldEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
+		nil,
+	}
+	newEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
+		endpoint.NewEndpointWithTTL("record2.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "2.2.2.2"),
+		endpoint.NewEndpointWithTTL("record3.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "3.3.3.3"),
+	}
+
+	changes := provider.createUpdateChanges(newEndpoints, oldEndpoints)
+
+	// record2 should be created, record1 should be upserted
+	var creates, upserts, deletes int
+	for _, c := range changes {
+		switch c.Action {
+		case route53types.ChangeActionCreate:
+			creates++
+		case route53types.ChangeActionUpsert:
+			upserts++
+		case route53types.ChangeActionDelete:
+			deletes++
+		}
+	}
+
+	require.Equal(t, 0, creates, "should create the extra new endpoint")
+	require.Equal(t, 1, upserts, "should upsert the matching endpoint")
+	require.Equal(t, 0, deletes, "should not delete anything")
+}
