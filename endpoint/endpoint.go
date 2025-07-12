@@ -415,6 +415,14 @@ func (e *Endpoint) CheckEndpoint() bool {
 	return true
 }
 
+// WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
+func (e *Endpoint) WithMinTTL(ttl int64) {
+	if !e.RecordTTL.IsConfigured() && ttl > 0 {
+		log.Debugf("Overriding existing TTL %d with new value %d for endpoint %s", e.RecordTTL, ttl, e.DNSName)
+		e.RecordTTL = TTL(ttl)
+	}
+}
+
 // NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")
 // and returns an MXTarget struct. Returns an error if the input is invalid.
 func NewMXRecord(target string) (*MXTarget, error) {
