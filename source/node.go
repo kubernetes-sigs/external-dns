@@ -172,7 +172,8 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 	return endpointsSlice, nil
 }
 
-func (ns *nodeSource) AddEventHandler(_ context.Context, _ func()) {
+func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
+	_, _ = ns.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // nodeAddress returns the node's externalIP and if that's not found, the node's internalIP

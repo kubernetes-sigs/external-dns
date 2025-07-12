@@ -26,7 +26,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/mock"
 	"k8s.io/client-go/kubernetes"
+	corev1lister "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
@@ -617,6 +620,39 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 		assert.NotEmpty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
 		assert.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 	}
+}
+
+func TestNodeSource_AddEventHandler(t *testing.T) {
+	fakeInformer := new(fakeNodeInformer)
+	inf := testInformer{}
+	fakeInformer.On("Informer").Return(&inf)
+
+	nSource := &nodeSource{
+		nodeInformer: fakeInformer,
+	}
+
+	handlerCalled := false
+	handler := func() { handlerCalled = true }
+
+	nSource.AddEventHandler(t.Context(), handler)
+
+	fakeInformer.AssertNumberOfCalls(t, "Informer", 1)
+	assert.False(t, handlerCalled)
+	assert.Equal(t, 1, inf.times)
+}
+
+type fakeNodeInformer struct {
+	mock.Mock
+	informer cache.SharedIndexInformer
+}
+
+func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
+	args := f.Called()
+	return args.Get(0).(cache.SharedIndexInformer)
+}
+
+func (f *fakeNodeInformer) Lister() corev1lister.NodeLister {
+	return corev1lister.NewNodeLister(f.Informer().GetIndexer())
 }
 
 type nodeListBuilder struct {
