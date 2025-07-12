@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	cloud.google.com/go/compute/metadata v0.7.0
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
@@ -41,7 +41,7 @@ require (
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.53.0
 	github.com/maxatome/go-testdeep v1.14.0
-	github.com/miekg/dns v1.1.66
+	github.com/miekg/dns v1.1.67
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
 	github.com/oracle/oci-go-sdk/v65 v65.95.1
@@ -55,15 +55,15 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/transip/gotransip/v6 v6.26.0
-	go.etcd.io/etcd/api/v3 v3.6.1
-	go.etcd.io/etcd/client/v3 v3.6.1
+	go.etcd.io/etcd/api/v3 v3.6.2
+	go.etcd.io/etcd/client/v3 v3.6.2
 	go.uber.org/ratelimit v0.3.1
-	golang.org/x/net v0.41.0
+	golang.org/x/net v0.42.0
 	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.15.0
-	golang.org/x/text v0.26.0
+	golang.org/x/sync v0.16.0
+	golang.org/x/text v0.27.0
 	golang.org/x/time v0.12.0
-	google.golang.org/api v0.240.0
+	google.golang.org/api v0.241.0
 	gopkg.in/ns1/ns1-go.v2 v2.14.4
 	istio.io/api v1.26.2
 	istio.io/client-go v1.26.2
@@ -171,7 +171,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.6.1 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
@@ -180,11 +180,11 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/tools v0.33.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/term v0.33.0 // indirect
+	golang.org/x/tools v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/grpc v1.73.0 // indirect
