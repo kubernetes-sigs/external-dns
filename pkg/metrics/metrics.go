@@ -17,25 +17,43 @@ limitations under the License.
 package metrics
 
 import (
-	"runtime"
+	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
-
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+)
+
+const (
+	Namespace = "external_dns"
 )
 
 var (
 	RegisterMetric = NewMetricsRegister()
 )
 
+func init() {
+	RegisterMetric.MustRegister(NewGaugeFuncMetric(prometheus.GaugeOpts{
+		Namespace: Namespace,
+		Name:      "build_info",
+		Help: fmt.Sprintf(
+			"A metric with a constant '1' value labeled by 'version', 'revision', 'go_version' from which %s was built, and the os and arch for the build.",
+			Namespace,
+		),
+		ConstLabels: prometheus.Labels{
+			"version":    cfg.Version,
+			"revision":   version.GetRevision(),
+			"go_version": version.GoVersion,
+			"os":         version.GoOS,
+			"arch":       version.GoArch,
+		},
+	}))
+}
+
 func NewMetricsRegister() *MetricRegistry {
 	reg := prometheus.WrapRegistererWith(
-		prometheus.Labels{
-			"version":    cfg.Version,
-			"arch":       runtime.GOARCH,
-			"go_version": runtime.Version(),
-		},
+		prometheus.Labels{},
 		prometheus.DefaultRegisterer)
 	return &MetricRegistry{
 		Registerer: reg,
@@ -54,7 +72,7 @@ func NewMetricsRegister() *MetricRegistry {
 //	}
 func (m *MetricRegistry) MustRegister(cs IMetric) {
 	switch v := cs.(type) {
-	case CounterMetric, GaugeMetric, CounterVecMetric, GaugeVecMetric:
+	case CounterMetric, GaugeMetric, CounterVecMetric, GaugeVecMetric, GaugeFuncMetric:
 		if _, exists := m.mName[cs.Get().FQDN]; exists {
 			return
 		} else {
@@ -70,6 +88,8 @@ func (m *MetricRegistry) MustRegister(cs IMetric) {
 			m.Registerer.MustRegister(metric.Gauge)
 		case CounterVecMetric:
 			m.Registerer.MustRegister(metric.CounterVec)
+		case GaugeFuncMetric:
+			m.Registerer.MustRegister(metric.GaugeFunc)
 		}
 		log.Debugf("Register metric: %s", cs.Get().FQDN)
 	default:
