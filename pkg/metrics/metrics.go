@@ -22,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
+
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
