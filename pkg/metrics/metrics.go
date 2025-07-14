@@ -39,7 +39,7 @@ func init() {
 		Namespace: Namespace,
 		Name:      "build_info",
 		Help: fmt.Sprintf(
-			"A metric with a constant '1' value labeled by 'version', 'revision', 'go_version' from which %s was built, and the os and arch for the build.",
+			"A metric with a constant '1' value labeled with 'version' and 'revision' of %s and the 'go_version', 'os' and the 'arch' used the build.",
 			Namespace,
 		),
 		ConstLabels: prometheus.Labels{
