@@ -37,7 +37,7 @@ To create internal load balancers, one can set the annotation `service.beta.kube
 
 ## Configuration file
 
-The azure provider will reference a configuration file called `azure.json`. The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named `azure.json` with content similar to this:
+The azure provider will reference a configuration file called `azure.json`.  The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named `azure.json` with content similar to this:
 
 ```json
 {
@@ -51,28 +51,28 @@ The azure provider will reference a configuration file called `azure.json`. The 
 
 The following fields are used:
 
-- `tenantId` (**required**) - run `az account show --query "tenantId"` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
-- `subscriptionId` (**required**) - run `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
-- `resourceGroup` (**required**) is the Resource Group created in a previous step that contains the Azure DNS Zone.
-- `aadClientID` is associated with the Service Principal. This is used with Service Principal or Workload Identity methods documented in the next section.
-- `aadClientSecret` is associated with the Service Principal. This is only used with Service Principal method documented in the next section.
-- `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
-- `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.
-- `activeDirectoryAuthorityHost` - this contains the URI to override the default Azure Active Directory authority endpoint. This is useful for Azure Stack Cloud deployments or custom environments where the default AAD endpoint from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables) is not available or needs to be customized.
-- `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
-- `ResourceManagerAudience` - this specifies the audience for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to authenticate with the correct Resource Manager endpoint.
-- `ResourceManagerEndpoint` - this specifies the endpoint URL for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to point to the correct Resource Manager instance.
+* `tenantId` (**required**) - run `az account show --query "tenantId"` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
+* `subscriptionId` (**required**) - run `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
+* `resourceGroup` (**required**) is the Resource Group created in a previous step that contains the Azure DNS Zone.
+* `aadClientID` is associated with the Service Principal. This is used with Service Principal or Workload Identity methods documented in the next section.
+* `aadClientSecret` is associated with the Service Principal. This is only used with Service Principal method documented in the next section.
+* `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
+* `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.
+* `activeDirectoryAuthorityHost` - this contains the URI to override the default Azure Active Directory authority endpoint. This is useful for Azure Stack Cloud deployments or custom environments where the default AAD endpoint from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables) is not available or needs to be customized.
+* `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
+* `ResourceManagerAudience` - this specifies the audience for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to authenticate with the correct Resource Manager endpoint.
+* `ResourceManagerEndpoint` - this specifies the endpoint URL for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to point to the correct Resource Manager instance.
 
-The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`. This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
+The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
 
 ## Permissions to modify DNS zone
 
 ExternalDNS needs permissions to make changes to the Azure DNS zone. There are four ways configure the access needed:
 
-- [Service Principal](#service-principal)
-- [Managed Identity Using AKS Kubelet Identity](#managed-identity-using-aks-kubelet-identity)
-- [Managed Identity Using AAD Pod Identities](#managed-identity-using-aad-pod-identities)
-- [Managed Identity Using Workload Identity](#managed-identity-using-workload-identity)
+* [Service Principal](#service-principal)
+* [Managed Identity Using AKS Kubelet Identity](#managed-identity-using-aks-kubelet-identity)
+* [Managed Identity Using AAD Pod Identities](#managed-identity-using-aad-pod-identities)
+* [Managed Identity Using Workload Identity](#managed-identity-using-workload-identity)
 
 ### Service Principal
 
@@ -211,7 +211,7 @@ This process is similar to Kubelet identity except that this managed identity is
 
 #### Enable the AAD Pod Identities feature
 
-For this solution, [AAD Pod Identities](https://docs.microsoft.com/azure/aks/use-azure-ad-pod-identity) preview feature can be enabled. The commands below should do the trick to enable this feature:
+For this solution, [AAD Pod Identities](https://docs.microsoft.com/azure/aks/use-azure-ad-pod-identity) preview feature can be enabled.  The commands below should do the trick to enable this feature:
 
 ```bash
 az feature register --name EnablePodIdentityPreview --namespace Microsoft.ContainerService
@@ -290,7 +290,7 @@ kubectl create secret generic azure-config-file --namespace "default" --from-fil
 #### Creating an Azure identity binding
 
 A binding between the managed identity and the ExternalDNS pods needs to be setup by creating `AzureIdentity` and `AzureIdentityBinding` resources.
-This will allow appropriately labeled ExternalDNS pods to authenticate using the managed identity. When AAD Pod Identity feature is enabled from previous steps above, the `az aks pod-identity add` can be used to create these resources:
+This will allow appropriately labeled ExternalDNS pods to authenticate using the managed identity.  When AAD Pod Identity feature is enabled from previous steps above, the `az aks pod-identity add` can be used to create these resources:
 
 ```bash
 $ IDENTITY_RESOURCE_ID=$(az identity show --resource-group ${IDENTITY_RESOURCE_GROUP} \
@@ -514,7 +514,7 @@ For more details see here: [nginx-ingress external-dns](https://github.com/kuber
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with. Then apply one of the following manifests file to deploy ExternalDNS.
 
-The deployment assumes that ExternalDNS will be installed into the `default` namespace. If this namespace is different, the `ClusterRoleBinding` will need to be updated to reflect the desired alternative namespace, such as `external-dns`, `kube-addons`, etc.
+The deployment assumes that ExternalDNS will be installed into the `default` namespace.  If this namespace is different, the `ClusterRoleBinding` will need to be updated to reflect the desired alternative namespace, such as `external-dns`, `kube-addons`, etc.
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -535,23 +535,23 @@ spec:
         app: external-dns
     spec:
       containers:
-        - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.18.0
-          args:
-            - --source=service
-            - --source=ingress
-            - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-            - --provider=azure
-            - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
-            - --azure-maxretries-count=1 # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
-          volumeMounts:
-            - name: azure-config-file
-              mountPath: /etc/kubernetes
-              readOnly: true
-      volumes:
+      - name: external-dns
+        image: registry.k8s.io/external-dns/external-dns:v0.18.0
+        args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --provider=azure
+        - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
+        - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
+        volumeMounts:
         - name: azure-config-file
-          secret:
-            secretName: azure-config-file
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
 ```
 
 ### Manifest (for clusters with RBAC enabled, cluster access)
@@ -568,14 +568,14 @@ metadata:
   name: external-dns
 rules:
   - apiGroups: [""]
-    resources: ["services", "pods", "nodes"]
-    verbs: ["get", "watch", "list"]
+    resources: ["services","pods", "nodes"]
+    verbs: ["get","watch","list"]
   - apiGroups: ["discovery.k8s.io"]
     resources: ["endpointslices"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: ["extensions", "networking.k8s.io"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
-    verbs: ["get", "watch", "list"]
+    verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -616,7 +616,7 @@ spec:
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
             - --txt-prefix=externaldns-
-            - --azure-maxretries-count=1 # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
+            - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes
@@ -645,14 +645,14 @@ metadata:
   name: external-dns
 rules:
   - apiGroups: [""]
-    resources: ["services", "pods"]
-    verbs: ["get", "watch", "list"]
+    resources: ["services","pods"]
+    verbs: ["get","watch","list"]
   - apiGroups: ["discovery.k8s.io"]
     resources: ["endpointslices"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: ["extensions", "networking.k8s.io"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
-    verbs: ["get", "watch", "list"]
+    verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -691,7 +691,7 @@ spec:
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
-            - --azure-maxretries-count=1 # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
+            - --azure-maxretries-count=1  # (optional) specifies the maxRetires value to be used by the Azure SDK. Default is 3.
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes
@@ -730,7 +730,7 @@ spec:
         - image: nginx
           name: nginx
           ports:
-            - containerPort: 80
+          - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
@@ -768,8 +768,8 @@ spec:
 When you use ExternalDNS with Ingress resources, it automatically creates DNS records based on the hostnames listed in those Ingress objects.
 Those hostnames must match the filters that you defined (if any):
 
-- By default, `--domain-filter` filters Azure DNS zone.
-- If you use `--domain-filter` together with `--zone-name-filter`, the behavior changes: `--domain-filter` then filters Ingress domains, not the Azure DNS zone name.
+* By default, `--domain-filter` filters Azure DNS zone.
+* If you use `--domain-filter` together with `--zone-name-filter`, the behavior changes: `--domain-filter` then filters Ingress domains, not the Azure DNS zone name.
 
 When those hostnames are removed or renamed the corresponding DNS records are also altered.
 
@@ -804,7 +804,7 @@ spec:
         - image: nginx
           name: nginx
           ports:
-            - containerPort: 80
+          - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
