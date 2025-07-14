@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Fixed the lack of schema support for `create-only` dns policy in helm values ([#5627](https://github.com/kubernetes-sigs/external-dns/pull/5627)) _@coltonhughes_
+
 ### Changed
 
 - Update RBAC for `Service` source to support `EndpointSlices`. ([#5493](https://github.com/kubernetes-sigs/external-dns/pull/5493)) _@vflaux_
