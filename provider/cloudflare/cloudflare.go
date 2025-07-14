@@ -173,15 +173,20 @@ type DNSRecordsConfig struct {
 }
 
 func (c *DNSRecordsConfig) trimAndValidateComment(dnsName, comment string, paidZone func(string) bool) string {
-	if len(comment) > freeZoneMaxCommentLength {
-		if !paidZone(dnsName) {
-			log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d chars.", dnsName, freeZoneMaxCommentLength)
-			return comment[:freeZoneMaxCommentLength]
-		} else if len(comment) > paidZoneMaxCommentLength {
-			log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d chars.", dnsName, paidZoneMaxCommentLength)
-			return comment[:paidZoneMaxCommentLength]
-		}
+	if len(comment) <= freeZoneMaxCommentLength {
+		return comment
 	}
+
+	maxLength := freeZoneMaxCommentLength
+	if paidZone(dnsName) {
+		maxLength = paidZoneMaxCommentLength
+	}
+
+	if len(comment) > maxLength {
+		log.Warnf("DNS record comment is invalid. Trimming comment of %s. To avoid endless syncs, please set it to less than %d chars.", dnsName, maxLength)
+		return comment[:maxLength]
+	}
+
 	return comment
 }
 
@@ -243,6 +248,7 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordParams
 		Type:     cfc.ResourceRecord.Type,
 		Content:  cfc.ResourceRecord.Content,
 		Priority: cfc.ResourceRecord.Priority,
+		Comment:  cloudflare.StringPtr(cfc.ResourceRecord.Comment),
 	}
 
 	return params
@@ -257,6 +263,7 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 		Type:     cfc.ResourceRecord.Type,
 		Content:  cfc.ResourceRecord.Content,
 		Priority: cfc.ResourceRecord.Priority,
+		Comment:  cfc.ResourceRecord.Comment,
 	}
 
 	return params
