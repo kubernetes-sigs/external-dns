@@ -833,6 +833,8 @@ func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
 	return !sc.enabled || sc.types[serviceType]
 }
 
+// isAllOrRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.
+// If no options are provided, it returns true.
 func (sc *serviceTypes) isAllOrRequired(opts ...v1.ServiceType) bool {
 	if len(opts) == 0 || !sc.enabled {
 		return true
