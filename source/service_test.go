@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -251,7 +252,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
-			serviceTypesFilter: []string{},
+			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer)},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
@@ -296,7 +297,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations:        map[string]string{},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
-			serviceTypesFilter: []string{},
+			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeNodePort)},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.fqdn.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "foo.fqdn.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
@@ -2443,6 +2444,7 @@ func TestHeadlessServices(t *testing.T) {
 		podsReady                []bool
 		publishNotReadyAddresses bool
 		nodes                    []v1.Node
+		serviceTypesFilter       []string
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 	}{
@@ -2473,6 +2475,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
 				{DNSName: "foo-1.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.2"}},
@@ -2507,6 +2510,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true},
 			false,
 			[]v1.Node{},
+			[]string{string(v1.ServiceTypeClusterIP), string(v1.ServiceTypeLoadBalancer)},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 				{DNSName: "foo-1.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::2"}},
@@ -2541,6 +2545,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{},
 			false,
 		},
@@ -2572,6 +2577,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
 				{DNSName: "foo-1.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
@@ -2607,6 +2613,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}, RecordTTL: endpoint.TTL(1)},
 				{DNSName: "foo-1.service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::2"}, RecordTTL: endpoint.TTL(1)},
@@ -2641,6 +2648,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, false},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2674,6 +2682,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, false},
 			true,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
 				{DNSName: "foo-1.service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.2"}},
@@ -2708,6 +2717,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
@@ -2740,6 +2750,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
@@ -2772,6 +2783,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1", "2001:db8::2"}},
 			},
@@ -2806,6 +2818,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true, true},
 			false,
 			[]v1.Node{},
+			[]string{string(v1.ServiceTypeClusterIP)},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
@@ -2840,6 +2853,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
 			},
@@ -2884,6 +2898,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				},
 			},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
@@ -2932,6 +2947,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				},
 			},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::5"}},
 			},
@@ -2976,6 +2992,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				},
 			},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
 			},
@@ -3024,6 +3041,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				},
 			},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
@@ -3058,6 +3076,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
@@ -3091,6 +3110,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]bool{true, true, true},
 			false,
 			[]v1.Node{},
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::4"}},
 			},
@@ -3187,7 +3207,7 @@ func TestHeadlessServices(t *testing.T) {
 				true,
 				false,
 				false,
-				[]string{},
+				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
@@ -3939,7 +3959,6 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
-			// Create a Kubernetes testing client
 			kubernetes := fake.NewClientset()
 
 			service := &v1.Service{
@@ -4079,7 +4098,7 @@ func TestExternalServices(t *testing.T) {
 			},
 			"111.111.111.111",
 			[]string{},
-			[]string{},
+			[]string{string(v1.ServiceTypeNodePort), string(v1.ServiceTypeExternalName)},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
 			},
@@ -4121,7 +4140,7 @@ func TestExternalServices(t *testing.T) {
 			},
 			"remote.example.com",
 			[]string{},
-			[]string{},
+			[]string{string(v1.ServiceTypeExternalName)},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"remote.example.com"}, RecordType: endpoint.RecordTypeCNAME},
 			},
@@ -4316,6 +4335,8 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.False(t, svc.serviceTypeFilter.enabled)
 				assert.NotNil(t, svc.nodeInformer)
+				assert.NotNil(t, svc.serviceInformer)
+				assert.NotNil(t, svc.endpointSlicesInformer)
 			},
 		},
 		{
@@ -4325,17 +4346,49 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.serviceInformer)
 				assert.Nil(t, svc.nodeInformer)
+				assert.NotNil(t, svc.endpointSlicesInformer)
+				assert.NotNil(t, svc.podInformer)
 			},
 		},
 		{
-			name:      "serviceTypeFilter contains NodePort",
-			svcFilter: []string{string(v1.ServiceTypeNodePort)},
+			name:      "serviceTypeFilter contains NodePort and ExternalName",
+			svcFilter: []string{string(v1.ServiceTypeNodePort), string(v1.ServiceTypeExternalName)},
 			asserts: func(svc *serviceSource) {
 				assert.NotNil(t, svc)
 				assert.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.serviceInformer)
 				assert.NotNil(t, svc.nodeInformer)
+				assert.NotNil(t, svc.endpointSlicesInformer)
+				assert.NotNil(t, svc.podInformer)
+			},
+		},
+		{
+			name:      "serviceTypeFilter contains ExternalName",
+			svcFilter: []string{string(v1.ServiceTypeExternalName)},
+			asserts: func(svc *serviceSource) {
+				assert.NotNil(t, svc)
+				assert.NotNil(t, svc.serviceTypeFilter)
+				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.serviceInformer)
+				assert.Nil(t, svc.nodeInformer)
+				assert.Nil(t, svc.endpointSlicesInformer)
+				assert.Nil(t, svc.podInformer)
+			},
+		},
+		{
+			name:      "serviceTypeFilter contains LoadBalancer",
+			svcFilter: []string{string(v1.ServiceTypeLoadBalancer)},
+			asserts: func(svc *serviceSource) {
+				assert.NotNil(t, svc)
+				assert.NotNil(t, svc.serviceTypeFilter)
+				assert.True(t, svc.serviceTypeFilter.enabled)
+				assert.NotNil(t, svc.serviceInformer)
+				assert.Nil(t, svc.nodeInformer)
+				assert.Nil(t, svc.endpointSlicesInformer)
+				assert.Nil(t, svc.podInformer)
 			},
 		},
 	}
@@ -4626,32 +4679,126 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 
 func TestServiceTypes_isNodeInformerRequired(t *testing.T) {
 	tests := []struct {
-		name   string
-		filter []string
-		want   bool
+		name     string
+		filter   []string
+		required []v1.ServiceType
+		want     bool
 	}{
 		{
-			name:   "NodePort type present",
-			filter: []string{string(v1.ServiceTypeNodePort)},
-			want:   true,
+			name:     "NodePort required and filter is empty",
+			filter:   []string{},
+			required: []v1.ServiceType{v1.ServiceTypeNodePort},
+			want:     true,
 		},
 		{
-			name:   "NodePort type absent, filter enabled",
-			filter: []string{string(v1.ServiceTypeLoadBalancer)},
-			want:   false,
+			name:     "NodePort type present",
+			filter:   []string{string(v1.ServiceTypeNodePort)},
+			required: []v1.ServiceType{v1.ServiceTypeNodePort},
+			want:     true,
 		},
 		{
-			name:   "NodePort and other filters present",
-			filter: []string{string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeNodePort)},
-			want:   true,
+			name:     "NodePort type absent, filter enabled",
+			filter:   []string{string(v1.ServiceTypeLoadBalancer)},
+			required: []v1.ServiceType{v1.ServiceTypeNodePort},
+			want:     false,
+		},
+		{
+			name:     "NodePort and other filters present",
+			filter:   []string{string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeNodePort)},
+			required: []v1.ServiceType{v1.ServiceTypeNodePort},
+			want:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter, _ := newServiceTypesFilter(tt.filter)
-			got := filter.isNodeInformerRequired()
+			got := filter.isAllOrRequired(tt.required...)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestServiceSource_AddEventHandler(t *testing.T) {
+	var fakeServiceInformer *informers.FakeServiceInformer
+	var fakeEdpInformer *informers.FakeEndpointSliceInformer
+	var fakeNodeInformer *informers.FakeNodeInformer
+	tests := []struct {
+		name    string
+		filter  []string
+		times   int
+		asserts func(t *testing.T, s *serviceSource)
+	}{
+		{
+			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
+			filter: []string{},
+			times:  3,
+			asserts: func(t *testing.T, s *serviceSource) {
+				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
+			},
+		},
+		{
+			name:   "AddEventHandler should trigger only service event handler",
+			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer)},
+			times:  1,
+			asserts: func(t *testing.T, s *serviceSource) {
+				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 0)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
+			},
+		},
+		{
+			name:   "AddEventHandler should configure only service event handler",
+			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeClusterIP)},
+			times:  2,
+			asserts: func(t *testing.T, s *serviceSource) {
+				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
+			},
+		},
+		{
+			name:   "AddEventHandler should configure all service event handlers",
+			filter: []string{string(v1.ServiceTypeNodePort)},
+			times:  3,
+			asserts: func(t *testing.T, s *serviceSource) {
+				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeServiceInformer = new(informers.FakeServiceInformer)
+			infSvc := testInformer{}
+			fakeServiceInformer.On("Informer").Return(&infSvc)
+
+			fakeEdpInformer = new(informers.FakeEndpointSliceInformer)
+			infEdp := testInformer{}
+			fakeEdpInformer.On("Informer").Return(&infEdp)
+
+			fakeNodeInformer = new(informers.FakeNodeInformer)
+			infNode := testInformer{}
+			fakeNodeInformer.On("Informer").Return(&infNode)
+
+			filter, _ := newServiceTypesFilter(tt.filter)
+
+			svcSource := &serviceSource{
+				endpointSlicesInformer: fakeEdpInformer,
+				serviceInformer:        fakeServiceInformer,
+				nodeInformer:           fakeNodeInformer,
+				serviceTypeFilter:      filter,
+				listenEndpointEvents:   true,
+			}
+
+			svcSource.AddEventHandler(t.Context(), func() {})
+
+			assert.Equal(t, tt.times, infSvc.times+infEdp.times+infNode.times)
+
+			tt.asserts(t, svcSource)
 		})
 	}
 }
