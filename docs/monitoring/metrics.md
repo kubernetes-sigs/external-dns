@@ -20,6 +20,7 @@ curl https://localhost:7979/metrics
 
 | Name                             | Metric Type | Subsystem   |  Help                                                 |
 |:---------------------------------|:------------|:------------|:------------------------------------------------------|
+| build_info | Gauge |  | A metric with a constant '1' value labeled with 'version' and 'revision' of external_dns and the 'go_version', 'os' and the 'arch' used the build. |
 | consecutive_soft_errors | Gauge | controller | Number of consecutive soft errors in reconciliation loop. |
 | last_reconcile_timestamp_seconds | Gauge | controller | Timestamp of last attempted sync with the DNS provider |
 | last_sync_timestamp_seconds | Gauge | controller | Timestamp of last successful sync with the DNS provider |
