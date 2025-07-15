@@ -30,8 +30,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
@@ -65,7 +66,7 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 		},
 	}
 
-	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
+	cl := extdnshttp.NewInstrumentedClient(httpClient)
 
 	p := &piholeClientV6{
 		cfg:        cfg,
@@ -164,17 +165,17 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		DNSName, Target = recs[1], recs[0]
 		switch rtype {
 		case endpoint.RecordTypeA:
-			//PiHole return A and AAAA records. Filter to only keep the A records
+			// PiHole return A and AAAA records. Filter to only keep the A records
 			if !isValidIPv4(Target) {
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
-			//PiHole return A and AAAA records. Filter to only keep the AAAA records
+			// PiHole return A and AAAA records. Filter to only keep the AAAA records
 			if !isValidIPv6(Target) {
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
-			//PiHole return only CNAME records.
+			// PiHole return only CNAME records.
 			// CNAME format is DNSName,target, ttl?
 			DNSName, Target = recs[0], recs[1]
 			if len(recs) == 3 { // TTL is present
