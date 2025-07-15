@@ -4,6 +4,43 @@ entries:
   - annotations:
       artifacthub.io/changes: |-
         - kind: changed
+          description: "Update RBAC for Service source to support EndpointSlices."
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.18.0."
+        - kind: fixed
+          description: "Fixed the lack of schema support for create-only dns policy in helm values (#5627) @coltonhughes."
+        - kind: fixed
+          description: "Fixed the type of .extraContainers from object to list (array)."
+    apiVersion: v2
+    appVersion: 0.18.0
+    created: "2025-07-15T08:46:51.887040518Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 663a2094d7ca158af43fd4a0db5c9391772367b15085180e5f35f9e94438c065
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.18.0/external-dns-1.18.0.tgz
+    version: 1.18.0
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: changed
           description: "Allow extraArgs to also be a map enabling overrides of individual values."
         - kind: changed
           description: "Update CRD."
@@ -1031,4 +1068,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-06-17T19:57:30.457384935Z"
+generated: "2025-07-15T08:46:51.887273403Z"
