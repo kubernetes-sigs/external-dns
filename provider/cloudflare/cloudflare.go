@@ -128,7 +128,23 @@ type zoneService struct {
 }
 
 func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
-	return z.service.ZoneIDByName(zoneName)
+	// Use v4 API to find zone by name
+	params := zones.ZoneListParams{
+		Name: cloudflarev4.F(zoneName),
+	}
+
+	iter := z.serviceV4.Zones.ListAutoPaging(context.Background(), params)
+	for zone := range autoPagerIterator(iter) {
+		if zone.Name == zoneName {
+			return zone.ID, nil
+		}
+	}
+
+	if err := iter.Err(); err != nil {
+		return "", fmt.Errorf("failed to list zones from CloudFlare API: %w", err)
+	}
+
+	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
 }
 
 func (z zoneService) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error) {
@@ -214,7 +230,7 @@ func (p *CloudFlareProvider) ZoneHasPaidPlan(hostname string) bool {
 		return false
 	}
 
-	return zoneDetails.Plan.IsSubscribed //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
+	return zoneDetails.Plan.IsSubscribed //nolint:staticcheck // SA1019: Plan.IsSubscribed is deprecated but no replacement available yet
 }
 
 // CloudFlareProvider is an implementation of Provider for CloudFlare DNS.

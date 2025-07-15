@@ -31,6 +31,8 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -335,13 +337,19 @@ func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, zoneID 
 }
 
 func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
+	// Simulate iterator error (line 144)
+	if m.listZonesError != nil {
+		return "", fmt.Errorf("failed to list zones from CloudFlare API: %w", m.listZonesError)
+	}
+
 	for id, name := range m.Zones {
 		if name == zoneName {
 			return id, nil
 		}
 	}
 
-	return "", errors.New("Unknown zone: " + zoneName)
+	// Use the improved error message (line 147)
+	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
 }
 
 // V4 Zone methods
@@ -2921,9 +2929,9 @@ func TestCloudflareChangesByZone(t *testing.T) {
 	// Test empty changes
 	emptyChanges := []*cloudFlareChange{}
 	changesByZone := cfProvider.changesByZone(zones, emptyChanges)
-	assert.Len(t, changesByZone, 2)        // Should return map with zones but empty slices
-	assert.Len(t, changesByZone["001"], 0) // bar.com zone should have no changes
-	assert.Len(t, changesByZone["002"], 0) // foo.com zone should have no changes
+	assert.Len(t, changesByZone, 2)       // Should return map with zones but empty slices
+	assert.Empty(t, changesByZone["001"]) // bar.com zone should have no changes
+	assert.Empty(t, changesByZone["002"]) // foo.com zone should have no changes
 
 	// Test changes for different zones
 	changes := []*cloudFlareChange{
@@ -2959,4 +2967,290 @@ func TestCloudflareChangesByZone(t *testing.T) {
 	assert.Len(t, fooChanges, 2)
 	assert.Equal(t, "api.foo.com", fooChanges[0].ResourceRecord.Name)
 	assert.Equal(t, "www.foo.com", fooChanges[1].ResourceRecord.Name)
+}
+
+func TestConvertCloudflareError(t *testing.T) {
+	tests := []struct {
+		name            string
+		inputError      error
+		expectSoftError bool
+		description     string
+	}{
+		{
+			name:            "Rate limit error via Error type",
+			inputError:      &cloudflare.Error{StatusCode: 429, Type: cloudflare.ErrorTypeRateLimit},
+			expectSoftError: true,
+			description:     "CloudFlare API rate limit error should be converted to soft error",
+		},
+		{
+			name:            "Rate limit error via ClientRateLimited",
+			inputError:      &cloudflare.Error{StatusCode: 429, ErrorCodes: []int{10000}, Type: cloudflare.ErrorTypeRateLimit}, // Complete rate limit error
+			expectSoftError: true,
+			description:     "CloudFlare client rate limited error should be converted to soft error",
+		},
+		{
+			name:            "Server error 500",
+			inputError:      &cloudflare.Error{StatusCode: 500},
+			expectSoftError: true,
+			description:     "Server error (500+) should be converted to soft error",
+		},
+		{
+			name:            "Server error 502",
+			inputError:      &cloudflare.Error{StatusCode: 502},
+			expectSoftError: true,
+			description:     "Server error (502) should be converted to soft error",
+		},
+		{
+			name:            "Server error 503",
+			inputError:      &cloudflare.Error{StatusCode: 503},
+			expectSoftError: true,
+			description:     "Server error (503) should be converted to soft error",
+		},
+		{
+			name:            "Rate limit string error",
+			inputError:      errors.New("exceeded available rate limit retries"),
+			expectSoftError: true,
+			description:     "String error containing rate limit message should be converted to soft error",
+		},
+		{
+			name:            "Rate limit string error mixed case",
+			inputError:      errors.New("request failed: exceeded available rate limit retries for this operation"),
+			expectSoftError: true,
+			description:     "String error containing rate limit message should be converted to soft error regardless of context",
+		},
+		{
+			name:            "Client error 400",
+			inputError:      &cloudflare.Error{StatusCode: 400},
+			expectSoftError: false,
+			description:     "Client error (400) should not be converted to soft error",
+		},
+		{
+			name:            "Client error 401",
+			inputError:      &cloudflare.Error{StatusCode: 401},
+			expectSoftError: false,
+			description:     "Client error (401) should not be converted to soft error",
+		},
+		{
+			name:            "Client error 404",
+			inputError:      &cloudflare.Error{StatusCode: 404},
+			expectSoftError: false,
+			description:     "Client error (404) should not be converted to soft error",
+		},
+		{
+			name:            "Generic error",
+			inputError:      errors.New("some generic error"),
+			expectSoftError: false,
+			description:     "Generic error should not be converted to soft error",
+		},
+		{
+			name:            "Network error",
+			inputError:      errors.New("connection refused"),
+			expectSoftError: false,
+			description:     "Network error should not be converted to soft error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := convertCloudflareError(tt.inputError)
+
+			if tt.expectSoftError {
+				assert.ErrorIs(t, result, provider.SoftError,
+					"Expected soft error for %s: %s", tt.name, tt.description)
+
+				// Verify the original error message is preserved in the soft error
+				assert.Contains(t, result.Error(), tt.inputError.Error(),
+					"Original error message should be preserved")
+			} else {
+				assert.NotErrorIs(t, result, provider.SoftError,
+					"Expected non-soft error for %s: %s", tt.name, tt.description)
+				assert.Equal(t, tt.inputError, result,
+					"Non-soft errors should be returned unchanged")
+			}
+		})
+	}
+}
+
+func TestConvertCloudflareErrorInContext(t *testing.T) {
+	tests := []struct {
+		name            string
+		setupMock       func(*mockCloudFlareClient)
+		function        func(*CloudFlareProvider) error
+		expectSoftError bool
+		description     string
+	}{
+		{
+			name: "Zones with GetZone rate limit error",
+			setupMock: func(client *mockCloudFlareClient) {
+				client.Zones = map[string]string{"zone1": "example.com"}
+				client.getZoneError = &cloudflare.Error{StatusCode: 429, Type: cloudflare.ErrorTypeRateLimit}
+			},
+			function: func(p *CloudFlareProvider) error {
+				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
+				_, err := p.Zones(context.Background())
+				return err
+			},
+			expectSoftError: true,
+			description:     "Zones function should convert GetZone rate limit errors to soft errors",
+		},
+		{
+			name: "Zones with GetZone server error",
+			setupMock: func(client *mockCloudFlareClient) {
+				client.Zones = map[string]string{"zone1": "example.com"}
+				client.getZoneError = &cloudflare.Error{StatusCode: 500}
+			},
+			function: func(p *CloudFlareProvider) error {
+				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
+				_, err := p.Zones(context.Background())
+				return err
+			},
+			expectSoftError: true,
+			description:     "Zones function should convert GetZone server errors to soft errors",
+		},
+		{
+			name: "Zones with GetZone client error",
+			setupMock: func(client *mockCloudFlareClient) {
+				client.Zones = map[string]string{"zone1": "example.com"}
+				client.getZoneError = &cloudflare.Error{StatusCode: 404}
+			},
+			function: func(p *CloudFlareProvider) error {
+				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
+				_, err := p.Zones(context.Background())
+				return err
+			},
+			expectSoftError: false,
+			description:     "Zones function should not convert GetZone client errors to soft errors",
+		},
+		{
+			name: "Zones with ListZones rate limit error",
+			setupMock: func(client *mockCloudFlareClient) {
+				client.listZonesError = errors.New("exceeded available rate limit retries")
+			},
+			function: func(p *CloudFlareProvider) error {
+				_, err := p.Zones(context.Background())
+				return err
+			},
+			expectSoftError: true,
+			description:     "Zones function should convert ListZones rate limit string errors to soft errors",
+		},
+		{
+			name: "Zones with ListZones server error",
+			setupMock: func(client *mockCloudFlareClient) {
+				client.listZonesError = &cloudflare.Error{StatusCode: 503}
+			},
+			function: func(p *CloudFlareProvider) error {
+				_, err := p.Zones(context.Background())
+				return err
+			},
+			expectSoftError: true,
+			description:     "Zones function should convert ListZones server errors to soft errors",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := NewMockCloudFlareClient()
+			tt.setupMock(client)
+
+			p := &CloudFlareProvider{
+				Client:       client,
+				zoneIDFilter: provider.ZoneIDFilter{},
+			}
+
+			err := tt.function(p)
+			assert.Error(t, err, "Expected an error from %s", tt.name)
+
+			if tt.expectSoftError {
+				assert.ErrorIs(t, err, provider.SoftError,
+					"Expected soft error for %s: %s", tt.name, tt.description)
+			} else {
+				assert.NotErrorIs(t, err, provider.SoftError,
+					"Expected non-soft error for %s: %s", tt.name, tt.description)
+			}
+		})
+	}
+}
+
+func TestCloudFlareZonesDomainFilter(t *testing.T) {
+	// Set required environment variables for CloudFlare provider
+	t.Setenv("CF_API_TOKEN", "test-token")
+
+	client := NewMockCloudFlareClient()
+
+	// Create a domain filter that only matches "bar.com"
+	// This should filter out "foo.com" and trigger the debug log
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
+
+	p, err := NewCloudFlareProvider(
+		domainFilter,
+		provider.NewZoneIDFilter([]string{""}), // empty zone ID filter so it uses ListZones path
+		false,                                  // proxied
+		false,                                  // dry run
+		RegionalServicesConfig{},
+		CustomHostnamesConfig{},
+		DNSRecordsConfig{PerPage: 50},
+	)
+	require.NoError(t, err)
+
+	// Replace the real client with our mock
+	p.Client = client
+
+	// Capture debug logs to verify the filter log message
+	oldLevel := log.GetLevel()
+	log.SetLevel(log.DebugLevel)
+	defer log.SetLevel(oldLevel)
+
+	// Use a custom formatter to capture log output
+	var logOutput strings.Builder
+	log.SetOutput(&logOutput)
+	defer log.SetOutput(os.Stderr)
+
+	// Call Zones() which should trigger the domain filter logic
+	zones, err := p.Zones(context.Background())
+	require.NoError(t, err)
+
+	// Should only return the "bar.com" zone since "foo.com" is filtered out
+	assert.Len(t, zones, 1)
+	assert.Equal(t, "bar.com", zones[0].Name)
+	assert.Equal(t, "001", zones[0].ID)
+
+	// Verify that the debug log was written for the filtered zone
+	logString := logOutput.String()
+	assert.Contains(t, logString, `zone \"foo.com\" not in domain filter`)
+	assert.Contains(t, logString, "no zoneIDFilter configured, looking at all zones")
+}
+
+func TestZoneIDByNameIteratorError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+
+	// Set up an error that will be returned by the ListZones iterator (line 144)
+	client.listZonesError = fmt.Errorf("CloudFlare API connection timeout")
+
+	// Call ZoneIDByName which should hit line 144 (iterator error handling)
+	zoneID, err := client.ZoneIDByName("example.com")
+
+	// Should return empty zone ID and the wrapped iterator error
+	assert.Empty(t, zoneID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list zones from CloudFlare API")
+	assert.Contains(t, err.Error(), "CloudFlare API connection timeout")
+}
+
+func TestZoneIDByNameZoneNotFound(t *testing.T) {
+	client := NewMockCloudFlareClient()
+
+	// Set up mock to return different zones but not the one we're looking for
+	client.Zones = map[string]string{
+		"zone456": "different.com",
+		"zone789": "another.com",
+	}
+
+	// Call ZoneIDByName for a zone that doesn't exist, should hit line 147 (zone not found)
+	zoneID, err := client.ZoneIDByName("nonexistent.com")
+
+	// Should return empty zone ID and the improved error message
+	assert.Empty(t, zoneID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `zone "nonexistent.com" not found in CloudFlare account`)
+	assert.Contains(t, err.Error(), "verify the zone exists and API credentials have access to it")
 }
