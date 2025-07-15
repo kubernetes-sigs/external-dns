@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v4/zones"
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -52,15 +53,14 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	Zones                 map[string]string
-	Records               map[string]map[string]cloudflare.DNSRecord
-	Actions               []MockAction
-	listZonesError        error
-	zoneDetailsError      error
-	listZonesContextError error
-	dnsRecordsError       error
-	customHostnames       map[string][]cloudflare.CustomHostname
-	regionalHostnames     map[string][]regionalHostname
+	Zones             map[string]string
+	Records           map[string]map[string]cloudflare.DNSRecord
+	Actions           []MockAction
+	listZonesError    error // For v4 ListZones
+	getZoneError      error // For v4 GetZone
+	dnsRecordsError   error
+	customHostnames   map[string][]cloudflare.CustomHostname
+	regionalHostnames map[string][]regionalHostname
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -344,45 +344,45 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	return "", errors.New("Unknown zone: " + zoneName)
 }
 
-func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
-	if m.listZonesContextError != nil {
-		return cloudflare.ZonesResponse{}, m.listZonesContextError
+// V4 Zone methods
+func (m *mockCloudFlareClient) ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone] {
+	if m.listZonesError != nil {
+		return &mockAutoPager[zones.Zone]{
+			err: m.listZonesError,
+		}
 	}
 
-	result := []cloudflare.Zone{}
+	var results []zones.Zone
 
-	for zoneId, zoneName := range m.Zones {
-		result = append(result, cloudflare.Zone{
-			ID:   zoneId,
+	for id, zoneName := range m.Zones {
+		results = append(results, zones.Zone{
+			ID:   id,
 			Name: zoneName,
+			Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 		})
 	}
 
-	return cloudflare.ZonesResponse{
-		Result: result,
-		ResultInfo: cloudflare.ResultInfo{
-			Page:       1,
-			TotalPages: 1,
-		},
-	}, nil
+	return &mockAutoPager[zones.Zone]{
+		items: results,
+	}
 }
 
-func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (cloudflare.Zone, error) {
-	if m.zoneDetailsError != nil {
-		return cloudflare.Zone{}, m.zoneDetailsError
+func (m *mockCloudFlareClient) GetZone(ctx context.Context, zoneID string) (*zones.Zone, error) {
+	if m.getZoneError != nil {
+		return nil, m.getZoneError
 	}
 
 	for id, zoneName := range m.Zones {
 		if zoneID == id {
-			return cloudflare.Zone{
+			return &zones.Zone{
 				ID:   zoneID,
 				Name: zoneName,
-				Plan: cloudflare.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")},
+				Plan: zones.ZonePlan{IsSubscribed: strings.HasSuffix(zoneName, "bar.com")}, //nolint:SA1019 // Plan.IsSubscribed is deprecated but no replacement available yet
 			}, nil
 		}
 	}
 
-	return cloudflare.Zone{}, errors.New("Unknown zoneID: " + zoneID)
+	return nil, errors.New("Unknown zoneID: " + zoneID)
 }
 
 func getCustomHostnameIdxByID(chs []cloudflare.CustomHostname, customHostnameID string) int {
@@ -841,7 +841,7 @@ func TestCloudflareZones(t *testing.T) {
 func TestCloudflareZonesFailed(t *testing.T) {
 
 	client := NewMockCloudFlareClient()
-	client.zoneDetailsError = errors.New("zone lookup failed")
+	client.getZoneError = errors.New("zone lookup failed")
 
 	provider := &CloudFlareProvider{
 		Client:       client,
@@ -877,7 +877,7 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 func TestCloudflareListZonesRateLimited(t *testing.T) {
 	// Create a mock client that returns a rate limit error
 	client := NewMockCloudFlareClient()
-	client.listZonesContextError = &cloudflare.Error{
+	client.listZonesError = &cloudflare.Error{
 		StatusCode: 429,
 		ErrorCodes: []int{10000},
 		Type:       cloudflare.ErrorTypeRateLimit,
@@ -896,7 +896,7 @@ func TestCloudflareListZonesRateLimited(t *testing.T) {
 func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 	// Create a mock client that returns a rate limit error
 	client := NewMockCloudFlareClient()
-	client.listZonesContextError = errors.New("exceeded available rate limit retries")
+	client.listZonesError = errors.New("exceeded available rate limit retries")
 	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
@@ -909,7 +909,7 @@ func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 func TestCloudflareListZoneInternalErrors(t *testing.T) {
 	// Create a mock client that returns a internal server error
 	client := NewMockCloudFlareClient()
-	client.listZonesContextError = &cloudflare.Error{
+	client.listZonesError = &cloudflare.Error{
 		StatusCode: 500,
 		ErrorCodes: []int{20000},
 		Type:       cloudflare.ErrorTypeService,
@@ -949,7 +949,7 @@ func TestCloudflareRecords(t *testing.T) {
 		t.Errorf("expected to fail")
 	}
 	client.dnsRecordsError = nil
-	client.listZonesContextError = &cloudflare.Error{
+	client.listZonesError = &cloudflare.Error{
 		StatusCode: 429,
 		ErrorCodes: []int{10000},
 		Type:       cloudflare.ErrorTypeRateLimit,
@@ -960,7 +960,7 @@ func TestCloudflareRecords(t *testing.T) {
 		t.Error("expected a rate limit error")
 	}
 
-	client.listZonesContextError = &cloudflare.Error{
+	client.listZonesError = &cloudflare.Error{
 		StatusCode: 500,
 		ErrorCodes: []int{10000},
 		Type:       cloudflare.ErrorTypeService,
@@ -971,7 +971,7 @@ func TestCloudflareRecords(t *testing.T) {
 		t.Error("expected a internal server error")
 	}
 
-	client.listZonesContextError = errors.New("failed to list zones")
+	client.listZonesError = errors.New("failed to list zones")
 	_, err = p.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
@@ -2584,7 +2584,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 	assert.True(t, cfprovider.ZoneHasPaidPlan("subdomain.bar.com"))
 	assert.False(t, cfprovider.ZoneHasPaidPlan("invaliddomain"))
 
-	client.zoneDetailsError = errors.New("zone lookup failed")
+	client.getZoneError = errors.New("zone lookup failed")
 	cfproviderWithZoneError := &CloudFlareProvider{
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
@@ -2592,6 +2592,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 	}
 	assert.False(t, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }
+
 func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 
@@ -2759,4 +2760,203 @@ func TestCloudFlareProvider_SupportedAdditionalRecordTypes(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestCloudflareZoneChanges(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	cfProvider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	// Test zone listing and filtering
+	zones, err := cfProvider.Zones(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, zones, 2)
+
+	// Verify zone names
+	zoneNames := make([]string, len(zones))
+	for i, zone := range zones {
+		zoneNames[i] = zone.Name
+	}
+	assert.Contains(t, zoneNames, "foo.com")
+	assert.Contains(t, zoneNames, "bar.com")
+
+	// Test zone filtering with specific zone ID
+	providerWithZoneFilter := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
+	}
+
+	filteredZones, err := providerWithZoneFilter.Zones(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, filteredZones, 1)
+	assert.Equal(t, "bar.com", filteredZones[0].Name) // zone 001 is bar.com
+	assert.Equal(t, "001", filteredZones[0].ID)
+
+	// Test zone changes grouping
+	changes := []*cloudFlareChange{
+		{
+			Action:         cloudFlareCreate,
+			ResourceRecord: cloudflare.DNSRecord{Name: "test1.foo.com", Type: "A", Content: "1.2.3.4"},
+		},
+		{
+			Action:         cloudFlareCreate,
+			ResourceRecord: cloudflare.DNSRecord{Name: "test2.foo.com", Type: "A", Content: "1.2.3.5"},
+		},
+		{
+			Action:         cloudFlareCreate,
+			ResourceRecord: cloudflare.DNSRecord{Name: "test1.bar.com", Type: "A", Content: "1.2.3.6"},
+		},
+	}
+
+	changesByZone := cfProvider.changesByZone(zones, changes)
+	assert.Len(t, changesByZone, 2)
+	assert.Len(t, changesByZone["001"], 1) // bar.com zone (test1.bar.com)
+	assert.Len(t, changesByZone["002"], 2) // foo.com zone (test1.foo.com, test2.foo.com)
+
+	// Test paid plan detection
+	assert.False(t, cfProvider.ZoneHasPaidPlan("subdomain.foo.com")) // free plan
+	assert.True(t, cfProvider.ZoneHasPaidPlan("subdomain.bar.com"))  // paid plan
+}
+
+func TestCloudflareZoneErrors(t *testing.T) {
+	client := NewMockCloudFlareClient()
+
+	// Test list zones error
+	client.listZonesError = errors.New("failed to list zones")
+	cfProvider := &CloudFlareProvider{
+		Client: client,
+	}
+
+	zones, err := cfProvider.Zones(context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list zones")
+	assert.Nil(t, zones)
+
+	// Test get zone error
+	client.listZonesError = nil
+	client.getZoneError = errors.New("failed to get zone")
+
+	// This should still work for listing but fail when getting individual zones
+	zones, err = cfProvider.Zones(context.Background())
+	assert.NoError(t, err) // List works, individual gets may fail internally
+	assert.NotNil(t, zones)
+}
+
+func TestCloudflareZoneFiltering(t *testing.T) {
+	client := NewMockCloudFlareClient()
+
+	// Test with domain filter only
+	cfProvider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	zones, err := cfProvider.Zones(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, zones, 1)
+	assert.Equal(t, "foo.com", zones[0].Name)
+
+	// Test with zone ID filter
+	providerWithIDFilter := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{"002"}),
+	}
+
+	filteredZones, err := providerWithIDFilter.Zones(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, filteredZones, 1)
+	assert.Equal(t, "foo.com", filteredZones[0].Name) // zone 002 is foo.com
+	assert.Equal(t, "002", filteredZones[0].ID)
+}
+
+func TestCloudflareZonePlanDetection(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	cfProvider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	// Test free plan detection (foo.com)
+	assert.False(t, cfProvider.ZoneHasPaidPlan("foo.com"))
+	assert.False(t, cfProvider.ZoneHasPaidPlan("subdomain.foo.com"))
+	assert.False(t, cfProvider.ZoneHasPaidPlan("deep.subdomain.foo.com"))
+
+	// Test paid plan detection (bar.com)
+	assert.True(t, cfProvider.ZoneHasPaidPlan("bar.com"))
+	assert.True(t, cfProvider.ZoneHasPaidPlan("subdomain.bar.com"))
+	assert.True(t, cfProvider.ZoneHasPaidPlan("deep.subdomain.bar.com"))
+
+	// Test invalid domain
+	assert.False(t, cfProvider.ZoneHasPaidPlan("invalid.domain.com"))
+
+	// Test with zone error
+	client.getZoneError = errors.New("zone lookup failed")
+	providerWithError := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+	assert.False(t, providerWithError.ZoneHasPaidPlan("subdomain.foo.com"))
+}
+
+func TestCloudflareChangesByZone(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	cfProvider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	zones, err := cfProvider.Zones(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, zones, 2)
+
+	// Test empty changes
+	emptyChanges := []*cloudFlareChange{}
+	changesByZone := cfProvider.changesByZone(zones, emptyChanges)
+	assert.Len(t, changesByZone, 2)        // Should return map with zones but empty slices
+	assert.Len(t, changesByZone["001"], 0) // bar.com zone should have no changes
+	assert.Len(t, changesByZone["002"], 0) // foo.com zone should have no changes
+
+	// Test changes for different zones
+	changes := []*cloudFlareChange{
+		{
+			Action:         cloudFlareCreate,
+			ResourceRecord: cloudflare.DNSRecord{Name: "api.foo.com", Type: "A", Content: "1.2.3.4"},
+		},
+		{
+			Action:         cloudFlareUpdate,
+			ResourceRecord: cloudflare.DNSRecord{Name: "www.foo.com", Type: "CNAME", Content: "foo.com"},
+		},
+		{
+			Action:         cloudFlareCreate,
+			ResourceRecord: cloudflare.DNSRecord{Name: "mail.bar.com", Type: "MX", Content: "10 mail.bar.com"},
+		},
+		{
+			Action:         cloudFlareDelete,
+			ResourceRecord: cloudflare.DNSRecord{Name: "old.bar.com", Type: "A", Content: "5.6.7.8"},
+		},
+	}
+
+	changesByZone = cfProvider.changesByZone(zones, changes)
+	assert.Len(t, changesByZone, 2)
+
+	// Verify bar.com zone changes (zone 001)
+	barChanges := changesByZone["001"]
+	assert.Len(t, barChanges, 2)
+	assert.Equal(t, "mail.bar.com", barChanges[0].ResourceRecord.Name)
+	assert.Equal(t, "old.bar.com", barChanges[1].ResourceRecord.Name)
+
+	// Verify foo.com zone changes (zone 002)
+	fooChanges := changesByZone["002"]
+	assert.Len(t, fooChanges, 2)
+	assert.Equal(t, "api.foo.com", fooChanges[0].ResourceRecord.Name)
+	assert.Equal(t, "www.foo.com", fooChanges[1].ResourceRecord.Name)
 }
