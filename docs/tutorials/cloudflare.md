@@ -9,6 +9,7 @@ Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
 ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the modern v4 SDK to improve performance, reliability, and access to newer CloudFlare features. The migration status is:
 
 **✅ Fully migrated to v4 SDK:**
+
 - Zone management (listing, filtering, pagination)
 - Zone details retrieval (`GetZone`)
 - Zone ID lookup by name (`ZoneIDByName`)  
@@ -16,6 +17,7 @@ ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the m
 - Regional services (data localization)
 
 **🔄 Still using legacy v0 SDK:**
+
 - DNS record management (create, update, delete records)
 - Custom hostnames
 - Proxied records
@@ -25,6 +27,7 @@ This mixed approach ensures continued functionality while gradually modernizing 
 ### SDK Dependencies
 
 ExternalDNS currently uses:
+
 - **cloudflare-go v0.115.0+**: Legacy SDK for DNS records, custom hostnames, and proxied record features
 - **cloudflare-go/v4 v4.6.0+**: Modern SDK for all zone management and regional services operations
 
