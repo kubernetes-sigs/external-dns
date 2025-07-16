@@ -56,7 +56,7 @@ const (
 
 	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
 	freeZoneMaxCommentLength = 100
-	paidZoneMaxCommentLength  = 500
+	paidZoneMaxCommentLength = 500
 )
 
 var changeActionNames = map[changeAction]string{
