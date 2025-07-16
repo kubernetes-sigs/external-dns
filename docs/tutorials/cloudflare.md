@@ -12,7 +12,7 @@ ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the m
 
 - Zone management (listing, filtering, pagination)
 - Zone details retrieval (`GetZone`)
-- Zone ID lookup by name (`ZoneIDByName`)  
+- Zone ID lookup by name (`ZoneIDByName`)
 - Zone plan detection (fully v4 implementation)
 - Regional services (data localization)
 
