@@ -1,5 +1,6 @@
 {
   "gomod": {
     "enabled": false
-  }
+  },
+  "commitMessagePrefix": "UPSTREAM: <carry>: "
 }
