@@ -26,6 +26,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/pkg/events"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -173,7 +175,8 @@ type Controller struct {
 	// The runAtMutex is for atomic updating of nextRunAt and lastRunAt
 	runAtMutex sync.Mutex
 	// The lastRunAt used for throttling and batching reconciliation
-	lastRunAt time.Time
+	lastRunAt       time.Time
+	EventController events.EventEmitter
 	// MangedRecordTypes are DNS record types that will be considered for management.
 	ManagedRecordTypes []string
 	// ExcludeRecordTypes are DNS record types that will be excluded from management.
@@ -243,7 +246,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
+			emitChangeEvent(c.EventController, *plan.Changes, events.RecordError)
 			return err
+		} else {
+			emitChangeEvent(c.EventController, *plan.Changes, events.RecordReady)
 		}
 	} else {
 		controllerNoChangesTotal.Counter.Inc()

@@ -33,6 +33,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
 
+	"sigs.k8s.io/external-dns/pkg/events"
+
 	"sigs.k8s.io/external-dns/source/wrappers"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -119,7 +121,18 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(cfg, endpointsSource, prvdr, domainFilter)
+	eventsController, err := events.NewEventController(events.NewConfig(
+		events.WithKubeConfig(cfg.KubeConfig),
+		events.WithAPIServerURL(cfg.APIServerURL),
+		events.WithEmitEvents(cfg.EmitEvents),
+		events.WithDryRun(cfg.DryRun),
+	))
+	if err != nil {
+		log.Fatal(err)
+	}
+	eventsController.Run(ctx)
+
+	ctrl, err := buildController(cfg, endpointsSource, prvdr, domainFilter, eventsController)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -344,7 +357,13 @@ func buildProvider(
 	return p, err
 }
 
-func buildController(cfg *externaldns.Config, src source.Source, p provider.Provider, filter *endpoint.DomainFilter) (*Controller, error) {
+func buildController(
+	cfg *externaldns.Config,
+	src source.Source,
+	p provider.Provider,
+	filter *endpoint.DomainFilter,
+	eventCtrl events.EventEmitter,
+) (*Controller, error) {
 	policy, ok := plan.Policies[cfg.Policy]
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
@@ -362,6 +381,7 @@ func buildController(cfg *externaldns.Config, src source.Source, p provider.Prov
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		EventController:      eventCtrl,
 	}, nil
 }
 

@@ -160,9 +160,10 @@ type Config struct {
 	ExoscaleAPISecret                             string `secure:"yes"`
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
+	ServiceTypeFilter                             []string
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
-	ServiceTypeFilter                             []string
+	EmitEvents                                    []string
 	CFAPIEndpoint                                 string
 	CFUsername                                    string
 	CFPassword                                    string
@@ -271,6 +272,7 @@ var defaultConfig = &Config{
 	ExcludeDNSRecordTypes:        []string{},
 	ExcludeDomains:               []string{},
 	ExcludeTargetNets:            []string{},
+	EmitEvents:                   []string{},
 	ExcludeUnschedulable:         true,
 	ExoscaleAPIEnvironment:       "api",
 	ExoscaleAPIKey:               "",
@@ -487,6 +489,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikEnableLegacy)).BoolVar(&cfg.TraefikEnableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
+
+	app.Flag("events-emit", "Events that should be emitted. (optional, default: none, expected: RecordReady, RecordError)").Default(defaultConfig.EmitEvents...).StringsVar(&cfg.EmitEvents)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "transip", "webhook"}

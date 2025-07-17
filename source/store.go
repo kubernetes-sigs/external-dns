@@ -102,6 +102,12 @@ type Config struct {
 	ExposeInternalIPv6             bool
 }
 
+type Type = string
+
+const (
+	TypeFake Type = "fake"
+)
+
 func NewSourceConfig(cfg *externaldns.Config) *Config {
 	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
@@ -365,7 +371,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildTraefikProxySource(ctx, p, cfg)
 	case "openshift-route":
 		return buildOpenShiftRouteSource(ctx, p, cfg)
-	case "fake":
+	case TypeFake:
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
 		return NewConnectorSource(cfg.ConnectorServer)
