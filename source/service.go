@@ -742,13 +742,19 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	access := getAccessFromAnnotations(svc.Annotations)
 	switch access {
 	case "public":
-		return append(externalIPs, ipv6IPs...), nil
+		if sc.exposeInternalIPv6 {
+			return append(externalIPs, ipv6IPs...), nil
+		}
+		return externalIPs, nil
 	case "private":
 		return internalIPs, nil
 	}
 
 	if len(externalIPs) > 0 {
-		return append(externalIPs, ipv6IPs...), nil
+		if sc.exposeInternalIPv6 {
+			return append(externalIPs, ipv6IPs...), nil
+		}
+		return externalIPs, nil
 	}
 
 	return internalIPs, nil
