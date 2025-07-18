@@ -14,24 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package fake
 
 import (
+	"github.com/stretchr/testify/mock"
+
 	"sigs.k8s.io/external-dns/pkg/events"
-	"sigs.k8s.io/external-dns/plan"
 )
 
-func emitChangeEvent(e events.EventEmitter, ch plan.Changes, reason events.Reason) {
-	if e == nil {
-		return
-	}
-	for _, change := range ch.Create {
-		e.Add(events.NewEvent(change.RefObject(), change.Describe(), events.ActionCreate, reason))
-	}
-	for _, change := range ch.UpdateNew {
-		e.Add(events.NewEvent(change.RefObject(), change.Describe(), events.ActionUpdate, reason))
-	}
-	for _, change := range ch.Delete {
-		e.Add(events.NewEvent(change.RefObject(), change.Describe(), events.ActionDelete, events.RecordDeleted))
-	}
+type EventEmitter struct {
+	mock.Mock
+}
+
+func (m *EventEmitter) Add(events ...events.Event) {
+	m.Called(events[0])
+}
+
+func NewFakeEventEmitter() *EventEmitter {
+	m := &EventEmitter{}
+	m.On("Add", mock.AnythingOfType("events.Event"))
+	return m
 }

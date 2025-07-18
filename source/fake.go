@@ -28,7 +28,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -76,17 +75,17 @@ func (sc *fakeSource) generateEndpoint() *endpoint.Endpoint {
 		generateIPAddress(),
 	)
 	ep.SetIdentifier = TypeFake
-	ep.WithRefObject(events.NewObjectReference(&v1.Service{
+	ep.WithRefObject(events.NewObjectReference(&v1.Pod{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
+			Kind:       "Pod",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			// Name:      TypeFake + "-object-" + ep.DNSName,
-			Name:      "fake-service",
-			Namespace: "extdns",
+			Name:      "fake-pod",
+			Namespace: "kube-system",
 			// Namespace: v1.NamespaceDefault,
-			UID: types.UID("9de3fc19-8aeb-4e76-865d-ada955403103"),
+			// UID: types.UID("9de3fc19-8aeb-4e76-865d-ada955403103"),
 		},
 	}, TypeFake))
 	return ep

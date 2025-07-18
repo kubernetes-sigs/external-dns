@@ -18,6 +18,7 @@ package events
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
 const (
@@ -41,33 +44,40 @@ const (
 )
 
 type EventEmitter interface {
-	Add(info ...Event)
+	Add(...Event)
 }
 
-type controller struct {
+type Controller struct {
 	client          v1.EventsV1Interface
 	queue           workqueue.TypedRateLimitingInterface[any]
-	emitEvents      sets.Set[string]
+	emitEvents      sets.Set[Reason]
 	maxQueuedEvents int
 	dryRun          bool
 	hostname        string
 }
 
-func NewEventController(cfg *Config) (*controller, error) {
+func NewEventController(cfg *Config) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig[any](
 		workqueue.DefaultTypedControllerRateLimiter[any](),
 		workqueue.TypedRateLimitingQueueConfig[any]{Name: controllerName},
 	)
+	// TODO: to externalize this as simlar to source.GetRestConfig
 	rConfig, err := GetRestConfig(cfg.kubeConfig, cfg.apiServerURL)
 	if err != nil {
 		return nil, err
 	}
+	rConfig.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return extdnshttp.NewInstrumentedTransport(rt)
+	}
+	rConfig.Timeout = cfg.timeout
+	// ^^
+
 	client, err := v1.NewForConfig(rConfig)
 	if err != nil {
 		return nil, err
 	}
 	hostname, _ := os.Hostname()
-	return &controller{
+	return &Controller{
 		client:          client,
 		queue:           queue,
 		emitEvents:      cfg.emitEvents,
@@ -77,14 +87,17 @@ func NewEventController(cfg *Config) (*controller, error) {
 	}, nil
 }
 
-func (ec *controller) Run(ctx context.Context) {
+func (ec *Controller) Run(ctx context.Context) {
 	if len(ec.emitEvents) == 0 {
-		log.Debug("--emit-events is not defined, controller will not emit any events")
+		log.Debug("--emit-events is not defined, will not emit any events")
 		return
 	}
 	go ec.run(ctx)
-	log.Info("event controller started")
-	defer log.Info("event controller terminated")
+}
+
+func (ec *Controller) run(ctx context.Context) {
+	log.Info("event Controller started")
+	defer log.Info("event Controller terminated")
 	defer utilruntime.HandleCrash()
 	var waitGroup wait.Group
 	for i := 0; i < workers; i++ {
@@ -98,23 +111,7 @@ func (ec *controller) Run(ctx context.Context) {
 	waitGroup.Wait()
 }
 
-func (ec *controller) run(ctx context.Context) {
-	log.Info("event controller started")
-	defer log.Info("event controller terminated")
-	defer utilruntime.HandleCrash()
-	var waitGroup wait.Group
-	for i := 0; i < workers; i++ {
-		waitGroup.StartWithContext(ctx, func(ctx context.Context) {
-			for ec.processNextWorkItem(ctx) {
-			}
-		})
-	}
-	<-ctx.Done()
-	ec.queue.ShutDownWithDrain()
-	waitGroup.Wait()
-}
-
-func (ec *controller) processNextWorkItem(ctx context.Context) bool {
+func (ec *Controller) processNextWorkItem(ctx context.Context) bool {
 	key, quit := ec.queue.Get()
 	if quit {
 		return false
@@ -143,21 +140,22 @@ func (ec *controller) processNextWorkItem(ctx context.Context) bool {
 	return true
 }
 
-func (ec *controller) Add(info ...Event) {
+func (ec *Controller) Add(events ...Event) {
 	if ec.queue.Len() >= ec.maxQueuedEvents {
-		log.Warnf("event queue is full, dropping %d events", len(info))
+		log.Warnf("event queue is full, dropping %d events", len(events))
 		return
 	}
-	for _, i := range info {
-		if i.transpose() == nil {
+	for _, e := range events {
+		event := e.event()
+		if event == nil {
 			continue
 		}
-		ec.emit(i.transpose())
+		ec.emit(event)
 	}
 }
 
-func (ec *controller) emit(event *eventsv1.Event) {
-	if !ec.emitEvents.Has(event.Reason) {
+func (ec *Controller) emit(event *eventsv1.Event) {
+	if !ec.emitEvents.Has(Reason(event.Reason)) {
 		log.Debugf("skipping event %s/%s/%s with reason %s as not configured to emit", event.Kind, event.Namespace, event.Name, event.Reason)
 		return
 	}
@@ -172,21 +170,20 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
-	// evaluate whether to use kubeConfig-file or serviceaccount-token
+
 	var (
 		config *rest.Config
 		err    error
 	)
 	if kubeConfig == "" {
-		log.Infof("Using inCluster-config based on serviceaccount-token")
+		log.Debug("Using inCluster-config based on serviceaccount-token")
 		config, err = rest.InClusterConfig()
 	} else {
-		log.Infof("Using kubeConfig")
+		log.Debug("Using kubeConfig")
 		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	}
 	if err != nil {
 		return nil, err
 	}
-
 	return config, nil
 }

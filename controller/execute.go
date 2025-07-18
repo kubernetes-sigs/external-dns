@@ -122,8 +122,7 @@ func Execute() {
 	}
 
 	eventsController, err := events.NewEventController(events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig),
-		events.WithAPIServerURL(cfg.APIServerURL),
+		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun),
 	))

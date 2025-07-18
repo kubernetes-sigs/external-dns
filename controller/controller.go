@@ -246,7 +246,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
-			emitChangeEvent(c.EventController, *plan.Changes, events.RecordError)
 			return err
 		} else {
 			emitChangeEvent(c.EventController, *plan.Changes, events.RecordReady)
