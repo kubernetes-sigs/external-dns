@@ -38,7 +38,6 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.53.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.67

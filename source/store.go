@@ -22,12 +22,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
+
 	"sync"
 	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
-	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -37,6 +36,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
@@ -623,14 +624,11 @@ func instrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time
 	if err != nil {
 		return nil, err
 	}
+
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
+		return extdnshttp.NewInstrumentedTransport(rt)
 	}
+
 	config.Timeout = requestTimeout
 	return config, nil
 }

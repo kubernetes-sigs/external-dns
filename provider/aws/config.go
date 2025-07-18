@@ -20,15 +20,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/linki/instrumented_http"
 	"github.com/sirupsen/logrus"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
@@ -84,12 +84,7 @@ func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {
 		config.WithRetryer(func() awsv2.Retryer {
 			return retry.AddWithMaxAttempts(retry.NewStandard(), awsConfig.APIRetries)
 		}),
-		config.WithHTTPClient(instrumented_http.NewClient(&http.Client{}, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})),
+		config.WithHTTPClient(extdnshttp.NewInstrumentedClient(&http.Client{})),
 		config.WithSharedConfigProfile(awsConfig.Profile),
 	}
 
