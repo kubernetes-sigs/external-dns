@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -80,4 +81,5 @@ func TestFakeSource_GenerateEndpoint_RefObject(t *testing.T) {
 	ep := fs.generateEndpoint()
 	require.NotNil(t, ep, "endpoint should not be nil")
 	require.NotNil(t, ep.RefObject())
+	require.Equal(t, "Pod", ep.RefObject().Kind)
 }

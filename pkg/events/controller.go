@@ -18,6 +18,7 @@ package events
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
 const (
@@ -62,6 +65,11 @@ func NewEventController(cfg *Config) (*controller, error) {
 	if err != nil {
 		return nil, err
 	}
+	rConfig.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return extdnshttp.NewInstrumentedTransport(rt)
+	}
+	rConfig.Timeout = cfg.timeout
+
 	client, err := v1.NewForConfig(rConfig)
 	if err != nil {
 		return nil, err
@@ -83,19 +91,6 @@ func (ec *controller) Run(ctx context.Context) {
 		return
 	}
 	go ec.run(ctx)
-	log.Info("event controller started")
-	defer log.Info("event controller terminated")
-	defer utilruntime.HandleCrash()
-	var waitGroup wait.Group
-	for i := 0; i < workers; i++ {
-		waitGroup.StartWithContext(ctx, func(ctx context.Context) {
-			for ec.processNextWorkItem(ctx) {
-			}
-		})
-	}
-	<-ctx.Done()
-	ec.queue.ShutDownWithDrain()
-	waitGroup.Wait()
 }
 
 func (ec *controller) run(ctx context.Context) {
@@ -172,7 +167,7 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
-	// evaluate whether to use kubeConfig-file or serviceaccount-token
+
 	var (
 		config *rest.Config
 		err    error

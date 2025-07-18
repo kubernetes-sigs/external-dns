@@ -33,12 +33,16 @@ import (
 )
 
 const (
-	recordPrefix        = "ExternalDns"
-	ActionCreate Action = "resource created"
-	ActionUpdate Action = "resource modified"
-	ActionDelete Action = "resource deleted"
-	RecordReady  Reason = "RecordReady"
-	RecordError  Reason = "RecordError"
+	ActionCreate  Action = "Created"
+	ActionUpdate  Action = "Updated"
+	ActionDelete  Action = "Deleted"
+	ActionFailed  Action = "FailedSync"
+	RecordReady   Reason = "RecordReady"
+	RecordDeleted Reason = "RecordDeleted"
+	RecordError   Reason = "RecordError"
+
+	EventTypeNormal  EventType = EventType(corev1.EventTypeNormal)
+	EventTypeWarning EventType = EventType(corev1.EventTypeWarning)
 )
 
 var (
@@ -53,15 +57,19 @@ type (
 
 	// Reason types of Event Reasons
 	Reason string
+
+	EventType string
+
+	ConfigOption func(*Config)
 )
 
 type Event struct {
-	involvedObject ObjectReference
-	message        string
-	action         Action
-	eType          string
-	reason         Reason
-	source         string
+	ref     ObjectReference
+	message string
+	source  string
+	action  Action
+	eType   EventType
+	reason  Reason
 }
 
 type ObjectReference struct {
@@ -73,10 +81,10 @@ type ObjectReference struct {
 	Source     string
 }
 
-type ConfigOption func(*Config)
 type Config struct {
 	kubeConfig   string
 	apiServerURL string
+	timeout      time.Duration
 	emitEvents   sets.Set[string]
 	dryRun       bool
 }
@@ -96,17 +104,29 @@ func NewEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
 		return Event{}
 	}
 	return Event{
-		involvedObject: *obj,
-		message:        msg,
-		eType:          corev1.EventTypeNormal,
-		action:         a,
-		reason:         r,
-		source:         obj.Source,
+		ref:     *obj,
+		message: msg,
+		eType:   EventTypeNormal,
+		action:  a,
+		reason:  r,
+		source:  obj.Source,
 	}
 }
 
-func (i *Event) Reference() string {
-	return fmt.Sprintf("%s/%s/%s", i.involvedObject.Kind, i.involvedObject.Namespace, i.involvedObject.Name)
+func (e *Event) Reference() string {
+	return fmt.Sprintf("%s/%s/%s", e.ref.Kind, e.ref.Namespace, e.ref.Name)
+}
+
+func (e *Event) Action() Action {
+	return e.action
+}
+
+func (e *Event) Reason() Reason {
+	return e.reason
+}
+
+func (e *Event) EventType() EventType {
+	return e.eType
 }
 
 // Sanitize input to comply with RFC 1123 subdomain naming requirements
@@ -133,7 +153,7 @@ func sanitize(input string) string {
 }
 
 func (i *Event) transpose() *eventsv1.Event {
-	if i.involvedObject.Name == "" {
+	if i.ref.Name == "" {
 		log.Debug("skipping event for resources as the name is not generated yet")
 		return nil
 	}
@@ -147,43 +167,47 @@ func (i *Event) transpose() *eventsv1.Event {
 
 	event := &eventsv1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sanitize(i.involvedObject.Name),
-			Namespace: i.involvedObject.Namespace,
+			Name:      sanitize(i.ref.Name),
+			Namespace: i.ref.Namespace,
 		},
 		EventTime: timestamp,
 		Series:    nil,
 		// Related: &corev1.ObjectReference{
-		// 	Kind:      i.involvedObject.Kind,
-		// 	Namespace: i.involvedObject.Namespace,
-		// 	Name:      i.involvedObject.Name,
-		// 	UID:       i.involvedObject.UID,
+		// 	Kind:      i.ref.Kind,
+		// 	Namespace: i.ref.Namespace,
+		// 	Name:      i.ref.Name,
+		// 	UID:       i.ref.UID,
 		// },
-		Regarding: corev1.ObjectReference{
-			Kind:      i.involvedObject.Kind,
-			Namespace: i.involvedObject.Namespace,
-			Name:      i.involvedObject.Name,
-			UID:       i.involvedObject.UID,
-		},
+		// Regarding: corev1.ObjectReference{
+		// 	Kind:      i.ref.Kind,
+		// 	Namespace: i.ref.Namespace,
+		// 	Name:      i.ref.Name,
+		// 	UID:       i.ref.UID,
+		// },
 		ReportingInstance:   "external-dns-controller",
-		ReportingController: controllerName,
+		ReportingController: controllerName + "/source/" + i.ref.Source,
 		Action:              string(i.action),
-		Reason:              recordPrefix + string(i.reason),
+		Reason:              string(i.reason),
 		Note:                message,
-		Type:                i.eType,
+		Type:                string(i.eType),
 	}
-
+	if i.ref.UID != "" {
+		event.Related = &corev1.ObjectReference{
+			Kind:       i.ref.Kind,
+			Namespace:  i.ref.Namespace,
+			Name:       i.ref.Name,
+			UID:        i.ref.UID,
+			APIVersion: i.ref.ApiVersion,
+		}
+	}
 	return event
 }
 
-func WithKubeConfig(kubeConfig string) ConfigOption {
+func WithKubeConfig(kubeConfig string, url string, timeout time.Duration) ConfigOption {
 	return func(c *Config) {
 		c.kubeConfig = kubeConfig
-	}
-}
-
-func WithAPIServerURL(apiServerURL string) ConfigOption {
-	return func(c *Config) {
-		c.apiServerURL = apiServerURL
+		c.apiServerURL = url
+		c.timeout = timeout
 	}
 }
 
@@ -199,7 +223,7 @@ func WithEmitEvents(events []string) ConfigOption {
 			c.emitEvents = sets.New[string]()
 			for _, event := range events {
 				if slices.Contains([]string{string(RecordReady), string(RecordError)}, event) {
-					c.emitEvents.Insert(recordPrefix + event)
+					c.emitEvents.Insert(event)
 				}
 			}
 		}

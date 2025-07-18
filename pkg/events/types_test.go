@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestSanitize(t *testing.T) {
@@ -61,7 +62,7 @@ func TestEvent_Reference(t *testing.T) {
 
 	for _, tt := range tests {
 		ev := Event{
-			involvedObject: ObjectReference{
+			ref: ObjectReference{
 				Kind:      tt.kind,
 				Namespace: tt.namespace,
 				Name:      tt.name,
@@ -74,7 +75,7 @@ func TestEvent_Reference(t *testing.T) {
 
 func TestEvent_Transpose(t *testing.T) {
 	ev := Event{
-		involvedObject: ObjectReference{
+		ref: ObjectReference{
 			Kind:      "Pod",
 			Namespace: "default",
 			Name:      "nginx",
@@ -87,7 +88,7 @@ func TestEvent_Transpose(t *testing.T) {
 
 	event := ev.transpose()
 	require.NotNil(t, event)
-	require.Contains(t, event.ObjectMeta.Name, ev.involvedObject.Name)
+	require.Contains(t, event.ObjectMeta.Name, ev.ref.Name)
 	require.Equal(t, "default", event.ObjectMeta.Namespace)
 	require.Equal(t, string(ActionCreate), event.Action)
 	require.Equal(t, string(RecordReady), event.Reason)
@@ -96,13 +97,49 @@ func TestEvent_Transpose(t *testing.T) {
 	require.Contains(t, event.ReportingInstance, "")
 	require.Equal(t, controllerName, event.ReportingController)
 
-	// Test message truncation
 	longMsg := strings.Repeat("a", 2000)
 	ev.message = longMsg
 	event = ev.transpose()
 	require.Equal(t, longMsg[:1021]+"...", event.Note)
 
-	// Test nil return for empty name
-	ev.involvedObject.Name = ""
+	ev.ref.Name = ""
 	require.Nil(t, ev.transpose())
+}
+
+func TestWithEmitEvents(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected sets.Set[string]
+	}{
+		{
+			name:     "valid events",
+			input:    []string{string(RecordReady), string(RecordError)},
+			expected: sets.New[string](string(RecordReady), string(RecordError)),
+		},
+		{
+			name:     "invalid event",
+			input:    []string{"InvalidEvent"},
+			expected: sets.New[string](),
+		},
+		{
+			name:     "mixed valid and invalid",
+			input:    []string{string(RecordReady), "InvalidEvent"},
+			expected: sets.New[string](string(RecordReady)),
+		},
+		{
+			name:     "empty input",
+			input:    []string{},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{}
+			opt := WithEmitEvents(tt.input)
+			opt(cfg)
+			require.Equal(t, tt.expected, cfg.emitEvents)
+		})
+	}
 }
