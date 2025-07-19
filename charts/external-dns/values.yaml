@@ -244,6 +244,8 @@ provider:  # @schema type: [object, string];
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
   name: aws
   webhook:
+    # -- (bool) If false, then do not add a webhook sidecar to the `external-dns` deployment.
+    sidecar: true
     image:
       # -- (string) Image repository for the `webhook` container.
       repository:  # @schema type:[string, null]; default: null
