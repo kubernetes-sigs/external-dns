@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -216,6 +217,9 @@ func TestRunOnce(t *testing.T) {
 	cfg := getTestConfig()
 	provider := getTestProvider()
 
+	emitter := &mockEventEmitter{}
+	emitter.On("Add", mock.AnythingOfType("events.Event")).Return()
+
 	r, err := registry.NewNoopRegistry(provider)
 	require.NoError(t, err)
 
@@ -225,6 +229,7 @@ func TestRunOnce(t *testing.T) {
 		Registry:           r,
 		Policy:             &plan.SyncPolicy{},
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+		EventController:    emitter,
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))
@@ -235,6 +240,8 @@ func TestRunOnce(t *testing.T) {
 
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
+
+	emitter.AssertNumberOfCalls(t, "Add", 6)
 }
 
 // TestRun tests that Run correctly starts and stops

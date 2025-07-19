@@ -25,6 +25,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -241,6 +243,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// refObject stores reference object
+	// +optional
+	refObject *events.ObjectReference
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -335,6 +340,17 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
+// WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
+// This can be used to associate the Endpoint with a specific Kubernetes object.
+func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+	e.refObject = obj
+	return e
+}
+
+func (e *Endpoint) RefObject() *events.ObjectReference {
+	return e.refObject
+}
+
 // Key returns the EndpointKey of the Endpoint.
 func (e *Endpoint) Key() EndpointKey {
 	return EndpointKey{
@@ -352,6 +368,10 @@ func (e *Endpoint) IsOwnedBy(ownerID string) bool {
 
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
+}
+
+func (e *Endpoint) Describe() string {
+	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
 
 // UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
