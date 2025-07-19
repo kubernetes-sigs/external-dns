@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	requestDuration = prometheus.NewSummaryVec(
+	RequestDuration = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Name:        "request_duration_seconds",
 			Help:        "The HTTP request latencies in seconds.",
@@ -41,7 +41,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(requestDuration)
+	prometheus.MustRegister(RequestDuration)
 }
 
 type CustomRoundTripper struct {
@@ -69,7 +69,7 @@ func (r *CustomRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		"method": req.Method,
 		"status": status,
 	}
-	requestDuration.With(labels).Observe(time.Since(start).Seconds())
+	RequestDuration.With(labels).Observe(time.Since(start).Seconds())
 	return resp, err
 }
 
