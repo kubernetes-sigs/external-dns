@@ -75,7 +75,7 @@ func TestPathProcessor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			require.Equal(t, tt.expected, pathProcessor(tt.input))
+			require.Equal(t, tt.expected, PathProcessor(tt.input))
 		})
 	}
 }
