@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -56,13 +57,73 @@ type Plan struct {
 // Changes holds lists of actions to be executed by dns providers
 type Changes struct {
 	// Records that need to be created
-	Create []*endpoint.Endpoint `json:"create,omitempty"`
-	// Records that need to be updated (current data)
-	UpdateOld []*endpoint.Endpoint `json:"updateOld,omitempty"`
-	// Records that need to be updated (desired data)
-	UpdateNew []*endpoint.Endpoint `json:"updateNew,omitempty"`
+	Create []*endpoint.Endpoint
+	// Records that need to be updated
+	Update []*Update
 	// Records that need to be deleted
-	Delete []*endpoint.Endpoint `json:"delete,omitempty"`
+	Delete []*endpoint.Endpoint
+}
+
+type Update struct {
+	// current data
+	Old *endpoint.Endpoint
+	// desired data
+	New *endpoint.Endpoint
+}
+
+type ChangesV1 struct {
+	Create    []*endpoint.Endpoint `json:"create,omitempty"`
+	UpdateOld []*endpoint.Endpoint `json:"updateOld,omitempty"`
+	UpdateNew []*endpoint.Endpoint `json:"updateNew,omitempty"`
+	Delete    []*endpoint.Endpoint `json:"delete,omitempty"`
+}
+
+func (changes *Changes) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&ChangesV1{
+		Create:    changes.Create,
+		UpdateOld: changes.UpdateOld(),
+		UpdateNew: changes.UpdateNew(),
+		Delete:    changes.Delete,
+	})
+}
+
+func MkUpdates(old []*endpoint.Endpoint, new []*endpoint.Endpoint) ([]*Update, error) {
+	updates := []*Update{}
+	if nOld, nNew := len(old), len(new); nOld != nNew {
+		return nil, fmt.Errorf("Number of old updates (%v) does not match number of new updates (%v)", nOld, nNew)
+	}
+	for i, old := range old {
+		updates = append(updates, &Update{Old: old, New: new[i]})
+	}
+	return updates, nil
+}
+
+func (changes *Changes) UnmarshalJSON(data []byte) error {
+	aux := &ChangesV1{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	changes.Create = aux.Create
+	changes.Delete = aux.Delete
+	update, err := MkUpdates(aux.UpdateOld, aux.UpdateNew)
+	changes.Update = update
+	return err
+}
+
+func (c *Changes) UpdateOld() []*endpoint.Endpoint {
+	result := []*endpoint.Endpoint{}
+	for _, update := range c.Update {
+		result = append(result, update.Old)
+	}
+	return result
+}
+
+func (c *Changes) UpdateNew() []*endpoint.Endpoint {
+	result := []*endpoint.Endpoint{}
+	for _, update := range c.Update {
+		result = append(result, update.New)
+	}
+	return result
 }
 
 // planKey is a key for a row in `planTable`.
@@ -160,7 +221,24 @@ func (c *Changes) HasChanges() bool {
 	if len(c.Create) > 0 || len(c.Delete) > 0 {
 		return true
 	}
-	return !cmp.Equal(c.UpdateNew, c.UpdateOld)
+	return !cmp.Equal(c.UpdateNew(), c.UpdateOld())
+}
+
+func FilterUpdatesByOwnerId(ownerID string, updates []*Update) []*Update {
+	filtered := []*Update{}
+	for _, update := range updates {
+		// NOTE: OwnerID of `update.Old` and `update.New` will be equivalent
+		endpointOwner, ok := update.Old.Labels[endpoint.OwnerLabelKey]
+		if !ok {
+			log.Debugf(`Skipping update %v because of missing owner label (required: "%s")`, update, ownerID)
+		} else if endpointOwner != ownerID {
+			log.Debugf(`Skipping update %v because owner id does not match, found: "%s", required: "%s"`, update, endpointOwner, ownerID)
+		} else {
+			filtered = append(filtered, update)
+		}
+	}
+
+	return filtered
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -225,8 +303,7 @@ func (p *Plan) Calculate() *Plan {
 
 					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) {
 						inheritOwner(records.current, update)
-						changes.UpdateNew = append(changes.UpdateNew, update)
-						changes.UpdateOld = append(changes.UpdateOld, records.current)
+						changes.Update = append(changes.Update, &Update{Old: records.current, New: update})
 					}
 				}
 			}
@@ -259,8 +336,7 @@ func (p *Plan) Calculate() *Plan {
 	if p.OwnerID != "" {
 		changes.Delete = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.Delete)
 		changes.Delete = endpoint.RemoveDuplicates(changes.Delete)
-		changes.UpdateOld = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateOld)
-		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
+		changes.Update = FilterUpdatesByOwnerId(p.OwnerID, changes.Update)
 	}
 
 	plan := &Plan{
@@ -282,7 +358,10 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 	if from.Labels == nil {
 		from.Labels = map[string]string{}
 	}
-	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
+	ownerLabel, ok := from.Labels[endpoint.OwnerLabelKey]
+	if ok {
+		to.Labels[endpoint.OwnerLabelKey] = ownerLabel
+	}
 }
 
 func targetChanged(desired, current *endpoint.Endpoint) bool {

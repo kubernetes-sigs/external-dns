@@ -42,9 +42,8 @@ type UpsertOnlyPolicy struct{}
 // Apply applies the upsert-only policy which strips out any deletions.
 func (p *UpsertOnlyPolicy) Apply(changes *Changes) *Changes {
 	return &Changes{
-		Create:    changes.Create,
-		UpdateOld: changes.UpdateOld,
-		UpdateNew: changes.UpdateNew,
+		Create: changes.Create,
+		Update: changes.Update,
 	}
 }
 
