@@ -30,8 +30,6 @@ kubectl describe service <name>
 kubectl get events --field-selector involvedObject.kind=Service
 kubectl get events --field-selector type=Normal|Warning
 kubectl get events --field-selector reason=RecordReady|RecordDeleted|RecordError
-kubectl get events --field-selector action=Created|Updated|Deleted|FailedSync
-kubectl get events --field-selector reportingComponent=external-dns
 ```
 
 Or integrate with tools like:
@@ -49,6 +47,57 @@ Or integrate with tools like:
   - `Warning`  indicates a problem (e.g., DNS sync failed due to configuration or provider issues).
 - **Linked** resource: Events are attached to the relevant Kubernetes resource (like an `Ingress` or `Service`), so you can view them with tools like `kubectl describe`.
 - **Event noise**: If you see repeated identical events, it may indicate a misconfiguration or an issue worth investigating.
+
+### Sequence Overview: External-DNS Endpoint Reconciliation and Event Emission
+
+The following sequence diagram illustrates the core workflow of how External-DNS processes endpoints, applies DNS changes, and emits Kubernetes events:
+
+1. **Endpoint Collection**
+   The `Source` component generates `Endpoint` objects, each linked to a `ReferenceObject` (such as a Service or Ingress).
+
+2. **Plan Construction**
+   A `Plan` aggregates multiple `Endpoints` and prepares a list of desired DNS changes.
+
+3. **Change Application**
+   The `Plan` sends the changes to a DNS `Provider`, which attempts to apply them. Each `Endpoint` is labeled with the result: `Success`, `Failed`, or `Skip`.
+
+4. **Event Emission**
+   Based on the result, an `Event` is created for each `Endpoint`, referencing the original `ReferenceObject`. These events are then emitted via the `EventEmitter`.
+
+This sequence ensures DNS records are managed declaratively and provides real-time visibility into the system’s behavior through Kubernetes Events.
+
+```mermaid
+sequenceDiagram
+  participant Source
+  participant ReferenceObject
+  participant Endpoint
+  participant Plan
+  participant Event
+  participant Provider
+  participant EventEmitter
+
+
+  loop Process each Endpoint
+    Source->>Endpoint: Add Endpoint with Reference
+  end
+
+  Endpoint-->>ReferenceObject: Contains
+  Plan-->>Endpoint: Contains multiple
+
+  loop Apply Changes
+    Plan->>Provider: Apply Endpoint Changes
+    Provider-->>Endpoint: Label with Skip/Success/Failed
+    Provider-->>Plan: Return Result
+  end
+
+
+  loop Process each Event
+    Provider->>Plan: Label with Skip/Success/Failed
+    Plan-->>Event: Construct Event
+    Event-->>ReferenceObject: Contains
+    Event->>EventEmitter: Emit
+  end
+```
 
 ### Caveats
 

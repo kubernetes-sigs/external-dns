@@ -81,11 +81,8 @@ func (sc *fakeSource) generateEndpoint() *endpoint.Endpoint {
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			// Name:      TypeFake + "-object-" + ep.DNSName,
-			Name:      "fake-pod",
-			Namespace: "kube-system",
-			// Namespace: v1.NamespaceDefault,
-			// UID: types.UID("9de3fc19-8aeb-4e76-865d-ada955403103"),
+			Name:      TypeFake + "-" + ep.DNSName,
+			Namespace: v1.NamespaceDefault,
 		},
 	}, TypeFake))
 	return ep
