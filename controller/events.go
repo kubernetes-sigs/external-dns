@@ -21,6 +21,9 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+// This function emits events for each change in the provided plan.Changes object using the given EventEmitter.
+// It handles create, update, and delete changes, assigning appropriate actions and reasons to each event.
+// If the emitter is nil, it does nothing.
 func emitChangeEvent(e events.EventEmitter, ch plan.Changes, reason events.Reason) {
 	if e == nil {
 		return

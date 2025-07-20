@@ -490,7 +490,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikEnableLegacy)).BoolVar(&cfg.TraefikEnableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
-	app.Flag("events-emit", "Events that should be emitted. (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)").Default(defaultConfig.EmitEvents...).StringsVar(&cfg.EmitEvents)
+	app.Flag("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)").Default(defaultConfig.EmitEvents...).StringsVar(&cfg.EmitEvents)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "civo", "cloudflare", "coredns", "digitalocean", "dnsimple", "exoscale", "gandi", "godaddy", "google", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rfc2136", "scaleway", "skydns", "transip", "webhook"}
