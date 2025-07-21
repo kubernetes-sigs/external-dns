@@ -27,7 +27,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -72,7 +71,10 @@ users:
 	err = os.WriteFile(mockKubeCfgPath, []byte(fmt.Sprintf(kubeCfgTemplate, svr.URL)), os.FileMode(0755))
 	require.NoError(t, err)
 
-	cfg := NewConfig(WithKubeConfig(mockKubeCfgPath, svr.URL, 0))
+	cfg := NewConfig(
+		WithKubeConfig(mockKubeCfgPath, svr.URL, 0),
+		WithEmitEvents([]string{string(RecordReady)}),
+	)
 	ctrl, err := NewEventController(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ctrl)
@@ -86,19 +88,9 @@ func TestController_Run_NoEmitEvents(t *testing.T) {
 		emitEvents: sets.New[Reason](),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// TODO: move internal/testutils/log.go to internal/testutils/log/log.go  package to prevent circular dependency issues
-	logger, hook := test.NewNullLogger()
-	log.AddHook(hook)
-	log.SetOutput(logger.Out)
-	log.SetLevel(log.DebugLevel)
-
-	ctrl.Run(ctx)
-
-	require.Contains(t, hook.LastEntry().Message, "--emit-events is not defined")
-	hook.Reset()
+	require.NotPanics(t, func() {
+		ctrl.Run(t.Context())
+	})
 }
 
 func TestController_Run_EmitEvents(t *testing.T) {

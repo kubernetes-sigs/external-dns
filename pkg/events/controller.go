@@ -61,7 +61,7 @@ func NewEventController(cfg *Config) (*Controller, error) {
 		workqueue.DefaultTypedControllerRateLimiter[any](),
 		workqueue.TypedRateLimitingQueueConfig[any]{Name: controllerName},
 	)
-	// TODO: to externalize this as simlar to source.GetRestConfig
+	// TODO: to externalize this as similar to source.GetRestConfig
 	rConfig, err := GetRestConfig(cfg.kubeConfig, cfg.apiServerURL)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,6 @@ func NewEventController(cfg *Config) (*Controller, error) {
 
 func (ec *Controller) Run(ctx context.Context) {
 	if len(ec.emitEvents) == 0 {
-		log.Debug("--emit-events is not defined, will not emit any events")
 		return
 	}
 	go ec.run(ctx)

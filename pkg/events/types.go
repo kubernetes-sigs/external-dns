@@ -24,7 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,8 +41,8 @@ const (
 	RecordDeleted Reason = "RecordDeleted"
 	RecordError   Reason = "RecordError"
 
-	EventTypeNormal  EventType = EventType(corev1.EventTypeNormal)
-	EventTypeWarning EventType = EventType(corev1.EventTypeWarning)
+	EventTypeNormal  EventType = EventType(apiv1.EventTypeNormal)
+	EventTypeWarning EventType = EventType(apiv1.EventTypeWarning)
 )
 
 var (
@@ -155,7 +155,7 @@ func (e *Event) event() *eventsv1.Event {
 		Type:                string(e.eType),
 	}
 	if e.ref.UID != "" {
-		ref := e.ref.v1ObjectRef()
+		ref := e.ref.objectRef()
 		event.Related = ref
 		event.Regarding = *ref
 	}
@@ -220,8 +220,12 @@ func NewConfig(opts ...ConfigOption) *Config {
 	return c
 }
 
-func (r *ObjectReference) v1ObjectRef() *corev1.ObjectReference {
-	return &corev1.ObjectReference{
+func (c *Config) IsEnabled() bool {
+	return len(c.emitEvents) > 0
+}
+
+func (r *ObjectReference) objectRef() *apiv1.ObjectReference {
+	return &apiv1.ObjectReference{
 		Kind:       r.Kind,
 		Namespace:  r.Namespace,
 		Name:       r.Name,

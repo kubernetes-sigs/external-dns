@@ -121,17 +121,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	eventsController, err := events.NewEventController(events.NewConfig(
-		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
-		events.WithEmitEvents(cfg.EmitEvents),
-		events.WithDryRun(cfg.DryRun),
-	))
-	if err != nil {
-		log.Fatal(err)
-	}
-	eventsController.Run(ctx)
-
-	ctrl, err := buildController(cfg, endpointsSource, prvdr, domainFilter, eventsController)
+	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -357,11 +347,11 @@ func buildProvider(
 }
 
 func buildController(
+	ctx context.Context,
 	cfg *externaldns.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
-	eventCtrl events.EventEmitter,
 ) (*Controller, error) {
 	policy, ok := plan.Policies[cfg.Policy]
 	if !ok {
@@ -371,6 +361,19 @@ func buildController(
 	if err != nil {
 		return nil, err
 	}
+	eventsCfg := events.NewConfig(
+		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
+		events.WithEmitEvents(cfg.EmitEvents),
+		events.WithDryRun(cfg.DryRun))
+	var eventsCtrl *events.Controller
+	if eventsCfg.IsEnabled() {
+		eventsCtrl, err = events.NewEventController(eventsCfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		eventsCtrl.Run(ctx)
+	}
+
 	return &Controller{
 		Source:               src,
 		Registry:             reg,
@@ -380,7 +383,7 @@ func buildController(
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
-		EventController:      eventCtrl,
+		EventController:      eventsCtrl,
 	}, nil
 }
 

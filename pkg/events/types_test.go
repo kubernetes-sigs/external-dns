@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -92,34 +92,34 @@ func TestEvent_NewEvents(t *testing.T) {
 		},
 		{
 			name: "event without uuid",
-			event: NewEvent(NewObjectReference(&v1.Pod{
+			event: NewEvent(NewObjectReference(&apiv1.Pod{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Pod",
-					APIVersion: "v1",
+					APIVersion: "apiv1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "fake-pod",
-					Namespace: v1.NamespaceDefault,
+					Namespace: apiv1.NamespaceDefault,
 				},
 			}, "fake"), "", ActionCreate, RecordReady),
 			asserts: func(e *eventsv1.Event) {
 				require.NotNil(t, e)
 				require.Contains(t, e.Name, "fake-pod.")
-				require.Equal(t, v1.NamespaceDefault, e.Namespace)
+				require.Equal(t, apiv1.NamespaceDefault, e.Namespace)
 				require.Nil(t, e.Related)
-				require.Equal(t, v1.ObjectReference{}, e.Regarding)
+				require.Equal(t, apiv1.ObjectReference{}, e.Regarding)
 			},
 		},
 		{
 			name: "event with uuid",
-			event: NewEvent(NewObjectReference(&v1.Pod{
+			event: NewEvent(NewObjectReference(&apiv1.Pod{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Pod",
-					APIVersion: "v1",
+					APIVersion: "apiv1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "fake-pod",
-					Namespace: v1.NamespaceDefault,
+					Namespace: apiv1.NamespaceDefault,
 					UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
 				},
 			}, "fake"), "", ActionCreate, RecordReady),
@@ -152,9 +152,9 @@ func TestEvent_Transpose(t *testing.T) {
 	require.Equal(t, string(ActionCreate), event.Action)
 	require.Equal(t, string(RecordReady), event.Reason)
 	require.Equal(t, "test message", event.Note)
-	require.Equal(t, "Normal", event.Type)
-	require.Contains(t, event.ReportingInstance, "")
-	// require.Equal(t, controllerName, event.ReportingController)
+	require.Equal(t, apiv1.EventTypeNormal, event.Type)
+	require.Equal(t, controllerName, event.ReportingController)
+	require.Contains(t, event.ReportingInstance, controllerName+"/source/")
 
 	longMsg := strings.Repeat("a", 2000)
 	ev.message = longMsg
@@ -170,26 +170,43 @@ func TestWithEmitEvents(t *testing.T) {
 		name     string
 		input    []string
 		expected sets.Set[Reason]
+		assert   func(c *Config)
 	}{
 		{
 			name:     "valid events",
 			input:    []string{string(RecordReady), string(RecordError)},
 			expected: sets.New[Reason](RecordReady, RecordError),
+			assert: func(c *Config) {
+				require.Equal(t, sets.New[Reason](RecordReady, RecordError), c.emitEvents)
+				require.True(t, c.IsEnabled())
+			},
 		},
 		{
 			name:     "invalid event",
 			input:    []string{"InvalidEvent"},
 			expected: sets.New[Reason](),
+			assert: func(c *Config) {
+				require.Equal(t, sets.New[Reason](), c.emitEvents)
+				require.False(t, c.IsEnabled())
+			},
 		},
 		{
 			name:     "mixed valid and invalid",
 			input:    []string{string(RecordReady), "InvalidEvent"},
 			expected: sets.New[Reason](RecordReady),
+			assert: func(c *Config) {
+				require.Equal(t, sets.New[Reason](RecordReady), c.emitEvents)
+				require.True(t, c.IsEnabled())
+			},
 		},
 		{
 			name:     "empty input",
 			input:    []string{},
 			expected: nil,
+			assert: func(c *Config) {
+				require.NotNil(t, c)
+				require.False(t, c.IsEnabled())
+			},
 		},
 	}
 
@@ -198,7 +215,7 @@ func TestWithEmitEvents(t *testing.T) {
 			cfg := &Config{}
 			opt := WithEmitEvents(tt.input)
 			opt(cfg)
-			require.Equal(t, tt.expected, cfg.emitEvents)
+			tt.assert(cfg)
 		})
 	}
 }
