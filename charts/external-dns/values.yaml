@@ -205,13 +205,16 @@ triggerLoopOnEvent: false
 # -- if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).
 namespaced: false
 
+# -- _Gateway API_ gateway namespace to watch.
+gatewayNamespace:  # @schema type:[string, null]; default: null
+
 # -- _Kubernetes_ resources to monitor for DNS entries.
 sources:
   - service
   - ingress
 
-# -- How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`.
-policy: upsert-only  # @schema enum:[sync, upsert-only]; type:string; default: "upsert-only"
+# -- How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`.
+policy: upsert-only  # @schema enum:[create-only, sync, upsert-only]; type:string; default: "upsert-only"
 
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.

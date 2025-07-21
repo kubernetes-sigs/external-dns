@@ -242,7 +242,7 @@ func (p *OVHProvider) handleSingleZoneUpdate(ctx context.Context, zoneName strin
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (err error) {
+func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, records := p.lastRunZones, p.lastRunRecords
 	defer func() {
 		p.lastRunRecords = []ovhRecord{}

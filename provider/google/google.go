@@ -20,16 +20,16 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	dns "google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -131,12 +131,7 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter *endpoi
 		return nil, err
 	}
 
-	gcloud = instrumented_http.NewClient(gcloud, &instrumented_http.Callbacks{
-		PathProcessor: func(path string) string {
-			parts := strings.Split(path, "/")
-			return parts[len(parts)-1]
-		},
-	})
+	gcloud = extdnshttp.NewInstrumentedClient(gcloud)
 
 	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud))
 	if err != nil {
@@ -207,11 +202,13 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 }
 
 // Records returns the list of records in all relevant zones.
-func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *GoogleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
@@ -226,7 +223,7 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, z := range zones {
 		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone %s: %w", z.Name, err))
+			return nil, provider.NewSoftErrorf("failed to list records in zone %s: %v", z.Name, err)
 		}
 	}
 

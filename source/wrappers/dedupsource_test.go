@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -22,10 +22,11 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Validates that dedupSource is a Source
-var _ Source = &dedupSource{}
+var _ source.Source = &dedupSource{}
 
 func TestDedup(t *testing.T) {
 	t.Run("Endpoints", testDedupEndpoints)

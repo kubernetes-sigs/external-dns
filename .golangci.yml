@@ -26,6 +26,7 @@ linters:
     - sloglint # Ensure consistent code style when using log/slog
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
     - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
+    - nonamedreturns # Checks that functions with named return values do not return named values. https://golangci-lint.run/usage/linters/#nonamedreturns
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
 
     # tests
@@ -40,7 +41,7 @@ linters:
         - name: confusing-naming
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
-      max-complexity: 51
+      max-complexity: 44
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
       # Default: false

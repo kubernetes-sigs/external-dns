@@ -23,9 +23,13 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1lister "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -657,7 +661,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false)
+			client, err := NewPodSource(ctx, kubernetes, tc.targetNamespace, tc.compatibility, tc.ignoreNonHostNetworkPods, tc.PodSourceDomain, "", false, "", nil)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
@@ -885,7 +889,7 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false)
+			client, err := NewPodSource(ctx, kubernetes, "", "", tc.ignoreNonHostNetworkPods, "", "", false, "", nil)
 			require.NoError(t, err)
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
@@ -907,6 +911,39 @@ func TestPodSourceLogs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPodSource_AddEventHandler(t *testing.T) {
+	fakeInformer := new(fakePodInformer)
+	inf := testInformer{}
+	fakeInformer.On("Informer").Return(&inf)
+
+	pSource := &podSource{
+		podInformer: fakeInformer,
+	}
+
+	handlerCalled := false
+	handler := func() { handlerCalled = true }
+
+	pSource.AddEventHandler(t.Context(), handler)
+
+	fakeInformer.AssertNumberOfCalls(t, "Informer", 1)
+	assert.False(t, handlerCalled)
+	assert.Equal(t, 1, inf.times)
+}
+
+type fakePodInformer struct {
+	mock.Mock
+	informer cache.SharedIndexInformer
+}
+
+func (f *fakePodInformer) Informer() cache.SharedIndexInformer {
+	args := f.Called()
+	return args.Get(0).(cache.SharedIndexInformer)
+}
+
+func (f *fakePodInformer) Lister() corev1lister.PodLister {
+	return corev1lister.NewPodLister(f.Informer().GetIndexer())
 }
 
 func nodesFixturesIPv6() []*corev1.Node {

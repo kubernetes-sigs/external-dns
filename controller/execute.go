@@ -33,6 +33,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
 
+	"sigs.k8s.io/external-dns/source/wrappers"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
@@ -424,11 +426,11 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 		return nil, err
 	}
 	// Combine multiple sources into a single, deduplicated source.
-	combinedSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
+	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
 	// Filter targets
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-	combinedSource = source.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-	combinedSource = source.NewTargetFilterSource(combinedSource, targetFilter)
+	combinedSource = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
+	combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
 	return combinedSource, nil
 }
 

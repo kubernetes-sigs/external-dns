@@ -25,15 +25,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-
-	"sigs.k8s.io/external-dns/source/fqdn"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/fqdn"
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
@@ -60,23 +59,24 @@ func NewPodSource(
 	podSourceDomain string,
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
+	annotationFilter string,
+	labelSelector labels.Selector,
 ) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
-	_, _ = podInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	_, _ = nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	err := podInformer.Informer().AddIndexers(informers.IndexerWithOptions[*corev1.Pod](
+		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
+		informers.IndexSelectorWithLabelSelector(labelSelector),
+	))
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to add indexers to pod informer: %w", err)
+	}
+
+	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -103,17 +103,20 @@ func NewPodSource(
 	}, nil
 }
 
-func (*podSource) AddEventHandler(_ context.Context, _ func()) {
+func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
+	_, _ = ps.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	pods, err := ps.podInformer.Lister().Pods(ps.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	indexKeys := ps.podInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
 
 	endpointMap := make(map[endpoint.EndpointKey][]string)
-	for _, pod := range pods {
+	for _, key := range indexKeys {
+		pod, err := informers.GetByKey[*corev1.Pod](ps.podInformer.Informer().GetIndexer(), key)
+		if err != nil {
+			continue
+		}
+
 		if ps.fqdnTemplate == nil || ps.combineFQDNAnnotation {
 			ps.addPodEndpointsToEndpointMap(endpointMap, pod)
 		}

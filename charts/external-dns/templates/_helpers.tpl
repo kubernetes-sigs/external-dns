@@ -103,3 +103,12 @@ labelSelector:
   matchLabels:
     {{ include "external-dns.selectorLabels" . | nindent 4 }}
 {{- end }}
+
+{{/*
+Check if any Gateway API sources are enabled
+*/}}
+{{- define "external-dns.hasGatewaySources" -}}
+{{- if or (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) -}}
+true
+{{- end -}}
+{{- end }}

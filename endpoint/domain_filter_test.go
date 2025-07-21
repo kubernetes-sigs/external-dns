@@ -949,3 +949,9 @@ func TestDomainFilterNormalizeDomain(t *testing.T) {
 		assert.Equal(t, r.expect, gotName)
 	}
 }
+
+func TestMatchTargetFilterReturnsProperEmptyVal(t *testing.T) {
+	var emptyFilters []string
+	assert.True(t, matchFilter(emptyFilters, "sometarget.com", true))
+	assert.False(t, matchFilter(emptyFilters, "sometarget.com", false))
+}

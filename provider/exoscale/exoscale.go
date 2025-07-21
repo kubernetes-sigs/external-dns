@@ -292,9 +292,8 @@ func (f *zoneFilter) Zones(zones map[string]string) map[string]string {
 
 // EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
 // returns empty string if no matches are found
-func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (zoneID string, name string) {
-	var matchZoneID string
-	var matchZoneName string
+func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (string, string) {
+	var matchZoneID, matchZoneName, name string
 	for zoneID, zoneName := range zones {
 		if strings.HasSuffix(endpoint.DNSName, "."+zoneName) && len(zoneName) > len(matchZoneName) {
 			matchZoneName = zoneName

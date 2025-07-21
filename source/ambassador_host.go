@@ -196,7 +196,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname
 		if hostname != "" {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -228,7 +228,7 @@ func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Co
 //
 // Returns namespace, name, error.
 
-func parseAmbLoadBalancerService(service string) (namespace, name string, err error) {
+func parseAmbLoadBalancerService(service string) (string, string, error) {
 	// Start by assuming that we have namespace/name.
 	parts := strings.Split(service, "/")
 
@@ -294,13 +294,7 @@ func newUnstructuredConverter() (*unstructuredConverter, error) {
 // Filter a list of Ambassador Host Resources to only return the ones that
 // contain the required External-DNS annotation filter
 func (sc *ambassadorHostSource) filterByAnnotations(ambassadorHosts []*ambassador.Host) ([]*ambassador.Host, error) {
-	// External-DNS Annotation Filter
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
