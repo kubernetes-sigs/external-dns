@@ -373,6 +373,7 @@ func NewCloudFlareProvider(
 		DryRun:                 dryRun,
 		RegionalServicesConfig: regionalServicesConfig,
 		DNSRecordsConfig:       dnsRecordsConfig,
+		PaidZones:              make(map[string]bool),
 	}, nil
 }
 

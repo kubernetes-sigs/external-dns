@@ -2646,6 +2646,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+		PaidZones:    make(map[string]bool),
 	}
 
 	assert.False(t, cfprovider.ZoneHasPaidPlan("subdomain.foo.com"))
@@ -2657,6 +2658,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+		PaidZones:    make(map[string]bool),
 	}
 	assert.False(t, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }
