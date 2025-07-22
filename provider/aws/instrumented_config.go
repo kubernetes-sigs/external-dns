@@ -19,33 +19,15 @@ package aws
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 )
-
-func prometheusMetricWriter(scheme string, host string, path string, method string, status string, requestStartTime time.Time) {
-	labels := prometheus.Labels{
-		"scheme": scheme,
-		"host":   host,
-		"path":   pathProcessor(path),
-		"method": method,
-		"status": status,
-	}
-
-	extdnshttp.RequestDuration.With(labels).Observe(time.Since(requestStartTime).Seconds())
-}
-
-func pathProcessor(path string) string {
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
-}
 
 type requestMetrics struct {
 	StartTime time.Time
@@ -95,7 +77,7 @@ var extractAWSRequestParameters = middleware.DeserializeMiddlewareFunc("extractA
 		status = fmt.Sprintf("%d", resp.StatusCode)
 	}
 
-	prometheusMetricWriter(scheme, host, path, method, status, requestMetrics.StartTime)
+	extdnshttp.RequestDurationMetric.SetWithLabels(time.Since(requestMetrics.StartTime).Seconds(), scheme, host, metrics.PathProcessor(path), method, status)
 
 	return out, metadata, err
 })

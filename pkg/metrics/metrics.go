@@ -73,7 +73,7 @@ func NewMetricsRegister() *MetricRegistry {
 //	}
 func (m *MetricRegistry) MustRegister(cs IMetric) {
 	switch v := cs.(type) {
-	case CounterMetric, GaugeMetric, CounterVecMetric, GaugeVecMetric, GaugeFuncMetric:
+	case CounterMetric, GaugeMetric, SummaryVecMetric, CounterVecMetric, GaugeVecMetric, GaugeFuncMetric:
 		if _, exists := m.mName[cs.Get().FQDN]; exists {
 			return
 		} else {
@@ -85,6 +85,8 @@ func (m *MetricRegistry) MustRegister(cs IMetric) {
 			m.Registerer.MustRegister(metric.Counter)
 		case GaugeMetric:
 			m.Registerer.MustRegister(metric.Gauge)
+		case SummaryVecMetric:
+			m.Registerer.MustRegister(metric.SummaryVec)
 		case GaugeVecMetric:
 			m.Registerer.MustRegister(metric.Gauge)
 		case CounterVecMetric:
