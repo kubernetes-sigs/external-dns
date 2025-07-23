@@ -383,8 +383,12 @@ func TestAkamaiApplyChanges(t *testing.T) {
 		{DNSName: "another.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}},
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "delete.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
+	changes.Update = []*plan.Update{
+		{
+			Old: &endpoint.Endpoint{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300},
+			New: &endpoint.Endpoint{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300},
+		},
+	}
 	apply := c.ApplyChanges(context.Background(), changes)
 	assert.NoError(t, apply)
 }

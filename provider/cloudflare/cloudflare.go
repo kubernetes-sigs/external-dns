@@ -448,8 +448,9 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		}
 	}
 
-	for i, desired := range changes.UpdateNew {
-		current := changes.UpdateOld[i]
+	for _, change := range changes.Update {
+		current := change.Old
+		desired := change.New
 
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 

@@ -117,18 +117,19 @@ func testNoopApplyChanges(t *testing.T) {
 				RecordType: endpoint.RecordTypeCNAME,
 			},
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName:    "example.org",
-				Targets:    endpoint.Targets{"new-example-lb.com"},
-				RecordType: endpoint.RecordTypeCNAME,
-			},
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			{
-				DNSName:    "example.org",
-				Targets:    endpoint.Targets{"old-lb.com"},
-				RecordType: endpoint.RecordTypeCNAME,
+				New: &endpoint.Endpoint{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"new-example-lb.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				Old: &endpoint.Endpoint{
+
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"old-lb.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
 			},
 		},
 	}))

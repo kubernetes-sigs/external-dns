@@ -640,7 +640,7 @@ func (p *DigitalOceanProvider) ApplyChanges(ctx context.Context, planChanges *pl
 	}
 
 	createsByDomain := endpointsByZone(zoneNameIDMapper, planChanges.Create)
-	updatesByDomain := endpointsByZone(zoneNameIDMapper, planChanges.UpdateNew)
+	updatesByDomain := endpointsByZone(zoneNameIDMapper, planChanges.UpdateNew())
 	deletesByDomain := endpointsByZone(zoneNameIDMapper, planChanges.Delete)
 
 	var changes digitalOceanChanges

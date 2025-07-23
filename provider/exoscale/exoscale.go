@@ -105,7 +105,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	if ep.dryRun {
 		log.Infof("Will NOT delete these records: %+v", changes.Delete)
 		log.Infof("Will NOT create these records: %+v", changes.Create)
-		log.Infof("Will NOT update these records: %+v", merge(changes.UpdateOld, changes.UpdateNew))
+		log.Infof("Will NOT update these records: %+v", merge(changes.UpdateOld(), changes.UpdateNew()))
 		return nil
 	}
 
@@ -144,7 +144,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		}
 	}
 
-	for _, epoint := range changes.UpdateNew {
+	for _, epoint := range changes.UpdateNew() {
 		if !ep.domain.Match(epoint.DNSName) {
 			continue
 		}
@@ -180,7 +180,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		}
 	}
 
-	for _, epoint := range changes.UpdateOld {
+	for _, epoint := range changes.UpdateOld() {
 		// Since Exoscale "Patches", we've ignored UpdateOld
 		// We leave this logging here for information
 		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
@@ -262,10 +262,10 @@ func ExoscaleWithLogging() ExoscaleOption {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
-			for _, v := range changes.UpdateOld {
+			for _, v := range changes.UpdateOld() {
 				log.Infof("UPDATE (old): %v", v)
 			}
-			for _, v := range changes.UpdateNew {
+			for _, v := range changes.UpdateNew() {
 				log.Infof("UPDATE (new): %v", v)
 			}
 			for _, v := range changes.Delete {

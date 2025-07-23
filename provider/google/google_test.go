@@ -370,7 +370,6 @@ func TestGoogleApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("update-test-ttl.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, endpoint.TTL(25), "4.3.2.1"),
 		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "baz.elb.amazonaws.com"),
 		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "5.6.7.8"),
-		endpoint.NewEndpoint("nomatch-update-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.7.6.5"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
@@ -381,11 +380,12 @@ func TestGoogleApplyChanges(t *testing.T) {
 		endpoint.NewEndpoint("nomatch-delete-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.1"),
 	}
 
+	update, err := plan.MkUpdates(currentRecords, updatedRecords)
+	assert.NoError(t, err)
 	changes := &plan.Changes{
-		Create:    createRecords,
-		UpdateNew: updatedRecords,
-		UpdateOld: currentRecords,
-		Delete:    deleteRecords,
+		Create: createRecords,
+		Update: update,
+		Delete: deleteRecords,
 	}
 
 	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
@@ -438,11 +438,12 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
 	}
 
+	update, err := plan.MkUpdates(currentRecords, updatedRecords)
+	assert.NoError(t, err)
 	changes := &plan.Changes{
-		Create:    createRecords,
-		UpdateNew: updatedRecords,
-		UpdateOld: currentRecords,
-		Delete:    deleteRecords,
+		Create: createRecords,
+		Update: update,
+		Delete: deleteRecords,
 	}
 
 	ctx := context.Background()

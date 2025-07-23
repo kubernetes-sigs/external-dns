@@ -684,7 +684,7 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		return provider.NewSoftErrorf("failed to list zones, not applying changes: %w", err)
 	}
 
-	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
+	updateChanges := p.createUpdateChanges(changes.UpdateNew(), changes.UpdateOld())
 
 	combinedChanges := make(Route53Changes, 0, len(changes.Delete)+len(changes.Create)+len(updateChanges))
 	combinedChanges = append(combinedChanges, p.newChanges(route53types.ChangeActionCreate, changes.Create)...)

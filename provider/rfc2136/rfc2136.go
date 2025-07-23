@@ -348,7 +348,7 @@ func (r *rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*e
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
+	log.Debugf("ApplyChanges (Create: %d, Update: %d, Delete: %d)", len(changes.Create), len(changes.Update), len(changes.Delete))
 
 	var errs []error
 
@@ -389,7 +389,8 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 		}
 	}
 
-	for c, chunk := range chunkBy(changes.UpdateNew, r.batchChangeSize) {
+	updateOld := changes.UpdateOld()
+	for c, chunk := range chunkBy(changes.UpdateNew(), r.batchChangeSize) {
 		log.Debugf("Processing batch %d of update changes", c)
 
 		m := make(map[string]*dns.Msg)
@@ -410,9 +411,9 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 
 			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
 			j := (c * r.batchChangeSize) + i
-			r.UpdateRecord(m[zone], changes.UpdateOld[j], ep)
+			r.UpdateRecord(m[zone], updateOld[j], ep)
 			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(changes.UpdateOld[j].Targets[0], ep.DNSName)
+				r.RemoveReverseRecord(updateOld[j].Targets[0], ep.DNSName)
 				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}

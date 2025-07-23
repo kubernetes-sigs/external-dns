@@ -471,7 +471,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	createsByZone := endpointsByZone(zoneNameIDMapper, changes.Create)
-	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
+	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew())
 	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
 
 	// Generate Creates

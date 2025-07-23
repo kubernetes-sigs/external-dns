@@ -301,9 +301,10 @@ func (p coreDNSProvider) groupEndpoints(changes *plan.Changes) map[string][]*end
 	for _, ep := range changes.Create {
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
-	for i, ep := range changes.UpdateNew {
-		ep.Labels = changes.UpdateOld[i].Labels
-		log.Debugf("Updating labels (%s) with old labels(%s)", ep.Labels, changes.UpdateOld[i].Labels)
+	updateOld := changes.UpdateOld()
+	for i, ep := range changes.UpdateNew() {
+		ep.Labels = updateOld[i].Labels
+		log.Debugf("Updating labels (%s) with old labels(%s)", ep.Labels, updateOld[i].Labels)
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
 	return grouped

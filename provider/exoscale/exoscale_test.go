@@ -160,28 +160,31 @@ func TestExoscaleApplyChanges(t *testing.T) {
 				Targets:    []string{""},
 			},
 		},
-		UpdateOld: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName:    "v1.foo.com",
-				RecordType: "A",
-				Targets:    []string{""},
+				Old: &endpoint.Endpoint{
+					DNSName:    "v1.foo.com",
+					RecordType: "A",
+					Targets:    []string{""},
+				},
+				New: &endpoint.Endpoint{
+					DNSName:    "v1.foo.com",
+					RecordType: "A",
+					Targets:    []string{""},
+				},
 			},
 			{
-				DNSName:    "v1.foobar.com",
-				RecordType: "TXT",
-				Targets:    []string{""},
-			},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{
-				DNSName:    "v1.foo.com",
-				RecordType: "A",
-				Targets:    []string{""},
-			},
-			{
-				DNSName:    "v1.foobar.com",
-				RecordType: "TXT",
-				Targets:    []string{""},
+				Old: &endpoint.Endpoint{
+					DNSName:    "v1.foobar.com",
+					RecordType: "TXT",
+					Targets:    []string{""},
+				},
+				New: &endpoint.Endpoint{
+
+					DNSName:    "v1.foobar.com",
+					RecordType: "TXT",
+					Targets:    []string{""},
+				},
 			},
 		},
 	}

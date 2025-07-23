@@ -917,23 +917,23 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 			},
 			args: args{
 				changes: &plan.Changes{
-					UpdateOld: []*endpoint.Endpoint{
+					Update: []*plan.Update{
 						{
-							RecordType: "A",
-							DNSName:    "rherror.bar.com",
-							Targets:    endpoint.Targets{"127.0.0.1"},
-							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+							Old: &endpoint.Endpoint{
+								RecordType: "A",
+								DNSName:    "rherror.bar.com",
+								Targets:    endpoint.Targets{"127.0.0.1"},
+								ProviderSpecific: endpoint.ProviderSpecific{
+									{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								},
 							},
-						},
-					},
-					UpdateNew: []*endpoint.Endpoint{
-						{
-							RecordType: "A",
-							DNSName:    "rherror.bar.com",
-							Targets:    endpoint.Targets{"127.0.0.2"},
-							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+							New: &endpoint.Endpoint{
+								RecordType: "A",
+								DNSName:    "rherror.bar.com",
+								Targets:    endpoint.Targets{"127.0.0.2"},
+								ProviderSpecific: endpoint.ProviderSpecific{
+									{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								},
 							},
 						},
 					},
@@ -1098,23 +1098,23 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 			},
 			args: args{
 				changes: &plan.Changes{
-					UpdateOld: []*endpoint.Endpoint{
+					Update: []*plan.Update{
 						{
-							RecordType: "A",
-							DNSName:    "foo.bar.com",
-							Targets:    endpoint.Targets{"127.0.0.1"},
-							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+							Old: &endpoint.Endpoint{
+								RecordType: "A",
+								DNSName:    "foo.bar.com",
+								Targets:    endpoint.Targets{"127.0.0.1"},
+								ProviderSpecific: endpoint.ProviderSpecific{
+									{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								},
 							},
-						},
-					},
-					UpdateNew: []*endpoint.Endpoint{
-						{
-							RecordType: "A",
-							DNSName:    "foo.bar.com",
-							Targets:    endpoint.Targets{"127.0.0.2"},
-							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+							New: &endpoint.Endpoint{
+								RecordType: "A",
+								DNSName:    "foo.bar.com",
+								Targets:    endpoint.Targets{"127.0.0.2"},
+								ProviderSpecific: endpoint.ProviderSpecific{
+									{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								},
 							},
 						},
 					},
