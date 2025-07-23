@@ -2824,7 +2824,8 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 
 	oldEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
-		nil,
+		endpoint.NewEndpointWithTTL("record2.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "2.2.2.2"),
+		endpoint.NewEndpointWithTTL("record3.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "3.3.3.3"),
 	}
 	newEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("record1.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "1.1.1.1"),
@@ -2832,7 +2833,9 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 		endpoint.NewEndpointWithTTL("record3.foo.bar.", endpoint.RecordTypeA, endpoint.TTL(300), "3.3.3.3"),
 	}
 
-	changes := provider.createUpdateChanges(newEndpoints, oldEndpoints)
+	update, err := plan.MkUpdates(oldEndpoints, newEndpoints)
+	assert.NoError(t, err)
+	changes := provider.createUpdateChanges(update)
 
 	// record2 should be created, record1 should be upserted
 	var creates, upserts, deletes int
@@ -2848,6 +2851,6 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 	}
 
 	require.Equal(t, 0, creates, "should create the extra new endpoint")
-	require.Equal(t, 1, upserts, "should upsert the matching endpoint")
+	require.Equal(t, 3, upserts, "should upsert the matching endpoint")
 	require.Equal(t, 0, deletes, "should not delete anything")
 }
