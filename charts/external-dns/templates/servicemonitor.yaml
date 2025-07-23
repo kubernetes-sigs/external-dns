@@ -50,6 +50,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     {{- if eq $providerName "webhook" }}
+    {{- if .Values.provider.webhook.sidecar }}
     {{- with .Values.provider.webhook.sidecar.serviceMonitor }}
     - port: http-webhook
       path: /metrics
@@ -77,6 +78,7 @@ spec:
       relabelings:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+    {{- end }}
     {{- end }}
     {{- end }}
   {{- with .Values.serviceMonitor.targetLabels }}
