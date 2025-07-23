@@ -174,7 +174,7 @@ spec:
           {{- end }}
         {{- if eq $providerName "webhook" }}
         {{- if .Values.provider.webhook.sidecar }}
-        {{- with .Values.provider.webhook }}
+        {{- with .Values.provider.webhook.sidecar }}
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
           imagePullPolicy: {{ .image.pullPolicy }}

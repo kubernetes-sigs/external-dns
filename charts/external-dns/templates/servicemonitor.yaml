@@ -50,7 +50,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     {{- if eq $providerName "webhook" }}
-    {{- with .Values.provider.webhook.serviceMonitor }}
+    {{- with .Values.provider.webhook.sidecar.serviceMonitor }}
     - port: http-webhook
       path: /metrics
       {{- with .interval }}

@@ -248,22 +248,13 @@ provider:  # @schema type: [object, string];
     readTimeout:
     writeTimeout:
     sidecar:
-      image:  # @schema additionalProperties: false
-        # -- Image repository for the `webhook` container.
-        repository: registry.k8s.io/external-dns/external-dns
-        # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
-        tag:  # @schema type:[string, null]
-        # -- Image pull policy for the `external-dns` container.
-        pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
-
-
-      #image:
-      #  # -- (string) Image repository for the `webhook` container.
-      #  repository:  # @schema type:[string, null]; default: null
-      #  # -- (string) Image tag for the `webhook` container.
-      #  tag:  # @schema type:[string, null]; default: null
-      #  # -- Image pull policy for the `webhook` container.
-      #  pullPolicy: IfNotPresent
+      image:
+        # -- (string) Image repository for the `webhook` container.
+        repository:  # @schema type:[string, null]; default: null
+        # -- (string) Image tag for the `webhook` container.
+        tag:  # @schema type:[string, null]; default: null
+        # -- Image pull policy for the `webhook` container.
+        pullPolicy: IfNotPresent
       # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
       env: []
       # -- Extra arguments to provide for the `webhook` container.

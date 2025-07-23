@@ -27,7 +27,7 @@ spec:
       targetPort: http
       protocol: TCP
     {{- if eq $providerName "webhook" }}
-    {{- with .Values.provider.webhook.service }}
+    {{- with .Values.provider.webhook.sidecar.service }}
     - name: http-webhook
       port: {{ .port }}
       targetPort: http-webhook
