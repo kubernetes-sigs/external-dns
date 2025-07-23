@@ -389,8 +389,7 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 		}
 	}
 
-	updateOld := changes.UpdateOld()
-	for c, chunk := range chunkBy(changes.UpdateNew(), r.batchChangeSize) {
+	for c, chunk := range chunkBy(changes.Update, r.batchChangeSize) {
 		log.Debugf("Processing batch %d of update changes", c)
 
 		m := make(map[string]*dns.Msg)
@@ -400,21 +399,19 @@ func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Change
 			m[z] = new(dns.Msg)
 		}
 
-		for i, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
-				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+		for _, update := range chunk {
+			if !r.domainFilter.Match(update.New.DNSName) {
+				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", update.New.DNSName)
 				continue
 			}
 
-			zone := findMsgZone(ep, r.zoneNames)
+			zone := findMsgZone(update.New, r.zoneNames)
 			m[zone].SetUpdate(zone)
 
-			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
-			j := (c * r.batchChangeSize) + i
-			r.UpdateRecord(m[zone], updateOld[j], ep)
-			if r.createPTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
-				r.RemoveReverseRecord(updateOld[j].Targets[0], ep.DNSName)
-				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
+			r.UpdateRecord(m[zone], update.Old, update.New)
+			if r.createPTR && (update.New.RecordType == "A" || update.New.RecordType == "AAAA") {
+				r.RemoveReverseRecord(update.Old.Targets[0], update.New.DNSName)
+				r.AddReverseRecord(update.New.Targets[0], update.New.DNSName)
 			}
 		}
 
@@ -629,16 +626,11 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	return lastErr
 }
 
-func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
-	var chunks [][]*endpoint.Endpoint
+func chunkBy[T any](slice []T, chunkSize int) [][]T {
+	var chunks [][]T
 
 	for i := 0; i < len(slice); i += chunkSize {
-		end := i + chunkSize
-
-		if end > len(slice) {
-			end = len(slice)
-		}
-
+		end := min(i+chunkSize, len(slice))
 		chunks = append(chunks, slice[i:end])
 	}
 
