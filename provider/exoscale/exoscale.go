@@ -105,7 +105,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	if ep.dryRun {
 		log.Infof("Will NOT delete these records: %+v", changes.Delete)
 		log.Infof("Will NOT create these records: %+v", changes.Create)
-		log.Infof("Will NOT update these records: %+v", merge(changes.UpdateOld(), changes.UpdateNew()))
+		log.Infof("Will NOT update these records: %+v", merge(changes.Update))
 		return nil
 	}
 
@@ -262,11 +262,8 @@ func ExoscaleWithLogging() ExoscaleOption {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
-			for _, v := range changes.UpdateOld() {
-				log.Infof("UPDATE (old): %v", v)
-			}
-			for _, v := range changes.UpdateNew() {
-				log.Infof("UPDATE (new): %v", v)
+			for _, v := range changes.Update {
+				log.Infof("UPDATE (old/new): %v / %v", v.Old, v.New)
 			}
 			for _, v := range changes.Delete {
 				log.Infof("DELETE: %v", v)
@@ -304,35 +301,20 @@ func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[strin
 	return matchZoneID, name
 }
 
-func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
-	findMatch := func(template *endpoint.Endpoint) *endpoint.Endpoint {
-		for _, record := range updateNew {
-			if template.DNSName == record.DNSName &&
-				template.RecordType == record.RecordType {
-				return record
-			}
-		}
-		return nil
-	}
-
+func merge(updates []*plan.Update) []*endpoint.Endpoint {
 	var result []*endpoint.Endpoint
-	for _, old := range updateOld {
-		matchingNew := findMatch(old)
-		if matchingNew == nil {
-			// no match shouldn't happen
-			continue
-		}
+	for _, update := range updates {
 
-		if !matchingNew.Targets.Same(old.Targets) {
+		if !update.New.Targets.Same(update.Old.Targets) {
 			// new target: always update, TTL will be overwritten too if necessary
-			result = append(result, matchingNew)
+			result = append(result, update.New)
 			continue
 		}
 
-		if matchingNew.RecordTTL != 0 && matchingNew.RecordTTL != old.RecordTTL {
+		if update.New.RecordTTL != 0 && update.New.RecordTTL != update.Old.RecordTTL {
 			// same target, but new non-zero TTL set in k8s, must update
 			// probably would happen only if there is a bug in the code calling the provider
-			result = append(result, matchingNew)
+			result = append(result, update.New)
 		}
 	}
 
