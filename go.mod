@@ -22,7 +22,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.8
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.1
 	github.com/bodgit/tsig v1.2.2
-	github.com/cenkalti/backoff/v5 v5.0.2
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/civo/civogo v0.6.1
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudflare/cloudflare-go/v4 v4.6.0
