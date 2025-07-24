@@ -116,11 +116,11 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
 		},
-		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+		Update: []*plan.Update{
+			{
+				New: newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+				Old: newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+			},
 		},
 	}
 	expected := &plan.Changes{
@@ -130,24 +130,24 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwnerAndDescription("foobar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner", "\"heritage=external-dns,external-dns/owner=owner\""),
 		},
-		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithOwnerAndDescription("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "\"heritage=external-dns,external-dns/owner=owner\""),
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithOwnerAndDescription("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "\"heritage=external-dns,external-dns/owner=owner\""),
+		Update: []*plan.Update{
+			{
+				New: newEndpointWithOwnerAndDescription("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "\"heritage=external-dns,external-dns/owner=owner\""),
+				Old: newEndpointWithOwnerAndDescription("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "\"heritage=external-dns,external-dns/owner=owner\""),
+			},
 		},
 	}
 	p := newInMemoryProvider(nil, func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
-			"UpdateNew": expected.UpdateNew,
-			"UpdateOld": expected.UpdateOld,
+			"UpdateNew": expected.UpdateNew(),
+			"UpdateOld": expected.UpdateOld(),
 			"Delete":    expected.Delete,
 		}
 		mGot := map[string][]*endpoint.Endpoint{
 			"Create":    got.Create,
-			"UpdateNew": got.UpdateNew,
-			"UpdateOld": got.UpdateOld,
+			"UpdateNew": got.UpdateNew(),
+			"UpdateOld": got.UpdateOld(),
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))

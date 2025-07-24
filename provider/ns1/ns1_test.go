@@ -234,14 +234,18 @@ func TestNS1ApplyChanges(t *testing.T) {
 		{DNSName: "new.subdomain.bar.com", Targets: endpoint.Targets{"target"}},
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target-new"}}}
+	changes.Update = []*plan.Update{
+		{
+			New: &endpoint.Endpoint{DNSName: "test.foo.com", Targets: endpoint.Targets{"target-new"}},
+		},
+	}
 	err := provider.ApplyChanges(context.Background(), changes)
 	require.NoError(t, err)
 
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
 	changes.Delete = []*endpoint.Endpoint{}
-	changes.UpdateNew = []*endpoint.Endpoint{}
+	changes.Update = []*plan.Update{}
 	err = provider.ApplyChanges(context.Background(), changes)
 	require.NoError(t, err)
 }

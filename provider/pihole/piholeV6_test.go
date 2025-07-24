@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -311,8 +312,8 @@ func TestProviderV6(t *testing.T) {
 			RecordType: endpoint.RecordTypeAAAA,
 		},
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
+	update, err := plan.MkUpdates(
+		[]*endpoint.Endpoint{
 			{
 				DNSName:    "test1.example.com",
 				Targets:    []string{"192.168.1.1"},
@@ -334,7 +335,7 @@ func TestProviderV6(t *testing.T) {
 				RecordType: endpoint.RecordTypeAAAA,
 			},
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		[]*endpoint.Endpoint{
 			{
 				DNSName:    "test1.example.com",
 				Targets:    []string{"192.168.1.1"},
@@ -342,12 +343,7 @@ func TestProviderV6(t *testing.T) {
 			},
 			{
 				DNSName:    "test2.example.com",
-				Targets:    []string{"10.0.0.1"},
-				RecordType: endpoint.RecordTypeA,
-			},
-			{
-				DNSName:    "test2.example.com",
-				Targets:    []string{"10.0.0.2"},
+				Targets:    []string{"10.0.0.1", "10.0.0.2"},
 				RecordType: endpoint.RecordTypeA,
 			},
 			{
@@ -361,6 +357,10 @@ func TestProviderV6(t *testing.T) {
 				RecordType: endpoint.RecordTypeAAAA,
 			},
 		},
+	)
+	assert.NoError(t, err)
+	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+		Update: update,
 	}); err != nil {
 		t.Fatal(err)
 	}

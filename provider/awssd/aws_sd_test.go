@@ -261,9 +261,10 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 	ctx = context.Background()
 
 	// apply update
+	update, err := plan.MkUpdates(oldEndpoints, newEndpoints)
+	assert.NoError(t, err)
 	provider.ApplyChanges(ctx, &plan.Changes{
-		UpdateOld: oldEndpoints,
-		UpdateNew: newEndpoints,
+		Update: update,
 	})
 
 	// make sure services were created

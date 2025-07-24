@@ -75,15 +75,14 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 // inserted in the AWS SD instance as a CreateID field
 func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.Delete),
+		Create: changes.Create,
+		Update: plan.FilterUpdatesByOwnerId(sdr.ownerID, changes.Update),
+		Delete: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.Delete),
 	}
 
 	sdr.updateLabels(filteredChanges.Create)
-	sdr.updateLabels(filteredChanges.UpdateNew)
-	sdr.updateLabels(filteredChanges.UpdateOld)
+	sdr.updateLabels(filteredChanges.UpdateNew())
+	sdr.updateLabels(filteredChanges.UpdateOld())
 	sdr.updateLabels(filteredChanges.Delete)
 
 	return sdr.provider.ApplyChanges(ctx, filteredChanges)
