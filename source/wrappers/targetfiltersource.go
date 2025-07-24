@@ -75,7 +75,5 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 }
 
 func (ms *targetFilterSource) AddEventHandler(ctx context.Context, handler func()) {
-	if ms.targetFilter.IsEnabled() {
-		ms.source.AddEventHandler(ctx, handler)
-	}
+	ms.source.AddEventHandler(ctx, handler)
 }
