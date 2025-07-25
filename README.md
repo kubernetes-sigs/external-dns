@@ -66,6 +66,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
 - [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)
+- [Myra Security DNS](https://www.myrasecurity.com/en/saasp/application-security/secure-dns/)
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.
 We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster.
@@ -104,6 +105,7 @@ from the usage of any externally developed webhook.
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
+| Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
@@ -203,6 +205,7 @@ The following tutorials are provided:
 - [IONOS Cloud](docs/tutorials/ionoscloud.md)
 - [Istio Gateway Source](docs/sources/istio.md)
 - [Linode](docs/tutorials/linode.md)
+- [Myra Security](docs/tutorials/myra.md)
 - [NS1](docs/tutorials/ns1.md)
 - [NS Record Creation with CRD Source](docs/sources/ns-record.md)
 - [MX Record Creation with CRD Source](docs/sources/mx-record.md)
