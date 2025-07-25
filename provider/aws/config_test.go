@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aws/smithy-go/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,6 +62,39 @@ func Test_newV2Config(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "AKIAIOSFODNN7EXAMPLE", creds.AccessKeyID)
 		assert.Equal(t, "topsecret", creds.SecretAccessKey)
+	})
+
+	t.Run("should not error when AWS_CA_BUNDLE set", func(t *testing.T) {
+		// setup
+		os.Setenv("AWS_CA_BUNDLE", "../../internal/testresources/ca.pem")
+		defer os.Unsetenv("AWS_CA_BUNDLE")
+
+		// when
+		_, err := newV2Config(AWSSessionConfig{})
+		require.NoError(t, err)
+
+		// then
+		assert.NoError(t, err)
+	})
+
+	t.Run("should configure instrumentation middleware", func(t *testing.T) {
+		// setup
+		cfg, err := newV2Config(AWSSessionConfig{})
+		require.NoError(t, err)
+
+		dummyStack := middleware.NewStack("test", nil)
+		for _, opt := range cfg.APIOptions {
+			err := opt(dummyStack)
+
+			require.NoError(t, err)
+		}
+
+		// then
+		_, foundTimedOperation := dummyStack.Initialize.Get("timedOperation")
+		assert.True(t, foundTimedOperation, "timedOperation middleware should be present")
+
+		_, foundExtractMetadata := dummyStack.Deserialize.Get("extractAWSRequestParameters")
+		assert.True(t, foundExtractMetadata, "extractAWSRequestParameters should be present")
 	})
 }
 
