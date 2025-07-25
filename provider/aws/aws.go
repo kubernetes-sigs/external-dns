@@ -735,7 +735,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			}
 
 			if !p.dryRun {
-
 				params := &route53.ChangeResourceRecordSetsInput{
 					HostedZoneId: aws.String(z),
 					ChangeBatch: &route53types.ChangeBatch{
