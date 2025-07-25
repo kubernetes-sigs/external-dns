@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -967,4 +968,17 @@ func TestEndpoint_UniqueOrderedTargets(t *testing.T) {
 			assert.Equal(t, tt.expected, ep.Targets)
 		})
 	}
+}
+
+func TestEndpoint_WithRefObject(t *testing.T) {
+	ep := &Endpoint{}
+	ref := &events.ObjectReference{
+		Kind:      "Service",
+		Namespace: "default",
+		Name:      "my-service",
+	}
+	result := ep.WithRefObject(ref)
+
+	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
+	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
 }
