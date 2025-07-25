@@ -22,14 +22,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.8
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.1
 	github.com/bodgit/tsig v1.2.2
-	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/civo/civogo v0.6.1
+	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/civo/civogo v0.6.2
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudflare/cloudflare-go/v4 v4.6.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.159.0
+	github.com/digitalocean/godo v1.160.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
