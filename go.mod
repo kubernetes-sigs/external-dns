@@ -21,6 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.53.1
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.8
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.1
+	github.com/aws/smithy-go v1.22.4
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/civo/civogo v0.6.1
@@ -95,7 +96,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.4 // indirect
-	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
