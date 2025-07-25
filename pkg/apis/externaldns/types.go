@@ -504,7 +504,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)").Default(defaultConfig.GoogleZoneVisibility).EnumVar(&cfg.GoogleZoneVisibility, "", "public", "private")
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
-	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
+	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, default: any, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
 	app.Flag("aws-profile", "When using the AWS provider, name of the profile to use").Default("").StringsVar(&cfg.AWSProfiles)
 	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
