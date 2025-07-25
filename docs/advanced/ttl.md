@@ -1,9 +1,15 @@
 # Configure DNS record TTL (Time-To-Live)
 
-An optional annotation `external-dns.alpha.kubernetes.io/ttl` is available to customize the TTL value of a DNS record.
-TTL is specified as an integer encoded as string representing seconds.
+> To customize DNS record TTL (Time-To-Live) in a DNS record`, you can use the `external-dns.alpha.kubernetes.io/ttl: <duration>` annotation or flag `--min-ttl=<duration>`. TTL is specified as an integer encoded as string representing seconds. Example; `1s`, `1m2s`, `1h2m11s`
 
-To configure it, simply annotate a service/ingress, e.g.:
+Behaviour:
+
+- If the `external-dns.alpha.kubernetes.io/ttl` annotation is set, it overrides the default TTL(0) value.
+- If the annotation is not set, the default TTL value is used, unless the `--min-ttl` flag is provided.
+- If the annotation is set to `0`, and the `--min-ttl=1s` flag is provided, the value from `--min-ttl` will be used instead.
+- Not all providers support the custom TTL value, and some may override it with their own default values.
+
+To configure it, annotate a service/ingress, e.g.:
 
 ```yaml
 apiVersion: v1
@@ -140,7 +146,7 @@ The Linode Provider default TTL is used when the TTL is 0. The default is 24 hou
 
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
 
-## Use Cases for `external-dns.alpha.kubernetes.io/ttl` annotation
+## Use Cases for `external-dns.alpha.kubernetes.io/ttl` annotation and `--min-ttl` flag`
 
 The `external-dns.alpha.kubernetes.io/ttl` annotation allows you to set a custom **TTL (Time To Live)** for DNS records managed by `external-dns`.
 
