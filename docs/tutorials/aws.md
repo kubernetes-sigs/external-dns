@@ -9,9 +9,6 @@ Record Sets and Hosted Zones. You'll want to create this Policy in IAM first. In
 our example, we'll call the policy `AllowExternalDNSUpdates` (but you can call
 it whatever you prefer).
 
-If you prefer, you may fine-tune the policy to permit updates only to explicit
-Hosted Zone IDs.
-
 ```json
 {
   "Version": "2012-10-17",
@@ -19,18 +16,18 @@ Hosted Zone IDs.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
       ],
       "Resource": [
-        "arn:aws:route53:::hostedzone/*"
+        "arn:aws:route53:::hostedzone/<INSERT YOUR ZONE ID HERE>"
       ]
     },
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
+        "route53:ListHostedZones"
       ],
       "Resource": [
         "*"
@@ -51,10 +48,12 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
       ],
       "Resource": [
-        "arn:aws:route53:::hostedzone/*"
+        "arn:aws:route53:::hostedzone/<INSERT YOUR ZONE ID HERE>"
       ],
       "Condition": {
         "ForAllValues:StringLike": {
@@ -67,9 +66,7 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
+        "route53:ListHostedZones"
       ],
       "Resource": [
         "*"
