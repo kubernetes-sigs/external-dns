@@ -18,12 +18,13 @@ package wrappers
 
 import (
 	"context"
+	"reflect"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
@@ -35,6 +36,7 @@ type multiSource struct {
 
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
 func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debugf("multiSource: collecting endpoints from %d child sources and removing duplicates", len(ms.children))
 	result := []*endpoint.Endpoint{}
 	hasDefaultTargets := len(ms.defaultTargets) > 0
 
@@ -70,7 +72,9 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 func (ms *multiSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debugf("multiSource: adding event handler for %d child sources", len(ms.children))
 	for _, s := range ms.children {
+		log.Debugf("multiSource: adding event handler for child %q", reflect.TypeOf(s).String())
 		s.AddEventHandler(ctx, handler)
 	}
 }
