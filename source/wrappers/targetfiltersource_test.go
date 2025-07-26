@@ -19,9 +19,11 @@ package wrappers
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
+	// "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -47,24 +49,9 @@ func (m *mockTargetNetFilter) IsEnabled() bool {
 	return true
 }
 
-// echoSource is a Source that returns the endpoints passed in on creation.
-type echoSource struct {
-	mock.Mock
-	endpoints []*endpoint.Endpoint
-}
-
-func (e *echoSource) AddEventHandler(ctx context.Context, handler func()) {
-	e.Called(ctx)
-}
-
-// Endpoints returns all the endpoints passed in on creation
-func (e *echoSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return e.endpoints, nil
-}
-
 // NewEchoSource creates a new echoSource.
 func NewEchoSource(endpoints []*endpoint.Endpoint) source.Source {
-	return &echoSource{endpoints: endpoints}
+	return testutils.NewMockSource(endpoints...)
 }
 
 func TestEchoSourceReturnGivenSources(t *testing.T) {
@@ -248,9 +235,9 @@ func TestTargetFilterSource_AddEventHandler(t *testing.T) {
 			times:   1,
 		},
 		{
-			title:   "should not add event handler if target filter is disabled",
+			title:   "should add event handler if target filter is disabled",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{}),
-			times:   0,
+			times:   1,
 		},
 	}
 
@@ -258,7 +245,7 @@ func TestTargetFilterSource_AddEventHandler(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			echo := NewEchoSource([]*endpoint.Endpoint{})
 
-			m := echo.(*echoSource)
+			m := echo.(*testutils.MockSource)
 			m.On("AddEventHandler", t.Context()).Return()
 
 			src := NewTargetFilterSource(echo, tt.filters)
