@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "type": "object",
   "properties": {
     "affinity": {
@@ -869,1170 +870,890 @@
 }
 =======
   "additionalProperties": false,
+=======
+  "type": "object",
+>>>>>>> fc9e156c (Update values and get schema to build)
   "properties": {
     "affinity": {
-      "additionalProperties": false,
       "description": "Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels.",
-      "required": [],
-      "title": "affinity"
+      "type": "object"
     },
     "automountServiceAccountToken": {
-      "default": true,
       "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.",
-      "required": [],
-      "title": "automountServiceAccountToken",
       "type": "boolean"
     },
     "commonLabels": {
-      "additionalProperties": false,
       "description": "Labels to add to all chart resources.",
-      "required": [],
-      "title": "commonLabels"
+      "type": "object"
     },
     "deploymentAnnotations": {
-      "additionalProperties": false,
       "description": "Annotations to add to the `Deployment`.",
-      "required": [],
-      "title": "deploymentAnnotations"
+      "type": "object"
     },
     "deploymentStrategy": {
-      "additionalProperties": false,
       "description": "[Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).",
+      "type": "object",
       "properties": {
         "type": {
           "default": "Recreate",
-          "required": [],
-          "title": "type",
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Recreate",
+            "RollingUpdate"
+          ]
         }
       },
-      "required": [
-        "type"
-      ],
-      "title": "deploymentStrategy"
+      "additionalProperties": true
     },
     "dnsConfig": {
-      "default": "",
       "description": "[DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used.",
-      "required": [],
-      "title": "dnsConfig",
-      "type": "object"
+      "type": [
+        "object",
+        "null"
+      ]
     },
     "dnsPolicy": {
-      "default": "",
       "description": "[DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy) for the pod, if not set the default will be used.",
-      "required": [],
-      "title": "dnsPolicy",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "domainFilters": {
       "description": "Limit possible target zones by domain suffixes.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "domainFilters"
+      "type": "array"
     },
     "enabled": {
-      "default": "",
-      "description": "No effect - reserved for use in sub-charting.",
-      "required": [],
-      "title": "enabled",
-      "type": "boolean"
+      "description": "No effect - reserved for use in sub-charting",
+      "type": [
+        "boolean",
+        "null"
+      ]
     },
     "env": {
       "description": "[Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "env"
+      "type": "array"
     },
     "excludeDomains": {
       "description": "Intentionally exclude domains from being managed.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "excludeDomains"
+      "type": "array"
     },
     "extraArgs": {
-      "additionalProperties": false,
       "description": "Extra arguments to provide to _ExternalDNS_. An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.",
-      "required": [],
-      "title": "extraArgs"
+      "type": [
+        "array",
+        "null",
+        "object"
+      ],
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
     },
     "extraContainers": {
       "description": "Extra containers to add to the `Deployment`.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "extraContainers"
+      "type": "array"
     },
     "extraVolumeMounts": {
       "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "extraVolumeMounts"
+      "type": "array"
     },
     "extraVolumes": {
       "description": "Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "extraVolumes"
+      "type": "array"
     },
     "fullnameOverride": {
-      "default": "",
       "description": "Override the full name of the chart.",
-      "required": [],
-      "title": "fullnameOverride",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "global": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "imagePullSecrets": {
           "description": "Global image pull secrets.",
+          "type": "array",
           "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "imagePullSecrets"
+            "type": "object"
+          }
         }
-      },
-      "required": [],
-      "title": "global",
-      "type": "object"
+      }
     },
     "image": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "pullPolicy": {
-          "default": "IfNotPresent",
           "description": "Image pull policy for the `external-dns` container.",
-          "required": [],
-          "title": "pullPolicy"
+          "type": "string",
+          "enum": [
+            "IfNotPresent",
+            "Always"
+          ]
         },
         "repository": {
-          "default": "registry.k8s.io/external-dns/external-dns",
           "description": "Image repository for the `external-dns` container.",
-          "required": [],
-          "title": "repository"
+          "type": "string"
         },
         "tag": {
-          "default": "",
           "description": "Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.",
-          "required": [],
-          "title": "tag"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
-      "required": [],
-      "title": "image",
-      "type": "object"
+      "additionalProperties": false
     },
     "imagePullSecrets": {
       "description": "Image pull secrets.",
+      "type": "array",
       "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "imagePullSecrets"
+        "type": "object"
+      }
     },
     "initContainers": {
       "description": "[Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "initContainers"
+      "type": "array"
     },
     "interval": {
-      "default": "1m",
       "description": "Interval for DNS updates.",
-      "required": [],
-      "title": "interval"
+      "type": "string"
     },
     "labelFilter": {
-      "default": "",
       "description": "Filter resources queried for endpoints by label selector",
-      "required": [],
-      "title": "labelFilter"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "livenessProbe": {
-      "additionalProperties": false,
-      "default": "See _values.yaml_",
       "description": "[Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.",
+      "type": "object",
       "properties": {
         "failureThreshold": {
-          "default": 2,
-          "required": [],
-          "title": "failureThreshold",
           "type": "integer"
         },
         "httpGet": {
-          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "path": {
-              "default": "/healthz",
-              "required": [],
-              "title": "path",
               "type": "string"
             },
             "port": {
-              "default": "http",
-              "required": [],
-              "title": "port",
               "type": "string"
             }
-          },
-          "required": [
-            "path",
-            "port"
-          ],
-          "title": "httpGet",
-          "type": "object"
+          }
         },
         "initialDelaySeconds": {
-          "default": 10,
-          "required": [],
-          "title": "initialDelaySeconds",
           "type": "integer"
         },
         "periodSeconds": {
-          "default": 10,
-          "required": [],
-          "title": "periodSeconds",
           "type": "integer"
         },
         "successThreshold": {
-          "default": 1,
-          "required": [],
-          "title": "successThreshold",
           "type": "integer"
         },
         "timeoutSeconds": {
-          "default": 5,
-          "required": [],
-          "title": "timeoutSeconds",
           "type": "integer"
         }
-      },
-      "required": [
-        "httpGet",
-        "initialDelaySeconds",
-        "periodSeconds",
-        "timeoutSeconds",
-        "failureThreshold",
-        "successThreshold"
-      ],
-      "title": "livenessProbe"
+      }
     },
     "logFormat": {
-      "default": "text",
       "description": "Log format.",
-      "required": [],
-      "title": "logFormat"
+      "default": "text",
+      "type": "string",
+      "enum": [
+        "text",
+        "json"
+      ]
     },
     "logLevel": {
-      "default": "info",
       "description": "Log level.",
-      "required": [],
-      "title": "logLevel"
+      "default": "info",
+      "type": "string",
+      "enum": [
+        "panic",
+        "debug",
+        "info",
+        "warning",
+        "error",
+        "fatal"
+      ]
     },
     "managedRecordTypes": {
       "description": "Record types to manage (default: A, AAAA, CNAME)",
+      "type": [
+        "array",
+        "null"
+      ],
+      "uniqueItems": true,
       "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "managedRecordTypes"
+        "type": "string"
+      }
     },
     "nameOverride": {
-      "default": "",
       "description": "Override the name of the chart.",
-      "required": [],
-      "title": "nameOverride",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "namespaced": {
-      "default": "false",
       "description": "if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).",
-      "required": [],
-      "title": "namespaced"
+      "type": "boolean"
     },
     "nodeSelector": {
-      "additionalProperties": false,
       "description": "Node labels to match for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).",
-      "required": [],
-      "title": "nodeSelector"
+      "type": "object"
     },
     "podAnnotations": {
-      "additionalProperties": false,
       "description": "Annotations to add to the `Pod`.",
-      "required": [],
-      "title": "podAnnotations"
+      "type": "object"
     },
     "podLabels": {
-      "additionalProperties": false,
       "description": "Labels to add to the `Pod`.",
-      "required": [],
-      "title": "podLabels"
+      "type": "object"
     },
     "podSecurityContext": {
-      "additionalProperties": false,
-      "default": "See _values.yaml_",
       "description": "[Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation.",
+      "type": "object",
       "properties": {
         "fsGroup": {
-          "default": 65534,
-          "required": [],
-          "title": "fsGroup",
           "type": "integer"
         },
         "runAsNonRoot": {
-          "default": true,
-          "required": [],
-          "title": "runAsNonRoot",
           "type": "boolean"
         },
         "seccompProfile": {
-          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "type": {
-              "default": "RuntimeDefault",
-              "required": [],
-              "title": "type",
               "type": "string"
             }
-          },
-          "required": [
-            "type"
-          ],
-          "title": "seccompProfile",
-          "type": "object"
+          }
         }
-      },
-      "required": [
-        "runAsNonRoot",
-        "fsGroup",
-        "seccompProfile"
-      ],
-      "title": "podSecurityContext"
+      }
     },
     "policy": {
-      "default": "upsert-only",
       "description": "How DNS records are synchronized between sources and providers; available values are `sync` \u0026 `upsert-only`.",
-      "required": [],
-      "title": "policy"
+      "default": "upsert-only",
+      "type": "string",
+      "enum": [
+        "sync",
+        "upsert-only"
+      ]
     },
     "priorityClassName": {
-      "default": "",
       "description": "Priority class name for the `Pod`.",
-      "required": [],
-      "title": "priorityClassName",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "provider": {
-      "additionalProperties": false,
+      "type": [
+        "object",
+        "string"
+      ],
       "properties": {
         "name": {
-          "default": "aws",
           "description": "_ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).",
-          "required": [],
-          "title": "name"
+          "type": "string"
         },
         "webhook": {
-          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "readTimeout": {
-              "default": "",
-              "required": [],
-              "title": "readTimeout",
-              "type": "null"
+              "description": "Webhook read timeout",
+              "type": [
+                "integer",
+                "null"
+              ]
             },
             "sidecar": {
-              "additionalProperties": false,
+              "description": "Webhook sidecar container",
+              "type": "object",
               "properties": {
                 "args": {
                   "description": "Extra arguments to provide for the `webhook` container.",
-                  "items": {
-                    "required": []
-                  },
-                  "required": [],
-                  "title": "args"
+                  "type": "array"
                 },
                 "env": {
                   "description": "[Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.",
-                  "items": {
-                    "required": []
-                  },
-                  "required": [],
-                  "title": "env"
+                  "type": "array"
                 },
                 "extraVolumeMounts": {
                   "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.",
-                  "items": {
-                    "required": []
-                  },
-                  "required": [],
-                  "title": "extraVolumeMounts"
+                  "type": "array"
                 },
                 "image": {
-                  "additionalProperties": false,
+                  "type": "object",
                   "properties": {
                     "pullPolicy": {
-                      "default": "IfNotPresent",
                       "description": "Image pull policy for the `webhook` container.",
-                      "required": [],
-                      "title": "pullPolicy"
+                      "type": "string"
                     },
                     "repository": {
-                      "default": "",
                       "description": "Image repository for the `webhook` container.",
-                      "required": [],
-                      "title": "repository",
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "tag": {
-                      "default": "",
                       "description": "Image tag for the `webhook` container.",
-                      "required": [],
-                      "title": "tag",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "limits": {
+                  "type": "object",
+                  "properties": {
+                    "cpu": {
+                      "type": "string"
+                    },
+                    "memory": {
                       "type": "string"
                     }
-                  },
-                  "required": [],
-                  "title": "image",
-                  "type": "object"
+                  }
                 },
                 "livenessProbe": {
-                  "additionalProperties": false,
-                  "default": "See _values.yaml_",
                   "description": "[Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.",
+                  "type": "object",
                   "properties": {
                     "failureThreshold": {
-                      "default": 2,
-                      "required": [],
-                      "title": "failureThreshold",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "httpGet": {
-                      "additionalProperties": false,
+                      "type": "object",
                       "properties": {
                         "path": {
-                          "default": "/healthz",
-                          "required": [],
-                          "title": "path",
-                          "type": "string"
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "port": {
-                          "default": "http-webhook",
-                          "required": [],
-                          "title": "port",
-                          "type": "string"
+                          "default": "string",
+                          "type": [
+                            "integer",
+                            "string"
+                          ]
                         }
-                      },
-                      "required": [
-                        "path",
-                        "port"
-                      ],
-                      "title": "httpGet",
-                      "type": "object"
+                      }
                     },
                     "initialDelaySeconds": {
-                      "default": 10,
-                      "required": [],
-                      "title": "initialDelaySeconds",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "periodSeconds": {
-                      "default": 10,
-                      "required": [],
-                      "title": "periodSeconds",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "successThreshold": {
-                      "default": 1,
-                      "required": [],
-                      "title": "successThreshold",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "timeoutSeconds": {
-                      "default": 5,
-                      "required": [],
-                      "title": "timeoutSeconds",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     }
-                  },
-                  "required": [
-                    "httpGet",
-                    "initialDelaySeconds",
-                    "periodSeconds",
-                    "timeoutSeconds",
-                    "failureThreshold",
-                    "successThreshold"
-                  ],
-                  "title": "livenessProbe"
+                  }
                 },
                 "readinessProbe": {
-                  "additionalProperties": false,
-                  "default": "See _values.yaml_",
                   "description": "[Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.",
+                  "type": "object",
                   "properties": {
                     "failureThreshold": {
-                      "default": 6,
-                      "required": [],
-                      "title": "failureThreshold",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "httpGet": {
-                      "additionalProperties": false,
+                      "type": "object",
                       "properties": {
                         "path": {
-                          "default": "/healthz",
-                          "required": [],
-                          "title": "path",
-                          "type": "string"
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "port": {
-                          "default": "http-webhook",
-                          "required": [],
-                          "title": "port",
-                          "type": "string"
+                          "default": "string",
+                          "type": [
+                            "integer",
+                            "string"
+                          ]
                         }
-                      },
-                      "required": [
-                        "path",
-                        "port"
-                      ],
-                      "title": "httpGet",
-                      "type": "object"
+                      }
                     },
                     "initialDelaySeconds": {
-                      "default": 5,
-                      "required": [],
-                      "title": "initialDelaySeconds",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "periodSeconds": {
-                      "default": 10,
-                      "required": [],
-                      "title": "periodSeconds",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "successThreshold": {
-                      "default": 1,
-                      "required": [],
-                      "title": "successThreshold",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     },
                     "timeoutSeconds": {
-                      "default": 5,
-                      "required": [],
-                      "title": "timeoutSeconds",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     }
-                  },
-                  "required": [
-                    "httpGet",
-                    "initialDelaySeconds",
-                    "periodSeconds",
-                    "timeoutSeconds",
-                    "failureThreshold",
-                    "successThreshold"
-                  ],
-                  "title": "readinessProbe"
+                  }
+                },
+                "requests": {
+                  "type": "object",
+                  "properties": {
+                    "cpu": {
+                      "type": "string"
+                    },
+                    "memory": {
+                      "type": "string"
+                    }
+                  }
                 },
                 "resources": {
-                  "additionalProperties": false,
                   "description": "[Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container.",
-                  "required": [],
-                  "title": "resources"
-                },
-                "securityContext": {
-                  "additionalProperties": false,
-                  "default": "See _values.yaml_",
-                  "description": "[Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container.",
-                  "required": [],
-                  "title": "securityContext"
-                },
-                "service": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "port": {
-                      "default": "8080",
-                      "description": "Webhook exposed HTTP port for the service.",
-                      "required": [],
-                      "title": "port"
-                    }
-                  },
-                  "required": [],
-                  "title": "service",
                   "type": "object"
                 },
+                "securityContext": {
+                  "description": "[Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container.",
+                  "type": "object"
+                },
+                "service": {
+                  "type": "object",
+                  "properties": {
+                    "port": {
+                      "description": "Webhook exposed HTTP port for the service.",
+                      "type": "integer"
+                    }
+                  }
+                },
                 "serviceMonitor": {
-                  "additionalProperties": false,
-                  "default": "See _values.yaml_",
                   "description": "Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.",
+                  "type": "object",
                   "properties": {
                     "bearerTokenFile": {
-                      "default": "",
-                      "required": [],
-                      "title": "bearerTokenFile",
                       "type": "null"
                     },
                     "interval": {
-                      "default": "",
-                      "required": [],
-                      "title": "interval",
                       "type": "null"
                     },
                     "metricRelabelings": {
-                      "items": {
-                        "required": []
-                      },
-                      "required": [],
-                      "title": "metricRelabelings",
                       "type": "array"
                     },
                     "relabelings": {
-                      "items": {
-                        "required": []
-                      },
-                      "required": [],
-                      "title": "relabelings",
                       "type": "array"
                     },
                     "scheme": {
-                      "default": "",
-                      "required": [],
-                      "title": "scheme",
                       "type": "null"
                     },
                     "scrapeTimeout": {
-                      "default": "",
-                      "required": [],
-                      "title": "scrapeTimeout",
                       "type": "null"
                     },
                     "tlsConfig": {
-                      "additionalProperties": false,
-                      "required": [],
-                      "title": "tlsConfig",
                       "type": "object"
                     }
-                  },
-                  "required": [
-                    "interval",
-                    "scheme",
-                    "tlsConfig",
-                    "bearerTokenFile",
-                    "scrapeTimeout",
-                    "metricRelabelings",
-                    "relabelings"
-                  ],
-                  "title": "serviceMonitor"
+                  }
                 }
-              },
-              "required": [
-                "image",
-                "service"
-              ],
-              "title": "sidecar",
-              "type": "object"
+              }
             },
             "url": {
-              "default": "",
-              "required": [],
-              "title": "url",
-              "type": "null"
+              "description": "Webhook URL",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "writeTimeout": {
-              "default": "",
-              "required": [],
-              "title": "writeTimeout",
-              "type": "null"
+              "description": "Webhook write timeout",
+              "type": [
+                "integer",
+                "null"
+              ]
             }
-          },
-          "required": [
-            "url",
-            "readTimeout",
-            "writeTimeout",
-            "sidecar"
-          ],
-          "title": "webhook",
-          "type": "object"
+          }
         }
-      },
-      "required": [
-        "webhook"
-      ],
-      "title": "provider",
-      "type": "object"
+      }
     },
     "rbac": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "additionalPermissions": {
           "description": "Additional rules to add to the `ClusterRole`.",
-          "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "additionalPermissions"
+          "type": "array"
         },
         "create": {
-          "default": "true",
           "description": "If `true`, create a `ClusterRole` \u0026 `ClusterRoleBinding` with access to the Kubernetes API.",
-          "required": [],
-          "title": "create"
+          "type": "boolean"
         }
       },
-      "required": [],
-      "title": "rbac",
-      "type": "object"
+      "additionalProperties": true
     },
     "readinessProbe": {
-      "additionalProperties": false,
-      "default": "See _values.yaml_",
       "description": "[Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.",
+      "type": "object",
       "properties": {
         "failureThreshold": {
-          "default": 6,
-          "required": [],
-          "title": "failureThreshold",
           "type": "integer"
         },
         "httpGet": {
-          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "path": {
-              "default": "/healthz",
-              "required": [],
-              "title": "path",
               "type": "string"
             },
             "port": {
-              "default": "http",
-              "required": [],
-              "title": "port",
               "type": "string"
             }
-          },
-          "required": [
-            "path",
-            "port"
-          ],
-          "title": "httpGet",
-          "type": "object"
+          }
         },
         "initialDelaySeconds": {
-          "default": 5,
-          "required": [],
-          "title": "initialDelaySeconds",
           "type": "integer"
         },
         "periodSeconds": {
-          "default": 10,
-          "required": [],
-          "title": "periodSeconds",
           "type": "integer"
         },
         "successThreshold": {
-          "default": 1,
-          "required": [],
-          "title": "successThreshold",
           "type": "integer"
         },
         "timeoutSeconds": {
-          "default": 5,
-          "required": [],
-          "title": "timeoutSeconds",
           "type": "integer"
         }
-      },
-      "required": [
-        "httpGet",
-        "initialDelaySeconds",
-        "periodSeconds",
-        "timeoutSeconds",
-        "failureThreshold",
-        "successThreshold"
-      ],
-      "title": "readinessProbe"
+      }
     },
     "registry": {
-      "default": "txt",
       "description": "Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `dynamodb` \u0026 `noop`.",
-      "required": [],
-      "title": "registry"
+      "default": "txt",
+      "type": "string",
+      "enum": [
+        "txt",
+        "aws-sd",
+        "dynamodb",
+        "noop"
+      ]
     },
     "resources": {
-      "additionalProperties": false,
       "description": "[Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container.",
-      "required": [],
-      "title": "resources"
+      "type": "object",
+      "properties": {
+        "limits": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          }
+        }
+      }
     },
     "revisionHistoryLimit": {
-      "default": "",
       "description": "Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``.",
-      "required": [],
-      "title": "revisionHistoryLimit",
-      "type": "integer"
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
     },
     "secretConfiguration": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "data": {
-          "additionalProperties": false,
           "description": "`Secret` data.",
-          "required": [],
-          "title": "data"
+          "type": "object"
         },
         "enabled": {
-          "default": "false",
           "description": "If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).",
-          "required": [],
-          "title": "enabled"
+          "type": "boolean"
         },
         "mountPath": {
-          "default": "",
           "description": "Mount path for the `Secret`, this can be templated.",
-          "required": [],
-          "title": "mountPath"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "subPath": {
-          "default": "",
           "description": "Sub-path for mounting the `Secret`, this can be templated.",
-          "required": [],
-          "title": "subPath"
+          "type": [
+            "string",
+            "null"
+          ]
         }
-      },
-      "required": [],
-      "title": "secretConfiguration",
-      "type": "object"
+      }
     },
     "securityContext": {
-      "additionalProperties": false,
-      "default": "See _values.yaml_",
       "description": "[Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `external-dns` container.",
+      "type": "object",
       "properties": {
         "allowPrivilegeEscalation": {
-          "default": false,
-          "required": [],
-          "title": "allowPrivilegeEscalation",
           "type": "boolean"
         },
         "capabilities": {
-          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "drop": {
+              "type": "array",
               "items": {
-                "anyOf": [
-                  {
-                    "required": [],
-                    "type": "string"
-                  }
-                ],
-                "required": []
-              },
-              "required": [],
-              "title": "drop",
-              "type": "array"
+                "type": "string"
+              }
             }
-          },
-          "required": [
-            "drop"
-          ],
-          "title": "capabilities",
-          "type": "object"
+          }
         },
         "privileged": {
-          "default": false,
-          "required": [],
-          "title": "privileged",
           "type": "boolean"
         },
         "readOnlyRootFilesystem": {
-          "default": true,
-          "required": [],
-          "title": "readOnlyRootFilesystem",
           "type": "boolean"
         },
         "runAsGroup": {
-          "default": 65532,
-          "required": [],
-          "title": "runAsGroup",
           "type": "integer"
         },
         "runAsNonRoot": {
-          "default": true,
-          "required": [],
-          "title": "runAsNonRoot",
           "type": "boolean"
         },
         "runAsUser": {
-          "default": 65532,
-          "required": [],
-          "title": "runAsUser",
           "type": "integer"
         }
-      },
-      "required": [
-        "privileged",
-        "allowPrivilegeEscalation",
-        "readOnlyRootFilesystem",
-        "runAsNonRoot",
-        "runAsUser",
-        "runAsGroup",
-        "capabilities"
-      ],
-      "title": "securityContext"
+      }
     },
     "service": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "annotations": {
-          "additionalProperties": false,
           "description": "Service annotations.",
-          "required": [],
-          "title": "annotations"
+          "type": "object"
         },
         "ipFamilies": {
           "description": "Service IP families (e.g. IPv4 and/or IPv6).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 2,
+          "minItems": 0,
+          "uniqueItems": true,
           "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "ipFamilies"
+            "type": "string",
+            "enum": [
+              "IPv4",
+              "IPv6"
+            ]
+          }
         },
         "ipFamilyPolicy": {
-          "default": "",
           "description": "Service IP family policy.",
-          "required": [],
-          "title": "ipFamilyPolicy"
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "SingleStack",
+            "PreferDualStack",
+            "RequireDualStack",
+            null
+          ]
         },
         "port": {
-          "default": "7979",
           "description": "Service HTTP port.",
-          "required": [],
-          "title": "port"
+          "default": 7979,
+          "type": "integer",
+          "minimum": 0
         }
-      },
-      "required": [],
-      "title": "service",
-      "type": "object"
+      }
     },
     "serviceAccount": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "annotations": {
-          "additionalProperties": false,
           "description": "Annotations to add to the service account. Templates are allowed in both the key and the value. Example: `example.com/annotation/{{ .Values.nameOverride }}: {{ .Values.nameOverride }}`",
-          "required": [],
-          "title": "annotations"
+          "type": "object"
         },
         "automountServiceAccountToken": {
-          "default": "true",
           "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `ServiceAccount`.",
-          "required": [],
-          "title": "automountServiceAccountToken"
+          "type": "boolean"
         },
         "create": {
-          "default": "true",
           "description": "If `true`, create a new `ServiceAccount`.",
-          "required": [],
-          "title": "create"
+          "type": "boolean"
         },
         "labels": {
-          "additionalProperties": false,
           "description": "Labels to add to the service account.",
-          "required": [],
-          "title": "labels"
+          "type": "object"
         },
         "name": {
-          "default": "",
           "description": "If this is set and `serviceAccount.create` is `true` this will be used for the created `ServiceAccount` name, if set and `serviceAccount.create` is `false` then this will define an existing `ServiceAccount` to use.",
-          "required": [],
-          "title": "name",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         }
-      },
-      "required": [],
-      "title": "serviceAccount",
-      "type": "object"
+      }
     },
     "serviceMonitor": {
-      "additionalProperties": false,
+      "type": "object",
       "properties": {
         "additionalLabels": {
-          "additionalProperties": false,
           "description": "Additional labels for the `ServiceMonitor`.",
-          "required": [],
-          "title": "additionalLabels"
+          "type": "object"
         },
         "annotations": {
-          "additionalProperties": false,
           "description": "Annotations to add to the `ServiceMonitor`.",
-          "required": [],
-          "title": "annotations"
+          "type": "object"
         },
         "bearerTokenFile": {
-          "default": "",
           "description": "Provide a bearer token file for the `ServiceMonitor`.",
-          "required": [],
-          "title": "bearerTokenFile",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "enabled": {
-          "default": "false",
           "description": "If `true`, create a `ServiceMonitor` resource to support the _Prometheus Operator_.",
-          "required": [],
-          "title": "enabled"
+          "type": "boolean"
         },
         "interval": {
-          "default": "",
           "description": "If set override the _Prometheus_ default interval.",
-          "required": [],
-          "title": "interval",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "metricRelabelings": {
           "description": "[Metric relabel configs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs) to apply to samples before ingestion.",
-          "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "metricRelabelings"
+          "type": "array"
         },
         "namespace": {
-          "default": "",
           "description": "If set create the `ServiceMonitor` in an alternate namespace.",
-          "required": [],
-          "title": "namespace",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "relabelings": {
           "description": "[Relabel configs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config) to apply to samples before ingestion.",
-          "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "relabelings"
+          "type": "array"
         },
         "scheme": {
-          "default": "",
           "description": "If set overrides the _Prometheus_ default scheme.",
-          "required": [],
-          "title": "scheme",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "scrapeTimeout": {
-          "default": "",
           "description": "If set override the _Prometheus_ default scrape timeout.",
-          "required": [],
-          "title": "scrapeTimeout",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "targetLabels": {
           "description": "Provide target labels for the `ServiceMonitor`.",
-          "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "targetLabels"
+          "type": "array"
         },
         "tlsConfig": {
-          "additionalProperties": false,
           "description": "Configure the `ServiceMonitor` [TLS config](https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#tlsconfig).",
-          "required": [],
-          "title": "tlsConfig"
+          "type": "object"
         }
-      },
-      "required": [],
-      "title": "serviceMonitor",
-      "type": "object"
+      }
     },
     "shareProcessNamespace": {
-      "default": "false",
       "description": "If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.",
-      "required": [],
-      "title": "shareProcessNamespace"
+      "type": "boolean"
     },
     "sources": {
       "description": "_Kubernetes_ resources to monitor for DNS entries.",
+      "type": "array",
       "items": {
-        "anyOf": [
-          {
-            "required": [],
-            "type": "string"
-          },
-          {
-            "required": [],
-            "type": "string"
-          }
-        ],
-        "required": []
-      },
-      "required": [],
-      "title": "sources"
+        "type": "string"
+      }
     },
     "terminationGracePeriodSeconds": {
-      "default": "",
       "description": "Termination grace period for the `Pod` in seconds.",
-      "required": [],
-      "title": "terminationGracePeriodSeconds",
-      "type": "integer"
+      "type": [
+        "integer",
+        "null"
+      ]
     },
     "tolerations": {
       "description": "Node taints which will be tolerated for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "tolerations"
+      "type": "array"
     },
     "topologySpreadConstraints": {
       "description": "Topology spread constraints for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided one will be created from the pod selector labels.",
-      "items": {
-        "required": []
-      },
-      "required": [],
-      "title": "topologySpreadConstraints"
+      "type": "array"
     },
     "triggerLoopOnEvent": {
-      "default": "false",
       "description": "If `true`, triggers run loop on create/update/delete events in addition of regular interval.",
-      "required": [],
-      "title": "triggerLoopOnEvent"
+      "type": "boolean"
     },
     "txtOwnerId": {
-      "default": "",
       "description": "Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`.",
-      "required": [],
-      "title": "txtOwnerId",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "txtPrefix": {
-      "default": "",
       "description": "Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`.",
-      "required": [],
-      "title": "txtPrefix",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "txtSuffix": {
-      "default": "",
       "description": "Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`.",
-      "required": [],
-      "title": "txtSuffix",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
+<<<<<<< HEAD
   "required": [
     "global",
     "image",
@@ -2046,3 +1767,7 @@
   "type": "object"
 }
 >>>>>>> 3360e934 (WIP3)
+=======
+  "additionalProperties": true
+}
+>>>>>>> fc9e156c (Update values and get schema to build)
