@@ -241,10 +241,12 @@ labelFilter:  # @schema type: [string,null]; default: null
 managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true
 
 # -- (object) Provider configuration
+# @default -- See _values.yaml_
 provider:  # @schema type: [object, string]
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
   name: aws  # @schema type:[string, null]
   # -- (object) Webhook configuration
+  # @default -- See _values.yaml_
   webhook:  # @schema type: [object, null]
     # -- (string) Webhook URL
     url:  # @schema type:[string, null]; default: null
@@ -253,6 +255,7 @@ provider:  # @schema type: [object, string]
     # -- (integer) Webhook write timeout
     writeTimeout:  # @schema type:[integer, null]; default: null
     # -- (object) Webhook sidecar container configuration
+    # @default -- See _values.yaml_
     sidecar:  # @schema type: [object, null]; default: null
       image:
         # -- (string) Image repository for the `webhook` container.
