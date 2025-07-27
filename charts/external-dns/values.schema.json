@@ -1153,6 +1153,7 @@
       ]
     },
     "provider": {
+      "description": "Provider configuration",
       "type": [
         "object",
         "string"
@@ -1160,10 +1161,17 @@
       "properties": {
         "name": {
           "description": "_ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "webhook": {
-          "type": "object",
+          "description": "Webhook configuration",
+          "type": [
+            "object",
+            "null"
+          ],
           "properties": {
             "readTimeout": {
               "description": "Webhook read timeout",
@@ -1173,8 +1181,11 @@
               ]
             },
             "sidecar": {
-              "description": "Webhook sidecar container",
-              "type": "object",
+              "description": "Webhook sidecar container configuration",
+              "type": [
+                "object",
+                "null"
+              ],
               "properties": {
                 "args": {
                   "description": "Extra arguments to provide for the `webhook` container.",

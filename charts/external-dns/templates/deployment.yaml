@@ -127,7 +127,8 @@ spec:
             - --managed-record-types={{ . }}
             {{- end }}
             - --provider={{ $providerName }}
-            {{- if .Values.provider.webhook.readTimeout }}
+            {{- if kindIs "map" .Values.provider }}
+            {{- if .Values.provider.webhook.readTimeout  }}
             - --webhook-provider-read-timeout={{ .Values.provider.webhook.readTimeout }}
             {{- end }}
             {{- if .Values.provider.webhook.writeTimeout }}
@@ -135,6 +136,7 @@ spec:
             {{- end }}
             {{- if .Values.provider.webhook.url }}
             - --webhook-provider-url={{ .Values.provider.webhook.url }}
+            {{- end }}
             {{- end }}
             {{- if kindIs "map" .Values.extraArgs }}
             {{- range $key, $value := .Values.extraArgs }}
