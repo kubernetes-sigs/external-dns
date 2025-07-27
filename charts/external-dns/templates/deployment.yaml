@@ -184,6 +184,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- if eq $providerName "webhook" }}
+        {{- if kindIs "map" .Values.provider }}
         {{- if .Values.provider.webhook.sidecar }}
         {{- with .Values.provider.webhook.sidecar }}
         - name: webhook
@@ -219,6 +220,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- end }}
         {{- end }}
         {{- end }}
         {{- end }}

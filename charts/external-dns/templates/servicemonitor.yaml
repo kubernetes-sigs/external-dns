@@ -50,6 +50,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     {{- if eq $providerName "webhook" }}
+    {{- if kindIs "map" .Values.provider }}
     {{- if .Values.provider.webhook.sidecar }}
     {{- with .Values.provider.webhook.sidecar.serviceMonitor }}
     - port: http-webhook
@@ -78,6 +79,7 @@ spec:
       relabelings:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+    {{- end }}
     {{- end }}
     {{- end }}
     {{- end }}
