@@ -12,7 +12,7 @@ image:  # @schema additionalProperties: false
   # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
   tag:  # @schema type:[string, null]
   # -- Image pull policy for the `external-dns` container.
-  pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
+  pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always, null];
 
 # -- Image pull secrets.
 imagePullSecrets: []  # @schema item: object
@@ -247,7 +247,7 @@ provider:  # @schema type: [object, string];
     url:
     readTimeout:
     writeTimeout:
-    sidecar:
+    sidecar:  # @schema type: [object];
       image:
         # -- (string) Image repository for the `webhook` container.
         repository:  # @schema type:[string, null]; default: null
