@@ -73,6 +73,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 					Name:  CloudflareRecordCommentKey,
 					Value: v,
 				})
+			} else if strings.Contains(k, CloudflareRecordTagsKey) {
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  CloudflareRecordTagsKey,
+					Value: v,
+				})
 			}
 		}
 	}

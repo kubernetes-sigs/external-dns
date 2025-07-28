@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
@@ -1913,6 +1914,73 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 			}
 		})
 	}
+
+	tagsTestCases := []struct {
+		name     string
+		provider *CloudFlareProvider
+		endpoint *endpoint.Endpoint
+		expected []string
+	}{
+		{
+			name:     "For free Zones setting Tags, expect them to be ignored",
+			provider: p,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "example.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordTagsKey,
+						Value: "tag1,tag2",
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name:     "For paid Zones setting tags, expect them to be set",
+			provider: paidProvider,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "bar.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordTagsKey,
+						Value: "tag1,tag2",
+					},
+				},
+			},
+			expected: []string{"tag1", "tag2"},
+		},
+		{
+			name:     "For paid Zones settings tags not alphabetically sorted, expect them to be sorted",
+			provider: paidProvider,
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "bar.com",
+				RecordType: "A",
+				Targets:    []string{"192.0.2.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareRecordTagsKey,
+						Value: "tag2,tag1",
+					},
+				},
+			},
+			expected: []string{"tag1", "tag2"},
+		},
+	}
+
+	for _, test := range tagsTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			change, _ := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
+			if test.expected == nil && len(change.ResourceRecord.Tags) != 0 {
+				t.Errorf("expected tags to be %v, but got %v", test.expected, change.ResourceRecord.Tags)
+			} else if !reflect.DeepEqual(change.ResourceRecord.Tags, test.expected) {
+				t.Errorf("expected tags to be %v, but got %v", test.expected, change.ResourceRecord.Tags)
+			}
+		})
+	}
 }
 
 func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
@@ -2578,6 +2646,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+		PaidZones:    make(map[string]bool),
 	}
 
 	assert.False(t, cfprovider.ZoneHasPaidPlan("subdomain.foo.com"))
@@ -2589,6 +2658,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com", "bar.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+		PaidZones:    make(map[string]bool),
 	}
 	assert.False(t, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }
