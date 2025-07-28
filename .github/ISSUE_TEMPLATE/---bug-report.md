@@ -20,7 +20,7 @@ Make sure to validate the behavior against latest release https://github.com/kub
 **How to reproduce it (as minimally and precisely as possible)**:
 
 <!--
-Please provide as much detail as possible, including Kubernetes manifests with spec.status, ExternalDNS arguments, and logs. Reproducing bugs without sufficient information is time-consuming and often impossible.
+Please provide as much detail as possible, including Kubernetes manifests with spec.status, ExternalDNS arguments, and logs. A bug that cannot be reproduced won't be fixed.
 -->
 
 **Anything else we need to know?**:
