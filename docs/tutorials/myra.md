@@ -56,6 +56,7 @@ kubectl apply -f deploy/combined-deployment.yaml
 ```
 
 This deploys:
+
 - ConfigMap with webhook configuration
 - ServiceAccount, ClusterRole, and ClusterRoleBinding for RBAC
 - Deployment with two containers:
@@ -95,6 +96,7 @@ kubectl apply -f deploy/nginx-demo.yaml
 ```
 
 This creates:
+
 - NGINX Deployment
 - Service for the deployment
 - Ingress resource with ExternalDNS annotations
@@ -139,10 +141,10 @@ The webhook can be configured through the ConfigMap:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `dry-run` | Run in dry-run mode without making actual changes | `"false"` |
-| `log-level` | Logging level (debug, info, warn, error) | `"debug"` |
-| `webhook-listen-address` | Address and port for the webhook server | `":8080"` |
-| `ttl` | Default TTL for DNS records | `"300"` |
 | `environment` | Environment name (affects private IP handling) | `"prod"` |
+| `log-level` | Logging level (debug, info, warn, error) | `"debug"` |
+| `ttl` | Default TTL for DNS records | `"300"` |
+| `webhook-listen-address` | Address and port for the webhook server | `":8080"` |
 
 ## Troubleshooting
 
@@ -155,7 +157,7 @@ The webhook can be configured through the ConfigMap:
 2. **DNS records not being created**
    - Verify MyraSec API credentials are correct
    - Check if the domain filter is properly configured
-   - Look for error messages in the webhook logs
+   - Look for error messages in the webhook and external-dns logs
 
 3. **Permissions issues**
    - Ensure the ServiceAccount has the correct RBAC permissions
