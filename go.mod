@@ -22,14 +22,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.35.8
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.1
 	github.com/bodgit/tsig v1.2.2
-	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/civo/civogo v0.6.1
+	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/civo/civogo v0.6.2
 	github.com/cloudflare/cloudflare-go v0.115.0
 	github.com/cloudflare/cloudflare-go/v4 v4.6.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.159.0
+	github.com/digitalocean/godo v1.160.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -55,8 +55,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/transip/gotransip/v6 v6.26.0
-	go.etcd.io/etcd/api/v3 v3.6.3
-	go.etcd.io/etcd/client/v3 v3.6.3
+	go.etcd.io/etcd/api/v3 v3.6.4
+	go.etcd.io/etcd/client/v3 v3.6.4
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.42.0
 	golang.org/x/oauth2 v0.30.0
@@ -170,7 +170,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.6.3 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
