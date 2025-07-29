@@ -616,37 +616,46 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			if chErr != nil {
 				return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
 			}
-			if change.Action == cloudFlareUpdate {
+			switch change.Action {
+			case cloudFlareUpdate:
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
 				}
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
+					log.WithFields(logFields).Warnf("failed to find previous record for update, attempting to create instead: %v", change.ResourceRecord)
+					// Convert UPDATE to CREATE when record is not found
+					recordParam := getCreateDNSRecordParam(*change)
+					_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to create record after update failure: %v", err)
+					}
+				} else {
+					recordParam := updateDNSRecordParam(*change)
+					recordParam.ID = recordID
+					err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to update record: %v", err)
+					}
 				}
-				recordParam := updateDNSRecordParam(*change)
-				recordParam.ID = recordID
-				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", err)
-				}
-			} else if change.Action == cloudFlareDelete {
+			case cloudFlareDelete:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-					continue
-				}
-				err := p.Client.DeleteDNSRecord(ctx, resourceContainer, recordID)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
+					log.WithFields(logFields).Warnf("failed to find record for deletion, record may already be deleted: %v", change.ResourceRecord)
+					// Don't treat this as a failure - the record might already be deleted
+				} else {
+					err := p.Client.DeleteDNSRecord(ctx, resourceContainer, recordID)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to delete record: %v", err)
+					}
 				}
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true
 				}
-			} else if change.Action == cloudFlareCreate {
+			case cloudFlareCreate:
 				recordParam := getCreateDNSRecordParam(*change)
 				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {

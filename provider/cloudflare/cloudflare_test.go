@@ -52,15 +52,20 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	Zones                 map[string]string
-	Records               map[string]map[string]cloudflare.DNSRecord
-	Actions               []MockAction
-	listZonesError        error
-	zoneDetailsError      error
-	listZonesContextError error
-	dnsRecordsError       error
-	customHostnames       map[string][]cloudflare.CustomHostname
-	regionalHostnames     map[string][]regionalHostname
+	Zones                  map[string]string
+	Records                map[string]map[string]cloudflare.DNSRecord
+	Actions                []MockAction
+	listZonesError         error
+	zoneDetailsError       error
+	listZonesContextError  error
+	dnsRecordsError        error
+	createError            error
+	updateError            error
+	deleteError            error
+	customHostnamesError   error
+	regionalHostnamesError error
+	customHostnames        map[string][]cloudflare.CustomHostname
+	regionalHostnames      map[string][]regionalHostname
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -158,6 +163,10 @@ func generateDNSRecordID(rrtype string, name string, content string) string {
 }
 
 func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error) {
+	if m.createError != nil {
+		return cloudflare.DNSRecord{}, m.createError
+	}
+
 	recordData := getDNSRecordFromRecordParams(rp)
 	if recordData.ID == "" {
 		recordData.ID = generateDNSRecordID(recordData.Type, recordData.Name, recordData.Content)
@@ -186,7 +195,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		for _, record := range zone {
 			if strings.HasPrefix(record.Name, "newerror-list-") {
-				m.DeleteDNSRecord(ctx, rc, record.ID)
+				_ = m.DeleteDNSRecord(ctx, rc, record.ID)
 				return nil, &cloudflare.ResultInfo{}, errors.New("failed to list erroring DNS record")
 			}
 			result = append(result, record)
@@ -224,6 +233,10 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 }
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error {
+	if m.updateError != nil {
+		return m.updateError
+	}
+
 	recordData := getDNSRecordFromRecordParams(rp)
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
@@ -243,6 +256,10 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 }
 
 func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
+	if m.deleteError != nil {
+		return m.deleteError
+	}
+
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
 		ZoneId:   rc.Identifier,
@@ -282,7 +299,7 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 		for idx := (page - 1) * perPage; idx < min(len(chs), page*perPage); idx++ {
 			ch := m.customHostnames[zoneID][idx]
 			if strings.HasPrefix(ch.Hostname, "newerror-list-") {
-				m.DeleteCustomHostname(ctx, zoneID, ch.ID)
+				_ = m.DeleteCustomHostname(ctx, zoneID, ch.ID)
 				return nil, cloudflare.ResultInfo{}, errors.New("failed to list erroring custom hostname")
 			}
 			result = append(result, ch)
@@ -1095,7 +1112,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
-	td.Cmp(t, client.Actions, []MockAction{
+	td.CmpDeeply(t, client.Actions, []MockAction{
 		{
 			Name:     "Create",
 			ZoneId:   "001",
@@ -1736,7 +1753,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		},
 	}
 
-	provider.AdjustEndpoints(endpoints)
+	endpoints, _ = provider.AdjustEndpoints(endpoints)
 
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{
@@ -2592,6 +2609,7 @@ func TestZoneHasPaidPlan(t *testing.T) {
 	}
 	assert.False(t, cfproviderWithZoneError.ZoneHasPaidPlan("subdomain.foo.com"))
 }
+
 func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 
@@ -2716,22 +2734,24 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 
 	// Test with custom hostnames enabled and disabled
 	for _, tc := range cases {
-		if tc.customHostnamesEnabled {
-			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: true}
-		} else {
-			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: false}
-		}
-		hook.Reset()
-		err := provider.ApplyChanges(context.Background(), tc.changes)
-		assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
-		errorLogCount := 0
-		for _, entry := range hook.Entries {
-			if entry.Level == log.ErrorLevel &&
-				strings.Contains(entry.Message, "failed to create cloudflare change") {
-				errorLogCount++
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.customHostnamesEnabled {
+				provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: true}
+			} else {
+				provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: false}
 			}
-		}
-		assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
+			hook.Reset()
+			err := provider.ApplyChanges(context.Background(), tc.changes)
+			assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
+			errorLogCount := 0
+			for _, entry := range hook.Entries {
+				if entry.Level == log.ErrorLevel &&
+					strings.Contains(entry.Message, "failed to create cloudflare change") {
+					errorLogCount++
+				}
+			}
+			assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
+		})
 	}
 }
 
@@ -2759,4 +2779,293 @@ func TestCloudFlareProvider_SupportedAdditionalRecordTypes(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestCloudflareApplyChanges_UpdateFallbackToCreate(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{})
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       false,
+	}
+
+	changes := &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("test.bar.com", endpoint.RecordTypeCNAME, endpoint.TTL(120), "example.com"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("test.bar.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
+		},
+	}
+
+	// Apply the changes - this should fallback to CREATE since no records exist
+	err := provider.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err)
+
+	// Verify that a CREATE operation was performed (not UPDATE)
+	// The mock client should have received a CreateDNSRecord call
+	records := client.Records["001"]
+	assert.Len(t, records, 1, "Should have created one record")
+
+	// Get the first (and only) record from the map
+	var createdRecord cloudflare.DNSRecord
+	for _, record := range records {
+		createdRecord = record
+		break
+	}
+
+	assert.Equal(t, "test.bar.com", createdRecord.Name)
+	assert.Equal(t, endpoint.RecordTypeCNAME, createdRecord.Type)
+	assert.Equal(t, "example.com", createdRecord.Content)
+	assert.Equal(t, 300, createdRecord.TTL)
+}
+
+func TestCloudflareApplyChanges_DeleteNonExistentRecord(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{})
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       false,
+	}
+
+	toDelete := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("test.bar.com", endpoint.RecordTypeCNAME, endpoint.TTL(120), "example.com"),
+	}
+
+	changes := &plan.Changes{
+		Delete: toDelete,
+	}
+
+	// Apply the changes - this should gracefully handle the missing record
+	err := provider.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err, "DELETE operation should not fail when record doesn't exist")
+
+	// Verify no records exist after the operation
+	records := client.Records["001"]
+	assert.Empty(t, records, "Should have no records")
+}
+
+func TestCloudflareSubmitChanges_ErrorHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		setupClient func() *mockCloudFlareClient
+		changes     []*cloudFlareChange
+		expectError bool
+		errorMsg    string
+	}{{
+		name: "handles zones error",
+		setupClient: func() *mockCloudFlareClient {
+			client := NewMockCloudFlareClient()
+			client.listZonesContextError = errors.New("zones API error")
+			return client
+		},
+		changes: []*cloudFlareChange{
+			{
+				Action: cloudFlareCreate,
+				ResourceRecord: cloudflare.DNSRecord{
+					Name:    "test.bar.com",
+					Type:    "A",
+					Content: "1.2.3.4",
+					TTL:     300,
+				},
+			},
+		},
+		expectError: true,
+		errorMsg:    "zones API error",
+	},
+		{
+			name: "handles list DNS records error",
+			setupClient: func() *mockCloudFlareClient {
+				client := NewMockCloudFlareClient()
+				client.dnsRecordsError = errors.New("DNS records API error")
+				return client
+			},
+			changes: []*cloudFlareChange{
+				{
+					Action: cloudFlareCreate,
+					ResourceRecord: cloudflare.DNSRecord{
+						Name:    "test.bar.com",
+						Type:    "A",
+						Content: "1.2.3.4",
+						TTL:     300,
+					},
+				},
+			},
+			expectError: true,
+			errorMsg:    "could not fetch records from zone",
+		},
+		{
+			name: "handles create record error",
+			setupClient: func() *mockCloudFlareClient {
+				client := NewMockCloudFlareClient()
+				client.createError = errors.New("create record failed")
+				return client
+			},
+			changes: []*cloudFlareChange{
+				{
+					Action: cloudFlareCreate,
+					ResourceRecord: cloudflare.DNSRecord{
+						Name:    "test.bar.com",
+						Type:    "A",
+						Content: "1.2.3.4",
+						TTL:     300,
+					},
+				},
+			},
+			expectError: true,
+			errorMsg:    "failed to submit all changes",
+		}, {
+			name: "handles update record error",
+			setupClient: func() *mockCloudFlareClient {
+				client := NewMockCloudFlareClient()
+				// Add existing record to zone 001
+				client.Records["001"]["existing-record"] = cloudflare.DNSRecord{
+					ID:      "existing-record",
+					Name:    "test.bar.com",
+					Type:    "A",
+					Content: "1.2.3.4",
+					TTL:     300,
+				}
+				client.updateError = errors.New("update record failed")
+				return client
+			},
+			changes: []*cloudFlareChange{
+				{
+					Action: cloudFlareUpdate,
+					ResourceRecord: cloudflare.DNSRecord{
+						Name:    "test.bar.com",
+						Type:    "A",
+						Content: "1.2.3.4", // Same content so getRecordID can find it
+						TTL:     600,       // Different TTL to make it a meaningful update
+					},
+				},
+			},
+			expectError: true,
+			errorMsg:    "failed to submit all changes",
+		},
+		{
+			name: "handles delete record error",
+			setupClient: func() *mockCloudFlareClient {
+				client := NewMockCloudFlareClient()
+				// Add existing record to zone 001
+				client.Records["001"]["existing-record"] = cloudflare.DNSRecord{
+					ID:      "existing-record",
+					Name:    "test.bar.com",
+					Type:    "A",
+					Content: "1.2.3.4",
+					TTL:     300,
+				}
+				client.deleteError = errors.New("delete record failed")
+				return client
+			},
+			changes: []*cloudFlareChange{
+				{
+					Action: cloudFlareDelete,
+					ResourceRecord: cloudflare.DNSRecord{
+						Name:    "test.bar.com",
+						Type:    "A",
+						Content: "1.2.3.4", // Same content so getRecordID can find it
+						TTL:     300,
+					},
+				},
+			},
+			expectError: true,
+			errorMsg:    "failed to submit all changes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := tt.setupClient()
+			provider := &CloudFlareProvider{
+				Client:       client,
+				domainFilter: endpoint.NewDomainFilter([]string{"bar.com", "foo.com"}),
+				DryRun:       false,
+			}
+
+			err := provider.submitChanges(context.Background(), tt.changes)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestCloudflareSubmitChanges_EmptyChanges(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       false,
+	}
+
+	err := provider.submitChanges(context.Background(), []*cloudFlareChange{})
+	assert.NoError(t, err)
+}
+
+func TestCloudflareSubmitChanges_DryRun(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       true,
+	}
+
+	changes := []*cloudFlareChange{
+		{
+			Action: cloudFlareCreate,
+			ResourceRecord: cloudflare.DNSRecord{
+				Name:    "test.bar.com",
+				Type:    "A",
+				Content: "1.2.3.4",
+				TTL:     300,
+			},
+		},
+	}
+
+	err := provider.submitChanges(context.Background(), changes)
+	assert.NoError(t, err)
+
+	// Should not have made any API calls
+	assert.Empty(t, client.Actions)
+}
+
+func TestCloudflareSubmitChanges_UpdateFallbackCreateFailure(t *testing.T) {
+	// This test specifically covers the "failed to create record after update failure" log line
+	client := NewMockCloudFlareClient() // No existing records to ensure getRecordID returns ""
+	client.createError = errors.New("create operation failed")
+
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DryRun:       false,
+	}
+
+	changes := []*cloudFlareChange{
+		{
+			Action: cloudFlareUpdate,
+			ResourceRecord: cloudflare.DNSRecord{
+				Name:    "nonexistent.bar.com",
+				Type:    "A",
+				Content: "1.2.3.4",
+				TTL:     300,
+			},
+		},
+	}
+
+	// This should:
+	// 1. Try to update a record
+	// 2. Fail to find the record (getRecordID returns "")
+	// 3. Fall back to create
+	// 4. Fail the create operation
+	// 5. Log "failed to create record after update failure"
+	err := provider.submitChanges(context.Background(), changes)
+
+	// Should return an error since the fallback create failed
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to submit all changes")
 }
