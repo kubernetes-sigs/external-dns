@@ -78,7 +78,7 @@ type AWSSDProvider struct {
 	// only consider namespaces ending in this suffix
 	namespaceFilter *endpoint.DomainFilter
 	// filter namespace by type (private or public)
-	namespaceTypeFilter sdtypes.NamespaceFilter
+	namespaceTypeFilter []sdtypes.NamespaceFilter
 	// enables service without instances cleanup
 	cleanEmptyService bool
 	// filter services for removal
@@ -102,21 +102,28 @@ func NewAWSSDProvider(domainFilter *endpoint.DomainFilter, namespaceType string,
 	return p, nil
 }
 
-// newSdNamespaceFilter initialized AWS SD Namespace Filter based on given string config
-func newSdNamespaceFilter(namespaceTypeConfig string) sdtypes.NamespaceFilter {
+// newSdNamespaceFilter returns NamespaceFilter based on the given namespace type configuration.
+// If the config is "public", it filters for public namespaces; if "private", for private namespaces.
+// For any other value (including empty), it returns filters for both public and private namespaces.
+// ref: https://docs.aws.amazon.com/cloud-map/latest/api/API_ListNamespaces.html
+func newSdNamespaceFilter(namespaceTypeConfig string) []sdtypes.NamespaceFilter {
 	switch namespaceTypeConfig {
 	case sdNamespaceTypePublic:
-		return sdtypes.NamespaceFilter{
-			Name:   sdtypes.NamespaceFilterNameType,
-			Values: []string{string(sdtypes.NamespaceTypeDnsPublic)},
+		return []sdtypes.NamespaceFilter{
+			{
+				Name:   sdtypes.NamespaceFilterNameType,
+				Values: []string{string(sdtypes.NamespaceTypeDnsPublic)},
+			},
 		}
 	case sdNamespaceTypePrivate:
-		return sdtypes.NamespaceFilter{
-			Name:   sdtypes.NamespaceFilterNameType,
-			Values: []string{string(sdtypes.NamespaceTypeDnsPrivate)},
+		return []sdtypes.NamespaceFilter{
+			{
+				Name:   sdtypes.NamespaceFilterNameType,
+				Values: []string{string(sdtypes.NamespaceTypeDnsPrivate)},
+			},
 		}
 	default:
-		return sdtypes.NamespaceFilter{}
+		return []sdtypes.NamespaceFilter{}
 	}
 }
 
@@ -354,7 +361,7 @@ func (p *AWSSDProvider) ListNamespaces(ctx context.Context) ([]*sdtypes.Namespac
 	namespaces := make([]*sdtypes.NamespaceSummary, 0)
 
 	paginator := sd.NewListNamespacesPaginator(p.client, &sd.ListNamespacesInput{
-		Filters: []sdtypes.NamespaceFilter{p.namespaceTypeFilter},
+		Filters: p.namespaceTypeFilter,
 	})
 	for paginator.HasMorePages() {
 		resp, err := paginator.NextPage(ctx)

@@ -118,19 +118,19 @@ Note that the key used for encryption should be a secure key and properly manage
 Python
 
 ```python
-python -c 'import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
+python -c 'import os,base64; print(base64.standard_b64encode(os.urandom(32)).decode())'
 ```
 
 Bash
 
 ```shell
-dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d -- '\n' | tr -- '+/' '-_'; echo
+dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64; echo
 ```
 
 OpenSSL
 
 ```shell
-openssl rand -base64 32 | tr -- '+/' '-_'
+openssl rand -base64 32
 ```
 
 PowerShell
@@ -138,7 +138,7 @@ PowerShell
 ```powershell
 # Add System.Web assembly to session, just in case
 Add-Type -AssemblyName System.Web
-[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.Web.Security.Membership]::GeneratePassword(32,4))).Replace("+","-").Replace("/","_")
+[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.Web.Security.Membership]::GeneratePassword(32,4)))
 ```
 
 Terraform
@@ -146,7 +146,6 @@ Terraform
 ```hcl
 resource "random_password" "txt_key" {
   length           = 32
-  override_special = "-_"
 }
 ```
 

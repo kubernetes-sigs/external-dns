@@ -20,6 +20,7 @@ Provider supported configurations
 | Google GCP    | n/a        | yes     | 300                   |
 | InMemory      | n/a        | n/a     | n/a                   |
 | Linode        | n/a        | n/a     | n/a                   |
+| Myra Security | n/a        | yes     | 300                   |
 | NS1           | n/a        | yes     | 10                    |
 | OCI           | yes        | yes     | 300                   |
 | OVH           | n/a        | yes     | 0                     |

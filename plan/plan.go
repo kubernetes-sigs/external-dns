@@ -24,9 +24,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/idna"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 )
 
 // PropertyComparator is used in Plan for comparing the previous and current custom annotations.
@@ -419,16 +419,10 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Ma
 	return filtered
 }
 
-var idnaProfile = idna.New(
-	idna.MapForLookup(),
-	idna.Transitional(true),
-	idna.StrictDomainName(false),
-)
-
 // normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
 // it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
 func normalizeDNSName(dnsName string) string {
-	s, err := idnaProfile.ToASCII(strings.TrimSpace(dnsName))
+	s, err := idna.Profile.ToASCII(strings.TrimSpace(dnsName))
 	if err != nil {
 		log.Warnf(`Got error while parsing DNSName %s: %v`, dnsName, err)
 	}

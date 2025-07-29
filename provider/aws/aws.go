@@ -729,56 +729,59 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 				log.Infof("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 			}
 
-			if !p.dryRun {
-				params := &route53.ChangeResourceRecordSetsInput{
-					HostedZoneId: aws.String(z),
-					ChangeBatch: &route53types.ChangeBatch{
-						Changes: b.Route53Changes(),
-					},
-				}
+			if p.dryRun {
+				log.Debug("Dry run mode, skipping change submission")
+				continue
+			}
 
-				successfulChanges := 0
+			params := &route53.ChangeResourceRecordSetsInput{
+				HostedZoneId: aws.String(z),
+				ChangeBatch: &route53types.ChangeBatch{
+					Changes: b.Route53Changes(),
+				},
+			}
 
-				client := p.clients[zones[z].profile]
-				if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-					log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
+			successfulChanges := 0
 
-					changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+			client := p.clients[zones[z].profile]
+			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
-					if len(changesByOwnership) > 1 {
-						log.Debug("Trying to submit change sets one-by-one instead")
-						for _, changes := range changesByOwnership {
-							if log.Logger.IsLevelEnabled(debugLevel) {
-								for _, c := range changes {
-									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
-								}
-							}
-							params.ChangeBatch = &route53types.ChangeBatch{
-								Changes: changes.Route53Changes(),
-							}
-							if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-								failedUpdate = true
-								log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
-								p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
-							} else {
-								successfulChanges = successfulChanges + len(changes)
+				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+
+				if len(changesByOwnership) > 1 {
+					log.Debug("Trying to submit change sets one-by-one instead")
+					for _, changes := range changesByOwnership {
+						if log.Logger.IsLevelEnabled(debugLevel) {
+							for _, c := range changes {
+								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 							}
 						}
-					} else {
-						failedUpdate = true
+						params.ChangeBatch = &route53types.ChangeBatch{
+							Changes: changes.Route53Changes(),
+						}
+						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+							failedUpdate = true
+							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
+							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
+						} else {
+							successfulChanges = successfulChanges + len(changes)
+						}
 					}
 				} else {
-					successfulChanges = len(b)
+					failedUpdate = true
 				}
+			} else {
+				successfulChanges = len(b)
+			}
 
-				if successfulChanges > 0 {
-					// z is the R53 Hosted Zone ID already as aws.StringValue
-					log.Infof("%d record(s) were successfully updated", successfulChanges)
-				}
+			if successfulChanges > 0 {
+				// z is the R53 Hosted Zone ID already as aws.StringValue
+				log.Infof("%d record(s) were successfully updated", successfulChanges)
+			}
 
-				if i != len(batchCs)-1 {
-					time.Sleep(p.batchChangeInterval)
-				}
+			if i != len(batchCs)-1 {
+				time.Sleep(p.batchChangeInterval)
 			}
 		}
 
