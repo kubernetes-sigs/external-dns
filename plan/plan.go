@@ -87,13 +87,13 @@ func (changes *Changes) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func MkUpdates(old []*endpoint.Endpoint, new []*endpoint.Endpoint) ([]*Update, error) {
+func MkUpdates(olds []*endpoint.Endpoint, news []*endpoint.Endpoint) ([]*Update, error) {
 	updates := []*Update{}
-	if nOld, nNew := len(old), len(new); nOld != nNew {
-		return nil, fmt.Errorf("Number of old updates (%v) does not match number of new updates (%v)", nOld, nNew)
+	if nOld, nNew := len(olds), len(news); nOld != nNew {
+		return nil, fmt.Errorf("number of old updates (%v) does not match number of new updates (%v)", nOld, nNew)
 	}
-	for i, old := range old {
-		updates = append(updates, &Update{Old: old, New: new[i]})
+	for i, old := range olds {
+		updates = append(updates, &Update{Old: old, New: news[i]})
 	}
 	return updates, nil
 }

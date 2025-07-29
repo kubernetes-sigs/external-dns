@@ -304,7 +304,6 @@ func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[strin
 func merge(updates []*plan.Update) []*endpoint.Endpoint {
 	var result []*endpoint.Endpoint
 	for _, update := range updates {
-
 		if !update.New.Targets.Same(update.Old.Targets) {
 			// new target: always update, TTL will be overwritten too if necessary
 			result = append(result, update.New)

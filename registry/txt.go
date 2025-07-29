@@ -284,8 +284,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		// when we update old TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// NOTE: Whether `generateTXTRecord` returns `nil` depends only on DNSName, which will be the same for `old` and `new`
-		if old, new := im.generateTXTRecord(r.Old), im.generateTXTRecord(r.New); old != nil && new != nil {
-			filteredChanges.Update = append(filteredChanges.Update, &plan.Update{Old: old, New: new})
+		if old, new_ := im.generateTXTRecord(r.Old), im.generateTXTRecord(r.New); old != nil && new_ != nil {
+			filteredChanges.Update = append(filteredChanges.Update, &plan.Update{Old: old, New: new_})
 		}
 		if im.cacheInterval > 0 {
 			// remove old version of record from cache
