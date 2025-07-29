@@ -4713,7 +4713,7 @@ func TestServiceTypes_isNodeInformerRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter, _ := newServiceTypesFilter(tt.filter)
-			got := filter.isAllOrRequired(tt.required...)
+			got := filter.isRequired(tt.required...)
 			assert.Equal(t, tt.want, got)
 		})
 	}

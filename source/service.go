@@ -108,7 +108,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 
 	var endpointSlicesInformer discoveryinformers.EndpointSliceInformer
 	var podInformer coreinformers.PodInformer
-	if sTypesFilter.isAllOrRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
 		podInformer = informerFactory.Core().V1().Pods()
 
@@ -137,7 +137,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	}
 
 	var nodeInformer coreinformers.NodeInformer
-	if sTypesFilter.isAllOrRequired(v1.ServiceTypeNodePort) {
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
 		nodeInformer = informerFactory.Core().V1().Nodes()
 		_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
@@ -793,10 +793,10 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	_, _ = sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	if sc.listenEndpointEvents && sc.serviceTypeFilter.isAllOrRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
-	if sc.serviceTypeFilter.isAllOrRequired(v1.ServiceTypeNodePort) {
+	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
 		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
@@ -833,9 +833,9 @@ func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
 	return !sc.enabled || sc.types[serviceType]
 }
 
-// isAllOrRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.
+// isRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.
 // If no options are provided, it returns true.
-func (sc *serviceTypes) isAllOrRequired(opts ...v1.ServiceType) bool {
+func (sc *serviceTypes) isRequired(opts ...v1.ServiceType) bool {
 	if len(opts) == 0 || !sc.enabled {
 		return true
 	}
