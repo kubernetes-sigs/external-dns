@@ -102,7 +102,7 @@ type GoogleProvider struct {
 	provider.BaseProvider
 	// The Google project to work in
 	project string
-	// Enabled dry-run will print any modifying actions rather than execute them.
+	// IsEnabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
 	// Max batch size to submit to Google Cloud DNS per transaction.
 	batchChangeSize int
