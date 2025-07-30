@@ -21,7 +21,7 @@ it whatever you prefer).
         "route53:ListTagsForResources"
       ],
       "Resource": [
-        "arn:aws:route53:::hostedzone/<INSERT YOUR ZONE ID HERE>"
+        "arn:aws:route53:::hostedzone/*"
       ]
     },
     {
@@ -53,7 +53,7 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
         "route53:ListTagsForResources"
       ],
       "Resource": [
-        "arn:aws:route53:::hostedzone/<INSERT YOUR ZONE ID HERE>"
+        "arn:aws:route53:::hostedzone/*"
       ],
       "Condition": {
         "ForAllValues:StringLike": {
