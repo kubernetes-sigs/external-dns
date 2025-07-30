@@ -37,7 +37,7 @@ func TestComputeMetrics(t *testing.T) {
 		t.Errorf("Expected not empty metrics registry, got %d", len(reg.Metrics))
 	}
 
-	assert.Len(t, reg.Metrics, 19)
+	assert.Len(t, reg.Metrics, 20)
 }
 
 func TestGenerateMarkdownTableRenderer(t *testing.T) {

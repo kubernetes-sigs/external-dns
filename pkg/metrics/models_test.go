@@ -17,18 +17,17 @@ limitations under the License.
 package metrics
 
 import (
+	"reflect"
 	"testing"
 
-	dto "github.com/prometheus/client_model/go"
-
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewGaugeWithOpts(t *testing.T) {
 	opts := prometheus.GaugeOpts{
 		Name:      "test_gauge",
-		Namespace: "test_namespace",
 		Subsystem: "test_subsystem",
 		Help:      "This is a test gauge",
 	}
@@ -37,7 +36,7 @@ func TestNewGaugeWithOpts(t *testing.T) {
 
 	assert.Equal(t, "gauge", gaugeMetric.Type)
 	assert.Equal(t, "test_gauge", gaugeMetric.Name)
-	assert.Equal(t, "test_namespace", gaugeMetric.Namespace)
+	assert.Equal(t, Namespace, gaugeMetric.Namespace)
 	assert.Equal(t, "test_subsystem", gaugeMetric.Subsystem)
 	assert.Equal(t, "This is a test gauge", gaugeMetric.Help)
 	assert.Equal(t, "test_subsystem_test_gauge", gaugeMetric.FQDN)
@@ -47,7 +46,6 @@ func TestNewGaugeWithOpts(t *testing.T) {
 func TestNewCounterWithOpts(t *testing.T) {
 	opts := prometheus.CounterOpts{
 		Name:      "test_counter",
-		Namespace: "test_namespace",
 		Subsystem: "test_subsystem",
 		Help:      "This is a test counter",
 	}
@@ -56,7 +54,7 @@ func TestNewCounterWithOpts(t *testing.T) {
 
 	assert.Equal(t, "counter", counterMetric.Type)
 	assert.Equal(t, "test_counter", counterMetric.Name)
-	assert.Equal(t, "test_namespace", counterMetric.Namespace)
+	assert.Equal(t, Namespace, counterMetric.Namespace)
 	assert.Equal(t, "test_subsystem", counterMetric.Subsystem)
 	assert.Equal(t, "This is a test counter", counterMetric.Help)
 	assert.Equal(t, "test_subsystem_test_counter", counterMetric.FQDN)
@@ -77,7 +75,7 @@ func TestNewCounterVecWithOpts(t *testing.T) {
 
 	assert.Equal(t, "counter", counterVecMetric.Type)
 	assert.Equal(t, "test_counter_vec", counterVecMetric.Name)
-	assert.Equal(t, "test_namespace", counterVecMetric.Namespace)
+	assert.Equal(t, Namespace, counterVecMetric.Namespace)
 	assert.Equal(t, "test_subsystem", counterVecMetric.Subsystem)
 	assert.Equal(t, "This is a test counter vector", counterVecMetric.Help)
 	assert.Equal(t, "test_subsystem_test_counter_vec", counterVecMetric.FQDN)
@@ -112,4 +110,21 @@ func TestGaugeV_SetWithLabels(t *testing.T) {
 	assert.InDelta(t, 4.56, *m.Gauge.Value, 0.01)
 
 	assert.Len(t, m.Label, 2)
+}
+
+func TestNewBuildInfoCollector(t *testing.T) {
+	metric := NewGaugeFuncMetric(prometheus.GaugeOpts{
+		Namespace: Namespace,
+		Name:      "build_info",
+		ConstLabels: prometheus.Labels{
+			"version":   "0.0.1",
+			"goversion": "1.24",
+			"arch":      "arm64",
+		},
+	})
+
+	desc := metric.GaugeFunc.Desc()
+
+	assert.Equal(t, "external_dns_build_info", reflect.ValueOf(desc).Elem().FieldByName("fqName").String())
+	assert.Contains(t, desc.String(), "version=\"0.0.1\"")
 }

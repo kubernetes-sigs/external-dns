@@ -50,7 +50,7 @@
 | `--service-type-filter=SERVICE-TYPE-FILTER` | The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName) |
 | `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
-| `--[no-]traefik-disable-legacy` | Disable listeners on Resources under the traefik.containo.us API Group |
+| `--[no-]traefik-enable-legacy` | Enable legacy listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
@@ -66,7 +66,7 @@
 | `--google-zone-visibility=` | When using the Google provider, filter for zones with this visibility (optional, options: public, private) |
 | `--alibaba-cloud-config-file="/etc/kubernetes/alibaba-cloud.json"` | When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud) |
 | `--alibaba-cloud-zone-type=` | When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private) |
-| `--aws-zone-type=` | When using the AWS provider, filter for zones of this type (optional, options: public, private) |
+| `--aws-zone-type=` | When using the AWS provider, filter for zones of this type (optional, default: any, options: public, private) |
 | `--aws-zone-tags=` | When using the AWS provider, filter for zones with these tags |
 | `--aws-profile=` | When using the AWS provider, name of the profile to use |
 | `--aws-assume-role=""` | When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional) |

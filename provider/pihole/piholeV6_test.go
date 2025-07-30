@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -60,7 +61,7 @@ func (t *testPiholeClientV6) createRecord(_ context.Context, ep *endpoint.Endpoi
 func (t *testPiholeClientV6) deleteRecord(_ context.Context, ep *endpoint.Endpoint) error {
 	newEPs := make([]*endpoint.Endpoint, 0)
 	for _, existing := range t.endpoints {
-		if existing.DNSName != ep.DNSName && existing.Targets[0] != ep.Targets[0] {
+		if existing.DNSName != ep.DNSName || cmp.Diff(existing.Targets, ep.Targets) != "" || existing.RecordType != ep.RecordType {
 			newEPs = append(newEPs, existing)
 		}
 	}
@@ -82,7 +83,8 @@ func (r *requestTrackerV6) clear() {
 func TestErrorHandling(t *testing.T) {
 	requests := requestTrackerV6{}
 	p := &PiholeProvider{
-		api: &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		api:        &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		apiVersion: "6",
 	}
 
 	p.api.(*testPiholeClientV6).trigger = "AERROR"
@@ -121,7 +123,8 @@ func TestNewPiholeProviderV6(t *testing.T) {
 func TestProviderV6(t *testing.T) {
 	requests := requestTrackerV6{}
 	p := &PiholeProvider{
-		api: &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		api:        &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		apiVersion: "6",
 	}
 
 	records, err := p.Records(context.Background())
@@ -343,6 +346,11 @@ func TestProviderV6(t *testing.T) {
 				RecordType: endpoint.RecordTypeA,
 			},
 			{
+				DNSName:    "test2.example.com",
+				Targets:    []string{"10.0.0.2"},
+				RecordType: endpoint.RecordTypeA,
+			},
+			{
 				DNSName:    "test1.example.com",
 				Targets:    []string{"fc00::1:192:168:1:1"},
 				RecordType: endpoint.RecordTypeAAAA,
@@ -383,7 +391,7 @@ func TestProviderV6(t *testing.T) {
 
 	expectedCreateA := endpoint.Endpoint{
 		DNSName:    "test2.example.com",
-		Targets:    []string{"10.0.0.1"},
+		Targets:    []string{"10.0.0.1", "10.0.0.2"},
 		RecordType: endpoint.RecordTypeA,
 	}
 	expectedDeleteA := endpoint.Endpoint{

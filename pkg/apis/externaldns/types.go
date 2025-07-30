@@ -115,7 +115,6 @@ type Config struct {
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
-	CloudflareRecordComment                       string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
 	AkamaiClientToken                             string
@@ -209,7 +208,7 @@ type Config struct {
 	WebhookProviderReadTimeout                    time.Duration
 	WebhookProviderWriteTimeout                   time.Duration
 	WebhookServer                                 bool
-	TraefikDisableLegacy                          bool
+	TraefikEnableLegacy                           bool
 	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
@@ -359,7 +358,7 @@ var defaultConfig = &Config{
 	TLSCA:                        "",
 	TLSClientCert:                "",
 	TLSClientCertKey:             "",
-	TraefikDisableLegacy:         false,
+	TraefikEnableLegacy:          false,
 	TraefikDisableNew:            false,
 	TransIPAccountName:           "",
 	TransIPPrivateKeyFile:        "",
@@ -486,7 +485,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").Default(defaultConfig.ServiceTypeFilter...).StringsVar(&cfg.ServiceTypeFilter)
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy")
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
-	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
+	app.Flag("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikEnableLegacy)).BoolVar(&cfg.TraefikEnableLegacy)
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
 	// Flags related to providers
@@ -505,7 +504,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)").Default(defaultConfig.GoogleZoneVisibility).EnumVar(&cfg.GoogleZoneVisibility, "", "public", "private")
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
-	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
+	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, default: any, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
 	app.Flag("aws-profile", "When using the AWS provider, name of the profile to use").Default("").StringsVar(&cfg.AWSProfiles)
 	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
@@ -535,7 +534,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)").Default(strconv.FormatBool(defaultConfig.CloudflareRegionalServices)).BoolVar(&cfg.CloudflareRegionalServices)
 	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)").StringVar(&cfg.CloudflareRegionKey)
-	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
+	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareDNSRecordsComment)
 
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)

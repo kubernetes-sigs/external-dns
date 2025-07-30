@@ -40,7 +40,7 @@ const (
 	maxInt     = int(maxUint >> 1)
 )
 
-// edgeDNSClient is a proxy interface of the Akamai edgegrid configdns-v2 package that can be stubbed for testing.
+// AkamaiDNSService is a proxy interface of the Akamai edgegrid configdns-v2 package that can be stubbed for testing.
 type AkamaiDNSService interface {
 	ListZones(queryArgs dns.ZoneListQueryArgs) (*dns.ZoneListResponse, error)
 	GetRecordsets(zone string, queryArgs dns.RecordsetQueryArgs) (*dns.RecordSetResponse, error)
@@ -208,7 +208,8 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint, err error) {
+func (p AkamaiProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
+	var endpoints []*endpoint.Endpoint
 	zones, err := p.fetchZones() // returns a filtered set of zones
 	if err != nil {
 		log.Warnf("Failed to identify target zones! Error: %s", err.Error())

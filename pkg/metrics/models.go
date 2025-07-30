@@ -88,6 +88,7 @@ func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
 }
 
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
+	opts.Namespace = Namespace
 	return GaugeMetric{
 		Metric: Metric{
 			Type:      "gauge",
@@ -104,6 +105,7 @@ func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 // NewGaugedVectorOpts creates a new GaugeVec based on the provided GaugeOpts and
 // partitioned by the given label names.
 func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVecMetric {
+	opts.Namespace = Namespace
 	return GaugeVecMetric{
 		Metric: Metric{
 			Type:      "gauge",
@@ -118,6 +120,7 @@ func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVe
 }
 
 func NewCounterWithOpts(opts prometheus.CounterOpts) CounterMetric {
+	opts.Namespace = Namespace
 	return CounterMetric{
 		Metric: Metric{
 			Type:      "counter",
@@ -132,6 +135,7 @@ func NewCounterWithOpts(opts prometheus.CounterOpts) CounterMetric {
 }
 
 func NewCounterVecWithOpts(opts prometheus.CounterOpts, labelNames []string) CounterVecMetric {
+	opts.Namespace = Namespace
 	return CounterVecMetric{
 		Metric: Metric{
 			Type:      "counter",
@@ -142,5 +146,33 @@ func NewCounterVecWithOpts(opts prometheus.CounterOpts, labelNames []string) Cou
 			Help:      opts.Help,
 		},
 		CounterVec: prometheus.NewCounterVec(opts, labelNames),
+	}
+}
+
+type GaugeFuncMetric struct {
+	Metric
+	GaugeFunc prometheus.GaugeFunc
+}
+
+func (g GaugeFuncMetric) Get() *Metric {
+	return &g.Metric
+}
+
+func NewGaugeFuncMetric(opts prometheus.GaugeOpts) GaugeFuncMetric {
+	return GaugeFuncMetric{
+		Metric: Metric{
+			Type: "gauge",
+			Name: opts.Name,
+			FQDN: func() string {
+				if opts.Subsystem != "" {
+					return fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name)
+				}
+				return opts.Name
+			}(),
+			Namespace: opts.Namespace,
+			Subsystem: opts.Subsystem,
+			Help:      opts.Help,
+		},
+		GaugeFunc: prometheus.NewGaugeFunc(opts, func() float64 { return 1 }),
 	}
 }

@@ -1,6 +1,6 @@
 # external-dns
 
-![Version: 1.17.0](https://img.shields.io/badge/Version-1.17.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.17.0](https://img.shields.io/badge/AppVersion-0.17.0-informational?style=flat-square)
+![Version: 1.18.0](https://img.shields.io/badge/Version-1.18.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.18.0](https://img.shields.io/badge/AppVersion-0.18.0-informational?style=flat-square)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -27,7 +27,7 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 After you've installed the repo you can install the chart.
 
 ```shell
-helm upgrade --install external-dns external-dns/external-dns --version 1.17.0
+helm upgrade --install external-dns external-dns/external-dns --version 1.18.0
 ```
 
 ## Providers
@@ -109,6 +109,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
+| gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. |
 | global.imagePullSecrets | list | `[]` | Global image pull secrets. |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |
@@ -127,7 +128,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | podAnnotations | object | `{}` | Annotations to add to the `Pod`. |
 | podLabels | object | `{}` | Labels to add to the `Pod`. |
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
-| policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`. |
+| policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
 | provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |

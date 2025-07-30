@@ -78,7 +78,7 @@ type AWSSDProvider struct {
 	// only consider namespaces ending in this suffix
 	namespaceFilter *endpoint.DomainFilter
 	// filter namespace by type (private or public)
-	namespaceTypeFilter sdtypes.NamespaceFilter
+	namespaceTypeFilter []sdtypes.NamespaceFilter
 	// enables service without instances cleanup
 	cleanEmptyService bool
 	// filter services for removal
@@ -102,21 +102,28 @@ func NewAWSSDProvider(domainFilter *endpoint.DomainFilter, namespaceType string,
 	return p, nil
 }
 
-// newSdNamespaceFilter initialized AWS SD Namespace Filter based on given string config
-func newSdNamespaceFilter(namespaceTypeConfig string) sdtypes.NamespaceFilter {
+// newSdNamespaceFilter returns NamespaceFilter based on the given namespace type configuration.
+// If the config is "public", it filters for public namespaces; if "private", for private namespaces.
+// For any other value (including empty), it returns filters for both public and private namespaces.
+// ref: https://docs.aws.amazon.com/cloud-map/latest/api/API_ListNamespaces.html
+func newSdNamespaceFilter(namespaceTypeConfig string) []sdtypes.NamespaceFilter {
 	switch namespaceTypeConfig {
 	case sdNamespaceTypePublic:
-		return sdtypes.NamespaceFilter{
-			Name:   sdtypes.NamespaceFilterNameType,
-			Values: []string{string(sdtypes.NamespaceTypeDnsPublic)},
+		return []sdtypes.NamespaceFilter{
+			{
+				Name:   sdtypes.NamespaceFilterNameType,
+				Values: []string{string(sdtypes.NamespaceTypeDnsPublic)},
+			},
 		}
 	case sdNamespaceTypePrivate:
-		return sdtypes.NamespaceFilter{
-			Name:   sdtypes.NamespaceFilterNameType,
-			Values: []string{string(sdtypes.NamespaceTypeDnsPrivate)},
+		return []sdtypes.NamespaceFilter{
+			{
+				Name:   sdtypes.NamespaceFilterNameType,
+				Values: []string{string(sdtypes.NamespaceTypeDnsPrivate)},
+			},
 		}
 	default:
-		return sdtypes.NamespaceFilter{}
+		return []sdtypes.NamespaceFilter{}
 	}
 }
 
@@ -130,11 +137,13 @@ func awsTags(tags map[string]string) []sdtypes.Tag {
 }
 
 // Records returns list of all endpoints.
-func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
+func (p *AWSSDProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	namespaces, err := p.ListNamespaces(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, ns := range namespaces {
 		services, err := p.ListServicesByNamespaceID(ctx, ns.Id)
@@ -244,11 +253,13 @@ func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	return nil
 }
 
-func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) (creates []*endpoint.Endpoint, deletes []*endpoint.Endpoint) {
+func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) ([]*endpoint.Endpoint, []*endpoint.Endpoint) {
 	updateNewMap := map[string]*endpoint.Endpoint{}
 	for _, e := range changes.UpdateNew {
 		updateNewMap[e.DNSName] = e
 	}
+
+	var creates, deletes []*endpoint.Endpoint
 
 	for _, old := range changes.UpdateOld {
 		current := updateNewMap[old.DNSName]
@@ -350,7 +361,7 @@ func (p *AWSSDProvider) ListNamespaces(ctx context.Context) ([]*sdtypes.Namespac
 	namespaces := make([]*sdtypes.NamespaceSummary, 0)
 
 	paginator := sd.NewListNamespacesPaginator(p.client, &sd.ListNamespacesInput{
-		Filters: []sdtypes.NamespaceFilter{p.namespaceTypeFilter},
+		Filters: p.namespaceTypeFilter,
 	})
 	for paginator.HasMorePages() {
 		resp, err := paginator.NextPage(ctx)
@@ -618,12 +629,10 @@ func matchingNamespaces(hostname string, namespaces []*sdtypes.NamespaceSummary)
 	return matchingNamespaces
 }
 
-// parse hostname to namespace (domain) and service
-func (p *AWSSDProvider) parseHostname(hostname string) (namespace string, service string) {
+// parseHostname parse hostname to namespace (domain) and service
+func (p *AWSSDProvider) parseHostname(hostname string) (string, string) {
 	parts := strings.Split(hostname, ".")
-	service = parts[0]
-	namespace = strings.Join(parts[1:], ".")
-	return
+	return strings.Join(parts[1:], "."), parts[0]
 }
 
 // determine service routing policy based on endpoint type

@@ -70,11 +70,11 @@ import (
 )
 
 func TestMe(t *testing.T) {
-  hook := testutils.LogsUnderTestWithLogLeve(log.WarnLevel, t)
+  hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
   ... function under tests ...
   testutils.TestHelperLogContains("example warning message", hook, t)
   // provide negative assertion
-  testuitls.TestHelperLogNotContains("this message should not be shown", hook, t)
+  testutils.TestHelperLogNotContains("this message should not be shown", hook, t)
 }
 ```
 

@@ -19,6 +19,7 @@ package endpoint
 import (
 	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -353,7 +354,21 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
-// Apply filter to slice of endpoints and return new filtered slice that includes
+// UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
+func (e *Endpoint) UniqueOrderedTargets() {
+	result := make([]string, 0, len(e.Targets))
+	existing := make(map[string]bool)
+	for _, target := range e.Targets {
+		if _, ok := existing[target]; !ok {
+			result = append(result, target)
+			existing[target] = true
+		}
+	}
+	slices.Sort(result)
+	e.Targets = result
+}
+
+// FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}

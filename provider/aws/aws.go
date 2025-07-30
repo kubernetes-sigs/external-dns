@@ -53,19 +53,27 @@ const (
 	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
 	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
 	// has a `providerSpecificAlias` value of `true`.
-	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
-	providerSpecificWeight                     = "aws/weight"
-	providerSpecificRegion                     = "aws/region"
-	providerSpecificFailover                   = "aws/failover"
-	providerSpecificGeolocationContinentCode   = "aws/geolocation-continent-code"
-	providerSpecificGeolocationCountryCode     = "aws/geolocation-country-code"
-	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
-	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
-	providerSpecificHealthCheckID              = "aws/health-check-id"
-	sameZoneAlias                              = "same-zone"
+	providerSpecificEvaluateTargetHealth               = "aws/evaluate-target-health"
+	providerSpecificWeight                             = "aws/weight"
+	providerSpecificRegion                             = "aws/region"
+	providerSpecificFailover                           = "aws/failover"
+	providerSpecificGeolocationContinentCode           = "aws/geolocation-continent-code"
+	providerSpecificGeolocationCountryCode             = "aws/geolocation-country-code"
+	providerSpecificGeolocationSubdivisionCode         = "aws/geolocation-subdivision-code"
+	providerSpecificGeoProximityLocationAWSRegion      = "aws/geoproximity-region"
+	providerSpecificGeoProximityLocationBias           = "aws/geoproximity-bias"
+	providerSpecificGeoProximityLocationCoordinates    = "aws/geoproximity-coordinates"
+	providerSpecificGeoProximityLocationLocalZoneGroup = "aws/geoproximity-local-zone-group"
+	providerSpecificMultiValueAnswer                   = "aws/multi-value-answer"
+	providerSpecificHealthCheckID                      = "aws/health-check-id"
+	sameZoneAlias                                      = "same-zone"
 	// Currently supported up to 10 health checks or hosted zones.
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTagsForResources.html#API_ListTagsForResources_RequestSyntax
-	batchSize = 10
+	batchSize    = 10
+	minLatitude  = -90.0
+	maxLatitude  = 90.0
+	minLongitude = -180.0
+	maxLongitude = 180.0
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -78,6 +86,7 @@ var canonicalHostedZones = map[string]string{
 	"ca-central-1.elb.amazonaws.com":      "ZQSVJUPU6J1EY",
 	"ca-west-1.elb.amazonaws.com":         "Z06473681N0SF6OS049SD",
 	"ap-east-1.elb.amazonaws.com":         "Z3DQVH9N71FHZ0",
+	"ap-east-2.elb.amazonaws.com":         "Z02789141MW7T1WBU19PO",
 	"ap-south-1.elb.amazonaws.com":        "ZP97RAFLXTNZK",
 	"ap-south-2.elb.amazonaws.com":        "Z0173938T07WNTVAEPZN",
 	"ap-northeast-2.elb.amazonaws.com":    "ZWKZPGTI48KDX",
@@ -115,6 +124,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ca-central-1.amazonaws.com":      "Z2EPGBW3API2WT",
 	"elb.ca-west-1.amazonaws.com":         "Z02754302KBB00W2LKWZ9",
 	"elb.ap-east-1.amazonaws.com":         "Z12Y7K3UBGUAD1",
+	"elb.ap-east-2.amazonaws.com":         "Z09176273OC2HWIAUNYW",
 	"elb.ap-south-1.amazonaws.com":        "ZVDDRBQ08TROA",
 	"elb.ap-south-2.amazonaws.com":        "Z0711778386UTO08407HT",
 	"elb.ap-northeast-3.amazonaws.com":    "Z1GWIQ4HH19I5X",
@@ -153,6 +163,7 @@ var canonicalHostedZones = map[string]string{
 	"us-east-2.vpce.amazonaws.com":      "ZC8PG0KIFKBRI",
 	"af-south-1.vpce.amazonaws.com":     "Z09302161J80N9A7UTP7U",
 	"ap-east-1.vpce.amazonaws.com":      "Z2LIHJ7PKBEMWN",
+	"ap-east-2.vpce.amazonaws.com":      "Z09379811HWP0POAUWVN3",
 	"ap-northeast-1.vpce.amazonaws.com": "Z2E726K9Y6RL4W",
 	"ap-northeast-2.vpce.amazonaws.com": "Z27UANNT0PRK1T",
 	"ap-northeast-3.vpce.amazonaws.com": "Z376B5OMM2JZL2",
@@ -186,6 +197,7 @@ var canonicalHostedZones = map[string]string{
 	"execute-api.us-west-2.amazonaws.com":      "Z2OJLYMUO9EFXC",
 	"execute-api.af-south-1.amazonaws.com":     "Z2DHW2332DAMTN",
 	"execute-api.ap-east-1.amazonaws.com":      "Z3FD1VL90ND7K5",
+	"execute-api.ap-east-2.amazonaws.com":      "Z02909591O7FG9Q56HWB1",
 	"execute-api.ap-south-1.amazonaws.com":     "Z3VO1THU9YC4UR",
 	"execute-api.ap-northeast-2.amazonaws.com": "Z20JF4UZKIW1U8",
 	"execute-api.ap-southeast-1.amazonaws.com": "ZL327KTPIQFUL",
@@ -229,6 +241,12 @@ type Route53Changes []*Route53Change
 type profiledZone struct {
 	profile string
 	zone    *route53types.HostedZone
+}
+
+type geoProximity struct {
+	location *route53types.GeoProximityLocation
+	endpoint *endpoint.Endpoint
+	isSet    bool
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {
@@ -454,10 +472,10 @@ func containsOctalSequence(domain string) bool {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AWSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
-		return nil, provider.NewSoftErrorf("records retrieval failed: %w", err)
+		return nil, provider.NewSoftErrorf("records retrieval failed: %v", err)
 	}
 
 	return p.records(ctx, zones)
@@ -542,6 +560,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 									ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, *r.GeoLocation.SubdivisionCode)
 								}
 							}
+						case r.GeoProximityLocation != nil:
+							handleGeoProximityLocationRecord(&r, ep)
 						default:
 							// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
 						}
@@ -558,6 +578,25 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	}
 
 	return endpoints, nil
+}
+
+func handleGeoProximityLocationRecord(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	if region := aws.ToString(r.GeoProximityLocation.AWSRegion); region != "" {
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, region)
+	}
+
+	if bias := r.GeoProximityLocation.Bias; bias != nil {
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationBias, fmt.Sprintf("%d", aws.ToInt32(bias)))
+	}
+
+	if coords := r.GeoProximityLocation.Coordinates; coords != nil {
+		coordinates := fmt.Sprintf("%s,%s", aws.ToString(coords.Latitude), aws.ToString(coords.Longitude))
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, coordinates)
+	}
+
+	if localZoneGroup := aws.ToString(r.GeoProximityLocation.LocalZoneGroup); localZoneGroup != "" {
+		ep.WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, localZoneGroup)
+	}
 }
 
 // Identify if old and new endpoints require DELETE/CREATE instead of UPDATE.
@@ -602,6 +641,10 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 	var updates []*endpoint.Endpoint
 
 	for i, newE := range newEndpoints {
+		if i >= len(oldEndpoints) || oldEndpoints[i] == nil {
+			log.Debugf("skip %s as endpoint not found in current endpoints", newE.DNSName)
+			continue
+		}
 		oldE := oldEndpoints[i]
 		if p.requiresDeleteCreate(oldE, newE) {
 			deletes = append(deletes, oldE)
@@ -691,56 +734,59 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 				log.Infof("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 			}
 
-			if !p.dryRun {
-				params := &route53.ChangeResourceRecordSetsInput{
-					HostedZoneId: aws.String(z),
-					ChangeBatch: &route53types.ChangeBatch{
-						Changes: b.Route53Changes(),
-					},
-				}
+			if p.dryRun {
+				log.Debug("Dry run mode, skipping change submission")
+				continue
+			}
 
-				successfulChanges := 0
+			params := &route53.ChangeResourceRecordSetsInput{
+				HostedZoneId: aws.String(z),
+				ChangeBatch: &route53types.ChangeBatch{
+					Changes: b.Route53Changes(),
+				},
+			}
 
-				client := p.clients[zones[z].profile]
-				if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-					log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
+			successfulChanges := 0
 
-					changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+			client := p.clients[zones[z].profile]
+			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
-					if len(changesByOwnership) > 1 {
-						log.Debug("Trying to submit change sets one-by-one instead")
-						for _, changes := range changesByOwnership {
-							if log.Logger.IsLevelEnabled(debugLevel) {
-								for _, c := range changes {
-									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
-								}
-							}
-							params.ChangeBatch = &route53types.ChangeBatch{
-								Changes: changes.Route53Changes(),
-							}
-							if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-								failedUpdate = true
-								log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
-								p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
-							} else {
-								successfulChanges = successfulChanges + len(changes)
+				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+
+				if len(changesByOwnership) > 1 {
+					log.Debug("Trying to submit change sets one-by-one instead")
+					for _, changes := range changesByOwnership {
+						if log.Logger.IsLevelEnabled(debugLevel) {
+							for _, c := range changes {
+								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 							}
 						}
-					} else {
-						failedUpdate = true
+						params.ChangeBatch = &route53types.ChangeBatch{
+							Changes: changes.Route53Changes(),
+						}
+						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+							failedUpdate = true
+							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
+							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
+						} else {
+							successfulChanges = successfulChanges + len(changes)
+						}
 					}
 				} else {
-					successfulChanges = len(b)
+					failedUpdate = true
 				}
+			} else {
+				successfulChanges = len(b)
+			}
 
-				if successfulChanges > 0 {
-					// z is the R53 Hosted Zone ID already as aws.StringValue
-					log.Infof("%d record(s) were successfully updated", successfulChanges)
-				}
+			if successfulChanges > 0 {
+				// z is the R53 Hosted Zone ID already as aws.StringValue
+				log.Infof("%d record(s) were successfully updated", successfulChanges)
+			}
 
-				if i != len(batchCs)-1 {
-					time.Sleep(p.batchChangeInterval)
-				}
+			if i != len(batchCs)-1 {
+				time.Sleep(p.batchChangeInterval)
 			}
 		}
 
@@ -832,10 +878,30 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		} else {
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
+
+		adjustGeoProximityLocationEndpoint(ep)
 	}
 
 	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
 	return endpoints, nil
+}
+
+// if the endpoint is using geoproximity, set the bias to 0 if not set
+// this is needed to avoid unnecessary Upserts if the desired endpoint doesn't specify a bias
+func adjustGeoProximityLocationEndpoint(ep *endpoint.Endpoint) {
+	if ep.SetIdentifier == "" {
+		return
+	}
+	_, ok1 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion)
+	_, ok2 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup)
+	_, ok3 := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates)
+
+	if ok1 || ok2 || ok3 {
+		// check if ep has bias property and if not, set it to 0
+		if _, ok := ep.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); !ok {
+			ep.SetProviderSpecificProperty(providerSpecificGeoProximityLocationBias, "0")
+		}
+	}
 }
 
 // newChange returns a route53 Change
@@ -926,6 +992,8 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		if useGeolocation {
 			change.ResourceRecordSet.GeoLocation = geolocation
 		}
+
+		withChangeForGeoProximityEndpoint(change, ep)
 	}
 
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
@@ -939,11 +1007,106 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	return change
 }
 
+func newGeoProximity(ep *endpoint.Endpoint) *geoProximity {
+	return &geoProximity{
+		location: &route53types.GeoProximityLocation{},
+		endpoint: ep,
+		isSet:    false,
+	}
+}
+
+func (gp *geoProximity) withAWSRegion() *geoProximity {
+	if prop, ok := gp.endpoint.GetProviderSpecificProperty(providerSpecificGeoProximityLocationAWSRegion); ok {
+		gp.location.AWSRegion = aws.String(prop)
+		gp.isSet = true
+	}
+	return gp
+}
+
+// add a method to set the local zone group for the geoproximity location
+func (gp *geoProximity) withLocalZoneGroup() *geoProximity {
+	if prop, ok := gp.endpoint.GetProviderSpecificProperty(providerSpecificGeoProximityLocationLocalZoneGroup); ok {
+		gp.location.LocalZoneGroup = aws.String(prop)
+		gp.isSet = true
+	}
+	return gp
+}
+
+// add a method to set the bias for the geoproximity location
+func (gp *geoProximity) withBias() *geoProximity {
+	if prop, ok := gp.endpoint.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); ok {
+		bias, err := strconv.ParseInt(prop, 10, 32)
+		if err != nil {
+			log.Warnf("Failed parsing value of %s: %s: %v; using bias of 0", providerSpecificGeoProximityLocationBias, prop, err)
+			bias = 0
+		}
+		gp.location.Bias = aws.Int32(int32(bias))
+		gp.isSet = true
+	}
+	return gp
+}
+
+// validateCoordinates checks if the given latitude and longitude are valid.
+func validateCoordinates(lat, long string) error {
+	latitude, err := strconv.ParseFloat(lat, 64)
+	if err != nil || latitude < minLatitude || latitude > maxLatitude {
+		return fmt.Errorf("invalid latitude: must be a number between %f and %f", minLatitude, maxLatitude)
+	}
+
+	longitude, err := strconv.ParseFloat(long, 64)
+	if err != nil || longitude < minLongitude || longitude > maxLongitude {
+		return fmt.Errorf("invalid longitude: must be a number between %f and %f", minLongitude, maxLongitude)
+	}
+
+	return nil
+}
+
+func (gp *geoProximity) withCoordinates() *geoProximity {
+	if prop, ok := gp.endpoint.GetProviderSpecificProperty(providerSpecificGeoProximityLocationCoordinates); ok {
+		coordinates := strings.Split(prop, ",")
+		if len(coordinates) == 2 {
+			latitude := coordinates[0]
+			longitude := coordinates[1]
+			if err := validateCoordinates(latitude, longitude); err != nil {
+				log.Warnf("Invalid coordinates %s for name=%s setIdentifier=%s; %v", prop, gp.endpoint.DNSName, gp.endpoint.SetIdentifier, err)
+			} else {
+				gp.location.Coordinates = &route53types.Coordinates{
+					Latitude:  aws.String(latitude),
+					Longitude: aws.String(longitude),
+				}
+				gp.isSet = true
+			}
+		} else {
+			log.Warnf("Invalid coordinates format for %s: %s; expected format 'latitude,longitude'", providerSpecificGeoProximityLocationCoordinates, prop)
+		}
+	}
+	return gp
+}
+
+func (gp *geoProximity) build() *route53types.GeoProximityLocation {
+	if gp.isSet {
+		return gp.location
+	}
+	return nil
+}
+
+func withChangeForGeoProximityEndpoint(change *Route53Change, ep *endpoint.Endpoint) {
+	geoProx := newGeoProximity(ep).
+		withAWSRegion().
+		withCoordinates().
+		withLocalZoneGroup().
+		withBias()
+
+	change.ResourceRecordSet.GeoProximityLocation = geoProx.build()
+}
+
 // searches for `changes` that are contained in `queue` and returns the `changes` separated by whether they were found in the queue (`foundChanges`) or not (`notFoundChanges`)
-func findChangesInQueue(changes Route53Changes, queue Route53Changes) (foundChanges, notFoundChanges Route53Changes) {
+func findChangesInQueue(changes Route53Changes, queue Route53Changes) (Route53Changes, Route53Changes) {
 	if queue == nil {
 		return Route53Changes{}, changes
 	}
+
+	var foundChanges, notFoundChanges Route53Changes
 
 	for _, c := range changes {
 		found := false
@@ -959,7 +1122,7 @@ func findChangesInQueue(changes Route53Changes, queue Route53Changes) (foundChan
 		}
 	}
 
-	return
+	return foundChanges, notFoundChanges
 }
 
 // group the given changes by name and ownership relation to ensure these are always submitted in the same transaction to Route53;
