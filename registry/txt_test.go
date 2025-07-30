@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
