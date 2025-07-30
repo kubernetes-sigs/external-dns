@@ -1926,8 +1926,30 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ownerId),
 			},
 		},
-		// TODO: Test TXT record regeneration when only A/CNAME records exist.
-		// The regeneration logic will be introduced in a separate PR.
+		{
+			name: "Should not recreate TXT records for existing A records without owner",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ownerId),
+				// Missing TXT record for the existing A record
+			},
+			expectedCreate: []*endpoint.Endpoint{},
+		},
+		{
+			name: "Should not recreate TXT records for existing A records with another owner",
+			desired: []*endpoint.Endpoint{
+				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			},
+			existing: []*endpoint.Endpoint{
+				// This test uses the `ownerId` variable, and "another-owner" simulates a different owner.
+				// In this case, TXT records should not be recreated.
+				newEndpointWithOwner("record-1.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, "another-owner"),
+				newEndpointWithOwner("a-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+"another-owner"+"\"", endpoint.RecordTypeTXT, "another-owner"),
+			},
+			expectedCreate: []*endpoint.Endpoint{},
+		},
 	}
 	for _, tt := range tests {
 		for _, setIdentifier := range []string{"", "set-identifier"} {
