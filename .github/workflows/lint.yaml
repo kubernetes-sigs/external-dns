@@ -48,7 +48,7 @@ jobs:
       with:
         verify: true
         args: --timeout=30m
-        version: v2.1
+        version: v2.2
 
       # Run Spectral
     - name: Lint OpenAPI spec
