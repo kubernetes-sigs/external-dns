@@ -181,8 +181,6 @@ components:
         - dnsName
         - targets
         - recordType
-        - setIdentifier
-        - recordTTL
       properties:
         dnsName:
           type: string
