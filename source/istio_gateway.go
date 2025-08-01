@@ -191,7 +191,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	// TODO: sort on endpoint creation
+	// TODO: sort on endpoint creation (performance)
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
 	}
@@ -241,6 +241,7 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 
 	targets := make(endpoint.Targets, 0)
 
+	// TODO: should be informer as currently this is make an API call for each gateway (performance)
 	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)

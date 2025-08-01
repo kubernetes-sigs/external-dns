@@ -109,10 +109,10 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -183,7 +183,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	// TODO: sort on endpoint creation
+	// TODO: sort on endpoint creation (performance)
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
 	}
@@ -419,6 +419,7 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 		namespace = gateway.Namespace
 	}
 
+	// TODO: should be informer as currently this is making an API call for each gateway (performance)
 	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)

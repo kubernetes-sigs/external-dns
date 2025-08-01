@@ -49,7 +49,7 @@ type VirtualServiceSuite struct {
 }
 
 func (suite *VirtualServiceSuite) SetupTest() {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
@@ -188,7 +188,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 
 			_, err := NewIstioVirtualServiceSource(
 				context.TODO(),
-				fake.NewSimpleClientset(),
+				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
