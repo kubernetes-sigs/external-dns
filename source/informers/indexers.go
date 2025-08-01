@@ -16,6 +16,7 @@ package informers
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,7 +26,8 @@ import (
 )
 
 const (
-	IndexWithSelectors = "withSelectors"
+	IndexWithSelectors    = "withSelectors"
+	IndexWithSpecSelector = "spec.selector"
 )
 
 type IndexSelectorOptions struct {
@@ -90,6 +92,23 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 				return nil, nil
 			}
 			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: entity.GetName()}.String()
+			return []string{key}, nil
+		},
+	}
+}
+
+// IndexerSpecSelector returns a cache.Indexers map that indexes Kubernetes Service objects
+// by a hash of their .spec.selector field. This enables efficient lookups of Services
+// sharing the same selector. The function is generic over metav1.Object, but only operates
+// on *corev1.Service objects at the moment. If the object is not a Service, it does not index.
+func IndexerSpecSelector[T metav1.Object]() cache.Indexers {
+	return cache.Indexers{
+		IndexWithSpecSelector: func(obj interface{}) ([]string, error) {
+			entity, ok := obj.(*corev1.Service)
+			if !ok {
+				return nil, nil
+			}
+			key := ToSHA(labels.Set(entity.Spec.Selector).String())
 			return []string{key}, nil
 		},
 	}

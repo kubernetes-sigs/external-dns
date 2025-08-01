@@ -30,13 +30,13 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -82,35 +82,28 @@ func NewIstioVirtualServiceSource(
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
 	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	virtualServiceInformer := istioInformerFactory.Networking().V1beta1().VirtualServices()
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 
+	serviceInformer := informerFactory.Core().V1().Services()
+	err = serviceInformer.Informer().AddIndexers(informers.IndexerSpecSelector[*corev1.Service]())
+	if err != nil {
+		return nil, err
+	}
+	err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
+		informers.TransformWithSpecSelector(),
+		informers.TransformWithSpecExternalIPs(),
+		informers.TransformWithStatusLoadBalancer(),
+	))
+	if err != nil {
+		return nil, err
+	}
+
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("service added")
-			},
-		},
-	)
-
-	_, _ = virtualServiceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("virtual service added")
-			},
-		},
-	)
-
-	_, _ = gatewayInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("gateway added")
-			},
-		},
-	)
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 	istioInformerFactory.Start(ctx.Done())
