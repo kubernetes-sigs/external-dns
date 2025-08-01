@@ -177,19 +177,13 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) map[string]*pl
 		}
 		output[zoneName].Create = append(output[zoneName].Create, endpt)
 	}
-	for _, endpt := range changes.UpdateOld {
-		_, zoneName := zoneNameIDMapper.FindZone(endpt.DNSName)
+	for _, change := range changes.Update {
+		// NOTE: DNSName of `change.Old` and `change.New` will be equivalent
+		_, zoneName := zoneNameIDMapper.FindZone(change.Old.DNSName)
 		if _, ok := output[zoneName]; !ok {
 			output[zoneName] = &plan.Changes{}
 		}
-		output[zoneName].UpdateOld = append(output[zoneName].UpdateOld, endpt)
-	}
-	for _, endpt := range changes.UpdateNew {
-		_, zoneName := zoneNameIDMapper.FindZone(endpt.DNSName)
-		if _, ok := output[zoneName]; !ok {
-			output[zoneName] = &plan.Changes{}
-		}
-		output[zoneName].UpdateNew = append(output[zoneName].UpdateNew, endpt)
+		output[zoneName].Update = append(output[zoneName].Update, change)
 	}
 
 	return output
@@ -205,7 +199,7 @@ func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName strin
 	allChanges = append(allChanges, computedChanges...)
 
 	var err error
-	computedChanges, err = p.newOvhChangeUpdate(changes.UpdateOld, changes.UpdateNew, zoneName, existingRecords)
+	computedChanges, err = p.newOvhChangeUpdate(changes.Update, zoneName, existingRecords)
 	if err != nil {
 		return nil, err
 	}
@@ -253,10 +247,10 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		for _, change := range changes.Create {
 			log.Debugf("OVH: changes CREATE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
-		for _, change := range changes.UpdateOld {
+		for _, change := range changes.UpdateOld() {
 			log.Debugf("OVH: changes UPDATEOLD dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
-		for _, change := range changes.UpdateNew {
+		for _, change := range changes.UpdateNew() {
 			log.Debugf("OVH: changes UPDATENEW dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
 		}
 		for _, change := range changes.Delete {
@@ -564,7 +558,7 @@ func normalizeDNSName(dnsName string) string {
 	return strings.TrimSpace(strings.ToLower(dnsName))
 }
 
-func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
+func (p *OVHProvider) newOvhChangeUpdate(updates []*plan.Update, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zoneNameIDMapper.Add(zone, zone)
 
@@ -572,13 +566,11 @@ func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endp
 	newEndpointByTypeAndName := map[string]*endpoint.Endpoint{}
 	oldRecordsInZone := map[string][]ovhRecord{}
 
-	for _, e := range endpointsOld {
-		sub := convertDNSNameIntoSubDomain(e.DNSName, zone)
-		oldEndpointByTypeAndName[normalizeDNSName(e.RecordType+"//"+sub)] = e
-	}
-	for _, e := range endpointsNew {
-		sub := convertDNSNameIntoSubDomain(e.DNSName, zone)
-		newEndpointByTypeAndName[normalizeDNSName(e.RecordType+"//"+sub)] = e
+	for _, update := range updates {
+		// NOTE: DNSName and RecordType of `update.Old` and `update.New` will be equivalent
+		sub := convertDNSNameIntoSubDomain(update.Old.DNSName, zone)
+		oldEndpointByTypeAndName[normalizeDNSName(update.Old.RecordType+"//"+sub)] = update.Old
+		newEndpointByTypeAndName[normalizeDNSName(update.New.RecordType+"//"+sub)] = update.New
 	}
 
 	for id := range oldEndpointByTypeAndName {

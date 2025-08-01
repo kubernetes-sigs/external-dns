@@ -837,30 +837,32 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	p = &plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName:    "v1.foo.com",
-				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
-				RecordTTL:  endpoint.TTL(400),
+				Old: &endpoint.Endpoint{
+					DNSName:    "v1.foo.com",
+					RecordType: "A",
+					Targets:    []string{"1.2.3.4"},
+					RecordTTL:  endpoint.TTL(400),
+				},
+				New: &endpoint.Endpoint{
+					DNSName:    "v1.foo.com",
+					RecordType: "A",
+					Targets:    []string{"1.2.3.5"},
+					RecordTTL:  endpoint.TTL(400),
+				},
 			},
 			{
-				DNSName:    "v1.foobar.com",
-				RecordType: "TXT",
-				Targets:    []string{"boom"},
-			},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{
-				DNSName:    "v1.foo.com",
-				RecordType: "A",
-				Targets:    []string{"1.2.3.5"},
-				RecordTTL:  endpoint.TTL(400),
-			},
-			{
-				DNSName:    "v1.foobar.com",
-				RecordType: "TXT",
-				Targets:    []string{"kablui"},
+				Old: &endpoint.Endpoint{
+					DNSName:    "v1.foobar.com",
+					RecordType: "TXT",
+					Targets:    []string{"boom"},
+				},
+				New: &endpoint.Endpoint{
+					DNSName:    "v1.foobar.com",
+					RecordType: "TXT",
+					Targets:    []string{"kablui"},
+				},
 			},
 		},
 	}
@@ -996,9 +998,10 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 		})
 	}
 
+	update, err := plan.MkUpdates(oldRecords, newRecords)
+	assert.NoError(t, err)
 	p := &plan.Changes{
-		UpdateOld: oldRecords,
-		UpdateNew: newRecords,
+		Update: update,
 	}
 
 	err = provider.ApplyChanges(context.Background(), p)

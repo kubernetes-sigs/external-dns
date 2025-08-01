@@ -225,7 +225,7 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sdtypes.NamespaceSummary, srv *s
 // ApplyChanges applies Kubernetes changes in endpoints to AWS API
 func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	// return early if there is nothing to change
-	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 {
+	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.Update) == 0 {
 		log.Info("All records are already up to date")
 		return nil
 	}
@@ -255,13 +255,13 @@ func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 
 func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) ([]*endpoint.Endpoint, []*endpoint.Endpoint) {
 	updateNewMap := map[string]*endpoint.Endpoint{}
-	for _, e := range changes.UpdateNew {
+	for _, e := range changes.UpdateNew() {
 		updateNewMap[e.DNSName] = e
 	}
 
 	var creates, deletes []*endpoint.Endpoint
 
-	for _, old := range changes.UpdateOld {
+	for _, old := range changes.UpdateOld() {
 		current := updateNewMap[old.DNSName]
 
 		if !old.Targets.Same(current.Targets) {

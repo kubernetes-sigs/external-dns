@@ -383,13 +383,14 @@ func TestLinodeApplyChanges(t *testing.T) {
 			DNSName:    "api.baz.com",
 			RecordType: "TXT",
 		}},
-		UpdateNew: []*endpoint.Endpoint{{
-			DNSName:    "foo.com",
-			RecordType: "A",
-			RecordTTL:  300,
-			Targets:    []string{"targetFoo"},
+		Update: []*plan.Update{{
+			New: &endpoint.Endpoint{
+				DNSName:    "foo.com",
+				RecordType: "A",
+				RecordTTL:  300,
+				Targets:    []string{"targetFoo"},
+			},
 		}},
-		UpdateOld: []*endpoint.Endpoint{},
 	})
 	require.NoError(t, err)
 
@@ -443,12 +444,13 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 
 	err := provider.ApplyChanges(context.Background(), &plan.Changes{
 		// From 1 target to 2
-		UpdateNew: []*endpoint.Endpoint{{
-			DNSName:    "example.com",
-			RecordType: "A",
-			Targets:    []string{"targetA", "targetB"},
+		Update: []*plan.Update{{
+			New: &endpoint.Endpoint{
+				DNSName:    "example.com",
+				RecordType: "A",
+				Targets:    []string{"targetA", "targetB"},
+			},
 		}},
-		UpdateOld: []*endpoint.Endpoint{},
 	})
 	require.NoError(t, err)
 
@@ -499,12 +501,13 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 
 	err := provider.ApplyChanges(context.Background(), &plan.Changes{
 		// From 2 targets to 1
-		UpdateNew: []*endpoint.Endpoint{{
-			DNSName:    "example.com",
-			RecordType: "A",
-			Targets:    []string{"targetB"},
+		Update: []*plan.Update{{
+			New: &endpoint.Endpoint{
+				DNSName:    "example.com",
+				RecordType: "A",
+				Targets:    []string{"targetB"},
+			},
 		}},
-		UpdateOld: []*endpoint.Endpoint{},
 	})
 	require.NoError(t, err)
 

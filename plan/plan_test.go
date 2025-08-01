@@ -256,14 +256,14 @@ func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
 				DNSName: "foo",
 			},
 		},
-		UpdateOld: []*endpoint.Endpoint{
+		Update: []*Update{
 			{
-				DNSName: "bar",
-			},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{
-				DNSName: "baz",
+				Old: &endpoint.Endpoint{
+					DNSName: "bar",
+				},
+				New: &endpoint.Endpoint{
+					DNSName: "baz",
+				},
 			},
 		},
 		Delete: []*endpoint.Endpoint{
@@ -308,8 +308,8 @@ func (suite *PlanTestSuite) TestSyncFirstRound() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -330,8 +330,8 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -352,8 +352,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -374,8 +374,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithTTLChange() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -396,8 +396,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -448,8 +448,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -470,8 +470,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificAddition() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -502,8 +502,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -523,8 +523,8 @@ func (suite *PlanTestSuite) TestIdempotency() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -546,8 +546,8 @@ func (suite *PlanTestSuite) TestRecordTypeChange() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -569,8 +569,8 @@ func (suite *PlanTestSuite) TestExistingCNameWithDualStackDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -594,8 +594,8 @@ func (suite *PlanTestSuite) TestExistingDualStackWithCNameDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -622,8 +622,8 @@ func (suite *PlanTestSuite) TestExistingOwnerNotMatchingDualStackDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -650,8 +650,8 @@ func (suite *PlanTestSuite) TestConflictingCurrentNonConflictingDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -678,8 +678,8 @@ func (suite *PlanTestSuite) TestConflictingCurrentNoDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -705,8 +705,8 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -730,8 +730,8 @@ func (suite *PlanTestSuite) TestNoCurrentWithConflictingDesired() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -752,8 +752,8 @@ func (suite *PlanTestSuite) TestIgnoreTXT() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -775,8 +775,8 @@ func (suite *PlanTestSuite) TestExcludeTXT() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -796,8 +796,8 @@ func (suite *PlanTestSuite) TestIgnoreTargetCase() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -818,8 +818,8 @@ func (suite *PlanTestSuite) TestRemoveEndpoint() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -840,8 +840,8 @@ func (suite *PlanTestSuite) TestRemoveEndpointWithUpsert() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -862,8 +862,8 @@ func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() 
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -884,8 +884,8 @@ func (suite *PlanTestSuite) TestSetIdentifierUpdateCreatesAndDeletes() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -908,8 +908,8 @@ func (suite *PlanTestSuite) TestDomainFiltersInitial() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -932,8 +932,8 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.UpdateNew(), expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld(), expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
@@ -953,8 +953,8 @@ func (suite *PlanTestSuite) TestAAAARecords() {
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
 	validateEntries(suite.T(), changes.Delete, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateOld, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateOld(), expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateNew(), expectNoChanges)
 }
 
 func (suite *PlanTestSuite) TestDualStackRecords() {
@@ -973,8 +973,8 @@ func (suite *PlanTestSuite) TestDualStackRecords() {
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
 	validateEntries(suite.T(), changes.Delete, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateOld, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateOld(), expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateNew(), expectNoChanges)
 }
 
 func (suite *PlanTestSuite) TestDualStackRecordsDelete() {
@@ -993,8 +993,8 @@ func (suite *PlanTestSuite) TestDualStackRecordsDelete() {
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 	validateEntries(suite.T(), changes.Create, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateOld, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateOld(), expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateNew(), expectNoChanges)
 }
 
 func (suite *PlanTestSuite) TestDualStackToSingleStack() {
@@ -1013,8 +1013,8 @@ func (suite *PlanTestSuite) TestDualStackToSingleStack() {
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 	validateEntries(suite.T(), changes.Create, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateOld, expectNoChanges)
-	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateOld(), expectNoChanges)
+	validateEntries(suite.T(), changes.UpdateNew(), expectNoChanges)
 }
 
 func TestPlan(t *testing.T) {
