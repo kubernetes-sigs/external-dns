@@ -34,6 +34,7 @@ func TestZoneIDName(t *testing.T) {
 	z.Add("123123", "_metadata.example.com")
 	z.Add("1231231", "_foo._metadata.example.com")
 	z.Add("456456", "_metadata.エイミー.みんな")
+	z.Add("123412", "*.example.com")
 
 	assert.Equal(t, ZoneIDName{
 		"123456":  "qux.baz",
@@ -42,6 +43,7 @@ func TestZoneIDName(t *testing.T) {
 		"123123":  "_metadata.example.com",
 		"1231231": "_foo._metadata.example.com",
 		"456456":  "_metadata.エイミー.みんな",
+		"123412":  "*.example.com",
 	}, z)
 
 	// simple entry in a domain
@@ -83,8 +85,12 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "_foo._metadata.example.com", zoneName)
 	assert.Equal(t, "1231231", zoneID)
 
-	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-	_, _ = z.FindZone("???")
+	zoneID, zoneName = z.FindZone("*.example.com")
+	assert.Equal(t, "*.example.com", zoneName)
+	assert.Equal(t, "123412", zoneID)
 
-	testutils.TestHelperLogContains("Failed to convert label \"???\" of hostname \"???\" to its Unicode form: idna: disallowed rune U+003F", hook, t)
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	_, _ = z.FindZone("xn--not-a-valid-punycode")
+
+	testutils.TestHelperLogContains("Failed to convert label \"xn--not-a-valid-punycode\" of hostname \"xn--not-a-valid-punycode\" to its Unicode form: idna: invalid label", hook, t)
 }
