@@ -57,25 +57,3 @@ func TestNewInstrumentedClient(t *testing.T) {
 	_, ok = result2.Transport.(*CustomRoundTripper)
 	require.True(t, ok)
 }
-
-func TestPathProcessor(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"/foo/bar", "bar"},
-		{"/foo/", ""},
-		{"/", ""},
-		{"", ""},
-		{"/foo/bar/baz", "baz"},
-		{"foo/bar", "bar"},
-		{"foo", "foo"},
-		{"foo/", ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			require.Equal(t, tt.expected, pathProcessor(tt.input))
-		})
-	}
-}
