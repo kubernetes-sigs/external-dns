@@ -429,7 +429,11 @@ func buildServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 	if err != nil {
 		return nil, err
 	}
-	return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.ResolveLoadBalancerHostname, cfg.ListenEndpointEvents, cfg.ExposeInternalIPv6)
+	return NewServiceSource(
+		ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation,
+		cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses,
+		cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.ResolveLoadBalancerHostname,
+		cfg.ListenEndpointEvents, cfg.ExposeInternalIPv6, cfg.ExcludeUnschedulable)
 }
 
 // buildIngressSource creates an Ingress source for exposing Kubernetes ingresses as DNS records.

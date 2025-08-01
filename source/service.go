@@ -80,13 +80,23 @@ type serviceSource struct {
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              *serviceTypes
 	exposeInternalIPv6             bool
+	excludeUnschedulable           bool
 
 	// process Services with legacy annotations
 	compatibility string
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool, exposeInternalIPv6 bool) (Source, error) {
+func NewServiceSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace, annotationFilter,
+	fqdnTemplate string, combineFqdnAnnotation bool,
+	compatibility string,
+	publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool,
+	serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector,
+	resolveLoadBalancerHostname, listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -169,6 +179,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
 		exposeInternalIPv6:             exposeInternalIPv6,
+		excludeUnschedulable:           excludeUnschedulable,
 	}, nil
 }
 
@@ -717,6 +728,12 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	for _, node := range nodes {
+		fmt.Println("NODE", node.Name)
+		if node.Spec.Unschedulable && sc.excludeUnschedulable {
+			fmt.Println("BINGO")
+			log.Debugf("Skipping node %s because it is unschedulable", node.Name)
+			continue
+		}
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:
