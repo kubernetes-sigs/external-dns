@@ -27,7 +27,7 @@ Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Begin by creating a Kubernetes secret to securely store your DigitalOcean API key. This key will enable ExternalDNS to authenticate with DigitalOcean:
 
 ```shell
-kubectl create secret generic DO_TOKEN --from-literal=DO_TOKEN=YOUR_DIGITALOCEAN_API_KEY
+kubectl create secret generic do-token --from-literal=DO_TOKEN=YOUR_DIGITALOCEAN_API_KEY
 ```
 
 Ensure to replace YOUR_DIGITALOCEAN_API_KEY with your actual DigitalOcean API key.
@@ -45,7 +45,7 @@ env:
   - name: DO_TOKEN
     valueFrom:
       secretKeyRef:
-        name: DO_TOKEN
+        name: do-token
         key: DO_TOKEN
 ```
 
