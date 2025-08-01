@@ -31,6 +31,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	cloudflarev4 "github.com/cloudflare/cloudflare-go/v4"
 	"github.com/cloudflare/cloudflare-go/v4/addressing"
+	"github.com/cloudflare/cloudflare-go/v4/dns"
 	"github.com/cloudflare/cloudflare-go/v4/option"
 	"github.com/cloudflare/cloudflare-go/v4/zones"
 	log "github.com/sirupsen/logrus"
@@ -113,6 +114,10 @@ type cloudFlareDNS interface {
 	CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error
+	// v4 DNS record operations for proxied records
+	CreateDNSRecordV4(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
+	UpdateDNSRecordV4(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error)
+	DeleteDNSRecordV4(ctx context.Context, recordID string, params dns.RecordDeleteParams) (*dns.RecordDeleteResponse, error)
 	ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse]
 	CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error
 	UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error
@@ -162,6 +167,19 @@ func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflare.Resourc
 
 func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
 	return z.service.DeleteDNSRecord(ctx, rc, recordID)
+}
+
+// v4 DNS record operations for proxied records
+func (z zoneService) CreateDNSRecordV4(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	return z.serviceV4.DNS.Records.New(ctx, params)
+}
+
+func (z zoneService) UpdateDNSRecordV4(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
+	return z.serviceV4.DNS.Records.Update(ctx, recordID, params)
+}
+
+func (z zoneService) DeleteDNSRecordV4(ctx context.Context, recordID string, params dns.RecordDeleteParams) (*dns.RecordDeleteResponse, error) {
+	return z.serviceV4.DNS.Records.Delete(ctx, recordID, params)
 }
 
 func (z zoneService) ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone] {
@@ -289,6 +307,13 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 	}
 
 	return params
+}
+
+// shouldUseV4ForRecord determines if we should use v4 SDK for this record
+// Currently migrating proxied records to v4 SDK
+func shouldUseV4ForRecord(cfc cloudFlareChange) bool {
+	// Use v4 only for records that are actually proxied (migration of proxied functionality)
+	return cfc.ResourceRecord.Proxied != nil && *cfc.ResourceRecord.Proxied
 }
 
 func convertCloudflareError(err error) error {
@@ -651,12 +676,23 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				recordParam := updateDNSRecordParam(*change)
-				recordParam.ID = recordID
-				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to update record: %v", err)
+
+				// Use v4 SDK for proxied records migration
+				if shouldUseV4ForRecord(*change) {
+					recordParamV4 := updateDNSRecordParamV4(*change, zoneID)
+					_, err := p.Client.UpdateDNSRecordV4(ctx, recordID, recordParamV4)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to update record (v4): %v", err)
+					}
+				} else {
+					recordParam := updateDNSRecordParam(*change)
+					recordParam.ID = recordID
+					err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to update record: %v", err)
+					}
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
@@ -673,11 +709,21 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					failedChange = true
 				}
 			} else if change.Action == cloudFlareCreate {
-				recordParam := getCreateDNSRecordParam(*change)
-				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
-				if err != nil {
-					failedChange = true
-					log.WithFields(logFields).Errorf("failed to create record: %v", err)
+				// Use v4 SDK for proxied records migration
+				if shouldUseV4ForRecord(*change) {
+					recordParamV4 := getCreateDNSRecordParamV4(*change, zoneID)
+					_, err := p.Client.CreateDNSRecordV4(ctx, recordParamV4)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to create record (v4): %v", err)
+					}
+				} else {
+					recordParam := getCreateDNSRecordParam(*change)
+					_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
+					if err != nil {
+						failedChange = true
+						log.WithFields(logFields).Errorf("failed to create record: %v", err)
+					}
 				}
 				if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 					failedChange = true

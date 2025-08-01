@@ -15,12 +15,16 @@ ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the m
 - Zone ID lookup by name (`ZoneIDByName`)
 - Zone plan detection (fully v4 implementation)
 - Regional services (data localization)
+- **Proxied records** (DNS records with Cloudflare proxy enabled)
 
 **🔄 Still using legacy v0 SDK:**
 
-- DNS record management (create, update, delete records)
+- DNS record management for non-proxied records (create, update, delete records)
 - Custom hostnames
-- Proxied records
+
+**🔀 Hybrid approach:**
+
+- **DNS record operations**: ExternalDNS now intelligently uses v4 SDK for proxied records (those with `Proxied: true`) and v0 SDK for non-proxied records, ensuring optimal performance for proxy-enabled features while maintaining backward compatibility.
 
 This mixed approach ensures continued functionality while gradually modernizing the codebase. Users should not experience any breaking changes during this transition.
 
@@ -28,10 +32,10 @@ This mixed approach ensures continued functionality while gradually modernizing 
 
 ExternalDNS currently uses:
 
-- **cloudflare-go v0.115.0+**: Legacy SDK for DNS records, custom hostnames, and proxied record features
-- **cloudflare-go/v4 v4.6.0+**: Modern SDK for all zone management and regional services operations
+- **cloudflare-go v0.115.0+**: Legacy SDK for non-proxied DNS records and custom hostnames
+- **cloudflare-go/v4 v4.6.0+**: Modern SDK for zone management, regional services, and proxied DNS records
 
-Zone management has been fully migrated to the v4 SDK, providing improved performance and reliability.
+Zone management and proxied records have been fully migrated to the v4 SDK, providing improved performance and reliability for proxy-enabled features.
 
 Both SDKs are automatically managed as Go module dependencies and require no special configuration from users.
 
@@ -338,6 +342,8 @@ kubectl delete -f externaldns.yaml
 ## Setting cloudflare-proxied on a per-ingress basis
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
+
+**Note:** Proxied records (`Proxied: true`) now use the modern Cloudflare v4 SDK, providing enhanced performance and access to the latest Cloudflare proxy features. Non-proxied records continue to use the v0 SDK for backward compatibility.
 
 ## Setting cloudlfare regional services
 

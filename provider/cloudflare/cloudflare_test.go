@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v4/dns"
 	"github.com/cloudflare/cloudflare-go/v4/zones"
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
@@ -261,6 +262,185 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudfla
 		}
 	}
 	return nil
+}
+
+// v4 DNS record operations for proxied records migration
+func (m *mockCloudFlareClient) CreateDNSRecordV4(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	// Convert v4 params to v0 for mock storage
+	zoneID := params.ZoneID.Value
+
+	// Extract record details from v4 union body
+	var name, content, recordType, comment string
+	var ttl dns.TTL
+	var proxied *bool
+
+	switch body := params.Body.(type) {
+	case dns.ARecordParam:
+		name = body.Name.Value
+		content = body.Content.Value
+		ttl = body.TTL.Value
+		recordType = "A"
+		comment = body.Comment.Value
+		// Always set the proxied field if it's in the parameter
+		val := body.Proxied.Value
+		proxied = &val
+	case dns.AAAARecordParam:
+		name = body.Name.Value
+		content = body.Content.Value
+		ttl = body.TTL.Value
+		recordType = "AAAA"
+		comment = body.Comment.Value
+		val := body.Proxied.Value
+		proxied = &val
+	case dns.CNAMERecordParam:
+		name = body.Name.Value
+		content = body.Content.Value
+		ttl = body.TTL.Value
+		recordType = "CNAME"
+		comment = body.Comment.Value
+		val := body.Proxied.Value
+		proxied = &val
+		if body.Proxied.Value != false {
+			val := body.Proxied.Value
+			proxied = &val
+		}
+	case dns.MXRecordParam:
+		name = body.Name.Value
+		content = body.Content.Value
+		ttl = body.TTL.Value
+		recordType = "MX"
+		comment = body.Comment.Value
+	case dns.TXTRecordParam:
+		name = body.Name.Value
+		content = body.Content.Value
+		ttl = body.TTL.Value
+		recordType = "TXT"
+		comment = body.Comment.Value
+	}
+
+	// Generate record ID using the same method as v0 mock
+	recordID := generateDNSRecordID(recordType, name, content)
+
+	record := cloudflare.DNSRecord{
+		ID:      recordID,
+		Name:    name,
+		Content: content,
+		Type:    recordType,
+		TTL:     int(ttl),
+		Proxied: proxied,
+		Comment: comment,
+	}
+
+	if m.Records[zoneID] == nil {
+		m.Records[zoneID] = make(map[string]cloudflare.DNSRecord)
+	}
+	m.Records[zoneID][recordID] = record
+
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "CreateV4",
+		ZoneId:     zoneID,
+		RecordId:   recordID,
+		RecordData: record,
+	})
+
+	// Return a mock v4 response
+	return &dns.RecordResponse{
+		ID:      recordID,
+		Name:    name,
+		Content: content,
+		Type:    dns.RecordResponseType(recordType),
+		TTL:     ttl,
+	}, nil
+}
+
+func (m *mockCloudFlareClient) UpdateDNSRecordV4(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
+	zoneID := params.ZoneID.Value
+
+	if zone, ok := m.Records[zoneID]; ok {
+		if existing, ok := zone[recordID]; ok {
+			// Update the existing record with v4 params
+			updated := existing
+
+			// Extract update details from v4 union body
+			switch body := params.Body.(type) {
+			case dns.ARecordParam:
+				updated.Name = body.Name.Value
+				updated.Content = body.Content.Value
+				updated.TTL = int(body.TTL.Value)
+				updated.Type = "A"
+				updated.Comment = body.Comment.Value
+				val := body.Proxied.Value
+				updated.Proxied = &val
+			case dns.AAAARecordParam:
+				updated.Name = body.Name.Value
+				updated.Content = body.Content.Value
+				updated.TTL = int(body.TTL.Value)
+				updated.Type = "AAAA"
+				updated.Comment = body.Comment.Value
+				val := body.Proxied.Value
+				updated.Proxied = &val
+			case dns.CNAMERecordParam:
+				updated.Name = body.Name.Value
+				updated.Content = body.Content.Value
+				updated.TTL = int(body.TTL.Value)
+				updated.Type = "CNAME"
+				updated.Comment = body.Comment.Value
+				val := body.Proxied.Value
+				updated.Proxied = &val
+			case dns.MXRecordParam:
+				updated.Name = body.Name.Value
+				updated.Content = body.Content.Value
+				updated.TTL = int(body.TTL.Value)
+				updated.Type = "MX"
+				updated.Comment = body.Comment.Value
+			case dns.TXTRecordParam:
+				updated.Name = body.Name.Value
+				updated.Content = body.Content.Value
+				updated.TTL = int(body.TTL.Value)
+				updated.Type = "TXT"
+				updated.Comment = body.Comment.Value
+			}
+
+			zone[recordID] = updated
+
+			m.Actions = append(m.Actions, MockAction{
+				Name:       "UpdateV4",
+				ZoneId:     zoneID,
+				RecordId:   recordID,
+				RecordData: updated,
+			})
+
+			return &dns.RecordResponse{
+				ID:      recordID,
+				Name:    updated.Name,
+				Content: updated.Content,
+				Type:    dns.RecordResponseType(updated.Type),
+				TTL:     dns.TTL(updated.TTL),
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("record not found")
+}
+
+func (m *mockCloudFlareClient) DeleteDNSRecordV4(ctx context.Context, recordID string, params dns.RecordDeleteParams) (*dns.RecordDeleteResponse, error) {
+	zoneID := params.ZoneID.Value
+
+	if zone, ok := m.Records[zoneID]; ok {
+		if _, ok := zone[recordID]; ok {
+			delete(zone, recordID)
+
+			m.Actions = append(m.Actions, MockAction{
+				Name:     "DeleteV4",
+				ZoneId:   zoneID,
+				RecordId: recordID,
+			})
+
+			return &dns.RecordDeleteResponse{
+				ID: recordID,
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("record not found")
 }
 
 func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflare.CustomHostname) ([]cloudflare.CustomHostname, cloudflare.ResultInfo, error) {
@@ -641,7 +821,7 @@ func TestCloudflareProxiedDefault(t *testing.T) {
 
 	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
 		{
-			Name:     "Create",
+			Name:     "CreateV4",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
 			RecordData: cloudflare.DNSRecord{
@@ -675,7 +855,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 
 	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 		{
-			Name:     "Create",
+			Name:     "CreateV4",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
 			RecordData: cloudflare.DNSRecord{
@@ -743,7 +923,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 
 	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
 		{
-			Name:     "Create",
+			Name:     "CreateV4",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
 			RecordData: cloudflare.DNSRecord{
@@ -818,9 +998,15 @@ func TestCloudflareSetProxied(t *testing.T) {
 		if testCase.recordType == "MX" {
 			recordData.Priority = priority
 		}
+
+		actionName := "Create"
+		if recordData.Proxied != nil && *recordData.Proxied {
+			actionName = "CreateV4"
+		}
+
 		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 			{
-				Name:       "Create",
+				Name:       actionName,
 				ZoneId:     "001",
 				RecordId:   expectedID,
 				RecordData: recordData,
@@ -847,7 +1033,6 @@ func TestCloudflareZones(t *testing.T) {
 
 // test failures on zone lookup
 func TestCloudflareZonesFailed(t *testing.T) {
-
 	client := NewMockCloudFlareClient()
 	client.getZoneError = errors.New("zone lookup failed")
 
@@ -1069,7 +1254,6 @@ func TestCloudflareProvider(t *testing.T) {
 				t.Errorf("should fail, %s", err)
 			}
 		})
-
 	}
 }
 
@@ -1677,7 +1861,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			RecordId: "2345678901",
 		},
 		{
-			Name:     "Create",
+			Name:     "CreateV4",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "foobar.bar.com", "2.3.4.5"),
 			RecordData: cloudflare.DNSRecord{
@@ -1690,7 +1874,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			},
 		},
 		{
-			Name:     "Update",
+			Name:     "UpdateV4",
 			ZoneId:   "001",
 			RecordId: "1234567890",
 			RecordData: cloudflare.DNSRecord{
@@ -3253,4 +3437,125 @@ func TestZoneIDByNameZoneNotFound(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), `zone "nonexistent.com" not found in CloudFlare account`)
 	assert.Contains(t, err.Error(), "verify the zone exists and API credentials have access to it")
+}
+
+func TestCloudflareApplyChangesV4ProxiedRecords(t *testing.T) {
+	changes := &plan.Changes{}
+
+	// Add some existing records for updates
+	existingProxiedRecord := cloudflare.DNSRecord{
+		ID:      "existing-proxied-123",
+		Name:    "update-proxied.bar.com",
+		Type:    "A",
+		Content: "192.168.1.3",
+		Proxied: proxyEnabled,
+	}
+
+	existingNonProxiedRecord := cloudflare.DNSRecord{
+		ID:      "existing-nonproxied-123",
+		Name:    "update-nonproxied.bar.com",
+		Type:    "A",
+		Content: "192.168.1.4",
+		Proxied: proxyDisabled,
+	}
+
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": {existingProxiedRecord, existingNonProxiedRecord},
+	})
+
+	provider := &CloudFlareProvider{
+		Client: client,
+	}
+
+	// Create endpoints with proxied annotation to trigger v4 SDK usage
+	proxiedEndpoint := &endpoint.Endpoint{
+		DNSName:    "proxied.bar.com",
+		Targets:    endpoint.Targets{"192.168.1.1"},
+		RecordType: endpoint.RecordTypeA,
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{
+				Name:  annotations.CloudflareProxiedKey,
+				Value: "true",
+			},
+		},
+	}
+
+	nonProxiedEndpoint := &endpoint.Endpoint{
+		DNSName:    "nonproxied.bar.com",
+		Targets:    endpoint.Targets{"192.168.1.2"},
+		RecordType: endpoint.RecordTypeA,
+	}
+
+	changes.Create = []*endpoint.Endpoint{proxiedEndpoint, nonProxiedEndpoint}
+
+	updateProxiedEndpointOld := &endpoint.Endpoint{
+		DNSName:    "update-proxied.bar.com",
+		Targets:    endpoint.Targets{"192.168.1.3"},
+		RecordType: endpoint.RecordTypeA,
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{
+				Name:  annotations.CloudflareProxiedKey,
+				Value: "true",
+			},
+		},
+	}
+
+	updateProxiedEndpointNew := &endpoint.Endpoint{
+		DNSName:    "update-proxied.bar.com",
+		Targets:    endpoint.Targets{"192.168.1.5"},
+		RecordType: endpoint.RecordTypeA,
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{
+				Name:  annotations.CloudflareProxiedKey,
+				Value: "true",
+			},
+		},
+	}
+
+	updateNonProxiedEndpointOld := &endpoint.Endpoint{
+		DNSName:    "update-nonproxied.bar.com",
+		Targets:    endpoint.Targets{"192.168.1.4"},
+		RecordType: endpoint.RecordTypeA,
+	}
+
+	updateNonProxiedEndpointNew := &endpoint.Endpoint{
+		DNSName:    "update-nonproxied.bar.com",
+		Targets:    endpoint.Targets{"192.168.1.6"},
+		RecordType: endpoint.RecordTypeA,
+	}
+
+	changes.UpdateOld = []*endpoint.Endpoint{updateProxiedEndpointOld, updateNonProxiedEndpointOld}
+	changes.UpdateNew = []*endpoint.Endpoint{updateProxiedEndpointNew, updateNonProxiedEndpointNew}
+
+	err := provider.ApplyChanges(context.Background(), changes)
+	assert.NoError(t, err)
+
+	// Debug: Print all actions
+	t.Logf("Total actions recorded: %d", len(client.Actions))
+	for i, action := range client.Actions {
+		t.Logf("Action %d: %s (ZoneId: %s, RecordId: %s)", i, action.Name, action.ZoneId, action.RecordId)
+	}
+
+	// Verify that v4 methods were called for proxied records and v0 for non-proxied
+	v4CreateCalls := 0
+	v0CreateCalls := 0
+	deleteCalls := 0
+
+	for _, action := range client.Actions {
+		switch action.Name {
+		case "CreateV4":
+			v4CreateCalls++
+		case "Create":
+			v0CreateCalls++
+		case "Delete":
+			deleteCalls++
+		}
+	}
+
+	// Should have 2 v4 creates (1 for proxied record creation + 1 for proxied record update)
+	assert.Equal(t, 2, v4CreateCalls, "Expected 2 v4 create calls for proxied records")
+	// Should have 2 v0 creates (1 for non-proxied record creation + 1 for non-proxied record update)
+	assert.Equal(t, 2, v0CreateCalls, "Expected 2 v0 create calls for non-proxied records")
+	// Should have 2 deletes (1 for each existing record being updated)
+	assert.Equal(t, 2, deleteCalls, "Expected 2 delete calls for existing records")
 }
