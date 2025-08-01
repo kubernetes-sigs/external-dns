@@ -1477,7 +1477,7 @@ func testGatewayEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeKubernetesClient := fake.NewSimpleClientset()
+			fakeKubernetesClient := fake.NewClientset()
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
@@ -1524,7 +1524,7 @@ func testGatewayEndpoints(t *testing.T) {
 
 // gateway specific helper functions
 func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {

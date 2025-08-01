@@ -183,3 +183,34 @@ func TestGetByKey_TypeAssertionFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "object is not of type")
 	assert.Nil(t, result)
 }
+
+func TestIndexerSpecSelector_Service(t *testing.T) {
+	indexers := IndexerSpecSelector[*corev1.Service]()
+	svc := &corev1.Service{}
+	svc.Spec.Selector = map[string]string{"app": "demo", "tier": "backend"}
+
+	keys, err := indexers[IndexWithSpecSelector](svc)
+	assert.NoError(t, err)
+	expected := ToSHA(labels.Set(svc.Spec.Selector).String())
+	assert.Equal(t, []string{expected}, keys)
+}
+
+func TestIndexerSpecSelector_NonService(t *testing.T) {
+	indexers := IndexerSpecSelector[*corev1.Service]()
+	obj := "not-a-service"
+
+	keys, err := indexers[IndexWithSpecSelector](obj)
+	assert.NoError(t, err)
+	assert.Nil(t, keys)
+}
+
+func TestIndexerSpecSelector_EmptySelector(t *testing.T) {
+	indexers := IndexerSpecSelector[*corev1.Service]()
+	svc := &corev1.Service{}
+	svc.Spec.Selector = map[string]string{}
+
+	keys, err := indexers[IndexWithSpecSelector](svc)
+	assert.NoError(t, err)
+	expected := ToSHA(labels.Set(svc.Spec.Selector).String())
+	assert.Equal(t, []string{expected}, keys)
+}
