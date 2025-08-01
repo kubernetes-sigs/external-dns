@@ -213,6 +213,7 @@ type Config struct {
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
 	ForceDefaultTargets                           bool
+	sourceWrappers                                map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 var defaultConfig = &Config{
@@ -376,6 +377,7 @@ var defaultConfig = &Config{
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
 	ForceDefaultTargets:          false,
+	sourceWrappers:               map[string]bool{},
 }
 
 // NewConfig returns new Config object
@@ -425,6 +427,22 @@ func (cfg *Config) ParseFlags(args []string) error {
 	}
 
 	return nil
+}
+
+func (cfg *Config) AddSourceWrapper(name string) {
+	if cfg.sourceWrappers == nil {
+		cfg.sourceWrappers = make(map[string]bool)
+	}
+	cfg.sourceWrappers[name] = true
+}
+
+// IsSourceWrapperInstrumented returns whether a source wrapper is enabled or not.
+func (cfg *Config) IsSourceWrapperInstrumented(name string) bool {
+	if cfg.sourceWrappers == nil {
+		return false
+	}
+	_, ok := cfg.sourceWrappers[name]
+	return ok
 }
 
 func App(cfg *Config) *kingpin.Application {

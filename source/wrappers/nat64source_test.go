@@ -89,3 +89,33 @@ func testNat64Source(t *testing.T) {
 		})
 	}
 }
+
+func TestNat64Source_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		title string
+		input []string
+		times int
+	}{
+		{
+			title: "should add event handler when prefixes are provided",
+			input: []string{"2001:DB8::/96"},
+			times: 1,
+		},
+		{
+			title: "should add event handler when prefixes not provided",
+			input: []string{},
+			times: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			mockSource := testutils.NewMockSource()
+
+			src := NewNAT64Source(mockSource, tt.input)
+			src.AddEventHandler(t.Context(), func() {})
+
+			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
+		})
+	}
+}
