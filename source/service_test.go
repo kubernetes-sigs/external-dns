@@ -91,6 +91,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		false,
 		false,
+		true,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -174,6 +175,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 
 			if ti.expectError {
@@ -1158,6 +1160,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.resolveLoadBalancerHostname,
 				false,
 				false,
+				true,
 			)
 
 			require.NoError(t, err)
@@ -1374,6 +1377,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -1679,6 +1683,7 @@ func TestClusterIpServices(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -1741,6 +1746,52 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "node1",
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: true,
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::3"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::4"},
+					},
+				},
+			}},
+		},
+		{
+			title:            "TBD",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: false,
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2456,6 +2507,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				false,
 				false,
 				tc.exposeInternalIPv6,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -3268,6 +3320,7 @@ func TestHeadlessServices(t *testing.T) {
 				false,
 				false,
 				tc.exposeInternalIPv6,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -3638,6 +3691,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -4096,6 +4150,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -4306,6 +4361,7 @@ func TestExternalServices(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -4368,6 +4424,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(b, err)
 
@@ -4467,6 +4524,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 			svcSrc, ok := svc.(*serviceSource)
@@ -4498,6 +4556,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
 	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
@@ -4677,6 +4736,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -4856,4 +4916,8 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			tt.asserts(t, svcSource)
 		})
 	}
+}
+
+func TestServiceSource_Nodes(t *testing.T) {
+
 }
