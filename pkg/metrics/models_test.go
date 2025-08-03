@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewGaugeWithOpts(t *testing.T) {
@@ -127,4 +128,56 @@ func TestNewBuildInfoCollector(t *testing.T) {
 
 	assert.Equal(t, "external_dns_build_info", reflect.ValueOf(desc).Elem().FieldByName("fqName").String())
 	assert.Contains(t, desc.String(), "version=\"0.0.1\"")
+}
+
+func TestSummaryV_SetWithLabels(t *testing.T) {
+	opts := prometheus.SummaryOpts{
+		Name:      "test_summaryVec",
+		Namespace: "test_ns",
+		Subsystem: "test_sub",
+		Help:      "help text",
+	}
+	sv := NewSummaryVecWithOpts(opts, []string{"label1", "label2"})
+
+	sv.SetWithLabels(5.01, "Alpha", "BETA")
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(sv.SummaryVec)
+
+	metricsFamilies, err := reg.Gather()
+	assert.NoError(t, err)
+	assert.Len(t, metricsFamilies, 1)
+
+	s, err := sv.SummaryVec.GetMetricWithLabelValues("alpha", "beta")
+	assert.NoError(t, err)
+	metricsFamilies, err = reg.Gather()
+
+	s.Observe(5.21)
+	metricsFamilies, err = reg.Gather()
+	assert.NoError(t, err)
+
+	assert.InDelta(t, 10.22, *metricsFamilies[0].Metric[0].Summary.SampleSum, 0.01)
+	assert.Len(t, metricsFamilies[0].Metric[0].Label, 2)
+}
+
+func TestPathProcessor(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"/foo/bar", "bar"},
+		{"/foo/", ""},
+		{"/", ""},
+		{"", ""},
+		{"/foo/bar/baz", "baz"},
+		{"foo/bar", "bar"},
+		{"foo", "foo"},
+		{"foo/", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			require.Equal(t, tt.expected, PathProcessor(tt.input))
+		})
+	}
 }
