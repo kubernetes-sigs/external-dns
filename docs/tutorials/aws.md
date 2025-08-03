@@ -78,7 +78,8 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
 
 ### Further improvements
 
-Both policies can be further enhanced by tightening them down. Following the [principle of least privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege) and explicitly providing a list of selected zones instead of `*` you can scope the deployment down allowing changes only to zones from the list hence reducing the blast radius and improving auditability.
+Both policies can be further enhanced by tightening them down following the [principle of least privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege).
+Explicitly providing a list of selected zones instead of `*` you can scope the deployment down allowing changes only to zones from the list hence reducing the blast radius and improving auditability.
 
 Additional resources:
 
