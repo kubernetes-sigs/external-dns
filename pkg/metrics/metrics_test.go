@@ -72,6 +72,14 @@ func TestMustRegister(t *testing.T) {
 			},
 			expected: 0,
 		},
+		{
+			name: "skip if metric exists",
+			metrics: []IMetric{
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "existing_metric"}),
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "existing_metric"}),
+			},
+			expected: 1,
+		},
 	}
 
 	for _, tt := range tests {
