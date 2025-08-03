@@ -113,21 +113,75 @@ func TestGaugeV_SetWithLabels(t *testing.T) {
 	assert.Len(t, m.Label, 2)
 }
 
-func TestNewBuildInfoCollector(t *testing.T) {
-	metric := NewGaugeFuncMetric(prometheus.GaugeOpts{
-		Namespace: Namespace,
-		Name:      "build_info",
-		ConstLabels: prometheus.Labels{
-			"version":   "0.0.1",
-			"goversion": "1.24",
-			"arch":      "arm64",
+func TestNewGaugeFuncMetric(t *testing.T) {
+	tests := []struct {
+		name                    string
+		metricName              string
+		subSystem               string
+		constLabels             prometheus.Labels
+		expectedFqName          string
+		expectedDescString      string
+		expectedGaugeFuncReturn float64
+	}{
+		{
+			name:       "NewGaugeFuncMetric returns build_info",
+			metricName: "build_info",
+			subSystem:  "",
+			constLabels: prometheus.Labels{
+				"version":   "0.0.1",
+				"goversion": "1.24",
+				"arch":      "arm64",
+			},
+			expectedFqName:          "external_dns_build_info",
+			expectedDescString:      "version=\"0.0.1\"",
+			expectedGaugeFuncReturn: 1,
 		},
-	})
+		{
+			name:                    "NewGaugeFuncMetric subsystem alters name",
+			metricName:              "metricName",
+			subSystem:               "subSystem",
+			constLabels:             prometheus.Labels{},
+			expectedFqName:          "external_dns_subSystem_metricName",
+			expectedDescString:      "",
+			expectedGaugeFuncReturn: 1,
+		},
+		{
+			name:                    "NewGaugeFuncMetric GaugeFunc returns 1",
+			metricName:              "metricName",
+			subSystem:               "",
+			constLabels:             prometheus.Labels{},
+			expectedFqName:          "external_dns_metricName",
+			expectedDescString:      "",
+			expectedGaugeFuncReturn: 1,
+		},
+	}
 
-	desc := metric.GaugeFunc.Desc()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := NewGaugeFuncMetric(prometheus.GaugeOpts{
+				Namespace:   Namespace,
+				Name:        tt.metricName,
+				Subsystem:   tt.subSystem,
+				ConstLabels: tt.constLabels,
+			})
 
-	assert.Equal(t, "external_dns_build_info", reflect.ValueOf(desc).Elem().FieldByName("fqName").String())
-	assert.Contains(t, desc.String(), "version=\"0.0.1\"")
+			desc := metric.GaugeFunc.Desc()
+
+			assert.Equal(t, tt.expectedFqName, reflect.ValueOf(desc).Elem().FieldByName("fqName").String())
+			assert.Contains(t, desc.String(), tt.expectedDescString)
+
+			testRegistry := prometheus.NewRegistry()
+			err := testRegistry.Register(metric.GaugeFunc)
+			require.NoError(t, err)
+
+			metricFamily, err := testRegistry.Gather()
+			require.NoError(t, err)
+			require.Len(t, metricFamily, 1)
+
+			require.NotNil(t, metricFamily[0].Metric[0].Gauge)
+			assert.InDelta(t, tt.expectedGaugeFuncReturn, metricFamily[0].Metric[0].GetGauge().GetValue(), 0.0001)
+		})
+	}
 }
 
 func TestSummaryV_SetWithLabels(t *testing.T) {
