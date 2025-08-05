@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	networkingv1alpha3api "istio.io/api/networking/v1beta1"
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istionetworking "istio.io/api/networking/v1beta1"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
@@ -1477,7 +1477,7 @@ func testGatewayEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeKubernetesClient := fake.NewSimpleClientset()
+			fakeKubernetesClient := fake.NewClientset()
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
@@ -1522,9 +1522,119 @@ func testGatewayEndpoints(t *testing.T) {
 	}
 }
 
+func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-service",
+			Namespace: "default",
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"app":     "demo",
+				"env":     "prod",
+				"team":    "devops",
+				"version": "v1",
+				"release": "stable",
+				"track":   "daily",
+				"tier":    "backend",
+			},
+			ExternalIPs: []string{"10.10.10.255"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		selectors map[string]string
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			name: "gw single selector match with single service selector",
+			selectors: map[string]string{
+				"version": "v1",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+		{
+			name: "gw selector match all service selectors",
+			selectors: map[string]string{
+				"app":     "demo",
+				"env":     "prod",
+				"team":    "devops",
+				"version": "v1",
+				"release": "stable",
+				"track":   "daily",
+				"tier":    "backend",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+		{
+			name: "gw selector has subset of service selectors",
+			selectors: map[string]string{
+				"version": "v1",
+				"release": "stable",
+				"tier":    "backend",
+				"app":     "demo",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeKubeClient := fake.NewClientset()
+			fakeIstioClient := istiofake.NewSimpleClientset()
+
+			src, err := NewIstioGatewaySource(
+				t.Context(),
+				fakeKubeClient,
+				fakeIstioClient,
+				"",
+				"",
+				"",
+				false,
+				false,
+			)
+			require.NoError(t, err)
+			require.NotNil(t, src)
+
+			_, err = fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			gw := &networkingv1beta1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-gateway",
+					Namespace: "default",
+				},
+				Spec: istionetworking.Gateway{
+					Servers: []*istionetworking.Server{
+						{
+							Hosts: []string{"example.org"},
+						},
+					},
+					Selector: tt.selectors,
+				},
+			}
+
+			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			res, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			validateEndpoints(t, res, tt.expected)
+		})
+	}
+}
+
 // gateway specific helper functions
 func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
@@ -1612,22 +1722,22 @@ type fakeGatewayConfig struct {
 	selector    map[string]string
 }
 
-func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
-	gw := &networkingv1alpha3.Gateway{
+func (c fakeGatewayConfig) Config() *networkingv1beta1.Gateway {
+	gw := &networkingv1beta1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
 			Annotations: c.annotations,
 		},
-		Spec: networkingv1alpha3api.Gateway{
+		Spec: istionetworking.Gateway{
 			Servers:  nil,
 			Selector: c.selector,
 		},
 	}
 
-	var servers []*networkingv1alpha3api.Server
+	var servers []*istionetworking.Server
 	for _, dnsnames := range c.dnsnames {
-		servers = append(servers, &networkingv1alpha3api.Server{
+		servers = append(servers, &istionetworking.Server{
 			Hosts: dnsnames,
 		})
 	}
