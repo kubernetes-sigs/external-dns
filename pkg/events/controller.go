@@ -18,7 +18,6 @@ package events
 
 import (
 	"context"
-	"net/http"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -32,8 +31,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
-
-	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
 const (
@@ -62,15 +59,12 @@ func NewEventController(cfg *Config) (*Controller, error) {
 		workqueue.TypedRateLimitingQueueConfig[any]{Name: controllerName},
 	)
 	// TODO: to externalize this as similar to source.GetRestConfig
+	// TODO: instrument with metrics
 	rConfig, err := GetRestConfig(cfg.kubeConfig, cfg.apiServerURL)
 	if err != nil {
 		return nil, err
 	}
-	rConfig.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return extdnshttp.NewInstrumentedTransport(rt)
-	}
 	rConfig.Timeout = cfg.timeout
-	// ^^
 
 	client, err := v1.NewForConfig(rConfig)
 	if err != nil {
