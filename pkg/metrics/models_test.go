@@ -191,9 +191,16 @@ func TestSummaryV_SetWithLabels(t *testing.T) {
 		Subsystem: "test_sub",
 		Help:      "help text",
 	}
-	sv := NewSummaryVecWithOpts(opts, []string{"label1", "label2"})
 
-	sv.SetWithLabels(5.01, "Alpha", "BETA")
+	labels := NewLabels([]string{"label1", "label2"})
+	sv := NewSummaryVecWithOpts(opts, *labels)
+
+	labels.WithOptions(
+		WithLabel("label1", "alpha"),
+		WithLabel("label2", "beta"),
+	)
+
+	sv.SetWithLabels(5.01, labels)
 
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(sv.SummaryVec)

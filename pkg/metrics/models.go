@@ -186,17 +186,11 @@ func (s SummaryVecMetric) Get() *Metric {
 	return &s.Metric
 }
 
-// SetWithLabels sets the value of the SummaryVec metric for the specified label values.
-// All label values are converted to lowercase before being applied.
-func (s SummaryVecMetric) SetWithLabels(value float64, lvs ...string) {
-	for i, v := range lvs {
-		lvs[i] = strings.ToLower(v)
-	}
-
-	s.SummaryVec.WithLabelValues(lvs...).Observe(value)
+func (s SummaryVecMetric) SetWithLabels(value float64, labels *Labels) {
+	s.SummaryVec.WithLabelValues(labels.GetValuesOrderedByKey()...).Observe(value)
 }
 
-func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labelNames []string) SummaryVecMetric {
+func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels Labels) SummaryVecMetric {
 	opts.Namespace = Namespace
 	return SummaryVecMetric{
 		Metric: Metric{
@@ -207,7 +201,7 @@ func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labelNames []string) Sum
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
 		},
-		SummaryVec: *prometheus.NewSummaryVec(opts, labelNames),
+		SummaryVec: *prometheus.NewSummaryVec(opts, labels.GetKeysInOrder()),
 	}
 }
 
