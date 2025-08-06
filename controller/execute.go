@@ -33,13 +33,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
 
-	"sigs.k8s.io/external-dns/pkg/events"
-
-	"sigs.k8s.io/external-dns/source/wrappers"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -72,6 +69,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 func Execute() {

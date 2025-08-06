@@ -26,9 +26,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/pkg/events"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
