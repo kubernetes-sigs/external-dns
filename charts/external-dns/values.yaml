@@ -314,3 +314,15 @@ secretConfiguration:
 
 # -- (bool) No effect - reserved for use in sub-charting.
 enabled:  # @schema type: [boolean, null]; description: No effect - reserved for use in sub-charting
+
+# -- Extra objects to add to the Helm Release.
+extraObjects: []
+  # - apiVersion: policy/v1
+  #   kind: PodDisruptionBudget
+  #   metadata:
+  #     name: external-dns
+  #   spec:
+  #     minAvailable: 1
+  #     selector:
+  #       matchLabels:
+  #         app.kubernetes.io/name: external-dns
