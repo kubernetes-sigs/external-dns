@@ -834,23 +834,23 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 
 	suite.NoError(newProvider(TLSConfig{
 		CAFilePath: "../../internal/testresources/ca.pem",
-	}), "IsEnabled TLS Config with --tls-ca should raise no error")
+	}), "Enabled TLS Config with --tls-ca should raise no error")
 
 	suite.Error(newProvider(TLSConfig{
 		CAFilePath:         "../../internal/testresources/ca.pem",
 		ClientCertFilePath: "../../internal/testresources/client-cert.pem",
-	}), "IsEnabled TLS Config with --tls-client-cert only should raise an error")
+	}), "Enabled TLS Config with --tls-client-cert only should raise an error")
 
 	suite.Error(newProvider(TLSConfig{
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
-	}), "IsEnabled TLS Config with --tls-client-cert-key only should raise an error")
+	}), "Enabled TLS Config with --tls-client-cert-key only should raise an error")
 
 	suite.NoError(newProvider(TLSConfig{
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
-	}), "IsEnabled TLS Config with all flags should raise no error")
+	}), "Enabled TLS Config with all flags should raise no error")
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
