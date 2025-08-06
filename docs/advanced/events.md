@@ -1,6 +1,6 @@
 # Kubernetes Events in External-DNS
 
-External-DNS manages DNS records dynamically based on Kubernetes resources like Services and Ingresses. 
+External-DNS manages DNS records dynamically based on Kubernetes resources like Services and Ingresses.
 Emitting Kubernetes Events provides a lightweight observable way for users and systems to understand what External-DNS is doing, especially in production environments where DNS correctness is essential.
 
 > Note; events is currently alpha feature. Functionality is limited and subject to change
@@ -121,7 +121,7 @@ If a source does not emit events, it may in the future.
 | `empty`                |           |
 | `f5-transportserver`   |           |
 | `f5-virtualserver`     |           |
-| `fake`                 |     ✅    |
+| `fake`                 |     ✅     |
 | `gateway-grpcroute`    |           |
 | `gateway-httproute`    |           |
 | `gateway-tcproute`     |           |
