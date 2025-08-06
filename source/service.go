@@ -96,28 +96,9 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	// Set the resync period to 0 to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	endpointSlicesInformer := informerFactory.Discovery().V1().EndpointSlices()
-	podInformer := informerFactory.Core().V1().Pods()
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	_, _ = endpointSlicesInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	_, _ = podInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
 	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
@@ -125,30 +106,40 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		return nil, err
 	}
 
-	var nodeInformer coreinformers.NodeInformer
-	if sTypesFilter.isNodeInformerRequired() {
-		nodeInformer = informerFactory.Core().V1().Nodes()
-		_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	var endpointSlicesInformer discoveryinformers.EndpointSliceInformer
+	var podInformer coreinformers.PodInformer
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
+		podInformer = informerFactory.Core().V1().Pods()
+
+		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+		// Add an indexer to the EndpointSlice informer to index by the service name label
+		err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
+			serviceNameIndexKey: func(obj any) ([]string, error) {
+				endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+				if !ok {
+					// This should never happen because the Informer should only contain EndpointSlice objects
+					return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
+				}
+				serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
+				if serviceName == "" {
+					return nil, nil
+				}
+				key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+				return []string{key}, nil
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Add an indexer to the EndpointSlice informer to index by the service name label
-	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
-		serviceNameIndexKey: func(obj any) ([]string, error) {
-			endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
-			if !ok {
-				// This should never happen because the Informer should only contain EndpointSlice objects
-				return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
-			}
-			serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
-			if serviceName == "" {
-				return nil, nil
-			}
-			key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
-			return []string{key}, nil
-		},
-	})
-	if err != nil {
-		return nil, err
+	var nodeInformer coreinformers.NodeInformer
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
+		nodeInformer = informerFactory.Core().V1().Nodes()
+		_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
@@ -808,10 +799,10 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	_, _ = sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	if sc.listenEndpointEvents {
+	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
-	if sc.serviceTypeFilter.isNodeInformerRequired() {
+	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
 		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
@@ -848,12 +839,18 @@ func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
 	return !sc.enabled || sc.types[serviceType]
 }
 
-func (sc *serviceTypes) isNodeInformerRequired() bool {
-	if !sc.enabled {
+// isRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.
+// If no options are provided, it returns true.
+func (sc *serviceTypes) isRequired(opts ...v1.ServiceType) bool {
+	if len(opts) == 0 || !sc.enabled {
 		return true
 	}
-	_, ok := sc.types[v1.ServiceTypeNodePort]
-	return ok
+	for _, opt := range opts {
+		if _, ok := sc.types[opt]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // conditionToBool converts an EndpointConditions condition to a bool value.

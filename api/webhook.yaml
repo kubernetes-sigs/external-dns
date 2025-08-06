@@ -147,6 +147,8 @@ components:
       description: |
         external-dns will only create DNS records for host names (specified in ingress objects and services with the external-dns annotation) related to zones that match filters. They can set in external-dns deployment manifest.
       type: object
+      required:
+        - filters
       properties:
         filters:
           type: array
@@ -175,6 +177,10 @@ components:
       description: |
         This is a DNS record.
       type: object
+      required:
+        - dnsName
+        - targets
+        - recordType
       properties:
         dnsName:
           type: string
@@ -226,6 +232,9 @@ components:
       description: |
         Allows provider to pass property specific to their implementation.
       type: object
+      required:
+        - name
+        - value
       properties:
         name:
           type: string

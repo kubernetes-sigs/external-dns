@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewGaugeWithOpts(t *testing.T) {
@@ -112,19 +113,125 @@ func TestGaugeV_SetWithLabels(t *testing.T) {
 	assert.Len(t, m.Label, 2)
 }
 
-func TestNewBuildInfoCollector(t *testing.T) {
-	metric := NewGaugeFuncMetric(prometheus.GaugeOpts{
-		Namespace: Namespace,
-		Name:      "build_info",
-		ConstLabels: prometheus.Labels{
-			"version":   "0.0.1",
-			"goversion": "1.24",
-			"arch":      "arm64",
+func TestNewGaugeFuncMetric(t *testing.T) {
+	tests := []struct {
+		name                    string
+		metricName              string
+		subSystem               string
+		constLabels             prometheus.Labels
+		expectedFqName          string
+		expectedDescString      string
+		expectedGaugeFuncReturn float64
+	}{
+		{
+			name:       "NewGaugeFuncMetric returns build_info",
+			metricName: "build_info",
+			subSystem:  "",
+			constLabels: prometheus.Labels{
+				"version":   "0.0.1",
+				"goversion": "1.24",
+				"arch":      "arm64",
+			},
+			expectedFqName:          "external_dns_build_info",
+			expectedDescString:      "version=\"0.0.1\"",
+			expectedGaugeFuncReturn: 1,
 		},
-	})
+		{
+			name:                    "NewGaugeFuncMetric subsystem alters name",
+			metricName:              "metricName",
+			subSystem:               "subSystem",
+			constLabels:             prometheus.Labels{},
+			expectedFqName:          "external_dns_subSystem_metricName",
+			expectedDescString:      "",
+			expectedGaugeFuncReturn: 1,
+		},
+		{
+			name:                    "NewGaugeFuncMetric GaugeFunc returns 1",
+			metricName:              "metricName",
+			subSystem:               "",
+			constLabels:             prometheus.Labels{},
+			expectedFqName:          "external_dns_metricName",
+			expectedDescString:      "",
+			expectedGaugeFuncReturn: 1,
+		},
+	}
 
-	desc := metric.GaugeFunc.Desc()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := NewGaugeFuncMetric(prometheus.GaugeOpts{
+				Namespace:   Namespace,
+				Name:        tt.metricName,
+				Subsystem:   tt.subSystem,
+				ConstLabels: tt.constLabels,
+			})
 
-	assert.Equal(t, "external_dns_build_info", reflect.ValueOf(desc).Elem().FieldByName("fqName").String())
-	assert.Contains(t, desc.String(), "version=\"0.0.1\"")
+			desc := metric.GaugeFunc.Desc()
+
+			assert.Equal(t, tt.expectedFqName, reflect.ValueOf(desc).Elem().FieldByName("fqName").String())
+			assert.Contains(t, desc.String(), tt.expectedDescString)
+
+			testRegistry := prometheus.NewRegistry()
+			err := testRegistry.Register(metric.GaugeFunc)
+			require.NoError(t, err)
+
+			metricFamily, err := testRegistry.Gather()
+			require.NoError(t, err)
+			require.Len(t, metricFamily, 1)
+
+			require.NotNil(t, metricFamily[0].Metric[0].Gauge)
+			assert.InDelta(t, tt.expectedGaugeFuncReturn, metricFamily[0].Metric[0].GetGauge().GetValue(), 0.0001)
+		})
+	}
+}
+
+func TestSummaryV_SetWithLabels(t *testing.T) {
+	opts := prometheus.SummaryOpts{
+		Name:      "test_summaryVec",
+		Namespace: "test_ns",
+		Subsystem: "test_sub",
+		Help:      "help text",
+	}
+	sv := NewSummaryVecWithOpts(opts, []string{"label1", "label2"})
+
+	sv.SetWithLabels(5.01, "Alpha", "BETA")
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(sv.SummaryVec)
+
+	metricsFamilies, err := reg.Gather()
+	assert.NoError(t, err)
+	assert.Len(t, metricsFamilies, 1)
+
+	s, err := sv.SummaryVec.GetMetricWithLabelValues("alpha", "beta")
+	assert.NoError(t, err)
+	metricsFamilies, err = reg.Gather()
+
+	s.Observe(5.21)
+	metricsFamilies, err = reg.Gather()
+	assert.NoError(t, err)
+
+	assert.InDelta(t, 10.22, *metricsFamilies[0].Metric[0].Summary.SampleSum, 0.01)
+	assert.Len(t, metricsFamilies[0].Metric[0].Label, 2)
+}
+
+func TestPathProcessor(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"/foo/bar", "bar"},
+		{"/foo/", ""},
+		{"/", ""},
+		{"", ""},
+		{"/foo/bar/baz", "baz"},
+		{"foo/bar", "bar"},
+		{"foo", "foo"},
+		{"foo/", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			require.Equal(t, tt.expected, PathProcessor(tt.input))
+		})
+	}
 }

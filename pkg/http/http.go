@@ -21,14 +21,15 @@ package http
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
 var (
-	requestDuration = prometheus.NewSummaryVec(
+	RequestDurationMetric = metrics.NewSummaryVecWithOpts(
 		prometheus.SummaryOpts{
 			Name:        "request_duration_seconds",
 			Help:        "The HTTP request latencies in seconds.",
@@ -41,7 +42,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(requestDuration)
+	metrics.RegisterMetric.MustRegister(RequestDurationMetric)
 }
 
 type CustomRoundTripper struct {
@@ -61,15 +62,8 @@ func (r *CustomRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	if resp != nil {
 		status = fmt.Sprintf("%d", resp.StatusCode)
 	}
+	RequestDurationMetric.SetWithLabels(time.Since(start).Seconds(), req.URL.Scheme, req.URL.Host, metrics.PathProcessor(req.URL.Path), req.Method, status)
 
-	labels := prometheus.Labels{
-		"scheme": req.URL.Scheme,
-		"host":   req.URL.Host,
-		"path":   pathProcessor(req.URL.Path),
-		"method": req.Method,
-		"status": status,
-	}
-	requestDuration.With(labels).Observe(time.Since(start).Seconds())
 	return resp, err
 }
 
@@ -89,9 +83,4 @@ func NewInstrumentedTransport(next http.RoundTripper) http.RoundTripper {
 	}
 
 	return &CustomRoundTripper{next: next}
-}
-
-func pathProcessor(path string) string {
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
 }
