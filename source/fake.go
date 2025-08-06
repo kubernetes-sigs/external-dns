@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // fakeSource is an implementation of Source that provides dummy endpoints for
@@ -54,7 +55,7 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	}, nil
 }
 
-func (sc *fakeSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *fakeSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects.
@@ -74,17 +75,17 @@ func (sc *fakeSource) generateEndpoint() *endpoint.Endpoint {
 		endpoint.RecordTypeA,
 		generateIPAddress(),
 	)
-	ep.SetIdentifier = TypeFake
+	ep.SetIdentifier = types.Fake
 	ep.WithRefObject(events.NewObjectReference(&v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      TypeFake + "-" + ep.DNSName,
+			Name:      types.Fake + "-" + ep.DNSName,
 			Namespace: v1.NamespaceDefault,
 		},
-	}, TypeFake))
+	}, types.Fake))
 	return ep
 }
 
