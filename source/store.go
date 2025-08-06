@@ -105,12 +105,6 @@ type Config struct {
 	ExposeInternalIPv6             bool
 }
 
-type Type = string
-
-const (
-	TypeFake Type = "fake"
-)
-
 func NewSourceConfig(cfg *externaldns.Config) *Config {
 	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
