@@ -830,7 +830,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 	}), "Disabled TLS Config with additional flags should raise no error")
 
-	suite.NoError(newProvider(TLSConfig{}), "IsEnabled TLS Config without --tls-ca should raise no error")
+	suite.NoError(newProvider(TLSConfig{}), "Enabled TLS Config without --tls-ca should raise no error")
 
 	suite.NoError(newProvider(TLSConfig{
 		CAFilePath: "../../internal/testresources/ca.pem",
