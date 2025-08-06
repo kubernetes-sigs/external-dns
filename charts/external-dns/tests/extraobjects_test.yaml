@@ -1,0 +1,71 @@
+suite: ExtraObjects functionality
+templates:
+  - extraobjects.yaml
+chart:
+  appVersion: 0.15.0
+  version: 1.15.0
+tests:
+  - it: should render empty when no extraObjects are provided
+    set:
+      extraObjects: []
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render extraObjects when provided
+    set:
+      extraObjects:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: external-dns-config
+            namespace: default
+          data:
+            KEY: VALUE
+        - apiVersion: policy/v1
+          kind: PodDisruptionBudget
+          metadata:
+            name: external-dns-pdb
+          spec:
+            minAvailable: 1
+            selector:
+              matchLabels:
+                app.kubernetes.io/name: external-dns
+    asserts:
+      - hasDocuments:
+          count: 2
+      - contains:
+          kind: ConfigMap
+      - contains:
+          kind: PodDisruptionBudget
+      - equal:
+          path: [0].metadata.name
+          value: external-dns-config
+      - equal:
+          path: [1].metadata.name
+          value: external-dns-pdb
+      - equal:
+          path: [1].spec.minAvailable
+          value: 1
+
+  - it: should render single extraObject correctly
+    set:
+      extraObjects:
+        - apiVersion: v1
+          kind: Secret
+          metadata:
+            name: external-dns-secret
+          type: Opaque
+          stringData:
+            MYKEY: MYVALUE
+    asserts:
+      - hasDocuments:
+          count: 1
+      - contains:
+          kind: Secret
+      - equal:
+          path: [0].metadata.name
+          value: external-dns-secret
+      - equal:
+          path: [0].type
+          value: Opaque
