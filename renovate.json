@@ -1,6 +1,95 @@
 {
-  "gomod": {
-    "enabled": false
-  },
-  "commitMessagePrefix": "UPSTREAM: <carry>: "
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": ["dockerfile", "tekton"],
+  "commitMessagePrefix": "UPSTREAM: <carry>: ",
+  "packageRules": [
+    {
+      "description": "Disable all Dockerfile updates by default. Only specific files will get targeted.",
+      "matchManagers": ["dockerfile"],
+      "enabled": false
+    },
+    {
+      "description": "Enable Docker image updates for Red Hat UBI images on major version 9",
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": [
+        "Containerfile.externaldns"
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "registry.access.redhat.com/ubi9/ubi-minimal",
+        "registry.access.redhat.com/ubi9/ubi"
+      ],
+      "enabled": true,
+      "versioning": "redhat",
+      "allowedVersions": "/^9(\\.|$)/",
+      "schedule": [
+        "after 5am on tuesday"
+      ]
+    },
+    {
+      "description": "Keep Go toolset on minor version 1.22",
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": [
+        "Containerfile.externaldns"
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "registry.access.redhat.com/ubi9/go-toolset"
+      ],
+      "enabled": true,
+      "versioning": "redhat",
+      "allowedVersions": "/^1\\.22(\\.|$)/",
+      "schedule": [
+        "after 5am on tuesday"
+      ]
+    }
+  ],
+  "tekton": {
+    "managerFilePatterns": [
+      "/\\.yaml$/",
+      "/\\.yml$/"
+    ],
+    "includePaths": [
+      ".tekton/**"
+    ],
+    "packageRules": [
+      {
+        "matchPackageNames": [
+          "/^quay.io/redhat-appstudio-tekton-catalog//",
+          "/^quay.io/konflux-ci/tekton-catalog//",
+          "/^quay.io/konflux-ci/konflux-vanguard//"
+        ],
+        "enabled": true,
+        "groupName": "Konflux references",
+        "branchPrefix": "konflux/references/",
+        "additionalBranchPrefix": "",
+        "group": {
+          "branchTopic": "{{{baseBranch}}}",
+          "commitMessageTopic": "{{{groupName}}}"
+        },
+        "commitMessageTopic": "Konflux references",
+        "prBodyColumns": [
+          "Package",
+          "Change",
+          "Notes"
+        ],
+        "prBodyDefinitions": {
+          "Notes": "{{#if (or (containsString updateType 'minor') (containsString updateType 'major'))}}:warning:[migration](https://github.com/redhat-appstudio/build-definitions/blob/main/task/{{{replace '^quay.io/(redhat-appstudio-tekton-catalog|konflux-ci/tekton-catalog)/task-' '' packageName}}}/{{{newVersion}}}/MIGRATION.md):warning:{{/if}}"
+        },
+        "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{configDescription}}}{{{controls}}}{{{footer}}}",
+        "recreateWhen": "always",
+        "rebaseWhen": "behind-base-branch"
+      }
+    ],
+    "schedule": [
+      "after 5am on tuesday"
+    ],
+    "postUpgradeTasks": {
+      "commands": [
+        "pipeline-migration-tool migrate -f \"$RENOVATE_POST_UPGRADE_COMMAND_DATA_FILE\""
+      ],
+      "executionMode": "branch",
+      "dataFileTemplate": "[{{#each upgrades}}{\"depName\": \"{{{depName}}}\", \"currentValue\": \"{{{currentValue}}}\", \"currentDigest\": \"{{{currentDigest}}}\", \"newValue\": \"{{{newValue}}}\", \"newDigest\": \"{{{newDigest}}}\", \"packageFile\": \"{{{packageFile}}}\", \"parentDir\": \"{{{parentDir}}}\", \"depTypes\": [{{#each depTypes}}\"{{{this}}}\"{{#unless @last}},{{\/unless}}{{\/each}}]}{{#unless @last}},{{\/unless}}{{\/each}}]"
+    }
+  }
 }
