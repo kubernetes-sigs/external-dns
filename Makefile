@@ -55,7 +55,7 @@ licensecheck:
             exit 1; \
         fi
 
-#? oas-lint: Execute OpenAPI Specification (OAS) linting
+#? oas-lint: Execute OpenAPI Specification (OAS) linting https://quobix.com/vacuum/
 .PHONY: go-lint
 oas-lint:
 	go tool vacuum lint -d --fail-severity warn api/*.yaml
