@@ -52,6 +52,8 @@ jobs:
 
       # https://github.com/daveshanley/vacuum
     - name: Lint OpenAPI spec
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Increases rate limit from 60 to 5000 requests
       run: |
         go tool vacuum lint -d --fail-severity warn api/*.yaml
 
