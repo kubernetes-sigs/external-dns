@@ -32,7 +32,8 @@ cat << EOF
 Usage: $(basename "$0") <options>
     -h, --help          Display help
     --generator         Install generator
-    --golangci         Install golangci linter
+    --golangci          Install golangci linter
+    --apispec-linter    Install API spec linter
 EOF
 }
 
@@ -51,7 +52,7 @@ install_generator() {
   fi
   if [[ "$install" == true ]]; then
       set -ex ;\
-	    go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
+      go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
   fi
 
   if [[ ! -x $(which yq) ]]; then
@@ -83,6 +84,11 @@ install_golangci() {
   fi
 }
 
+install_golangci() {
+  go install github.com/daveshanley/vacuum@latest
+}
+
+
 function main() {
   case $1 in
     --generator)
@@ -90,6 +96,9 @@ function main() {
       ;;
     --golangci)
       install_golangci
+      ;;
+    --apispec-linter)
+      install_apispec_linter
       ;;
     -h|--help)
       show_help
