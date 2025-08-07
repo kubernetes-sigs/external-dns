@@ -33,7 +33,6 @@ Usage: $(basename "$0") <options>
     -h, --help          Display help
     --generator         Install generator
     --golangci          Install golangci linter
-    --apispec-linter    Install API spec linter
 EOF
 }
 
@@ -84,11 +83,6 @@ install_golangci() {
   fi
 }
 
-install_golangci() {
-  go install github.com/daveshanley/vacuum@latest
-}
-
-
 function main() {
   case $1 in
     --generator)
@@ -96,9 +90,6 @@ function main() {
       ;;
     --golangci)
       install_golangci
-      ;;
-    --apispec-linter)
-      install_apispec_linter
       ;;
     -h|--help)
       show_help

@@ -58,7 +58,7 @@ licensecheck:
 #? oas-lint: Execute OpenAPI Specification (OAS) linting
 .PHONY: go-lint
 oas-lint:
-	go run github.com/daveshanley/vacuum@latest lint -d --fail-severity warn api/*.yaml
+	go tool vacuum lint -d --fail-severity warn api/*.yaml
 
 #? lint: Run all the linters
 .PHONY: lint
