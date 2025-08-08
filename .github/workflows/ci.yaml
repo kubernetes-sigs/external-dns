@@ -34,7 +34,7 @@ jobs:
         check-latest: true
       id: go
 
-    - name: Install CI
+    - name: Install Dependencies
       run: |
         go get -v -t -d ./...
 
@@ -77,12 +77,12 @@ jobs:
         check-latest: true
       id: go
 
-    - name: Install CI
-      env:
-        GOMAXPROCS: 1
-        GOMEMLIMIT: 2048MiB
+    - name: Install Dependencies
       run: |
         go get -v -t -d ./...
 
     - name: Test
+      env:
+        GOMAXPROCS: 1
+        GOMEMLIMIT: 2048MiB
       run: make test
