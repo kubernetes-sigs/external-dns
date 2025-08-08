@@ -1081,7 +1081,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		assert.Empty(t, retrieved.Status.Conditions)
 	})
 
-	t.Run("transormer is not used when fqdnTemplate is set", func(t *testing.T) {
+	t.Run("transformer is not used when fqdnTemplate is set", func(t *testing.T) {
 		ctx := t.Context()
 		fakeClient := fake.NewClientset()
 
