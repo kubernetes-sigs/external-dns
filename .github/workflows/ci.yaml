@@ -55,7 +55,6 @@ jobs:
       continue-on-error: true
 
   build-low-resources:
-    # needs: [build]
     permissions:
       contents: read  #  to fetch code (actions/checkout)
 
