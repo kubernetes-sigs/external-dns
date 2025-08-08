@@ -48,7 +48,7 @@ jobs:
       with:
         verify: true
         args: --timeout=30m
-        version: v2.1
+        version: v2.2
 
       # https://github.com/daveshanley/vacuum
     - name: Lint OpenAPI spec
