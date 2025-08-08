@@ -50,11 +50,12 @@ jobs:
         args: --timeout=30m
         version: v2.1
 
-      # Run Spectral
+      # https://github.com/daveshanley/vacuum
     - name: Lint OpenAPI spec
-      uses: stoplightio/spectral-action@6416fd018ae38e60136775066eb3e98172143141 # v0.8.13
-      with:
-        file_glob: 'api/*.yaml'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Increases rate limit from 60 to 5000 requests
+      run: |
+        go tool vacuum lint -d --fail-severity warn --show-rules api/*.yaml
 
     - uses: actions/setup-python@v5
     # https://github.com/pre-commit/action

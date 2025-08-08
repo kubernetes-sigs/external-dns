@@ -32,7 +32,7 @@ cat << EOF
 Usage: $(basename "$0") <options>
     -h, --help          Display help
     --generator         Install generator
-    --golangci         Install golangci linter
+    --golangci          Install golangci linter
 EOF
 }
 
@@ -51,7 +51,7 @@ install_generator() {
   fi
   if [[ "$install" == true ]]; then
       set -ex ;\
-	    go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
+      go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
   fi
 
   if [[ ! -x $(which yq) ]]; then
