@@ -11,9 +11,10 @@ resources:
 
 provider:
   webhook:
-    requests:
-      cpu: 200m
-      memory: 128Mi
-    limits:
-      cpu: 300m
-      memory: 200Mi
+    sidecar:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 300m
+        memory: 200Mi
