@@ -56,15 +56,3 @@ func ParseIngress(ingress string) (string, string, error) {
 
 	return namespace, name, err
 }
-
-// MatchesServiceSelector checks if all key-value pairs in the selector map
-// are present and match the corresponding key-value pairs in the svcSelector map.
-// It returns true if all pairs match, otherwise it returns false.
-func MatchesServiceSelector(selector, svcSelector map[string]string) bool {
-	for k, v := range selector {
-		if lbl, ok := svcSelector[k]; !ok || lbl != v {
-			return false
-		}
-	}
-	return true
-}
