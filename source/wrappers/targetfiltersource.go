@@ -21,9 +21,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/source"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // targetFilterSource is a Source that removes endpoints matching the target filter from its wrapped source.
@@ -40,6 +39,7 @@ func NewTargetFilterSource(source source.Source, targetFilter endpoint.TargetFil
 // Endpoints collects endpoints from its wrapped source and returns
 // them without targets matching the target filter.
 func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debug("targetFilterSource: collecting endpoints from wrapped source and applying target filter")
 	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,6 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 }
 
 func (ms *targetFilterSource) AddEventHandler(ctx context.Context, handler func()) {
-	if ms.targetFilter.IsEnabled() {
-		ms.source.AddEventHandler(ctx, handler)
-	}
+	log.Debug("targetFilterSource: adding event handler")
+	ms.source.AddEventHandler(ctx, handler)
 }

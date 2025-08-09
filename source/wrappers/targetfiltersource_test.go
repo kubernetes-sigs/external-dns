@@ -19,9 +19,10 @@ package wrappers
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
+
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -47,26 +48,6 @@ func (m *mockTargetNetFilter) IsEnabled() bool {
 	return true
 }
 
-// echoSource is a Source that returns the endpoints passed in on creation.
-type echoSource struct {
-	mock.Mock
-	endpoints []*endpoint.Endpoint
-}
-
-func (e *echoSource) AddEventHandler(ctx context.Context, handler func()) {
-	e.Called(ctx)
-}
-
-// Endpoints returns all the endpoints passed in on creation
-func (e *echoSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return e.endpoints, nil
-}
-
-// NewEchoSource creates a new echoSource.
-func NewEchoSource(endpoints []*endpoint.Endpoint) source.Source {
-	return &echoSource{endpoints: endpoints}
-}
-
 func TestEchoSourceReturnGivenSources(t *testing.T) {
 	startEndpoints := []*endpoint.Endpoint{{
 		DNSName:    "foo.bar.com",
@@ -75,7 +56,7 @@ func TestEchoSourceReturnGivenSources(t *testing.T) {
 		RecordTTL:  endpoint.TTL(300),
 		Labels:     endpoint.Labels{},
 	}}
-	e := NewEchoSource(startEndpoints)
+	e := testutils.NewMockSource(startEndpoints...)
 
 	endpoints, err := e.Endpoints(context.Background())
 	if err != nil {
@@ -143,7 +124,7 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			t.Parallel()
 
-			echo := NewEchoSource(tt.endpoints)
+			echo := testutils.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 
 			endpoints, err := src.Endpoints(context.Background())
@@ -225,7 +206,7 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			echo := NewEchoSource(tt.endpoints)
+			echo := testutils.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 
 			endpoints, err := src.Endpoints(context.Background())
@@ -248,20 +229,16 @@ func TestTargetFilterSource_AddEventHandler(t *testing.T) {
 			times:   1,
 		},
 		{
-			title:   "should not add event handler if target filter is disabled",
+			title:   "should add event handler if target filter is disabled",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{}),
-			times:   0,
+			times:   1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			echo := NewEchoSource([]*endpoint.Endpoint{})
-
-			m := echo.(*echoSource)
-			m.On("AddEventHandler", t.Context()).Return()
-
-			src := NewTargetFilterSource(echo, tt.filters)
+			m := testutils.NewMockSource()
+			src := NewTargetFilterSource(m, tt.filters)
 			src.AddEventHandler(t.Context(), func() {})
 
 			m.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
