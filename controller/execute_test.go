@@ -484,7 +484,7 @@ func (m *MockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return nil, nil
 }
 
-func (p *MockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (m *MockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	return nil
 }
 

@@ -33,11 +33,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
 
-	"sigs.k8s.io/external-dns/source/wrappers"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -70,6 +69,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 func Execute() {
@@ -119,7 +119,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -344,7 +344,13 @@ func buildProvider(
 	return p, err
 }
 
-func buildController(cfg *externaldns.Config, src source.Source, p provider.Provider, filter *endpoint.DomainFilter) (*Controller, error) {
+func buildController(
+	ctx context.Context,
+	cfg *externaldns.Config,
+	src source.Source,
+	p provider.Provider,
+	filter *endpoint.DomainFilter,
+) (*Controller, error) {
 	policy, ok := plan.Policies[cfg.Policy]
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
@@ -353,6 +359,19 @@ func buildController(cfg *externaldns.Config, src source.Source, p provider.Prov
 	if err != nil {
 		return nil, err
 	}
+	eventsCfg := events.NewConfig(
+		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
+		events.WithEmitEvents(cfg.EmitEvents),
+		events.WithDryRun(cfg.DryRun))
+	var eventsCtrl *events.Controller
+	if eventsCfg.IsEnabled() {
+		eventsCtrl, err = events.NewEventController(eventsCfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		eventsCtrl.Run(ctx)
+	}
+
 	return &Controller{
 		Source:               src,
 		Registry:             reg,
@@ -362,6 +381,7 @@ func buildController(cfg *externaldns.Config, src source.Source, p provider.Prov
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		EventController:      eventsCtrl,
 	}, nil
 }
 
