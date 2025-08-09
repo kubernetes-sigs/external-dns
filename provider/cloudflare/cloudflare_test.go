@@ -23,6 +23,7 @@ import (
 	"os"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -136,6 +137,12 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 		if params.Type == "MX" {
 			record.Priority = params.Priority
 		}
+		if params.Data != nil {
+			record.Data = params.Data
+		}
+		if params.Type == "SRV" && record.Data != nil {
+			record.Content = ""
+		}
 		return record
 	case cloudflare.UpdateDNSRecordParams:
 		record := cloudflare.DNSRecord{
@@ -148,6 +155,12 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 		}
 		if params.Type == "MX" {
 			record.Priority = params.Priority
+		}
+		if params.Data != nil {
+			record.Data = params.Data
+		}
+		if params.Type == "SRV" && record.Data != nil {
+			record.Content = ""
 		}
 		return record
 	default:
@@ -164,12 +177,37 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudfla
 	if recordData.ID == "" {
 		recordData.ID = generateDNSRecordID(recordData.Type, recordData.Name, recordData.Content)
 	}
-	m.Actions = append(m.Actions, MockAction{
+	
+	if recordData.Type == "SRV" {
+		if rp.Data != nil {
+			recordData.Data = rp.Data
+			recordData.Content = ""
+		} else if recordData.Data == nil && recordData.Content != "" {
+			parts := strings.Fields(recordData.Content)
+			if len(parts) >= 4 {
+				priority, _ := strconv.Atoi(parts[0])
+				weight, _ := strconv.Atoi(parts[1])
+				port, _ := strconv.Atoi(parts[2])
+				target := strings.Join(parts[3:], " ")
+				recordData.Data = map[string]interface{}{
+					"priority": priority,
+					"weight":   weight,
+					"port":     port,
+					"target":   target,
+				}
+				recordData.Content = ""
+			}
+		}
+	}
+	
+	action := MockAction{
 		Name:       "Create",
 		ZoneId:     rc.Identifier,
 		RecordId:   recordData.ID,
 		RecordData: recordData,
-	})
+	}
+	m.Actions = append(m.Actions, action)
+	
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		zone[recordData.ID] = recordData
 	}
@@ -177,7 +215,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudfla
 	if recordData.Name == "newerror.bar.com" {
 		return cloudflare.DNSRecord{}, fmt.Errorf("failed to create record")
 	}
-	return cloudflare.DNSRecord{}, nil
+	return recordData, nil
 }
 
 func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDNSRecordsParams) ([]cloudflare.DNSRecord, *cloudflare.ResultInfo, error) {
@@ -788,6 +826,9 @@ func TestCloudflareSetProxied(t *testing.T) {
 			targets = endpoint.Targets{"10 mx.example.com"}
 			content = "mx.example.com"
 			priority = cloudflare.Uint16Ptr(10)
+		} else if testCase.recordType == "SRV" {
+			targets = endpoint.Targets{"10 5 8080 example.com"}
+			content = "10 5 8080 example.com"
 		} else {
 			targets = endpoint.Targets{"127.0.0.1"}
 			content = "127.0.0.1"
@@ -806,17 +847,30 @@ func TestCloudflareSetProxied(t *testing.T) {
 				},
 			},
 		}
-		expectedID := fmt.Sprintf("%s-%s-%s", testCase.domain, testCase.recordType, content)
+		// Generate the expected ID based on the record type and content
+		expectedID := generateDNSRecordID(testCase.recordType, testCase.domain, content)
+
 		recordData := cloudflare.DNSRecord{
 			ID:      expectedID,
 			Type:    testCase.recordType,
 			Name:    testCase.domain,
-			Content: content,
 			TTL:     1,
 			Proxied: testCase.proxiable,
 		}
+
 		if testCase.recordType == "MX" {
+			recordData.Content = content
 			recordData.Priority = priority
+		} else if testCase.recordType == "SRV" {
+			recordData.Data = map[string]interface{}{
+				"priority": 10,
+				"weight":   5,
+				"port":     8080,
+				"target":   "example.com",
+			}
+			recordData.Content = ""
+		} else {
+			recordData.Content = content
 		}
 		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 			{
@@ -825,7 +879,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 				RecordId:   expectedID,
 				RecordData: recordData,
 			},
-		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeMX}, testCase.recordType+" record on "+testCase.domain)
+		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeMX, endpoint.RecordTypeSRV}, testCase.recordType+" record on "+testCase.domain)
 	}
 }
 
@@ -1234,11 +1288,6 @@ func TestCloudflareGetRecordID(t *testing.T) {
 }
 
 func TestCloudflareGroupByNameAndType(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client:       NewMockCloudFlareClient(),
-		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
-		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
-	}
 	testCases := []struct {
 		Name              string
 		Records           []cloudflare.DNSRecord
@@ -1473,6 +1522,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 		for _, r := range tc.Records {
 			records[newDNSRecordIndex(r)] = r
 		}
+		provider := &CloudFlareProvider{}
 		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, CustomHostnamesMap{})
 		// Targets order could be random with underlying map
 		for _, ep := range endpoints {

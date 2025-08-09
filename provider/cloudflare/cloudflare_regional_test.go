@@ -842,7 +842,6 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 }
 
 func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
-	t.Parallel()
 	type fields struct {
 		Records           map[string]cloudflare.DNSRecord
 		RegionalHostnames []regionalHostname
@@ -1042,7 +1041,6 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 }
 
 func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
-	t.Parallel()
 	type fields struct {
 		Records           map[string]cloudflare.DNSRecord
 		RegionalHostnames []regionalHostname
