@@ -236,8 +236,8 @@ func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
 
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew)...)
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
+	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew())...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld())...)
 
 	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
 

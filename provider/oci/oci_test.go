@@ -789,18 +789,22 @@ func TestOCIApplyChanges(t *testing.T) {
 				}},
 			},
 			changes: &plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"foo.foo.com",
-					endpoint.RecordTypeA,
-					endpoint.TTL(defaultTTL),
-					"127.0.0.1",
-				)},
-				UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"foo.foo.com",
-					endpoint.RecordTypeA,
-					endpoint.TTL(defaultTTL),
-					"10.0.0.1",
-				)},
+				Update: []*plan.Update{
+					{
+						Old: endpoint.NewEndpointWithTTL(
+							"foo.foo.com",
+							endpoint.RecordTypeA,
+							endpoint.TTL(defaultTTL),
+							"127.0.0.1",
+						),
+						New: endpoint.NewEndpointWithTTL(
+							"foo.foo.com",
+							endpoint.RecordTypeA,
+							endpoint.TTL(defaultTTL),
+							"10.0.0.1",
+						),
+					},
+				},
 			},
 			expectedEndpoints: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
 				"foo.foo.com",
@@ -868,18 +872,22 @@ func TestOCIApplyChanges(t *testing.T) {
 					endpoint.TTL(defaultTTL),
 					"127.0.0.1",
 				)},
-				UpdateOld: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"car.foo.com",
-					endpoint.RecordTypeCNAME,
-					endpoint.TTL(defaultTTL),
-					"baz.com.",
-				)},
-				UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"bar.foo.com",
-					endpoint.RecordTypeCNAME,
-					endpoint.TTL(defaultTTL),
-					"foo.bar.com.",
-				)},
+				Update: []*plan.Update{
+					{
+						Old: endpoint.NewEndpointWithTTL(
+							"car.foo.com",
+							endpoint.RecordTypeCNAME,
+							endpoint.TTL(defaultTTL),
+							"baz.com.",
+						),
+						New: endpoint.NewEndpointWithTTL(
+							"bar.foo.com",
+							endpoint.RecordTypeCNAME,
+							endpoint.TTL(defaultTTL),
+							"foo.bar.com.",
+						),
+					},
+				},
 				Create: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
 					"baz.foo.com",
 					endpoint.RecordTypeA,
@@ -975,18 +983,22 @@ func TestOCIApplyChanges(t *testing.T) {
 				}},
 			},
 			changes: &plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"first.foo.com",
-					endpoint.RecordTypeA,
-					endpoint.TTL(defaultTTL),
-					"10.77.4.5",
-				)},
-				UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
-					"first.foo.com",
-					endpoint.RecordTypeA,
-					endpoint.TTL(defaultTTL),
-					"10.77.6.10",
-				)},
+				Update: []*plan.Update{
+					{
+						Old: endpoint.NewEndpointWithTTL(
+							"first.foo.com",
+							endpoint.RecordTypeA,
+							endpoint.TTL(defaultTTL),
+							"10.77.4.5",
+						),
+						New: endpoint.NewEndpointWithTTL(
+							"first.foo.com",
+							endpoint.RecordTypeA,
+							endpoint.TTL(defaultTTL),
+							"10.77.6.10",
+						),
+					},
+				},
 			},
 			expectedEndpoints: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(
 				"first.foo.com",

@@ -89,7 +89,7 @@ func (p *PluralProvider) ApplyChanges(_ context.Context, diffs *plan.Changes) er
 		changes = append(changes, makeChange(CreateAction, ep.Targets, ep))
 	}
 
-	for _, desired := range diffs.UpdateNew {
+	for _, desired := range diffs.UpdateNew() {
 		changes = append(changes, makeChange(CreateAction, desired.Targets, desired))
 	}
 

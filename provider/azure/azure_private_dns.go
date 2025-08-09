@@ -169,7 +169,7 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) ([]*endpoint.Endp
 //
 // Returns nil if the operation was successful or an error if the operation failed.
 func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("Received %d changes to process", len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew)+len(changes.UpdateOld))
+	log.Debugf("Received %d changes to process", len(changes.Create)+len(changes.Delete)+len(changes.Update))
 
 	zones, err := p.zones(ctx)
 	if err != nil {
@@ -246,7 +246,7 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 		mapChange(updated, change)
 	}
 
-	for _, change := range changes.UpdateNew {
+	for _, change := range changes.UpdateNew() {
 		mapChange(updated, change)
 	}
 	return deleted, updated

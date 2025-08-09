@@ -224,13 +224,12 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 // ApplyChanges updates the DNS provider and DynamoDB table with the changes.
 func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
+		Create: changes.Create,
+		Update: plan.FilterUpdatesByOwnerId(im.ownerID, changes.Update),
+		Delete: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
+	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.Update))
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
@@ -259,35 +258,30 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		}
 	}
 
-	oldLabels := make(map[endpoint.EndpointKey]endpoint.Labels, len(filteredChanges.UpdateOld))
-	needMigration := map[endpoint.EndpointKey]bool{}
-	for _, r := range filteredChanges.UpdateOld {
-		oldLabels[r.Key()] = r.Labels
-
-		if _, ok := r.GetProviderSpecificProperty(dynamodbAttributeMigrate); ok {
-			needMigration[r.Key()] = true
+	for _, r := range filteredChanges.Update {
+		oldLabels := r.Old.Labels
+		needMigration := false
+		if _, ok := r.Old.GetProviderSpecificProperty(dynamodbAttributeMigrate); ok {
+			needMigration = true
 		}
-
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
+			im.removeFromCache(r.Old)
 		}
-	}
 
-	for _, r := range filteredChanges.UpdateNew {
-		key := r.Key()
-		if needMigration[key] {
-			statements = im.appendInsert(statements, key, r.Labels)
+		key := r.New.Key()
+		if needMigration {
+			statements = im.appendInsert(statements, key, r.New.Labels)
 			// Invalidate the records cache so the next sync deletes the TXT ownership record
 			im.recordsCache = nil
 		} else {
-			statements = im.appendUpdate(statements, key, oldLabels[key], r.Labels)
+			statements = im.appendUpdate(statements, key, oldLabels, r.New.Labels)
 		}
 
 		// add new version of record to caches
-		im.labels[key] = r.Labels
+		im.labels[key] = r.New.Labels
 		if im.cacheInterval > 0 {
-			im.addToCache(r)
+			im.addToCache(r.New)
 		}
 	}
 

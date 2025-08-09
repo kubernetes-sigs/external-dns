@@ -392,8 +392,10 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 	iOldSkip := make(map[int]bool)
 	iNewSkip := make(map[int]bool)
 
-	for iOld, recOld := range changes.UpdateOld {
-		for iNew, recNew := range changes.UpdateNew {
+	updateOld := changes.UpdateOld()
+	updateNew := changes.UpdateNew()
+	for iOld, recOld := range updateOld {
+		for iNew, recNew := range updateNew {
 			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
 				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
 				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
@@ -404,12 +406,12 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 		}
 	}
 
-	for iOld, recOld := range changes.UpdateOld {
+	for iOld, recOld := range updateOld {
 		_, found := iOldSkip[iOld]
 		if found {
 			continue
 		}
-		for iNew, recNew := range changes.UpdateNew {
+		for iNew, recNew := range updateNew {
 			_, found := iNewSkip[iNew]
 			if found {
 				continue
@@ -579,7 +581,7 @@ func (c gdRecordField) String() string {
 }
 
 func countTargets(p *plan.Changes) int {
-	changes := [][]*endpoint.Endpoint{p.Create, p.UpdateNew, p.UpdateOld, p.Delete}
+	changes := [][]*endpoint.Endpoint{p.Create, p.UpdateNew(), p.UpdateOld(), p.Delete}
 	count := 0
 
 	for _, endpoints := range changes {

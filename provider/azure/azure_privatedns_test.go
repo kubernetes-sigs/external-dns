@@ -23,6 +23,7 @@ import (
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -403,8 +404,10 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 
 	currentRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "2001::111:222:111:222"),
 		endpoint.NewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("old.nope.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
 		endpoint.NewEndpoint("oldmail.example.com", endpoint.RecordTypeMX, "20 foo.other.com"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
@@ -424,11 +427,12 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 		endpoint.NewEndpoint("deleted.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
 	}
 
+	update, err := plan.MkUpdates(currentRecords, updatedRecords)
+	assert.NoError(t, err)
 	changes := &plan.Changes{
-		Create:    createRecords,
-		UpdateNew: updatedRecords,
-		UpdateOld: currentRecords,
-		Delete:    deleteRecords,
+		Create: createRecords,
+		Update: update,
+		Delete: deleteRecords,
 	}
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
@@ -527,8 +531,10 @@ func testAzurePrivateDNSApplyChangesInternalZoneName(t *testing.T, dryRun bool, 
 
 	currentRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
 		endpoint.NewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "2001::222:111:222:111"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
@@ -545,11 +551,12 @@ func testAzurePrivateDNSApplyChangesInternalZoneName(t *testing.T, dryRun bool, 
 		endpoint.NewEndpoint("deleted.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
 	}
 
+	update, err := plan.MkUpdates(currentRecords, updatedRecords)
+	assert.NoError(t, err)
 	changes := &plan.Changes{
-		Create:    createRecords,
-		UpdateNew: updatedRecords,
-		UpdateOld: currentRecords,
-		Delete:    deleteRecords,
+		Create: createRecords,
+		Update: update,
+		Delete: deleteRecords,
 	}
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {

@@ -644,8 +644,12 @@ func TestCivoApplyChanges(t *testing.T) {
 		{DNSName: "new.ext-dns-test-with-ttl.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeA, RecordTTL: 100},
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target"}}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target-old"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100}}
+	changes.Update = []*plan.Update{
+		{
+			Old: &endpoint.Endpoint{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target-old"}},
+			New: &endpoint.Endpoint{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100},
+		},
+	}
 	err := provider.ApplyChanges(context.Background(), changes)
 	assert.NoError(t, err)
 }
@@ -690,11 +694,11 @@ func TestCivoApplyChangesError(t *testing.T) {
 		{
 			Name: "invalid record type from processUpdateActions",
 			changes: &plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("bad.example.com", "AAAA", "1.2.3.4"),
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("bad.example.com", "AAAA", "5.6.7.8"),
+				Update: []*plan.Update{
+					{
+						Old: endpoint.NewEndpoint("bad.example.com", "AAAA", "1.2.3.4"),
+						New: endpoint.NewEndpoint("bad.example.com", "AAAA", "5.6.7.8"),
+					},
 				},
 			},
 		},

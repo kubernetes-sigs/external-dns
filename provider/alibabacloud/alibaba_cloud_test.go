@@ -281,12 +281,14 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 			},
 			defaultTtlPlan,
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "A",
-				RecordTTL:  500,
-				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+				New: &endpoint.Endpoint{
+					DNSName:    "abc.container-service.top",
+					RecordType: "A",
+					RecordTTL:  500,
+					Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+				},
 			},
 		},
 		Delete: []*endpoint.Endpoint{
@@ -339,12 +341,14 @@ func TestAlibabaCloudProvider_ApplyChanges_HaveNoDefinedZoneDomain(t *testing.T)
 			},
 			defaultTtlPlan,
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "A",
-				RecordTTL:  500,
-				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+				New: &endpoint.Endpoint{
+					DNSName:    "abc.container-service.top",
+					RecordType: "A",
+					RecordTTL:  500,
+					Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+				},
 			},
 		},
 		Delete: []*endpoint.Endpoint{
@@ -405,12 +409,14 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 				Targets:    endpoint.NewTargets("4.3.2.1"),
 			},
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "A",
-				RecordTTL:  500,
-				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+				New: &endpoint.Endpoint{
+					DNSName:    "abc.container-service.top",
+					RecordType: "A",
+					RecordTTL:  500,
+					Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+				},
 			},
 		},
 		Delete: []*endpoint.Endpoint{

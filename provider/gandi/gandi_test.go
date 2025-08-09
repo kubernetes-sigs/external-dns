@@ -319,18 +319,22 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 			RecordTTL:  666,
 		},
 	}
-	changes.UpdateNew = []*endpoint.Endpoint{
+	changes.Update = []*plan.Update{
 		{
-			DNSName:    "test3.example.com",
-			Targets:    endpoint.Targets{"192.168.0.2"},
-			RecordType: "A",
-			RecordTTL:  777,
+			New: &endpoint.Endpoint{
+				DNSName:    "test3.example.com",
+				Targets:    endpoint.Targets{"192.168.0.2"},
+				RecordType: "A",
+				RecordTTL:  777,
+			},
 		},
 		{
-			DNSName:    "example.com.example.com",
-			Targets:    endpoint.Targets{"lb-2.example.net"},
-			RecordType: "CNAME",
-			RecordTTL:  777,
+			New: &endpoint.Endpoint{
+				DNSName:    "example.com.example.com",
+				Targets:    endpoint.Targets{"lb-2.example.net"},
+				RecordType: "CNAME",
+				RecordTTL:  777,
+			},
 		},
 	}
 	changes.Delete = []*endpoint.Endpoint{
@@ -401,7 +405,11 @@ func TestGandiProvider_ApplyChangesRespectsDryRun(t *testing.T) {
 	}
 
 	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
+	changes.Update = []*plan.Update{
+		{
+			New: &endpoint.Endpoint{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777},
+		},
+	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
 
 	mockedProvider.ApplyChanges(context.Background(), changes)
@@ -495,7 +503,11 @@ func TestGandiProvider_ApplyChangesConvertsApexDomain(t *testing.T) {
 func TestGandiProvider_FailingCases(t *testing.T) {
 	changes := &plan.Changes{}
 	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
+	changes.Update = []*plan.Update{
+		{
+			New: &endpoint.Endpoint{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777},
+		},
+	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
 
 	// Failing ListDomains API call creates an error when calling Records

@@ -147,10 +147,10 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 }
 
 func (p *GandiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	combinedChanges := make([]*GandiChanges, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+	combinedChanges := make([]*GandiChanges, 0, len(changes.Create)+len(changes.Update)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, p.newGandiChanges(gandiCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, p.newGandiChanges(gandiUpdate, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, p.newGandiChanges(gandiUpdate, changes.UpdateNew())...)
 	combinedChanges = append(combinedChanges, p.newGandiChanges(gandiDelete, changes.Delete)...)
 
 	return p.submitChanges(ctx, combinedChanges)

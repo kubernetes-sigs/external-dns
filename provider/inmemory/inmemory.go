@@ -63,11 +63,8 @@ func InMemoryWithLogging() InMemoryOption {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
-			for _, v := range changes.UpdateOld {
-				log.Infof("UPDATE (old): %v", v)
-			}
-			for _, v := range changes.UpdateNew {
-				log.Infof("UPDATE (new): %v", v)
+			for _, v := range changes.Update {
+				log.Infof("UPDATE (old/new): %v / %v", v.Old, v.New)
 			}
 			for _, v := range changes.Delete {
 				log.Infof("DELETE: %v", v)
@@ -155,28 +152,22 @@ func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 
 	for _, ep := range changes.Create {
-		zoneID := im.filter.EndpointZoneID(ep, zones)
+		zoneID := im.filter.EndpointZoneID(ep.DNSName, zones)
 		if zoneID == "" {
 			continue
 		}
 		perZoneChanges[zoneID].Create = append(perZoneChanges[zoneID].Create, ep)
 	}
-	for _, ep := range changes.UpdateNew {
-		zoneID := im.filter.EndpointZoneID(ep, zones)
+	for _, change := range changes.Update {
+		// NOTE: DNSName of `change.Old` and `change.New` will be equivalent
+		zoneID := im.filter.EndpointZoneID(change.Old.DNSName, zones)
 		if zoneID == "" {
 			continue
 		}
-		perZoneChanges[zoneID].UpdateNew = append(perZoneChanges[zoneID].UpdateNew, ep)
-	}
-	for _, ep := range changes.UpdateOld {
-		zoneID := im.filter.EndpointZoneID(ep, zones)
-		if zoneID == "" {
-			continue
-		}
-		perZoneChanges[zoneID].UpdateOld = append(perZoneChanges[zoneID].UpdateOld, ep)
+		perZoneChanges[zoneID].Update = append(perZoneChanges[zoneID].Update, change)
 	}
 	for _, ep := range changes.Delete {
-		zoneID := im.filter.EndpointZoneID(ep, zones)
+		zoneID := im.filter.EndpointZoneID(ep.DNSName, zones)
 		if zoneID == "" {
 			continue
 		}
@@ -185,10 +176,9 @@ func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 	for zoneID := range perZoneChanges {
 		change := &plan.Changes{
-			Create:    perZoneChanges[zoneID].Create,
-			UpdateNew: perZoneChanges[zoneID].UpdateNew,
-			UpdateOld: perZoneChanges[zoneID].UpdateOld,
-			Delete:    perZoneChanges[zoneID].Delete,
+			Create: perZoneChanges[zoneID].Create,
+			Update: perZoneChanges[zoneID].Update,
+			Delete: perZoneChanges[zoneID].Delete,
 		}
 		err := im.client.ApplyChanges(ctx, zoneID, change)
 		if err != nil {
@@ -230,10 +220,10 @@ func (f *filter) Zones(zones map[string]string) map[string]string {
 
 // EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
 // returns empty string if no match found
-func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) string {
+func (f *filter) EndpointZoneID(dnsName string, zones map[string]string) string {
 	var matchZoneID, matchZoneName string
 	for zoneID, zoneName := range zones {
-		if strings.HasSuffix(endpoint.DNSName, zoneName) && len(zoneName) > len(matchZoneName) {
+		if strings.HasSuffix(dnsName, zoneName) && len(zoneName) > len(matchZoneName) {
 			matchZoneName = zoneName
 			matchZoneID = zoneID
 		}
@@ -287,7 +277,7 @@ func (c *inMemoryClient) ApplyChanges(ctx context.Context, zoneID string, change
 	for _, newEndpoint := range changes.Create {
 		c.zones[zoneID][newEndpoint.Key()] = newEndpoint
 	}
-	for _, updateEndpoint := range changes.UpdateNew {
+	for _, updateEndpoint := range changes.UpdateNew() {
 		c.zones[zoneID][updateEndpoint.Key()] = updateEndpoint
 	}
 	for _, deleteEndpoint := range changes.Delete {
@@ -319,7 +309,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 			return err
 		}
 	}
-	for _, updateEndpoint := range changes.UpdateNew {
+	for _, updateEndpoint := range changes.UpdateNew() {
 		if _, ok := curZone[updateEndpoint.Key()]; !ok {
 			return ErrRecordNotFound
 		}
@@ -327,7 +317,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *plan.Changes)
 			return err
 		}
 	}
-	for _, updateOldEndpoint := range changes.UpdateOld {
+	for _, updateOldEndpoint := range changes.UpdateOld() {
 		if rec, ok := curZone[updateOldEndpoint.Key()]; !ok || rec.Targets[0] != updateOldEndpoint.Targets[0] {
 			return ErrRecordNotFound
 		}
