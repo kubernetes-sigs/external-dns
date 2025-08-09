@@ -43,3 +43,51 @@ func newEndpointWithOwnerResource(dnsName, target, recordType, ownerID, resource
 	e.Labels[endpoint.ResourceLabelKey] = resource
 	return e
 }
+
+// This is primarily used to prevent data races when running tests in parallel (t.Parallel).
+func cloneEndpointsWithOpts(list []*endpoint.Endpoint, opt ...func(*endpoint.Endpoint)) []*endpoint.Endpoint {
+	cloned := make([]*endpoint.Endpoint, len(list))
+	for i, e := range list {
+		cloned[i] = cloneEndpointWithOpts(e, opt...)
+	}
+	return cloned
+}
+
+func cloneEndpointWithOpts(e *endpoint.Endpoint, opt ...func(*endpoint.Endpoint)) *endpoint.Endpoint {
+	targets := make(endpoint.Targets, len(e.Targets))
+	copy(targets, e.Targets)
+
+	// SameEndpoints treats nil and empty maps/slices as different.
+	// To avoid introducing unintended differences, we retain nil when original is nil.
+	var labels endpoint.Labels
+	if e.Labels != nil {
+		labels = make(endpoint.Labels, len(e.Labels))
+		for k, v := range e.Labels {
+			labels[k] = v
+		}
+	}
+
+	var providerSpecific endpoint.ProviderSpecific
+	if e.ProviderSpecific != nil {
+		providerSpecific = make(endpoint.ProviderSpecific, len(e.ProviderSpecific))
+		for i, p := range e.ProviderSpecific {
+			providerSpecific[i] = p
+		}
+	}
+
+	ttl := e.RecordTTL
+
+	ep := &endpoint.Endpoint{
+		DNSName:          e.DNSName,
+		Targets:          targets,
+		RecordType:       e.RecordType,
+		RecordTTL:        ttl,
+		Labels:           labels,
+		ProviderSpecific: providerSpecific,
+		SetIdentifier:    e.SetIdentifier,
+	}
+	for _, o := range opt {
+		o(ep)
+	}
+	return ep
+}
