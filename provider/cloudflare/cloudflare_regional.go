@@ -22,8 +22,8 @@ import (
 	"maps"
 	"slices"
 
-	cloudflarev4 "github.com/cloudflare/cloudflare-go/v4"
-	"github.com/cloudflare/cloudflare-go/v4/addressing"
+	"github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/addressing"
 
 	log "github.com/sirupsen/logrus"
 
@@ -77,31 +77,31 @@ func (z zoneService) DeleteDataLocalizationRegionalHostname(ctx context.Context,
 // listDataLocalizationRegionalHostnamesParams is a function that returns the appropriate RegionalHostname List Param based on the zoneID
 func listDataLocalizationRegionalHostnamesParams(zoneID string) addressing.RegionalHostnameListParams {
 	return addressing.RegionalHostnameListParams{
-		ZoneID: cloudflarev4.F(zoneID),
+		ZoneID: cloudflare.F(zoneID),
 	}
 }
 
 // createDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func createDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameNewParams {
 	return addressing.RegionalHostnameNewParams{
-		ZoneID:    cloudflarev4.F(zoneID),
-		Hostname:  cloudflarev4.F(rhc.hostname),
-		RegionKey: cloudflarev4.F(rhc.regionKey),
+		ZoneID:    cloudflare.F(zoneID),
+		Hostname:  cloudflare.F(rhc.hostname),
+		RegionKey: cloudflare.F(rhc.regionKey),
 	}
 }
 
 // updateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func updateDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameEditParams {
 	return addressing.RegionalHostnameEditParams{
-		ZoneID:    cloudflarev4.F(zoneID),
-		RegionKey: cloudflarev4.F(rhc.regionKey),
+		ZoneID:    cloudflare.F(zoneID),
+		RegionKey: cloudflare.F(rhc.regionKey),
 	}
 }
 
 // deleteDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func deleteDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameDeleteParams {
 	return addressing.RegionalHostnameDeleteParams{
-		ZoneID: cloudflarev4.F(zoneID),
+		ZoneID: cloudflare.F(zoneID),
 	}
 }
 

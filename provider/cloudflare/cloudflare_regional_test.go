@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/cloudflare/cloudflare-go/v4/addressing"
+	cloudflarev0 "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v5/addressing"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -103,14 +103,14 @@ func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx contex
 func TestCloudflareRegionalHostnameActions(t *testing.T) {
 	tests := []struct {
 		name              string
-		records           map[string]cloudflare.DNSRecord
+		records           map[string]cloudflarev0.DNSRecord
 		regionalHostnames []regionalHostname
 		endpoints         []*endpoint.Endpoint
 		want              []MockAction
 	}{
 		{
 			name:              "create",
-			records:           map[string]cloudflare.DNSRecord{},
+			records:           map[string]cloudflarev0.DNSRecord{},
 			regionalHostnames: []regionalHostname{},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -130,7 +130,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Name:     "Create",
 					ZoneId:   "001",
 					RecordId: generateDNSRecordID("A", "create.bar.com", "127.0.0.1"),
-					RecordData: cloudflare.DNSRecord{
+					RecordData: cloudflarev0.DNSRecord{
 						ID:      generateDNSRecordID("A", "create.bar.com", "127.0.0.1"),
 						Type:    "A",
 						Name:    "create.bar.com",
@@ -151,7 +151,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 		},
 		{
 			name: "Update",
-			records: map[string]cloudflare.DNSRecord{
+			records: map[string]cloudflarev0.DNSRecord{
 				"update.bar.com": {
 					ID:      generateDNSRecordID("A", "update.bar.com", "127.0.0.1"),
 					Type:    "A",
@@ -185,7 +185,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Name:     "Update",
 					ZoneId:   "001",
 					RecordId: generateDNSRecordID("A", "update.bar.com", "127.0.0.1"),
-					RecordData: cloudflare.DNSRecord{
+					RecordData: cloudflarev0.DNSRecord{
 						ID:      generateDNSRecordID("A", "update.bar.com", "127.0.0.1"),
 						Type:    "A",
 						Name:    "update.bar.com",
@@ -206,7 +206,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 		},
 		{
 			name: "Delete",
-			records: map[string]cloudflare.DNSRecord{
+			records: map[string]cloudflarev0.DNSRecord{
 				"update.bar.com": {
 					ID:      generateDNSRecordID("A", "delete.bar.com", "127.0.0.1"),
 					Type:    "A",
@@ -228,7 +228,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Name:       "Delete",
 					ZoneId:     "001",
 					RecordId:   generateDNSRecordID("A", "delete.bar.com", "127.0.0.1"),
-					RecordData: cloudflare.DNSRecord{},
+					RecordData: cloudflarev0.DNSRecord{},
 				},
 				{
 					Name:   "DeleteDataLocalizationRegionalHostname",
@@ -241,7 +241,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 		},
 		{
 			name: "No change",
-			records: map[string]cloudflare.DNSRecord{
+			records: map[string]cloudflarev0.DNSRecord{
 				"nochange.bar.com": {
 					ID:      generateDNSRecordID("A", "nochange.bar.com", "127.0.0.1"),
 					Type:    "A",
@@ -281,7 +281,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Zones: map[string]string{
 						"001": "bar.com",
 					},
-					Records: map[string]map[string]cloudflare.DNSRecord{
+					Records: map[string]map[string]cloudflarev0.DNSRecord{
 						"001": tt.records,
 					},
 					regionalHostnames: map[string][]regionalHostname{
@@ -309,7 +309,7 @@ func TestCloudflareRegionalHostnameDefaults(t *testing.T) {
 			Name:     "Create",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
-			RecordData: cloudflare.DNSRecord{
+			RecordData: cloudflarev0.DNSRecord{
 				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
 				Type:    "A",
 				Name:    "bar.com",
@@ -322,7 +322,7 @@ func TestCloudflareRegionalHostnameDefaults(t *testing.T) {
 			Name:     "Create",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
-			RecordData: cloudflare.DNSRecord{
+			RecordData: cloudflarev0.DNSRecord{
 				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
 				Type:    "A",
 				Name:    "bar.com",
@@ -829,7 +829,7 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 		Zones: map[string]string{
 			"rherror": "error.com",
 		},
-		Records: map[string]map[string]cloudflare.DNSRecord{
+		Records: map[string]map[string]cloudflarev0.DNSRecord{
 			"rherror": {"foo.error.com": {Type: "A"}},
 		},
 	}
@@ -844,7 +844,7 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		Records           map[string]cloudflare.DNSRecord
+		Records           map[string]cloudflarev0.DNSRecord
 		RegionalHostnames []regionalHostname
 		RegionKey         string
 	}
@@ -879,7 +879,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 		{
 			name: "create fails",
 			fields: fields{
-				Records:           map[string]cloudflare.DNSRecord{},
+				Records:           map[string]cloudflarev0.DNSRecord{},
 				RegionalHostnames: []regionalHostname{},
 				RegionKey:         "us",
 			},
@@ -902,7 +902,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 		{
 			name: "update fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]cloudflarev0.DNSRecord{
 					"rherror.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -944,7 +944,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 		{
 			name: "delete fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]cloudflarev0.DNSRecord{
 					"rherror.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -974,7 +974,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 			// This should not happen in practice, but we test it to ensure we return an error.
 			name: "conflicting regional keys",
 			fields: fields{
-				Records:           map[string]cloudflare.DNSRecord{},
+				Records:           map[string]cloudflarev0.DNSRecord{},
 				RegionalHostnames: []regionalHostname{},
 				RegionKey:         "us",
 			},
@@ -1008,7 +1008,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 			t.Parallel()
 			records := tt.fields.Records
 			if records == nil {
-				records = map[string]cloudflare.DNSRecord{}
+				records = map[string]cloudflarev0.DNSRecord{}
 			}
 			p := &CloudFlareProvider{
 				Client: &mockCloudFlareClient{
@@ -1016,7 +1016,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 						"001":     "bar.com",
 						"rherror": "error.com",
 					},
-					Records: map[string]map[string]cloudflare.DNSRecord{
+					Records: map[string]map[string]cloudflarev0.DNSRecord{
 						"001": records,
 					},
 					regionalHostnames: map[string][]regionalHostname{
@@ -1044,7 +1044,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		Records           map[string]cloudflare.DNSRecord
+		Records           map[string]cloudflarev0.DNSRecord
 		RegionalHostnames []regionalHostname
 		RegionKey         string
 	}
@@ -1060,7 +1060,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 		{
 			name: "create dry run",
 			fields: fields{
-				Records:           map[string]cloudflare.DNSRecord{},
+				Records:           map[string]cloudflarev0.DNSRecord{},
 				RegionalHostnames: []regionalHostname{},
 				RegionKey:         "us",
 			},
@@ -1083,7 +1083,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 		{
 			name: "update fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]cloudflarev0.DNSRecord{
 					"foo.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -1125,7 +1125,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 		{
 			name: "delete fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]cloudflarev0.DNSRecord{
 					"foo.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -1157,7 +1157,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 			t.Parallel()
 			records := tt.fields.Records
 			if records == nil {
-				records = map[string]cloudflare.DNSRecord{}
+				records = map[string]cloudflarev0.DNSRecord{}
 			}
 			p := &CloudFlareProvider{
 				DryRun: true,
@@ -1165,7 +1165,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 					Zones: map[string]string{
 						"001": "bar.com",
 					},
-					Records: map[string]map[string]cloudflare.DNSRecord{
+					Records: map[string]map[string]cloudflarev0.DNSRecord{
 						"001": records,
 					},
 					regionalHostnames: map[string][]regionalHostname{
