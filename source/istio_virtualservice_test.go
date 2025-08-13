@@ -2215,7 +2215,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 	}
 }
 
-func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
+func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *testing.T) {
 	tests := []struct {
 		name      string
 		selectors map[string]string
