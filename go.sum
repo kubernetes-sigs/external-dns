@@ -218,8 +218,8 @@ github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudflare/cloudflare-go v0.115.0 h1:84/dxeeXweCc0PN5Cto44iTA8AkG1fyT11yPO5ZB7sM=
 github.com/cloudflare/cloudflare-go v0.115.0/go.mod h1:Ds6urDwn/TF2uIU24mu7H91xkKP8gSAHxQ44DSZgVmU=
-github.com/cloudflare/cloudflare-go/v4 v4.6.0 h1:ZaWwXjHFR5NoY8UEf4QFY0g3KTi72kqqEXpajV610/o=
-github.com/cloudflare/cloudflare-go/v4 v4.6.0/go.mod h1:XcYpLe7Mf6FN87kXzEWVnJ6z+vskW/k6eUqgqfhFE9k=
+github.com/cloudflare/cloudflare-go/v5 v5.0.0 h1:t1N+0YADVAcnL1HL3FRUqPgDvCtbj2YJwxUYxLnEoyY=
+github.com/cloudflare/cloudflare-go/v5 v5.0.0/go.mod h1:C6OjOlDHOk/g7lXehothXJRFZrSIJMLzOZB2SXQhcjk=
 github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381 h1:rdRS5BT13Iae9ssvcslol66gfOOXjaLYwqerEn/cl9s=
 github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381/go.mod h1:e5+USP2j8Le2M0Jo3qKPFnNhuo1wueU4nWHCXBOfQ14=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
