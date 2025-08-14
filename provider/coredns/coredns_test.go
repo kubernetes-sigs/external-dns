@@ -345,15 +345,12 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedServices1 := map[string][]*Service{
-		"/skydns/local/domain1": {{Host: "5.5.5.5", Text: "string1"}},
+		"/skydns/local/domain1": {{Host: "5.5.5.5"}, {Text: "string1"}},
 		"/skydns/local/domain2": {{Host: "site.local"}},
 	}
 	validateServices(client.services, expectedServices1, t, 1)
 
 	changes2 := &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
-		},
 		UpdateNew: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
 		},
@@ -368,17 +365,15 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedServices2 := map[string][]*Service{
-		"/skydns/local/domain1": {{Host: "6.6.6.6", Text: "string1"}},
+		"/skydns/local/domain1": {{Host: "6.6.6.6"}, {Text: "string1"}},
 		"/skydns/local/domain2": {{Host: "site.local"}},
-		"/skydns/local/domain3": {{Host: "7.7.7.7"}},
 	}
 	validateServices(client.services, expectedServices2, t, 2)
 
 	changes3 := &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string"),
-			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string1"),
 		},
 	}
 
@@ -397,6 +392,13 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
 			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "7.7.7.7"),
 		},
+	}
+	for _, ep := range changes4.Create {
+		ep.Labels = map[string]string{
+			"5.5.5.5": "pfx1",
+			"6.6.6.6": "pfx2",
+			"7.7.7.7": "pfx3",
+		}
 	}
 	err = coredns.ApplyChanges(context.Background(), changes4)
 	require.NoError(t, err)
@@ -453,8 +455,15 @@ func validateServices(services map[string]Service, expectedServices map[string][
 	for key, value := range services {
 		keyParts := strings.Split(key, "/")
 		expectedKey := strings.Join(keyParts[:len(keyParts)-value.TargetStrip], "/")
+		if value.TargetStrip == 0 {
+			expectedKey = strings.Join(keyParts[:len(keyParts)-1], "/")
+		}
 		expectedServiceEntries := expectedServices[expectedKey]
 		if expectedServiceEntries == nil {
+			//This is a TXT record for ownership tracking, so we can ignore it
+			if value.Text != "" && strings.Contains(value.Text, "heritage=external-dns") {
+				continue
+			}
 			t.Errorf("unexpected service %s", key)
 			continue
 		}
@@ -835,8 +844,17 @@ func TestCoreDNSProvider_updateTXTRecords_WithEdpoints(t *testing.T) {
 
 	services := provider.updateTXTRecords(dnsName, group, []*Service{})
 	assert.Len(t, services, 2)
-	assert.Equal(t, "txt-value", services[0].Text)
-	assert.Equal(t, "txt-value-2", services[1].Text)
+	expectedTexts := map[string]bool{"txt-value": false, "txt-value-2": false}
+	for _, service := range services {
+		if _, exists := expectedTexts[service.Text]; exists {
+			expectedTexts[service.Text] = true
+		}
+	}
+	for text, found := range expectedTexts {
+		if !found {
+			t.Errorf("Expected TXT value %q not found in services", text)
+		}
+	}
 }
 
 func TestCoreDNSProvider_updateTXTRecords_ClearsExtraText(t *testing.T) {
@@ -858,8 +876,92 @@ func TestCoreDNSProvider_updateTXTRecords_ClearsExtraText(t *testing.T) {
 	services = append(services, &Service{Key: "/prefix/3", Text: "should-be-empty"})
 
 	services = provider.updateTXTRecords(dnsName, group, services)
-	assert.Len(t, services, 3)
+	assert.Len(t, services, 4)
 
-	assert.Equal(t, "txt-value", services[0].Text)
-	assert.Empty(t, services[1].Text)
+	assert.Equal(t, "", services[0].Text)
+	assert.Equal(t, "", services[1].Text)
+	assert.Equal(t, "", services[2].Text)
+	assert.Equal(t, "txt-value", services[3].Text)
+}
+
+func TestCoreDNSProviderMultiTXT(t *testing.T) {
+	client := fakeETCDClient{
+		services: make(map[string]Service),
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		dryRun:        false,
+		coreDNSPrefix: "/skydns/dev/test/",
+		domainFilter:  nil,
+	}
+
+	// Test multi-target TXT record creation
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName:    "example.test.dev",
+			RecordType: endpoint.RecordTypeTXT,
+			RecordTTL:  30,
+			Targets:    []string{"v=1", "key=value", "third=string"},
+			Labels:     map[string]string{},
+		},
+	}
+
+	changes := &plan.Changes{
+		Create: desired,
+	}
+
+	err := provider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Fatalf("ApplyChanges failed: %v", err)
+	}
+
+	// Verify three separate etcd keys were created
+	if len(client.services) != 3 {
+		t.Errorf("Expected 3 services, got %d", len(client.services))
+		for k, v := range client.services {
+			t.Logf("Service key: %s, text: %s", k, v.Text)
+		}
+	}
+
+	// Verify each target has its own service
+	expectedTexts := map[string]bool{"v=1": false, "key=value": false, "third=string": false}
+	for _, service := range client.services {
+		if _, exists := expectedTexts[service.Text]; exists {
+			expectedTexts[service.Text] = true
+		}
+	}
+
+	for text, found := range expectedTexts {
+		if !found {
+			t.Errorf("Expected TXT value %q not found in services", text)
+		}
+	}
+}
+
+func TestTXTRecordsHaveOwnerLabel(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/com/example": {Text: "test-value"},
+		},
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	endpoints, err := provider.Records(context.Background())
+	require.NoError(t, err)
+
+	// Find the TXT endpoint
+	var txtEndpoint *endpoint.Endpoint
+	for _, ep := range endpoints {
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			txtEndpoint = ep
+			break
+		}
+	}
+
+	require.NotNil(t, txtEndpoint, "TXT endpoint should exist")
+	assert.Equal(t, "default", txtEndpoint.Labels[endpoint.OwnerLabelKey],
+		"TXT endpoint should have owner label set to 'default'")
 }

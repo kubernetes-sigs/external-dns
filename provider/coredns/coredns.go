@@ -442,6 +442,11 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 	}
 
 	// Create/update one etcd service per desired TXT target, reusing stable prefixes when known
+	for i, svc := range services {
+		if _, keep := desiredTargets[svc.Text]; !keep && svc.Text != "" {
+			services[i].Text = ""
+		}
+	}
 	for target, ttl := range desiredTargets {
 		prefix := labels[target]
 		if prefix == "" {
@@ -478,17 +483,35 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 
 func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
-		dnsName := ep.DNSName
-		if ep.Labels[randomPrefixLabel] != "" {
-			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
-		}
-		key := p.etcdKeyFor(dnsName)
-		log.Infof("Delete key %s", key)
-		if p.dryRun {
-			continue
-		}
-		if err := p.client.DeleteService(key); err != nil {
-			return err
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			// For TXT records, delete each individual target's key
+			for _, target := range ep.Targets {
+				prefix := ep.Labels[target]
+				if prefix != "" {
+					key := p.etcdKeyFor(prefix + "." + ep.DNSName)
+					log.Infof("Delete TXT key %s", key)
+					if p.dryRun {
+						continue
+					}
+					if err := p.client.DeleteService(key); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			// For non-TXT records, use the original logic
+			dnsName := ep.DNSName
+			if ep.Labels[randomPrefixLabel] != "" {
+				dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
+			}
+			key := p.etcdKeyFor(dnsName)
+			log.Infof("Delete key %s", key)
+			if p.dryRun {
+				continue
+			}
+			if err := p.client.DeleteService(key); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
