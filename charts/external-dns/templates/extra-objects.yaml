@@ -1,0 +1,22 @@
+{{- range .Values.extraObjects }}
+---
+{{- $rendered := "" }}
+{{- if typeIs "string" . }}
+  {{- $rendered = tpl . $ }}
+{{- else }}
+  {{- $rendered = tpl (. | toYaml) $ }}
+{{- end }}
+
+{{- $obj := $rendered | fromYaml }}
+{{- $commonLabels := include "external-dns.labels" $ | fromYaml }}
+
+{{- if not $obj.metadata }}
+  {{- $_ := set $obj "metadata" dict }}
+{{- end }}
+
+{{- $existingLabels := $obj.metadata.labels | default dict }}
+{{- $mergedLabels := merge $existingLabels $commonLabels }}
+{{- $_ := set $obj.metadata "labels" $mergedLabels }}
+
+{{- $obj | toYaml }}
+{{- end }}

@@ -312,5 +312,8 @@ secretConfiguration:
   # -- `Secret` data.
   data: {}
 
+# -- Extra Kubernetes objects to deploy with the helm chart
+extraObjects: []
+
 # -- (bool) No effect - reserved for use in sub-charting.
 enabled:  # @schema type: [boolean, null]; description: No effect - reserved for use in sub-charting

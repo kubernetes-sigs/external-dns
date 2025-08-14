@@ -1,0 +1,40 @@
+suite: Extra objects rendering
+templates:
+  - "extra-objects.yaml"
+release:
+  name: external-dns
+chart:
+  version: "1.15.0"
+  appVersion: "0.15.0"
+tests:
+  - it: "should render correctly the objects"
+    set:
+      extraObjects:
+        - |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: string-cm-{{ .Release.Name }}
+          data:
+            foo: {{ .Release.Name }}
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "obj-cm-{{ .Release.Name }}"
+          data:
+          foo: "{{ .Release.Namespace }}"
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentSelector:
+          path: metadata.name
+          value: string-cm-external-dns
+        equal:
+          path: data.foo
+          value: external-dns
+      - documentSelector:
+          path: metadata.name
+          value: obj-cm-external-dns
+        equal:
+          path: data.foo
+          value: NAMESPACE
