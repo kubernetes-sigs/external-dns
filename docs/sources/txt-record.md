@@ -30,4 +30,5 @@ spec:
       targets:
         - SOMETXT
         - ANOTHERTXT
+        - ANDEVENMORETXT.
 ```
