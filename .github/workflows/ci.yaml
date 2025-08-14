@@ -34,7 +34,7 @@ jobs:
         check-latest: true
       id: go
 
-    - name: Install CI
+    - name: Install Dependencies
       run: |
         go get -v -t -d ./...
 
@@ -45,6 +45,9 @@ jobs:
       if: github.actor == 'nektos/act' && matrix.os == 'ubuntu-latest'
 
     - name: Test
+      env:
+        GOMAXPROCS: 1
+        GOMEMLIMIT: 2048MiB
       run: make test
 
     - name: Send coverage
