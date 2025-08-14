@@ -239,6 +239,9 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	if err != nil {
 		return nil, err
 	}
+	// Group TXT services by dnsName to build multi-target endpoints
+	txtServicesByDNS := make(map[string][]*Service)
+
 	for _, service := range services {
 		domains := strings.Split(strings.TrimPrefix(service.Key, p.coreDNSPrefix), "/")
 		reverse(domains)
@@ -268,14 +271,45 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 			result = append(result, ep)
 		}
 		if service.Text != "" {
-			ep := endpoint.NewEndpoint(
-				dnsName,
-				endpoint.RecordTypeTXT,
-				service.Text,
-			)
-			ep.Labels[randomPrefixLabel] = prefix
-			result = append(result, ep)
+			txtServicesByDNS[dnsName] = append(txtServicesByDNS[dnsName], service)
 		}
+	}
+
+	// Create multi-target TXT endpoints
+	for dnsName, txtServices := range txtServicesByDNS {
+		if len(txtServices) == 0 {
+			continue
+		}
+
+		var targets []string
+		labels := make(map[string]string)
+		var ttl uint32
+
+		for _, service := range txtServices {
+			targets = append(targets, service.Text)
+			domains := strings.Split(strings.TrimPrefix(service.Key, p.coreDNSPrefix), "/")
+			reverse(domains)
+			prefix := strings.Join(domains[:service.TargetStrip], ".")
+			labels[service.Text] = prefix
+			if ttl == 0 {
+				ttl = service.TTL
+			}
+		}
+
+		ep := endpoint.NewEndpointWithTTL(
+			dnsName,
+			endpoint.RecordTypeTXT,
+			endpoint.TTL(ttl),
+			targets...,
+		)
+		ep.Labels = labels
+		// Set a default prefix label if none exists
+		if ep.Labels[randomPrefixLabel] == "" {
+			ep.Labels[randomPrefixLabel] = "default"
+		}
+		// Set owner label for TXT registry ownership tracking
+		ep.Labels[endpoint.OwnerLabelKey] = "default"
+		result = append(result, ep)
 	}
 	return result, nil
 }
@@ -384,29 +418,61 @@ func shouldSkipLabel(label string) bool {
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
 func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endpoint, services []*Service) []*Service {
-	index := 0
+	// Collect desired TXT targets (merged across all TXT endpoints for this dnsName)
+	desiredTargets := map[string]uint32{}
+	var labels map[string]string
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
 			continue
 		}
-		if index >= len(services) {
-			prefix := ep.Labels[randomPrefixLabel]
-			if prefix == "" {
-				prefix = fmt.Sprintf("%08x", rand.Int31())
-			}
-			services = append(services, &Service{
-				Key:         p.etcdKeyFor(prefix + "." + dnsName),
-				TargetStrip: strings.Count(prefix, ".") + 1,
-				TTL:         uint32(ep.RecordTTL),
-			})
+		if ep.Labels == nil {
+			ep.Labels = map[string]string{}
 		}
-		services[index].Text = ep.Targets[0]
-		index++
+		if labels == nil {
+			labels = ep.Labels
+		}
+		for _, t := range ep.Targets {
+			desiredTargets[t] = uint32(ep.RecordTTL)
+		}
 	}
 
-	for i := index; index > 0 && i < len(services); i++ {
-		services[i].Text = ""
+	if labels == nil {
+		// no TXT endpoints present
+		return services
 	}
+
+	// Create/update one etcd service per desired TXT target, reusing stable prefixes when known
+	for target, ttl := range desiredTargets {
+		prefix := labels[target]
+		if prefix == "" {
+			prefix = fmt.Sprintf("%08x", rand.Int31())
+		}
+		svc := &Service{
+			Key:         p.etcdKeyFor(prefix + "." + dnsName),
+			TargetStrip: strings.Count(prefix, ".") + 1,
+			TTL:         ttl,
+			Text:        target,
+		}
+		services = append(services, svc)
+		labels[target] = prefix
+	}
+
+	// Cleanup stale TXT keys for targets that are no longer desired
+	for label, labelPrefix := range labels {
+		if shouldSkipLabel(label) {
+			continue
+		}
+		if _, keep := desiredTargets[label]; !keep {
+			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
+			log.Infof("Delete key %s", key)
+			if !p.dryRun {
+				if err := p.client.DeleteService(key); err != nil {
+					log.Warnf("Failed to delete stale TXT key %s: %v", key, err)
+				}
+			}
+		}
+	}
+
 	return services
 }
 
