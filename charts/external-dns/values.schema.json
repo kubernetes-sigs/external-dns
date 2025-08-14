@@ -7,7 +7,7 @@
       "type": "object"
     },
     "annotationFilter": {
-      "description": "Filter resources queried for endpoints by annotation selector",
+      "description": "Filter resources queried for endpoints by annotation selector.",
       "type": [
         "string",
         "null"
@@ -164,7 +164,7 @@
       "type": "string"
     },
     "labelFilter": {
-      "description": "Filter resources queried for endpoints by label selector",
+      "description": "Filter resources queried for endpoints by label selector.",
       "type": [
         "string",
         "null"

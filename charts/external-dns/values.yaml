@@ -234,10 +234,10 @@ domainFilters: []
 # -- Intentionally exclude domains from being managed.
 excludeDomains: []
 
-# -- Filter resources queried for endpoints by label selector
+# -- Filter resources queried for endpoints by label selector.
 labelFilter:  # @schema type: [string,null]; default: null
 
-# -- Filter resources queried for endpoints by annotation selector
+# -- Filter resources queried for endpoints by annotation selector.
 annotationFilter:  # @schema type: [string,null]; default: null
 
 # -- Record types to manage (default: A, AAAA, CNAME)
