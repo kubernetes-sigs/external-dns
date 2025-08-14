@@ -167,8 +167,8 @@ func TestTransformer_Service_WithFakeClient(t *testing.T) {
 		got, err := serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
 		require.NoError(t, err)
 
-		// assert.Equal(t, svc.Spec.Selector, got.Spec.Selector)
-		// assert.Equal(t, svc.Spec.ExternalIPs, got.Spec.ExternalIPs)
+		assert.Equal(t, map[string]string{"app": "demo"}, got.Spec.Selector)
+		assert.Equal(t, []string{"1.2.3.4"}, got.Spec.ExternalIPs)
 		assert.Equal(t, svc.Status.LoadBalancer.Ingress, got.Status.LoadBalancer.Ingress)
 		assert.Equal(t, svc.Annotations, got.Annotations)
 		assert.Equal(t, svc.Labels, got.Labels)

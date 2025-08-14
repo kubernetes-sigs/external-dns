@@ -69,6 +69,7 @@ func fakeService() *corev1.Service {
 			Namespace:   "ns",
 			Labels:      map[string]string{"env": "prod", "team": "devops"},
 			Annotations: map[string]string{"description": "Enriched service object"},
+			UID:         "1234",
 		},
 		Spec: corev1.ServiceSpec{
 			Selector:    map[string]string{"app": "demo"},
