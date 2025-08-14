@@ -57,6 +57,7 @@ type coreDNSProvider struct {
 	coreDNSPrefix string
 	domainFilter  *endpoint.DomainFilter
 	client        coreDNSClient
+	txtOwnerID    string
 }
 
 // Service represents CoreDNS etcd record
@@ -195,7 +196,7 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix string, dryRun bool) (provider.Provider, error) {
+func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, txtOwnerID string, dryRun bool) (provider.Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
@@ -206,6 +207,7 @@ func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix string, dryR
 		dryRun:        dryRun,
 		coreDNSPrefix: prefix,
 		domainFilter:  domainFilter,
+		txtOwnerID:    txtOwnerID,
 	}, nil
 }
 
@@ -307,8 +309,7 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 		if ep.Labels[randomPrefixLabel] == "" {
 			ep.Labels[randomPrefixLabel] = "default"
 		}
-		// Set owner label for TXT registry ownership tracking
-		ep.Labels[endpoint.OwnerLabelKey] = "default"
+		ep.Labels[endpoint.OwnerLabelKey] = p.txtOwnerID
 		result = append(result, ep)
 	}
 	return result, nil
@@ -481,22 +482,48 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 	return services
 }
 
+// deleteTXTRecordsForDNSName finds and deletes TXT services that match the specified targets
+func (p coreDNSProvider) deleteTXTRecordsForDNSName(dnsName string, targets []string) error {
+	// Convert DNS name to etcd path format
+	domains := strings.Split(dnsName, ".")
+	reverse(domains)
+	searchPrefix := p.coreDNSPrefix + strings.Join(domains, "/")
+	
+	// Get all services under this DNS name
+	services, err := p.client.GetServices(searchPrefix)
+	if err != nil {
+		return err
+	}
+	
+	// Create a set of targets to delete for efficient lookup
+	targetSet := make(map[string]bool)
+	for _, target := range targets {
+		targetSet[target] = true
+	}
+	
+	// Find and delete matching TXT services
+	for _, service := range services {
+		if service.Text != "" && targetSet[service.Text] {
+			log.Infof("Delete TXT key %s", service.Key)
+			if p.dryRun {
+				continue
+			}
+			if err := p.client.DeleteService(service.Key); err != nil {
+				return err
+			}
+		}
+	}
+	
+	return nil
+}
+
 func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
 		if ep.RecordType == endpoint.RecordTypeTXT {
-			// For TXT records, delete each individual target's key
-			for _, target := range ep.Targets {
-				prefix := ep.Labels[target]
-				if prefix != "" {
-					key := p.etcdKeyFor(prefix + "." + ep.DNSName)
-					log.Infof("Delete TXT key %s", key)
-					if p.dryRun {
-						continue
-					}
-					if err := p.client.DeleteService(key); err != nil {
-						return err
-					}
-				}
+			// For TXT records, we need to find and delete all matching services from etcd
+			// since labels may not be preserved during deletion
+			if err := p.deleteTXTRecordsForDNSName(ep.DNSName, ep.Targets); err != nil {
+				return err
 			}
 		} else {
 			// For non-TXT records, use the original logic

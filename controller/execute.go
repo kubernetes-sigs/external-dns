@@ -241,7 +241,7 @@ func buildProvider(
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "coredns", "skydns":
-		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
+		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.TXTOwnerID, cfg.DryRun)
 	case "exoscale":
 		p, err = exoscale.NewExoscaleProvider(
 			cfg.ExoscaleAPIEnvironment,
