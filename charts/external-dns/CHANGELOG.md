@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-- Added option to configure `annotationFilter` via dedicated helm value. ([#5737](https://github.com/kubernetes-sigs/external-dns/pull/5737)) _@dshatokhin_
+### Added
+
+- Add option to configure `annotationFilter` via dedicated chart value. ([#5737](https://github.com/kubernetes-sigs/external-dns/pull/5737)) _@dshatokhin_
 
 ## [v1.18.0] - 2025-07-14
 
