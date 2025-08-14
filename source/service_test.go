@@ -4702,6 +4702,110 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		})
 }
 
+func TestPodTransformerInServiceSource(t *testing.T) {
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+
+	pod := &v1.Pod{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{{
+				Name: "test",
+			}},
+			Hostname: "test-hostname",
+			NodeName: "test-node",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "test-name",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+				"label3": "value3",
+			},
+			Annotations: map[string]string{
+				"user-annotation": "value",
+				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+				"external-dns.alpha.kubernetes.io/random":   "value",
+				"other/annotation":                          "value",
+			},
+			UID: "someuid",
+		},
+		Status: v1.PodStatus{
+			PodIP:  "127.0.0.1",
+			HostIP: "127.0.0.2",
+			Conditions: []v1.PodCondition{{
+				Type:   v1.PodReady,
+				Status: v1.ConditionTrue,
+			}, {
+				Type:   v1.ContainersReady,
+				Status: v1.ConditionFalse,
+			}},
+		},
+	}
+
+	_, err := fakeClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Should not error when creating the source
+	src, err := NewServiceSource(
+		ctx,
+		fakeClient,
+		"",
+		"",
+		"{{.Name}}",
+		false,
+		"",
+		false,
+		false,
+		false,
+		[]string{},
+		false,
+		labels.Everything(),
+		false,
+		false,
+		false,
+	)
+	require.NoError(t, err)
+	ss, ok := src.(*serviceSource)
+	require.True(t, ok)
+
+	retrieved, err := ss.podInformer.Lister().Pods("test-ns").Get("test-name")
+	require.NoError(t, err)
+
+	// Metadata
+	assert.Equal(t, "test-name", retrieved.Name)
+	assert.Equal(t, "test-ns", retrieved.Namespace)
+	assert.Empty(t, retrieved.UID)
+	assert.Equal(t, map[string]string{
+		"label1": "value1",
+		"label2": "value2",
+		"label3": "value3",
+	}, retrieved.Labels)
+	// Filtered
+	assert.Equal(t, map[string]string{
+		"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+		"external-dns.alpha.kubernetes.io/random":   "value",
+	}, retrieved.Annotations)
+
+	// Spec
+	assert.Empty(t, retrieved.Spec.Containers)
+	assert.Equal(t, "test-hostname", retrieved.Spec.Hostname)
+	assert.Equal(t, "test-node", retrieved.Spec.NodeName)
+
+	// Status
+	assert.Empty(t, retrieved.Status.ContainerStatuses)
+	assert.Empty(t, retrieved.Status.InitContainerStatuses)
+	assert.Equal(t, "127.0.0.2", retrieved.Status.HostIP)
+	assert.Empty(t, retrieved.Status.PodIP)
+	assert.ElementsMatch(t, []v1.PodCondition{{
+		Type:   v1.PodReady,
+		Status: v1.ConditionTrue,
+	}, {
+		Type:   v1.ContainersReady,
+		Status: v1.ConditionFalse,
+	}}, retrieved.Status.Conditions)
+}
+
 // createTestServicesByType creates the requested number of services per type in the given namespace.
 func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]int) []*v1.Service {
 	var services []*v1.Service
