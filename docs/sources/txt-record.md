@@ -1,13 +1,16 @@
 # Creating TXT record with CRD source
 
 You can create and manage TXT records with the help of [CRD source](../sources/crd.md)
-and `DNSEndpoint` CRD. Currently, this feature is only supported by `digitalocean` providers.
+and `DNSEndpoint` CRD. Currently, this feature is only supported by `digitalocean` and `coredns` providers.
 
 In order to start managing TXT records you need to set the `--managed-record-types=TXT` flag.
 
 ```console
 external-dns --source crd --provider {digitalocean} --managed-record-types=A --managed-record-types=CNAME --managed-record-types=TXT
 ```
+
+> **NOTE**: for the `coredns` provider, it is also recommended to set the `--txt-prefix` to avoid it confusing its registry TXT records within SkyDNS,
+> and `--policy=sync` in order for updates to `DNSEndpoint` to be applied.
 
 Targets within the CRD need to be specified according to the RFC 1035 (section 3.3.14). Below is an example of
 `example.com` DNS TXT two records creation.
