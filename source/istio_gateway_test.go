@@ -1571,6 +1571,9 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fakeKubeClient := fake.NewClientset()
+			fakeIstioClient := istiofake.NewSimpleClientset()
+
 			svc := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "fake-service",
@@ -1590,12 +1593,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 					ExternalIPs: []string{"10.10.10.255"},
 				},
 			}
-
-			ctx := context.Background()
-			fakeKubeClient := fake.NewClientset()
-			fakeIstioClient := istiofake.NewSimpleClientset()
-
-			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
+			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			gw := &networkingv1beta1.Gateway{
@@ -1613,11 +1611,11 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				},
 			}
 
-			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			src, err := NewIstioGatewaySource(
-				ctx,
+				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
 				"",
@@ -1629,7 +1627,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, src)
 
-			res, err := src.Endpoints(ctx)
+			res, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 
 			validateEndpoints(t, res, tt.expected)
