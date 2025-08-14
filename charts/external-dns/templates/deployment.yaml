@@ -127,6 +127,17 @@ spec:
             - --managed-record-types={{ . }}
             {{- end }}
             - --provider={{ $providerName }}
+            {{- if kindIs "map" .Values.provider }}
+            {{- if .Values.provider.webhook.readTimeout  }}
+            - --webhook-provider-read-timeout={{ .Values.provider.webhook.readTimeout }}
+            {{- end }}
+            {{- if .Values.provider.webhook.writeTimeout }}
+            - --webhook-provider-write-timeout={{ .Values.provider.webhook.writeTimeout }}
+            {{- end }}
+            {{- if .Values.provider.webhook.url }}
+            - --webhook-provider-url={{ .Values.provider.webhook.url }}
+            {{- end }}
+            {{- end }}
             {{- if kindIs "map" .Values.extraArgs }}
             {{- range $key, $value := .Values.extraArgs }}
             {{- if not (kindIs "invalid" $value) }}
@@ -173,7 +184,9 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- if eq $providerName "webhook" }}
-        {{- with .Values.provider.webhook }}
+        {{- if kindIs "map" .Values.provider }}
+        {{- if .Values.provider.webhook.sidecar }}
+        {{- with .Values.provider.webhook.sidecar }}
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
           imagePullPolicy: {{ .image.pullPolicy }}
@@ -207,6 +220,8 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- end }}
+        {{- end }}
         {{- end }}
         {{- end }}
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
