@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -2213,26 +2215,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 	}
 }
 
-func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-service",
-			Namespace: "default",
-		},
-		Spec: v1.ServiceSpec{
-			Selector: map[string]string{
-				"app":     "demo",
-				"env":     "prod",
-				"team":    "devops",
-				"version": "v1",
-				"release": "stable",
-				"track":   "daily",
-				"tier":    "backend",
-			},
-			ExternalIPs: []string{"10.10.10.255"},
-		},
-	}
-
+func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *testing.T) {
 	tests := []struct {
 		name      string
 		selectors map[string]string
@@ -2244,7 +2227,7 @@ func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
 				"version": "v1",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
 			},
 		},
 		{
@@ -2259,7 +2242,7 @@ func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
 				"tier":    "backend",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
 			},
 		},
 		{
@@ -2271,29 +2254,36 @@ func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
 				"app":     "demo",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeKubeClient := fake.NewClientset()
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
-			src, err := NewIstioGatewaySource(
-				t.Context(),
-				fakeKubeClient,
-				fakeIstioClient,
-				"",
-				"",
-				"",
-				false,
-				false,
-			)
-			require.NoError(t, err)
-			require.NotNil(t, src)
+			svc := &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-service",
+					Namespace: "default",
+					UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
+				},
+				Spec: v1.ServiceSpec{
+					Selector: map[string]string{
+						"app":     "demo",
+						"env":     "prod",
+						"team":    "devops",
+						"version": "v1",
+						"release": "stable",
+						"track":   "daily",
+						"tier":    "backend",
+					},
+					ExternalIPs: []string{"10.10.10.255"},
+				},
+			}
 
-			_, err = fakeKubeClient.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			gw := &networkingv1beta1.Gateway{
@@ -2315,7 +2305,7 @@ func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
 			require.NoError(t, err)
 
 			gwService := &networkingv1beta1.VirtualService{
-				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"},
+				ObjectMeta: metav1.ObjectMeta{Name: "fake-vservice", Namespace: "default"},
 				Spec: istionetworking.VirtualService{
 					Gateways: []string{gw.Namespace + "/" + gw.Name},
 					Hosts:    []string{"example.org"},
@@ -2324,6 +2314,19 @@ func TestGatewaySource_GWVServiceSelectorMatchServiceSelector(t *testing.T) {
 			}
 			_, err = fakeIstioClient.NetworkingV1beta1().VirtualServices(gwService.Namespace).Create(t.Context(), gwService, metav1.CreateOptions{})
 			require.NoError(t, err)
+
+			src, err := NewIstioVirtualServiceSource(
+				t.Context(),
+				fakeKubeClient,
+				fakeIstioClient,
+				"",
+				"",
+				"",
+				false,
+				false,
+			)
+			require.NoError(t, err)
+			require.NotNil(t, src)
 
 			res, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
