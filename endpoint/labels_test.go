@@ -186,14 +186,14 @@ func TestLabels(t *testing.T) {
 // TestLabelsWithEqualsInValue tests label parsing when values contain '=' characters
 func TestLabelsWithEqualsInValue(t *testing.T) {
 	// This simulates the bug where label values containing '=' characters were truncated
-	labelText := `"heritage=external-dns,external-dns/owner=default,external-dns/prefix=default,external-dns/v=1;some_signature=aBx3d5..=1b6eef32"`
+	labelText := `"heritage=external-dns,external-dns/owner=default,external-dns/prefix=default,external-dns/v=1;some_signature=aBx3d5..====1b6eef32"`
 
 	labels, err := NewLabelsFromStringPlain(labelText)
 	require.NoError(t, err, "should succeed for valid label text with '=' in values")
 
 	// Verify the full enode string is preserved
 	expectedValue := "1b6eef32"
-	actualValue := labels["v=1;some_signature=aBx3d5.."]
+	actualValue := labels["v=1;some_signature=aBx3d5..==="]
 	require.Equal(t, expectedValue, actualValue, "should preserve full value including '=' characters")
 
 	// Verify other labels are also parsed correctly
