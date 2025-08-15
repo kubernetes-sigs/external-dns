@@ -63,12 +63,14 @@ func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 	tokens := strings.Split(labelText, ",")
 	foundExternalDNSHeritage := false
 	for _, token := range tokens {
-		parts := strings.SplitN(token, "=", 2)
-		if len(parts) != 2 {
+		// Split on the last occurrence of '=' since target content can contain '=' characters
+		// but the hash value (after the last '=') should not contain '='
+		lastEquals := strings.LastIndex(token, "=")
+		if lastEquals == -1 {
 			continue
 		}
-		key := parts[0]
-		val := parts[1]
+		key := token[:lastEquals]
+		val := token[lastEquals+1:]
 		if key == "heritage" && val != heritage {
 			return nil, ErrInvalidHeritage
 		}

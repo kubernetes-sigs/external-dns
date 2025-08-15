@@ -1124,10 +1124,10 @@ func TestCoreDNSProviderPeerScenarioTXTCleanup(t *testing.T) {
 	// Create the exact scenario from the logs - peer1.kaleido.dev with two TXT targets
 	desired := []*endpoint.Endpoint{
 		{
-			DNSName:    "peer1.kaleido.dev",
+			DNSName:    "peer1.example.dev",
 			RecordType: endpoint.RecordTypeTXT,
 			RecordTTL:  5,
-			Targets:    []string{"v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..", "additional-txt-value"},
+			Targets:    []string{"v=1;signature=aBx3d5..", "additional-txt-value"},
 			Labels:     map[string]string{},
 		},
 	}
@@ -1150,8 +1150,8 @@ func TestCoreDNSProviderPeerScenarioTXTCleanup(t *testing.T) {
 
 	// Verify both expected targets exist
 	expectedTexts := map[string]bool{
-		"v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..": false,
-		"additional-txt-value":                                 false,
+		"v=1;signature=aBx3d5..": false,
+		"additional-txt-value":   false,
 	}
 	for _, service := range client.services {
 		if _, exists := expectedTexts[service.Text]; exists {
@@ -1166,10 +1166,10 @@ func TestCoreDNSProviderPeerScenarioTXTCleanup(t *testing.T) {
 	deleteChanges := &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			{
-				DNSName:    "peer1.kaleido.dev",
+				DNSName:    "peer1.example.dev",
 				RecordType: endpoint.RecordTypeTXT,
 				RecordTTL:  5,
-				Targets:    []string{"v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..", "additional-txt-value"},
+				Targets:    []string{"v=1;signature=aBx3d5..", "additional-txt-value"},
 				Labels:     map[string]string{}, // Empty labels simulating deletion flow
 			},
 		},
@@ -1203,7 +1203,7 @@ func TestCoreDNSProviderSpecialCharactersTXTCleanup(t *testing.T) {
 	}
 
 	// Test with special characters that might cause encoding issues
-	complexText := "v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/QmSomeHashHere123"
+	complexText := "v=1;signature=aBx3d5..SomeHashHere123"
 	desired := []*endpoint.Endpoint{
 		{
 			DNSName:    "test.example.com",
