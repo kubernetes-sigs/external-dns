@@ -298,16 +298,6 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
-		// Debug: Log targets before NewEndpointWithTTL
-		if dnsName == "peer1.kaleido.dev" {
-			log.Debugf("CoreDNS Records() before NewEndpointWithTTL: targets=%v", targets)
-			for i, target := range targets {
-				if strings.Contains(target, "enode1") {
-					log.Debugf("CoreDNS Records() pre-endpoint targets[%d]: %q (len=%d)", i, target, len(target))
-				}
-			}
-		}
-		
 		ep := endpoint.NewEndpointWithTTL(
 			dnsName,
 			endpoint.RecordTypeTXT,
@@ -320,17 +310,6 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 			ep.Labels[randomPrefixLabel] = "default"
 		}
 		ep.Labels[endpoint.OwnerLabelKey] = p.txtOwnerID
-		
-		// Debug: Log the final endpoint targets
-		if dnsName == "peer1.kaleido.dev" {
-			log.Debugf("CoreDNS Records() created endpoint: DNSName=%s, Targets=%v", dnsName, ep.Targets)
-			for i, target := range ep.Targets {
-				if strings.Contains(target, "enode1") {
-					log.Debugf("CoreDNS Records() final target[%d]: %q (len=%d)", i, target, len(target))
-				}
-			}
-		}
-		
 		result = append(result, ep)
 	}
 	return result, nil
