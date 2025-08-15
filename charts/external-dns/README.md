@@ -94,6 +94,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels. |
+| annotationFilter | string | `nil` | Filter resources queried for endpoints by annotation selector. |
 | automountServiceAccountToken | bool | `true` | Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`. |
 | commonLabels | object | `{}` | Labels to add to all chart resources. |
 | deploymentAnnotations | object | `{}` | Annotations to add to the `Deployment`. |
@@ -117,7 +118,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | imagePullSecrets | list | `[]` | Image pull secrets. |
 | initContainers | list | `[]` | [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition. |
 | interval | string | `"1m"` | Interval for DNS updates. |
-| labelFilter | string | `nil` | Filter resources queried for endpoints by label selector |
+| labelFilter | string | `nil` | Filter resources queried for endpoints by label selector. |
 | livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | logFormat | string | `"text"` | Log format. |
 | logLevel | string | `"info"` | Log level. |
