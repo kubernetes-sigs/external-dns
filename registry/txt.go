@@ -271,6 +271,22 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
+		// Debug: Log the endpoint being processed for deletion
+		log.Debugf("TXT Registry processing deletion for endpoint: DNSName=%s, RecordType=%s, Targets=%v, Labels=%v",
+			r.DNSName, r.RecordType, r.Targets, r.Labels)
+
+		// Check for the specific truncation issue
+		if r.RecordType == endpoint.RecordTypeTXT && r.DNSName == "peer1.kaleido.dev" {
+			for _, target := range r.Targets {
+				if strings.Contains(target, "enode1") {
+					log.Debugf("TXT Registry found peer1 target: %q (len=%d)", target, len(target))
+					if len(target) == 51 {
+						log.Warnf("TXT Registry detected truncated target! Expected 52 chars, got 51: %q", target)
+					}
+				}
+			}
+		}
+
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!

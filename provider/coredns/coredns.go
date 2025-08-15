@@ -298,6 +298,16 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
+		// Debug: Log targets before NewEndpointWithTTL
+		if dnsName == "peer1.kaleido.dev" {
+			log.Debugf("CoreDNS Records() before NewEndpointWithTTL: targets=%v", targets)
+			for i, target := range targets {
+				if strings.Contains(target, "enode1") {
+					log.Debugf("CoreDNS Records() pre-endpoint targets[%d]: %q (len=%d)", i, target, len(target))
+				}
+			}
+		}
+		
 		ep := endpoint.NewEndpointWithTTL(
 			dnsName,
 			endpoint.RecordTypeTXT,
@@ -310,6 +320,17 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 			ep.Labels[randomPrefixLabel] = "default"
 		}
 		ep.Labels[endpoint.OwnerLabelKey] = p.txtOwnerID
+		
+		// Debug: Log the final endpoint targets
+		if dnsName == "peer1.kaleido.dev" {
+			log.Debugf("CoreDNS Records() created endpoint: DNSName=%s, Targets=%v", dnsName, ep.Targets)
+			for i, target := range ep.Targets {
+				if strings.Contains(target, "enode1") {
+					log.Debugf("CoreDNS Records() final target[%d]: %q (len=%d)", i, target, len(target))
+				}
+			}
+		}
+		
 		result = append(result, ep)
 	}
 	return result, nil
@@ -488,38 +509,59 @@ func (p coreDNSProvider) deleteTXTRecordsForDNSName(dnsName string, targets []st
 	domains := strings.Split(dnsName, ".")
 	reverse(domains)
 	searchPrefix := p.coreDNSPrefix + strings.Join(domains, "/")
-	
+
+	log.Debugf("Searching for TXT services to delete: dnsName=%s, searchPrefix=%s", dnsName, searchPrefix)
+	for i, target := range targets {
+		log.Debugf("Target[%d]: %q (len=%d)", i, target, len(target))
+	}
+
 	// Get all services under this DNS name
 	services, err := p.client.GetServices(searchPrefix)
 	if err != nil {
 		return err
 	}
-	
+
+	log.Debugf("Found %d services under prefix %s", len(services), searchPrefix)
+
 	// Create a set of targets to delete for efficient lookup
 	targetSet := make(map[string]bool)
 	for _, target := range targets {
 		targetSet[target] = true
 	}
-	
+
 	// Find and delete matching TXT services
 	for _, service := range services {
-		if service.Text != "" && targetSet[service.Text] {
-			log.Infof("Delete TXT key %s", service.Key)
-			if p.dryRun {
-				continue
-			}
-			if err := p.client.DeleteService(service.Key); err != nil {
-				return err
+		log.Debugf("Examining service: key=%s, text=%q, host=%q", service.Key, service.Text, service.Host)
+
+		// Only process TXT services (ones with text content and no host)
+		if service.Text != "" && service.Host == "" {
+			log.Debugf("Found TXT service text: %q (len=%d)", service.Text, len(service.Text))
+			// Check if this TXT target should be deleted
+			if targetSet[service.Text] {
+				log.Infof("Delete TXT key %s", service.Key)
+				if p.dryRun {
+					continue
+				}
+				if err := p.client.DeleteService(service.Key); err != nil {
+					return err
+				}
+			} else {
+				log.Debugf("TXT service %s with text %q (len=%d) not in target set", service.Key, service.Text, len(service.Text))
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
 		if ep.RecordType == endpoint.RecordTypeTXT {
+			log.Debugf("Deleting TXT endpoint: dnsName=%s, targets=%v, labels=%v", ep.DNSName, ep.Targets, ep.Labels)
+			// Debug: Print each target in detail to check for truncation
+			for i, target := range ep.Targets {
+				log.Debugf("Target %d: %q (length: %d)", i, target, len(target))
+			}
 			// For TXT records, we need to find and delete all matching services from etcd
 			// since labels may not be preserved during deletion
 			if err := p.deleteTXTRecordsForDNSName(ep.DNSName, ep.Targets); err != nil {

@@ -1108,3 +1108,155 @@ func TestCoreDNSProviderPartialTXTCleanup(t *testing.T) {
 	assert.Equal(t, 1, len(remainingTexts), "Should have exactly 1 remaining TXT service")
 	assert.Equal(t, "keep-this", remainingTexts[0], "Only 'keep-this' should remain")
 }
+
+func TestCoreDNSProviderPeerScenarioTXTCleanup(t *testing.T) {
+	client := fakeETCDClient{
+		services: make(map[string]Service),
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		dryRun:        false,
+		coreDNSPrefix: "/skydns/",
+		domainFilter:  nil,
+		txtOwnerID:    "default",
+	}
+
+	// Create the exact scenario from the logs - peer1.kaleido.dev with two TXT targets
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName:    "peer1.kaleido.dev",
+			RecordType: endpoint.RecordTypeTXT,
+			RecordTTL:  5,
+			Targets:    []string{"v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..", "additional-txt-value"},
+			Labels:     map[string]string{},
+		},
+	}
+
+	changes := &plan.Changes{
+		Create: desired,
+	}
+
+	// Apply the creation
+	err := provider.ApplyChanges(context.Background(), changes)
+	require.NoError(t, err)
+
+	// Verify both TXT services were created
+	assert.Equal(t, 2, len(client.services), "Expected 2 TXT services to be created")
+
+	// Log what was created for debugging
+	for key, service := range client.services {
+		t.Logf("Created service: key=%s, text=%q", key, service.Text)
+	}
+
+	// Verify both expected targets exist
+	expectedTexts := map[string]bool{
+		"v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..": false,
+		"additional-txt-value":                                 false,
+	}
+	for _, service := range client.services {
+		if _, exists := expectedTexts[service.Text]; exists {
+			expectedTexts[service.Text] = true
+		}
+	}
+	for text, found := range expectedTexts {
+		assert.True(t, found, "Expected TXT value %q should exist before deletion", text)
+	}
+
+	// Now delete the TXT record (simulating the exact deletion scenario)
+	deleteChanges := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:    "peer1.kaleido.dev",
+				RecordType: endpoint.RecordTypeTXT,
+				RecordTTL:  5,
+				Targets:    []string{"v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..", "additional-txt-value"},
+				Labels:     map[string]string{}, // Empty labels simulating deletion flow
+			},
+		},
+	}
+
+	// Apply the deletion
+	err = provider.ApplyChanges(context.Background(), deleteChanges)
+	require.NoError(t, err)
+
+	// Verify ALL TXT services were deleted
+	remainingTXTServices := 0
+	for key, service := range client.services {
+		if service.Text != "" {
+			remainingTXTServices++
+			t.Errorf("Found remaining TXT service: key=%s, text=%q", key, service.Text)
+		}
+	}
+	assert.Equal(t, 0, remainingTXTServices, "All TXT services should be deleted but found %d remaining", remainingTXTServices)
+}
+
+func TestCoreDNSProviderSpecialCharactersTXTCleanup(t *testing.T) {
+	client := fakeETCDClient{
+		services: make(map[string]Service),
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		dryRun:        false,
+		coreDNSPrefix: "/skydns/",
+		domainFilter:  nil,
+		txtOwnerID:    "default",
+	}
+
+	// Test with special characters that might cause encoding issues
+	complexText := "v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/QmSomeHashHere123"
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName:    "test.example.com",
+			RecordType: endpoint.RecordTypeTXT,
+			RecordTTL:  30,
+			Targets:    []string{complexText, "simple-value"},
+			Labels:     map[string]string{},
+		},
+	}
+
+	changes := &plan.Changes{Create: desired}
+	err := provider.ApplyChanges(context.Background(), changes)
+	require.NoError(t, err)
+
+	// Verify creation
+	assert.Equal(t, 2, len(client.services), "Expected 2 TXT services to be created")
+
+	foundComplex := false
+	foundSimple := false
+	for _, service := range client.services {
+		if service.Text == complexText {
+			foundComplex = true
+		}
+		if service.Text == "simple-value" {
+			foundSimple = true
+		}
+	}
+	assert.True(t, foundComplex, "Complex text should be found")
+	assert.True(t, foundSimple, "Simple text should be found")
+
+	// Now delete with the exact same text
+	deleteChanges := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:    "test.example.com",
+				RecordType: endpoint.RecordTypeTXT,
+				RecordTTL:  30,
+				Targets:    []string{complexText, "simple-value"},
+				Labels:     map[string]string{},
+			},
+		},
+	}
+
+	err = provider.ApplyChanges(context.Background(), deleteChanges)
+	require.NoError(t, err)
+
+	// Verify ALL services were deleted
+	remainingTXTServices := 0
+	for key, service := range client.services {
+		if service.Text != "" {
+			remainingTXTServices++
+			t.Errorf("Found remaining TXT service: key=%s, text=%q", key, service.Text)
+		}
+	}
+	assert.Equal(t, 0, remainingTXTServices, "All TXT services should be deleted")
+}

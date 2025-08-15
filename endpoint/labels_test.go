@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -180,4 +181,22 @@ func (suite *LabelsSuite) TestDeserialize() {
 
 func TestLabels(t *testing.T) {
 	suite.Run(t, new(LabelsSuite))
+}
+
+// TestLabelsWithEqualsInValue tests label parsing when values contain '=' characters
+func TestLabelsWithEqualsInValue(t *testing.T) {
+	// This simulates the bug where label values containing '=' characters were truncated
+	labelText := `"heritage=external-dns,external-dns/owner=default,external-dns/prefix=default,external-dns/v=1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..=1b6eef32"`
+	
+	labels, err := NewLabelsFromStringPlain(labelText)
+	require.NoError(t, err, "should succeed for valid label text with '=' in values")
+	
+	// Verify the full enode string is preserved
+	expectedValue := "1;id=enode1;addr=/ip4/10.0.0.10/tcp/30303/p2p/Qm..=1b6eef32"
+	actualValue := labels["v"]
+	require.Equal(t, expectedValue, actualValue, "should preserve full value including '=' characters")
+	
+	// Verify other labels are also parsed correctly
+	require.Equal(t, "default", labels["owner"])
+	require.Equal(t, "default", labels["prefix"])
 }
