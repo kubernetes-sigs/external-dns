@@ -419,9 +419,11 @@ func shouldSkipLabel(label string) bool {
 
 // updateTXTRecords updates the TXT records in the provided services slice based on the given group of endpoints.
 func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endpoint, services []*Service) []*Service {
-	// Collect desired TXT targets (merged across all TXT endpoints for this dnsName)
-	desiredTargets := map[string]uint32{}
+	// Collect desired TXT targets in order (preserving user-defined order)
+	var orderedTargets []string
+	var targetTTL uint32
 	var labels map[string]string
+	
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
 			continue
@@ -432,31 +434,55 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 		if labels == nil {
 			labels = ep.Labels
 		}
+		
+		// Append targets in the order they appear in the endpoint
 		for _, t := range ep.Targets {
-			desiredTargets[t] = uint32(ep.RecordTTL)
+			orderedTargets = append(orderedTargets, t)
+			targetTTL = uint32(ep.RecordTTL)
 		}
 	}
 
-	if labels == nil {
+	if len(orderedTargets) == 0 {
 		// no TXT endpoints present
 		return services
 	}
 
-	// Create/update one etcd service per desired TXT target, reusing stable prefixes when known
+	// Clear existing TXT services that are no longer needed
 	for i, svc := range services {
-		if _, keep := desiredTargets[svc.Text]; !keep && svc.Text != "" {
-			services[i].Text = ""
+		if svc.Text != "" {
+			found := false
+			for _, target := range orderedTargets {
+				if target == svc.Text {
+					found = true
+					break
+				}
+			}
+			if !found {
+				services[i].Text = ""
+			}
 		}
 	}
-	for target, ttl := range desiredTargets {
+
+	// Check if we need to reorder existing targets based on current labels
+	needsReorder := p.checkIfReorderNeeded(orderedTargets, labels)
+	
+	if needsReorder {
+		// Clean up all existing TXT prefixes and regenerate with correct order
+		p.cleanupTXTLabels(labels, orderedTargets, dnsName)
+	}
+
+	// Create/update services for each target in order
+	for i, target := range orderedTargets {
 		prefix := labels[target]
-		if prefix == "" {
-			prefix = fmt.Sprintf("%08x", rand.Int31())
+		if prefix == "" || needsReorder {
+			// Generate ordered prefix: index + random hex for uniqueness
+			prefix = fmt.Sprintf("%d-%06x", i, rand.Int31()&0xFFFFFF)
 		}
+		
 		svc := &Service{
 			Key:         p.etcdKeyFor(prefix + "." + dnsName),
 			TargetStrip: strings.Count(prefix, ".") + 1,
-			TTL:         ttl,
+			TTL:         targetTTL,
 			Text:        target,
 		}
 		services = append(services, svc)
@@ -468,10 +494,19 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 		if shouldSkipLabel(label) {
 			continue
 		}
-		if _, keep := desiredTargets[label]; !keep {
+		
+		found := false
+		for _, target := range orderedTargets {
+			if target == label {
+				found = true
+				break
+			}
+		}
+		
+		if !found {
 			key := p.etcdKeyFor(labelPrefix + "." + dnsName)
 			log.Infof("Delete key %s", key)
-			if !p.dryRun {
+			if !p.dryRun && p.client != nil {
 				if err := p.client.DeleteService(key); err != nil {
 					log.Warnf("Failed to delete stale TXT key %s: %v", key, err)
 				}
@@ -480,6 +515,59 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 	}
 
 	return services
+}
+
+// checkIfReorderNeeded determines if the current label prefixes match the expected order
+func (p coreDNSProvider) checkIfReorderNeeded(orderedTargets []string, labels map[string]string) bool {
+	// Count how many existing targets we have vs. total targets
+	existingTargets := 0
+	for _, target := range orderedTargets {
+		if labels[target] != "" {
+			existingTargets++
+		}
+	}
+	
+	// If we have fewer existing targets than total targets, new targets were added
+	// This requires reordering to maintain sequential indices
+	if existingTargets != len(orderedTargets) {
+		log.Debugf("Reorder needed: have %d existing targets, but %d total targets", existingTargets, len(orderedTargets))
+		return true
+	}
+	
+	// Check if all existing targets match their expected indices
+	for i, target := range orderedTargets {
+		prefix := labels[target]
+		if prefix == "" {
+			// New target, already handled above
+			continue
+		}
+		
+		// Check if prefix starts with the expected index
+		expectedPrefix := fmt.Sprintf("%d-", i)
+		if !strings.HasPrefix(prefix, expectedPrefix) {
+			log.Debugf("Reorder needed: target %q at index %d has prefix %q, expected prefix starting with %q", 
+				target, i, prefix, expectedPrefix)
+			return true
+		}
+	}
+	return false
+}
+
+// cleanupTXTLabels removes existing TXT prefixes that need reordering
+func (p coreDNSProvider) cleanupTXTLabels(labels map[string]string, orderedTargets []string, dnsName string) {
+	for _, target := range orderedTargets {
+		if prefix := labels[target]; prefix != "" {
+			key := p.etcdKeyFor(prefix + "." + dnsName)
+			log.Infof("Delete key for reordering %s", key)
+			if !p.dryRun && p.client != nil {
+				if err := p.client.DeleteService(key); err != nil {
+					log.Warnf("Failed to delete key for reordering %s: %v", key, err)
+				}
+			}
+			// Clear the prefix so it gets regenerated with correct order
+			delete(labels, target)
+		}
+	}
 }
 
 // deleteTXTRecordsForDNSName finds and deletes TXT services that match the specified targets
