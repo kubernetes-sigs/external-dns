@@ -116,11 +116,16 @@ func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
 	}
-	sort.Stable(t)
-	sort.Stable(o)
+	// Create copies to avoid mutating the original slices during comparison
+	tCopy := make(Targets, len(t))
+	oCopy := make(Targets, len(o))
+	copy(tCopy, t)
+	copy(oCopy, o)
+	sort.Stable(tCopy)
+	sort.Stable(oCopy)
 
-	for i, e := range t {
-		if !strings.EqualFold(e, o[i]) {
+	for i, e := range tCopy {
+		if !strings.EqualFold(e, oCopy[i]) {
 			// IPv6 can be shortened, so it should be parsed for equality checking
 			ipA, err := netip.ParseAddr(e)
 			if err != nil {
@@ -130,7 +135,7 @@ func (t Targets) Same(o Targets) bool {
 				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
-			ipB, err := netip.ParseAddr(o[i])
+			ipB, err := netip.ParseAddr(oCopy[i])
 			if err != nil {
 				log.WithFields(log.Fields{
 					"targets":           t,

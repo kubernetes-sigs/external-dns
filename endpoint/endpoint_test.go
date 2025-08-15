@@ -995,3 +995,32 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
+
+// TestTargetsOrderPreservation verifies that Targets.Same() doesn't mutate target ordering
+func TestTargetsOrderPreservation(t *testing.T) {
+	// Create targets in specific YAML order (not alphabetical)
+	originalTargets := NewTargets("other.text.woo=!", "please-delete all this", "other text")
+	comparisonTargets := NewTargets("other.text.woo=!", "please-delete all this", "other text")
+
+	// Verify they are considered the same
+	assert.True(t, originalTargets.Same(comparisonTargets), "Identical targets should be considered the same")
+
+	// Verify original ordering is preserved after comparison
+	assert.Equal(t, "other.text.woo=!", originalTargets[0], "First target should remain unchanged")
+	assert.Equal(t, "please-delete all this", originalTargets[1], "Second target should remain unchanged")
+	assert.Equal(t, "other text", originalTargets[2], "Third target should remain unchanged")
+
+	// Verify comparison targets are also preserved
+	assert.Equal(t, "other.text.woo=!", comparisonTargets[0], "Comparison first target should remain unchanged")
+	assert.Equal(t, "please-delete all this", comparisonTargets[1], "Comparison second target should remain unchanged")
+	assert.Equal(t, "other text", comparisonTargets[2], "Comparison third target should remain unchanged")
+
+	// Test with alphabetically different order that should still be equal
+	reorderedTargets := NewTargets("other text", "other.text.woo=!", "please-delete all this")
+	assert.True(t, originalTargets.Same(reorderedTargets), "Targets with same content but different order should be considered equal")
+
+	// Verify original targets still preserved
+	assert.Equal(t, "other.text.woo=!", originalTargets[0], "Original first target should remain unchanged after reordered comparison")
+	assert.Equal(t, "please-delete all this", originalTargets[1], "Original second target should remain unchanged after reordered comparison")
+	assert.Equal(t, "other text", originalTargets[2], "Original third target should remain unchanged after reordered comparison")
+}
