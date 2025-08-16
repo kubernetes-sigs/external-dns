@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -271,8 +272,8 @@ func TestProvider(t *testing.T) {
 			RecordType: endpoint.RecordTypeAAAA,
 		},
 	}
-	if err := p.ApplyChanges(context.Background(), &plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
+	update, err := plan.MkUpdates(
+		[]*endpoint.Endpoint{
 			{
 				DNSName:    "test1.example.com",
 				Targets:    []string{"192.168.1.1"},
@@ -294,7 +295,7 @@ func TestProvider(t *testing.T) {
 				RecordType: endpoint.RecordTypeAAAA,
 			},
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		[]*endpoint.Endpoint{
 			{
 				DNSName:    "test1.example.com",
 				Targets:    []string{"192.168.1.1"},
@@ -316,6 +317,10 @@ func TestProvider(t *testing.T) {
 				RecordType: endpoint.RecordTypeAAAA,
 			},
 		},
+	)
+	assert.NoError(t, err)
+	if err := p.ApplyChanges(context.Background(), &plan.Changes{
+		Update: update,
 	}); err != nil {
 		t.Fatal(err)
 	}

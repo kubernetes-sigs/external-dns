@@ -242,7 +242,7 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 		mapChange(updated, change)
 	}
 
-	for _, change := range changes.UpdateNew {
+	for _, change := range changes.UpdateNew() {
 		mapChange(updated, change)
 	}
 	return deleted, updated

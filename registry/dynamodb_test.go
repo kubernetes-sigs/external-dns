@@ -709,25 +709,25 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 		{
 			name: "update",
 			changes: plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{
+				Update: []*plan.Update{
 					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+						Old: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"my-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+							},
 						},
-					},
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"new-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+						New: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"new-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+							},
 						},
 					},
 				},
@@ -778,25 +778,25 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 		{
 			name: "update change",
 			changes: plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{
+				Update: []*plan.Update{
 					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+						Old: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"my-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+							},
 						},
-					},
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"new-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+						New: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"new-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+							},
 						},
 					},
 				},
@@ -858,31 +858,32 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 			},
 			changes: plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{
+				Update: []*plan.Update{
 					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/my-ingress",
-						},
-						ProviderSpecific: endpoint.ProviderSpecific{
-							{
-								Name:  dynamodbAttributeMigrate,
-								Value: "true",
+						Old: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"my-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+							},
+							ProviderSpecific: endpoint.ProviderSpecific{
+								{
+									Name:  dynamodbAttributeMigrate,
+									Value: "true",
+								},
 							},
 						},
-					},
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+						New: &endpoint.Endpoint{
+
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"my-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+							},
 						},
 					},
 				},
@@ -945,25 +946,25 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 		{
 			name: "update error",
 			changes: plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{
+				Update: []*plan.Update{
 					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+						Old: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"my-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+							},
 						},
-					},
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					{
-						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"new-domain.com"},
-						RecordType: endpoint.RecordTypeCNAME,
-						Labels: map[string]string{
-							endpoint.OwnerLabelKey:    "test-owner",
-							endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+						New: &endpoint.Endpoint{
+							DNSName:    "bar.test-zone.example.org",
+							Targets:    endpoint.Targets{"new-domain.com"},
+							RecordType: endpoint.RecordTypeCNAME,
+							Labels: map[string]string{
+								endpoint.OwnerLabelKey:    "test-owner",
+								endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+							},
 						},
 					},
 				},

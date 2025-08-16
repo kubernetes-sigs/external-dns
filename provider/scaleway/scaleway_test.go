@@ -519,41 +519,41 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				Targets:    []string{"1.1.1.1"},
 			},
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		Update: []*plan.Update{
 			{
-				DNSName: "me.example.com",
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  scalewayPriorityKey,
-						Value: "30",
+				New: &endpoint.Endpoint{
+					DNSName: "me.example.com",
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  scalewayPriorityKey,
+							Value: "30",
+						},
 					},
+					RecordType: "A",
+					RecordTTL:  600,
+					Targets:    []string{"2.2.2.2"},
 				},
-				RecordType: "A",
-				RecordTTL:  600,
-				Targets:    []string{"2.2.2.2"},
-			},
-			{
-				DNSName:    "my.test.example.com",
-				RecordType: "A",
-				Targets:    []string{"1.2.3.4", "5.6.7.8"},
-			},
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			{
-				DNSName: "me.example.com",
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  scalewayPriorityKey,
-						Value: "1234",
+				Old: &endpoint.Endpoint{
+					DNSName: "me.example.com",
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  scalewayPriorityKey,
+							Value: "1234",
+						},
 					},
+					RecordType: "A",
+					Targets:    []string{"3.3.3.3"},
 				},
-				RecordType: "A",
-				Targets:    []string{"3.3.3.3"},
 			},
 			{
-				DNSName:    "my.test.example.com",
-				RecordType: "A",
-				Targets:    []string{"4.4.4.4", "5.5.5.5"},
+				New: &endpoint.Endpoint{DNSName: "my.test.example.com",
+					RecordType: "A",
+					Targets:    []string{"1.2.3.4", "5.6.7.8"}},
+				Old: &endpoint.Endpoint{
+					DNSName:    "my.test.example.com",
+					RecordType: "A",
+					Targets:    []string{"4.4.4.4", "5.5.5.5"},
+				},
 			},
 		},
 	}

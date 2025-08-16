@@ -185,7 +185,7 @@ func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	}
 
 	// then update existing DNS records
-	for _, ep := range changes.UpdateNew {
+	for _, ep := range changes.UpdateNew() {
 		epLog := log.WithFields(log.Fields{
 			"record": ep.DNSName,
 			"type":   ep.RecordType,

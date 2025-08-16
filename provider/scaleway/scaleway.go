@@ -228,7 +228,7 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 	}
 
 	log.Debugf("Following records present in updateOld")
-	for _, c := range changes.UpdateOld {
+	for _, c := range changes.UpdateOld() {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
 			log.Infof("Ignore record %s since it's not handled by ExternalDNS", c.DNSName)
@@ -261,7 +261,7 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 	}
 
 	log.Debugf("Following records present in updateNew")
-	for _, c := range changes.UpdateNew {
+	for _, c := range changes.UpdateNew() {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
 			log.Infof("Ignore record %s since it's not handled by ExternalDNS", c.DNSName)
