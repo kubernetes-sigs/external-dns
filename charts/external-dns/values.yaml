@@ -12,7 +12,7 @@ image:  # @schema additionalProperties: false
   # -- Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set.
   tag:  # @schema type:[string, null]
   # -- Image pull policy for the `external-dns` container.
-  pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always];
+  pullPolicy: IfNotPresent  # @schema enum:[IfNotPresent, Always]
 
 # -- Image pull secrets.
 imagePullSecrets: []  # @schema item: object
@@ -44,11 +44,11 @@ service:
   # -- Service HTTP port.
   port: 7979  # @schema minimum:0; default:7979
   # -- Service IP families (e.g. IPv4 and/or IPv6).
-  ipFamilies: []  # @schema type: [array, null]; item: string; itemEnum: ["IPv4", "IPv6"]; minItems:0; maxItems:2; uniqueItems: true;
+  ipFamilies: []  # @schema type: [array, null]; item: string; itemEnum: ["IPv4", "IPv6"]; minItems:0; maxItems:2; uniqueItems: true
   #  - IPv4
   #  - IPv6
   # -- Service IP family policy.
-  ipFamilyPolicy:  # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null];
+  ipFamilyPolicy:  # @schema type: [string, null];  enum:[SingleStack, PreferDualStack, RequireDualStack, null]
 
 rbac:  # @schema additionalProperties: true
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
@@ -234,13 +234,16 @@ domainFilters: []
 # -- Intentionally exclude domains from being managed.
 excludeDomains: []
 
-# -- Filter resources queried for endpoints by label selector
+# -- Filter resources queried for endpoints by label selector.
 labelFilter:  # @schema type: [string,null]; default: null
 
-# -- Record types to manage (default: A, AAAA, CNAME)
-managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true;
+# -- Filter resources queried for endpoints by annotation selector.
+annotationFilter:  # @schema type: [string,null]; default: null
 
-provider:  # @schema type: [object, string];
+# -- Record types to manage (default: A, AAAA, CNAME)
+managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true
+
+provider:  # @schema type: [object, string]
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
   name: aws
   webhook:
@@ -300,7 +303,7 @@ provider:  # @schema type: [object, string];
 
 # -- Extra arguments to provide to _ExternalDNS_.
 # An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times.
-extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true;
+extraArgs: {}  # @schema type: [array, null, object]; item: string; uniqueItems: true
 
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
