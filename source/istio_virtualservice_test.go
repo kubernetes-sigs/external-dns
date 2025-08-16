@@ -33,6 +33,7 @@ import (
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -2334,4 +2335,97 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 			validateEndpoints(t, res, tt.expected)
 		})
 	}
+}
+
+func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-service",
+			Namespace: "default",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+				"label3": "value3",
+			},
+			Annotations: map[string]string{
+				"user-annotation": "value",
+				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+				"external-dns.alpha.kubernetes.io/random":   "value",
+				"other/annotation":                          "value",
+			},
+			UID: "someuid",
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"selector":  "one",
+				"selector2": "two",
+				"selector3": "three",
+			},
+			ExternalIPs: []string{"1.2.3.4"},
+			Ports: []v1.ServicePort{
+				{
+					Name:       "http",
+					Port:       80,
+					TargetPort: intstr.FromInt32(8080),
+					Protocol:   v1.ProtocolTCP,
+				},
+				{
+					Name:       "https",
+					Port:       443,
+					TargetPort: intstr.FromInt32(8443),
+					Protocol:   v1.ProtocolTCP,
+				},
+			},
+			Type: v1.ServiceTypeLoadBalancer,
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{
+					{IP: "5.6.7.8", Hostname: "lb.example.com"},
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:               "Available",
+					Status:             metav1.ConditionTrue,
+					Reason:             "MinimumReplicasAvailable",
+					Message:            "Service is available",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset()
+
+	_, err := fakeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioVirtualServiceSource(
+		t.Context(),
+		fakeClient,
+		istiofake.NewSimpleClientset(),
+		"",
+		"",
+		"",
+		false,
+		false)
+	require.NoError(t, err)
+	gwSource, ok := src.(*virtualServiceSource)
+	require.True(t, ok)
+
+	rService, err := gwSource.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, svc.Name, rService.Name)
+	assert.Empty(t, rService.Labels)
+	assert.Empty(t, rService.Annotations)
+	assert.Empty(t, rService.UID)
+	assert.NotEmpty(t, rService.Status.LoadBalancer)
+	assert.Empty(t, rService.Status.Conditions)
+	assert.Equal(t, map[string]string{
+		"selector":  "one",
+		"selector2": "two",
+		"selector3": "three",
+	}, rService.Spec.Selector)
 }
