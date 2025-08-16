@@ -609,6 +609,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				false,
 				false,
 				true,
+				true,
 			)
 			require.NoError(t, err)
 
