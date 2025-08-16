@@ -58,8 +58,11 @@ The following fields are used:
 * `aadClientSecret` is associated with the Service Principal. This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.
-* `activeDirectoryAuthorityHost` - this contains the uri to overwrite the default provided AAD Endpoint. This is useful for providing additional support where the endpoint is not available in the default cloud config from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables).
+* `activeDirectoryAuthorityHost` - this contains the URI to override the default Azure Active Directory authority endpoint.
+  This is useful for Azure Stack Cloud deployments or custom environments.
 * `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
+* `ResourceManagerAudience` - this specifies the audience for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to authenticate with the correct Resource Manager endpoint.
+* `ResourceManagerEndpoint` - this specifies the endpoint URL for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to point to the correct Resource Manager instance.
 
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
 
