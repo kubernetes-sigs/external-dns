@@ -426,10 +426,15 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 	}
 	// Combine multiple sources into a single, deduplicated source.
 	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
+	cfg.AddSourceWrapper("dedup")
+	combinedSource = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
+	cfg.AddSourceWrapper("nat64")
 	// Filter targets
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-	combinedSource = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-	combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
+	if targetFilter.IsEnabled() {
+		combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
+		cfg.AddSourceWrapper("target-filter")
+	}
 	// should be the last step, so that the post-processed modifications applied
 	combinedSource = wrappers.NewPostProcessor(combinedSource, wrappers.WithTTL(cfg.MinTTL))
 	return combinedSource, nil

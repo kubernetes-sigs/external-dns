@@ -66,7 +66,7 @@
 | `--google-zone-visibility=` | When using the Google provider, filter for zones with this visibility (optional, options: public, private) |
 | `--alibaba-cloud-config-file="/etc/kubernetes/alibaba-cloud.json"` | When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud) |
 | `--alibaba-cloud-zone-type=` | When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private) |
-| `--aws-zone-type=` | When using the AWS provider, filter for zones of this type (optional, options: public, private) |
+| `--aws-zone-type=` | When using the AWS provider, filter for zones of this type (optional, default: any, options: public, private) |
 | `--aws-zone-tags=` | When using the AWS provider, filter for zones with these tags |
 | `--aws-profile=` | When using the AWS provider, name of the profile to use |
 | `--aws-assume-role=""` | When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional) |

@@ -27,7 +27,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -69,13 +68,7 @@ func NewNodeSource(
 	nodeInformer := informerFactory.Core().V1().Nodes()
 
 	// Add default resource event handler to properly initialize informer.
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("node added")
-			},
-		},
-	)
+	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -172,7 +165,8 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 	return endpointsSlice, nil
 }
 
-func (ns *nodeSource) AddEventHandler(_ context.Context, _ func()) {
+func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
+	_, _ = ns.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // nodeAddress returns the node's externalIP and if that's not found, the node's internalIP

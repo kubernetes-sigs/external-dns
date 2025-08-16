@@ -20,16 +20,16 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	dns "google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -131,12 +131,7 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter *endpoi
 		return nil, err
 	}
 
-	gcloud = instrumented_http.NewClient(gcloud, &instrumented_http.Callbacks{
-		PathProcessor: func(path string) string {
-			parts := strings.Split(path, "/")
-			return parts[len(parts)-1]
-		},
-	})
+	gcloud = extdnshttp.NewInstrumentedClient(gcloud)
 
 	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud))
 	if err != nil {

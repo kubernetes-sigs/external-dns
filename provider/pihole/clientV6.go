@@ -30,8 +30,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
+
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
@@ -65,7 +66,7 @@ func newPiholeClientV6(cfg PiholeConfig) (piholeAPI, error) {
 		},
 	}
 
-	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
+	cl := extdnshttp.NewInstrumentedClient(httpClient)
 
 	p := &piholeClientV6{
 		cfg:        cfg,
@@ -143,11 +144,12 @@ func isValidIPv6(ip string) bool {
 }
 
 func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
-	out := make([]*endpoint.Endpoint, 0)
 	results, err := p.getConfigValue(ctx, rtype)
 	if err != nil {
 		return nil, err
 	}
+
+	endpoints := make(map[string]*endpoint.Endpoint)
 
 	for _, rec := range results {
 		recs := strings.FieldsFunc(rec, func(r rune) bool {
@@ -163,17 +165,17 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		DNSName, Target = recs[1], recs[0]
 		switch rtype {
 		case endpoint.RecordTypeA:
-			//PiHole return A and AAAA records. Filter to only keep the A records
+			// PiHole return A and AAAA records. Filter to only keep the A records
 			if !isValidIPv4(Target) {
 				continue
 			}
 		case endpoint.RecordTypeAAAA:
-			//PiHole return A and AAAA records. Filter to only keep the AAAA records
+			// PiHole return A and AAAA records. Filter to only keep the AAAA records
 			if !isValidIPv6(Target) {
 				continue
 			}
 		case endpoint.RecordTypeCNAME:
-			//PiHole return only CNAME records.
+			// PiHole return only CNAME records.
 			// CNAME format is DNSName,target, ttl?
 			DNSName, Target = recs[0], recs[1]
 			if len(recs) == 3 { // TTL is present
@@ -186,7 +188,18 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 			}
 		}
 
-		out = append(out, endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target))
+		ep := endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target)
+
+		if oldEp, ok := endpoints[DNSName]; ok {
+			ep.Targets = append(oldEp.Targets, Target)
+		}
+
+		endpoints[DNSName] = ep
+	}
+
+	out := make([]*endpoint.Endpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		out = append(out, ep)
 	}
 	return out, nil
 }
@@ -272,37 +285,44 @@ func (p *piholeClientV6) apply(ctx context.Context, action string, ep *endpoint.
 		return nil
 	}
 
-	if p.cfg.DryRun {
-		log.Infof("DRY RUN: %s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
-		return nil
-	}
-
-	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
-
 	// Get the current record
 	if strings.Contains(ep.DNSName, "*") {
 		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole DNS names cannot return wildcard"))
 	}
 
-	switch ep.RecordType {
-	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s %s", ep.Targets, ep.DNSName))
-	case endpoint.RecordTypeCNAME:
-		if ep.RecordTTL.IsConfigured() {
-			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, ep.Targets, ep.RecordTTL))
-		} else {
-			apiUrl = p.generateApiUrl(apiUrl, fmt.Sprintf("%s,%s", ep.DNSName, ep.Targets))
+	if ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 1 {
+		return provider.NewSoftError(errors.New("UNSUPPORTED: Pihole CNAME records cannot have multiple targets"))
+	}
+
+	for _, target := range ep.Targets {
+		if p.cfg.DryRun {
+			log.Infof("DRY RUN: %s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, target)
+			continue
 		}
-	}
 
-	req, err := http.NewRequestWithContext(ctx, action, apiUrl, nil)
-	if err != nil {
-		return err
-	}
+		log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, target)
 
-	_, err = p.do(req)
-	if err != nil {
-		return err
+		targetApiUrl := apiUrl
+
+		switch ep.RecordType {
+		case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
+			targetApiUrl = p.generateApiUrl(targetApiUrl, fmt.Sprintf("%s %s", target, ep.DNSName))
+		case endpoint.RecordTypeCNAME:
+			if ep.RecordTTL.IsConfigured() {
+				targetApiUrl = p.generateApiUrl(targetApiUrl, fmt.Sprintf("%s,%s,%d", ep.DNSName, target, ep.RecordTTL))
+			} else {
+				targetApiUrl = p.generateApiUrl(targetApiUrl, fmt.Sprintf("%s,%s", ep.DNSName, target))
+			}
+		}
+		req, err := http.NewRequestWithContext(ctx, action, targetApiUrl, nil)
+		if err != nil {
+			return err
+		}
+
+		_, err = p.do(req)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -399,6 +419,14 @@ func (p *piholeClientV6) do(req *http.Request) ([]byte, error) {
 		var apiError ApiErrorResponse
 		if err := json.Unmarshal(jRes, &apiError); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal error response: %w", err)
+		}
+		// Ignore if the entry already exists when adding a record
+		if strings.Contains(apiError.Error.Message, "Item already present") {
+			return jRes, nil
+		}
+		// Ignore if the entry does not exist when deleting a record
+		if res.StatusCode == http.StatusNotFound && req.Method == http.MethodDelete {
+			return jRes, nil
 		}
 		if log.IsLevelEnabled(log.DebugLevel) {
 			log.Debugf("Error on request %s", req.URL)

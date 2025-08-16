@@ -24,12 +24,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -76,18 +76,42 @@ func NewPodSource(
 		return nil, fmt.Errorf("failed to add indexers to pod informer: %w", err)
 	}
 
-	_, _ = podInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	_, _ = nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+	if fqdnTemplate == "" {
+		// Transformer is used to reduce the memory usage of the informer.
+		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
+		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
+		// When fqdnTemplate is used the entire pod needs to be provided to the rendering call, but the informer itself becomes unneeded.
+		podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+			pod, ok := i.(*corev1.Pod)
+			if !ok {
+				return nil, fmt.Errorf("object is not a pod")
+			}
+			if pod.UID == "" {
+				// Pod was already transformed and we must be idempotent.
+				return pod, nil
+			}
+			return &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					// Name/namespace must always be kept for the informer to work.
+					Name:      pod.Name,
+					Namespace: pod.Namespace,
+					// Used by the controller. This includes non-external-dns prefixed annotations.
+					Annotations: pod.Annotations,
+				},
+				Spec: corev1.PodSpec{
+					HostNetwork: pod.Spec.HostNetwork,
+					NodeName:    pod.Spec.NodeName,
+				},
+				Status: corev1.PodStatus{
+					PodIP: pod.Status.PodIP,
+				},
+			}, nil
+		})
+	}
+
+	_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -114,7 +138,8 @@ func NewPodSource(
 	}, nil
 }
 
-func (*podSource) AddEventHandler(_ context.Context, _ func()) {
+func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
+	_, _ = ps.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {

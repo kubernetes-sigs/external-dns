@@ -22,7 +22,9 @@ import (
 	"maps"
 	"slices"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/addressing"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -53,46 +55,62 @@ type regionalHostnameChange struct {
 	regionalHostname
 }
 
-func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDataLocalizationRegionalHostnamesParams) ([]cloudflare.RegionalHostname, error) {
-	return z.service.ListDataLocalizationRegionalHostnames(ctx, rc, rp)
+func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
+	return z.serviceV4.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)
 }
 
-func (z zoneService) CreateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDataLocalizationRegionalHostnameParams) error {
-	_, err := z.service.CreateDataLocalizationRegionalHostname(ctx, rc, rp)
+func (z zoneService) CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error {
+	_, err := z.serviceV4.Addressing.RegionalHostnames.New(ctx, params)
 	return err
 }
 
-func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDataLocalizationRegionalHostnameParams) error {
-	_, err := z.service.UpdateDataLocalizationRegionalHostname(ctx, rc, rp)
+func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error {
+	_, err := z.serviceV4.Addressing.RegionalHostnames.Edit(ctx, hostname, params)
 	return err
 }
 
-func (z zoneService) DeleteDataLocalizationRegionalHostname(ctx context.Context, rc *cloudflare.ResourceContainer, hostname string) error {
-	return z.service.DeleteDataLocalizationRegionalHostname(ctx, rc, hostname)
+func (z zoneService) DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error {
+	_, err := z.serviceV4.Addressing.RegionalHostnames.Delete(ctx, hostname, params)
+	return err
+}
+
+// listDataLocalizationRegionalHostnamesParams is a function that returns the appropriate RegionalHostname List Param based on the zoneID
+func listDataLocalizationRegionalHostnamesParams(zoneID string) addressing.RegionalHostnameListParams {
+	return addressing.RegionalHostnameListParams{
+		ZoneID: cloudflare.F(zoneID),
+	}
 }
 
 // createDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
-func createDataLocalizationRegionalHostnameParams(rhc regionalHostnameChange) cloudflare.CreateDataLocalizationRegionalHostnameParams {
-	return cloudflare.CreateDataLocalizationRegionalHostnameParams{
-		Hostname:  rhc.hostname,
-		RegionKey: rhc.regionKey,
+func createDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameNewParams {
+	return addressing.RegionalHostnameNewParams{
+		ZoneID:    cloudflare.F(zoneID),
+		Hostname:  cloudflare.F(rhc.hostname),
+		RegionKey: cloudflare.F(rhc.regionKey),
 	}
 }
 
 // updateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
-func updateDataLocalizationRegionalHostnameParams(rhc regionalHostnameChange) cloudflare.UpdateDataLocalizationRegionalHostnameParams {
-	return cloudflare.UpdateDataLocalizationRegionalHostnameParams{
-		Hostname:  rhc.hostname,
-		RegionKey: rhc.regionKey,
+func updateDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameEditParams {
+	return addressing.RegionalHostnameEditParams{
+		ZoneID:    cloudflare.F(zoneID),
+		RegionKey: cloudflare.F(rhc.regionKey),
+	}
+}
+
+// deleteDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
+func deleteDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameDeleteParams {
+	return addressing.RegionalHostnameDeleteParams{
+		ZoneID: cloudflare.F(zoneID),
 	}
 }
 
 // submitRegionalHostnameChanges applies a set of regional hostname changes, returns false if at least one fails
-func (p *CloudFlareProvider) submitRegionalHostnameChanges(ctx context.Context, rhChanges []regionalHostnameChange, resourceContainer *cloudflare.ResourceContainer) bool {
+func (p *CloudFlareProvider) submitRegionalHostnameChanges(ctx context.Context, zoneID string, rhChanges []regionalHostnameChange) bool {
 	failedChange := false
 
 	for _, rhChange := range rhChanges {
-		if !p.submitRegionalHostnameChange(ctx, rhChange, resourceContainer) {
+		if !p.submitRegionalHostnameChange(ctx, zoneID, rhChange) {
 			failedChange = true
 		}
 	}
@@ -101,12 +119,12 @@ func (p *CloudFlareProvider) submitRegionalHostnameChanges(ctx context.Context, 
 }
 
 // submitRegionalHostnameChange applies a single regional hostname change, returns false if it fails
-func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, rhChange regionalHostnameChange, resourceContainer *cloudflare.ResourceContainer) bool {
+func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, zoneID string, rhChange regionalHostnameChange) bool {
 	changeLog := log.WithFields(log.Fields{
 		"hostname":   rhChange.hostname,
 		"region_key": rhChange.regionKey,
 		"action":     rhChange.action.String(),
-		"zone":       resourceContainer.Identifier,
+		"zone":       zoneID,
 	})
 	if p.DryRun {
 		changeLog.Debug("Dry run: skipping regional hostname change", rhChange.action)
@@ -115,21 +133,22 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, r
 	switch rhChange.action {
 	case cloudFlareCreate:
 		changeLog.Debug("Creating regional hostname")
-		regionalHostnameParam := createDataLocalizationRegionalHostnameParams(rhChange)
-		if err := p.Client.CreateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam); err != nil {
+		params := createDataLocalizationRegionalHostnameParams(zoneID, rhChange)
+		if err := p.Client.CreateDataLocalizationRegionalHostname(ctx, params); err != nil {
 			changeLog.Errorf("failed to create regional hostname: %v", err)
 			return false
 		}
 	case cloudFlareUpdate:
 		changeLog.Debug("Updating regional hostname")
-		regionalHostnameParam := updateDataLocalizationRegionalHostnameParams(rhChange)
-		if err := p.Client.UpdateDataLocalizationRegionalHostname(ctx, resourceContainer, regionalHostnameParam); err != nil {
+		params := updateDataLocalizationRegionalHostnameParams(zoneID, rhChange)
+		if err := p.Client.UpdateDataLocalizationRegionalHostname(ctx, rhChange.hostname, params); err != nil {
 			changeLog.Errorf("failed to update regional hostname: %v", err)
 			return false
 		}
 	case cloudFlareDelete:
 		changeLog.Debug("Deleting regional hostname")
-		if err := p.Client.DeleteDataLocalizationRegionalHostname(ctx, resourceContainer, rhChange.hostname); err != nil {
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID, rhChange)
+		if err := p.Client.DeleteDataLocalizationRegionalHostname(ctx, rhChange.hostname, params); err != nil {
 			changeLog.Errorf("failed to delete regional hostname: %v", err)
 			return false
 		}
@@ -137,17 +156,21 @@ func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, r
 	return true
 }
 
-func (p *CloudFlareProvider) listDataLocalisationRegionalHostnames(ctx context.Context, resourceContainer *cloudflare.ResourceContainer) (regionalHostnamesMap, error) {
-	rhs, err := p.Client.ListDataLocalizationRegionalHostnames(ctx, resourceContainer, cloudflare.ListDataLocalizationRegionalHostnamesParams{})
-	if err != nil {
-		return nil, convertCloudflareError(err)
-	}
+// listDataLocalisationRegionalHostnames fetches the current regional hostnames for the given zone ID.
+//
+// It returns a map of hostnames to regional hostnames, or an error if the request fails.
+func (p *CloudFlareProvider) listDataLocalisationRegionalHostnames(ctx context.Context, zoneID string) (regionalHostnamesMap, error) {
+	params := listDataLocalizationRegionalHostnamesParams(zoneID)
+	iter := p.Client.ListDataLocalizationRegionalHostnames(ctx, params)
 	rhsMap := make(regionalHostnamesMap)
-	for _, rh := range rhs {
+	for rh := range autoPagerIterator(iter) {
 		rhsMap[rh.Hostname] = regionalHostname{
 			hostname:  rh.Hostname,
 			regionKey: rh.RegionKey,
 		}
+	}
+	if iter.Err() != nil {
+		return nil, convertCloudflareError(iter.Err())
 	}
 	return rhsMap, nil
 }
@@ -193,7 +216,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 		return nil
 	}
 
-	regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, cloudflare.ZoneIdentifier(zoneID))
+	regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
 	if err != nil {
 		return err
 	}

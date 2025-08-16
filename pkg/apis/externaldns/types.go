@@ -115,7 +115,6 @@ type Config struct {
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
-	CloudflareRecordComment                       string
 	CoreDNSPrefix                                 string
 	AkamaiServiceConsumerDomain                   string
 	AkamaiClientToken                             string
@@ -215,6 +214,7 @@ type Config struct {
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
 	ForceDefaultTargets                           bool
+	sourceWrappers                                map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 var defaultConfig = &Config{
@@ -378,6 +378,7 @@ var defaultConfig = &Config{
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
 	ForceDefaultTargets:          false,
+	sourceWrappers:               map[string]bool{},
 }
 
 // NewConfig returns new Config object
@@ -427,6 +428,22 @@ func (cfg *Config) ParseFlags(args []string) error {
 	}
 
 	return nil
+}
+
+func (cfg *Config) AddSourceWrapper(name string) {
+	if cfg.sourceWrappers == nil {
+		cfg.sourceWrappers = make(map[string]bool)
+	}
+	cfg.sourceWrappers[name] = true
+}
+
+// IsSourceWrapperInstrumented returns whether a source wrapper is enabled or not.
+func (cfg *Config) IsSourceWrapperInstrumented(name string) bool {
+	if cfg.sourceWrappers == nil {
+		return false
+	}
+	_, ok := cfg.sourceWrappers[name]
+	return ok
 }
 
 func App(cfg *Config) *kingpin.Application {
@@ -506,7 +523,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)").Default(defaultConfig.GoogleZoneVisibility).EnumVar(&cfg.GoogleZoneVisibility, "", "public", "private")
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
-	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
+	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, default: any, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
 	app.Flag("aws-profile", "When using the AWS provider, name of the profile to use").Default("").StringsVar(&cfg.AWSProfiles)
 	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
@@ -536,7 +553,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)").Default(strconv.FormatBool(defaultConfig.CloudflareRegionalServices)).BoolVar(&cfg.CloudflareRegionalServices)
 	app.Flag("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)").StringVar(&cfg.CloudflareRegionKey)
-	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareRecordComment)
+	app.Flag("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')").Default("").StringVar(&cfg.CloudflareDNSRecordsComment)
 
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)

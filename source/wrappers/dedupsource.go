@@ -22,9 +22,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/source"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
@@ -39,6 +38,7 @@ func NewDedupSource(source source.Source) source.Source {
 
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debug("dedupSource: collecting endpoints and removing duplicates")
 	result := []*endpoint.Endpoint{}
 	collected := map[string]bool{}
 
@@ -67,5 +67,6 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("dedupSource: adding event handler")
 	ms.source.AddEventHandler(ctx, handler)
 }

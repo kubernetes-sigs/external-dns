@@ -86,6 +86,7 @@ var canonicalHostedZones = map[string]string{
 	"ca-central-1.elb.amazonaws.com":      "ZQSVJUPU6J1EY",
 	"ca-west-1.elb.amazonaws.com":         "Z06473681N0SF6OS049SD",
 	"ap-east-1.elb.amazonaws.com":         "Z3DQVH9N71FHZ0",
+	"ap-east-2.elb.amazonaws.com":         "Z02789141MW7T1WBU19PO",
 	"ap-south-1.elb.amazonaws.com":        "ZP97RAFLXTNZK",
 	"ap-south-2.elb.amazonaws.com":        "Z0173938T07WNTVAEPZN",
 	"ap-northeast-2.elb.amazonaws.com":    "ZWKZPGTI48KDX",
@@ -123,6 +124,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ca-central-1.amazonaws.com":      "Z2EPGBW3API2WT",
 	"elb.ca-west-1.amazonaws.com":         "Z02754302KBB00W2LKWZ9",
 	"elb.ap-east-1.amazonaws.com":         "Z12Y7K3UBGUAD1",
+	"elb.ap-east-2.amazonaws.com":         "Z09176273OC2HWIAUNYW",
 	"elb.ap-south-1.amazonaws.com":        "ZVDDRBQ08TROA",
 	"elb.ap-south-2.amazonaws.com":        "Z0711778386UTO08407HT",
 	"elb.ap-northeast-3.amazonaws.com":    "Z1GWIQ4HH19I5X",
@@ -161,6 +163,7 @@ var canonicalHostedZones = map[string]string{
 	"us-east-2.vpce.amazonaws.com":      "ZC8PG0KIFKBRI",
 	"af-south-1.vpce.amazonaws.com":     "Z09302161J80N9A7UTP7U",
 	"ap-east-1.vpce.amazonaws.com":      "Z2LIHJ7PKBEMWN",
+	"ap-east-2.vpce.amazonaws.com":      "Z09379811HWP0POAUWVN3",
 	"ap-northeast-1.vpce.amazonaws.com": "Z2E726K9Y6RL4W",
 	"ap-northeast-2.vpce.amazonaws.com": "Z27UANNT0PRK1T",
 	"ap-northeast-3.vpce.amazonaws.com": "Z376B5OMM2JZL2",
@@ -194,6 +197,7 @@ var canonicalHostedZones = map[string]string{
 	"execute-api.us-west-2.amazonaws.com":      "Z2OJLYMUO9EFXC",
 	"execute-api.af-south-1.amazonaws.com":     "Z2DHW2332DAMTN",
 	"execute-api.ap-east-1.amazonaws.com":      "Z3FD1VL90ND7K5",
+	"execute-api.ap-east-2.amazonaws.com":      "Z02909591O7FG9Q56HWB1",
 	"execute-api.ap-south-1.amazonaws.com":     "Z3VO1THU9YC4UR",
 	"execute-api.ap-northeast-2.amazonaws.com": "Z20JF4UZKIW1U8",
 	"execute-api.ap-southeast-1.amazonaws.com": "ZL327KTPIQFUL",
@@ -637,6 +641,10 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 	var updates []*endpoint.Endpoint
 
 	for i, newE := range newEndpoints {
+		if i >= len(oldEndpoints) || oldEndpoints[i] == nil {
+			log.Debugf("skip %s as endpoint not found in current endpoints", newE.DNSName)
+			continue
+		}
 		oldE := oldEndpoints[i]
 		if p.requiresDeleteCreate(oldE, newE) {
 			deletes = append(deletes, oldE)
@@ -726,56 +734,59 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 				log.Infof("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 			}
 
-			if !p.dryRun {
-				params := &route53.ChangeResourceRecordSetsInput{
-					HostedZoneId: aws.String(z),
-					ChangeBatch: &route53types.ChangeBatch{
-						Changes: b.Route53Changes(),
-					},
-				}
+			if p.dryRun {
+				log.Debug("Dry run mode, skipping change submission")
+				continue
+			}
 
-				successfulChanges := 0
+			params := &route53.ChangeResourceRecordSetsInput{
+				HostedZoneId: aws.String(z),
+				ChangeBatch: &route53types.ChangeBatch{
+					Changes: b.Route53Changes(),
+				},
+			}
 
-				client := p.clients[zones[z].profile]
-				if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-					log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
+			successfulChanges := 0
 
-					changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+			client := p.clients[zones[z].profile]
+			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
-					if len(changesByOwnership) > 1 {
-						log.Debug("Trying to submit change sets one-by-one instead")
-						for _, changes := range changesByOwnership {
-							if log.Logger.IsLevelEnabled(debugLevel) {
-								for _, c := range changes {
-									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
-								}
-							}
-							params.ChangeBatch = &route53types.ChangeBatch{
-								Changes: changes.Route53Changes(),
-							}
-							if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-								failedUpdate = true
-								log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
-								p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
-							} else {
-								successfulChanges = successfulChanges + len(changes)
+				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+
+				if len(changesByOwnership) > 1 {
+					log.Debug("Trying to submit change sets one-by-one instead")
+					for _, changes := range changesByOwnership {
+						if log.Logger.IsLevelEnabled(debugLevel) {
+							for _, c := range changes {
+								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 							}
 						}
-					} else {
-						failedUpdate = true
+						params.ChangeBatch = &route53types.ChangeBatch{
+							Changes: changes.Route53Changes(),
+						}
+						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+							failedUpdate = true
+							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
+							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
+						} else {
+							successfulChanges = successfulChanges + len(changes)
+						}
 					}
 				} else {
-					successfulChanges = len(b)
+					failedUpdate = true
 				}
+			} else {
+				successfulChanges = len(b)
+			}
 
-				if successfulChanges > 0 {
-					// z is the R53 Hosted Zone ID already as aws.StringValue
-					log.Infof("%d record(s) were successfully updated", successfulChanges)
-				}
+			if successfulChanges > 0 {
+				// z is the R53 Hosted Zone ID already as aws.StringValue
+				log.Infof("%d record(s) were successfully updated", successfulChanges)
+			}
 
-				if i != len(batchCs)-1 {
-					time.Sleep(p.batchChangeInterval)
-				}
+			if i != len(batchCs)-1 {
+				time.Sleep(p.batchChangeInterval)
 			}
 		}
 
