@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net/netip"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -38,6 +40,7 @@ func NewNAT64Source(source source.Source, nat64Prefixes []string) source.Source 
 
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
 func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debug("nat64Source: collecting endpoints and processing NAT64 translation")
 	parsedNAT64Prefixes := make([]netip.Prefix, 0)
 	for _, prefix := range s.nat64Prefixes {
 		pPrefix, err := netip.ParsePrefix(prefix)
@@ -109,5 +112,6 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 }
 
 func (s *nat64Source) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("nat64Source: adding event handler")
 	s.source.AddEventHandler(ctx, handler)
 }
