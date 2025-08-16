@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 type mockSource struct {
@@ -164,6 +165,30 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 				return
 			}
 			validateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+func TestPostProcessor_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		title string
+		input []string
+		times int
+	}{
+		{
+			title: "should add event handler",
+			times: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			mockSource := testutils.NewMockSource()
+
+			src := NewPostProcessor(mockSource)
+			src.AddEventHandler(t.Context(), func() {})
+
+			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
 		})
 	}
 }

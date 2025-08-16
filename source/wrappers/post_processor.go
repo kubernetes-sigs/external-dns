@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -71,6 +73,7 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoints, nil
 }
 
-func (pp *postProcessor) AddEventHandler(_ context.Context, handler func()) {
-
+func (pp *postProcessor) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("postProcessor: adding event handler")
+	pp.source.AddEventHandler(ctx, handler)
 }
