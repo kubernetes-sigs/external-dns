@@ -31,8 +31,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-
 	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -100,12 +98,7 @@ func NewIngressSource(
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	// Add default resource event handlers to properly initialize informer.
-	ingressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -360,5 +353,5 @@ func (sc *ingressSource) AddEventHandler(ctx context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
