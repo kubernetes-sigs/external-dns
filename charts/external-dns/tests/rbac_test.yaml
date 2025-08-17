@@ -424,7 +424,7 @@ tests:
             resources: ["virtualservices"]
             verbs: ["get","watch","list"]
         template: clusterrole.yaml
-#
+
   - it: should create only ClusterRole for istio-gateway with ingress permissions
     set:
       namespaced: false
