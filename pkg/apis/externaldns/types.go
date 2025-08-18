@@ -190,33 +190,36 @@ type Config struct {
 	NS1Endpoint                                   string
 	NS1IgnoreSSL                                  bool
 	NS1MinTTLSeconds                              int
-	TransIPAccountName                            string
-	TransIPPrivateKeyFile                         string
-	DigitalOceanAPIPageSize                       int
-	ManagedDNSRecordTypes                         []string
-	ExcludeDNSRecordTypes                         []string
-	GoDaddyAPIKey                                 string `secure:"yes"`
-	GoDaddySecretKey                              string `secure:"yes"`
-	GoDaddyTTL                                    int64
-	GoDaddyOTE                                    bool
-	OCPRouterName                                 string
-	PiholeServer                                  string
-	PiholePassword                                string `secure:"yes"`
-	PiholeTLSInsecureSkipVerify                   bool
-	PiholeApiVersion                              string
-	PluralCluster                                 string
-	PluralProvider                                string
-	WebhookProviderURL                            string
-	WebhookProviderReadTimeout                    time.Duration
-	WebhookProviderWriteTimeout                   time.Duration
-	WebhookServer                                 bool
-	TraefikEnableLegacy                           bool
-	TraefikDisableNew                             bool
-	NAT64Networks                                 []string
-	ExcludeUnschedulable                          bool
-	EmitEvents                                    []string
-	ForceDefaultTargets                           bool
-	sourceWrappers                                map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
+	// Accepts repeatable --ns1-zone-handle-map flags or a comma-separated
+	// EXTERNAL_DNS_NS1_ZONE_HANDLE_MAP env var like: "example.com=corp,dev.example.com=dev"
+	NS1ZoneHandleMap            map[string]string
+	TransIPAccountName          string
+	TransIPPrivateKeyFile       string
+	DigitalOceanAPIPageSize     int
+	ManagedDNSRecordTypes       []string
+	ExcludeDNSRecordTypes       []string
+	GoDaddyAPIKey               string `secure:"yes"`
+	GoDaddySecretKey            string `secure:"yes"`
+	GoDaddyTTL                  int64
+	GoDaddyOTE                  bool
+	OCPRouterName               string
+	PiholeServer                string
+	PiholePassword              string `secure:"yes"`
+	PiholeTLSInsecureSkipVerify bool
+	PiholeApiVersion            string
+	PluralCluster               string
+	PluralProvider              string
+	WebhookProviderURL          string
+	WebhookProviderReadTimeout  time.Duration
+	WebhookProviderWriteTimeout time.Duration
+	WebhookServer               bool
+	TraefikEnableLegacy         bool
+	TraefikDisableNew           bool
+	NAT64Networks               []string
+	ExcludeUnschedulable        bool
+	EmitEvents                  []string
+	ForceDefaultTargets         bool
+	sourceWrappers              map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 var defaultConfig = &Config{
@@ -312,6 +315,7 @@ var defaultConfig = &Config{
 	NAT64Networks:                []string{},
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
+	NS1ZoneHandleMap:             map[string]string{},
 	OCIConfigFile:                "/etc/kubernetes/oci.yaml",
 	OCIZoneCacheDuration:         0 * time.Second,
 	OCIZoneScope:                 "GLOBAL",
@@ -447,7 +451,8 @@ var allowedSources = []string{
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
-		AWSSDCreateTag: map[string]string{},
+		AWSSDCreateTag:   map[string]string{},
+		NS1ZoneHandleMap: map[string]string{},
 	}
 }
 
