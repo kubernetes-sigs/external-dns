@@ -139,9 +139,6 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list"]
-- apiGroups: [""]
-  resources: ["endpoints"]
-  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
