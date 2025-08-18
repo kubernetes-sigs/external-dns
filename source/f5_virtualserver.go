@@ -169,6 +169,15 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 
 		endpoints = append(endpoints, EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+
+		// Process hostAliases if they exist
+		if len(virtualServer.Spec.HostAliases) > 0 {
+			for _, alias := range virtualServer.Spec.HostAliases {
+				if alias != "" {
+					endpoints = append(endpoints, EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+				}
+			}
+		}
 	}
 
 	return endpoints, nil

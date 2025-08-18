@@ -37,3 +37,55 @@ Note that, in case you're not installing via Helm, you'll need the following in 
   - list
   - watch
 ```
+
+## How it works
+
+The F5 VirtualServer source creates DNS records based on the following fields:
+
+- **`spec.host`**: The primary hostname for the virtual server
+- **`spec.hostAliases`**: Additional hostnames that should also resolve to the same targets
+- **`spec.virtualServerAddress`**: The IP address to use as the target (if no target annotation is set)
+- **`status.vsAddress`**: The IP address from the status field (if no spec address or target annotation is set)
+
+### Example VirtualServer with hostAliases
+
+```yaml
+apiVersion: cis.f5.com/v1
+kind: VirtualServer
+metadata:
+  name: example-vs
+  namespace: default
+spec:
+  host: www.example.com
+  hostAliases:
+    - alias1.example.com
+    - alias2.example.com
+  virtualServerAddress: 192.168.1.100
+```
+
+This configuration will create DNS A records for:
+- `www.example.com` → `192.168.1.100`
+- `alias1.example.com` → `192.168.1.100`
+- `alias2.example.com` → `192.168.1.100`
+
+### Target Priority
+
+The source follows this priority order for determining targets:
+
+1. **Target annotation**: `external-dns.alpha.kubernetes.io/target` (highest priority)
+2. **Spec address**: `spec.virtualServerAddress`
+3. **Status address**: `status.vsAddress`
+
+If none of these are available, the VirtualServer will be skipped.
+
+### TTL Support
+
+You can set a custom TTL using the annotation:
+```yaml
+annotations:
+  external-dns.alpha.kubernetes.io/ttl: "300"
+```
+
+### Annotation Filtering
+
+You can filter VirtualServers using the `--annotation-filter` flag to only process those with specific annotations.
