@@ -40,21 +40,19 @@ const (
 	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
 	AliasKey         = AnnotationKeyPrefix + "alias"
 	TargetKey        = AnnotationKeyPrefix + "target"
-	// ControllerKey The annotation used for figuring out which controller is responsible
+	// The annotation used for figuring out which controller is responsible
 	ControllerKey = AnnotationKeyPrefix + "controller"
-	// HostnameKey The annotation used for defining the desired hostname
+	// The annotation used for defining the desired hostname
 	HostnameKey = AnnotationKeyPrefix + "hostname"
-	// AccessKey The annotation used for specifying whether the public or private interface address is used
+	// The annotation used for specifying whether the public or private interface address is used
 	AccessKey = AnnotationKeyPrefix + "access"
-	// EndpointsTypeKey The annotation used for specifying the type of endpoints to use for headless services
+	// The annotation used for specifying the type of endpoints to use for headless services
 	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
-	// Ingress the annotation used to determine if the gateway is implemented by an Ingress object
-	Ingress = AnnotationKeyPrefix + "ingress"
-	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
+	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
-	// ControllerValue The value of the controller annotation so that we feel responsible
+	// The value of the controller annotation so that we feel responsible
 	ControllerValue = "dns-controller"
-	// InternalHostnameKey The annotation used for defining the desired hostname
+	// The annotation used for defining the desired hostname
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 )
