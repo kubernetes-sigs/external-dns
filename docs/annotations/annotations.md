@@ -4,25 +4,25 @@ ExternalDNS sources support a number of annotations on the Kubernetes resources 
 
 The following table documents which sources support which annotations:
 
-| Source       | controller | hostname | internal-hostname | target  | ttl     | (provider-specific) |
-|--------------|------------|----------|-------------------|---------|---------|---------------------|
-| Ambassador   |            |          |                   | Yes     | Yes     | Yes                 |
-| Connector    |            |          |                   |         |         |                     |
-| Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| CloudFoundry |            |          |                   |         |         |                     |
-| CRD          |            |          |                   |         |         |                     |
-| F5           |            |          |                   | Yes     | Yes     |                     |
-| Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |
-| Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |
-| Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Kong         |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Node         | Yes        |          |                   | Yes     | Yes     |                     |
-| OpenShift    | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Pod          |            | Yes      | Yes               | Yes     |         |                     |
-| Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes     | Yes                 |
-| Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Traefik      |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Source       | controller | hostname | internal-hostname | target  | ttl     | (provider-specific) | ingress |
+|--------------|------------|----------|-------------------|---------|---------|---------------------|:-------:|
+| Ambassador   |            |          |                   | Yes     | Yes     | Yes                 |   No    |
+| Connector    |            |          |                   |         |         |                     |   No    |
+| Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   No    |
+| CloudFoundry |            |          |                   |         |         |                     |   No    |
+| CRD          |            |          |                   |         |         |                     |   No    |
+| F5           |            |          |                   | Yes     | Yes     |                     |   No    |
+| Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |   No    |
+| Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |   No    |
+| Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   No    |
+| Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   Yes   |
+| Kong         |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   No    |
+| Node         | Yes        |          |                   | Yes     | Yes     |                     |   No    |
+| OpenShift    | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   No    |
+| Pod          |            | Yes      | Yes               | Yes     |         |                     |   No    |
+| Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes     | Yes                 |   No    |
+| Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   No    |
+| Traefik      |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |   No    |
 
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
 [^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.
@@ -142,6 +142,18 @@ If the value is `defined-hosts-only`, use only the domains from the `Ingress` sp
 If the value is `annotation-only`, use only the domains from the `Ingress` annotations.
 
 If the annotation is not present, use the domains from both the spec and annotations.
+
+## external-dns.alpha.kubernetes.io/ingress
+
+This annotation allows ExternalDNS to work with Istio Gateways that don't have a public IP.
+This is a common setup in modern cloud environments, like on GCP's Service Mesh, where a Kubernetes Ingress directs all public traffic to the Istio Gateway.
+
+It can be used to address a specific architectural pattern, when a Kubernetes Ingress directs all public traffic to the Istio Gateway:
+
+- **The Challenge**: By default, ExternalDNS sources the public IP address for a DNS record from a Service of type LoadBalancer.
+However, in some service mesh setups, the Istio Gateway's Service is of type ClusterIP, with all public traffic routed to it via a separate Kubernetes Ingress object. This setup leaves the Gateway without a public IP that ExternalDNS can discover.
+
+- **The Solution**: The annotation on the Istio Gateway tells ExternalDNS to ignore the Gateway's Service IP. Instead, it directs ExternalDNS to a specified Ingress resource to find the target LoadBalancer IP address.
 
 ## external-dns.alpha.kubernetes.io/internal-hostname
 
