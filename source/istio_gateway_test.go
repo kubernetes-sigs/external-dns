@@ -1481,6 +1481,7 @@ func testGatewayEndpoints(t *testing.T) {
 			t.Parallel()
 
 			fakeKubernetesClient := fake.NewClientset()
+			targetNamespace := ti.targetNamespace
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
@@ -1490,6 +1491,9 @@ func testGatewayEndpoints(t *testing.T) {
 
 			for _, ing := range ti.ingresses {
 				ingress := ing.Ingress()
+				if ingress.Namespace != targetNamespace {
+					targetNamespace = v1.NamespaceAll
+				}
 				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
@@ -1505,7 +1509,7 @@ func testGatewayEndpoints(t *testing.T) {
 				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				ti.targetNamespace,
+				targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
