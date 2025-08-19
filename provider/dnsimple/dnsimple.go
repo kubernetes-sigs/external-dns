@@ -359,10 +359,10 @@ func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsi
 
 // ApplyChanges applies a given set of changes
 func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.Update))
 
 	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleUpdate, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleUpdate, changes.UpdateNew())...)
 	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleDelete, changes.Delete)...)
 
 	return p.submitChanges(ctx, combinedChanges)

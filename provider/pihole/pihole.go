@@ -107,7 +107,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	// Handle updated state - there are no endpoints for updating in place.
 	updateNew := make(map[piholeEntryKey]*endpoint.Endpoint)
-	for _, ep := range changes.UpdateNew {
+	for _, ep := range changes.UpdateNew() {
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
 
 		// If the API version is 6, we need to handle multiple targets for the same DNS name.
@@ -125,7 +125,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		updateNew[key] = ep
 	}
 
-	for _, ep := range changes.UpdateOld {
+	for _, ep := range changes.UpdateOld() {
 		// Check if this existing entry has an exact match for an updated entry and skip it if so.
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
 		if newRecord := updateNew[key]; newRecord != nil {

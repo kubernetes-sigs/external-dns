@@ -443,9 +443,12 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 
 	currentRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "2001::111:222:111:222"),
 		endpoint.NewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("oldcloud.example.com", endpoint.RecordTypeNS, "ns1.example.com."),
+		endpoint.NewEndpoint("oldns.example.com", endpoint.RecordTypeNS, "ns1.example.com."),
 		endpoint.NewEndpoint("old.nope.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.nope.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("oldns.nope.com", endpoint.RecordTypeNS, "ns1.example.com"),
 		endpoint.NewEndpoint("oldmail.example.com", endpoint.RecordTypeMX, "20 foo.other.com"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
@@ -469,11 +472,12 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		endpoint.NewEndpoint("deletedns.nope.com", endpoint.RecordTypeNS, "ns1.example.com."),
 	}
 
+	update, err := plan.MkUpdates(currentRecords, updatedRecords)
+	assert.NoError(t, err)
 	changes := &plan.Changes{
-		Create:    createRecords,
-		UpdateNew: updatedRecords,
-		UpdateOld: currentRecords,
-		Delete:    deleteRecords,
+		Create: createRecords,
+		Update: update,
+		Delete: deleteRecords,
 	}
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
@@ -580,8 +584,12 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 
 	currentRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
 		endpoint.NewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.NewEndpoint("oldns.foo.example.com", endpoint.RecordTypeNS, "ns1.foo.example.com."),
 		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
+		endpoint.NewEndpoint("oldns.nope.example.com", endpoint.RecordTypeNS, "ns1.nope.example.com."),
 	}
 	updatedRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
@@ -601,11 +609,12 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 		endpoint.NewEndpoint("deleted.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
 	}
 
+	update, err := plan.MkUpdates(currentRecords, updatedRecords)
+	assert.NoError(t, err)
 	changes := &plan.Changes{
-		Create:    createRecords,
-		UpdateNew: updatedRecords,
-		UpdateOld: currentRecords,
-		Delete:    deleteRecords,
+		Create: createRecords,
+		Update: update,
+		Delete: deleteRecords,
 	}
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {

@@ -350,19 +350,25 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	}
 	validateServices(client.services, expectedServices1, t, 1)
 
+	var old *endpoint.Endpoint
+	records, _ := coredns.Records(context.Background())
+	for _, ep := range records {
+		if ep.DNSName == "domain1.local" {
+			old = ep
+			break
+		}
+	}
+	assert.NotNil(t, old)
 	changes2 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
 		},
-		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
+		Update: []*plan.Update{
+			{
+				Old: old,
+				New: endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
+			},
 		},
-	}
-	records, _ := coredns.Records(context.Background())
-	for _, ep := range records {
-		if ep.DNSName == "domain1.local" {
-			changes2.UpdateOld = append(changes2.UpdateOld, ep)
-		}
 	}
 	err = applyServiceChanges(coredns, changes2)
 	require.NoError(t, err)
@@ -436,7 +442,7 @@ func TestCoreDNSApplyChanges_DomainDoNotMatch(t *testing.T) {
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) error {
 	ctx := context.Background()
 	records, _ := provider.Records(ctx)
-	for _, col := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew, changes.Delete} {
+	for _, col := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew(), changes.Delete} {
 		for _, record := range col {
 			for _, existingRecord := range records {
 				if existingRecord.DNSName == record.DNSName && existingRecord.RecordType == record.RecordType {

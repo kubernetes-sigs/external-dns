@@ -217,7 +217,7 @@ func TestRecordsHandlerWithMixedCase(t *testing.T) {
 					{
 						DNSName: "bar",
 					},
-				}, changes.UpdateOld)
+				}, changes.UpdateOld())
 				require.Equal(t, []*endpoint.Endpoint{
 					{
 						DNSName: "qux",

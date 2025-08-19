@@ -207,8 +207,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Get desired TXT records and detect the missing ones
-				desiredTXTs := im.generateTXTRecord(ep)
-				for _, desiredTXT := range desiredTXTs {
+				if desiredTXT := im.generateTXTRecord(ep); desiredTXT != nil {
 					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 					}
@@ -226,13 +225,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
-// depending on the newFormatOnly configuration. The old format is maintained for backwards
-// compatibility but can be disabled to reduce the number of DNS records.
-func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	endpoints := make([]*endpoint.Endpoint, 0)
+func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) *endpoint.Endpoint {
+	var ep *endpoint.Endpoint
 
-	// Always create new format record
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
@@ -243,19 +238,18 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
+		ep = txtNew
 	}
-	return endpoints
+	return ep
 }
 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
+		Create: changes.Create,
+		Update: plan.FilterUpdatesByOwnerId(im.ownerID, changes.Update),
+		Delete: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
@@ -263,7 +257,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
+		if txt := im.generateTXTRecord(r); txt != nil {
+			filteredChanges.Create = append(filteredChanges.Create, txt)
+		}
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
@@ -274,7 +270,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
+		if txt := im.generateTXTRecord(r); txt != nil {
+			filteredChanges.Delete = append(filteredChanges.Delete, txt)
+		}
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -282,22 +280,18 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	// make sure TXT records are consistently updated as well
-	for _, r := range filteredChanges.UpdateOld {
-		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
+	for _, r := range filteredChanges.Update {
+		// when we update old TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
-		// remove old version of record from cache
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
+		// NOTE: Whether `generateTXTRecord` returns `nil` depends only on DNSName, which will be the same for `old` and `new`
+		if old, new_ := im.generateTXTRecord(r.Old), im.generateTXTRecord(r.New); old != nil && new_ != nil {
+			filteredChanges.Update = append(filteredChanges.Update, &plan.Update{Old: old, New: new_})
 		}
-	}
-
-	// make sure TXT records are consistently updated as well
-	for _, r := range filteredChanges.UpdateNew {
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
-		// add new version of record to cache
 		if im.cacheInterval > 0 {
-			im.addToCache(r)
+			// remove old version of record from cache
+			im.removeFromCache(r.Old)
+			// add new version of record to cache
+			im.addToCache(r.New)
 		}
 	}
 

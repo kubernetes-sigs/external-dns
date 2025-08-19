@@ -331,11 +331,11 @@ func TestOvhComputeChanges(t *testing.T) {
 	}
 
 	changes := plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", Targets: []string{"203.0.113.42"}},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", Targets: []string{"203.0.113.43", "203.0.113.42"}},
+		Update: []*plan.Update{
+			{
+				Old: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", Targets: []string{"203.0.113.42"}},
+				New: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", Targets: []string{"203.0.113.43", "203.0.113.42"}},
+			},
 		},
 	}
 
@@ -520,11 +520,11 @@ func TestOvhApplyChanges(t *testing.T) {
 	client = new(mockOvhClient)
 	provider = &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration), DryRun: false}
 	changes = plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+		Update: []*plan.Update{
+			{
+				Old: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+				New: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+			},
 		},
 	}
 
@@ -543,11 +543,11 @@ func TestOvhApplyChanges(t *testing.T) {
 	client = new(mockOvhClient)
 	provider = &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration), DryRun: true}
 	changes = plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+		Update: []*plan.Update{
+			{
+				Old: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+				New: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+			},
 		},
 	}
 
@@ -564,11 +564,11 @@ func TestOvhApplyChanges(t *testing.T) {
 	client = new(mockOvhClient)
 	provider = &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration), DryRun: false}
 	changes = plan.Changes{
-		UpdateOld: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42", "203.0.113.43"}},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+		Update: []*plan.Update{
+			{
+				Old: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42", "203.0.113.43"}},
+				New: &endpoint.Endpoint{DNSName: "example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+			},
 		},
 	}
 

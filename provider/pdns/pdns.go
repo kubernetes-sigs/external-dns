@@ -477,7 +477,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	// Update
-	for _, change := range changes.UpdateOld {
+	for _, change := range changes.UpdateOld() {
 		// Since PDNS "Patches", we don't need to specify the "old"
 		// record. The Update New change type will automatically take
 		// care of replacing the old RRSet with the new one We simply
@@ -485,11 +485,12 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		log.Debugf("UPDATE-OLD (ignored): %+v", change)
 	}
 
-	for _, change := range changes.UpdateNew {
+	updateNew := changes.UpdateNew()
+	for _, change := range updateNew {
 		log.Infof("UPDATE-NEW: %+v", change)
 	}
-	if len(changes.UpdateNew) > 0 {
-		err := p.mutateRecords(changes.UpdateNew, PdnsReplace)
+	if len(updateNew) > 0 {
+		err := p.mutateRecords(updateNew, PdnsReplace)
 		if err != nil {
 			return err
 		}

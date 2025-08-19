@@ -296,7 +296,7 @@ func (p *AlibabaCloudProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 //
 // Returns nil if the operation was successful or an error if the operation failed.
 func (p *AlibabaCloudProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
-	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew) == 0 {
+	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.Update) == 0 {
 		// No op
 		return nil
 	}
@@ -481,7 +481,7 @@ func (p *AlibabaCloudProvider) applyChangesForDNS(changes *plan.Changes) error {
 
 	p.createRecords(changes.Create, hostedZoneDomains)
 	p.deleteRecords(recordMap, changes.Delete)
-	p.updateRecords(recordMap, changes.UpdateNew, hostedZoneDomains)
+	p.updateRecords(recordMap, changes.UpdateNew(), hostedZoneDomains)
 	return nil
 }
 
@@ -989,7 +989,7 @@ func (p *AlibabaCloudProvider) applyChangesForPrivateZone(changes *plan.Changes)
 
 	p.createPrivateZoneRecords(zones, changes.Create)
 	p.deletePrivateZoneRecords(zones, changes.Delete)
-	p.updatePrivateZoneRecords(zones, changes.UpdateNew)
+	p.updatePrivateZoneRecords(zones, changes.UpdateNew())
 	return nil
 }
 

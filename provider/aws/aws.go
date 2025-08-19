@@ -635,23 +635,18 @@ func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, newE *endpoin
 	return false
 }
 
-func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint.Endpoint) Route53Changes {
+func (p *AWSProvider) createUpdateChanges(changes []*plan.Update) Route53Changes {
 	var deletes []*endpoint.Endpoint
 	var creates []*endpoint.Endpoint
 	var updates []*endpoint.Endpoint
 
-	for i, newE := range newEndpoints {
-		if i >= len(oldEndpoints) || oldEndpoints[i] == nil {
-			log.Debugf("skip %s as endpoint not found in current endpoints", newE.DNSName)
-			continue
-		}
-		oldE := oldEndpoints[i]
-		if p.requiresDeleteCreate(oldE, newE) {
-			deletes = append(deletes, oldE)
-			creates = append(creates, newE)
+	for _, update := range changes {
+		if p.requiresDeleteCreate(update.Old, update.New) {
+			deletes = append(deletes, update.Old)
+			creates = append(creates, update.New)
 		} else {
 			// Safe to perform an UPSERT.
-			updates = append(updates, newE)
+			updates = append(updates, update.New)
 		}
 	}
 
@@ -684,7 +679,7 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		return provider.NewSoftErrorf("failed to list zones, not applying changes: %w", err)
 	}
 
-	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
+	updateChanges := p.createUpdateChanges(changes.Update)
 
 	combinedChanges := make(Route53Changes, 0, len(changes.Delete)+len(changes.Create)+len(updateChanges))
 	combinedChanges = append(combinedChanges, p.newChanges(route53types.ChangeActionCreate, changes.Create)...)

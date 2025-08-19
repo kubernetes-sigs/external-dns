@@ -194,9 +194,13 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{
 		{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
 	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
-		{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+	changes.Update = []*plan.Update{
+		{
+			New: &endpoint.Endpoint{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
+		},
+		{
+			New: &endpoint.Endpoint{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+		},
 	}
 
 	mockProvider.accountID = "1"

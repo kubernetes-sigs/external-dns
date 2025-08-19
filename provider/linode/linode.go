@@ -291,7 +291,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 
 	createsByZone := endpointsByZone(zoneNameIDMapper, changes.Create)
-	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
+	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew())
 	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
 
 	var linodeCreates []LinodeChangeCreate

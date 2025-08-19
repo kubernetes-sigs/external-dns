@@ -1090,13 +1090,15 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		DNSName: "foobar.bar.com",
 		Targets: endpoint.Targets{"target"},
 	}}
-	changes.UpdateOld = []*endpoint.Endpoint{{
-		DNSName: "foobar.bar.com",
-		Targets: endpoint.Targets{"target-old"},
-	}}
-	changes.UpdateNew = []*endpoint.Endpoint{{
-		DNSName: "foobar.bar.com",
-		Targets: endpoint.Targets{"target-new"},
+	changes.Update = []*plan.Update{{
+		Old: &endpoint.Endpoint{
+			DNSName: "foobar.bar.com",
+			Targets: endpoint.Targets{"target-old"},
+		},
+		New: &endpoint.Endpoint{
+			DNSName: "foobar.bar.com",
+			Targets: endpoint.Targets{"target-new"},
+		},
 	}}
 	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
@@ -1133,8 +1135,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
 	changes.Delete = []*endpoint.Endpoint{}
-	changes.UpdateOld = []*endpoint.Endpoint{}
-	changes.UpdateNew = []*endpoint.Endpoint{}
+	changes.Update = []*plan.Update{}
 
 	err = provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
@@ -1614,11 +1615,11 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			assert.Empty(t, plan.Changes.Delete, "should not have deletes")
 
 			if test.ShouldBeUpdated {
-				assert.Len(t, plan.Changes.UpdateNew, 1, "should not have new updates")
-				assert.Len(t, plan.Changes.UpdateOld, 1, "should not have old updates")
+				assert.Len(t, plan.Changes.UpdateNew(), 1, "should not have new updates")
+				assert.Len(t, plan.Changes.UpdateOld(), 1, "should not have old updates")
 			} else {
-				assert.Empty(t, plan.Changes.UpdateNew, "should not have new updates")
-				assert.Empty(t, plan.Changes.UpdateOld, "should not have old updates")
+				assert.Empty(t, plan.Changes.UpdateNew(), "should not have new updates")
+				assert.Empty(t, plan.Changes.UpdateOld(), "should not have old updates")
 			}
 		})
 	}
@@ -1757,8 +1758,8 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	planned := plan.Calculate()
 
 	assert.Empty(t, planned.Changes.Create, "no new changes should be here")
-	assert.Empty(t, planned.Changes.UpdateNew, "no new changes should be here")
-	assert.Empty(t, planned.Changes.UpdateOld, "no new changes should be here")
+	assert.Empty(t, planned.Changes.UpdateNew(), "no new changes should be here")
+	assert.Empty(t, planned.Changes.UpdateOld(), "no new changes should be here")
 	assert.Empty(t, planned.Changes.Delete, "no new changes should be here")
 }
 
@@ -2654,25 +2655,27 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 		{
 			name: "Update add/remove error (custom hostnames enabled)",
 			changes: &plan.Changes{
-				UpdateNew: []*endpoint.Endpoint{{
-					DNSName:    "bad-update-add.bar.com",
-					RecordType: "MX",
-					Targets:    endpoint.Targets{"not-a-valid-mx"},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-add-custom.bar.com",
+				Update: []*plan.Update{{
+					New: &endpoint.Endpoint{
+						DNSName:    "bad-update-add.bar.com",
+						RecordType: "MX",
+						Targets:    endpoint.Targets{"not-a-valid-mx"},
+						ProviderSpecific: endpoint.ProviderSpecific{
+							{
+								Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+								Value: "bad-update-add-custom.bar.com",
+							},
 						},
 					},
-				}},
-				UpdateOld: []*endpoint.Endpoint{{
-					DNSName:    "old-bad-update-add.bar.com",
-					RecordType: "MX",
-					Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-add-custom.bar.com",
+					Old: &endpoint.Endpoint{
+						DNSName:    "old-bad-update-add.bar.com",
+						RecordType: "MX",
+						Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
+						ProviderSpecific: endpoint.ProviderSpecific{
+							{
+								Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+								Value: "bad-update-add-custom.bar.com",
+							},
 						},
 					},
 				}},
@@ -2683,25 +2686,27 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 		{
 			name: "Update leave error (custom hostnames enabled)",
 			changes: &plan.Changes{
-				UpdateOld: []*endpoint.Endpoint{{
-					DNSName:    "bad-update-leave.bar.com",
-					RecordType: "MX",
-					Targets:    endpoint.Targets{"not-a-valid-mx"},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-leave-custom.bar.com",
+				Update: []*plan.Update{{
+					Old: &endpoint.Endpoint{
+						DNSName:    "bad-update-leave.bar.com",
+						RecordType: "MX",
+						Targets:    endpoint.Targets{"not-a-valid-mx"},
+						ProviderSpecific: endpoint.ProviderSpecific{
+							{
+								Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+								Value: "bad-update-leave-custom.bar.com",
+							},
 						},
 					},
-				}},
-				UpdateNew: []*endpoint.Endpoint{{
-					DNSName:    "bad-update-leave.bar.com",
-					RecordType: "MX",
-					Targets:    endpoint.Targets{"not-a-valid-mx"},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-leave-custom.bar.com",
+					New: &endpoint.Endpoint{
+						DNSName:    "bad-update-leave.bar.com",
+						RecordType: "MX",
+						Targets:    endpoint.Targets{"not-a-valid-mx"},
+						ProviderSpecific: endpoint.ProviderSpecific{
+							{
+								Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
+								Value: "bad-update-leave-custom.bar.com",
+							},
 						},
 					},
 				}},

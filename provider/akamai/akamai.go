@@ -279,24 +279,9 @@ func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 		return err
 	}
 	// Update recordsets
-	log.Debugf("Update Changes requested [%v]", changes.UpdateNew)
-	if err := p.updateNewRecordsets(zoneNameIDMapper, changes.UpdateNew); err != nil {
+	log.Debugf("Update Changes requested [%v]", changes.Update)
+	if err := p.updateNewRecordsets(zoneNameIDMapper, changes.UpdateNew()); err != nil {
 		return err
-	}
-	// Check that all old endpoints were accounted for
-	revRecs := changes.Delete
-	revRecs = append(revRecs, changes.UpdateNew...)
-	for _, rec := range changes.UpdateOld {
-		found := false
-		for _, r := range revRecs {
-			if rec.DNSName == r.DNSName {
-				found = true
-				break
-			}
-		}
-		if !found {
-			log.Warnf("UpdateOld endpoint '%s' is not accounted for in UpdateNew|Delete endpoint list", rec.DNSName)
-		}
 	}
 
 	return nil

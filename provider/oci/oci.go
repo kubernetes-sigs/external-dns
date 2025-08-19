@@ -306,8 +306,8 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	var ops []dns.RecordOperation
 	ops = append(ops, p.newFilteredRecordOperations(changes.Create, dns.RecordOperationOperationAdd)...)
 
-	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateNew, dns.RecordOperationOperationAdd)...)
-	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateOld, dns.RecordOperationOperationRemove)...)
+	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateNew(), dns.RecordOperationOperationAdd)...)
+	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateOld(), dns.RecordOperationOperationRemove)...)
 
 	ops = append(ops, p.newFilteredRecordOperations(changes.Delete, dns.RecordOperationOperationRemove)...)
 

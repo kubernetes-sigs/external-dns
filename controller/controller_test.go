@@ -86,11 +86,11 @@ func (p *mockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		return err
 	}
 
-	if err := verifyEndpoints(changes.UpdateNew, p.ExpectChanges.UpdateNew); err != nil {
+	if err := verifyEndpoints(changes.UpdateNew(), p.ExpectChanges.UpdateNew()); err != nil {
 		return err
 	}
 
-	if err := verifyEndpoints(changes.UpdateOld, p.ExpectChanges.UpdateOld); err != nil {
+	if err := verifyEndpoints(changes.UpdateOld(), p.ExpectChanges.UpdateOld()); err != nil {
 		return err
 	}
 
@@ -194,13 +194,15 @@ func getTestProvider() provider.Provider {
 				{DNSName: "create-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
 				{DNSName: "create-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			UpdateNew: []*endpoint.Endpoint{
-				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::2"}},
-				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.4.4"}},
-			},
-			UpdateOld: []*endpoint.Endpoint{
-				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
-				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
+			Update: []*plan.Update{
+				{
+					New: &endpoint.Endpoint{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::2"}},
+					Old: &endpoint.Endpoint{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
+				},
+				{
+					New: &endpoint.Endpoint{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.4.4"}},
+					Old: &endpoint.Endpoint{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
+				},
 			},
 			Delete: []*endpoint.Endpoint{
 				{DNSName: "delete-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::4"}},
@@ -461,21 +463,21 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 						Targets:    endpoint.Targets{"1.2.3.4"},
 					},
 				},
-				UpdateOld: []*endpoint.Endpoint{
+				Update: []*plan.Update{
 					{
-						DNSName:    "some-record.used.tld",
-						RecordType: endpoint.RecordTypeA,
-						Targets:    endpoint.Targets{"8.8.8.8"},
-						Labels:     endpoint.Labels{},
-					},
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					{
-						DNSName:    "some-record.used.tld",
-						RecordType: endpoint.RecordTypeA,
-						Targets:    endpoint.Targets{"1.1.1.1"},
-						Labels: endpoint.Labels{
-							"owner": "",
+						Old: &endpoint.Endpoint{
+
+							DNSName:    "some-record.used.tld",
+							RecordType: endpoint.RecordTypeA,
+							Targets:    endpoint.Targets{"8.8.8.8"},
+							Labels:     endpoint.Labels{},
+						},
+						New: &endpoint.Endpoint{
+
+							DNSName:    "some-record.used.tld",
+							RecordType: endpoint.RecordTypeA,
+							Targets:    endpoint.Targets{"1.1.1.1"},
+							Labels:     endpoint.Labels{},
 						},
 					},
 				},
