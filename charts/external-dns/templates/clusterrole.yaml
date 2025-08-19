@@ -20,6 +20,8 @@ rules:
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "service" .Values.sources }}
   - apiGroups: ["discovery.k8s.io"]
     resources: ["endpointslices"]
     verbs: ["get","watch","list"]

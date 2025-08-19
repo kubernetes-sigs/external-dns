@@ -52,6 +52,50 @@ tests:
               resources: ["ingresses"]
               verbs: ["get","watch","list"]
 
+  - it: should create no RBAC rules when no sources are set
+    set:
+      sources: []
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value: null
+
+  - it: should create default RBAC rules for 'ingresses' with source 'ingress'
+    set:
+      sources:
+        - ingress
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'nodes', 'pods', 'services' and 'endpointslices' with source 'service'
+    set:
+      sources:
+        - service
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["list", "watch"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "watch", "list"]
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["discovery.k8s.io"]
+              resources: ["endpointslices"]
+              verbs: ["get","watch","list"]
+
   - it: should create default RBAC rules for 'ambassador-host'
     set:
       sources:
@@ -411,9 +455,6 @@ tests:
           - apiGroups: [""]
             resources: ["services"]
             verbs: ["get","watch","list"]
-          - apiGroups: ["discovery.k8s.io"]
-            resources: ["endpointslices"]
-            verbs: ["get","watch","list"]
           - apiGroups: ["extensions","networking.k8s.io"]
             resources: ["ingresses"]
             verbs: ["get","watch","list"]
@@ -443,9 +484,6 @@ tests:
             - apiGroups: [""]
               resources: ["services"]
               verbs: ["get","watch","list"]
-            - apiGroups: ["discovery.k8s.io"]
-              resources: ["endpointslices"]
-              verbs: ["get","watch","list"]
             - apiGroups: ["extensions","networking.k8s.io"]
               resources: ["ingresses"]
               verbs: ["get","watch","list"]
@@ -471,9 +509,6 @@ tests:
           value:
             - apiGroups: [""]
               resources: ["services"]
-              verbs: ["get","watch","list"]
-            - apiGroups: ["discovery.k8s.io"]
-              resources: ["endpointslices"]
               verbs: ["get","watch","list"]
             - apiGroups: ["extensions","networking.k8s.io"]
               resources: ["ingresses"]
