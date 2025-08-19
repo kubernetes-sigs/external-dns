@@ -391,3 +391,97 @@ tests:
       - isKind:
           of: RoleBinding
         template: clusterrolebinding.yaml
+
+  - it: should create only Role when namespaced=true for istio sources
+    set:
+      namespaced: true
+      sources:
+        - istio-virtualservice
+        - istio-gateway
+    asserts:
+      - isKind:
+          of: Role
+        template: clusterrole.yaml
+      - isKind:
+          of: RoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: rules
+          value:
+          - apiGroups: [""]
+            resources: ["services"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["discovery.k8s.io"]
+            resources: ["endpointslices"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["extensions","networking.k8s.io"]
+            resources: ["ingresses"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["networking.istio.io"]
+            resources: ["gateways"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["networking.istio.io"]
+            resources: ["virtualservices"]
+            verbs: ["get","watch","list"]
+        template: clusterrole.yaml
+
+  - it: should create only ClusterRole for istio-gateway with ingress permissions
+    set:
+      namespaced: false
+      sources:
+        - istio-gateway
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["discovery.k8s.io"]
+              resources: ["endpointslices"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["networking.istio.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+        template: clusterrole.yaml
+
+  - it: should create only ClusterRole for istio-virtualservice with ingress permissions required
+    set:
+      namespaced: false
+      sources:
+        - istio-virtualservice
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["discovery.k8s.io"]
+              resources: ["endpointslices"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["networking.istio.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["networking.istio.io"]
+              resources: ["virtualservices"]
+              verbs: ["get","watch","list"]
+        template: clusterrole.yaml
