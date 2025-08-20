@@ -146,7 +146,6 @@ If the annotation is not present, use the domains from both the spec and annotat
 ## external-dns.alpha.kubernetes.io/ingress
 
 This annotation allows ExternalDNS to work with Istio Gateways that don't have a public IP.
-This is a common setup in modern cloud environments, like on GCP's Service Mesh, where a Kubernetes Ingress directs all public traffic to the Istio Gateway.
 
 It can be used to address a specific architectural pattern, when a Kubernetes Ingress directs all public traffic to the Istio Gateway:
 
