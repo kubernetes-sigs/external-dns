@@ -424,9 +424,9 @@ func TestNS1ChangesByZone_IgnoresUnmatchedRecords(t *testing.T) {
 
 	// Should still have exactly the zone keys for the provided zones, but no entries inside.
 	if gs, ok := changes["foo-handle"]; ok {
-		assert.Len(t, gs, 0)
+		assert.Empty(t, gs)
 	}
 	if gs, ok := changes["bar.com"]; ok {
-		assert.Len(t, gs, 0)
+		assert.Empty(t, gs)
 	}
 }

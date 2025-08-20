@@ -176,7 +176,6 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 			} else {
 				return nil, err
 			}
-
 		}
 
 		for _, record := range zoneData.Records {
