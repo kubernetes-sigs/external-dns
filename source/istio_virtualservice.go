@@ -32,10 +32,10 @@ import (
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -61,6 +61,7 @@ type virtualServiceSource struct {
 	serviceInformer          coreinformers.ServiceInformer
 	vServiceInformer         networkingv1beta1informer.VirtualServiceInformer
 	gatewayInformer          networkingv1beta1informer.GatewayInformer
+	ingressInformer          netinformers.IngressInformer
 }
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
@@ -86,6 +87,9 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	virtualServiceInformer := istioInformerFactory.Networking().V1beta1().VirtualServices()
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
+	ingressInformer := informerFactory.Networking().V1().Ingresses()
+
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
@@ -124,6 +128,7 @@ func NewIstioVirtualServiceSource(
 		serviceInformer:          serviceInformer,
 		vServiceInformer:         virtualServiceInformer,
 		gatewayInformer:          gatewayInformer,
+		ingressInformer:          ingressInformer,
 	}, nil
 }
 
@@ -292,7 +297,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(vService, gw, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(ctx, gw)
+		tgs, err := sc.targetsFromGateway(gw)
 		if err != nil {
 			return targets, err
 		}
@@ -407,7 +412,7 @@ func virtualServiceBindsToGateway(vService *v1beta1.VirtualService, gateway *v1b
 	return false
 }
 
-func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -416,7 +421,7 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 		namespace = gateway.Namespace
 	}
 
-	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
+	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -434,7 +439,7 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 	return targets, nil
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *v1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *virtualServiceSource) targetsFromGateway(gateway *v1beta1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -442,7 +447,7 @@ func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway 
 
 	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
 	if ok && ingressStr != "" {
-		return sc.targetsFromIngress(ctx, ingressStr, gateway)
+		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
 	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)

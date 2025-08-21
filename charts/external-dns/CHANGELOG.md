@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add option to configure `annotationFilter` via dedicated chart value. ([#5737](https://github.com/kubernetes-sigs/external-dns/pull/5737)) _@dshatokhin_
 
+### Changed
+
+- Grant `discovery.k8s.io/endpointslices` permission only when using `service` source. ([#5746](https://github.com/kubernetes-sigs/external-dns/pull/5746)) _@vflaux_
+
 ## [v1.18.0] - 2025-07-14
 
 ### Changed
