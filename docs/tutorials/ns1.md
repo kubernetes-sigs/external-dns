@@ -98,7 +98,7 @@ spec:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --ns1-zone-handle-map="example.com=corp-prod" # (optional) map example.com FQDN to corp-prod zone handle
-				- --ns1-zone-handle-map="dev.example.com=dev-view" # (optional) multiple FQDN-zone handle mappings
+        - --ns1-zone-handle-map="dev.example.com=dev-view" # (optional) multiple FQDN-zone handle mappings
         - --provider=ns1
         env:
         - name: NS1_APIKEY
