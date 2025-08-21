@@ -120,19 +120,6 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 
 func getDNSRecordFromRecordParams(rp any) dns.RecordResponse {
 	switch params := rp.(type) {
-	case cloudflarev0.CreateDNSRecordParams:
-		record := dns.RecordResponse{
-			ID:      params.ID,
-			Name:    params.Name,
-			TTL:     dns.TTL(params.TTL),
-			Proxied: params.Proxied != nil && *params.Proxied,
-			Type:    dns.RecordResponseType(params.Type),
-			Content: params.Content,
-		}
-		if params.Type == "MX" {
-			record.Priority = float64(*params.Priority)
-		}
-		return record
 	case cloudflarev0.UpdateDNSRecordParams:
 		record := dns.RecordResponse{
 			ID:      params.ID,
@@ -155,25 +142,33 @@ func generateDNSRecordID(rrtype string, name string, content string) string {
 	return fmt.Sprintf("%s-%s-%s", name, rrtype, content)
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (dns.RecordResponse, error) {
-	recordData := getDNSRecordFromRecordParams(rp)
-	if recordData.ID == "" {
-		recordData.ID = generateDNSRecordID(string(recordData.Type), recordData.Name, recordData.Content)
-	}
-	m.Actions = append(m.Actions, MockAction{
-		Name:       "Create",
-		ZoneId:     rc.Identifier,
-		RecordId:   recordData.ID,
-		RecordData: recordData,
-	})
-	if zone, ok := m.Records[rc.Identifier]; ok {
-		zone[recordData.ID] = recordData
+func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	body := params.Body.(dns.RecordNewParamsBody)
+
+	record := dns.RecordResponse{
+		ID:       generateDNSRecordID(body.Type.String(), body.Name.Value, body.Content.Value),
+		Name:     body.Name.Value,
+		TTL:      dns.TTL(body.TTL.Value),
+		Proxied:  body.Proxied.Value,
+		Type:     dns.RecordResponseType(body.Type.String()),
+		Content:  body.Content.Value,
+		Priority: body.Priority.Value,
 	}
 
-	if recordData.Name == "newerror.bar.com" {
-		return dns.RecordResponse{}, fmt.Errorf("failed to create record")
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "Create",
+		ZoneId:     params.ZoneID.Value,
+		RecordId:   record.ID,
+		RecordData: record,
+	})
+	if zone, ok := m.Records[params.ZoneID.Value]; ok {
+		zone[record.ID] = record
 	}
-	return dns.RecordResponse{}, nil
+
+	if record.Name == "newerror.bar.com" {
+		return nil, fmt.Errorf("failed to create record")
+	}
+	return &record, nil
 }
 
 func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error) {
