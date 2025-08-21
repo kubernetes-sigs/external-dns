@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aws/aws-sdk-go-v2 v1.38.0
-	github.com/aws/aws-sdk-go-v2/config v1.31.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.4
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.4
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.48.0
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.56.0
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.37.0
+	github.com/aws/aws-sdk-go-v2/config v1.31.1
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.5
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.5
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.49.0
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.56.1
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.37.1
 	github.com/aws/smithy-go v1.22.5
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.3
@@ -44,11 +44,11 @@ require (
 	github.com/miekg/dns v1.1.68
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.98.0
+	github.com/oracle/oci-go-sdk/v65 v65.99.0
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
-	github.com/projectcontour/contour v1.32.0
+	github.com/projectcontour/contour v1.32.1
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
@@ -64,7 +64,7 @@ require (
 	golang.org/x/sync v0.16.0
 	golang.org/x/text v0.28.0
 	golang.org/x/time v0.12.0
-	google.golang.org/api v0.247.0
+	google.golang.org/api v0.248.0
 	gopkg.in/ns1/ns1-go.v2 v2.14.4
 	istio.io/api v1.27.0
 	istio.io/client-go v1.27.0
@@ -80,7 +80,7 @@ require (
 	atomicgo.dev/cursor v0.2.0 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.1.0 // indirect
-	cloud.google.com/go/auth v0.16.4 // indirect
+	cloud.google.com/go/auth v0.16.5 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/99designs/gqlgen v0.17.73 // indirect
@@ -94,12 +94,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.29.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.29.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.28.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.33.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.28.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.33.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
@@ -129,7 +129,7 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
@@ -240,7 +240,7 @@ require (
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/tools v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/grpc v1.74.2 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
