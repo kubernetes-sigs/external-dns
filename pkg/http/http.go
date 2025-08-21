@@ -29,7 +29,6 @@ import (
 )
 
 var (
-	RequestDurationLabels = metrics.NewLabels([]string{"scheme", "host", "path", "method", "status"})
 	RequestDurationMetric = metrics.NewSummaryVecWithOpts(
 		prometheus.SummaryOpts{
 			Name:        "request_duration_seconds",
@@ -38,7 +37,7 @@ var (
 			ConstLabels: prometheus.Labels{"handler": "instrumented_http"},
 			Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		*RequestDurationLabels,
+		[]string{"scheme", "host", "path", "method", "status"},
 	)
 )
 
@@ -64,15 +63,13 @@ func (r *CustomRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		status = fmt.Sprintf("%d", resp.StatusCode)
 	}
 
-	RequestDurationLabels.WithOptions(
-		metrics.WithLabel("scheme", req.URL.Scheme),
-		metrics.WithLabel("host", req.URL.Host),
-		metrics.WithLabel("path", metrics.PathProcessor(req.URL.Path)),
-		metrics.WithLabel("method", req.Method),
-		metrics.WithLabel("status", status),
-	)
-
-	RequestDurationMetric.SetWithLabels(time.Since(start).Seconds(), RequestDurationLabels)
+	RequestDurationMetric.SetWithLabels(time.Since(start).Seconds(), metrics.Labels{
+		metrics.LabelScheme: req.URL.Scheme,
+		metrics.LabelHost:   req.URL.Host,
+		metrics.LabelPath:   metrics.PathProcessor(req.URL.Path),
+		metrics.LabelMethod: req.Method,
+		metrics.LabelStatus: status,
+	})
 
 	return resp, err
 }

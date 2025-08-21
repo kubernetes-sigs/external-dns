@@ -45,7 +45,7 @@ type apiUnderTest struct {
 	baseURL string
 }
 
-func (api *apiUnderTest) DoStuff() ([]byte, error) {
+func (api *apiUnderTest) doStuff() ([]byte, error) {
 	resp, err := api.client.Get(api.baseURL + "/some/path")
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func BenchmarkRoundTripper(b *testing.B) {
 
 	for b.Loop() {
 		api := apiUnderTest{client, "http://example.com"}
-		body, err := api.DoStuff()
+		body, err := api.doStuff()
 		require.NoError(b, err)
 		assert.Equal(b, []byte("OK"), body)
 	}
@@ -88,7 +88,7 @@ func TestRoundTripper_Concurrent(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			defer wg.Done()
-			body, err := api.DoStuff()
+			body, err := api.doStuff()
 			assert.NoError(t, err)
 			assert.Equal(t, []byte("OK"), body)
 		}()

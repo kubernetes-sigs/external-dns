@@ -192,13 +192,11 @@ func TestSummaryV_SetWithLabels(t *testing.T) {
 		Help:      "help text",
 	}
 
-	labels := NewLabels([]string{"label1", "label2"})
-	sv := NewSummaryVecWithOpts(opts, *labels)
+	labels := Labels{}
+	sv := NewSummaryVecWithOpts(opts, []string{"label1", "label2"})
 
-	labels.WithOptions(
-		WithLabel("label1", "alpha"),
-		WithLabel("label2", "beta"),
-	)
+	labels["label1"] = "alpha"
+	labels["label2"] = "beta"
 
 	sv.SetWithLabels(5.01, labels)
 
