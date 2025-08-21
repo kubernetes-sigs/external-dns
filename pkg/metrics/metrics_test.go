@@ -33,12 +33,6 @@ func (m *MockMetric) Get() *Metric {
 	return &Metric{FQDN: m.FQDN}
 }
 
-func getTestLabels(t *testing.T, labelNames []string) *Labels {
-	t.Helper()
-
-	return NewLabels(labelNames)
-}
-
 func TestMustRegister(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -67,7 +61,7 @@ func TestMustRegister(t *testing.T) {
 				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_3"}),
 				NewCounterVecWithOpts(prometheus.CounterOpts{Name: "test_counter_vec_3"}, []string{"label"}),
 				NewGaugedVectorOpts(prometheus.GaugeOpts{Name: "test_gauge_v_3"}, []string{"label"}),
-				NewSummaryVecWithOpts(prometheus.SummaryOpts{Name: "test_summary_v_3"}, *NewLabels([]string{"label"})),
+				NewSummaryVecWithOpts(prometheus.SummaryOpts{Name: "test_summary_v_3"}, []string{"label"}),
 			},
 			expected: 5,
 		},

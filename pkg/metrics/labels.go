@@ -17,62 +17,15 @@ limitations under the License.
 package metrics
 
 import (
-	"sort"
-	"strings"
-
-	"github.com/sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-type Labels struct {
-	values map[string]string
-}
+const (
+	LabelScheme = "scheme"
+	LabelHost   = "host"
+	LabelPath   = "path"
+	LabelMethod = "method"
+	LabelStatus = "status"
+)
 
-func (labels *Labels) GetKeysInOrder() []string {
-	keys := make([]string, 0, len(labels.values))
-	for key := range labels.values {
-		keys = append(keys, key)
-	}
-
-	sort.Strings(keys)
-
-	return keys
-}
-
-func (labels *Labels) GetValuesOrderedByKey() []string {
-	var orderedValues []string
-	for _, key := range labels.GetKeysInOrder() {
-		orderedValues = append(orderedValues, labels.values[key])
-	}
-
-	return orderedValues
-}
-
-type LabelOption func(*Labels)
-
-func NewLabels(labelNames []string) *Labels {
-	labels := &Labels{
-		values: make(map[string]string),
-	}
-
-	for _, label := range labelNames {
-		labels.values[strings.ToLower(label)] = ""
-	}
-
-	return labels
-}
-
-func (labels *Labels) WithOptions(options ...LabelOption) {
-	for _, option := range options {
-		option(labels)
-	}
-}
-
-func WithLabel(labelName string, labelValue string) LabelOption {
-	return func(labels *Labels) {
-		if _, ok := labels.values[strings.ToLower(labelName)]; !ok {
-			logrus.Errorf("Attempting to set a value for a label that doesn't exist! '%s' does not exist!", labelName)
-		} else {
-			labels.values[strings.ToLower(labelName)] = labelValue
-		}
-	}
-}
+type Labels = prometheus.Labels

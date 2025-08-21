@@ -186,11 +186,11 @@ func (s SummaryVecMetric) Get() *Metric {
 	return &s.Metric
 }
 
-func (s SummaryVecMetric) SetWithLabels(value float64, labels *Labels) {
-	s.SummaryVec.WithLabelValues(labels.GetValuesOrderedByKey()...).Observe(value)
+func (s SummaryVecMetric) SetWithLabels(value float64, labels prometheus.Labels) {
+	s.SummaryVec.With(labels).Observe(value)
 }
 
-func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels Labels) SummaryVecMetric {
+func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) SummaryVecMetric {
 	opts.Namespace = Namespace
 	return SummaryVecMetric{
 		Metric: Metric{
@@ -201,7 +201,7 @@ func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels Labels) SummaryVe
 			Subsystem: opts.Subsystem,
 			Help:      opts.Help,
 		},
-		SummaryVec: *prometheus.NewSummaryVec(opts, labels.GetKeysInOrder()),
+		SummaryVec: *prometheus.NewSummaryVec(opts, labels),
 	}
 }
 
