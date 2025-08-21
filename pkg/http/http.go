@@ -37,7 +37,7 @@ var (
 			ConstLabels: prometheus.Labels{"handler": "instrumented_http"},
 			Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"scheme", "host", "path", "method", "status"},
+		[]string{metrics.LabelScheme, metrics.LabelHost, metrics.LabelPath, metrics.LabelMethod, metrics.LabelStatus},
 	)
 )
 
