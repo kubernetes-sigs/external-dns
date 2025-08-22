@@ -3,7 +3,7 @@
 This tutorial describes how to configure ExternalDNS to use the F5 Networks VirtualServer Source. It is meant to supplement the other provider-specific setup tutorials.
 
 The F5 Networks VirtualServer CRD is part of [this](https://github.com/F5Networks/k8s-bigip-ctlr) project.
-See more in-depth info regarding the VirtualServer CRD [here](https://github.com/F5Networks/k8s-bigip-ctlr/blob/master/docs/config_examples/customResource/CustomResource.md#virtualserver).
+See more in-depth info regarding the VirtualServer CRD [in the official documentation](https://github.com/F5Networks/k8s-bigip-ctlr/blob/master/docs/config_examples/customResource/CustomResource.md#virtualserver).
 
 ## Start with ExternalDNS with the F5 Networks VirtualServer source
 
@@ -64,6 +64,7 @@ spec:
 ```
 
 This configuration will create DNS A records for:
+
 - `www.example.com` → `192.168.1.100`
 - `alias1.example.com` → `192.168.1.100`
 - `alias2.example.com` → `192.168.1.100`
@@ -81,6 +82,7 @@ If none of these are available, the VirtualServer will be skipped.
 ### TTL Support
 
 You can set a custom TTL using the annotation:
+
 ```yaml
 annotations:
   external-dns.alpha.kubernetes.io/ttl: "300"
@@ -89,3 +91,5 @@ annotations:
 ### Annotation Filtering
 
 You can filter VirtualServers using the `--annotation-filter` flag to only process those with specific annotations.
+
+```
