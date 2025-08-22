@@ -91,5 +91,3 @@ annotations:
 ### Annotation Filtering
 
 You can filter VirtualServers using the `--annotation-filter` flag to only process those with specific annotations.
-
-```
