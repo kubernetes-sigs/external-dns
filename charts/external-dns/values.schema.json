@@ -6,13 +6,6 @@
       "description": "Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels.",
       "type": "object"
     },
-    "annotationFilter": {
-      "description": "Filter resources queried for endpoints by annotation selector.",
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "automountServiceAccountToken": {
       "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.",
       "type": "boolean"
