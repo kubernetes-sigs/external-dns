@@ -33,7 +33,7 @@ spec:
       port: {{ .port }}
       targetPort: http-webhook
       protocol: TCP
-    {{- end }}  
+    {{- end }}
     {{- else }}
     {{- with .Values.provider.webhook.service }}
     - name: http-webhook
