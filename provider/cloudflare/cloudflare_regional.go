@@ -56,21 +56,21 @@ type regionalHostnameChange struct {
 }
 
 func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
-	return z.serviceV4.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)
+	return z.service.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)
 }
 
 func (z zoneService) CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error {
-	_, err := z.serviceV4.Addressing.RegionalHostnames.New(ctx, params)
+	_, err := z.service.Addressing.RegionalHostnames.New(ctx, params)
 	return err
 }
 
 func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error {
-	_, err := z.serviceV4.Addressing.RegionalHostnames.Edit(ctx, hostname, params)
+	_, err := z.service.Addressing.RegionalHostnames.Edit(ctx, hostname, params)
 	return err
 }
 
 func (z zoneService) DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error {
-	_, err := z.serviceV4.Addressing.RegionalHostnames.Delete(ctx, hostname, params)
+	_, err := z.service.Addressing.RegionalHostnames.Delete(ctx, hostname, params)
 	return err
 }
 
