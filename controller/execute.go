@@ -363,13 +363,14 @@ func buildController(
 		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
 		events.WithEmitEvents(cfg.EmitEvents),
 		events.WithDryRun(cfg.DryRun))
-	var eventsCtrl *events.Controller
+	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		eventsCtrl, err = events.NewEventController(eventsCfg)
+		eventCtrl, err := events.NewEventController(eventsCfg)
 		if err != nil {
 			log.Fatal(err)
 		}
-		eventsCtrl.Run(ctx)
+		eventCtrl.Run(ctx)
+		eventEmitter = eventCtrl
 	}
 
 	return &Controller{
@@ -381,7 +382,7 @@ func buildController(
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
-		EventController:      eventsCtrl,
+		EventEmitter:         eventEmitter,
 	}, nil
 }
 
