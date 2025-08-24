@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -804,7 +805,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			// see https://en.wikipedia.org/wiki/SRV_record
 
 			// build a target with a priority of 0, weight of 50, and pointing the given port on the given host
-			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
+			target := fmt.Sprintf("0 50 %d %s", port.NodePort, provider.EnsureTrailingDot(hostname))
 
 			// take the service name from the K8s Service object
 			// it is safe to use since it is DNS compatible
@@ -817,7 +818,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 				protocol = "tcp"
 			}
 
-			recordName := fmt.Sprintf("_%s._%s.%s", serviceName, protocol, hostname)
+			recordName := fmt.Sprintf("_%s._%s.%s", serviceName, protocol, provider.EnsureTrailingDot(hostname))
 
 			var ep *endpoint.Endpoint
 			if ttl.IsConfigured() {
