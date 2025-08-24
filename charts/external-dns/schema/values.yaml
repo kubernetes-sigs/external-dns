@@ -11,6 +11,15 @@ resources:
 
 provider:
   webhook:
+    sidecar:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 300m
+        memory: 200Mi
+
+    # deprecated:
     requests:
       cpu: 200m
       memory: 128Mi
