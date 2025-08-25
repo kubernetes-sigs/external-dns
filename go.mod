@@ -19,7 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.6
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.49.1
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.56.2
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.2
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.0
 	github.com/aws/smithy-go v1.22.5
 	github.com/bodgit/tsig v1.2.2
@@ -54,7 +54,7 @@ require (
 	github.com/prometheus/common v0.65.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/transip/gotransip/v6 v6.26.0
 	go.etcd.io/etcd/api/v3 v3.6.4
 	go.etcd.io/etcd/client/v3 v3.6.4
