@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
+    build.appstudio.openshift.io/build-nudge-files: bundle-hack/container_digest.sh
     build.appstudio.openshift.io/repo: https://github.com/openshift/external-dns?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
