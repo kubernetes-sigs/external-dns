@@ -14,12 +14,12 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aws/aws-sdk-go-v2 v1.38.1
-	github.com/aws/aws-sdk-go-v2/config v1.31.2
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.6
+	github.com/aws/aws-sdk-go-v2/config v1.31.3
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.7
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.6
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.49.1
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.56.2
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.2
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.57.0
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.0
 	github.com/aws/smithy-go v1.22.5
 	github.com/bodgit/tsig v1.2.2
@@ -39,12 +39,12 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/linode/linodego v1.55.0
+	github.com/linode/linodego v1.56.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.68
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.99.0
+	github.com/oracle/oci-go-sdk/v65 v65.99.1
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
@@ -54,7 +54,7 @@ require (
 	github.com/prometheus/common v0.65.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/transip/gotransip/v6 v6.26.0
 	go.etcd.io/etcd/api/v3 v3.6.4
 	go.etcd.io/etcd/client/v3 v3.6.4
@@ -99,7 +99,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.28.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.33.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.34.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
