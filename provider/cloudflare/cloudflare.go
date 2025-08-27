@@ -744,12 +744,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
 		}
 
-		if p.RegionalServicesConfig.Enabled {
-			// Add default region key if not set
-			if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareRegionKey); !ok {
-				e.SetProviderSpecificProperty(annotations.CloudflareRegionKey, p.RegionalServicesConfig.RegionKey)
-			}
-		}
+		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
