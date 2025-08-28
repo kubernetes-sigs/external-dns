@@ -179,7 +179,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 	if zone, ok := m.Records[params.ZoneID.Value]; ok {
 		for _, record := range zone {
 			if strings.HasPrefix(record.Name, "newerror-list-") {
-				m.DeleteDNSRecord(ctx, cloudflarev0.ResourceIdentifier(params.ZoneID.Value), record.ID)
+				m.DeleteDNSRecord(ctx, record.ID, dns.RecordDeleteParams{ZoneID: params.ZoneID})
 				iter.err = errors.New("failed to list erroring DNS record")
 				return iter
 			}
@@ -208,13 +208,14 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error {
+func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
+	zoneID := params.ZoneID.String()
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
-		ZoneId:   rc.Identifier,
+		ZoneId:   zoneID,
 		RecordId: recordID,
 	})
-	if zone, ok := m.Records[rc.Identifier]; ok {
+	if zone, ok := m.Records[zoneID]; ok {
 		if _, ok := zone[recordID]; ok {
 			name := zone[recordID].Name
 			delete(zone, recordID)
@@ -3336,5 +3337,11 @@ func TestZoneService(t *testing.T) {
 		require.False(t, iter.Next())
 		require.Empty(t, iter.Current())
 		require.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("DeleteDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		err := client.DeleteDNSRecord(ctx, "1234", dns.RecordDeleteParams{ZoneID: cloudflare.F("foo")})
+		assert.ErrorIs(t, err, context.Canceled)
 	})
 }
