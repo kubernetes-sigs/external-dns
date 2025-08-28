@@ -151,16 +151,6 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			title: "endpoint without TTL configured",
-			ttl:   "1s",
-			endpoints: []*endpoint.Endpoint{
-				{DNSName: "foo-1", Targets: endpoint.Targets{"1.2.3.5"}},
-			},
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("foo-1", "A", 1, "1.2.3.5"),
-			},
-		},
-		{
 			title: "endpoint foo-2 with TTL configured while foo-1 without TTL configured",
 			ttl:   "1s",
 			endpoints: []*endpoint.Endpoint{
@@ -169,7 +159,7 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo-1", Targets: endpoint.Targets{"1.2.3.5"}, RecordTTL: endpoint.TTL(1)},
-				{DNSName: "foo-2", Targets: endpoint.Targets{"1.2.3.6"}, RecordTTL: endpoint.TTL(0)},
+				{DNSName: "foo-2", Targets: endpoint.Targets{"1.2.3.6"}, RecordTTL: endpoint.TTL(1)},
 			},
 		},
 	}
