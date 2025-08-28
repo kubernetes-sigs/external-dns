@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -66,6 +67,7 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	}
 
 	for _, ep := range endpoints {
+		fmt.Println(ep, ep.RecordTTL, ep.RecordTTL.IsConfigured())
 		ep.WithMinTTL(pp.cfg.ttl)
 		// Additional post-processing can be added here.
 	}
