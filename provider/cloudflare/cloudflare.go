@@ -31,6 +31,7 @@ import (
 	cloudflarev0 "github.com/cloudflare/cloudflare-go"
 	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/addressing"
+	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/option"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
 	log "github.com/sirupsen/logrus"
@@ -75,7 +76,7 @@ type DNSRecordIndex struct {
 	Content string
 }
 
-type DNSRecordsMap map[DNSRecordIndex]cloudflarev0.DNSRecord
+type DNSRecordsMap map[DNSRecordIndex]dns.RecordResponse
 
 // for faster getCustomHostname() lookup
 type CustomHostnameIndex struct {
@@ -109,8 +110,8 @@ type cloudFlareDNS interface {
 	ZoneIDByName(zoneName string) (string, error)
 	ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone]
 	GetZone(ctx context.Context, zoneID string) (*zones.Zone, error)
-	ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]cloudflarev0.DNSRecord, *cloudflarev0.ResultInfo, error)
-	CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (cloudflarev0.DNSRecord, error)
+	ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error)
+	CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (dns.RecordResponse, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error
 	ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse]
@@ -147,12 +148,18 @@ func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
 	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
 }
 
-func (z zoneService) CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (cloudflarev0.DNSRecord, error) {
-	return z.serviceV0.CreateDNSRecord(ctx, rc, rp)
+func (z zoneService) CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (dns.RecordResponse, error) {
+	record, err := z.serviceV0.CreateDNSRecord(ctx, rc, rp)
+	return dnsRecordResponseFromLegacyDNSRecord(record), err
 }
 
-func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]cloudflarev0.DNSRecord, *cloudflarev0.ResultInfo, error) {
-	return z.serviceV0.ListDNSRecords(ctx, rc, rp)
+func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error) {
+	records, info, err := z.serviceV0.ListDNSRecords(ctx, rc, rp)
+	convertedRecords := make([]dns.RecordResponse, 0, len(records))
+	for _, record := range records {
+		convertedRecords = append(convertedRecords, dnsRecordResponseFromLegacyDNSRecord(record))
+	}
+	return convertedRecords, info, err
 }
 
 func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
@@ -250,7 +257,7 @@ type CloudFlareProvider struct {
 // cloudFlareChange differentiates between ChangeActions
 type cloudFlareChange struct {
 	Action              changeAction
-	ResourceRecord      cloudflarev0.DNSRecord
+	ResourceRecord      dns.RecordResponse
 	RegionalHostname    regionalHostname
 	CustomHostnames     map[string]cloudflarev0.CustomHostname
 	CustomHostnamesPrev []string
@@ -263,13 +270,15 @@ type RecordParamsTypes interface {
 
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func updateDNSRecordParam(cfc cloudFlareChange) cloudflarev0.UpdateDNSRecordParams {
+	priority := uint16(cfc.ResourceRecord.Priority)
+
 	params := cloudflarev0.UpdateDNSRecordParams{
 		Name:     cfc.ResourceRecord.Name,
-		TTL:      cfc.ResourceRecord.TTL,
-		Proxied:  cfc.ResourceRecord.Proxied,
-		Type:     cfc.ResourceRecord.Type,
+		TTL:      int(cfc.ResourceRecord.TTL),
+		Proxied:  &cfc.ResourceRecord.Proxied,
+		Type:     string(cfc.ResourceRecord.Type),
 		Content:  cfc.ResourceRecord.Content,
-		Priority: cfc.ResourceRecord.Priority,
+		Priority: &priority,
 		Comment:  cloudflarev0.StringPtr(cfc.ResourceRecord.Comment),
 	}
 
@@ -278,13 +287,15 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflarev0.UpdateDNSRecordPara
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflarev0.CreateDNSRecordParams {
+	priority := uint16(cfc.ResourceRecord.Priority)
+
 	params := cloudflarev0.CreateDNSRecordParams{
 		Name:     cfc.ResourceRecord.Name,
-		TTL:      cfc.ResourceRecord.TTL,
-		Proxied:  cfc.ResourceRecord.Proxied,
-		Type:     cfc.ResourceRecord.Type,
+		TTL:      int(cfc.ResourceRecord.TTL),
+		Proxied:  &cfc.ResourceRecord.Proxied,
+		Type:     string(cfc.ResourceRecord.Type),
 		Content:  cfc.ResourceRecord.Content,
-		Priority: cfc.ResourceRecord.Priority,
+		Priority: &priority,
 		Comment:  cfc.ResourceRecord.Comment,
 	}
 
@@ -534,7 +545,7 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 
 	switch change.Action {
 	case cloudFlareUpdate:
-		if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] {
+		if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] {
 			add, remove, _ := provider.Difference(change.CustomHostnamesPrev, slices.Collect(maps.Keys(change.CustomHostnames)))
 
 			for _, changeCH := range remove {
@@ -561,7 +572,7 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 		}
 	case cloudFlareDelete:
 		for _, changeCH := range change.CustomHostnames {
-			if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] && changeCH.Hostname != "" {
+			if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.Hostname != "" {
 				log.WithFields(logFields).Infof("Deleting custom hostname %q", changeCH.Hostname)
 				if ch, err := getCustomHostname(chs, changeCH.Hostname); err == nil {
 					chID := ch.ID
@@ -577,7 +588,7 @@ func (p *CloudFlareProvider) submitCustomHostnameChanges(ctx context.Context, zo
 		}
 	case cloudFlareCreate:
 		for _, changeCH := range change.CustomHostnames {
-			if recordTypeCustomHostnameSupported[change.ResourceRecord.Type] && changeCH.Hostname != "" {
+			if recordTypeCustomHostnameSupported[string(change.ResourceRecord.Type)] && changeCH.Hostname != "" {
 				log.WithFields(logFields).Infof("Creating custom hostname %q", changeCH.Hostname)
 				if ch, err := getCustomHostname(chs, changeCH.Hostname); err == nil {
 					if changeCH.CustomOriginServer == ch.CustomOriginServer {
@@ -769,8 +780,8 @@ func (p *CloudFlareProvider) changesByZone(zones []zones.Zone, changeSet []*clou
 	return changes
 }
 
-func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record cloudflarev0.DNSRecord) string {
-	if zoneRecord, ok := records[DNSRecordIndex{Name: record.Name, Type: record.Type, Content: record.Content}]; ok {
+func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record dns.RecordResponse) string {
+	if zoneRecord, ok := records[DNSRecordIndex{Name: record.Name, Type: string(record.Type), Content: record.Content}]; ok {
 		return zoneRecord.ID
 	}
 	return ""
@@ -795,11 +806,11 @@ func (p *CloudFlareProvider) newCustomHostname(customHostname string, origin str
 }
 
 func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) (*cloudFlareChange, error) {
-	ttl := defaultTTL
+	ttl := dns.TTL(defaultTTL)
 	proxied := shouldBeProxied(ep, p.proxiedByDefault)
 
 	if ep.RecordTTL.IsConfigured() {
-		ttl = int(ep.RecordTTL)
+		ttl = dns.TTL(ep.RecordTTL)
 	}
 
 	prevCustomHostnames := []string{}
@@ -824,26 +835,24 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		comment = p.DNSRecordsConfig.trimAndValidateComment(ep.DNSName, comment, p.ZoneHasPaidPlan)
 	}
 
-	priority := (*uint16)(nil)
+	var priority float64
 	if ep.RecordType == "MX" {
 		mxRecord, err := endpoint.NewMXRecord(target)
 		if err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
-			priority = mxRecord.GetPriority()
+			priority = float64(*mxRecord.GetPriority())
 			target = *mxRecord.GetHost()
 		}
 	}
 
 	return &cloudFlareChange{
 		Action: action,
-		ResourceRecord: cloudflarev0.DNSRecord{
-			Name: ep.DNSName,
-			TTL:  ttl,
-			// We have to use pointers to bools now, as the upstream cloudflare-go library requires them
-			// see: https://github.com/cloudflare/cloudflare-go/pull/595
-			Proxied:  &proxied,
-			Type:     ep.RecordType,
+		ResourceRecord: dns.RecordResponse{
+			Name:     ep.DNSName,
+			TTL:      ttl,
+			Proxied:  proxied,
+			Type:     dns.RecordResponseType(ep.RecordType),
 			Content:  target,
 			Comment:  comment,
 			Priority: priority,
@@ -854,8 +863,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	}, nil
 }
 
-func newDNSRecordIndex(r cloudflarev0.DNSRecord) DNSRecordIndex {
-	return DNSRecordIndex{Name: r.Name, Type: r.Type, Content: r.Content}
+func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
+	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: r.Content}
 }
 
 // listDNSRecordsWithAutoPagination performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
@@ -964,16 +973,16 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 	var endpoints []*endpoint.Endpoint
 
 	// group supported records by name and type
-	groups := map[string][]cloudflarev0.DNSRecord{}
+	groups := map[string][]dns.RecordResponse{}
 
 	for _, r := range records {
-		if !p.SupportedAdditionalRecordTypes(r.Type) {
+		if !p.SupportedAdditionalRecordTypes(string(r.Type)) {
 			continue
 		}
 
-		groupBy := r.Name + r.Type
+		groupBy := r.Name + string(r.Type)
 		if _, ok := groups[groupBy]; !ok {
-			groups[groupBy] = []cloudflarev0.DNSRecord{}
+			groups[groupBy] = []dns.RecordResponse{}
 		}
 
 		groups[groupBy] = append(groups[groupBy], r)
@@ -994,20 +1003,17 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 		targets := make([]string, len(records))
 		for i, record := range records {
 			if records[i].Type == "MX" {
-				targets[i] = fmt.Sprintf("%v %v", *record.Priority, record.Content)
+				targets[i] = fmt.Sprintf("%v %v", record.Priority, record.Content)
 			} else {
 				targets[i] = record.Content
 			}
 		}
 		e := endpoint.NewEndpointWithTTL(
 			records[0].Name,
-			records[0].Type,
+			string(records[0].Type),
 			endpoint.TTL(records[0].TTL),
 			targets...)
-		proxied := false
-		if records[0].Proxied != nil {
-			proxied = *records[0].Proxied
-		}
+		proxied := records[0].Proxied
 		if e == nil {
 			continue
 		}
@@ -1034,5 +1040,29 @@ func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) b
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)
+	}
+}
+
+func dnsRecordResponseFromLegacyDNSRecord(record cloudflarev0.DNSRecord) dns.RecordResponse {
+	var priority float64
+	if record.Priority != nil {
+		priority = float64(*record.Priority)
+	}
+
+	return dns.RecordResponse{
+		CreatedOn:  record.CreatedOn,
+		ModifiedOn: record.ModifiedOn,
+		Type:       dns.RecordResponseType(record.Type),
+		Name:       record.Name,
+		Content:    record.Content,
+		Meta:       record.Meta,
+		Data:       record.Data,
+		ID:         record.ID,
+		Priority:   priority,
+		TTL:        dns.TTL(record.TTL),
+		Proxied:    record.Proxied != nil && *record.Proxied,
+		Proxiable:  record.Proxiable,
+		Comment:    record.Comment,
+		Tags:       record.Tags,
 	}
 }
