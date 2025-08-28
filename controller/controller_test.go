@@ -228,7 +228,7 @@ func TestRunOnce(t *testing.T) {
 		Registry:           r,
 		Policy:             &plan.SyncPolicy{},
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
-		EventController:    emitter,
+		EventEmitter:       emitter,
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))

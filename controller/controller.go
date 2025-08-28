@@ -174,8 +174,8 @@ type Controller struct {
 	// The runAtMutex is for atomic updating of nextRunAt and lastRunAt
 	runAtMutex sync.Mutex
 	// The lastRunAt used for throttling and batching reconciliation
-	lastRunAt       time.Time
-	EventController events.EventEmitter
+	lastRunAt    time.Time
+	EventEmitter events.EventEmitter
 	// MangedRecordTypes are DNS record types that will be considered for management.
 	ManagedRecordTypes []string
 	// ExcludeRecordTypes are DNS record types that will be excluded from management.
@@ -247,7 +247,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 			deprecatedRegistryErrors.Counter.Inc()
 			return err
 		} else {
-			emitChangeEvent(c.EventController, *plan.Changes, events.RecordReady)
+			emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordReady)
 		}
 	} else {
 		controllerNoChangesTotal.Counter.Inc()

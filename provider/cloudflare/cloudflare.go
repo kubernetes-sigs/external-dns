@@ -123,8 +123,8 @@ type cloudFlareDNS interface {
 }
 
 type zoneService struct {
-	service   *cloudflarev0.API
-	serviceV4 *cloudflare.Client
+	serviceV0 *cloudflarev0.API
+	service   *cloudflare.Client
 }
 
 func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
@@ -133,7 +133,7 @@ func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
 		Name: cloudflare.F(zoneName),
 	}
 
-	iter := z.serviceV4.Zones.ListAutoPaging(context.Background(), params)
+	iter := z.service.Zones.ListAutoPaging(context.Background(), params)
 	for zone := range autoPagerIterator(iter) {
 		if zone.Name == zoneName {
 			return zone.ID, nil
@@ -148,40 +148,40 @@ func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
 }
 
 func (z zoneService) CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (cloudflarev0.DNSRecord, error) {
-	return z.service.CreateDNSRecord(ctx, rc, rp)
+	return z.serviceV0.CreateDNSRecord(ctx, rc, rp)
 }
 
 func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]cloudflarev0.DNSRecord, *cloudflarev0.ResultInfo, error) {
-	return z.service.ListDNSRecords(ctx, rc, rp)
+	return z.serviceV0.ListDNSRecords(ctx, rc, rp)
 }
 
 func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
-	_, err := z.service.UpdateDNSRecord(ctx, rc, rp)
+	_, err := z.serviceV0.UpdateDNSRecord(ctx, rc, rp)
 	return err
 }
 
 func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error {
-	return z.service.DeleteDNSRecord(ctx, rc, recordID)
+	return z.serviceV0.DeleteDNSRecord(ctx, rc, recordID)
 }
 
 func (z zoneService) ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone] {
-	return z.serviceV4.Zones.ListAutoPaging(ctx, params)
+	return z.service.Zones.ListAutoPaging(ctx, params)
 }
 
 func (z zoneService) GetZone(ctx context.Context, zoneID string) (*zones.Zone, error) {
-	return z.serviceV4.Zones.Get(ctx, zones.ZoneGetParams{ZoneID: cloudflare.F(zoneID)})
+	return z.service.Zones.Get(ctx, zones.ZoneGetParams{ZoneID: cloudflare.F(zoneID)})
 }
 
 func (z zoneService) CustomHostnames(ctx context.Context, zoneID string, page int, filter cloudflarev0.CustomHostname) ([]cloudflarev0.CustomHostname, cloudflarev0.ResultInfo, error) {
-	return z.service.CustomHostnames(ctx, zoneID, page, filter)
+	return z.serviceV0.CustomHostnames(ctx, zoneID, page, filter)
 }
 
 func (z zoneService) DeleteCustomHostname(ctx context.Context, zoneID string, customHostnameID string) error {
-	return z.service.DeleteCustomHostname(ctx, zoneID, customHostnameID)
+	return z.serviceV0.DeleteCustomHostname(ctx, zoneID, customHostnameID)
 }
 
 func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch cloudflarev0.CustomHostname) (*cloudflarev0.CustomHostnameResponse, error) {
-	return z.service.CreateCustomHostname(ctx, zoneID, ch)
+	return z.serviceV0.CreateCustomHostname(ctx, zoneID, ch)
 }
 
 // listZonesV4Params returns the appropriate Zone List Params for v4 API

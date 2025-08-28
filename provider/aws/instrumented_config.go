@@ -61,23 +61,22 @@ var extractAWSRequestParameters = middleware.DeserializeMiddlewareFunc("extractA
 
 	requestMetrics := getRequestMetric(ctx)
 
+	labels := metrics.Labels{}
+
 	if req, ok := in.Request.(*smithyhttp.Request); ok && req != nil {
-		extdnshttp.RequestDurationLabels.WithOptions(
-			metrics.WithLabel("scheme", req.URL.Scheme),
-			metrics.WithLabel("host", req.URL.Host),
-			metrics.WithLabel("path", metrics.PathProcessor(req.URL.Path)),
-			metrics.WithLabel("method", req.Method),
-		)
+		labels[metrics.LabelScheme] = req.URL.Scheme
+		labels[metrics.LabelHost] = req.URL.Host
+		labels[metrics.LabelPath] = metrics.PathProcessor(req.URL.Path)
+		labels[metrics.LabelMethod] = req.Method
+		labels[metrics.LabelStatus] = "unknown"
 	}
 
 	// Try to access HTTP response and status code
 	if resp, ok := out.RawResponse.(*smithyhttp.Response); ok && resp != nil {
-		extdnshttp.RequestDurationLabels.WithOptions(
-			metrics.WithLabel("status", fmt.Sprintf("%d", resp.StatusCode)),
-		)
+		labels[metrics.LabelStatus] = fmt.Sprintf("%d", resp.StatusCode)
 	}
 
-	extdnshttp.RequestDurationMetric.SetWithLabels(time.Since(requestMetrics.StartTime).Seconds(), extdnshttp.RequestDurationLabels)
+	extdnshttp.RequestDurationMetric.SetWithLabels(time.Since(requestMetrics.StartTime).Seconds(), labels)
 
 	return out, metadata, err
 })
