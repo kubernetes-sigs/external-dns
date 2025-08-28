@@ -62,7 +62,6 @@ type TXTRegistry struct {
 	//Handle Owner ID migration
 	isMigrationEnabled bool
 	oldOwnerID         string
-
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
