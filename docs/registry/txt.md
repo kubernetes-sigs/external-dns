@@ -199,3 +199,91 @@ The TXT registry can optionally cache DNS records read from the provider. This c
 rate limits imposed by the provider.
 
 Caching is enabled by specifying a cache duration with the `--txt-cache-interval` flag.
+
+## OwnerID migration
+
+If you wish to update the owner ID of the TXT records managed by your external-dns instance,
+you can set the following flags: `--migrate-txt-owner`, which will enable the migration checks
+in the run loop, `--txt-owner-id=new-owner-id` and `--from-txt-owner=old-owner-id`.
+
+If `--migrate-txt-owner` is set, `--from-txt-owner` is mandatory.
+
+Example, if you had a standard deployment like so:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.k8s.io/external-dns/external-dns:v0.18.0
+        imagePullPolicy: Always
+        args:
+        - "--txt-prefix=%{record_type}-"
+        - "--txt-cache-interval=2m"
+        - "--log-level=debug"
+        - "--log-format=text"
+        - "--txt-owner-id=old-owner"
+        - "--policy=sync"
+        - "--provider=some-provider"
+        - "--registry=txt"
+        - "--interval=1m"
+        - "--source=ingress"
+```
+
+You can update your deployment to migrate like so :
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        imagePullPolicy: Always
+        image: registry.k8s.io/external-dns/external-dns:v0.18.0
+        args:
+        - "--txt-prefix=%{record_type}-"
+        - "--txt-cache-interval=2m"
+        - "--log-level=debug"
+        - "--log-format=text"
+        - "--txt-owner-id=new-owner"
+        - "--from-txt-owner=old-owner"
+        - "--migrate-txt-owner"
+        - "--policy=sync"
+        - "--provider=some-provider"
+        - "--registry=txt"
+        - "--interval=1m"
+        - "--source=ingress"
+```
+
+If you didn't set the owner ID, the value set by external-dns is `default`. You can set the
+`--from-txt-owner` flag to `default` to migrate the associated records.
+
