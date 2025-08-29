@@ -277,12 +277,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	if im.isMigrationEnabled {
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.UpdateOld)...)
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.UpdateNew)...)
-		filteredChanges.Delete = append(filteredChanges.Delete, endpoint.FilterEndpointsByOwnerID(im.oldOwnerID, changes.Delete)...)
-	}
-
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
