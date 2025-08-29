@@ -88,15 +88,12 @@ func (im *existingTXTs) add(r *endpoint.Endpoint) {
 		dnsName:       r.DNSName,
 		setIdentifier: r.SetIdentifier,
 	}
-	if im.entries == nil {
-		im.entries = make(map[recordKey]struct{})
-	}
 	im.entries[key] = struct{}{}
 }
 
-// isNotManaged reports whether the given endpoint's TXT record is absent from the existing set.
-// Used to determine whether a new TXT record needs to be created.
-func (im *existingTXTs) isNotManaged(ep *endpoint.Endpoint) bool {
+// isAbsent returns true when there is no entry for the given name in the store.
+// This is intended for the "if absent -> create" pattern.
+func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
 	key := recordKey{
 		dnsName:       ep.DNSName,
 		setIdentifier: ep.SetIdentifier,
@@ -324,7 +321,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isNotManaged)...)
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
