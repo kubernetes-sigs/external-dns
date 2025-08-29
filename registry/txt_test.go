@@ -1540,14 +1540,6 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 	record := newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner")
 	expectedTXTBeforeMigration := []*endpoint.Endpoint{
 		{
-			DNSName:    "foo.test-zone.example.org",
-			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: map[string]string{
-				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
-			},
-		},
-		{
 			DNSName:    "a-foo.test-zone.example.org",
 			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
 			RecordType: endpoint.RecordTypeTXT,
@@ -1563,14 +1555,6 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 	assert.Equal(t, expectedTXTBeforeMigration, gotTXTBeforeMigration)
 
 	expectedTXTAfterMigration := []*endpoint.Endpoint{
-		{
-			DNSName:    "foo.test-zone.example.org",
-			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foobar\""},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: map[string]string{
-				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
-			},
-		},
 		{
 			DNSName:    "a-foo.test-zone.example.org",
 			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foobar\""},
