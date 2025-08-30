@@ -58,6 +58,10 @@ type TXTRegistry struct {
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
+
+	//Handle Owner ID migration
+	isMigrationEnabled bool
+	oldOwnerID         string
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -66,9 +70,14 @@ type TXTRegistry struct {
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
-	txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+	txtEncryptEnabled bool, txtEncryptAESKey []byte,
+	isMigrationEnabled bool, oldOwnerID string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
+	}
+
+	if isMigrationEnabled && oldOwnerID == "" {
+		return nil, errors.New("oldOwnerID cannot be empty if isMigrationEnabled is true")
 	}
 
 	if len(txtEncryptAESKey) == 0 {
@@ -100,6 +109,8 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		isMigrationEnabled:  isMigrationEnabled,
+		oldOwnerID:          oldOwnerID,
 	}, nil
 }
 
@@ -202,6 +213,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
+		if im.isMigrationEnabled && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		}
+
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
@@ -232,6 +247,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
+	if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+	}
+
 	// Always create new format record
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
@@ -257,6 +276,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
+
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)

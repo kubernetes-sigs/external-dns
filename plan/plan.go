@@ -52,6 +52,8 @@ type Plan struct {
 	ExcludeRecords []string
 	// OwnerID of records to manage
 	OwnerID string
+	// Old owner ID we migrate from
+	OldOwnerId string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -224,7 +226,8 @@ func (p *Plan) Calculate() *Plan {
 				if records.current != nil && len(records.candidates) > 0 {
 					update := t.resolver.ResolveUpdate(records.current, records.candidates)
 
-					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) {
+					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) ||
+						p.isOldOwnerIdSetAndDifferent(records.current) {
 						inheritOwner(records.current, update)
 						changes.UpdateNew = append(changes.UpdateNew, update)
 						changes.UpdateOld = append(changes.UpdateOld, records.current)
@@ -274,6 +277,10 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func (p *Plan) isOldOwnerIdSetAndDifferent(current *endpoint.Endpoint) bool {
+	return len(p.OldOwnerId) != 0 && current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerId
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
