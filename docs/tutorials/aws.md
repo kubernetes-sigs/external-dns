@@ -9,9 +9,6 @@ Record Sets and Hosted Zones. You'll want to create this Policy in IAM first. In
 our example, we'll call the policy `AllowExternalDNSUpdates` (but you can call
 it whatever you prefer).
 
-If you prefer, you may fine-tune the policy to permit updates only to explicit
-Hosted Zone IDs.
-
 ```json
 {
   "Version": "2012-10-17",
@@ -19,7 +16,9 @@ Hosted Zone IDs.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
       ],
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
@@ -28,9 +27,7 @@ Hosted Zone IDs.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
+        "route53:ListHostedZones"
       ],
       "Resource": [
         "*"
@@ -51,7 +48,9 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
       ],
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
@@ -67,9 +66,7 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
+        "route53:ListHostedZones"
       ],
       "Resource": [
         "*"
@@ -78,6 +75,11 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
   ]
 }
 ```
+
+### Further improvements
+
+Both policies can be further enhanced by tightening them down following the [principle of least privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege).
+Explicitly providing a list of selected zones instead of `*` you can scope the deployment down allowing changes only to zones from the list hence reducing the blast radius and improving auditability.
 
 Additional resources:
 
