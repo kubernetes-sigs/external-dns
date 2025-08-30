@@ -112,7 +112,7 @@ type cloudFlareDNS interface {
 	GetZone(ctx context.Context, zoneID string) (*zones.Zone, error)
 	ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error)
 	CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
-	DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error
+	DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error
 	ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse]
 	CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error
@@ -166,8 +166,9 @@ func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.Resou
 	return err
 }
 
-func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error {
-	return z.serviceV0.DeleteDNSRecord(ctx, rc, recordID)
+func (z zoneService) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
+	_, err := z.service.DNS.Records.Delete(ctx, recordID, params)
+	return err
 }
 
 func (z zoneService) ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone] {
@@ -297,6 +298,13 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNew
 			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
 		},
+	}
+}
+
+// getDeleteDNSRecordParam is a function that returns the appropriate Record Delete Param based on the zoneID passed in
+func getDeleteDNSRecordParam(zoneID string) dns.RecordDeleteParams {
+	return dns.RecordDeleteParams{
+		ZoneID: cloudflare.F(zoneID),
 	}
 }
 
@@ -673,7 +681,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				err := p.Client.DeleteDNSRecord(ctx, resourceContainer, recordID)
+				recordParam := getDeleteDNSRecordParam(zoneID)
+				err := p.Client.DeleteDNSRecord(ctx, recordID, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to delete record: %v", err)

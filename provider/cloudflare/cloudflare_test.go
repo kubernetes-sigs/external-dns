@@ -179,7 +179,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		for _, record := range zone {
 			if strings.HasPrefix(record.Name, "newerror-list-") {
-				m.DeleteDNSRecord(ctx, rc, record.ID)
+				m.DeleteDNSRecord(ctx, record.ID, getDeleteDNSRecordParam(rc.Identifier))
 				return nil, &cloudflarev0.ResultInfo{}, errors.New("failed to list erroring DNS record")
 			}
 			result = append(result, record)
@@ -235,13 +235,14 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error {
+func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
+	zoneID := params.ZoneID.String()
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
-		ZoneId:   rc.Identifier,
+		ZoneId:   zoneID,
 		RecordId: recordID,
 	})
-	if zone, ok := m.Records[rc.Identifier]; ok {
+	if zone, ok := m.Records[zoneID]; ok {
 		if _, ok := zone[recordID]; ok {
 			name := zone[recordID].Name
 			delete(zone, recordID)
