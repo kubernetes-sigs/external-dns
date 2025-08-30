@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -171,49 +170,22 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.R
 	return &record, nil
 }
 
-func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error) {
+func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse] {
 	if m.dnsRecordsError != nil {
-		return nil, &cloudflarev0.ResultInfo{}, m.dnsRecordsError
+		return &mockAutoPager[dns.RecordResponse]{err: m.dnsRecordsError}
 	}
-	result := []dns.RecordResponse{}
-	if zone, ok := m.Records[rc.Identifier]; ok {
+	iter := &mockAutoPager[dns.RecordResponse]{}
+	if zone, ok := m.Records[params.ZoneID.Value]; ok {
 		for _, record := range zone {
 			if strings.HasPrefix(record.Name, "newerror-list-") {
-				m.DeleteDNSRecord(ctx, rc, record.ID)
-				return nil, &cloudflarev0.ResultInfo{}, errors.New("failed to list erroring DNS record")
+				m.DeleteDNSRecord(ctx, cloudflarev0.ResourceIdentifier(params.ZoneID.Value), record.ID)
+				iter.err = errors.New("failed to list erroring DNS record")
+				return iter
 			}
-			result = append(result, record)
+			iter.items = append(iter.items, record)
 		}
 	}
-
-	if len(result) == 0 || rp.PerPage == 0 {
-		return result, &cloudflarev0.ResultInfo{Page: 1, TotalPages: 1, Count: 0, Total: 0}, nil
-	}
-
-	// if not pagination options were passed in, return the result as is
-	if rp.Page == 0 {
-		return result, &cloudflarev0.ResultInfo{Page: 1, TotalPages: 1, Count: len(result), Total: len(result)}, nil
-	}
-
-	// otherwise, split the result into chunks of size rp.PerPage to simulate the pagination from the API
-	chunks := [][]dns.RecordResponse{}
-
-	// to ensure consistency in the multiple calls to this function, sort the result slice
-	sort.Slice(result, func(i, j int) bool { return strings.Compare(result[i].ID, result[j].ID) > 0 })
-	for rp.PerPage < len(result) {
-		result, chunks = result[rp.PerPage:], append(chunks, result[0:rp.PerPage])
-	}
-	chunks = append(chunks, result)
-
-	// return the requested page
-	partialResult := chunks[rp.Page-1]
-	return partialResult, &cloudflarev0.ResultInfo{
-		PerPage:    rp.PerPage,
-		Page:       rp.Page,
-		TotalPages: len(chunks),
-		Count:      len(partialResult),
-		Total:      len(result),
-	}, nil
+	return iter
 }
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
@@ -1500,7 +1472,7 @@ func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
 	}
 	ctx := context.Background()
 	chs := CustomHostnamesMap{}
-	records, err := provider.listDNSRecordsWithAutoPagination(ctx, "001")
+	records, err := provider.getDNSRecordsMap(ctx, "001")
 	assert.NoError(t, err)
 
 	endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, chs)

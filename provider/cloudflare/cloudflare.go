@@ -110,7 +110,7 @@ type cloudFlareDNS interface {
 	ZoneIDByName(zoneName string) (string, error)
 	ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone]
 	GetZone(ctx context.Context, zoneID string) (*zones.Zone, error)
-	ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error)
+	ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse]
 	CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error
@@ -152,13 +152,8 @@ func (z zoneService) CreateDNSRecord(ctx context.Context, params dns.RecordNewPa
 	return z.service.DNS.Records.New(ctx, params)
 }
 
-func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error) {
-	records, info, err := z.serviceV0.ListDNSRecords(ctx, rc, rp)
-	convertedRecords := make([]dns.RecordResponse, 0, len(records))
-	for _, record := range records {
-		convertedRecords = append(convertedRecords, dnsRecordResponseFromLegacyDNSRecord(record))
-	}
-	return convertedRecords, info, err
+func (z zoneService) ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse] {
+	return z.service.DNS.Records.ListAutoPaging(ctx, params)
 }
 
 func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
@@ -428,7 +423,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 
 	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
-		records, err := p.listDNSRecordsWithAutoPagination(ctx, zone.ID)
+		records, err := p.getDNSRecordsMap(ctx, zone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -643,7 +638,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				continue
 			}
 
-			records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
+			records, err := p.getDNSRecordsMap(ctx, zoneID)
 			if err != nil {
 				return fmt.Errorf("could not fetch records from zone, %w", err)
 			}
@@ -865,27 +860,19 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: r.Content}
 }
 
-// listDNSRecordsWithAutoPagination performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
-func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
+// getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
+func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
-	records := make(DNSRecordsMap)
-	resultInfo := cloudflarev0.ResultInfo{PerPage: p.DNSRecordsConfig.PerPage, Page: 1}
-	params := cloudflarev0.ListDNSRecordsParams{ResultInfo: resultInfo}
-	for {
-		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflarev0.ZoneIdentifier(zoneID), params)
-		if err != nil {
-			return nil, convertCloudflareError(err)
-		}
-
-		for _, r := range pageRecords {
-			records[newDNSRecordIndex(r)] = r
-		}
-		params.ResultInfo = resultInfo.Next()
-		if params.Done() {
-			break
-		}
+	recordsMap := make(DNSRecordsMap)
+	params := dns.RecordListParams{ZoneID: cloudflare.F(zoneID)}
+	iter := p.Client.ListDNSRecords(ctx, params)
+	for record := range autoPagerIterator(iter) {
+		recordsMap[newDNSRecordIndex(record)] = record
 	}
-	return records, nil
+	if iter.Err() != nil {
+		return nil, convertCloudflareError(iter.Err())
+	}
+	return recordsMap, nil
 }
 
 func newCustomHostnameIndex(ch cloudflarev0.CustomHostname) CustomHostnameIndex {
