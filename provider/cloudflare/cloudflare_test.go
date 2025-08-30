@@ -118,26 +118,6 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func getDNSRecordFromRecordParams(rp any) dns.RecordResponse {
-	switch params := rp.(type) {
-	case cloudflarev0.UpdateDNSRecordParams:
-		record := dns.RecordResponse{
-			ID:      params.ID,
-			Name:    params.Name,
-			TTL:     dns.TTL(params.TTL),
-			Proxied: params.Proxied != nil && *params.Proxied,
-			Type:    dns.RecordResponseType(params.Type),
-			Content: params.Content,
-		}
-		if params.Type == "MX" {
-			record.Priority = float64(*params.Priority)
-		}
-		return record
-	default:
-		return dns.RecordResponse{}
-	}
-}
-
 func generateDNSRecordID(rrtype string, name string, content string) string {
 	return fmt.Sprintf("%s-%s-%s", name, rrtype, content)
 }
@@ -216,23 +196,35 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 	}, nil
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
-	recordData := getDNSRecordFromRecordParams(rp)
+func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (res *dns.RecordResponse, err error) {
+	zoneID := params.ZoneID.String()
+	body := params.Body.(dns.RecordUpdateParamsBody)
+
+	record := dns.RecordResponse{
+		ID:       recordID,
+		Name:     body.Name.Value,
+		TTL:      dns.TTL(body.TTL.Value),
+		Proxied:  body.Proxied.Value,
+		Type:     dns.RecordResponseType(body.Type.String()),
+		Content:  body.Content.Value,
+		Priority: body.Priority.Value,
+	}
+
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
-		ZoneId:     rc.Identifier,
-		RecordId:   rp.ID,
-		RecordData: recordData,
+		ZoneId:     zoneID,
+		RecordId:   recordID,
+		RecordData: record,
 	})
-	if zone, ok := m.Records[rc.Identifier]; ok {
-		if _, ok := zone[rp.ID]; ok {
-			if strings.HasPrefix(recordData.Name, "newerror-update-") {
-				return errors.New("failed to update erroring DNS record")
+	if zone, ok := m.Records[zoneID]; ok {
+		if _, ok := zone[recordID]; ok {
+			if strings.HasPrefix(record.Name, "newerror-update-") {
+				return nil, errors.New("failed to update erroring DNS record")
 			}
-			zone[rp.ID] = recordData
+			zone[recordID] = record
 		}
 	}
-	return nil
+	return &record, nil
 }
 
 func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error {
