@@ -111,7 +111,7 @@ type cloudFlareDNS interface {
 	ListZones(ctx context.Context, params zones.ZoneListParams) autoPager[zones.Zone]
 	GetZone(ctx context.Context, zoneID string) (*zones.Zone, error)
 	ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error)
-	CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (dns.RecordResponse, error)
+	CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
 	DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error
 	UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error
 	ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse]
@@ -148,9 +148,8 @@ func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
 	return "", fmt.Errorf("zone %q not found in CloudFlare account - verify the zone exists and API credentials have access to it", zoneName)
 }
 
-func (z zoneService) CreateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.CreateDNSRecordParams) (dns.RecordResponse, error) {
-	record, err := z.serviceV0.CreateDNSRecord(ctx, rc, rp)
-	return dnsRecordResponseFromLegacyDNSRecord(record), err
+func (z zoneService) CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	return z.service.DNS.Records.New(ctx, params)
 }
 
 func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error) {
@@ -286,20 +285,19 @@ func updateDNSRecordParam(cfc cloudFlareChange) cloudflarev0.UpdateDNSRecordPara
 }
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflarev0.CreateDNSRecordParams {
-	priority := uint16(cfc.ResourceRecord.Priority)
-
-	params := cloudflarev0.CreateDNSRecordParams{
-		Name:     cfc.ResourceRecord.Name,
-		TTL:      int(cfc.ResourceRecord.TTL),
-		Proxied:  &cfc.ResourceRecord.Proxied,
-		Type:     string(cfc.ResourceRecord.Type),
-		Content:  cfc.ResourceRecord.Content,
-		Priority: &priority,
-		Comment:  cfc.ResourceRecord.Comment,
+func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNewParams {
+	return dns.RecordNewParams{
+		ZoneID: cloudflare.F(zoneID),
+		Body: dns.RecordNewParamsBody{
+			Name:     cloudflare.F(cfc.ResourceRecord.Name),
+			TTL:      cloudflare.F(cfc.ResourceRecord.TTL),
+			Proxied:  cloudflare.F(cfc.ResourceRecord.Proxied),
+			Type:     cloudflare.F(dns.RecordNewParamsBodyType(cfc.ResourceRecord.Type)),
+			Content:  cloudflare.F(cfc.ResourceRecord.Content),
+			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
+			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
+		},
 	}
-
-	return params
 }
 
 func convertCloudflareError(err error) error {
@@ -684,8 +682,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					failedChange = true
 				}
 			} else if change.Action == cloudFlareCreate {
-				recordParam := getCreateDNSRecordParam(*change)
-				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
+				recordParam := getCreateDNSRecordParam(zoneID, change)
+				_, err := p.Client.CreateDNSRecord(ctx, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
