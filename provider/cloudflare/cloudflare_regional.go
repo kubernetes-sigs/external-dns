@@ -222,11 +222,32 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 	}
 
 	for _, ep := range supportedEndpoints {
+		var regionKey string
 		if rh, found := regionalHostnames[ep.DNSName]; found {
-			ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, rh.regionKey)
+			regionKey = rh.regionKey
 		}
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, regionKey)
 	}
 	return nil
+}
+
+// adjustEnpointProviderSpecificRegionKeyProperty updates the given endpoint's provider-specific
+// Cloudflare region key based on the provider's RegionalServicesConfig.
+//   - If regional services are disabled or the endpoint's record type does not
+//     support regional hostnames, the Cloudflare region key is removed.
+//   - If enabled and supported, and the key is not already set, it is initialized
+//     to the provider's default RegionKey.
+//
+// The endpoint is modified in place and any explicitly set region key is left unchanged.
+func (p *CloudFlareProvider) adjustEnpointProviderSpecificRegionKeyProperty(ep *endpoint.Endpoint) {
+	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
+		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionKey)
+		return
+	}
+	// Add default region key if not set
+	if _, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); !ok {
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, p.RegionalServicesConfig.RegionKey)
+	}
 }
 
 // desiredRegionalHostnames builds a list of desired regional hostnames from changes.
