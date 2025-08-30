@@ -106,10 +106,17 @@ Iterates over all listeners for the parent's `parentRef.sectionName`:
 
 The targets of the DNS entries created from a \*Route are sourced from the following places:
 
-1. If a matching parent Gateway has an `external-dns.alpha.kubernetes.io/target` annotation, uses
+1. If the route has the `external-dns.alpha.kubernetes.io/target` annotation
+   with a non-empty value, uses the value from that.
+
+2. If the route has the `external-dns.alpha.kubernetes.io/target: ""` it
+   will disable the `external-dns.alpha.kubernetes.io/target` on the matching parent
+   Gateway(s) and continue the regular flow from step 4.
+
+3. If a matching parent Gateway has the `external-dns.alpha.kubernetes.io/target` annotation, uses
    the values from that.
 
-2. Otherwise, iterates over that parent Gateway's `status.addresses`,
+4. Otherwise, iterates over that parent Gateway's `status.addresses`,
    adding each address's `value`.
 
 The targets from each parent Gateway matching the \*Route are then combined and de-duplicated.
