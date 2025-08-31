@@ -319,7 +319,6 @@ func TestNewNS1ChangesByZone(t *testing.T) {
 	assert.Len(t, changes["foo.com"], 3)
 }
 
-// helper: build a change
 func change(action, name, rtype string) *ns1Change {
 	return &ns1Change{
 		Action: action,
