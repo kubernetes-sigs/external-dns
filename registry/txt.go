@@ -285,9 +285,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
-// depending on the newFormatOnly configuration. The old format is maintained for backwards
-// compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	return im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool { return true })
 }
@@ -295,7 +292,6 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	// Always create new format record
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
