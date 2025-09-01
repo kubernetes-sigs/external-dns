@@ -265,9 +265,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
-				// Get desired TXT records and detect the missing ones
-				desiredTXTs := im.generateTXTRecord(ep)
-				for _, desiredTXT := range desiredTXTs {
+				// Get desired TXT record and check whether it is missing
+				if desiredTXT := im.generateTXTRecord(ep); desiredTXT != nil {
 					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 					}
@@ -285,13 +284,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	return im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool { return true })
-}
-
-func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
-	endpoints := make([]*endpoint.Endpoint, 0)
-
+func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) *endpoint.Endpoint {
 	recordType := r.RecordType
 	// AWS Alias records are encoded as type "cname"
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
@@ -307,11 +300,8 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
-		}
 	}
-	return endpoints
+	return txtNew
 }
 
 // ApplyChanges updates dns provider with the changes
@@ -332,7 +322,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		if txt := im.generateTXTRecord(r); txt != nil && im.existingTXTs.isAbsent(txt) {
+			filteredChanges.Create = append(filteredChanges.Create, txt)
+		}
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
@@ -343,7 +335,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
+		if txt := im.generateTXTRecord(r); txt != nil {
+			filteredChanges.Delete = append(filteredChanges.Delete, txt)
+		}
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -354,7 +348,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.UpdateOld {
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		if txt := im.generateTXTRecord(r); txt != nil {
+			filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
+		}
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -363,7 +359,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		if txt := im.generateTXTRecord(r); txt != nil {
+			filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
+		}
 		// add new version of record to cache
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
