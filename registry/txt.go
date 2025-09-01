@@ -19,6 +19,7 @@ package registry
 import (
 	"context"
 	"errors"
+
 	"strings"
 	"time"
 
@@ -58,6 +59,53 @@ type TXTRegistry struct {
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
+
+	// existingTXTs is the TXT records that already exist in the zone so that
+	// ApplyChanges() can skip re-creating them. See the struct below for details.
+	existingTXTs *existingTXTs
+}
+
+// existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
+// It relies on the fact that Records() is always called **before** ApplyChanges()
+// within a single reconciliation cycle.
+type existingTXTs struct {
+	entries map[recordKey]struct{}
+}
+
+type recordKey struct {
+	dnsName       string
+	setIdentifier string
+}
+
+func newExistingTXTs() *existingTXTs {
+	return &existingTXTs{
+		entries: make(map[recordKey]struct{}),
+	}
+}
+
+func (im *existingTXTs) add(r *endpoint.Endpoint) {
+	key := recordKey{
+		dnsName:       r.DNSName,
+		setIdentifier: r.SetIdentifier,
+	}
+	im.entries[key] = struct{}{}
+}
+
+// isAbsent returns true when there is no entry for the given name in the store.
+// This is intended for the "if absent -> create" pattern.
+func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
+	key := recordKey{
+		dnsName:       ep.DNSName,
+		setIdentifier: ep.SetIdentifier,
+	}
+	_, ok := im.entries[key]
+	return !ok
+}
+
+func (im *existingTXTs) reset() {
+	// Reset the existing TXT records for the next reconciliation loop.
+	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
+	im.entries = make(map[recordKey]struct{})
 }
 
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -100,6 +148,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		existingTXTs:        newExistingTXTs(),
 	}, nil
 }
 
@@ -167,6 +216,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		labelMap[key] = labels
 		txtRecordsMap[record.DNSName] = struct{}{}
+		im.existingTXTs.add(record)
 	}
 
 	for _, ep := range endpoints {
@@ -230,6 +280,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.generateTXTRecordWithFilter(r, func(ep *endpoint.Endpoint) bool { return true })
+}
+
+func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	// Always create new format record
@@ -243,7 +297,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
+		if filter(txtNew) {
+			endpoints = append(endpoints, txtNew)
+		}
 	}
 	return endpoints
 }
@@ -251,6 +307,8 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	defer im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
+
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
@@ -263,7 +321,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
