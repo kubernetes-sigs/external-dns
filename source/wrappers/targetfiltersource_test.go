@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -56,7 +55,7 @@ func TestEchoSourceReturnGivenSources(t *testing.T) {
 		RecordTTL:  endpoint.TTL(300),
 		Labels:     endpoint.Labels{},
 	}}
-	e := testutils.NewMockSource(startEndpoints...)
+	e := source.NewMockSource(startEndpoints...)
 
 	endpoints, err := e.Endpoints(context.Background())
 	if err != nil {
@@ -124,7 +123,7 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			t.Parallel()
 
-			echo := testutils.NewMockSource(tt.endpoints...)
+			echo := source.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 
 			endpoints, err := src.Endpoints(context.Background())
@@ -206,7 +205,7 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			echo := testutils.NewMockSource(tt.endpoints...)
+			echo := source.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 
 			endpoints, err := src.Endpoints(context.Background())
@@ -237,7 +236,7 @@ func TestTargetFilterSource_AddEventHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			m := testutils.NewMockSource()
+			m := source.NewMockSource()
 			src := NewTargetFilterSource(m, tt.filters)
 			src.AddEventHandler(t.Context(), func() {})
 

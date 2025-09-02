@@ -231,13 +231,13 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
 	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsSuffixed(t *testing.T) {
@@ -366,13 +366,13 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
 	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpointLabels(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
@@ -493,7 +493,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
@@ -530,12 +530,12 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 
 	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
@@ -572,12 +572,12 @@ func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 
 	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryApplyChanges(t *testing.T) {
@@ -680,7 +680,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -726,7 +726,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -769,7 +769,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -871,7 +871,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -947,7 +947,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -1061,7 +1061,7 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
@@ -1171,7 +1171,7 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS, endpoint.RecordTypeTXT}, []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func TestCacheMethods(t *testing.T) {
@@ -1507,7 +1507,7 @@ func TestNewTXTScheme(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -1603,7 +1603,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		mGot := map[string][]*endpoint.Endpoint{
 			"Delete": got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
@@ -1663,7 +1663,7 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 			"UpdateOld": {},
 			"Delete":    {},
 		}
-		testutils.SamePlanChanges(got, expected)
+		endpoint.SamePlanChanges(got, expected)
 	}
 
 	err := r.ApplyChanges(ctx, changes.Changes)
@@ -1804,7 +1804,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 		},
 	}
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 
 	testutils.TestHelperLogContains("TXT record has no targets empty-targets.test-zone.example.org", hook, t)
 }
@@ -1982,7 +1982,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 							assert.Empty(t, changes.Create, "ApplyChanges should not be called multiple times with new changes")
 						} else {
 							assert.True(t,
-								testutils.SameEndpoints(changes.Create, expectedCreate),
+								endpoint.SameEndpoints(changes.Create, expectedCreate),
 								"Expected create changes: %v, but got: %v", expectedCreate, changes.Create,
 							)
 						}
@@ -2018,7 +2018,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 						// Then: Verify that the missing records are recreated or the existing records are not modified
 						records, err = p.Records(ctx)
 						assert.NoError(t, err)
-						assert.True(t, testutils.SameEndpoints(records, expectedRecords),
+						assert.True(t, endpoint.SameEndpoints(records, expectedRecords),
 							"Expected records after reconciliation loop #%d: %v, but got: %v",
 							i, expectedRecords, records,
 						)

@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
@@ -63,7 +62,7 @@ func testNoopRecords(t *testing.T) {
 
 	eps, err := r.Records(ctx)
 	require.NoError(t, err)
-	assert.True(t, testutils.SameEndpoints(eps, inmemoryRecords))
+	assert.True(t, endpoint.SameEndpoints(eps, inmemoryRecords))
 }
 
 func testNoopApplyChanges(t *testing.T) {
@@ -133,5 +132,5 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}))
 	res, _ := p.Records(ctx)
-	assert.True(t, testutils.SameEndpoints(res, expectedUpdate))
+	assert.True(t, endpoint.SameEndpoints(res, expectedUpdate))
 }

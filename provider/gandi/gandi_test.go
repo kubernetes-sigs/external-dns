@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -251,7 +250,7 @@ func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
 	assert.Len(t, actualEndpoints, len(expectedEndpoints))
 	// we could use testutils.SameEndpoints (plural), but this makes it easier to identify which case is failing
 	for i := range actualEndpoints {
-		if !testutils.SameEndpoint(expectedEndpoints[i], actualEndpoints[i]) {
+		if !endpoint.SameEndpoint(expectedEndpoints[i], actualEndpoints[i]) {
 			t.Errorf("should be equal, expected:%v <> actual:%v", expectedEndpoints[i], actualEndpoints[i])
 
 		}

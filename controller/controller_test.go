@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/source"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,9 +131,9 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 	return dnsProvider
 }
 
-func getTestSource() *testutils.MockSource {
+func getTestSource() *source.MockSource {
 	// Fake some desired endpoints coming from our source.
-	source := new(testutils.MockSource)
+	source := new(source.MockSource)
 	source.On("Endpoints").Return([]*endpoint.Endpoint{
 		{
 			DNSName:    "create-record",
@@ -339,7 +340,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	cfg := externaldns.NewConfig()
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 
-	source := new(testutils.MockSource)
+	source := new(source.MockSource)
 	source.On("Endpoints").Return(configuredEndpoints, nil)
 
 	// Fake some existing records in our DNS provider and validate some desired changes.

@@ -169,7 +169,7 @@ func TestAWSSDProvider_Records(t *testing.T) {
 
 	endpoints, _ := provider.Records(context.Background())
 
-	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
+	assert.True(t, endpoint.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 }
 
 func TestAWSSDProvider_ApplyChanges(t *testing.T) {
@@ -212,7 +212,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 
 	// make sure instances were registered
 	endpoints, _ := provider.Records(ctx)
-	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
+	assert.True(t, endpoint.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 
 	ctx = context.Background()
 	// apply deletes
@@ -273,7 +273,7 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 
 	// make sure instances were registered
 	endpoints, _ := provider.Records(ctx)
-	assert.True(t, testutils.SameEndpoints(newEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", newEndpoints, endpoints)
+	assert.True(t, endpoint.SameEndpoints(newEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", newEndpoints, endpoints)
 
 	// make sure only one instance is de-registered
 	assert.Len(t, api.deregistered, 1)

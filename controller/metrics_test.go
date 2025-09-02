@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/source"
 )
 
 func TestRecordKnownEndpointType(t *testing.T) {
@@ -322,7 +323,7 @@ func TestAAAARecords(t *testing.T) {
 }
 
 func TestGaugeMetricsWithMixedRecords(t *testing.T) {
-	configuredEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
+	configuredEndpoints := endpoint.GenerateTestEndpointsByType(map[string]int{
 		endpoint.RecordTypeA:     534,
 		endpoint.RecordTypeAAAA:  324,
 		endpoint.RecordTypeCNAME: 2,
@@ -331,7 +332,7 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 		endpoint.RecordTypeNS:    3,
 	})
 
-	providerEndpoints := testutils.GenerateTestEndpointsByType(map[string]int{
+	providerEndpoints := endpoint.GenerateTestEndpointsByType(map[string]int{
 		endpoint.RecordTypeA:     5334,
 		endpoint.RecordTypeAAAA:  324,
 		endpoint.RecordTypeCNAME: 23,
@@ -344,7 +345,7 @@ func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	cfg := externaldns.NewConfig()
 	cfg.ManagedDNSRecordTypes = endpoint.KnownRecordTypes
 
-	source := new(testutils.MockSource)
+	source := new(source.MockSource)
 	source.On("Endpoints").Return(configuredEndpoints, nil)
 
 	provider := &filteredMockProvider{

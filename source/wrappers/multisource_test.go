@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 func TestMultiSource(t *testing.T) {
@@ -83,17 +82,17 @@ func testMultiSourceEndpoints(t *testing.T) {
 
 			// Populate the nested mock sources.
 			for _, endpoints := range tc.nestedEndpoints {
-				src := new(testutils.MockSource)
+				src := new(source.MockSource)
 				src.On("Endpoints").Return(endpoints, nil)
 
 				sources = append(sources, src)
 			}
 
 			// Create our object under test and get the endpoints.
-			source := NewMultiSource(sources, nil, false)
+			source_ := NewMultiSource(sources, nil, false)
 
 			// Get endpoints from the source.
-			endpoints, err := source.Endpoints(context.Background())
+			endpoints, err := source_.Endpoints(context.Background())
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
@@ -101,7 +100,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 
 			// Validate that the nested sources were called.
 			for _, src := range sources {
-				src.(*testutils.MockSource).AssertExpectations(t)
+				src.(*source.MockSource).AssertExpectations(t)
 			}
 		})
 	}
@@ -113,7 +112,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 	errSomeError := errors.New("some error")
 
 	// Create a mocked source returning that error.
-	src := new(testutils.MockSource)
+	src := new(source.MockSource)
 	src.On("Endpoints").Return(nil, errSomeError)
 
 	// Create our object under test and get the endpoints.
@@ -152,7 +151,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 			{DNSName: "bar", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
 		}
 
-		src := new(testutils.MockSource)
+		src := new(source.MockSource)
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=false (default behavior)
@@ -182,7 +181,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 			{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
 		}
 
-		src := new(testutils.MockSource)
+		src := new(source.MockSource)
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=false (default behavior)
@@ -220,7 +219,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 			{DNSName: "bar", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
 		}
 
-		src := new(testutils.MockSource)
+		src := new(source.MockSource)
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=true (legacy behavior)
@@ -255,7 +254,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 			{DNSName: "empty-target-test", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
 		}
 
-		src := new(testutils.MockSource)
+		src := new(source.MockSource)
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=true
@@ -284,9 +283,9 @@ func TestMultiSource_AddEventHandler(t *testing.T) {
 		{
 			title: "should add event handler when sources not empty",
 			sources: []source.Source{
-				testutils.NewMockSource(),
-				testutils.NewMockSource(),
-				testutils.NewMockSource(),
+				source.NewMockSource(),
+				source.NewMockSource(),
+				source.NewMockSource(),
 			},
 			times: 3,
 		},
@@ -300,7 +299,7 @@ func TestMultiSource_AddEventHandler(t *testing.T) {
 			count := 0
 
 			for _, mockSource := range tt.sources {
-				mSource := mockSource.(*testutils.MockSource)
+				mSource := mockSource.(*source.MockSource)
 				mSource.AssertNumberOfCalls(t, "AddEventHandler", 1)
 				count += 1
 			}

@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -105,7 +104,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 	r, _ := NewAWSSDRegistry(p, "owner")
 	records, _ := r.Records(context.Background())
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
@@ -150,7 +149,7 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.True(t, endpoint.SamePlanChanges(mGot, mExpected))
 	})
 	r, err := NewAWSSDRegistry(p, "owner")
 	require.NoError(t, err)

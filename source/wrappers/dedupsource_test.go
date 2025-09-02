@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -125,7 +124,7 @@ func testDedupEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			mockSource := new(testutils.MockSource)
+			mockSource := new(source.MockSource)
 			mockSource.On("Endpoints").Return(tc.endpoints, nil)
 
 			// Create our object under test and get the endpoints.
@@ -159,7 +158,7 @@ func TestDedupSource_AddEventHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
-			mockSource := testutils.NewMockSource()
+			mockSource := source.NewMockSource()
 
 			src := NewDedupSource(mockSource)
 			src.AddEventHandler(t.Context(), func() {})

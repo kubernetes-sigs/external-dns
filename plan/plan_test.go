@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 type PlanTestSuite struct {
@@ -1023,7 +1022,7 @@ func TestPlan(t *testing.T) {
 
 // validateEntries validates that the list of entries matches expected.
 func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
-	if !testutils.SameEndpoints(entries, expected) {
+	if !endpoint.SameEndpoints(entries, expected) {
 		t.Fatalf("expected %q to match %q", entries, expected)
 	}
 }

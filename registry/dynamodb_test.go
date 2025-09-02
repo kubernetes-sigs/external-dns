@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -252,7 +251,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, endpoint.SameEndpoints(records, expectedRecords))
 }
 
 func TestDynamoDBRegistryApplyChanges(t *testing.T) {
@@ -1095,12 +1094,12 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 
 			records, err := r.Records(ctx)
 			require.NoError(t, err)
-			assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
+			assert.True(t, endpoint.SameEndpoints(records, tc.expectedRecords))
 
 			r.recordsCache = nil
 			records, err = r.Records(ctx)
 			require.NoError(t, err)
-			assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
+			assert.True(t, endpoint.SameEndpoints(records, tc.expectedRecords))
 			if tc.expectedError == "" {
 				assert.Empty(t, r.orphanedLabels)
 			}

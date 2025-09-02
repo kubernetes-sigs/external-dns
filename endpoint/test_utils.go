@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testutils
+package endpoint
 
 import (
 	"fmt"
@@ -23,19 +23,17 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
 /** test utility functions for endpoints verifications */
 
-type byNames endpoint.ProviderSpecific
+type byNames ProviderSpecific
 
 func (p byNames) Len() int           { return len(p) }
 func (p byNames) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p byNames) Less(i, j int) bool { return p[i].Name < p[j].Name }
 
-type byAllFields []*endpoint.Endpoint
+type byAllFields []*Endpoint
 
 func (b byAllFields) Len() int      { return len(b) }
 func (b byAllFields) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
@@ -62,11 +60,11 @@ func (b byAllFields) Less(i, j int) bool {
 
 // SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
-func SameEndpoint(a, b *endpoint.Endpoint) bool {
+func SameEndpoint(a, b *Endpoint) bool {
 	return a.DNSName == b.DNSName && a.Targets.Same(b.Targets) && a.RecordType == b.RecordType && a.SetIdentifier == b.SetIdentifier &&
-		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
-		a.Labels[endpoint.ResourceLabelKey] == b.Labels[endpoint.ResourceLabelKey] &&
-		a.Labels[endpoint.OwnedRecordLabelKey] == b.Labels[endpoint.OwnedRecordLabelKey] &&
+		a.Labels[OwnerLabelKey] == b.Labels[OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
+		a.Labels[ResourceLabelKey] == b.Labels[ResourceLabelKey] &&
+		a.Labels[OwnedRecordLabelKey] == b.Labels[OwnedRecordLabelKey] &&
 		SameProviderSpecific(a.ProviderSpecific, b.ProviderSpecific)
 }
 
@@ -75,7 +73,7 @@ func SameEndpoint(a, b *endpoint.Endpoint) bool {
 // [x,x,z] == [x,z,x]
 // [x,y,y] != [x,x,y]
 // [x,x,x] != [x,x,z]
-func SameEndpoints(a, b []*endpoint.Endpoint) bool {
+func SameEndpoints(a, b []*Endpoint) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -94,7 +92,7 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 }
 
 // SameEndpointLabels verifies that labels of the two slices of endpoints are the same
-func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
+func SameEndpointLabels(a, b []*Endpoint) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -113,13 +111,13 @@ func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
 }
 
 // SamePlanChanges verifies that two set of changes are the same
-func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
+func SamePlanChanges(a, b map[string][]*Endpoint) bool {
 	return SameEndpoints(a["Create"], b["Create"]) && SameEndpoints(a["Delete"], b["Delete"]) &&
 		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
 }
 
 // SameProviderSpecific verifies that two maps contain the same string/string key/value pairs
-func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
+func SameProviderSpecific(a, b ProviderSpecific) bool {
 	sa := a
 	sb := b
 	sort.Sort(byNames(sa))
@@ -128,8 +126,8 @@ func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
 }
 
 // NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)
-func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
-	t := make(endpoint.Targets, len(targets))
+func NewTargetsFromAddr(targets []netip.Addr) Targets {
+	t := make(Targets, len(targets))
 	for i, target := range targets {
 		t[i] = target.String()
 	}
@@ -141,14 +139,14 @@ func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
 //
 //	endpoints := GenerateTestEndpointsByType(map[string]int{"A": 2, "CNAME": 1})
 //	// endpoints will contain 2 A records and 1 CNAME record with unique DNS names and targets.
-func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint {
-	var result []*endpoint.Endpoint
+func GenerateTestEndpointsByType(typeCounts map[string]int) []*Endpoint {
+	var result []*Endpoint
 	idx := 0
 	for rt, count := range typeCounts {
 		for i := 0; i < count; i++ {
-			result = append(result, &endpoint.Endpoint{
+			result = append(result, &Endpoint{
 				DNSName:    fmt.Sprintf("%s-%d.example.com", strings.ToLower(rt), idx),
-				Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},
+				Targets:    Targets{fmt.Sprintf("192.0.2.%d", idx)},
 				RecordType: rt,
 				RecordTTL:  300,
 			})
