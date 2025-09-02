@@ -27,6 +27,7 @@ import (
 	"time"
 
 	cloudflarev0 "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
 	"github.com/maxatome/go-testdeep/td"
@@ -3317,4 +3318,23 @@ func TestDnsRecordFromLegacyAPI(t *testing.T) {
 			assert.Equal(t, tt.expect, got)
 		})
 	}
+}
+
+func TestZoneService(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	client := &zoneService{
+		service: cloudflare.NewClient(),
+	}
+
+	t.Run("UpdateDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		iter := client.ListDNSRecords(ctx, dns.RecordListParams{ZoneID: cloudflare.F("foo")})
+		require.False(t, iter.Next())
+		require.Empty(t, iter.Current())
+		require.ErrorIs(t, iter.Err(), context.Canceled)
+	})
 }
