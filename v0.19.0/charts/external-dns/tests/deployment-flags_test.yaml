@@ -1,0 +1,166 @@
+suite: Deployment flags configurations
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should provide expected default flags
+    asserts:
+      - exists :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+
+  - it: should configure 'txtSuffix' when not empty with 'txtPrefix' empty
+    set:
+      txtPrefix: ""
+      txtSuffix: "test-suffix"
+    asserts:
+      - exists :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --txt-suffix=test-suffix
+            - --provider=aws
+      - notContains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-prefix=test-prefix"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-suffix=test-suffix"
+
+  - it: should configure 'txtSuffix' when set and 'txtPrefix' is not present
+    set:
+      txtSuffix: "custom-suffix"
+    asserts:
+      - exists :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--txt-suffix=custom-suffix"
+
+  - it: should be able configure multiple sources
+    set:
+      sources:
+        - fake
+        - crd
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--source=fake"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--source=crd"
+
+  - it: should be able to configure in single namespace
+    set:
+      namespaced: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--namespace=default"
+
+  - it: should manage multiple zones with 'extraArgs'
+    set:
+      extraArgs:
+        - --zone-id-filter=/hostedzone/Z00001
+        - --zone-id-filter=/hostedzone/Z00002
+        - --zone-id-filter=/hostedzone/Z00003
+        - --zone-id-filter=/hostedzone/Z00004
+        - --zone-id-filter=/hostedzone/Z00005
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --zone-id-filter=/hostedzone/Z00001
+            - --zone-id-filter=/hostedzone/Z00002
+            - --zone-id-filter=/hostedzone/Z00003
+            - --zone-id-filter=/hostedzone/Z00004
+            - --zone-id-filter=/hostedzone/Z00005
+
+
+  - it: should allow 'extraArgs' to be a slice
+    set:
+      extraArgs:
+       - --extraArgA=valueA
+       - --extraArgB=valueB
+       - --extraArgC=valueC-1
+       - --extraArgC=valueC-2
+
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --extraArgA=valueA
+            - --extraArgB=valueB
+            - --extraArgC=valueC-1
+            - --extraArgC=valueC-2
+
+
+  - it: should allow 'extraArgs' to be a map with its entries potentially being slices (lists) themselves
+    set:
+      extraArgs:
+        extraArgA: valueA
+        extraArgB: valueB
+        extraArgC:
+          - valueC-1
+          - valueC-2
+
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+            - --extraArgA=valueA
+            - --extraArgB=valueB
+            - --extraArgC=valueC-1
+            - --extraArgC=valueC-2
+
+
+  - it: should throw error when txtPrefix and txtSuffix are set
+    set:
+        txtPrefix: "test-prefix"
+        txtSuffix: "test-suffix"
+    asserts:
+     - failedTemplate:
+          errorMessage: "'txtPrefix' and 'txtSuffix' are mutually exclusive"

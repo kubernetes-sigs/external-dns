@@ -1,0 +1,16 @@
+---
+type: public
+providers:
+  kubernetesCRD:
+    ingressClass: traefik-public
+
+  kubernetesIngress:
+    ingressClass: traefik-public
+---
+type: private
+providers:
+  kubernetesCRD:
+    ingressClass: traefik-private
+
+  kubernetesIngress:
+    ingressClass: traefik-private

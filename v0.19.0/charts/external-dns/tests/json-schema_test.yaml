@@ -1,0 +1,64 @@
+suite: Test json value schema validation
+templates:
+  - templates/*
+release:
+  name: notes
+  namespace: apps-notes
+tests:
+  - it: should not throw an error when legacy provider is a string
+    set:
+      provider: legacy
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not throw an error when provider is an object
+    set:
+      provider:
+        name: aws
+        webhook: {}
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not throw an error when 'enabled' value is provided
+    set:
+      enabled: true
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should throw an error when 'enabled' value is not a bool or nil
+    set:
+      enabled: "abrakadabra"
+    asserts:
+      - failedTemplate:
+          errorPattern: "Invalid type. Expected: [boolean,null], given: string"
+
+  - it: should fail if provider is null
+    set:
+      provider: null
+    asserts:
+      - failedTemplate:
+          errorPattern: 'executing "external-dns.providerName" at <.Values.provider.name>: nil pointer evaluating interface {}.name'
+
+  - it: should not fail if provider block is empty
+    set:
+      provider: {}
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when labelFilter has condition
+    set:
+      labelFilter: "mydomain.io/enable-dns-record in (true)"
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when livenessProbe is null
+    set:
+      livenessProbe: null
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when readinessProbe is null
+    set:
+      readinessProbe: null
+    asserts:
+      - notFailedTemplate: {}

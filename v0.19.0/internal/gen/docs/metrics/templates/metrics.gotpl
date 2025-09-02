@@ -1,0 +1,37 @@
+# Available Metrics
+
+<!-- THIS FILE MUST NOT BE EDITED BY HAND -->
+<!-- ON NEW METRIC ADDED PLEASE RUN 'make generate-metrics-documentation' -->
+<!-- markdownlint-disable MD013 -->
+
+All metrics available for scraping are exposed on the {{backtick 1}}/metrics{{backtick 1}} endpoint.
+The metrics are in the Prometheus exposition format.
+
+To access the metrics:
+
+{{backtick 3}}sh
+curl https://localhost:7979/metrics
+{{backtick 3}}
+
+## Supported Metrics
+
+> Full metric name is constructed as follows:
+> {{backtick 1}}external_dns_<subsystem>_<name>{{backtick 1}}
+
+| Name                             | Metric Type | Subsystem   |  Help                                                 |
+|:---------------------------------|:------------|:------------|:------------------------------------------------------|
+{{- range .Metrics }}
+| {{ .Name }} | {{ .Type | capitalize }} | {{ .Subsystem }} | {{ .Help }} |
+{{- end }}
+
+## Available Go Runtime Metrics
+
+> The following Go runtime metrics are available for scraping. Please note that they may change over time and they are OS dependent.
+
+{{ if .RuntimeMetrics -}}
+| Name                  |
+|:----------------------|
+{{- range .RuntimeMetrics }}
+| {{ . }} |
+{{- end -}}
+{{- end -}}
