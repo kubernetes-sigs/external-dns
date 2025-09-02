@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -706,6 +706,8 @@
   
     
     
+      
+        
       
         
       
@@ -1372,6 +1374,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2684,6 +2707,8 @@
       
         
       
+        
+      
     
     
       
@@ -2842,6 +2867,27 @@
   
   <span class="md-ellipsis">
     Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
   </span>
   
 
@@ -3026,7 +3072,7 @@
 
 
 <h1 id="external-dns">external-dns<a class="headerlink" href="#external-dns" title="Permanent link">&para;</a></h1>
-<p><img alt="Version: 1.17.0" src="https://img.shields.io/badge/Version-1.17.0-informational?style=flat-square" /> <img alt="Type: application" src="https://img.shields.io/badge/Type-application-informational?style=flat-square" /> <img alt="AppVersion: 0.17.0" src="https://img.shields.io/badge/AppVersion-0.17.0-informational?style=flat-square" /></p>
+<p><img alt="Version: 1.18.0" src="https://img.shields.io/badge/Version-1.18.0-informational?style=flat-square" /> <img alt="Type: application" src="https://img.shields.io/badge/Type-application-informational?style=flat-square" /> <img alt="AppVersion: 0.18.0" src="https://img.shields.io/badge/AppVersion-0.18.0-informational?style=flat-square" /></p>
 <p>ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.</p>
 <p><strong>Homepage:</strong> <a href="https://github.com/kubernetes-sigs/external-dns/">https://github.com/kubernetes-sigs/external-dns/</a></p>
 <h2 id="maintainers">Maintainers<a class="headerlink" href="#maintainers" title="Permanent link">&para;</a></h2>
@@ -3055,7 +3101,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>external-dns<span class="w"> </span>https://kubernetes-sigs.github.io/external-dns/
 </code></pre></div>
 <p>After you&rsquo;ve installed the repo you can install the chart.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>external-dns<span class="w"> </span>external-dns/external-dns<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.17.0
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>external-dns<span class="w"> </span>external-dns/external-dns<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.18.0
 </code></pre></div>
 <h2 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h2>
 <blockquote>
@@ -3189,6 +3235,12 @@ namespaces as <code>external-dns</code>.</p>
 <td>Affinity settings for <code>Pod</code> <a href="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/">scheduling</a>. If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels.</td>
 </tr>
 <tr>
+<td>annotationFilter</td>
+<td>string</td>
+<td><code>nil</code></td>
+<td>Filter resources queried for endpoints by annotation selector.</td>
+</tr>
+<tr>
 <td>automountServiceAccountToken</td>
 <td>bool</td>
 <td><code>true</code></td>
@@ -3279,6 +3331,12 @@ namespaces as <code>external-dns</code>.</p>
 <td>Override the full name of the chart.</td>
 </tr>
 <tr>
+<td>gatewayNamespace</td>
+<td>string</td>
+<td><code>nil</code></td>
+<td><em>Gateway API</em> gateway namespace to watch.</td>
+</tr>
+<tr>
 <td>global.imagePullSecrets</td>
 <td>list</td>
 <td><code>[]</code></td>
@@ -3324,7 +3382,7 @@ namespaces as <code>external-dns</code>.</p>
 <td>labelFilter</td>
 <td>string</td>
 <td><code>nil</code></td>
-<td>Filter resources queried for endpoints by label selector</td>
+<td>Filter resources queried for endpoints by label selector.</td>
 </tr>
 <tr>
 <td>livenessProbe</td>
@@ -3390,7 +3448,7 @@ namespaces as <code>external-dns</code>.</p>
 <td>policy</td>
 <td>string</td>
 <td><code>"upsert-only"</code></td>
-<td>How DNS records are synchronized between sources and providers; available values are <code>sync</code> &amp; <code>upsert-only</code>.</td>
+<td>How DNS records are synchronized between sources and providers; available values are <code>create-only</code>, <code>sync</code>, &amp; <code>upsert-only</code>.</td>
 </tr>
 <tr>
 <td>priorityClassName</td>
@@ -3746,7 +3804,7 @@ namespaces as <code>external-dns</code>.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 26, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 15, 2025</span>
   </span>
 
     

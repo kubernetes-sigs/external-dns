@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -22,10 +22,11 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Validates that dedupSource is a Source
-var _ Source = &dedupSource{}
+var _ source.Source = &dedupSource{}
 
 func TestDedup(t *testing.T) {
 	t.Run("Endpoints", testDedupEndpoints)
@@ -140,6 +141,30 @@ func testDedupEndpoints(t *testing.T) {
 
 			// Validate that the mock source was called.
 			mockSource.AssertExpectations(t)
+		})
+	}
+}
+
+func TestDedupSource_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		title string
+		input []string
+		times int
+	}{
+		{
+			title: "should add event handler",
+			times: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			mockSource := testutils.NewMockSource()
+
+			src := NewDedupSource(mockSource)
+			src.AddEventHandler(t.Context(), func() {})
+
+			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
 		})
 	}
 }

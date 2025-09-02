@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -37,7 +38,6 @@ import (
 var (
 	registryErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Namespace: "external_dns",
 			Subsystem: "registry",
 			Name:      "errors_total",
 			Help:      "Number of Registry errors.",
@@ -45,7 +45,6 @@ var (
 	)
 	sourceErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Namespace: "external_dns",
 			Subsystem: "source",
 			Name:      "errors_total",
 			Help:      "Number of Source errors.",
@@ -53,7 +52,6 @@ var (
 	)
 	sourceEndpointsTotal = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "source",
 			Name:      "endpoints_total",
 			Help:      "Number of Endpoints in all sources",
@@ -61,7 +59,6 @@ var (
 	)
 	registryEndpointsTotal = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "registry",
 			Name:      "endpoints_total",
 			Help:      "Number of Endpoints in the registry",
@@ -69,7 +66,6 @@ var (
 	)
 	lastSyncTimestamp = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "controller",
 			Name:      "last_sync_timestamp_seconds",
 			Help:      "Timestamp of last successful sync with the DNS provider",
@@ -77,7 +73,6 @@ var (
 	)
 	lastReconcileTimestamp = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "controller",
 			Name:      "last_reconcile_timestamp_seconds",
 			Help:      "Timestamp of last attempted sync with the DNS provider",
@@ -85,7 +80,6 @@ var (
 	)
 	controllerNoChangesTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Namespace: "external_dns",
 			Subsystem: "controller",
 			Name:      "no_op_runs_total",
 			Help:      "Number of reconcile loops ending up with no changes on the DNS provider side.",
@@ -108,7 +102,6 @@ var (
 
 	registryRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "registry",
 			Name:      "records",
 			Help:      "Number of registry records partitioned by label name (vector).",
@@ -118,7 +111,6 @@ var (
 
 	sourceRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "source",
 			Name:      "records",
 			Help:      "Number of source records partitioned by label name (vector).",
@@ -128,7 +120,6 @@ var (
 
 	verifiedRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "controller",
 			Name:      "verified_records",
 			Help:      "Number of DNS records that exists both in source and registry (vector).",
@@ -138,7 +129,6 @@ var (
 
 	consecutiveSoftErrors = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "controller",
 			Name:      "consecutive_soft_errors",
 			Help:      "Number of consecutive soft errors in reconciliation loop.",
@@ -184,7 +174,8 @@ type Controller struct {
 	// The runAtMutex is for atomic updating of nextRunAt and lastRunAt
 	runAtMutex sync.Mutex
 	// The lastRunAt used for throttling and batching reconciliation
-	lastRunAt time.Time
+	lastRunAt    time.Time
+	EventEmitter events.EventEmitter
 	// MangedRecordTypes are DNS record types that will be considered for management.
 	ManagedRecordTypes []string
 	// ExcludeRecordTypes are DNS record types that will be excluded from management.
@@ -255,6 +246,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
 			return err
+		} else {
+			emitChangeEvent(c.EventEmitter, *plan.Changes, events.RecordReady)
 		}
 	} else {
 		controllerNoChangesTotal.Counter.Inc()

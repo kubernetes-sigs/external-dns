@@ -19,11 +19,14 @@ package endpoint
 import (
 	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -110,7 +113,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares to Targets and returns true if they are identical (case-insensitive)
+// Same compares two Targets and returns true if they are identical (case-insensitive)
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -240,6 +243,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// refObject stores reference object
+	// +optional
+	refObject *events.ObjectReference
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -334,6 +340,17 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
+// WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
+// This can be used to associate the Endpoint with a specific Kubernetes object.
+func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+	e.refObject = obj
+	return e
+}
+
+func (e *Endpoint) RefObject() *events.ObjectReference {
+	return e.refObject
+}
+
 // Key returns the EndpointKey of the Endpoint.
 func (e *Endpoint) Key() EndpointKey {
 	return EndpointKey{
@@ -353,7 +370,25 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
-// Apply filter to slice of endpoints and return new filtered slice that includes
+func (e *Endpoint) Describe() string {
+	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
+}
+
+// UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
+func (e *Endpoint) UniqueOrderedTargets() {
+	result := make([]string, 0, len(e.Targets))
+	existing := make(map[string]bool)
+	for _, target := range e.Targets {
+		if _, ok := existing[target]; !ok {
+			result = append(result, target)
+			existing[target] = true
+		}
+	}
+	slices.Sort(result)
+	e.Targets = result
+}
+
+// FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}

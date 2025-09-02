@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -701,6 +701,8 @@
   
     
     
+      
+        
       
         
       
@@ -1383,6 +1385,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../tutorials/ns1/" class="md-nav__link">
         
   
@@ -1747,12 +1770,69 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="external-dns.alpha.kubernetes.io/hostname">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-cases-for-external-dnsalphakubernetesiohostname-annotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases for external-dns.alpha.kubernetes.io/hostname annotation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Cases for external-dns.alpha.kubernetes.io/hostname annotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#explicit-hostname-mapping-for-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Explicit Hostname Mapping for Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hostname-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Hostname Records
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-dns-assignment-without-ingress-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static DNS Assignment Without Ingress Rules
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#external-dnsalphakubernetesioingress-hostname-source" class="md-nav__link">
     <span class="md-ellipsis">
       external-dns.alpha.kubernetes.io/ingress-hostname-source
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-dnsalphakubernetesioingress" class="md-nav__link">
+    <span class="md-ellipsis">
+      external-dns.alpha.kubernetes.io/ingress
     </span>
   </a>
   
@@ -2829,6 +2909,8 @@
       
         
       
+        
+      
     
     
       
@@ -3003,6 +3085,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributing/sources-and-providers/" class="md-nav__link">
         
   
@@ -3084,12 +3187,69 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="external-dns.alpha.kubernetes.io/hostname">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-cases-for-external-dnsalphakubernetesiohostname-annotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Cases for external-dns.alpha.kubernetes.io/hostname annotation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Cases for external-dns.alpha.kubernetes.io/hostname annotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#explicit-hostname-mapping-for-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Explicit Hostname Mapping for Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hostname-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Hostname Records
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-dns-assignment-without-ingress-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static DNS Assignment Without Ingress Rules
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#external-dnsalphakubernetesioingress-hostname-source" class="md-nav__link">
     <span class="md-ellipsis">
       external-dns.alpha.kubernetes.io/ingress-hostname-source
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-dnsalphakubernetesioingress" class="md-nav__link">
+    <span class="md-ellipsis">
+      external-dns.alpha.kubernetes.io/ingress
     </span>
   </a>
   
@@ -3186,6 +3346,7 @@
 <th>target</th>
 <th>ttl</th>
 <th>(provider-specific)</th>
+<th style="text-align: center;">ingress</th>
 </tr>
 </thead>
 <tbody>
@@ -3197,6 +3358,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Connector</td>
@@ -3206,6 +3368,7 @@
 <td></td>
 <td></td>
 <td></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Contour</td>
@@ -3215,6 +3378,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>CloudFoundry</td>
@@ -3224,6 +3388,7 @@
 <td></td>
 <td></td>
 <td></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>CRD</td>
@@ -3233,6 +3398,7 @@
 <td></td>
 <td></td>
 <td></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>F5</td>
@@ -3242,6 +3408,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Gateway</td>
@@ -3251,6 +3418,7 @@
 <td>Yes<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Gloo</td>
@@ -3260,6 +3428,7 @@
 <td>Yes</td>
 <td>Yes<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup></td>
 <td>Yes<sup id="fnref2:5"><a class="footnote-ref" href="#fn:5">5</a></sup></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Ingress</td>
@@ -3269,6 +3438,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Istio</td>
@@ -3278,6 +3448,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>Kong</td>
@@ -3287,6 +3458,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Node</td>
@@ -3296,6 +3468,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>OpenShift</td>
@@ -3305,6 +3478,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Pod</td>
@@ -3314,6 +3488,7 @@
 <td>Yes</td>
 <td></td>
 <td></td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Service</td>
@@ -3323,6 +3498,7 @@
 <td>Yes<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup></td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Skipper</td>
@@ -3332,6 +3508,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 <tr>
 <td>Traefik</td>
@@ -3341,6 +3518,7 @@
 <td>Yes</td>
 <td>Yes</td>
 <td>Yes</td>
+<td style="text-align: center;">No</td>
 </tr>
 </tbody>
 </table>
@@ -3364,11 +3542,80 @@ each relevant <code>Pod</code>&rsquo;s <code>Status.HostIP</code>.</p>
 <p>Multiple hostnames can be specified through a comma-separated list, e.g.<br />
 <code>svc.mydomain1.com,svc.mydomain2.com</code>.</p>
 <p>For <code>Pods</code>, uses the <code>Pod</code>&rsquo;s <code>Status.PodIP</code>, unless they are <code>hostNetwork: true</code> in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.</p>
+<p>Notes:</p>
+<ul>
+<li>This annotation <code>overrides</code> any automatically derived hostnames (e.g., from Ingress.spec.rules[].host).</li>
+<li>Hostnames must match the domain filter set in ExternalDNS (e.g., &ndash;domain-filter=example.com).</li>
+<li>This is an alpha annotation — subject to change; newer versions may support alternatives or deprecate it.</li>
+<li>This annotation is helpful for:</li>
+<li>Services or other resources without native hostname fields.</li>
+<li>Explicit overrides or multi-host situations.</li>
+<li>Avoiding reliance on auto-detection or heuristics.</li>
+</ul>
+<h3 id="use-cases-for-external-dnsalphakubernetesiohostname-annotation">Use Cases for <code>external-dns.alpha.kubernetes.io/hostname</code> annotation<a class="headerlink" href="#use-cases-for-external-dnsalphakubernetesiohostname-annotation" title="Permanent link">&para;</a></h3>
+<h4 id="explicit-hostname-mapping-for-services">Explicit Hostname Mapping for Services<a class="headerlink" href="#explicit-hostname-mapping-for-services" title="Permanent link">&para;</a></h4>
+<p>You have a Service (e.g. of type LoadBalancer or ClusterIP) and want to expose it under a custom DNS name:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>apiVersion: v1
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kind: Service
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>metadata:
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  name: my-service
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  annotations:
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    external-dns.alpha.kubernetes.io/hostname: app.example.com
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>spec:
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  type: LoadBalancer
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  ...
+</code></pre></div>
+<blockquote>
+<p>ExternalDNS will create a A or CNAME record for app.example.com pointing to the external IP or hostname of the service.</p>
+</blockquote>
+<h4 id="multi-hostname-records">Multi-Hostname Records<a class="headerlink" href="#multi-hostname-records" title="Permanent link">&para;</a></h4>
+<p>You can assign multiple hostnames by separating them with commas:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>annotations:
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  external-dns.alpha.kubernetes.io/hostname: api.example.com,api.internal.example.com
+</code></pre></div>
+<blockquote>
+<p>ExternalDNS will create two DNS records for the same service.</p>
+</blockquote>
+<h4 id="static-dns-assignment-without-ingress-rules">Static DNS Assignment Without Ingress Rules<a class="headerlink" href="#static-dns-assignment-without-ingress-rules" title="Permanent link">&para;</a></h4>
+<p>When using Ingress, you usually declare hostnames in the spec.rules[].host. But with this annotation, you can manage DNS independently:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>apiVersion: networking.k8s.io/v1
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kind: Ingress
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>metadata:
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  name: my-ingress
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  annotations:
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    external-dns.alpha.kubernetes.io/hostname: www.example.com
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>spec:
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  rules:
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    - http:
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        paths:
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>          - path: /
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>            pathType: Prefix
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>            backend:
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>              service:
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>                name: my-service
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>                port:
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>                  number: 80
+</code></pre></div>
+<blockquote>
+<p>Useful when DNS management is decoupled from routing logic.</p>
+</blockquote>
 <h2 id="external-dnsalphakubernetesioingress-hostname-source">external-dns.alpha.kubernetes.io/ingress-hostname-source<a class="headerlink" href="#external-dnsalphakubernetesioingress-hostname-source" title="Permanent link">&para;</a></h2>
 <p>Specifies where to get the domain for an <code>Ingress</code> resource.</p>
 <p>If the value is <code>defined-hosts-only</code>, use only the domains from the <code>Ingress</code> spec.</p>
 <p>If the value is <code>annotation-only</code>, use only the domains from the <code>Ingress</code> annotations.</p>
 <p>If the annotation is not present, use the domains from both the spec and annotations.</p>
+<h2 id="external-dnsalphakubernetesioingress">external-dns.alpha.kubernetes.io/ingress<a class="headerlink" href="#external-dnsalphakubernetesioingress" title="Permanent link">&para;</a></h2>
+<p>This annotation allows ExternalDNS to work with Istio Gateways that don&rsquo;t have a public IP.</p>
+<p>It can be used to address a specific architectural pattern, when a Kubernetes Ingress directs all public traffic to the Istio Gateway:</p>
+<ul>
+<li>
+<p><strong>The Challenge</strong>: By default, ExternalDNS sources the public IP address for a DNS record from a Service of type LoadBalancer.<br />
+However, in some service mesh setups, the Istio Gateway&rsquo;s Service is of type ClusterIP, with all public traffic routed to it via a separate Kubernetes Ingress object. This setup leaves the Gateway without a public IP that ExternalDNS can discover.</p>
+</li>
+<li>
+<p><strong>The Solution</strong>: The annotation on the Istio Gateway tells ExternalDNS to ignore the Gateway&rsquo;s Service IP. Instead, it directs ExternalDNS to a specified Ingress resource to find the target LoadBalancer IP address.</p>
+</li>
+</ul>
 <h2 id="external-dnsalphakubernetesiointernal-hostname">external-dns.alpha.kubernetes.io/internal-hostname<a class="headerlink" href="#external-dnsalphakubernetesiointernal-hostname" title="Permanent link">&para;</a></h2>
 <p>Specifies the domain for the resource&rsquo;s DNS records that are for use from internal networks.</p>
 <p>For <code>Services</code> of type <code>LoadBalancer</code>, uses the <code>Service</code>&rsquo;s <code>ClusterIP</code>.</p>
@@ -3455,7 +3702,7 @@ Which record set or sets are returned to queries is then determined by the confi
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 25, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 20, 2025</span>
   </span>
 
     

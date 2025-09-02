@@ -14,7 +14,7 @@
         <link rel="prev" href="../design/">
       
       
-        <link rel="next" href="../sources-and-providers/">
+        <link rel="next" href="../source-wrappers/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -701,6 +701,8 @@
   
     
     
+      
+        
       
         
       
@@ -1367,6 +1369,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2681,6 +2704,8 @@
       
         
       
+        
+      
     
     
       
@@ -3051,6 +3076,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sources-and-providers/" class="md-nav__link">
         
   
@@ -3320,11 +3366,11 @@ In the context of the <code>external-dns</code>, acceptance tests are tests of i
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="kd">func</span><span class="w"> </span><span class="nx">TestMe</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nx">hook</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">testutils</span><span class="p">.</span><span class="nx">LogsUnderTestWithLogLeve</span><span class="p">(</span><span class="nx">log</span><span class="p">.</span><span class="nx">WarnLevel</span><span class="p">,</span><span class="w"> </span><span class="nx">t</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nx">hook</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">testutils</span><span class="p">.</span><span class="nx">LogsUnderTestWithLogLevel</span><span class="p">(</span><span class="nx">log</span><span class="p">.</span><span class="nx">WarnLevel</span><span class="p">,</span><span class="w"> </span><span class="nx">t</span><span class="p">)</span>
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="o">...</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">under</span><span class="w"> </span><span class="nx">tests</span><span class="w"> </span><span class="o">...</span>
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nx">testutils</span><span class="p">.</span><span class="nx">TestHelperLogContains</span><span class="p">(</span><span class="s">&quot;example warning message&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">hook</span><span class="p">,</span><span class="w"> </span><span class="nx">t</span><span class="p">)</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="c1">// provide negative assertion</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="nx">testuitls</span><span class="p">.</span><span class="nx">TestHelperLogNotContains</span><span class="p">(</span><span class="s">&quot;this message should not be shown&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">hook</span><span class="p">,</span><span class="w"> </span><span class="nx">t</span><span class="p">)</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="nx">testutils</span><span class="p">.</span><span class="nx">TestHelperLogNotContains</span><span class="p">(</span><span class="s">&quot;this message should not be shown&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">hook</span><span class="p">,</span><span class="w"> </span><span class="nx">t</span><span class="p">)</span>
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="continuous-integration">Continuous Integration<a class="headerlink" href="#continuous-integration" title="Permanent link">&para;</a></h3>
@@ -3519,7 +3565,7 @@ that configuration:</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 19, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">July 19, 2025</span>
   </span>
 
     

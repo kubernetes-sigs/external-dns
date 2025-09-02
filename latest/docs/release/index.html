@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -701,6 +701,8 @@
   
     
     
+      
+        
       
         
       
@@ -1367,6 +1369,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2681,6 +2704,8 @@
       
         
       
+        
+      
     
     
       
@@ -2982,6 +3007,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../contributing/sources-and-providers/" class="md-nav__link">
         
   
@@ -3141,7 +3187,7 @@ You might want to ask in our Slack channel <a href="https://kubernetes.slack.com
 <p>There is a time lag between merging changes into the master branch and the subsequent creation of the staging image.</p>
 </blockquote>
 <p>Example command to fetch <code>10</code> most recent staging images:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">EXT_DNS_VERSION</span><span class="o">=</span><span class="s2">&quot;v0.18.0&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">EXT_DNS_VERSION</span><span class="o">=</span><span class="s2">&quot;v0.19.0&quot;</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>curl<span class="w"> </span>-sLk<span class="w"> </span>https://gcr.io/v2/k8s-staging-external-dns/external-dns/tags/list<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$EXT_DNS_VERSION</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span>
 </code></pre></div>
 <h2 id="versioning-convention">Versioning convention<a class="headerlink" href="#versioning-convention" title="Permanent link">&para;</a></h2>
@@ -3166,9 +3212,9 @@ You might want to ask in our Slack channel <a href="https://kubernetes.slack.com
 <li>Run <code>scripts/releaser.sh</code> to create a new GitHub release. Alternatively you can create a release in the GitHub UI making sure to click on the autogenerate release node feature.</li>
 <li>The step above will trigger the Kubernetes based CI/CD system <a href="https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns">Prow</a>. Verify that a new image was built and uploaded to <code>gcr.io/k8s-staging-external-dns/external-dns</code>.</li>
 <li>Create a PR in the <a href="https://github.com/kubernetes/k8s.io">k8s.io repo</a> by taking the current staging image using the sha256 digest. They can be obtained with <code>scripts/get-sha256.sh</code>. Once the PR is merged, the image will be live with the corresponding tag specified in the PR.</li>
-<li>See https://github.com/kubernetes/k8s.io/pull/540 for reference</li>
+<li>See https://github.com/kubernetes/k8s.io/pull/8466 for reference</li>
 <li>Verify that the image is pullable with the given tag</li>
-<li><code>docker run registry.k8s.io/external-dns/external-dns:v0.16.0 --version</code></li>
+<li><code>docker run registry.k8s.io/external-dns/external-dns:v0.x.0 --version</code></li>
 <li>Branch out from the default branch and run <code>scripts/version-updater.sh</code> to update the image tag used in the kustomization.yaml and in documentation.</li>
 <li>Create the PR with this version change.</li>
 <li>Create an issue to release the corresponding Helm chart via the chart release process (below) assigned to a chart maintainer</li>
@@ -3202,7 +3248,7 @@ You might want to ask in our Slack channel <a href="https://kubernetes.slack.com
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 26, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 2, 2025</span>
   </span>
 
     

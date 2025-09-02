@@ -101,7 +101,7 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter *endpoint.Domain
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AzurePrivateDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err
@@ -109,12 +109,13 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 
 	log.Debugf("Retrieving Azure Private DNS Records for resource group '%s'", p.resourceGroup)
 
+	endpoints := make([]*endpoint.Endpoint, 0)
 	for _, zone := range zones {
 		pager := p.recordSetsClient.NewListPager(p.resourceGroup, *zone.Name, &privatedns.RecordSetsClientListOptions{Top: nil})
 		for pager.More() {
 			nextResult, err := pager.NextPage(ctx)
 			if err != nil {
-				return nil, provider.NewSoftError(fmt.Errorf("failed to fetch dns records: %w", err))
+				return nil, provider.NewSoftErrorf("failed to fetch dns records: %v", err)
 			}
 
 			for _, recordSet := range nextResult.Value {

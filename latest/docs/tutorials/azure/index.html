@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -703,6 +703,8 @@
   
     
     
+      
+        
       
         
       
@@ -1820,6 +1822,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -3132,6 +3155,8 @@
       
         
       
+        
+      
     
     
       
@@ -3290,6 +3315,27 @@
   
   <span class="md-ellipsis">
     Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
   </span>
   
 
@@ -3818,8 +3864,11 @@ are being run on an orchestration node.</p>
 <li><code>aadClientSecret</code> is associated with the Service Principal. This is only used with Service Principal method documented in the next section.</li>
 <li><code>useManagedIdentityExtension</code> - this is set to <code>true</code> if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.</li>
 <li><code>userAssignedIdentityID</code> - this contains the client id from the Managed identity when using the AAD Pod Identities method documented in the next setion.</li>
-<li><code>activeDirectoryAuthorityHost</code> - this contains the uri to overwrite the default provided AAD Endpoint. This is useful for providing additional support where the endpoint is not available in the default cloud config from the <a href="https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables">azure-sdk-for-go</a>.</li>
+<li><code>activeDirectoryAuthorityHost</code> - this contains the URI to override the default Azure Active Directory authority endpoint.<br />
+  This is useful for Azure Stack Cloud deployments or custom environments.</li>
 <li><code>useWorkloadIdentityExtension</code> - this is set to <code>true</code> if you use Workload Identity method documented in the next section.</li>
+<li><code>ResourceManagerAudience</code> - this specifies the audience for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to authenticate with the correct Resource Manager endpoint.</li>
+<li><code>ResourceManagerEndpoint</code> - this specifies the endpoint URL for the Azure Resource Manager service when using Azure Stack Cloud. This is required for Azure Stack Cloud deployments to point to the correct Resource Manager instance.</li>
 </ul>
 <p>The Azure DNS provider expects, by default, that the configuration file is at <code>/etc/kubernetes/azure.json</code>.  This can be overridden with the <code>--azure-config-file</code> option when starting ExternalDNS.</p>
 <h2 id="permissions-to-modify-dns-zone">Permissions to modify DNS zone<a class="headerlink" href="#permissions-to-modify-dns-zone" title="Permanent link">&para;</a></h2>
@@ -4159,7 +4208,7 @@ This causes nginx-ingress to write the Cluster IP of the backend pods in the ing
 <a id="__codelineno-31-15" name="__codelineno-31-15" href="#__codelineno-31-15"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <a id="__codelineno-31-16" name="__codelineno-31-16" href="#__codelineno-31-16"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-31-17" name="__codelineno-31-17" href="#__codelineno-31-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-31-19" name="__codelineno-31-19" href="#__codelineno-31-19"></a><span class="w">        </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-31-20" name="__codelineno-31-20" href="#__codelineno-31-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
 <a id="__codelineno-31-21" name="__codelineno-31-21" href="#__codelineno-31-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
@@ -4228,7 +4277,7 @@ This causes nginx-ingress to write the Cluster IP of the backend pods in the ing
 <a id="__codelineno-32-49" name="__codelineno-32-49" href="#__codelineno-32-49"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
 <a id="__codelineno-32-50" name="__codelineno-32-50" href="#__codelineno-32-50"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-32-51" name="__codelineno-32-51" href="#__codelineno-32-51"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-32-52" name="__codelineno-32-52" href="#__codelineno-32-52"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-32-52" name="__codelineno-32-52" href="#__codelineno-32-52"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-32-53" name="__codelineno-32-53" href="#__codelineno-32-53"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-32-54" name="__codelineno-32-54" href="#__codelineno-32-54"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
 <a id="__codelineno-32-55" name="__codelineno-32-55" href="#__codelineno-32-55"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
@@ -4300,7 +4349,7 @@ services with type <code>NodePort</code> will be skipped!</p>
 <a id="__codelineno-33-48" name="__codelineno-33-48" href="#__codelineno-33-48"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
 <a id="__codelineno-33-49" name="__codelineno-33-49" href="#__codelineno-33-49"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-33-50" name="__codelineno-33-50" href="#__codelineno-33-50"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-33-51" name="__codelineno-33-51" href="#__codelineno-33-51"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-33-51" name="__codelineno-33-51" href="#__codelineno-33-51"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-33-52" name="__codelineno-33-52" href="#__codelineno-33-52"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-33-53" name="__codelineno-33-53" href="#__codelineno-33-53"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
 <a id="__codelineno-33-54" name="__codelineno-33-54" href="#__codelineno-33-54"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
@@ -4456,7 +4505,7 @@ resource group:</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 26, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 2, 2025</span>
   </span>
 
     

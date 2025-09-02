@@ -42,7 +42,9 @@ func suitableType(target string) string {
 // ParseIngress parses an ingress string in the format "namespace/name" or "name".
 // It returns the namespace and name extracted from the string, or an error if the format is invalid.
 // If the namespace is not provided, it defaults to an empty string.
-func ParseIngress(ingress string) (namespace, name string, err error) {
+func ParseIngress(ingress string) (string, string, error) {
+	var namespace, name string
+	var err error
 	parts := strings.Split(ingress, "/")
 	if len(parts) == 2 {
 		namespace, name = parts[0], parts[1]
@@ -52,7 +54,7 @@ func ParseIngress(ingress string) (namespace, name string, err error) {
 		err = fmt.Errorf("invalid ingress name (name or namespace/name) found %q", ingress)
 	}
 
-	return
+	return namespace, name, err
 }
 
 // MatchesServiceSelector checks if all key-value pairs in the selector map

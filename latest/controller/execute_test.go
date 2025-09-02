@@ -18,7 +18,6 @@ package controller
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -36,8 +35,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	fakeprovider "sigs.k8s.io/external-dns/provider/fakes"
 )
 
 func TestSelectRegistry(t *testing.T) {
@@ -60,7 +59,7 @@ func TestSelectRegistry(t *testing.T) {
 				ExcludeDNSRecordTypes:  []string{"TXT"},
 				TXTCacheInterval:       60,
 			},
-			provider: &MockProvider{},
+			provider: &fakeprovider.MockProvider{},
 			wantErr:  false,
 			wantType: "DynamoDBRegistry",
 		},
@@ -69,7 +68,7 @@ func TestSelectRegistry(t *testing.T) {
 			cfg: &externaldns.Config{
 				Registry: "noop",
 			},
-			provider: &MockProvider{},
+			provider: &fakeprovider.MockProvider{},
 			wantErr:  false,
 			wantType: "NoopRegistry",
 		},
@@ -84,7 +83,7 @@ func TestSelectRegistry(t *testing.T) {
 				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
 				ExcludeDNSRecordTypes:  []string{"TXT"},
 			},
-			provider: &MockProvider{},
+			provider: &fakeprovider.MockProvider{},
 			wantErr:  false,
 			wantType: "TXTRegistry",
 		},
@@ -94,7 +93,7 @@ func TestSelectRegistry(t *testing.T) {
 				Registry:   "aws-sd",
 				TXTOwnerID: "owner-id",
 			},
-			provider: &MockProvider{},
+			provider: &fakeprovider.MockProvider{},
 			wantErr:  false,
 			wantType: "AWSSDRegistry",
 		},
@@ -103,7 +102,7 @@ func TestSelectRegistry(t *testing.T) {
 			cfg: &externaldns.Config{
 				Registry: "unknown",
 			},
-			provider: &MockProvider{},
+			provider: &fakeprovider.MockProvider{},
 			wantErr:  true,
 			wantType: "",
 		},
@@ -477,21 +476,47 @@ func TestBuildSource(t *testing.T) {
 	}
 }
 
-// mocks
-type MockProvider struct{}
+func TestBuildSourceWithWrappers(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotImplemented)
+	}))
+	defer svr.Close()
 
-func (m *MockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return nil, nil
-}
+	tests := []struct {
+		name    string
+		cfg     *externaldns.Config
+		asserts func(*externaldns.Config)
+	}{
+		{
+			name: "configuration with target filter wrapper",
+			cfg: &externaldns.Config{
+				APIServerURL:    svr.URL,
+				Sources:         []string{"fake"},
+				TargetNetFilter: []string{"10.0.0.0/8"},
+			},
+			asserts: func(cfg *externaldns.Config) {
+				assert.True(t, cfg.IsSourceWrapperInstrumented("target-filter"))
+			},
+		},
+		{
+			name: "configuration without target filter wrapper",
+			cfg: &externaldns.Config{
+				APIServerURL: svr.URL,
+				Sources:      []string{"fake"},
+			},
+			asserts: func(cfg *externaldns.Config) {
+				assert.True(t, cfg.IsSourceWrapperInstrumented("dedup"))
+				assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
+				assert.False(t, cfg.IsSourceWrapperInstrumented("target-filter"))
+			},
+		},
+	}
 
-func (p *MockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	return nil
-}
-
-func (m *MockProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return nil, nil
-}
-
-func (m *MockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-	return nil
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := buildSource(t.Context(), tt.cfg)
+			require.NoError(t, err)
+			tt.asserts(tt.cfg)
+		})
+	}
 }

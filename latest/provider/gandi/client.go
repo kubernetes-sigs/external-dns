@@ -19,14 +19,14 @@ import (
 )
 
 type DomainClientAdapter interface {
-	ListDomains() (domains []domain.ListResponse, err error)
+	ListDomains() ([]domain.ListResponse, error)
 }
 
 type domainClient struct {
 	Client *domain.Domain
 }
 
-func (p *domainClient) ListDomains() (domains []domain.ListResponse, err error) {
+func (p *domainClient) ListDomains() ([]domain.ListResponse, error) {
 	return p.Client.ListDomains()
 }
 
@@ -54,9 +54,9 @@ type standardError struct {
 
 type LiveDNSClientAdapter interface {
 	GetDomainRecords(fqdn string) (records []livedns.DomainRecord, err error)
-	CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error)
+	CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (standardResponse, error)
 	DeleteDomainRecord(fqdn, name, recordtype string) (err error)
-	UpdateDomainRecordByNameAndType(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error)
+	UpdateDomainRecordByNameAndType(fqdn, name, recordtype string, ttl int, values []string) (standardResponse, error)
 }
 
 type LiveDNSClient struct {
@@ -67,11 +67,11 @@ func NewLiveDNSClient(client *livedns.LiveDNS) LiveDNSClientAdapter {
 	return &LiveDNSClient{client}
 }
 
-func (p *LiveDNSClient) GetDomainRecords(fqdn string) (records []livedns.DomainRecord, err error) {
+func (p *LiveDNSClient) GetDomainRecords(fqdn string) ([]livedns.DomainRecord, error) {
 	return p.Client.GetDomainRecords(fqdn)
 }
 
-func (p *LiveDNSClient) CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error) {
+func (p *LiveDNSClient) CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (standardResponse, error) {
 	res, err := p.Client.CreateDomainRecord(fqdn, name, recordtype, ttl, values)
 	if err != nil {
 		return standardResponse{}, err
@@ -93,11 +93,11 @@ func (p *LiveDNSClient) CreateDomainRecord(fqdn, name, recordtype string, ttl in
 	}, err
 }
 
-func (p *LiveDNSClient) DeleteDomainRecord(fqdn, name, recordtype string) (err error) {
+func (p *LiveDNSClient) DeleteDomainRecord(fqdn, name, recordtype string) error {
 	return p.Client.DeleteDomainRecord(fqdn, name, recordtype)
 }
 
-func (p *LiveDNSClient) UpdateDomainRecordByNameAndType(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error) {
+func (p *LiveDNSClient) UpdateDomainRecordByNameAndType(fqdn, name, recordtype string, ttl int, values []string) (standardResponse, error) {
 	res, err := p.Client.UpdateDomainRecordByNameAndType(fqdn, name, recordtype, ttl, values)
 	if err != nil {
 		return standardResponse{}, err

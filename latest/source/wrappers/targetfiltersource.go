@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -22,31 +22,37 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // targetFilterSource is a Source that removes endpoints matching the target filter from its wrapped source.
 type targetFilterSource struct {
-	source       Source
+	source       source.Source
 	targetFilter endpoint.TargetFilterInterface
 }
 
 // NewTargetFilterSource creates a new targetFilterSource wrapping the provided Source.
-func NewTargetFilterSource(source Source, targetFilter endpoint.TargetFilterInterface) Source {
+func NewTargetFilterSource(source source.Source, targetFilter endpoint.TargetFilterInterface) source.Source {
 	return &targetFilterSource{source: source, targetFilter: targetFilter}
 }
 
 // Endpoints collects endpoints from its wrapped source and returns
 // them without targets matching the target filter.
 func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	result := []*endpoint.Endpoint{}
-
+	log.Debug("targetFilterSource: collecting endpoints from wrapped source and applying target filter")
 	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	if !ms.targetFilter.IsEnabled() {
+		return endpoints, nil
+	}
+
+	result := make([]*endpoint.Endpoint, 0, len(endpoints))
+
 	for _, ep := range endpoints {
-		filteredTargets := []string{}
+		filteredTargets := make([]string, 0, len(ep.Targets))
 
 		for _, t := range ep.Targets {
 			if ms.targetFilter.Match(t) {
@@ -69,5 +75,6 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 }
 
 func (ms *targetFilterSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("targetFilterSource: adding event handler")
 	ms.source.AddEventHandler(ctx, handler)
 }

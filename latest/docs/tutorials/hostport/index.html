@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -703,6 +703,8 @@
   
     
     
+      
+        
       
         
       
@@ -1514,6 +1516,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2826,6 +2849,8 @@
       
         
       
+        
+      
     
     
       
@@ -2984,6 +3009,27 @@
   
   <span class="md-ellipsis">
     Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
   </span>
   
 
@@ -3194,7 +3240,7 @@ In this scenario, quite often, only the Node IP addresses are actually routable 
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">        </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--log-level=debug</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
@@ -3260,7 +3306,7 @@ In this scenario, quite often, only the Node IP addresses are actually routable 
 <a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
 <a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="w">        </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--log-level=debug</span>
 <a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
@@ -3318,7 +3364,7 @@ In this scenario, quite often, only the Node IP addresses are actually routable 
 <h3 id="headless-service">Headless Service<a class="headerlink" href="#headless-service" title="Permanent link">&para;</a></h3>
 <p>Now we need to define a headless service to use to expose the Kafka pods. There are generally two approaches to use expose the nodeport of a Headless service:</p>
 <ol>
-<li>Add <code>--fqdn-template={{name}}.example.org</code></li>
+<li>Add <code>--fqdn-template={{ .Name }}.example.org</code></li>
 <li>Use a full annotation</li>
 </ol>
 <p>If you go with #1, you just need to define the headless service, here is an example of the case #2:</p>
@@ -3336,17 +3382,20 @@ In this scenario, quite often, only the Node IP addresses are actually routable 
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 <a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">    </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kafka</span>
 </code></pre></div>
-<p>This will create 3 dns records:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kafka-0.example.org
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kafka-1.example.org
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kafka-2.example.org
+<p>This will create 4 dns records:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kafka-0.example.org<span class="w"> </span>IP-0
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kafka-1.example.org<span class="w"> </span>IP-1
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kafka-2.example.org<span class="w"> </span>IP-2
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>example.org<span class="w"> </span>IP-0,IP-1,IP-2
 </code></pre></div>
-<p>If you set <code>--fqdn-template={{name}}.example.org</code> you can omit the annotation.<br />
-Generally it is a better approach to use  <code>--fqdn-template={{name}}.example.org</code>, because then<br />
-you would get the service name inside the generated A records:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kafka-0.ksvc.example.org
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kafka-1.ksvc.example.org
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>kafka-2.ksvc.example.org
+<blockquote>
+<p>!Notice rood domain with records <code>example.org</code></p>
+</blockquote>
+<p>If you set <code>--fqdn-template={{ .Name }}.example.org</code> you can omit the annotation.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kafka-0.ksvc.example.org<span class="w"> </span>IP-0
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kafka-1.ksvc.example.org<span class="w"> </span>IP-1
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>kafka-2.ksvc.example.org<span class="w"> </span>IP-2
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>ksvc.example.org<span class="w"> </span>IP-0,IP-1,IP-2
 </code></pre></div>
 <h4 id="using-pods-hostips-as-targets">Using pods&rsquo; HostIPs as targets<a class="headerlink" href="#using-pods-hostips-as-targets" title="Permanent link">&para;</a></h4>
 <p>Add the following annotation to your <code>Service</code>:</p>
@@ -3384,7 +3433,7 @@ you would get the service name inside the generated A records:</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 26, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 2, 2025</span>
   </span>
 
     

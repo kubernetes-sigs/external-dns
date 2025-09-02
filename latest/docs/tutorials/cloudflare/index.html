@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -703,6 +703,8 @@
   
     
     
+      
+        
       
         
       
@@ -1075,6 +1077,30 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cloudflare-sdk-migration-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudFlare SDK Migration Status
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CloudFlare SDK Migration Status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sdk-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      SDK Dependencies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#creating-a-cloudflare-dns-zone" class="md-nav__link">
@@ -1544,6 +1570,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2856,6 +2903,8 @@
       
         
       
+        
+      
     
     
       
@@ -3030,6 +3079,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributing/sources-and-providers/" class="md-nav__link">
         
   
@@ -3076,6 +3146,30 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cloudflare-sdk-migration-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudFlare SDK Migration Status
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CloudFlare SDK Migration Status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sdk-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      SDK Dependencies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#creating-a-cloudflare-dns-zone" class="md-nav__link">
@@ -3230,6 +3324,31 @@
 <h1 id="cloudflare-dns">Cloudflare DNS<a class="headerlink" href="#cloudflare-dns" title="Permanent link">&para;</a></h1>
 <p>This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Cloudflare DNS.</p>
 <p>Make sure to use <strong>&gt;=0.4.2</strong> version of ExternalDNS for this tutorial.</p>
+<h2 id="cloudflare-sdk-migration-status">CloudFlare SDK Migration Status<a class="headerlink" href="#cloudflare-sdk-migration-status" title="Permanent link">&para;</a></h2>
+<p>ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the modern v4 SDK to improve performance, reliability, and access to newer CloudFlare features. The migration status is:</p>
+<p><strong>✅ Fully migrated to v4 SDK:</strong></p>
+<ul>
+<li>Zone management (listing, filtering, pagination)</li>
+<li>Zone details retrieval (<code>GetZone</code>)</li>
+<li>Zone ID lookup by name (<code>ZoneIDByName</code>)</li>
+<li>Zone plan detection (fully v4 implementation)</li>
+<li>Regional services (data localization)</li>
+</ul>
+<p><strong>🔄 Still using legacy v0 SDK:</strong></p>
+<ul>
+<li>DNS record management (create, update, delete records)</li>
+<li>Custom hostnames</li>
+<li>Proxied records</li>
+</ul>
+<p>This mixed approach ensures continued functionality while gradually modernizing the codebase. Users should not experience any breaking changes during this transition.</p>
+<h3 id="sdk-dependencies">SDK Dependencies<a class="headerlink" href="#sdk-dependencies" title="Permanent link">&para;</a></h3>
+<p>ExternalDNS currently uses:</p>
+<ul>
+<li><strong>cloudflare-go v0.115.0+</strong>: Legacy SDK for DNS records, custom hostnames, and proxied record features</li>
+<li><strong>cloudflare-go/v4 v4.6.0+</strong>: Modern SDK for all zone management and regional services operations</li>
+</ul>
+<p>Zone management has been fully migrated to the v4 SDK, providing improved performance and reliability.</p>
+<p>Both SDKs are automatically managed as Go module dependencies and require no special configuration from users.</p>
 <h2 id="creating-a-cloudflare-dns-zone">Creating a Cloudflare DNS zone<a class="headerlink" href="#creating-a-cloudflare-dns-zone" title="Permanent link">&para;</a></h2>
 <p>We highly recommend to read this tutorial if you haven&rsquo;t used Cloudflare before:</p>
 <p><a href="https://support.cloudflare.com/hc/en-us/articles/201720164-Step-2-Create-a-Cloudflare-account-and-add-a-website">Create a Cloudflare account and add a website</a></p>
@@ -3310,7 +3429,7 @@ The AWS Provider <a href="../aws/#throttling">docs</a> has some recommendations 
 <a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span><span class="w"> </span><span class="c1"># ingress is also possible</span>
 <a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># (optional) limit to only example.com domains; change to match the zone created above.</span>
@@ -3388,7 +3507,7 @@ The AWS Provider <a href="../aws/#throttling">docs</a> has some recommendations 
 <a id="__codelineno-8-52" name="__codelineno-8-52" href="#__codelineno-8-52"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
 <a id="__codelineno-8-53" name="__codelineno-8-53" href="#__codelineno-8-53"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-8-54" name="__codelineno-8-54" href="#__codelineno-8-54"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-8-55" name="__codelineno-8-55" href="#__codelineno-8-55"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-8-55" name="__codelineno-8-55" href="#__codelineno-8-55"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-8-56" name="__codelineno-8-56" href="#__codelineno-8-56"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-8-57" name="__codelineno-8-57" href="#__codelineno-8-57"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span><span class="w"> </span><span class="c1"># ingress is also possible</span>
 <a id="__codelineno-8-58" name="__codelineno-8-58" href="#__codelineno-8-58"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># (optional) limit to only example.com domains; change to match the zone created above.</span>
@@ -3502,7 +3621,7 @@ A default region can be defined using the <code>--cloudflare-region-key</code> f
 <p><code>--cloudflare-custom-hostnames-certificate-authority</code> defaults to <code>none</code>, which explicitly means no Certificate Authority (CA) is set when using the Cloudflare API. Specifying a custom CA is only possible for enterprise accounts.</p>
 <p>The custom hostname DNS must resolve to the Cloudflare DNS record (<code>external-dns.alpha.kubernetes.io/hostname</code>) for automatic certificate validation via the HTTP method. It&rsquo;s important to note that the TXT method does not allow automatic validation and is not supported.</p>
 <p>Requires <a href="https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/">Cloudflare for SaaS</a> product and &ldquo;SSL and Certificates&rdquo; API permission.</p>
-<p>Due to a limitation within the cloudflare-go v0 API, the custom hostname page size is fixed at 50.</p>
+<p><strong>Note:</strong> Due to using the legacy cloudflare-go v0 API for custom hostname management, the custom hostname page size is fixed at 50. This limitation will be addressed in a future migration to the v4 SDK.</p>
 <h2 id="using-crd-source-to-manage-dns-records-in-cloudflare">Using CRD source to manage DNS records in Cloudflare<a class="headerlink" href="#using-crd-source-to-manage-dns-records-in-cloudflare" title="Permanent link">&para;</a></h2>
 <p>Please refer to the <a href="../../sources/crd/#example">CRD source documentation</a> for more information.</p>
 
@@ -3525,7 +3644,7 @@ A default region can be defined using the <code>--cloudflare-region-key</code> f
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 26, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 2, 2025</span>
   </span>
 
     

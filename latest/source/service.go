@@ -97,66 +97,98 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	// Set the resync period to 0 to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	endpointSlicesInformer := informerFactory.Discovery().V1().EndpointSlices()
-	podInformer := informerFactory.Core().V1().Pods()
-	nodeInformer := informerFactory.Core().V1().Nodes()
 
 	// Add default resource event handlers to properly initialize informer.
-	serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	endpointSlicesInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	podInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
-	// Add an indexer to the EndpointSlice informer to index by the service name label
-	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
-		serviceNameIndexKey: func(obj any) ([]string, error) {
-			endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
-			if !ok {
-				// This should never happen because the Informer should only contain EndpointSlice objects
-				return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
-			}
-			serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
-			if serviceName == "" {
-				return nil, nil
-			}
-			key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
-			return []string{key}, nil
-		},
-	})
+	// Transform the slice into a map so it will be way much easier and fast to filter later
+	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
 	if err != nil {
 		return nil, err
+	}
+
+	var endpointSlicesInformer discoveryinformers.EndpointSliceInformer
+	var podInformer coreinformers.PodInformer
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
+		podInformer = informerFactory.Core().V1().Pods()
+
+		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+		// Add an indexer to the EndpointSlice informer to index by the service name label
+		err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
+			serviceNameIndexKey: func(obj any) ([]string, error) {
+				endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+				if !ok {
+					// This should never happen because the Informer should only contain EndpointSlice objects
+					return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
+				}
+				serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
+				if serviceName == "" {
+					return nil, nil
+				}
+				key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+				return []string{key}, nil
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Transformer is used to reduce the memory usage of the informer.
+		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
+		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
+		podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+			pod, ok := i.(*v1.Pod)
+			if !ok {
+				return nil, fmt.Errorf("object is not a pod")
+			}
+			if pod.UID == "" {
+				// Pod was already transformed and we must be idempotent.
+				return pod, nil
+			}
+
+			// All pod level annotations we're interested in start with a common prefix
+			podAnnotations := map[string]string{}
+			for key, value := range pod.Annotations {
+				if strings.HasPrefix(key, annotations.AnnotationKeyPrefix) {
+					podAnnotations[key] = value
+				}
+			}
+			return &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					// Name/namespace must always be kept for the informer to work.
+					Name:      pod.Name,
+					Namespace: pod.Namespace,
+					// Used to match services.
+					Labels:            pod.Labels,
+					Annotations:       podAnnotations,
+					DeletionTimestamp: pod.DeletionTimestamp,
+				},
+				Spec: v1.PodSpec{
+					Hostname: pod.Spec.Hostname,
+					NodeName: pod.Spec.NodeName,
+				},
+				Status: v1.PodStatus{
+					HostIP:     pod.Status.HostIP,
+					Phase:      pod.Status.Phase,
+					Conditions: pod.Status.Conditions,
+				},
+			}, nil
+		})
+	}
+
+	var nodeInformer coreinformers.NodeInformer
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
+		nodeInformer = informerFactory.Core().V1().Nodes()
+		_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
-		return nil, err
-	}
-
-	// Transform the slice into a map so it will be way much easier and fast to filter later
-	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
-	if err != nil {
 		return nil, err
 	}
 
@@ -198,7 +230,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
 		// Check controller annotation to see if we are responsible.
@@ -252,6 +284,29 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		sort.Slice(endpoints, func(i, j int) bool {
 			return endpoints[i].Labels[endpoint.ResourceLabelKey] < endpoints[j].Labels[endpoint.ResourceLabelKey]
 		})
+		mergedEndpoints := make(map[endpoint.EndpointKey][]*endpoint.Endpoint)
+		for _, ep := range endpoints {
+			key := ep.Key()
+			if existing, ok := mergedEndpoints[key]; ok {
+				if existing[0].RecordType == endpoint.RecordTypeCNAME {
+					log.Debugf("CNAME %s with multiple targets found", ep.DNSName)
+					mergedEndpoints[key] = append(existing, ep)
+					continue
+				}
+				existing[0].Targets = append(existing[0].Targets, ep.Targets...)
+				existing[0].UniqueOrderedTargets()
+				mergedEndpoints[key] = existing
+			} else {
+				ep.UniqueOrderedTargets()
+				mergedEndpoints[key] = []*endpoint.Endpoint{ep}
+			}
+		}
+		processed := make([]*endpoint.Endpoint, 0, len(mergedEndpoints))
+		for _, ep := range mergedEndpoints {
+			processed = append(processed, ep...)
+		}
+		endpoints = processed
+
 		// Use stable sort to not disrupt the order of services
 		sort.SliceStable(endpoints, func(i, j int) bool {
 			if endpoints[i].DNSName != endpoints[j].DNSName {
@@ -259,31 +314,6 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			}
 			return endpoints[i].RecordType < endpoints[j].RecordType
 		})
-		mergedEndpoints := []*endpoint.Endpoint{}
-		mergedEndpoints = append(mergedEndpoints, endpoints[0])
-		for i := 1; i < len(endpoints); i++ {
-			lastMergedEndpoint := len(mergedEndpoints) - 1
-			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
-				mergedEndpoints[lastMergedEndpoint].RecordType != endpoint.RecordTypeCNAME && // It is against RFC-1034 for CNAME records to have multiple targets, so skip merging
-				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
-				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
-				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
-			} else {
-				mergedEndpoints = append(mergedEndpoints, endpoints[i])
-			}
-
-			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoint.RecordTypeCNAME {
-				log.Debugf("CNAME %s with multiple targets found", endpoints[i].DNSName)
-			}
-		}
-		endpoints = mergedEndpoints
-	}
-
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil
@@ -293,11 +323,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-	if err != nil {
-		return nil
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 	if err != nil {
 		return nil
 	}
@@ -371,6 +397,10 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
+						if sc.nodeInformer == nil {
+							log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
+							continue
+						}
 						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
 						if err != nil {
 							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
@@ -466,7 +496,8 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 // endpointsFromService extracts the endpoints from a service object
 func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-	// Skip endpoints if we do not want entries from annotations
+
+	// Skip endpoints if we do not want entries from annotations or service is excluded
 	if sc.ignoreHostnameAnnotation {
 		return endpoints
 	}
@@ -519,7 +550,7 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 	}
 	var result []*v1.Service
 	for _, service := range services {
-		if _, ok := sc.serviceTypeFilter.types[service.Spec.Type]; ok {
+		if sc.serviceTypeFilter.isProcessed(service.Spec.Type) {
 			result = append(result, service)
 		}
 	}
@@ -527,7 +558,7 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 	return result
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) (endpoints []*endpoint.Endpoint) {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
@@ -535,6 +566,8 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
 
 	targets := annotations.TargetsFromTargetAnnotation(svc.Annotations)
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	if len(targets) == 0 {
 		switch svc.Spec.Type {
@@ -569,7 +602,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		}
 	}
 
-	endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 
 	return endpoints
 }
@@ -696,11 +729,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 
 // pods retrieve a slice of pods associated with the given Service
 func (sc *serviceSource) pods(svc *v1.Service) []*v1.Pod {
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-	if err != nil {
-		return nil
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 	if err != nil {
 		return nil
 	}
@@ -747,13 +776,19 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	access := getAccessFromAnnotations(svc.Annotations)
 	switch access {
 	case "public":
-		return append(externalIPs, ipv6IPs...), nil
+		if sc.exposeInternalIPv6 {
+			return append(externalIPs, ipv6IPs...), nil
+		}
+		return externalIPs, nil
 	case "private":
 		return internalIPs, nil
 	}
 
 	if len(externalIPs) > 0 {
-		return append(externalIPs, ipv6IPs...), nil
+		if sc.exposeInternalIPv6 {
+			return append(externalIPs, ipv6IPs...), nil
+		}
+		return externalIPs, nil
 	}
 
 	return internalIPs, nil
@@ -806,9 +841,12 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	if sc.listenEndpointEvents {
-		sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
+	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
+		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
 
@@ -826,18 +864,36 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 			enabled: false,
 		}, nil
 	}
-	types := make(map[v1.ServiceType]bool)
+	result := make(map[v1.ServiceType]bool)
 	for _, serviceType := range filter {
 		if _, ok := knownServiceTypes[v1.ServiceType(serviceType)]; !ok {
 			return nil, fmt.Errorf("unsupported service type filter: %q. Supported types are: %q", serviceType, slices.Collect(maps.Keys(knownServiceTypes)))
 		}
-		types[v1.ServiceType(serviceType)] = true
+		result[v1.ServiceType(serviceType)] = true
 	}
 
 	return &serviceTypes{
 		enabled: true,
-		types:   types,
+		types:   result,
 	}, nil
+}
+
+func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
+	return !sc.enabled || sc.types[serviceType]
+}
+
+// isRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.
+// If no options are provided, it returns true.
+func (sc *serviceTypes) isRequired(opts ...v1.ServiceType) bool {
+	if len(opts) == 0 || !sc.enabled {
+		return true
+	}
+	for _, opt := range opts {
+		if _, ok := sc.types[opt]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // conditionToBool converts an EndpointConditions condition to a bool value.

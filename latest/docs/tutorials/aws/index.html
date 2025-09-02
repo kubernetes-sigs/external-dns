@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -703,6 +703,8 @@
   
     
     
+      
+        
       
         
       
@@ -1916,6 +1918,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -3228,6 +3251,8 @@
       
         
       
+        
+      
     
     
       
@@ -3386,6 +3411,27 @@
   
   <span class="md-ellipsis">
     Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
   </span>
   
 
@@ -4331,7 +4377,9 @@ Then apply one of the following manifests file to deploy ExternalDNS. You can ch
 <a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">    </span>value:<span class="w"> </span>us-east-1<span class="w"> </span><span class="c1"># change to region where EKS is installed</span>
 </code></pre></div>
 <p>Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>external-dns<span class="w"> </span>external-dns/external-dns<span class="w"> </span>--values<span class="w"> </span>values.yaml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>--force-update<span class="w"> </span>external-dns<span class="w"> </span>https://kubernetes-sigs.github.io/external-dns/
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>external-dns<span class="w"> </span>external-dns/external-dns<span class="w"> </span>--values<span class="w"> </span>values.yaml
 </code></pre></div>
 <h3 id="when-using-clusters-without-rbac-enabled">When using clusters without RBAC enabled<a class="headerlink" href="#when-using-clusters-without-rbac-enabled" title="Permanent link">&para;</a></h3>
 <p>Save the following below as <code>externaldns-no-rbac.yaml</code>.</p>
@@ -4354,7 +4402,7 @@ Then apply one of the following manifests file to deploy ExternalDNS. You can ch
 <a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
-<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
 <a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
 <a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
@@ -4647,6 +4695,11 @@ e.g., modify the service manifest YAML file above:</p>
 <li><code>external-dns.alpha.kubernetes.io/aws-geolocation-continent-code</code></li>
 <li><code>external-dns.alpha.kubernetes.io/aws-geolocation-country-code</code></li>
 <li><code>external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code</code></li>
+<li>Geoproximity routing:</li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geoproximity-region</code></li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group</code></li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates</code></li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geoproximity-bias</code></li>
 <li>Multi-value answer:<code>external-dns.alpha.kubernetes.io/aws-multi-value-answer</code></li>
 </ul>
 <h3 id="associating-dns-records-with-healthchecks">Associating DNS records with healthchecks<a class="headerlink" href="#associating-dns-records-with-healthchecks" title="Permanent link">&para;</a></h3>
@@ -4760,7 +4813,7 @@ Running several fast polling ExternalDNS instances in a given account can easily
 <a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a><span class="w">      </span><span class="nt">initContainers</span><span class="p">:</span>
 <a id="__codelineno-60-4" name="__codelineno-60-4" href="#__codelineno-60-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">init-jitter</span>
-<a id="__codelineno-60-5" name="__codelineno-60-5" href="#__codelineno-60-5"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.18.0</span>
+<a id="__codelineno-60-5" name="__codelineno-60-5" href="#__codelineno-60-5"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.19.0</span>
 <a id="__codelineno-60-6" name="__codelineno-60-6" href="#__codelineno-60-6"></a><span class="w">        </span><span class="nt">command</span><span class="p">:</span>
 <a id="__codelineno-60-7" name="__codelineno-60-7" href="#__codelineno-60-7"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/bin/sh</span>
 <a id="__codelineno-60-8" name="__codelineno-60-8" href="#__codelineno-60-8"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-c</span>
@@ -4818,7 +4871,7 @@ Because those limits are in place, <code>aws-batch-change-size</code> can be set
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 26, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 2, 2025</span>
   </span>
 
     

@@ -114,15 +114,14 @@ func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) e
 }
 
 // Function for debug printing
-func stringifyHTTPResponseBody(r *http.Response) (body string) {
+func stringifyHTTPResponseBody(r *http.Response) string {
 	if r == nil {
 		return ""
 	}
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
-	body = buf.String()
-	return body
+	_, _ = buf.ReadFrom(r.Body)
+	return buf.String()
 }
 
 // PDNSAPIProvider : Interface used and extended by the PDNSAPIClient struct as
@@ -145,7 +144,10 @@ type PDNSAPIClient struct {
 
 // ListZones : Method returns all enabled zones from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones
-func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err error) {
+func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
+	var zones []pgo.Zone
+	var resp *http.Response
+	var err error
 	for i := 0; i < retryLimit; i++ {
 		zones, resp, err = c.client.ZonesApi.ListZones(c.authCtx, c.serverID)
 		if err != nil {
@@ -157,11 +159,14 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 		return zones, resp, err
 	}
 
-	return zones, resp, provider.NewSoftError(fmt.Errorf("unable to list zones: %w", err))
+	return zones, resp, provider.NewSoftErrorf("unable to list zones: %v", err)
 }
 
 // PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
-func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zone, residualZones []pgo.Zone) {
+func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+	var filteredZones []pgo.Zone
+	var residualZones []pgo.Zone
+
 	if c.domainFilter.IsConfigured() {
 		for _, zone := range zones {
 			if c.domainFilter.Match(zone.Name) {
@@ -178,9 +183,9 @@ func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zo
 
 // ListZone : Method returns the details of a specific zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones-zone_id
-func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Response, err error) {
+func (c *PDNSAPIClient) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 	for i := 0; i < retryLimit; i++ {
-		zone, resp, err = c.client.ZonesApi.ListZone(c.authCtx, c.serverID, zoneID)
+		zone, resp, err := c.client.ZonesApi.ListZone(c.authCtx, c.serverID, zoneID)
 		if err != nil {
 			log.Debugf("Unable to fetch zone %v", err)
 			log.Debugf("Retrying ListZone() ... %d", i)
@@ -190,12 +195,14 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Respo
 		return zone, resp, err
 	}
 
-	return zone, resp, provider.NewSoftError(fmt.Errorf("unable to list zone: %w", err))
+	return pgo.Zone{}, nil, provider.NewSoftErrorf("unable to list zone")
 }
 
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#patch--servers-server_id-zones-zone_id
-func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *http.Response, err error) {
+func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
+	var resp *http.Response
+	var err error
 	for i := 0; i < retryLimit; i++ {
 		resp, err = c.client.ZonesApi.PatchZone(c.authCtx, c.serverID, zoneID, zoneStruct)
 		if err != nil {
@@ -207,7 +214,7 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *htt
 		return resp, err
 	}
 
-	return resp, provider.NewSoftError(fmt.Errorf("unable to patch zone: %w", err))
+	return resp, provider.NewSoftErrorf("unable to patch zone: %v", err)
 }
 
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
@@ -252,9 +259,9 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 	return provider, nil
 }
 
-func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpoint.Endpoint, _ error) {
-	endpoints = []*endpoint.Endpoint{}
-	targets := []string{}
+func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoint, error) {
+	endpoints := make([]*endpoint.Endpoint, 0)
+	targets := make([]string, 0)
 	rrType_ := rr.Type_
 
 	for _, record := range rr.Records {
@@ -271,8 +278,8 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpo
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
-func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changetype pdnsChangeType) (zonelist []pgo.Zone, _ error) {
-	zonelist = []pgo.Zone{}
+func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changetype pdnsChangeType) ([]pgo.Zone, error) {
+	var zoneList = make([]pgo.Zone, 0)
 	endpoints := make([]*endpoint.Endpoint, len(eps))
 	copy(endpoints, eps)
 
@@ -354,7 +361,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			}
 		}
 		if len(zone.Rrsets) > 0 {
-			zonelist = append(zonelist, zone)
+			zoneList = append(zoneList, zone)
 		}
 	}
 
@@ -379,9 +386,9 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 		log.Warnf("No matching zones were found for the following endpoints: %+v", endpoints)
 	}
 
-	log.Debugf("Zone List generated from Endpoints: %+v", zonelist)
+	log.Debugf("Zone List generated from Endpoints: %+v", zoneList)
 
-	return zonelist, nil
+	return zoneList, nil
 }
 
 // mutateRecords takes a list of endpoints and creates, replaces or deletes them based on the changetype
@@ -407,17 +414,19 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 }
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
-func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	zones, _, err := p.client.ListZones()
 	if err != nil {
 		return nil, err
 	}
 	filteredZones, _ := p.client.PartitionZones(zones)
 
+	var endpoints []*endpoint.Endpoint
+
 	for _, zone := range filteredZones {
 		z, _, err := p.client.ListZone(zone.Id)
 		if err != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("unable to fetch records: %w", err))
+			return nil, provider.NewSoftErrorf("unable to fetch records: %v", err)
 		}
 
 		for _, rr := range z.Rrsets {

@@ -98,7 +98,7 @@ func CidrToInAddr(cidr string) (string, error) {
 // reverseaddr returns the in-addr.arpa. or ip6.arpa. hostname of the IP
 // address addr suitable for rDNS (PTR) record lookup or an error if it fails
 // to parse the IP address.
-func reverseaddr(addr string) (arpa string, err error) {
+func reverseaddr(addr string) (string, error) {
 	ip := net.ParseIP(addr)
 	if ip == nil {
 		return "", &net.DNSError{Err: "unrecognized address", Name: addr}

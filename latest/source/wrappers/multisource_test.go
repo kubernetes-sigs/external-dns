@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -39,7 +40,7 @@ func TestMultiSource(t *testing.T) {
 
 // testMultiSourceImplementsSource tests that multiSource is a valid Source.
 func testMultiSourceImplementsSource(t *testing.T) {
-	assert.Implements(t, (*Source)(nil), new(multiSource))
+	assert.Implements(t, (*source.Source)(nil), new(multiSource))
 }
 
 // testMultiSourceEndpoints tests merged endpoints from children are returned.
@@ -78,7 +79,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 			t.Parallel()
 
 			// Prepare the nested mock sources.
-			sources := make([]Source, 0, len(tc.nestedEndpoints))
+			sources := make([]source.Source, 0, len(tc.nestedEndpoints))
 
 			// Populate the nested mock sources.
 			for _, endpoints := range tc.nestedEndpoints {
@@ -116,7 +117,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 	src.On("Endpoints").Return(nil, errSomeError)
 
 	// Create our object under test and get the endpoints.
-	source := NewMultiSource([]Source{src}, nil, false)
+	source := NewMultiSource([]source.Source{src}, nil, false)
 
 	// Get endpoints from our source.
 	_, err := source.Endpoints(context.Background())
@@ -155,7 +156,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=false (default behavior)
-		source := NewMultiSource([]Source{src}, defaultTargets, false)
+		source := NewMultiSource([]source.Source{src}, defaultTargets, false)
 
 		endpoints, err := source.Endpoints(context.Background())
 		require.NoError(t, err)
@@ -185,7 +186,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=false (default behavior)
-		source := NewMultiSource([]Source{src}, defaultTargets, false)
+		source := NewMultiSource([]source.Source{src}, defaultTargets, false)
 
 		endpoints, err := source.Endpoints(context.Background())
 		require.NoError(t, err)
@@ -223,7 +224,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=true (legacy behavior)
-		source := NewMultiSource([]Source{src}, defaultTargets, true)
+		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
 
 		endpoints, err := source.Endpoints(context.Background())
 		require.NoError(t, err)
@@ -258,7 +259,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		src.On("Endpoints").Return(sourceEndpoints, nil)
 
 		// Test with forceDefaultTargets=true
-		source := NewMultiSource([]Source{src}, defaultTargets, true)
+		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
 
 		endpoints, err := source.Endpoints(context.Background())
 		require.NoError(t, err)
@@ -267,4 +268,44 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 
 		src.AssertExpectations(t)
 	})
+}
+
+func TestMultiSource_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		title   string
+		sources []source.Source
+		times   int
+	}{
+		{
+			title:   "should not add event handler when sources are empty",
+			sources: []source.Source{},
+			times:   0,
+		},
+		{
+			title: "should add event handler when sources not empty",
+			sources: []source.Source{
+				testutils.NewMockSource(),
+				testutils.NewMockSource(),
+				testutils.NewMockSource(),
+			},
+			times: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			src := NewMultiSource(tt.sources, []string{}, true)
+			src.AddEventHandler(t.Context(), func() {})
+
+			count := 0
+
+			for _, mockSource := range tt.sources {
+				mSource := mockSource.(*testutils.MockSource)
+				mSource.AssertNumberOfCalls(t, "AddEventHandler", 1)
+				count += 1
+			}
+
+			assert.Equal(t, tt.times, count)
+		})
+	}
 }

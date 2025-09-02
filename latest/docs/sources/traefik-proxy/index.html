@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -701,6 +701,8 @@
   
     
     
+      
+        
       
         
       
@@ -1367,6 +1369,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2209,9 +2232,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#disabling-resource-listeners" class="md-nav__link">
+  <a href="#resource-listeners" class="md-nav__link">
     <span class="md-ellipsis">
-      Disabling Resource Listeners
+      Resource Listeners
     </span>
   </a>
   
@@ -2793,6 +2816,8 @@
       
         
       
+        
+      
     
     
       
@@ -2967,6 +2992,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributing/sources-and-providers/" class="md-nav__link">
         
   
@@ -3070,9 +3116,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#disabling-resource-listeners" class="md-nav__link">
+  <a href="#resource-listeners" class="md-nav__link">
     <span class="md-ellipsis">
-      Disabling Resource Listeners
+      Resource Listeners
     </span>
   </a>
   
@@ -3313,8 +3359,8 @@ It is meant to supplement the other provider-specific setup tutorials.</p>
 </thead>
 <tbody>
 <tr>
-<td>&ndash;traefik-disable-legacy</td>
-<td>Disable listeners on Resources under traefik.containo.us</td>
+<td>&ndash;traefik-enable-legacy</td>
+<td>Enable listeners on Resources under traefik.containo.us</td>
 </tr>
 <tr>
 <td>&ndash;traefik-disable-new</td>
@@ -3322,11 +3368,9 @@ It is meant to supplement the other provider-specific setup tutorials.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="disabling-resource-listeners">Disabling Resource Listeners<a class="headerlink" href="#disabling-resource-listeners" title="Permanent link">&para;</a></h3>
-<p>Traefik has deprecated the legacy API group, <code>traefik.containo.us</code>, in favor of <code>traefik.io</code>. By default the <code>traefik-proxy</code> source will listen for resources under both API groups; however, this may cause timeouts with the following message</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>FATA<span class="o">[</span><span class="m">0060</span><span class="o">]</span><span class="w"> </span>failed<span class="w"> </span>to<span class="w"> </span>sync<span class="w"> </span>traefik.io/v1alpha1,<span class="w"> </span><span class="nv">Resource</span><span class="o">=</span>ingressroutes:<span class="w"> </span>context<span class="w"> </span>deadline<span class="w"> </span>exceeded
-</code></pre></div>
-<p>In this case you can disable one or the other API groups with <code>--traefik-disable-new</code> or <code>--traefik-disable-legacy</code></p>
+<h3 id="resource-listeners">Resource Listeners<a class="headerlink" href="#resource-listeners" title="Permanent link">&para;</a></h3>
+<p>Traefik has deprecated the legacy API group, <em>traefik.containo.us</em>, in favor of <em>traefik.io</em>. By default the <code>traefik-proxy</code> source listen for resources under traefik.io API groups.</p>
+<p>If needed, you can enable legacy listener with <code>--traefik-enable-legacy</code> and also disable new listener with <code>--traefik-disable-new</code>.</p>
 
 
 
@@ -3347,7 +3391,7 @@ It is meant to supplement the other provider-specific setup tutorials.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 25, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">July 3, 2025</span>
   </span>
 
     

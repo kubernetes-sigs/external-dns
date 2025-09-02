@@ -83,12 +83,12 @@ func NewGandiProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, 
 	return gandiProvider, nil
 }
 
-func (p *GandiProvider) Zones() (zones []string, err error) {
+func (p *GandiProvider) Zones() ([]string, error) {
 	availableDomains, err := p.DomainClient.ListDomains()
 	if err != nil {
 		return nil, err
 	}
-	zones = []string{}
+	zones := []string{}
 	for _, domain := range availableDomains {
 		if !p.domainFilter.Match(domain.FQDN) {
 			log.Debugf("Excluding domain %s by domain-filter", domain.FQDN)
@@ -156,7 +156,7 @@ func (p *GandiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	return p.submitChanges(ctx, combinedChanges)
 }
 
-func (p *GandiProvider) submitChanges(ctx context.Context, changes []*GandiChanges) error {
+func (p *GandiProvider) submitChanges(_ context.Context, changes []*GandiChanges) error {
 	if len(changes) == 0 {
 		log.Infof("All records are already up to date")
 		return nil

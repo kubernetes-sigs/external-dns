@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -701,6 +701,8 @@
   
     
     
+      
+        
       
         
       
@@ -1367,6 +1369,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2835,6 +2858,8 @@
       
         
       
+        
+      
     
     
       
@@ -2993,6 +3018,27 @@
   
   <span class="md-ellipsis">
     Developer Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
   </span>
   
 
@@ -3302,24 +3348,23 @@ key must be specified in URL-safe base64 form (recommended) or be a plain text, 
 <p>Note that the key used for encryption should be a secure key and properly managed to ensure the security of your TXT records.</p>
 <h3 id="generating-the-txt-encryption-key">Generating the TXT Encryption Key<a class="headerlink" href="#generating-the-txt-encryption-key" title="Permanent link">&para;</a></h3>
 <p>Python</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s1">&#39;import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s1">&#39;import os,base64; print(base64.standard_b64encode(os.urandom(32)).decode())&#39;</span>
 </code></pre></div>
 <p>Bash</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/urandom<span class="w"> </span><span class="nv">bs</span><span class="o">=</span><span class="m">32</span><span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>-d<span class="w"> </span>--<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>--<span class="w"> </span><span class="s1">&#39;+/&#39;</span><span class="w"> </span><span class="s1">&#39;-_&#39;</span><span class="p">;</span><span class="w"> </span><span class="nb">echo</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/urandom<span class="w"> </span><span class="nv">bs</span><span class="o">=</span><span class="m">32</span><span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="p">;</span><span class="w"> </span><span class="nb">echo</span>
 </code></pre></div>
 <p>OpenSSL</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span>--<span class="w"> </span><span class="s1">&#39;+/&#39;</span><span class="w"> </span><span class="s1">&#39;-_&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span>
 </code></pre></div>
 <p>PowerShell</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># Add System.Web assembly to session, just in case</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">Add-Type</span> <span class="n">-AssemblyName</span> <span class="n">System</span><span class="p">.</span><span class="n">Web</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="no">[Convert]</span><span class="p">::</span><span class="n">ToBase64String</span><span class="p">(</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="n">UTF8</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="no">[System.Web.Security.Membership]</span><span class="p">::</span><span class="n">GeneratePassword</span><span class="p">(</span><span class="n">32</span><span class="p">,</span><span class="n">4</span><span class="p">))).</span><span class="n">Replace</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">,</span><span class="s2">&quot;-&quot;</span><span class="p">).</span><span class="n">Replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span><span class="s2">&quot;_&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="no">[Convert]</span><span class="p">::</span><span class="n">ToBase64String</span><span class="p">(</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="n">UTF8</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="no">[System.Web.Security.Membership]</span><span class="p">::</span><span class="n">GeneratePassword</span><span class="p">(</span><span class="n">32</span><span class="p">,</span><span class="n">4</span><span class="p">)))</span>
 </code></pre></div>
 <p>Terraform</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kr">resource</span><span class="w"> </span><span class="nc">&quot;random_password&quot;</span><span class="w"> </span><span class="nv">&quot;txt_key&quot;</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="na">length</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="m">32</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="na">override_special</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;-_&quot;</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">}</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="manually-encryptingdecrypting-txt-records">Manually Encrypting/Decrypting TXT Records<a class="headerlink" href="#manually-encryptingdecrypting-txt-records" title="Permanent link">&para;</a></h3>
 <p>In some cases you might need to edit registry TXT records. The following example Go code encrypts and decrypts such records.</p>
@@ -3385,7 +3430,7 @@ rate limits imposed by the provider.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 25, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">July 25, 2025</span>
   </span>
 
     

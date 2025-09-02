@@ -67,8 +67,8 @@ update_schema() {
 
 diff_schema() {
   cd charts/external-dns
-  helm schema  \
-    -output diff-schema.schema.json
+  helm schema \
+    --output diff-schema.schema.json
   trap 'rm -rf -- "diff-schema.schema.json"' EXIT
   CURRENT_SCHEMA=$(cat values.schema.json)
   GENERATED_SCHEMA=$(cat diff-schema.schema.json)

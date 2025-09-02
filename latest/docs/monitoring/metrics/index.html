@@ -184,7 +184,7 @@
   
     
   
-  Home
+  Macro Syntax Error
 
       </a>
     </li>
@@ -415,7 +415,7 @@
         
   
   <span class="md-ellipsis">
-    Home
+    Macro Syntax Error
   </span>
   
 
@@ -701,6 +701,8 @@
   
     
     
+      
+        
       
         
       
@@ -1367,6 +1369,27 @@
   
   <span class="md-ellipsis">
     Linode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/myra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Myra ExternalDNS Webhook
   </span>
   
 
@@ -2744,6 +2767,8 @@
       
         
       
+        
+      
     
     
       
@@ -2918,6 +2943,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../contributing/source-wrappers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    🧩 Source Wrappers/Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contributing/sources-and-providers/" class="md-nav__link">
         
   
@@ -3027,6 +3073,12 @@ The metrics are in the Prometheus exposition format.</p>
 </thead>
 <tbody>
 <tr>
+<td style="text-align: left;">build_info</td>
+<td style="text-align: left;">Gauge</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">A metric with a constant &lsquo;1&rsquo; value labeled with &lsquo;version&rsquo; and &lsquo;revision&rsquo; of external_dns and the &lsquo;go_version&rsquo;, &lsquo;os&rsquo; and the &lsquo;arch&rsquo; used the build.</td>
+</tr>
+<tr>
 <td style="text-align: left;">consecutive_soft_errors</td>
 <td style="text-align: left;">Gauge</td>
 <td style="text-align: left;">controller</td>
@@ -3055,6 +3107,12 @@ The metrics are in the Prometheus exposition format.</p>
 <td style="text-align: left;">Gauge</td>
 <td style="text-align: left;">controller</td>
 <td style="text-align: left;">Number of DNS records that exists both in source and registry (vector).</td>
+</tr>
+<tr>
+<td style="text-align: left;">request_duration_seconds</td>
+<td style="text-align: left;">Summaryvec</td>
+<td style="text-align: left;">http</td>
+<td style="text-align: left;">The HTTP request latencies in seconds.</td>
 </tr>
 <tr>
 <td style="text-align: left;">cache_apply_changes_calls</td>
@@ -3241,9 +3299,6 @@ The metrics are in the Prometheus exposition format.</p>
 <td style="text-align: left;">go_threads</td>
 </tr>
 <tr>
-<td style="text-align: left;">http_request_duration_seconds</td>
-</tr>
-<tr>
 <td style="text-align: left;">process_cpu_seconds_total</td>
 </tr>
 <tr>
@@ -3292,7 +3347,7 @@ The metrics are in the Prometheus exposition format.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">June 13, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 3, 2025</span>
   </span>
 
     

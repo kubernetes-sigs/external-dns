@@ -18,13 +18,15 @@ package plan
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/idna"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 )
 
 // PropertyComparator is used in Plan for comparing the previous and current custom annotations.
@@ -159,7 +161,7 @@ func (c *Changes) HasChanges() bool {
 	if len(c.Create) > 0 || len(c.Delete) > 0 {
 		return true
 	}
-	return !cmp.Equal(c.UpdateNew, c.UpdateOld)
+	return !cmp.Equal(c.UpdateNew, c.UpdateOld, cmpopts.IgnoreUnexported(endpoint.Endpoint{}))
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -342,7 +344,7 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Ma
 // normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
 // it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
 func normalizeDNSName(dnsName string) string {
-	s, err := idna.Lookup.ToASCII(strings.TrimSpace(dnsName))
+	s, err := idna.Profile.ToASCII(strings.TrimSpace(dnsName))
 	if err != nil {
 		log.Warnf(`Got error while parsing DNSName %s: %v`, dnsName, err)
 	}
@@ -353,15 +355,8 @@ func normalizeDNSName(dnsName string) string {
 }
 
 func IsManagedRecord(record string, managedRecords, excludeRecords []string) bool {
-	for _, r := range excludeRecords {
-		if record == r {
-			return false
-		}
+	if slices.Contains(excludeRecords, record) {
+		return false
 	}
-	for _, r := range managedRecords {
-		if record == r {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(managedRecords, record)
 }

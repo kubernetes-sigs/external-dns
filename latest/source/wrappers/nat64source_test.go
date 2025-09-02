@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -22,10 +22,11 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // Validates that dedupSource is a Source
-var _ Source = &nat64Source{}
+var _ source.Source = &nat64Source{}
 
 func TestNAT64Source(t *testing.T) {
 	t.Run("Endpoints", testNat64Source)
@@ -85,6 +86,36 @@ func testNat64Source(t *testing.T) {
 
 			// Validate that the mock source was called.
 			mockSource.AssertExpectations(t)
+		})
+	}
+}
+
+func TestNat64Source_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		title string
+		input []string
+		times int
+	}{
+		{
+			title: "should add event handler when prefixes are provided",
+			input: []string{"2001:DB8::/96"},
+			times: 1,
+		},
+		{
+			title: "should add event handler when prefixes not provided",
+			input: []string{},
+			times: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			mockSource := testutils.NewMockSource()
+
+			src := NewNAT64Source(mockSource, tt.input)
+			src.AddEventHandler(t.Context(), func() {})
+
+			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
 		})
 	}
 }
