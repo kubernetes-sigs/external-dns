@@ -397,7 +397,7 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 		if !ok {
 			log.Debugf(`Skipping endpoint %v because of missing owner label (required: "%s")`, ep, ownerID)
 		} else if endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+			log.Debugf(`Skipping endpoint %v because owner id does not match (found: "%s", required: "%s")`, ep, endpointOwner, ownerID)
 		} else {
 			filtered = append(filtered, ep)
 		}
