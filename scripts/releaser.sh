@@ -30,6 +30,14 @@ function generate_changelog {
   echo "## :package: Others"
   echo
   cat "${MERGED_PRS}" | grep -v "\!" | grep -v feat[:\(] | grep -v fix[:\(] | grep -v docs[:\(]
+
+  echo
+  echo "## :package: Docker Image"
+  echo
+  echo "\`\`\`sh"
+  echo "docker pull registry.k8s.io/external-dns/external-dns:${VERSION}"
+  echo "\`\`\`"
+
 }
 
 function create_release {
@@ -66,12 +74,14 @@ gh pr list \
   " | sort > "${MERGED_PRS}"
 
 if [ $# -ne 1 ]; then
+  export VERSION="v0.x.0"
   generate_changelog "${MERGED_PRS}"
   echo "** DRY RUN **"
   echo
-  echo "To create a release: ./releaser.sh v0.17.0"
+  echo "To create a release: ./releaser.sh v0.x.0"
 else
-  generate_changelog "${MERGED_PRS}" | gh release create "$1" -t "$1" -p -F -
+  export VERSION="$1"
+  generate_changelog "${MERGED_PRS}" | gh release create "${VERSION}" -t "${VERSION}" -p -F -
 fi
 
 rm -f "${MERGED_PRS}"
