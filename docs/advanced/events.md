@@ -121,7 +121,7 @@ If a source does not emit events, it may in the future.
 | `empty`                |           |
 | `f5-transportserver`   |           |
 | `f5-virtualserver`     |           |
-| `fake`                 |     ✅     |
+| `fake`                 |     ✅    |
 | `gateway-grpcroute`    |           |
 | `gateway-httproute`    |           |
 | `gateway-tcproute`     |           |
