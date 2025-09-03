@@ -3327,16 +3327,111 @@ func TestZoneService(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
+	serviceV0, err := cloudflarev0.NewWithAPIToken("fake-token")
+	require.NoError(t, err)
+
 	client := &zoneService{
-		service: cloudflare.NewClient(),
+		service:   cloudflare.NewClient(),
+		serviceV0: serviceV0,
 	}
+
+	zoneID := "foo"
+	rc := cloudflarev0.ZoneIdentifier(zoneID)
+
+	t.Run("ListDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		iter := client.ListDNSRecords(ctx, dns.RecordListParams{ZoneID: cloudflare.F("foo")})
+		assert.False(t, iter.Next())
+		assert.Empty(t, iter.Current())
+		assert.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("CreateDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		params := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		record, err := client.CreateDNSRecord(ctx, params)
+		assert.Empty(t, record)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 
 	t.Run("UpdateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		iter := client.ListDNSRecords(ctx, dns.RecordListParams{ZoneID: cloudflare.F("foo")})
-		require.False(t, iter.Next())
-		require.Empty(t, iter.Current())
-		require.ErrorIs(t, iter.Err(), context.Canceled)
+		params := updateDNSRecordParam(cloudFlareChange{})
+		params.ID = "1234"
+		err := client.UpdateDNSRecord(ctx, rc, params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		err := client.DeleteDNSRecord(ctx, "1234", dns.RecordDeleteParams{ZoneID: cloudflare.F("foo")})
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("ListZones", func(t *testing.T) {
+		t.Parallel()
+		iter := client.ListZones(ctx, listZonesV4Params())
+		assert.False(t, iter.Next())
+		assert.Empty(t, iter.Current())
+		assert.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("GetZone", func(t *testing.T) {
+		t.Parallel()
+		zone, err := client.GetZone(ctx, zoneID)
+		assert.Nil(t, zone)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("ListDataLocalizationRegionalHostnames", func(t *testing.T) {
+		t.Parallel()
+		params := listDataLocalizationRegionalHostnamesParams(zoneID)
+		iter := client.ListDataLocalizationRegionalHostnames(ctx, params)
+		assert.False(t, iter.Next())
+		assert.Empty(t, iter.Current())
+		assert.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("CreateDataLocalizationRegionalHostname", func(t *testing.T) {
+		t.Parallel()
+		params := createDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		err := client.CreateDataLocalizationRegionalHostname(ctx, params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteDataLocalizationRegionalHostname", func(t *testing.T) {
+		t.Parallel()
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		err := client.DeleteDataLocalizationRegionalHostname(ctx, "foo", params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("UpdateDataLocalizationRegionalHostname", func(t *testing.T) {
+		t.Parallel()
+		params := updateDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		err := client.UpdateDataLocalizationRegionalHostname(ctx, "foo", params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("CustomHostnames", func(t *testing.T) {
+		t.Parallel()
+		ch, info, err := client.CustomHostnames(ctx, zoneID, 0, cloudflarev0.CustomHostname{})
+		assert.Empty(t, ch)
+		assert.Empty(t, info)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("CreateCustomHostname", func(t *testing.T) {
+		t.Parallel()
+		resp, err := client.CreateCustomHostname(ctx, zoneID, cloudflarev0.CustomHostname{})
+		assert.Empty(t, resp)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteCustomHostname", func(t *testing.T) {
+		t.Parallel()
+		err := client.DeleteCustomHostname(ctx, zoneID, "foo")
+		assert.ErrorIs(t, err, context.Canceled)
 	})
 
 	t.Run("DeleteDNSRecord", func(t *testing.T) {
