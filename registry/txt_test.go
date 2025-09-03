@@ -83,7 +83,7 @@ func testTXTRegistryNew(t *testing.T) {
 	r, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, false, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, nil, false, true, "")
+	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, nil, true, "")
 	require.Error(t, err)
 
 	_, ok = r.mapper.(affixNameMapper)
@@ -1550,7 +1550,7 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 	}
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false, false, "")
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, false, "")
 	gotTXTBeforeMigration := r.generateTXTRecord(record)
 	assert.Equal(t, expectedTXTBeforeMigration, gotTXTBeforeMigration)
 
@@ -1565,7 +1565,7 @@ func TestGenerateTXTWithMigration(t *testing.T) {
 		},
 	}
 
-	rMigrated, _ := NewTXTRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, false, true, "owner")
+	rMigrated, _ := NewTXTRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, true, "owner")
 	gotTXTAfterMigration := rMigrated.generateTXTRecord(record)
 	assert.Equal(t, expectedTXTAfterMigration, gotTXTAfterMigration)
 
@@ -2032,7 +2032,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 
 					// When: Apply changes to recreate missing A records
 					managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
-					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil)
+					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, false, "")
 					assert.NoError(t, err)
 
 					expectedRecords := append(existing, expectedCreate...)
@@ -2072,7 +2072,7 @@ func TestTXTRecordMigration(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
 
-	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", time.Hour, "", []string{}, []string{}, false, nil, false, false, "")
+	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", time.Hour, "", []string{}, []string{}, false, nil, false, "")
 
 	r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -2095,7 +2095,7 @@ func TestTXTRecordMigration(t *testing.T) {
 
 	assert.Equal(t, expectedTXTRecords[0].Targets, newTXTRecord[0].Targets)
 
-	r, _ = NewTXTRegistry(p, "%{record_type}-", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, false, true, "foo")
+	r, _ = NewTXTRegistry(p, "%{record_type}-", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, true, "foo")
 
 	updatedRecords, _ := r.Records(ctx)
 
