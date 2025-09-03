@@ -180,6 +180,10 @@ spec:
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
           imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            - name: http-webhook
+              protocol: TCP
+              containerPort: {{ .service.port }}
           {{- with .env }}
           env:
             {{- toYaml . | nindent 12 }}
@@ -188,10 +192,6 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          ports:
-            - name: http-webhook
-              protocol: TCP
-              containerPort: 8080
           livenessProbe:
             {{- toYaml .livenessProbe | nindent 12 }}
           readinessProbe:
