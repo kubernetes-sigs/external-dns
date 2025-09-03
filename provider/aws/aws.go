@@ -954,6 +954,38 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	}
 
 	setIdentifier := ep.SetIdentifier
+
+	// Check if provider-specific values requiring setIdentifier are present but setIdentifier is empty
+	// AWS Route53 requires setIdentifier for routing policies:
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ResourceRecordSet.html
+	if setIdentifier == "" {
+		providerSpecificRequiringSetIdentifier := []string{
+			providerSpecificWeight,
+			providerSpecificRegion,
+			providerSpecificFailover,
+			providerSpecificGeolocationContinentCode,
+			providerSpecificGeolocationCountryCode,
+			providerSpecificGeolocationSubdivisionCode,
+			providerSpecificGeoProximityLocationAWSRegion,
+			providerSpecificGeoProximityLocationBias,
+			providerSpecificGeoProximityLocationCoordinates,
+			providerSpecificGeoProximityLocationLocalZoneGroup,
+			providerSpecificMultiValueAnswer,
+		}
+
+		ignoredProperties := make([]string, 0, len(providerSpecificRequiringSetIdentifier))
+
+		for _, prop := range providerSpecificRequiringSetIdentifier {
+			if _, ok := ep.GetProviderSpecificProperty(prop); ok {
+				ignoredProperties = append(ignoredProperties, prop)
+			}
+		}
+		if len(ignoredProperties) > 0 {
+			log.Warnf("Endpoint %s has provider-specific properties %v that require a setIdentifier, but none was set; ignoring these properties",
+				ep.DNSName, ignoredProperties)
+		}
+	}
+
 	if setIdentifier != "" {
 		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {

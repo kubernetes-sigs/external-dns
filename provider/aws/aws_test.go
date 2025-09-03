@@ -2850,3 +2850,121 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 	require.Equal(t, 1, upserts, "should upsert the matching endpoint")
 	require.Equal(t, 0, deletes, "should not delete anything")
 }
+
+func TestAWSProvider_newChange_WarnForProviderSpecificWithoutSetIdentifier(t *testing.T) {
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"foo.bar."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), true, false, nil)
+
+	tests := []struct {
+		name               string
+		endpoint           *endpoint.Endpoint
+		expectedWarnLog    string
+		unexpectedWarnLogs []string
+	}{
+		{
+			name: "endpoint with weight but no setIdentifier should warn",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    []string{"1.2.3.4"},
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: providerSpecificWeight, Value: "100"},
+				},
+			},
+			expectedWarnLog: "Endpoint test.foo.bar. has provider-specific properties [aws/weight] that require a setIdentifier, but none was set; ignoring these properties",
+			unexpectedWarnLogs: nil,
+		},
+		{
+			name: "endpoint with region but no setIdentifier should warn",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    []string{"1.2.3.4"},
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: providerSpecificRegion, Value: "us-east-1"},
+				},
+			},
+			expectedWarnLog: "Endpoint test.foo.bar. has provider-specific properties [aws/region] that require a setIdentifier, but none was set; ignoring these properties",
+			unexpectedWarnLogs: nil,
+		},
+		{
+			name: "endpoint with multiple properties but no setIdentifier should warn",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    []string{"1.2.3.4"},
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: providerSpecificWeight, Value: "100"},
+					{Name: providerSpecificRegion, Value: "us-east-1"},
+					{Name: providerSpecificFailover, Value: "PRIMARY"},
+				},
+			},
+			expectedWarnLog: "Endpoint test.foo.bar. has provider-specific properties [aws/weight aws/region aws/failover] that require a setIdentifier, but none was set; ignoring these properties",
+			unexpectedWarnLogs: nil,
+		},
+		{
+			name: "endpoint with setIdentifier should not warn",
+			endpoint: &endpoint.Endpoint{
+				DNSName:       "test.foo.bar.",
+				RecordType:    endpoint.RecordTypeA,
+				Targets:       []string{"1.2.3.4"},
+				SetIdentifier: "primary",
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: providerSpecificWeight, Value: "100"},
+				},
+			},
+			expectedWarnLog: "",
+			unexpectedWarnLogs: []string{
+				"test.foo.bar. has provider-specific properties",
+				"ignoring these properties",
+			},
+		},
+		{
+			name: "endpoint without provider specific properties should not warn",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    []string{"1.2.3.4"},
+			},
+			expectedWarnLog: "",
+			unexpectedWarnLogs: []string{
+				"test.foo.bar. has provider-specific properties",
+				"ignoring these properties",
+			},
+		},
+		{
+			name: "endpoint with alias property (not requiring setIdentifier) should not warn",
+			endpoint: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    []string{"test-elb-123456789.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: providerSpecificAlias, Value: "true"},
+				},
+			},
+			expectedWarnLog: "",
+			unexpectedWarnLogs: []string{
+				"test.foo.bar. has provider-specific properties",
+				"ignoring these properties",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			change := provider.newChange(route53types.ChangeActionCreate, tt.endpoint)
+
+			assert.NotNil(t, change)
+			assert.Equal(t, route53types.ChangeActionCreate, change.Action)
+
+			if tt.expectedWarnLog != "" {
+				testutils.TestHelperLogContains(tt.expectedWarnLog, hook, t)
+			}
+
+			for _, unexpectedLog := range tt.unexpectedWarnLogs {
+				testutils.TestHelperLogNotContains(unexpectedLog, hook, t)
+			}
+		})
+	}
+}
