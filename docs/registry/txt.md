@@ -268,7 +268,7 @@ spec:
       containers:
       - name: external-dns
         imagePullPolicy: Always
-        image: registry.k8s.io/external-dns/external-dns:v0.18.0
+        image: registry.k8s.io/external-dns/external-dns:v0.19.0
         args:
         - "--txt-prefix=%{record_type}-"
         - "--txt-cache-interval=2m"
