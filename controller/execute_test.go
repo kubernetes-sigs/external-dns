@@ -393,11 +393,8 @@ func getRandomPort() (int, error) {
 }
 
 func TestServeMetrics(t *testing.T) {
-	// Avoid global DefaultServeMux interference by swapping it for this test
-	origMux := http.DefaultServeMux
-	newMux := http.NewServeMux()
-	http.DefaultServeMux = newMux
-	t.Cleanup(func() { http.DefaultServeMux = origMux })
+    // Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
+    http.DefaultServeMux = http.NewServeMux()
 
 	port, err := getRandomPort()
 	require.NoError(t, err)
@@ -747,10 +744,8 @@ func TestExecuteConfigValidationFatalInProcess(t *testing.T) {
 
 // Run path with --events; shut down via SIGTERM.
 func TestExecuteDefaultRunWithEventsStopsOnSigterm(t *testing.T) {
-	// Isolate DefaultServeMux to avoid handler collisions from serveMetrics
-	origMux := http.DefaultServeMux
-	http.DefaultServeMux = http.NewServeMux()
-	t.Cleanup(func() { http.DefaultServeMux = origMux })
+    // Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
+    http.DefaultServeMux = http.NewServeMux()
 
 	// Prepare args to run Execute without --once and with --events
 	prevArgs := os.Args
@@ -792,10 +787,8 @@ func TestExecuteDefaultRunWithEventsStopsOnSigterm(t *testing.T) {
 
 // Webhook server path; pre-bind 127.0.0.1:8888 to force a bind failure.
 func TestExecuteWebhookServerFailsPortInUseInProcess(t *testing.T) {
-	// Isolate DefaultServeMux for serveMetrics
-	origMux := http.DefaultServeMux
-	http.DefaultServeMux = http.NewServeMux()
-	t.Cleanup(func() { http.DefaultServeMux = origMux })
+    // Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
+    http.DefaultServeMux = http.NewServeMux()
 
 	// Pre-bind the webhook server port so it is unavailable
 	l, err := net.Listen("tcp", "127.0.0.1:8888")
