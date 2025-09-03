@@ -202,9 +202,10 @@ Caching is enabled by specifying a cache duration with the `--txt-cache-interval
 
 ## OwnerID migration
 
-If you wish to update the owner ID of the TXT records managed by your external-dns instance,
-you can set the following flags: `--migrate-txt-owner`, which will enable the migration checks
-in the run loop, `--txt-owner-id=new-owner-id` and `--from-txt-owner=old-owner-id`.
+The owner ID of the TXT records managed by external-dns instance can be updated.
+
+When `--migrate-txt-owner` is set, it will enable the migration checks
+in the run loop using `--txt-owner-id=new-owner-id` and `--from-txt-owner=old-owner-id`.
 
 If `--migrate-txt-owner` is set, `--from-txt-owner` is mandatory.
 
