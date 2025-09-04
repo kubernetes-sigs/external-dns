@@ -20,6 +20,8 @@ import (
 	"context"
 	"strings"
 
+	"k8s.io/utils/set"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -39,7 +41,7 @@ func NewDedupSource(source source.Source) source.Source {
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
-	result := []*endpoint.Endpoint{}
+	result := make([]*endpoint.Endpoint, 0)
 	collected := map[string]bool{}
 
 	endpoints, err := ms.source.Endpoints(ctx)
@@ -52,7 +54,13 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
+		targets := ep.Targets
+		if len(targets) > 1 {
+			targets = removeDuplicates(targets)
+			ep.Targets = targets
+		}
+
+		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, targets.String()}, "/")
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
@@ -64,6 +72,11 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	return result, nil
+}
+
+func removeDuplicates(targets []string) []string {
+	s := set.New(targets...)
+	return s.SortedList()
 }
 
 func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
