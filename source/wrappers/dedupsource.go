@@ -54,13 +54,11 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
-		targets := ep.Targets
-		if len(targets) > 1 {
-			targets = removeDuplicates(targets)
-			ep.Targets = targets
+		if len(ep.Targets) > 1 {
+			ep.Targets = removeDuplicates(ep.Targets)
 		}
 
-		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, targets.String()}, "/")
+		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
@@ -75,8 +73,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 func removeDuplicates(targets []string) []string {
-	s := set.New(targets...)
-	return s.SortedList()
+	return set.New(targets...).SortedList()
 }
 
 func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
