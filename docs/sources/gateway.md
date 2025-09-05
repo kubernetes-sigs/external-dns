@@ -104,22 +104,74 @@ Iterates over all listeners for the parent's `parentRef.sectionName`:
 
 ## Targets
 
-The targets of the DNS entries created from a \*Route are sourced from the following places:
+Targets are derived from a combination of Route annotations, Gateway annotations, and
+the Gateway's `status.addresses`. How these sources are combined is controlled (per Route)
+by the optional strategy annotation:
 
-1. If the route has the `external-dns.alpha.kubernetes.io/target` annotation
-   with a non-empty value, uses the value from that.
+```yaml
+external-dns.alpha.kubernetes.io/target-strategy: <strategy>
+```
 
-2. If the route has the `external-dns.alpha.kubernetes.io/target: ""` it
-   will disable the `external-dns.alpha.kubernetes.io/target` on the matching parent
-   Gateway(s) and continue the regular flow from step 4.
+Supported strategies (current behavior for Gateway *Route sources):
 
-3. If a matching parent Gateway has the `external-dns.alpha.kubernetes.io/target` annotation, uses
-   the values from that.
+| Strategy         | Behavior | Fallback Order | Publishes Multiple Target Sets? |
+|------------------|----------|----------------|----------------------------------|
+| `route-preferred` (default when omitted or unrecognized) | Use Route targets if present; otherwise Gateway targets if present; otherwise addresses | Route → Gateway → Addresses | No (at most one set) |
+| `route-only`     | Use Route targets only if present; otherwise fall back directly to addresses (Gateway targets are ignored even if set) | Route → Addresses | No |
+| `gateway-only`   | Use Gateway targets only if present; otherwise fall back to addresses (Route targets are ignored) | Gateway → Addresses | No |
+| `merge`          | Combine Route and Gateway targets (deduped). If neither annotation supplies targets, fall back to addresses | (Route ∪ Gateway) → Addresses | Yes |
 
-4. Otherwise, iterates over that parent Gateway's `status.addresses`,
-   adding each address's `value`.
+Where the individual sources come from:
 
-The targets from each parent Gateway matching the \*Route are then combined and de-duplicated.
+1. Route targets: values from a non-empty `external-dns.alpha.kubernetes.io/target` annotation on the Route.
+2. Gateway targets: values from a non-empty `external-dns.alpha.kubernetes.io/target` annotation on the matching parent Gateway.
+3. Addresses: each `value` in the parent Gateway's `status.addresses` field.
+
+Notes & nuances:
+
+- The empty string (`external-dns.alpha.kubernetes.io/target: ""`) on a Route or Gateway does not disable the other annotation; it simply contributes no targets.
+- Under `route-only`, any Gateway target annotation is intentionally ignored even if populated.
+- Under `gateway-only`, any Route target annotation is intentionally ignored.
+- Under `merge`, duplicate targets between Route and Gateway are removed before creating DNS records.
+- If (after applying the strategy rules) no annotation targets are selected, Gateway `status.addresses` are always used as a safety fallback to avoid producing zero endpoints for an otherwise valid attachment.
+
+Example usages on a *Route:
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/target-strategy: route-only
+```
+
+Publishes the hostname(s) from the route using the Gateway addresses, ignoring target annotation on the Gateway.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/target: canary.lb.example.net
+    external-dns.alpha.kubernetes.io/target-strategy: route-preferred
+```
+
+Publishes only `canary.lb.example.net` (even if the Gateway also has a target annotation).
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/target-strategy: merge
+```
+
+Route has no target annotation; if the Gateway has `external-dns.alpha.kubernetes.io/target: edge.lb.example.net` the record will include that value; otherwise the Gateway addresses are used.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/target: direct.lb.example.net
+    external-dns.alpha.kubernetes.io/target-strategy: merge
+```
+
+If the Gateway also has `external-dns.alpha.kubernetes.io/target: edge.lb.example.net` both targets are published (deduped if identical).
+
+The combined targets from each matching parent Gateway are gathered per hostname and de-duplicated before generating DNS records.
 
 ## Dualstack Routes
 
