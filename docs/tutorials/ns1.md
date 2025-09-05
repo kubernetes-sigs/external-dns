@@ -97,13 +97,18 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --ns1-zone-handle-map="example.com=corp-prod" # (optional) map example.com FQDN to corp-prod zone handle
+        - --ns1-zone-handle-map="dev.example.com=dev-view" # (optional) multiple FQDN-zone handle mappings
         - --provider=ns1
         env:
-       - name: NS1_APIKEY
+        - name: NS1_APIKEY
           valueFrom:
             secretKeyRef:
               name: NS1_APIKEY
               key: NS1_API_KEY
+        - name: EXTERNAL_DNS_NS1_ZONE_HANDLE_MAP
+          value: "example.com=corp-prod\ndev.example.com=dev-view"
+
 ```
 
 ### Manifest (for clusters with RBAC enabled)

@@ -188,6 +188,7 @@ type Config struct {
 	NS1Endpoint                                   string
 	NS1IgnoreSSL                                  bool
 	NS1MinTTLSeconds                              int
+	NS1ZoneHandleMap                              map[string]string
 	TransIPAccountName                            string
 	TransIPPrivateKeyFile                         string
 	DigitalOceanAPIPageSize                       int
@@ -310,6 +311,7 @@ var defaultConfig = &Config{
 	NAT64Networks:                []string{},
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
+	NS1ZoneHandleMap:             map[string]string{},
 	OCIConfigFile:                "/etc/kubernetes/oci.yaml",
 	OCIZoneCacheDuration:         0 * time.Second,
 	OCIZoneScope:                 "GLOBAL",
@@ -385,7 +387,8 @@ var defaultConfig = &Config{
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
-		AWSSDCreateTag: map[string]string{},
+		AWSSDCreateTag:   map[string]string{},
+		NS1ZoneHandleMap: map[string]string{},
 	}
 }
 
@@ -581,6 +584,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
 	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
+	app.Flag("ns1-zone-handle-map", "Map FQDN (or suffix) to an NS1 zone handle/ID. Repeatable; k=v form. .").PlaceHolder("fqdn=handle").StringMapVar(&cfg.NS1ZoneHandleMap)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
 	// GoDaddy flags
 	app.Flag("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)").Default(defaultConfig.GoDaddyAPIKey).StringVar(&cfg.GoDaddyAPIKey)
