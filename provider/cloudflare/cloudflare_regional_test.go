@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
@@ -1182,6 +1183,112 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 			assert.NoError(t, err, "ApplyChanges should not fail")
 			if tt.expectDebug != "" {
 				testutils.TestHelperLogContains(tt.expectDebug, hook, t)
+			}
+		})
+	}
+}
+
+func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		recordType             string
+		regionalServicesConfig RegionalServicesConfig
+		initialRegionKey       string  // existing region key on endpoint
+		expectedRegionKey      *string // expected region key after AdjustEndpoints (nil = should not be present)
+	}{
+		// Supported types should get region key when enabled
+		{
+			name:                   "A record with regional services enabled",
+			recordType:             "A",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      testutils.ToPtr("us"),
+		},
+		{
+			name:                   "AAAA record with regional services enabled",
+			recordType:             "AAAA",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      testutils.ToPtr("us"),
+		},
+		{
+			name:                   "CNAME record with regional services enabled",
+			recordType:             "CNAME",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      testutils.ToPtr("us"),
+		},
+
+		// Unsupported types should NOT get region key even when enabled
+		{
+			name:                   "TXT record with regional services enabled",
+			recordType:             "TXT",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      nil,
+		},
+
+		// Disabled regional services should remove region key for all types
+		{
+			name:                   "A record with regional services disabled",
+			recordType:             "A",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: false},
+			initialRegionKey:       "existing-region",
+			expectedRegionKey:      nil,
+		},
+		{
+			name:                   "TXT record with regional services disabled",
+			recordType:             "TXT",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: false},
+			initialRegionKey:       "existing-region",
+			expectedRegionKey:      nil,
+		},
+
+		// Existing region key should be preserved when already set
+		{
+			name:                   "A record with existing custom region key",
+			recordType:             "A",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "eu",
+			expectedRegionKey:      testutils.ToPtr("eu"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create endpoint with initial region key if specified
+			testEndpoint := &endpoint.Endpoint{
+				RecordType: tc.recordType,
+				DNSName:    "test.bar.com",
+				Targets:    endpoint.Targets{"127.0.0.1"},
+			}
+
+			if tc.initialRegionKey != "" {
+				testEndpoint.ProviderSpecific = endpoint.ProviderSpecific{
+					endpoint.ProviderSpecificProperty{
+						Name:  annotations.CloudflareRegionKey,
+						Value: tc.initialRegionKey,
+					},
+				}
+			}
+
+			provider := &CloudFlareProvider{
+				RegionalServicesConfig: tc.regionalServicesConfig,
+			}
+
+			adjustedEndpoints, err := provider.AdjustEndpoints([]*endpoint.Endpoint{testEndpoint})
+			assert.NoError(t, err)
+			assert.Len(t, adjustedEndpoints, 1)
+
+			regionKey, exists := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareRegionKey)
+
+			if tc.expectedRegionKey != nil {
+				// Region key should be present with expected value
+				assert.True(t, exists, "Region key should be present")
+				assert.Equal(t, *tc.expectedRegionKey, regionKey, "Region key value should match expected")
+			} else {
+				// Region key should not be present
+				assert.False(t, exists, "Region key should not be present")
 			}
 		})
 	}

@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	cloudflarev0 "github.com/cloudflare/cloudflare-go"
+	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
 	"github.com/maxatome/go-testdeep/td"
@@ -171,49 +171,22 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.R
 	return &record, nil
 }
 
-func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.ListDNSRecordsParams) ([]dns.RecordResponse, *cloudflarev0.ResultInfo, error) {
+func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse] {
 	if m.dnsRecordsError != nil {
-		return nil, &cloudflarev0.ResultInfo{}, m.dnsRecordsError
+		return &mockAutoPager[dns.RecordResponse]{err: m.dnsRecordsError}
 	}
-	result := []dns.RecordResponse{}
-	if zone, ok := m.Records[rc.Identifier]; ok {
+	iter := &mockAutoPager[dns.RecordResponse]{}
+	if zone, ok := m.Records[params.ZoneID.Value]; ok {
 		for _, record := range zone {
 			if strings.HasPrefix(record.Name, "newerror-list-") {
-				m.DeleteDNSRecord(ctx, rc, record.ID)
-				return nil, &cloudflarev0.ResultInfo{}, errors.New("failed to list erroring DNS record")
+				m.DeleteDNSRecord(ctx, record.ID, dns.RecordDeleteParams{ZoneID: params.ZoneID})
+				iter.err = errors.New("failed to list erroring DNS record")
+				return iter
 			}
-			result = append(result, record)
+			iter.items = append(iter.items, record)
 		}
 	}
-
-	if len(result) == 0 || rp.PerPage == 0 {
-		return result, &cloudflarev0.ResultInfo{Page: 1, TotalPages: 1, Count: 0, Total: 0}, nil
-	}
-
-	// if not pagination options were passed in, return the result as is
-	if rp.Page == 0 {
-		return result, &cloudflarev0.ResultInfo{Page: 1, TotalPages: 1, Count: len(result), Total: len(result)}, nil
-	}
-
-	// otherwise, split the result into chunks of size rp.PerPage to simulate the pagination from the API
-	chunks := [][]dns.RecordResponse{}
-
-	// to ensure consistency in the multiple calls to this function, sort the result slice
-	sort.Slice(result, func(i, j int) bool { return strings.Compare(result[i].ID, result[j].ID) > 0 })
-	for rp.PerPage < len(result) {
-		result, chunks = result[rp.PerPage:], append(chunks, result[0:rp.PerPage])
-	}
-	chunks = append(chunks, result)
-
-	// return the requested page
-	partialResult := chunks[rp.Page-1]
-	return partialResult, &cloudflarev0.ResultInfo{
-		PerPage:    rp.PerPage,
-		Page:       rp.Page,
-		TotalPages: len(chunks),
-		Count:      len(partialResult),
-		Total:      len(result),
-	}, nil
+	return iter
 }
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
@@ -235,13 +208,14 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudfla
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, recordID string) error {
+func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
+	zoneID := params.ZoneID.String()
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
-		ZoneId:   rc.Identifier,
+		ZoneId:   zoneID,
 		RecordId: recordID,
 	})
-	if zone, ok := m.Records[rc.Identifier]; ok {
+	if zone, ok := m.Records[zoneID]; ok {
 		if _, ok := zone[recordID]; ok {
 			name := zone[recordID].Name
 			delete(zone, recordID)
@@ -1500,7 +1474,7 @@ func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
 	}
 	ctx := context.Background()
 	chs := CustomHostnamesMap{}
-	records, err := provider.listDNSRecordsWithAutoPagination(ctx, "001")
+	records, err := provider.getDNSRecordsMap(ctx, "001")
 	assert.NoError(t, err)
 
 	endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, chs)
@@ -3345,4 +3319,124 @@ func TestDnsRecordFromLegacyAPI(t *testing.T) {
 			assert.Equal(t, tt.expect, got)
 		})
 	}
+}
+
+func TestZoneService(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	serviceV0, err := cloudflarev0.NewWithAPIToken("fake-token")
+	require.NoError(t, err)
+
+	client := &zoneService{
+		service:   cloudflare.NewClient(),
+		serviceV0: serviceV0,
+	}
+
+	zoneID := "foo"
+	rc := cloudflarev0.ZoneIdentifier(zoneID)
+
+	t.Run("ListDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		iter := client.ListDNSRecords(ctx, dns.RecordListParams{ZoneID: cloudflare.F("foo")})
+		assert.False(t, iter.Next())
+		assert.Empty(t, iter.Current())
+		assert.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("CreateDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		params := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		record, err := client.CreateDNSRecord(ctx, params)
+		assert.Empty(t, record)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("UpdateDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		params := updateDNSRecordParam(cloudFlareChange{})
+		params.ID = "1234"
+		err := client.UpdateDNSRecord(ctx, rc, params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		err := client.DeleteDNSRecord(ctx, "1234", dns.RecordDeleteParams{ZoneID: cloudflare.F("foo")})
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("ListZones", func(t *testing.T) {
+		t.Parallel()
+		iter := client.ListZones(ctx, listZonesV4Params())
+		assert.False(t, iter.Next())
+		assert.Empty(t, iter.Current())
+		assert.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("GetZone", func(t *testing.T) {
+		t.Parallel()
+		zone, err := client.GetZone(ctx, zoneID)
+		assert.Nil(t, zone)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("ListDataLocalizationRegionalHostnames", func(t *testing.T) {
+		t.Parallel()
+		params := listDataLocalizationRegionalHostnamesParams(zoneID)
+		iter := client.ListDataLocalizationRegionalHostnames(ctx, params)
+		assert.False(t, iter.Next())
+		assert.Empty(t, iter.Current())
+		assert.ErrorIs(t, iter.Err(), context.Canceled)
+	})
+
+	t.Run("CreateDataLocalizationRegionalHostname", func(t *testing.T) {
+		t.Parallel()
+		params := createDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		err := client.CreateDataLocalizationRegionalHostname(ctx, params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteDataLocalizationRegionalHostname", func(t *testing.T) {
+		t.Parallel()
+		params := deleteDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		err := client.DeleteDataLocalizationRegionalHostname(ctx, "foo", params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("UpdateDataLocalizationRegionalHostname", func(t *testing.T) {
+		t.Parallel()
+		params := updateDataLocalizationRegionalHostnameParams(zoneID, regionalHostnameChange{})
+		err := client.UpdateDataLocalizationRegionalHostname(ctx, "foo", params)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("CustomHostnames", func(t *testing.T) {
+		t.Parallel()
+		ch, info, err := client.CustomHostnames(ctx, zoneID, 0, cloudflarev0.CustomHostname{})
+		assert.Empty(t, ch)
+		assert.Empty(t, info)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("CreateCustomHostname", func(t *testing.T) {
+		t.Parallel()
+		resp, err := client.CreateCustomHostname(ctx, zoneID, cloudflarev0.CustomHostname{})
+		assert.Empty(t, resp)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteCustomHostname", func(t *testing.T) {
+		t.Parallel()
+		err := client.DeleteCustomHostname(ctx, zoneID, "foo")
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("DeleteDNSRecord", func(t *testing.T) {
+		t.Parallel()
+		err := client.DeleteDNSRecord(ctx, "1234", dns.RecordDeleteParams{ZoneID: cloudflare.F("foo")})
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }
