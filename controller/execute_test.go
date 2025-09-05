@@ -19,6 +19,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -36,6 +37,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/provider"
@@ -393,8 +395,8 @@ func getRandomPort() (int, error) {
 }
 
 func TestServeMetrics(t *testing.T) {
-    // Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
-    http.DefaultServeMux = http.NewServeMux()
+	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
+	http.DefaultServeMux = http.NewServeMux()
 
 	port, err := getRandomPort()
 	require.NoError(t, err)
@@ -587,7 +589,8 @@ func runExecuteSubprocess(t *testing.T, args []string) (int, string, error) {
 	if err == nil {
 		return 0, output, nil
 	}
-	if ee, ok := err.(*exec.ExitError); ok {
+	ee := &exec.ExitError{}
+	if errors.As(err, &ee) {
 		return ee.ExitCode(), output, nil
 	}
 	return -1, output, err
@@ -744,8 +747,8 @@ func TestExecuteConfigValidationFatalInProcess(t *testing.T) {
 
 // Run path with --events; shut down via SIGTERM.
 func TestExecuteDefaultRunWithEventsStopsOnSigterm(t *testing.T) {
-    // Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
-    http.DefaultServeMux = http.NewServeMux()
+	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
+	http.DefaultServeMux = http.NewServeMux()
 
 	// Prepare args to run Execute without --once and with --events
 	prevArgs := os.Args
@@ -787,8 +790,8 @@ func TestExecuteDefaultRunWithEventsStopsOnSigterm(t *testing.T) {
 
 // Webhook server path; pre-bind 127.0.0.1:8888 to force a bind failure.
 func TestExecuteWebhookServerFailsPortInUseInProcess(t *testing.T) {
-    // Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
-    http.DefaultServeMux = http.NewServeMux()
+	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
+	http.DefaultServeMux = http.NewServeMux()
 
 	// Pre-bind the webhook server port so it is unavailable
 	l, err := net.Listen("tcp", "127.0.0.1:8888")
