@@ -118,26 +118,6 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func getDNSRecordFromRecordParams(rp any) dns.RecordResponse {
-	switch params := rp.(type) {
-	case cloudflarev0.UpdateDNSRecordParams:
-		record := dns.RecordResponse{
-			ID:      params.ID,
-			Name:    params.Name,
-			TTL:     dns.TTL(params.TTL),
-			Proxied: params.Proxied != nil && *params.Proxied,
-			Type:    dns.RecordResponseType(params.Type),
-			Content: params.Content,
-		}
-		if params.Type == "MX" {
-			record.Priority = float64(*params.Priority)
-		}
-		return record
-	default:
-		return dns.RecordResponse{}
-	}
-}
-
 func generateDNSRecordID(rrtype string, name string, content string) string {
 	return fmt.Sprintf("%s-%s-%s", name, rrtype, content)
 }
@@ -189,23 +169,35 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 	return iter
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
-	recordData := getDNSRecordFromRecordParams(rp)
+func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
+	zoneID := params.ZoneID.String()
+	body := params.Body.(dns.RecordUpdateParamsBody)
+
+	record := dns.RecordResponse{
+		ID:       recordID,
+		Name:     body.Name.Value,
+		TTL:      dns.TTL(body.TTL.Value),
+		Proxied:  body.Proxied.Value,
+		Type:     dns.RecordResponseType(body.Type.String()),
+		Content:  body.Content.Value,
+		Priority: body.Priority.Value,
+	}
+
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
-		ZoneId:     rc.Identifier,
-		RecordId:   rp.ID,
-		RecordData: recordData,
+		ZoneId:     zoneID,
+		RecordId:   recordID,
+		RecordData: record,
 	})
-	if zone, ok := m.Records[rc.Identifier]; ok {
-		if _, ok := zone[rp.ID]; ok {
-			if strings.HasPrefix(recordData.Name, "newerror-update-") {
-				return errors.New("failed to update erroring DNS record")
+	if zone, ok := m.Records[zoneID]; ok {
+		if _, ok := zone[recordID]; ok {
+			if strings.HasPrefix(record.Name, "newerror-update-") {
+				return nil, errors.New("failed to update erroring DNS record")
 			}
-			zone[rp.ID] = recordData
+			zone[recordID] = record
 		}
 	}
-	return nil
+	return &record, nil
 }
 
 func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
@@ -3321,6 +3313,33 @@ func TestDnsRecordFromLegacyAPI(t *testing.T) {
 	}
 }
 
+func TestGetUpdateDNSRecordParam(t *testing.T) {
+	cfc := cloudFlareChange{
+		ResourceRecord: dns.RecordResponse{
+			ID:       "1234",
+			Name:     "example.com",
+			Type:     endpoint.RecordTypeA,
+			TTL:      120,
+			Proxied:  true,
+			Content:  "1.2.3.4",
+			Priority: 10,
+			Comment:  "test-comment",
+		},
+	}
+
+	params := getUpdateDNSRecordParam("zone-123", cfc)
+	body := params.Body.(dns.RecordUpdateParamsBody)
+
+	assert.Equal(t, "zone-123", params.ZoneID.Value)
+	assert.Equal(t, "example.com", body.Name.Value)
+	assert.InDelta(t, 120, float64(body.TTL.Value), 0)
+	assert.True(t, body.Proxied.Value)
+	assert.EqualValues(t, "A", body.Type.Value)
+	assert.Equal(t, "1.2.3.4", body.Content.Value)
+	assert.InDelta(t, 10, float64(body.Priority.Value), 0)
+	assert.Equal(t, "test-comment", body.Comment.Value)
+}
+
 func TestZoneService(t *testing.T) {
 	t.Parallel()
 
@@ -3336,7 +3355,6 @@ func TestZoneService(t *testing.T) {
 	}
 
 	zoneID := "foo"
-	rc := cloudflarev0.ZoneIdentifier(zoneID)
 
 	t.Run("ListDNSRecord", func(t *testing.T) {
 		t.Parallel()
@@ -3356,9 +3374,8 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("UpdateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		params := updateDNSRecordParam(cloudFlareChange{})
-		params.ID = "1234"
-		err := client.UpdateDNSRecord(ctx, rc, params)
+		recordParam := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
+		_, err := client.UpdateDNSRecord(ctx, "1234", recordParam)
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 

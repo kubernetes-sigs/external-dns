@@ -113,7 +113,7 @@ type cloudFlareDNS interface {
 	ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse]
 	CreateDNSRecord(ctx context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error)
 	DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error
-	UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error
+	UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error)
 	ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse]
 	CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error
 	UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error
@@ -156,9 +156,8 @@ func (z zoneService) ListDNSRecords(ctx context.Context, params dns.RecordListPa
 	return z.service.DNS.Records.ListAutoPaging(ctx, params)
 }
 
-func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflarev0.ResourceContainer, rp cloudflarev0.UpdateDNSRecordParams) error {
-	_, err := z.serviceV0.UpdateDNSRecord(ctx, rc, rp)
-	return err
+func (z zoneService) UpdateDNSRecord(ctx context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
+	return z.service.DNS.Records.Update(ctx, recordID, params)
 }
 
 func (z zoneService) DeleteDNSRecord(ctx context.Context, recordID string, params dns.RecordDeleteParams) error {
@@ -264,20 +263,19 @@ type RecordParamsTypes interface {
 }
 
 // updateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
-func updateDNSRecordParam(cfc cloudFlareChange) cloudflarev0.UpdateDNSRecordParams {
-	priority := uint16(cfc.ResourceRecord.Priority)
-
-	params := cloudflarev0.UpdateDNSRecordParams{
-		Name:     cfc.ResourceRecord.Name,
-		TTL:      int(cfc.ResourceRecord.TTL),
-		Proxied:  &cfc.ResourceRecord.Proxied,
-		Type:     string(cfc.ResourceRecord.Type),
-		Content:  cfc.ResourceRecord.Content,
-		Priority: &priority,
-		Comment:  cloudflarev0.StringPtr(cfc.ResourceRecord.Comment),
+func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) dns.RecordUpdateParams {
+	return dns.RecordUpdateParams{
+		ZoneID: cloudflare.F(zoneID),
+		Body: dns.RecordUpdateParamsBody{
+			Name:     cloudflare.F(cfc.ResourceRecord.Name),
+			TTL:      cloudflare.F(cfc.ResourceRecord.TTL),
+			Proxied:  cloudflare.F(cfc.ResourceRecord.Proxied),
+			Type:     cloudflare.F(dns.RecordUpdateParamsBodyType(cfc.ResourceRecord.Type)),
+			Content:  cloudflare.F(cfc.ResourceRecord.Content),
+			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
+			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
+		},
 	}
-
-	return params
 }
 
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
@@ -622,7 +620,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	var failedZones []string
 	for zoneID, zoneChanges := range changesByZone {
 		var failedChange bool
-		resourceContainer := cloudflarev0.ZoneIdentifier(zoneID)
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
@@ -656,9 +653,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				recordParam := updateDNSRecordParam(*change)
-				recordParam.ID = recordID
-				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
+				recordParam := getUpdateDNSRecordParam(zoneID, *change)
+				_, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam)
 				if err != nil {
 					failedChange = true
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
