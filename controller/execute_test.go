@@ -454,14 +454,25 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 			},
 		},
 		{
-			name: "configuration without target filter wrapper",
+			name: "configuration with nat64 networks",
+			cfg: &externaldns.Config{
+				APIServerURL:  svr.URL,
+				Sources:       []string{"fake"},
+				NAT64Networks: []string{"2001:db8::/96"},
+			},
+			asserts: func(t *testing.T, cfg *externaldns.Config) {
+				assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
+			},
+		},
+		{
+			name: "default configuration",
 			cfg: &externaldns.Config{
 				APIServerURL: svr.URL,
 				Sources:      []string{"fake"},
 			},
 			asserts: func(t *testing.T, cfg *externaldns.Config) {
 				assert.True(t, cfg.IsSourceWrapperInstrumented("dedup"))
-				assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
+				assert.False(t, cfg.IsSourceWrapperInstrumented("nat64"))
 				assert.False(t, cfg.IsSourceWrapperInstrumented("target-filter"))
 			},
 		},
