@@ -23,6 +23,8 @@ import (
 	"sort"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -488,4 +490,64 @@ func TestWithLabel(t *testing.T) {
 	e.WithLabel("new", "val")
 	assert.Equal(t, "orig", e.Labels["existing"])
 	assert.Equal(t, "val", e.Labels["new"])
+}
+
+func TestFilterEndpointsByOwnerIDLogging(t *testing.T) {
+	noOwner := &endpoint.Endpoint{}
+	ownedByFoo := &endpoint.Endpoint{
+		Labels: endpoint.Labels{
+			endpoint.OwnerLabelKey: "foo",
+		},
+	}
+	ownedByBar := &endpoint.Endpoint{
+		Labels: endpoint.Labels{
+			endpoint.OwnerLabelKey: "bar",
+		},
+	}
+	tests := []struct {
+		name         string
+		ownerID      string
+		endpoints    []*endpoint.Endpoint
+		messages     []string
+		messages_not []string
+		result       []*endpoint.Endpoint
+	}{
+		{
+			name:         "one_matches",
+			ownerID:      "foo",
+			endpoints:    []*endpoint.Endpoint{ownedByFoo},
+			messages:     []string{},
+			messages_not: []string{""},
+			result:       []*endpoint.Endpoint{ownedByFoo},
+		},
+		{
+			name:         "wrong_owner",
+			ownerID:      "foo",
+			endpoints:    []*endpoint.Endpoint{ownedByFoo, ownedByBar},
+			messages:     []string{"because owner id does not match"},
+			messages_not: []string{},
+			result:       []*endpoint.Endpoint{ownedByFoo},
+		},
+		{
+			name:         "no_owner",
+			ownerID:      "bar",
+			endpoints:    []*endpoint.Endpoint{noOwner, ownedByBar},
+			messages:     []string{"because of missing owner label"},
+			messages_not: []string{"because owner id does not match"},
+			result:       []*endpoint.Endpoint{ownedByBar},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			endpoint.FilterEndpointsByOwnerID(tt.ownerID, tt.endpoints)
+			for _, m := range tt.messages {
+				TestHelperLogContains(m, hook, t)
+			}
+			for _, m := range tt.messages_not {
+				TestHelperLogNotContains(m, hook, t)
+			}
+		})
+	}
 }
