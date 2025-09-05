@@ -101,7 +101,7 @@ To let ExternalDNS take ownership of the existing A record, you must add TXT rec
 
 ```text
 aaaa-grafana.dev.example.com  → TXT → "heritage=external-dns,external-dns/owner=dev.example.com,external-dns/resource=gateway/istio/gateway"
-cname-grafana.dev.example.com → TXT → "heritage=external-dns,external-dns/owner=dev.example.com,external-dns/resource/gateway/istio/gateway"
+cname-grafana.dev.example.com → TXT → "heritage=external-dns,external-dns/owner=dev.example.com,external-dns/resource=gateway/istio/gateway"
 ```
 
 Note: The easiest way to determine the correct TXT value is to create a dummy record with ExternalDNS. This will generate the required TXT entries, which you can then copy and apply to your manually created records.
