@@ -192,11 +192,8 @@ func TestIsLess(t *testing.T) {
 
 func TestGetProviderSpecificProperty(t *testing.T) {
 	e := &Endpoint{
-		ProviderSpecific: []ProviderSpecificProperty{
-			{
-				Name:  "name",
-				Value: "value",
-			},
+		ProviderSpecific: ProviderSpecific{
+			"name": "value",
 		},
 	}
 
@@ -221,18 +218,15 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 		key                string
 		value              string
 		expectedIdentifier string
-		expected           []ProviderSpecificProperty
+		expected           ProviderSpecific
 	}{
 		{
 			name:     "endpoint is empty",
 			endpoint: Endpoint{},
 			key:      "key1",
 			value:    "value1",
-			expected: []ProviderSpecificProperty{
-				{
-					Name:  "key1",
-					Value: "value1",
-				},
+			expected: ProviderSpecific{
+				"key1": "value1",
 			},
 		},
 		{
@@ -245,26 +239,17 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 				Targets: Targets{
 					"example.org", "example.com", "1.2.4.5",
 				},
-				ProviderSpecific: []ProviderSpecificProperty{
-					{
-						Name:  "name1",
-						Value: "value1",
-					},
+				ProviderSpecific: ProviderSpecific{
+					"name1": "value1",
 				},
 			},
 			expectedIdentifier: "newIdentifier",
 			key:                "name2",
 			value:              "value2",
 
-			expected: []ProviderSpecificProperty{
-				{
-					Name:  "name1",
-					Value: "value1",
-				},
-				{
-					Name:  "name2",
-					Value: "value2",
-				},
+			expected: ProviderSpecific{
+				"name1": "value1",
+				"name2": "value2",
 			},
 		},
 		{
@@ -277,37 +262,19 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 				Targets: Targets{
 					"example.org", "example.com", "1.2.4.5",
 				},
-				ProviderSpecific: []ProviderSpecificProperty{
-					{
-						Name:  "name1",
-						Value: "value1",
-					},
-					{
-						Name:  "name2",
-						Value: "value2",
-					},
-					{
-						Name:  "name3",
-						Value: "value3",
-					},
+				ProviderSpecific: ProviderSpecific{
+					"name1": "value1",
+					"name2": "value2",
+					"name3": "value3",
 				},
 			},
 			key:                "name2",
 			value:              "value2",
 			expectedIdentifier: "newIdentifier",
-			expected: []ProviderSpecificProperty{
-				{
-					Name:  "name1",
-					Value: "value1",
-				},
-				{
-					Name:  "name2",
-					Value: "value2",
-				},
-				{
-					Name:  "name3",
-					Value: "value3",
-				},
+			expected: ProviderSpecific{
+				"name1": "value1",
+				"name2": "value2",
+				"name3": "value3",
 			},
 		},
 		{
@@ -320,21 +287,15 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 				Targets: Targets{
 					"example.org", "example.com", "1.2.4.5",
 				},
-				ProviderSpecific: []ProviderSpecificProperty{
-					{
-						Name:  "name1",
-						Value: "value1",
-					},
+				ProviderSpecific: ProviderSpecific{
+					"name1": "value1",
 				},
 			},
 			key:                "name1",
 			value:              "value2",
 			expectedIdentifier: "identifier",
-			expected: []ProviderSpecificProperty{
-				{
-					Name:  "name1",
-					Value: "value2",
-				},
+			expected: ProviderSpecific{
+				"name1": "value2",
 			},
 		},
 	}
@@ -346,7 +307,7 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 			identifier := c.endpoint.WithSetIdentifier(c.endpoint.SetIdentifier)
 			assert.Equal(t, c.expectedIdentifier, identifier.SetIdentifier)
 			assert.Equal(t, expectedString, c.endpoint.String())
-			if !reflect.DeepEqual([]ProviderSpecificProperty(c.endpoint.ProviderSpecific), c.expected) {
+			if !reflect.DeepEqual(c.endpoint.ProviderSpecific, c.expected) {
 				t.Errorf("unexpected ProviderSpecific:\nGot:      %#v\nExpected: %#v", c.endpoint.ProviderSpecific, c.expected)
 			}
 		})
@@ -358,75 +319,51 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 		name     string
 		endpoint Endpoint
 		key      string
-		expected []ProviderSpecificProperty
+		expected ProviderSpecific
 	}{
 		{
 			name: "name and key are not matching",
 			endpoint: Endpoint{
-				ProviderSpecific: []ProviderSpecificProperty{
-					{
-						Name:  "name1",
-						Value: "value1",
-					},
+				ProviderSpecific: ProviderSpecific{
+					"name1": "value1",
 				},
 			},
 			key: "name2",
-			expected: []ProviderSpecificProperty{
-				{
-					Name:  "name1",
-					Value: "value1",
-				},
+			expected: ProviderSpecific{
+				"name1": "value1",
 			},
 		},
 		{
 			name: "some keys are matching and some keys are not matching",
 			endpoint: Endpoint{
-				ProviderSpecific: []ProviderSpecificProperty{
-					{
-						Name:  "name1",
-						Value: "value1",
-					},
-					{
-						Name:  "name2",
-						Value: "value2",
-					},
-					{
-						Name:  "name3",
-						Value: "value3",
-					},
+				ProviderSpecific: ProviderSpecific{
+					"name1": "value1",
+					"name2": "value2",
+					"name3": "value3",
 				},
 			},
 			key: "name2",
-			expected: []ProviderSpecificProperty{
-				{
-					Name:  "name1",
-					Value: "value1",
-				},
-				{
-					Name:  "name3",
-					Value: "value3",
-				},
+			expected: ProviderSpecific{
+				"name1": "value1",
+				"name3": "value3",
 			},
 		},
 		{
 			name: "name and key are matching",
 			endpoint: Endpoint{
-				ProviderSpecific: []ProviderSpecificProperty{
-					{
-						Name:  "name1",
-						Value: "value1",
-					},
+				ProviderSpecific: ProviderSpecific{
+					"name1": "value1",
 				},
 			},
 			key:      "name1",
-			expected: []ProviderSpecificProperty{},
+			expected: ProviderSpecific{},
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			c.endpoint.DeleteProviderSpecificProperty(c.key)
-			if !reflect.DeepEqual([]ProviderSpecificProperty(c.endpoint.ProviderSpecific), c.expected) {
+			if !reflect.DeepEqual(c.endpoint.ProviderSpecific, c.expected) {
 				t.Errorf("unexpected ProviderSpecific:\nGot:      %#v\nExpected: %#v", c.endpoint.ProviderSpecific, c.expected)
 			}
 		})
@@ -981,4 +918,65 @@ func TestEndpoint_WithRefObject(t *testing.T) {
 
 	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
 	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+}
+
+func TestProviderSpecificString(t *testing.T) {
+	tests := []struct {
+		name string
+		ps   ProviderSpecific
+		want string
+	}{
+		{name: "nil", ps: nil, want: "[]"},
+		{name: "empty", ps: ProviderSpecific{}, want: "[]"},
+		{name: "single", ps: ProviderSpecific{"k": "v"}, want: "[{k v}]"},
+		{name: "multi_sorted", ps: ProviderSpecific{"b": "2", "a": "1"}, want: "[{a 1} {b 2}]"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ps.String(); got != tt.want {
+				t.Fatalf("ProviderSpecific.String() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEndpointString(t *testing.T) {
+	tests := []struct {
+		name string
+		ep   *Endpoint
+		want string
+	}{
+		{
+			name: "no set id, nil ps",
+			ep:   &Endpoint{DNSName: "x.example.com", RecordType: RecordTypeA, Targets: Targets{"1.2.3.4"}},
+			want: "x.example.com 0 IN A  1.2.3.4 []",
+		},
+		{
+			name: "no set id, empty ps",
+			ep:   &Endpoint{DNSName: "x.example.com", RecordType: RecordTypeA, Targets: Targets{"1.2.3.4"}, ProviderSpecific: ProviderSpecific{}},
+			want: "x.example.com 0 IN A  1.2.3.4 []",
+		},
+		{
+			name: "with set id and ps",
+			ep:   &Endpoint{DNSName: "x.example.com", RecordType: RecordTypeA, SetIdentifier: "id", Targets: Targets{"1.2.3.4"}, ProviderSpecific: ProviderSpecific{"k": "v"}},
+			want: "x.example.com 0 IN A id 1.2.3.4 [{k v}]",
+		},
+		{
+			name: "multiple targets, nil ps",
+			ep:   &Endpoint{DNSName: "x.example.com", RecordType: RecordTypeA, Targets: Targets{"1.2.3.4", "2.3.4.5"}},
+			want: "x.example.com 0 IN A  1.2.3.4;2.3.4.5 []",
+		},
+		{
+			name: "multiple targets, with set id and ps",
+			ep:   &Endpoint{DNSName: "x.example.com", RecordType: RecordTypeA, SetIdentifier: "id", Targets: Targets{"1.2.3.4", "2.3.4.5"}, ProviderSpecific: ProviderSpecific{"a": "1", "b": "2"}},
+			want: "x.example.com 0 IN A id 1.2.3.4;2.3.4.5 [{a 1} {b 2}]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ep.String(); got != tt.want {
+				t.Fatalf("Endpoint.String() = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }

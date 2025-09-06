@@ -102,9 +102,27 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			continue
 		}
 
-		v4EP := ep.DeepCopy()
-		v4EP.Targets = v4Targets
-		v4EP.RecordType = endpoint.RecordTypeA
+		v4EP := &endpoint.Endpoint{
+			DNSName:       ep.DNSName,
+			Targets:       v4Targets,
+			RecordType:    endpoint.RecordTypeA,
+			SetIdentifier: ep.SetIdentifier,
+			RecordTTL:     ep.RecordTTL,
+		}
+
+		if ep.Labels != nil {
+			v4EP.Labels = make(endpoint.Labels, len(ep.Labels))
+			for k, v := range ep.Labels {
+				v4EP.Labels[k] = v
+			}
+		}
+
+		if ep.ProviderSpecific != nil {
+			v4EP.ProviderSpecific = make(endpoint.ProviderSpecific, len(ep.ProviderSpecific))
+			for k, v := range ep.ProviderSpecific {
+				v4EP.ProviderSpecific.Set(k, v)
+			}
+		}
 
 		additionalEndpoints = append(additionalEndpoints, v4EP)
 	}

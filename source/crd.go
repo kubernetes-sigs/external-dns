@@ -161,13 +161,9 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 func fromCRDEndpoint(crdEp *apiv1alpha1.Endpoint) *endpoint.Endpoint {
-	//TODO:
-	p := endpoint.ProviderSpecific{}
+	p := make(endpoint.ProviderSpecific)
 	for _, ps := range crdEp.ProviderSpecific {
-		p = append(p, endpoint.ProviderSpecificProperty{
-			Name:  ps.Name,
-			Value: ps.Value,
-		})
+		p.Set(ps.Name, ps.Value)
 	}
 	ep := &endpoint.Endpoint{
 		DNSName:          crdEp.DNSName,
