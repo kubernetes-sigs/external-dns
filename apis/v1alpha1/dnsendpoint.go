@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // +genclient
@@ -51,7 +49,36 @@ type DNSEndpointList struct {
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
 type DNSEndpointSpec struct {
-	Endpoints []*endpoint.Endpoint `json:"endpoints,omitempty"`
+	Endpoints []*Endpoint `json:"endpoints"`
+}
+
+type ProviderSpecificProperty struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+// ProviderSpecific holds configuration which is specific to individual DNS providers
+type ProviderSpecific []ProviderSpecificProperty
+
+// Endpoint is a high-level way of a connection between a service and an IP
+// +kubebuilder:object:generate=true
+type Endpoint struct {
+	// The hostname of the DNS record
+	DNSName string `json:"dnsName,omitempty"`
+	// The targets the DNS record points to
+	Targets []string `json:"targets,omitempty"`
+	// RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
+	RecordType string `json:"recordType,omitempty"`
+	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+	SetIdentifier string `json:"setIdentifier,omitempty"`
+	// TTL for the record
+	RecordTTL int64 `json:"recordTTL,omitempty"`
+	// Labels stores labels defined for the Endpoint
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+	// ProviderSpecific stores provider specific config
+	// +optional
+	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 }
 
 // DNSEndpointStatus defines the observed state of DNSEndpoint
