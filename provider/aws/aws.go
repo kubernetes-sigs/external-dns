@@ -32,6 +32,8 @@ import (
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/utils/set"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -904,6 +906,21 @@ func adjustGeoProximityLocationEndpoint(ep *endpoint.Endpoint) {
 	}
 }
 
+var providerSpecificRequiringSetIdentifier = set.New(
+	providerSpecificEvaluateTargetHealth,
+	providerSpecificWeight,
+	providerSpecificRegion,
+	providerSpecificFailover,
+	providerSpecificGeolocationContinentCode,
+	providerSpecificGeolocationCountryCode,
+	providerSpecificGeolocationSubdivisionCode,
+	providerSpecificGeoProximityLocationAWSRegion,
+	providerSpecificGeoProximityLocationBias,
+	providerSpecificGeoProximityLocationCoordinates,
+	providerSpecificGeoProximityLocationLocalZoneGroup,
+	providerSpecificMultiValueAnswer,
+)
+
 // newChange returns a route53 Change
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
@@ -959,30 +976,15 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	// AWS Route53 requires setIdentifier for routing policies:
 	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ResourceRecordSet.html
 	if setIdentifier == "" {
-		providerSpecificRequiringSetIdentifier := []string{
-			providerSpecificWeight,
-			providerSpecificRegion,
-			providerSpecificFailover,
-			providerSpecificGeolocationContinentCode,
-			providerSpecificGeolocationCountryCode,
-			providerSpecificGeolocationSubdivisionCode,
-			providerSpecificGeoProximityLocationAWSRegion,
-			providerSpecificGeoProximityLocationBias,
-			providerSpecificGeoProximityLocationCoordinates,
-			providerSpecificGeoProximityLocationLocalZoneGroup,
-			providerSpecificMultiValueAnswer,
+		providerSpecificSet := make(set.Set[string], len(ep.ProviderSpecific))
+		for _, p := range ep.ProviderSpecific {
+			providerSpecificSet.Insert(p.Name)
 		}
-
-		ignoredProperties := make([]string, 0, len(providerSpecificRequiringSetIdentifier))
-
-		for _, prop := range providerSpecificRequiringSetIdentifier {
-			if _, ok := ep.GetProviderSpecificProperty(prop); ok {
-				ignoredProperties = append(ignoredProperties, prop)
-			}
-		}
+		ignoredProperties := providerSpecificRequiringSetIdentifier.Intersection(providerSpecificSet)
 		if len(ignoredProperties) > 0 {
+			pMsg := ignoredProperties.SortedList()
 			log.Warnf("Endpoint %s has provider-specific properties %v that require a setIdentifier, but none was set; ignoring these properties",
-				ep.DNSName, ignoredProperties)
+				ep.DNSName, pMsg)
 		}
 	}
 
