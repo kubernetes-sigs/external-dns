@@ -64,7 +64,7 @@ func TestExampleSameEndpoints(t *testing.T) {
 			DNSName: "example.org",
 			Targets: endpoint.Targets{"load-balancer.org"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{Name: "foo", Value: "bar"},
+				"foo": "bar",
 			},
 		},
 	}
@@ -95,7 +95,7 @@ func makeEndpoint(DNSName string) *endpoint.Endpoint {
 			endpoint.OwnedRecordLabelKey: "owned",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			{Name: "key", Value: "val"},
+			"key": "val",
 		},
 	}
 }
@@ -127,7 +127,7 @@ func TestSameEndpoint(t *testing.T) {
 					endpoint.OwnedRecordLabelKey: "owned-true",
 				},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{Name: "key1", Value: "val1"},
+					"key1": "val1",
 				},
 			},
 			b: &endpoint.Endpoint{
@@ -142,7 +142,7 @@ func TestSameEndpoint(t *testing.T) {
 					endpoint.OwnedRecordLabelKey: "owned-true",
 				},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{Name: "key1", Value: "val1"},
+					"key1": "val1",
 				},
 			},
 			isSameEndpoint: true,
@@ -192,13 +192,13 @@ func TestSameEndpoint(t *testing.T) {
 			a: &endpoint.Endpoint{
 				DNSName: "example.org",
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{Name: "key1", Value: "val1"},
+					"key1": "val1",
 				},
 			},
 			b: &endpoint.Endpoint{
 				DNSName: "example.org",
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{Name: "key1", Value: "val2"},
+					"key1": "val2",
 				},
 			},
 			isSameEndpoint: false,

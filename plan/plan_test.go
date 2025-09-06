@@ -159,14 +159,8 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
-				Value: "false",
-			},
-			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-				Value: "true",
-			},
+			"alias": "false",
+			"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 		},
 	}
 	suite.bar127AWithProviderSpecificFalse = &endpoint.Endpoint{
@@ -177,14 +171,8 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-				Value: "false",
-			},
-			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
-				Value: "false",
-			},
+			"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
+			"alias": "false",
 		},
 	}
 	suite.bar127AWithProviderSpecificUnset = &endpoint.Endpoint{
@@ -195,10 +183,7 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
-				Value: "false",
-			},
+			"alias": "false",
 		},
 	}
 	suite.bar192A = &endpoint.Endpoint{
@@ -1137,14 +1122,14 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 			name: "skip AWS target health",
 			current: &endpoint.Endpoint{
 				DNSName: "foo.com",
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "aws/evaluate-target-health", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"aws/evaluate-target-health": "true",
 				},
 			},
 			desired: &endpoint.Endpoint{
 				DNSName: "bar.com",
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "aws/evaluate-target-health", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"aws/evaluate-target-health": "true",
 				},
 			},
 			shouldUpdate: false,
@@ -1152,13 +1137,13 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 		{
 			name: "custom property unchanged",
 			current: &endpoint.Endpoint{
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "custom/property", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"custom/property": "true",
 				},
 			},
 			desired: &endpoint.Endpoint{
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "custom/property", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"custom/property": "true",
 				},
 			},
 			shouldUpdate: false,
@@ -1166,13 +1151,13 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 		{
 			name: "custom property value changed",
 			current: &endpoint.Endpoint{
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "custom/property", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"custom/property": "true",
 				},
 			},
 			desired: &endpoint.Endpoint{
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "custom/property", Value: "false"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"custom/property": "false",
 				},
 			},
 			shouldUpdate: true,
@@ -1180,13 +1165,13 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 		{
 			name: "custom property key changed",
 			current: &endpoint.Endpoint{
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "custom/property", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"custom/property": "true",
 				},
 			},
 			desired: &endpoint.Endpoint{
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "new/property", Value: "true"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"new/property": "true",
 				},
 			},
 			shouldUpdate: true,
