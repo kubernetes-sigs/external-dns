@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
@@ -180,37 +179,6 @@ func TestDedupSource_AddEventHandler(t *testing.T) {
 			src.AddEventHandler(t.Context(), func() {})
 
 			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
-		})
-	}
-}
-
-func TestRemoveDuplicates(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []string
-		expected []string
-	}{
-		{
-			name:     "removes duplicates and sorts",
-			input:    []string{"b", "a", "a", "c"},
-			expected: []string{"a", "b", "c"},
-		},
-		{
-			name:     "no duplicates",
-			input:    []string{"x", "y", "z"},
-			expected: []string{"x", "y", "z"},
-		},
-		{
-			name:     "empty slice",
-			input:    []string{},
-			expected: []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := removeDuplicates(tt.input)
-			assert.Equal(t, tt.expected, got)
 		})
 	}
 }

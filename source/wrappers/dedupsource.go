@@ -20,8 +20,6 @@ import (
 	"context"
 	"strings"
 
-	"k8s.io/utils/set"
-
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -70,10 +68,6 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	return result, nil
-}
-
-func removeDuplicates(targets []string) []string {
-	return set.New(targets...).SortedList()
 }
 
 func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
