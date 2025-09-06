@@ -207,7 +207,12 @@ func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 		for k, v := range ep.Labels {
 			newEp.Labels[k] = v
 		}
-		newEp.ProviderSpecific = append(endpoint.ProviderSpecific(nil), ep.ProviderSpecific...)
+		if ep.ProviderSpecific != nil {
+			newEp.ProviderSpecific = make(endpoint.ProviderSpecific)
+			for k, v := range ep.ProviderSpecific {
+				newEp.ProviderSpecific.Set(k, v)
+			}
+		}
 		records = append(records, newEp)
 	}
 	return records

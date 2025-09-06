@@ -424,11 +424,8 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
-			ProviderSpecific: []endpoint.ProviderSpecificProperty{
-				{
-					Name:  "alias",
-					Value: "true",
-				},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"alias": "true",
 			},
 		},
 		{
@@ -990,11 +987,8 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 				// owner was added from the TXT record's target
 				endpoint.OwnerLabelKey: "owner",
 			},
-			ProviderSpecific: []endpoint.ProviderSpecificProperty{
-				{
-					Name:  "txt/force-update",
-					Value: "true",
-				},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"txt/force-update": "true",
 			},
 		},
 		{
@@ -1004,11 +998,8 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
-			ProviderSpecific: []endpoint.ProviderSpecificProperty{
-				{
-					Name:  "txt/force-update",
-					Value: "true",
-				},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"txt/force-update": "true",
 			},
 		},
 		{
@@ -1095,11 +1086,8 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 				// owner was added from the TXT record's target
 				endpoint.OwnerLabelKey: "owner",
 			},
-			ProviderSpecific: []endpoint.ProviderSpecificProperty{
-				{
-					Name:  "txt/force-update",
-					Value: "true",
-				},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"txt/force-update": "true",
 			},
 		},
 		{
@@ -1109,11 +1097,8 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
-			ProviderSpecific: []endpoint.ProviderSpecificProperty{
-				{
-					Name:  "txt/force-update",
-					Value: "true",
-				},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"txt/force-update": "true",
 			},
 		},
 		{
@@ -1123,11 +1108,8 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
-			ProviderSpecific: []endpoint.ProviderSpecificProperty{
-				{
-					Name:  "txt/force-update",
-					Value: "true",
-				},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"txt/force-update": "true",
 			},
 		},
 		{

@@ -1084,9 +1084,9 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName:    "example.org",
 					Targets:    endpoint.Targets{"ingress-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
-					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name: "alias", Value: "true",
-					}},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						"alias": "true",
+					},
 				},
 			},
 		},

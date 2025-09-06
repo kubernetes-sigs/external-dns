@@ -52,6 +52,7 @@ type DNSEndpointSpec struct {
 	Endpoints []*Endpoint `json:"endpoints"`
 }
 
+// ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
 type ProviderSpecificProperty struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`

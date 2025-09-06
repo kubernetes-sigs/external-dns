@@ -180,10 +180,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "0",
-				},
+				scalewayPriorityKey: "0",
 			},
 		},
 		{
@@ -192,10 +189,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "10",
-				},
+				scalewayPriorityKey: "10",
 			},
 		},
 		{
@@ -214,10 +208,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "0",
-				},
+				scalewayPriorityKey: "0",
 			},
 		},
 		{
@@ -226,10 +217,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "10",
-				},
+				scalewayPriorityKey: "10",
 			},
 		},
 		{
@@ -238,10 +226,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "0",
-				},
+				scalewayPriorityKey: "0",
 			},
 		},
 	}
@@ -296,10 +281,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "0",
-				},
+				scalewayPriorityKey: "0",
 			},
 		},
 		{
@@ -308,10 +290,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.2", "1.1.1.3"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "0",
-				},
+				scalewayPriorityKey: "0",
 			},
 		},
 		{
@@ -320,10 +299,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			RecordType: "A",
 			Targets:    []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "0",
-				},
+				scalewayPriorityKey: "0",
 			},
 		},
 		{
@@ -332,10 +308,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			RecordType: "CNAME",
 			Targets:    []string{"test.example.com"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  scalewayPriorityKey,
-					Value: "30",
-				},
+				scalewayPriorityKey: "30",
 			},
 		},
 	}
@@ -498,10 +471,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				DNSName:    "test.example.com",
 				RecordType: "CNAME",
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  scalewayPriorityKey,
-						Value: "20",
-					},
+					scalewayPriorityKey: "20",
 				},
 				RecordTTL: 600,
 				Targets:   []string{"example.com"},
@@ -523,10 +493,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 			{
 				DNSName: "me.example.com",
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  scalewayPriorityKey,
-						Value: "30",
-					},
+					scalewayPriorityKey: "30",
 				},
 				RecordType: "A",
 				RecordTTL:  600,
@@ -542,10 +509,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 			{
 				DNSName: "me.example.com",
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  scalewayPriorityKey,
-						Value: "1234",
-					},
+					scalewayPriorityKey: "1234",
 				},
 				RecordType: "A",
 				Targets:    []string{"3.3.3.3"},

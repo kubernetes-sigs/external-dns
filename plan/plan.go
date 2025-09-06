@@ -298,23 +298,17 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
-	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
-
-	for _, d := range desired.ProviderSpecific {
-		desiredProperties[d.Name] = d
+	if len(desired.ProviderSpecific) != len(current.ProviderSpecific) {
+		return true
 	}
-	for _, c := range current.ProviderSpecific {
-		if d, ok := desiredProperties[c.Name]; ok {
-			if c.Value != d.Value {
-				return true
-			}
-			delete(desiredProperties, c.Name)
-		} else {
+
+	for key, desiredValue := range desired.ProviderSpecific {
+		if currentValue, exists := current.ProviderSpecific[key]; !exists || currentValue != desiredValue {
 			return true
 		}
 	}
 
-	return len(desiredProperties) > 0
+	return false
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.

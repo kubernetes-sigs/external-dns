@@ -47,6 +47,17 @@ func testMultiSourceImplementsSource(t *testing.T) {
 func testMultiSourceEndpoints(t *testing.T) {
 	foo := &endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}}
 	bar := &endpoint.Endpoint{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}}
+	// Create thread-safe copies of endpoints for concurrent test execution
+	cloneEndpointsForTesting := func(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+		copies := make([]*endpoint.Endpoint, 0, len(endpoints))
+		for _, ep := range endpoints {
+			copies = append(copies, &endpoint.Endpoint{
+				DNSName: ep.DNSName,
+				Targets: ep.Targets,
+			})
+		}
+		return copies
+	}
 
 	for _, tc := range []struct {
 		title           string
@@ -65,13 +76,16 @@ func testMultiSourceEndpoints(t *testing.T) {
 		},
 		{
 			"single non-empty child source returns child's endpoints",
-			[][]*endpoint.Endpoint{{foo.DeepCopy()}},
-			[]*endpoint.Endpoint{foo.DeepCopy()},
+			[][]*endpoint.Endpoint{cloneEndpointsForTesting([]*endpoint.Endpoint{foo})},
+			cloneEndpointsForTesting([]*endpoint.Endpoint{foo}),
 		},
 		{
 			"multiple non-empty child sources returns merged children's endpoints",
-			[][]*endpoint.Endpoint{{foo.DeepCopy()}, {bar.DeepCopy()}},
-			[]*endpoint.Endpoint{foo.DeepCopy(), bar.DeepCopy()},
+			[][]*endpoint.Endpoint{
+				cloneEndpointsForTesting([]*endpoint.Endpoint{foo}),
+				cloneEndpointsForTesting([]*endpoint.Endpoint{bar}),
+			},
+			cloneEndpointsForTesting([]*endpoint.Endpoint{foo, bar}),
 		},
 	} {
 
