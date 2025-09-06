@@ -21,13 +21,10 @@ import (
 )
 
 func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
-	providerSpecificAnnotations := endpoint.ProviderSpecific{}
+	providerSpecificAnnotations := make(endpoint.ProviderSpecific)
 
 	if hasAliasFromAnnotations(annotations) {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  "alias",
-			Value: "true",
-		})
+		providerSpecificAnnotations.Set("alias", "true")
 	}
 	setIdentifier := ""
 	for k, v := range annotations {
@@ -35,44 +32,23 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 			setIdentifier = v
 		} else if strings.HasPrefix(k, AWSPrefix) {
 			attr := strings.TrimPrefix(k, AWSPrefix)
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("aws/%s", attr),
-				Value: v,
-			})
+			providerSpecificAnnotations.Set(fmt.Sprintf("aws/%s", attr), v)
 		} else if strings.HasPrefix(k, SCWPrefix) {
 			attr := strings.TrimPrefix(k, SCWPrefix)
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("scw/%s", attr),
-				Value: v,
-			})
+			providerSpecificAnnotations.Set(fmt.Sprintf("scw/%s", attr), v)
 		} else if strings.HasPrefix(k, WebhookPrefix) {
 			// Support for wildcard annotations for webhook providers
 			attr := strings.TrimPrefix(k, WebhookPrefix)
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("webhook/%s", attr),
-				Value: v,
-			})
+			providerSpecificAnnotations.Set(fmt.Sprintf("webhook/%s", attr), v)
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
 			if strings.Contains(k, CloudflareCustomHostnameKey) {
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareCustomHostnameKey,
-					Value: v,
-				})
+				providerSpecificAnnotations.Set(CloudflareCustomHostnameKey, v)
 			} else if strings.Contains(k, CloudflareProxiedKey) {
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareProxiedKey,
-					Value: v,
-				})
+				providerSpecificAnnotations.Set(CloudflareProxiedKey, v)
 			} else if strings.Contains(k, CloudflareRegionKey) {
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareRegionKey,
-					Value: v,
-				})
+				providerSpecificAnnotations.Set(CloudflareRegionKey, v)
 			} else if strings.Contains(k, CloudflareRecordCommentKey) {
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareRecordCommentKey,
-					Value: v,
-				})
+				providerSpecificAnnotations.Set(CloudflareRecordCommentKey, v)
 			}
 		}
 	}

@@ -40,7 +40,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 				CloudflareProxiedKey: "true",
 			},
 			expected: endpoint.ProviderSpecific{
-				{Name: CloudflareProxiedKey, Value: "true"},
+				CloudflareProxiedKey: "true",
 			},
 			setIdentifier: "",
 		},
@@ -50,7 +50,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 				CloudflareCustomHostnameKey: "custom.example.com",
 			},
 			expected: endpoint.ProviderSpecific{
-				{Name: CloudflareCustomHostnameKey, Value: "custom.example.com"},
+				CloudflareCustomHostnameKey: "custom.example.com",
 			},
 			setIdentifier: "",
 		},
@@ -60,7 +60,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 				"external-dns.alpha.kubernetes.io/aws-weight": "100",
 			},
 			expected: endpoint.ProviderSpecific{
-				{Name: "aws/weight", Value: "100"},
+				"aws/weight": "100",
 			},
 			setIdentifier: "",
 		},
@@ -115,11 +115,9 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == tc.expectedKey {
-					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
-					return
-				}
+			if value, exists := providerSpecificAnnotations.Get(tc.expectedKey); exists {
+				assert.Equal(t, strconv.FormatBool(tc.expectedValue), value)
+				return
 			}
 			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
 		})
@@ -158,11 +156,9 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == tc.expectedKey {
-					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
-					return
-				}
+			if value, exists := providerSpecificAnnotations.Get(tc.expectedKey); exists {
+				assert.Equal(t, tc.expectedValue, value)
+				return
 			}
 			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %v", tc.expectedKey, tc.expectedValue)
 		})
@@ -192,11 +188,9 @@ func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == tc.expectedKey {
-					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
-					return
-				}
+			if value, exists := providerSpecificAnnotations.Get(tc.expectedKey); exists {
+				assert.Equal(t, tc.expectedValue, value)
+				return
 			}
 			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %s", tc.expectedKey, tc.expectedValue)
 		})
@@ -229,11 +223,9 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == "alias" {
-					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
-					return
-				}
+			if value, exists := providerSpecificAnnotations.Get("alias"); exists {
+				assert.Equal(t, strconv.FormatBool(tc.expectedValue), value)
+				return
 			}
 			t.Errorf("provider specific annotation alias is not set correctly to %v", tc.expectedValue)
 		})
@@ -257,10 +249,8 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
-			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-				if providerSpecificAnnotation.Name == "alias" {
-					t.Error("provider specific annotation alias is not expected to be set")
-				}
+			if _, exists := providerSpecificAnnotations.Get("alias"); exists {
+				t.Error("provider specific annotation alias is not expected to be set")
 			}
 
 		})
@@ -318,15 +308,9 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 			providerSpecificAnnotations, identifier := ProviderSpecificAnnotations(tc.annotations)
 			assert.Equal(t, tc.expectedIdentifier, identifier)
 			for expectedAnnotationKey, expectedAnnotationValue := range tc.expectedResult {
-				expectedResultFound := false
-				for _, providerSpecificAnnotation := range providerSpecificAnnotations {
-					if providerSpecificAnnotation.Name == expectedAnnotationKey {
-						assert.Equal(t, expectedAnnotationValue, providerSpecificAnnotation.Value)
-						expectedResultFound = true
-						break
-					}
-				}
-				if !expectedResultFound {
+				if value, exists := providerSpecificAnnotations.Get(expectedAnnotationKey); exists {
+					assert.Equal(t, expectedAnnotationValue, value)
+				} else {
 					t.Errorf("provider specific annotation %s has not been set", expectedAnnotationKey)
 				}
 			}

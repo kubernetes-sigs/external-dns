@@ -630,10 +630,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 			DNSName:    "bar.com",
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-					Value: "true",
-				},
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 			},
 		},
 	}
@@ -664,10 +661,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 			DNSName:    "bar.com",
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-					Value: "false",
-				},
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 			},
 		},
 	}
@@ -698,10 +692,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 			DNSName:    "bar.com",
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-					Value: "asfasdfa",
-				},
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": "asfasdfa",
 			},
 		},
 	}
@@ -762,10 +753,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 				DNSName:    testCase.domain,
 				Targets:    endpoint.Targets{targets[0]},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					endpoint.ProviderSpecificProperty{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-						Value: "true",
-					},
+					"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 				},
 			},
 		}
@@ -1231,10 +1219,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 			},
@@ -1265,10 +1250,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 			},
@@ -1313,10 +1295,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 				{
@@ -1326,10 +1305,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 			},
@@ -1367,10 +1343,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 				{
@@ -1380,10 +1353,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 			},
@@ -1421,10 +1391,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-							Value: "false",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "false",
 					},
 				},
 			},
@@ -1611,10 +1578,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			RecordTTL:  endpoint.TTL(defaultTTL),
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-					Value: "true",
-				},
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 			},
 		},
 	})
@@ -1699,10 +1663,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 			RecordTTL:  300,
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-					Value: "true",
-				},
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 			},
 		},
 	}
@@ -1817,10 +1778,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				RecordType: "A",
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  annotations.CloudflareRecordCommentKey,
-						Value: freeValidCommentBuilder.String(),
-					},
+					annotations.CloudflareRecordCommentKey: freeInvalidCommentBuilder.String(),
 				},
 			},
 			expected: len(freeValidCommentBuilder.String()),
@@ -1833,10 +1791,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				RecordType: "A",
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  annotations.CloudflareRecordCommentKey,
-						Value: freeInvalidCommentBuilder.String(),
-					},
+					annotations.CloudflareRecordCommentKey: freeInvalidCommentBuilder.String(),
 				},
 			},
 			expected: freeZoneMaxCommentLength,
@@ -1849,10 +1804,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				RecordType: "A",
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  annotations.CloudflareRecordCommentKey,
-						Value: paidValidCommentBuilder.String(),
-					},
+					annotations.CloudflareRecordCommentKey: paidValidCommentBuilder.String(),
 				},
 			},
 			expected: len(paidValidCommentBuilder.String()),
@@ -1865,10 +1817,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				RecordType: "A",
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  annotations.CloudflareRecordCommentKey,
-						Value: paidInvalidCommentBuilder.String(),
-					},
+					annotations.CloudflareRecordCommentKey: paidInvalidCommentBuilder.String(),
 				},
 			},
 			expected: paidZoneMaxCommentLength,
@@ -2261,10 +2210,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "a.foo.fancybar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "a.foo.fancybar.com",
 					},
 				},
 				{
@@ -2281,10 +2227,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "c1.foo.fancybar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "c1.foo.fancybar.com",
 					},
 				},
 			},
@@ -2307,10 +2250,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "b.foo.fancybar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "b.foo.fancybar.com",
 					},
 				},
 				{
@@ -2320,10 +2260,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "c2.foo.fancybar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "c2.foo.fancybar.com",
 					},
 				},
 			},
@@ -2384,10 +2321,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "newerror-getCustomHostnameOrigin.foo.fancybar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "newerror-getCustomHostnameOrigin.foo.fancybar.com",
 					},
 				},
 			},
@@ -2416,10 +2350,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "a.foo.fancybar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "a.foo.fancybar.com",
 					},
 				},
 			},
@@ -2504,10 +2435,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 				RecordTTL:  endpoint.TTL(defaultTTL),
 				Labels:     endpoint.Labels{},
 				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-						Value: fmt.Sprintf("host-%d.foo.fancybar.com", i),
-					},
+					"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": fmt.Sprintf("host-%d.foo.fancybar.com", i),
 				},
 			},
 		}
@@ -2586,10 +2514,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-create-custom.bar.com",
-						},
+						"extenal-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "bad-create-custom.bar.com",
 					},
 				}},
 			},
@@ -2604,10 +2529,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-delete-custom.bar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "bad-delete-custom.bar.com",
 					},
 				}},
 			},
@@ -2622,10 +2544,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-add-custom.bar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "bad-update-add-custom.bar.com",
 					},
 				}},
 				UpdateOld: []*endpoint.Endpoint{{
@@ -2633,10 +2552,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-add-custom.bar.com",
-						},
+						"exntelnal-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "bad-update-add-custom.bar.com",
 					},
 				}},
 			},
@@ -2651,10 +2567,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-leave-custom.bar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "bad-update-leave-custom.bar.com",
 					},
 				}},
 				UpdateNew: []*endpoint.Endpoint{{
@@ -2662,10 +2575,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					RecordType: "MX",
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "bad-update-leave-custom.bar.com",
-						},
+						"external-dns.alpha.kubernetes.io/cloudflare-custom-hostname": "bad",
 					},
 				}},
 			},
