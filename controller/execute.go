@@ -72,6 +72,16 @@ import (
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
+// sigtermSignals is a package-level signal channel that is registered in init().
+// This way, SIGTERM is captured as soon as the package is loaded, preventing
+// default process termination, even if application startup is delayed.
+var sigtermSignals chan os.Signal
+
+func init() {
+	sigtermSignals = make(chan os.Signal, 1)
+	signal.Notify(sigtermSignals, syscall.SIGTERM)
+}
+
 func Execute() {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
@@ -99,8 +109,14 @@ func Execute() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(cancel)
+	// Connect global SIGTERM capture to this run's context cancellation.
+	go func() {
+		<-sigtermSignals
+		log.Info("Received SIGTERM. Terminating...")
+		cancel()
+	}()
+
+	go serveMetrics(ctx, cfg.MetricsAddress)
 
 	endpointsSource, err := buildSource(ctx, cfg)
 	if err != nil {
@@ -476,14 +492,17 @@ func handleSigterm(cancel func()) {
 	<-signals
 	log.Info("Received SIGTERM. Terminating...")
 	cancel()
+	signal.Stop(signals)
 }
 
 // serveMetrics starts an HTTP server that serves health and metrics endpoints.
 // The /healthz endpoint returns a 200 OK status to indicate the service is healthy.
 // The /metrics endpoint serves Prometheus metrics.
 // The server listens on the specified address and logs debug information about the endpoints.
-func serveMetrics(address string) {
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+func serveMetrics(ctx context.Context, address string) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -492,7 +511,19 @@ func serveMetrics(address string) {
 	log.Debugf("serving 'metrics' on '%s/metrics'", address)
 	log.Debugf("registered '%d' metrics", len(metrics.RegisterMetric.Metrics))
 
-	http.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/metrics", promhttp.Handler())
 
-	log.Fatal(http.ListenAndServe(address, nil))
+	srv := &http.Server{Addr: address, Handler: mux}
+
+	// Shutdown server on context cancellation
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_ = srv.Shutdown(shutdownCtx)
+		cancel()
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
 }
