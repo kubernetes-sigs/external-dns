@@ -402,7 +402,9 @@ func TestServeMetrics(t *testing.T) {
 	require.NoError(t, err)
 	address := fmt.Sprintf("localhost:%d", port)
 
-	go serveMetrics(fmt.Sprintf(":%d", port))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go serveMetrics(ctx, fmt.Sprintf(":%d", port))
 
 	// Wait for the TCP socket to be ready
 	require.Eventually(t, func() bool {
@@ -423,6 +425,9 @@ func TestServeMetrics(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	_ = resp.Body.Close()
+
+	// Stop the server to avoid leaking goroutines across tests
+	cancel()
 }
 
 func TestHandleSigterm(t *testing.T) {
