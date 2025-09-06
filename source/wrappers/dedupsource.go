@@ -55,7 +55,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		if len(ep.Targets) > 1 {
-			ep.Targets = removeDuplicates(ep.Targets)
+			ep.Targets = endpoint.NewTargets(ep.Targets...)
 		}
 
 		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
