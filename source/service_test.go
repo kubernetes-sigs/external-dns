@@ -3284,6 +3284,121 @@ func TestHeadlessServices(t *testing.T) {
 	}
 }
 
+func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
+	kubernetes := fake.NewClientset()
+
+	services := []*v1.Service{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "ingressgateway",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.223.3",
+				ClusterIPs:            []string{"10.118.223.3"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "web",
+						Port:       80,
+						Protocol:   v1.ProtocolTCP,
+						TargetPort: intstr.FromInt32(80),
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+		// {
+		// 	ObjectMeta: metav1.ObjectMeta{
+		// 		Name:      "kafka-2",
+		// 		Namespace: "default",
+		// 		Labels: map[string]string{
+		// 			"app": "kafka",
+		// 		},
+		// 		Annotations: map[string]string{
+		// 			annotations.HostnameKey: "example.org",
+		// 		},
+		// 	},
+		// 	Spec: v1.ServiceSpec{
+		// 		Type:                  v1.ServiceTypeClusterIP,
+		// 		ClusterIP:             v1.ClusterIPNone,
+		// 		ClusterIPs:            []string{v1.ClusterIPNone},
+		// 		InternalTrafficPolicy: testutils.ToPtr(v1.ServiceInternalTrafficPolicyCluster),
+		// 		IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+		// 		IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+		// 		Ports: []v1.ServicePort{
+		// 			{
+		// 				Name:       "web",
+		// 				Port:       80,
+		// 				Protocol:   v1.ProtocolTCP,
+		// 				TargetPort: intstr.FromInt32(80),
+		// 			},
+		// 		},
+		// 		Selector: map[string]string{
+		// 			"app": "kafka",
+		// 		},
+		// 		SessionAffinity: v1.ServiceAffinityNone,
+		// 	},
+		// 	Status: v1.ServiceStatus{
+		// 		LoadBalancer: v1.LoadBalancerStatus{},
+		// 	},
+		// },
+	}
+
+	assert.NotNil(t, services)
+
+	for _, svc := range services {
+		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewServiceSource(
+		t.Context(),
+		kubernetes,
+		v1.NamespaceAll,
+		"",
+		"",
+		false,
+		"",
+		false,
+		false,
+		false,
+		[]string{},
+		false,
+		labels.Everything(),
+		false,
+		false,
+		false,
+	)
+	require.NoError(t, err)
+	assert.NotNil(t, src)
+
+	got, err := src.Endpoints(context.Background())
+	require.NoError(t, err)
+	fmt.Println(got)
+}
+
 func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 	kubernetes := fake.NewClientset()
 

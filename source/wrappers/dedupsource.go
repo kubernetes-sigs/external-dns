@@ -39,7 +39,7 @@ func NewDedupSource(source source.Source) source.Source {
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
-	result := []*endpoint.Endpoint{}
+	result := make([]*endpoint.Endpoint, 0)
 	collected := map[string]bool{}
 
 	endpoints, err := ms.source.Endpoints(ctx)
@@ -50,6 +50,10 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	for _, ep := range endpoints {
 		if ep == nil {
 			continue
+		}
+
+		if len(ep.Targets) > 1 {
+			ep.Targets = endpoint.NewTargets(ep.Targets...)
 		}
 
 		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
