@@ -59,7 +59,7 @@ func TestNewTargets(t *testing.T) {
 		{
 			name:     "multiple targets",
 			input:    []string{"example.com", "8.8.8.8", "::0001"},
-			expected: Targets{"example.com", "8.8.8.8", "::0001"},
+			expected: Targets{"8.8.8.8", "::0001", "example.com"},
 		},
 	}
 
@@ -68,7 +68,6 @@ func TestNewTargets(t *testing.T) {
 			Targets := NewTargets(c.input...)
 			changedTarget := Targets.String()
 			assert.Equal(t, c.expected.String(), changedTarget)
-
 		})
 	}
 }
@@ -981,4 +980,50 @@ func TestEndpoint_WithRefObject(t *testing.T) {
 
 	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
 	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+}
+
+func TestTargets_UniqueOrdered(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Targets
+		expected Targets
+	}{
+		{
+			name:     "no duplicates",
+			input:    Targets{"a.example.com", "b.example.com"},
+			expected: Targets{"a.example.com", "b.example.com"},
+		},
+		{
+			name:     "with duplicates",
+			input:    Targets{"a.example.com", "b.example.com", "a.example.com"},
+			expected: Targets{"a.example.com", "b.example.com"},
+		},
+		{
+			name:     "already sorted",
+			input:    Targets{"a.example.com", "c.example.com", "d.example.com"},
+			expected: Targets{"a.example.com", "c.example.com", "d.example.com"},
+		},
+		{
+			name:     "unsorted input",
+			input:    Targets{"z.example.com", "a.example.com", "m.example.com"},
+			expected: Targets{"a.example.com", "m.example.com", "z.example.com"},
+		},
+		{
+			name:     "empty input",
+			input:    Targets{},
+			expected: Targets{},
+		},
+		{
+			name:     "single element",
+			input:    Targets{"only.example.com"},
+			expected: Targets{"only.example.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NewTargets(tt.input...)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
