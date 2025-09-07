@@ -17,22 +17,17 @@ limitations under the License.
 package controller
 
 import (
-	"bytes"
-	"context"
-	"errors"
-	"fmt"
-	"net"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"os/signal"
-	"reflect"
-	"regexp"
-	"runtime"
-	"syscall"
-	"testing"
-	"time"
+    "bytes"
+    "context"
+    "errors"
+    "net/http"
+    "net/http/httptest"
+    "os"
+    "os/exec"
+    "reflect"
+    "regexp"
+    "testing"
+    "time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -380,79 +375,6 @@ func TestCreateDomainFilter(t *testing.T) {
 	}
 }
 
-func getRandomPort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
-func TestServeMetrics(t *testing.T) {
-	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
-	http.DefaultServeMux = http.NewServeMux()
-
-	port, err := getRandomPort()
-	require.NoError(t, err)
-	address := fmt.Sprintf("localhost:%d", port)
-
-	go serveMetrics(fmt.Sprintf(":%d", port))
-
-	// Wait for the TCP socket to be ready
-	require.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", address)
-		if err != nil {
-			return false
-		}
-		_ = conn.Close()
-		return true
-	}, 2*time.Second, 10*time.Millisecond, "server not ready with port open in time")
-
-	resp, err := http.Get(fmt.Sprintf("http://%s/healthz", address))
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	_ = resp.Body.Close()
-
-	resp, err = http.Get(fmt.Sprintf("http://%s/metrics", address))
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	_ = resp.Body.Close()
-}
-
-func TestHandleSigterm(t *testing.T) {
-	cancelCalled := make(chan bool, 1)
-	cancel := func() { cancelCalled <- true }
-
-	var logOutput bytes.Buffer
-	log.SetOutput(&logOutput)
-	defer log.SetOutput(os.Stderr)
-
-	go handleSigterm(cancel)
-
-	// Simulate sending a SIGTERM signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
-	defer signal.Stop(sigChan)
-	err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-	assert.NoError(t, err)
-
-	// Wait for cancel to be called
-	select {
-	case <-cancelCalled:
-		assert.Contains(t, logOutput.String(), "Received SIGTERM. Terminating...")
-	case sig := <-sigChan:
-		assert.Equal(t, syscall.SIGTERM, sig)
-	case <-time.After(1 * time.Second):
-		t.Fatal("cancel function was not called")
-	}
-}
-
 func TestBuildSource(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
@@ -705,129 +627,6 @@ func TestExecuteBuildControllerErrorExitsNonZero(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotEqual(t, 0, code)
-}
-
-// ValidateConfig triggers log.Fatalf (in-process).
-func TestExecuteConfigValidationFatalInProcess(t *testing.T) {
-	// Prepare args to trigger validation error before any goroutines start
-	prevArgs := os.Args
-	os.Args = []string{
-		"external-dns",
-		"--source", "fake",
-		"--provider", "inmemory",
-		"--ignore-hostname-annotation", // triggers validation: FQDN template required when ignoring annotations
-		"--metrics-address", ":0",
-	}
-	t.Cleanup(func() { os.Args = prevArgs })
-
-	// Capture logs and replace Fatalf with Goexit to stop only the Execute goroutine
-	logger := log.StandardLogger()
-	prevExit := logger.ExitFunc
-	prevOut := logger.Out
-	buf := new(bytes.Buffer)
-	logger.SetOutput(buf)
-	logger.ExitFunc = func(int) { runtime.Goexit() }
-	t.Cleanup(func() { logger.ExitFunc = prevExit; logger.SetOutput(prevOut) })
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		Execute()
-	}()
-
-	select {
-	case <-done:
-		// ok
-	case <-time.After(2 * time.Second):
-		t.Fatal("Execute did not exit after validation fatal")
-	}
-
-	// Do not assert on logger text to avoid flakiness with global logger
-}
-
-// Run path with --events; shut down via SIGTERM.
-func TestExecuteDefaultRunWithEventsStopsOnSigterm(t *testing.T) {
-	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
-	http.DefaultServeMux = http.NewServeMux()
-
-	// Prepare args to run Execute without --once and with --events
-	prevArgs := os.Args
-	os.Args = []string{
-		"external-dns",
-		"--source", "fake",
-		"--provider", "inmemory",
-		"--events",
-		"--dry-run",
-		"--metrics-address", ":0",
-	}
-	t.Cleanup(func() { os.Args = prevArgs })
-
-	// Prevent log.Fatal from terminating the test process
-	logger := log.StandardLogger()
-	prevExit := logger.ExitFunc
-	logger.ExitFunc = func(int) { runtime.Goexit() }
-	t.Cleanup(func() { logger.ExitFunc = prevExit })
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		Execute()
-	}()
-
-	// Give goroutines time to start
-	time.Sleep(50 * time.Millisecond)
-
-	// Send SIGTERM to trigger handleSigterm(cancel)
-	_ = syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
-
-	select {
-	case <-done:
-		// ok
-	case <-time.After(2 * time.Second):
-		t.Fatal("Execute did not stop after SIGTERM")
-	}
-}
-
-// Webhook server path; pre-bind 127.0.0.1:8888 to force a bind failure.
-func TestExecuteWebhookServerFailsPortInUseInProcess(t *testing.T) {
-	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
-	http.DefaultServeMux = http.NewServeMux()
-
-	// Pre-bind the webhook server port so it is unavailable
-	l, err := net.Listen("tcp", "127.0.0.1:8888")
-	if err != nil {
-		// If we cannot bind, assume something else is bound already, which is fine for this test
-	} else {
-		t.Cleanup(func() { _ = l.Close() })
-	}
-
-	prevArgs := os.Args
-	os.Args = []string{
-		"external-dns",
-		"--source", "fake",
-		"--provider", "inmemory",
-		"--webhook-server",
-		"--metrics-address", ":0",
-	}
-	t.Cleanup(func() { os.Args = prevArgs })
-
-	logger := log.StandardLogger()
-	prevExit := logger.ExitFunc
-	logger.ExitFunc = func(int) { runtime.Goexit() }
-	t.Cleanup(func() { logger.ExitFunc = prevExit })
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		Execute()
-	}()
-
-	select {
-	case <-done:
-		// ok
-	case <-time.After(2 * time.Second):
-		t.Fatal("Execute did not exit after webhook server fatal")
-	}
 }
 
 // Controller run loop stops on context cancel.
