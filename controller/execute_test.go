@@ -17,17 +17,17 @@ limitations under the License.
 package controller
 
 import (
-    "bytes"
-    "context"
-    "errors"
-    "net/http"
-    "net/http/httptest"
-    "os"
-    "os/exec"
-    "reflect"
-    "regexp"
-    "testing"
-    "time"
+	"bytes"
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"reflect"
+	"regexp"
+	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
