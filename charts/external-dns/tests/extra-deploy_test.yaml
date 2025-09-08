@@ -1,0 +1,174 @@
+suite: ExtraDeploy configuration
+templates:
+  - extra-deploy.yaml
+release:
+  name: test-release
+  namespace: test-namespace
+tests:
+  - it: should not create any documents when extraDeploy is empty
+    set:
+      extraDeploy: []
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not create any documents when extraDeploy is not set
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should deploy a single manifest
+    set:
+      extraDeploy:
+        - |-
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: test-config
+          data:
+            key: value
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: test-config
+      - equal:
+          path: data.key
+          value: value
+
+  - it: should deploy multiple manifests
+    set:
+      extraDeploy:
+        - |-
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: test-config-1
+          data:
+            key1: value1
+        - |-
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: test-secret-1
+          data:
+            secretKey: secretValue
+    asserts:
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: ConfigMap
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: test-config-1
+        documentIndex: 0
+      - isKind:
+          of: Secret
+        documentIndex: 1
+      - equal:
+          path: metadata.name
+          value: test-secret-1
+        documentIndex: 1
+
+  - it: should support templating with release values
+    set:
+      extraDeploy:
+        - |-
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: {{ .Release.Name }}-config
+            namespace: {{ .Release.Namespace }}
+          data:
+            releaseName: {{ .Release.Name }}
+            namespace: {{ .Release.Namespace }}
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: test-release-config
+      - equal:
+          path: metadata.namespace
+          value: test-namespace
+      - equal:
+          path: data.releaseName
+          value: test-release
+      - equal:
+          path: data.namespace
+          value: test-namespace
+
+  - it: should support templating with chart values
+    set:
+      customValue: my-custom-value
+      extraDeploy:
+        - |-
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: templated-config
+          data:
+            customValue: {{ .Values.customValue }}
+            provider: {{ .Values.provider.name }}
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: data.customValue
+          value: my-custom-value
+      - equal:
+          path: data.provider
+          value: aws
+
+  - it: should support complex manifest with ExternalSecret
+    set:
+      extraDeploy:
+        - |-
+          apiVersion: external-secrets.io/v1
+          kind: ExternalSecret
+          metadata:
+            name: {{ .Release.Name }}-tsig-secret
+            namespace: {{ .Release.Namespace }}
+          spec:
+            secretStoreRef:
+              kind: ClusterSecretStore
+              name: secretstore
+            target:
+              creationPolicy: Owner
+            dataFrom:
+              - extract:
+                  conversionStrategy: Default
+                  decodingStrategy: None
+                  key: cluster-tsig-secret
+                  metadataPolicy: None
+                  property: rfc2136_tsig_secret
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ExternalSecret
+      - equal:
+          path: apiVersion
+          value: external-secrets.io/v1
+      - equal:
+          path: metadata.name
+          value: test-release-tsig-secret
+      - equal:
+          path: metadata.namespace
+          value: test-namespace
+      - equal:
+          path: spec.secretStoreRef.kind
+          value: ClusterSecretStore
+      - equal:
+          path: spec.secretStoreRef.name
+          value: secretstore
+      - equal:
+          path: spec.target.creationPolicy
+          value: Owner
+      - equal:
+          path: spec.dataFrom[0].extract.key
+          value: cluster-tsig-secret

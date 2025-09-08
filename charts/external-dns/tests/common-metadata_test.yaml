@@ -1,6 +1,8 @@
 suite: All resources contains metadata
 templates:
   - "*.yaml"
+excludeTemplates:
+  - "extra-deploy.yaml"
 release:
   name: external-dns
 chart:
