@@ -41,7 +41,7 @@ linters:
         - name: confusing-naming
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
-      max-complexity: 44
+      max-complexity: 43
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
       # Default: false
