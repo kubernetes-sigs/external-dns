@@ -926,49 +926,6 @@ func TestCheckEndpoint(t *testing.T) {
 	}
 }
 
-func TestEndpoint_UniqueOrderedTargets(t *testing.T) {
-	tests := []struct {
-		name     string
-		targets  []string
-		expected Targets
-		want     bool
-	}{
-		{
-			name:     "no duplicates",
-			targets:  []string{"b.example.com", "a.example.com"},
-			expected: Targets{"a.example.com", "b.example.com"},
-		},
-		{
-			name:     "with duplicates",
-			targets:  []string{"a.example.com", "b.example.com", "a.example.com"},
-			expected: Targets{"a.example.com", "b.example.com"},
-		},
-		{
-			name:     "already sorted",
-			targets:  []string{"a.example.com", "b.example.com"},
-			expected: Targets{"a.example.com", "b.example.com"},
-		},
-		{
-			name:     "all duplicates",
-			targets:  []string{"a.example.com", "a.example.com", "a.example.com"},
-			expected: Targets{"a.example.com"},
-		},
-		{
-			name:     "empty",
-			targets:  []string{},
-			expected: Targets{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ep := &Endpoint{Targets: tt.targets}
-			ep.UniqueOrderedTargets()
-			assert.Equal(t, tt.expected, ep.Targets)
-		})
-	}
-}
-
 func TestEndpoint_WithRefObject(t *testing.T) {
 	ep := &Endpoint{}
 	ref := &events.ObjectReference{
@@ -997,6 +954,11 @@ func TestTargets_UniqueOrdered(t *testing.T) {
 			name:     "with duplicates",
 			input:    Targets{"a.example.com", "b.example.com", "a.example.com"},
 			expected: Targets{"a.example.com", "b.example.com"},
+		},
+		{
+			name:     "all duplicates",
+			input:    []string{"a.example.com", "a.example.com", "a.example.com"},
+			expected: Targets{"a.example.com"},
 		},
 		{
 			name:     "already sorted",

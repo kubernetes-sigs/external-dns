@@ -373,11 +373,6 @@ func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
 
-// UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
-func (e *Endpoint) UniqueOrderedTargets() {
-	e.Targets = NewTargets(e.Targets...)
-}
-
 // FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
