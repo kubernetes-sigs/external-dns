@@ -27,7 +27,7 @@ jobs:
         config_file: ".markdownlint.json"
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
 
@@ -57,7 +57,7 @@ jobs:
       run: |
         go tool vacuum lint -d --fail-severity warn --show-rules api/*.yaml
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action
     - name: Verify with pre-commit
       uses: pre-commit/action@v3.0.1

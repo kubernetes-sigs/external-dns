@@ -3284,6 +3284,138 @@ func TestHeadlessServices(t *testing.T) {
 	}
 }
 
+func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
+	kubernetes := fake.NewClientset()
+
+	services := []*v1.Service{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "istio-ingressgateway",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+				Annotations: map[string]string{
+					"external-dns.alpha.kubernetes.io/hostname": "example.org",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.223.3",
+				ClusterIPs:            []string{"10.118.223.3"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "http2",
+						Port:       80,
+						Protocol:   v1.ProtocolTCP,
+						TargetPort: intstr.FromInt32(8080),
+						NodePort:   30127,
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "istio-ingressgatewayudp",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgatewayudp",
+					"istio": "ingressgateway",
+				},
+				Annotations: map[string]string{
+					"external-dns.alpha.kubernetes.io/hostname": "example.org",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.220.130",
+				ClusterIPs:            []string{"10.118.220.130"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "upd-dns",
+						Port:       53,
+						Protocol:   v1.ProtocolUDP,
+						TargetPort: intstr.FromInt32(5353),
+						NodePort:   30873,
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgatewayudp",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.NotNil(t, services)
+
+	for _, svc := range services {
+		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewServiceSource(
+		t.Context(),
+		kubernetes,
+		v1.NamespaceAll,
+		"",
+		"",
+		false,
+		"",
+		false,
+		false,
+		false,
+		[]string{},
+		false,
+		labels.Everything(),
+		false,
+		false,
+		false,
+	)
+	require.NoError(t, err)
+	assert.NotNil(t, src)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	validateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "service/default/istio-ingressgateway"),
+	})
+}
+
 func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 	kubernetes := fake.NewClientset()
 
