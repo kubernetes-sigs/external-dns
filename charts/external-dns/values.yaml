@@ -149,6 +149,9 @@ extraVolumes: []
 # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container.
 extraVolumeMounts: []
 
+# -- Array of extra K8s manifests to deploy alongside the chart. Supports templating via `tpl` function.
+extraDeploy: []
+
 # -- [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container.
 resources: {}
 

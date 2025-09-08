@@ -107,6 +107,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | object | `{}` | Extra arguments to provide to _ExternalDNS_. An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times. |
 | extraContainers | list | `[]` | Extra containers to add to the `Deployment`. |
+| extraDeploy | list | `[]` | Array of extra K8s manifests to deploy alongside the chart. Supports templating via `tpl` function. |
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |

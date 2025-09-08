@@ -89,6 +89,13 @@
       "description": "Extra containers to add to the `Deployment`.",
       "type": "array"
     },
+    "extraDeploy": {
+      "description": "Array of extra K8s manifests to deploy alongside the chart. Supports templating via `tpl` function.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "extraVolumeMounts": {
       "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container.",
       "type": "array"
