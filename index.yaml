@@ -3,6 +3,41 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |-
+        - kind: added
+          description: "Add option to configure annotationFilter via dedicated chart value."
+        - kind: changed
+          description: "Grant discovery.k8s.io/endpointslices permission only when using service source."
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.19.0."
+    apiVersion: v2
+    appVersion: 0.19.0
+    created: "2025-09-08T12:38:06.346325988Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 8bd576acf7c9074cdf6ca21662a1e923b786d0576a3e6cf3f75d252860a0af6e
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.19.0/external-dns-1.19.0.tgz
+    version: 1.19.0
+  - annotations:
+      artifacthub.io/changes: |-
         - kind: changed
           description: "Update RBAC for Service source to support EndpointSlices."
         - kind: changed
@@ -1068,4 +1103,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2025-07-15T08:46:51.887273403Z"
+generated: "2025-09-08T12:38:06.346715728Z"
