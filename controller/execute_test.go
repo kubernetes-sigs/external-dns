@@ -189,7 +189,7 @@ func TestCreateDomainFilter(t *testing.T) {
 	}
 }
 
-func TestHandleSigterm(t *testing.T) {
+func TestSetupSigterm(t *testing.T) {
 	cancelCalled := make(chan bool, 1)
 	cancel := func() {
 		cancelCalled <- true
@@ -199,7 +199,8 @@ func TestHandleSigterm(t *testing.T) {
 	log.SetOutput(&logOutput)
 	defer log.SetOutput(os.Stderr)
 
-	go handleSigterm(cancel)
+	defer signal.Reset(syscall.SIGTERM)
+	setupSigtermHandler(cancel)
 
 	// Simulate sending a SIGTERM signal
 	sigChan := make(chan os.Signal, 1)
@@ -207,12 +208,18 @@ func TestHandleSigterm(t *testing.T) {
 	err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 	assert.NoError(t, err)
 
+	// Wait for the signal to be received
+	select {
+	case sig := <-sigChan:
+		assert.Equal(t, syscall.SIGTERM, sig)
+	case <-time.After(1 * time.Second):
+		t.Fatal("signal was not recieved")
+	}
+
 	// Wait for the cancel function to be called
 	select {
 	case <-cancelCalled:
 		assert.Contains(t, logOutput.String(), "Received SIGTERM. Terminating...")
-	case sig := <-sigChan:
-		assert.Equal(t, syscall.SIGTERM, sig)
 	case <-time.After(1 * time.Second):
 		t.Fatal("cancel function was not called")
 	}
