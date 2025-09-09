@@ -18,7 +18,6 @@ package wrappers
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -32,16 +31,6 @@ type mockSource struct {
 	endpoints []*endpoint.Endpoint
 	err       error
 }
-
-func (m *mockSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	for _, ep := range m.endpoints {
-		if ep == nil {
-			return m.endpoints, fmt.Errorf("skipped nil endpoint")
-		}
-	}
-	return m.endpoints, m.err
-}
-func (m *mockSource) AddEventHandler(_ context.Context, _ func()) {}
 
 func TestWithTTL(t *testing.T) {
 	tests := []struct {
@@ -138,7 +127,7 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			},
 		},
 		{
-			title: "skip endpoints processing as nill endpoint detected",
+			title: "skip endpoints processing for nill endpoint",
 			ttl:   "0s",
 			endpoints: []*endpoint.Endpoint{
 				nil,
@@ -148,7 +137,6 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 				nil,
 				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
 			},
-			expectErr: true,
 		},
 		{
 			title: "endpoint foo-2 with TTL configured while foo-1 without TTL configured",
@@ -167,15 +155,13 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 
 		t.Run(tt.title, func(t *testing.T) {
 
-			ms := mockSource{endpoints: tt.endpoints}
+			ms := new(testutils.MockSource)
+			ms.On("Endpoints").Return(tt.endpoints, nil)
 			ttl, _ := time.ParseDuration(tt.ttl)
-			src := NewPostProcessor(&ms, WithTTL(ttl))
+			src := NewPostProcessor(ms, WithTTL(ttl))
 
 			endpoints, err := src.Endpoints(context.Background())
-			if tt.expectErr {
-				require.Error(t, err, "expected error for test case: %s", tt.title)
-				return
-			}
+			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tt.expected)
 		})
 	}
