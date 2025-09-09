@@ -18,6 +18,7 @@ package testutils
 
 import (
 	"fmt"
+	"maps"
 	"math/rand"
 	"net/netip"
 	"reflect"
@@ -108,9 +109,9 @@ func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
 }
 
-// SameProviderSpecific verifies that two maps contain the same string/[]string key/value pairs
+// SameProviderSpecific verifies that two maps contain the same key/value pairs
 func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
-	return reflect.DeepEqual(a, b)
+	return maps.Equal(a, b)
 }
 
 // NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)

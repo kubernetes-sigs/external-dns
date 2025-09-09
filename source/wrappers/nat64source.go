@@ -19,6 +19,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/netip"
 
 	log "github.com/sirupsen/logrus"
@@ -112,16 +113,12 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		if ep.Labels != nil {
 			v4EP.Labels = make(endpoint.Labels, len(ep.Labels))
-			for k, v := range ep.Labels {
-				v4EP.Labels[k] = v
-			}
+			maps.Copy(v4EP.Labels, ep.Labels)
 		}
 
 		if ep.ProviderSpecific != nil {
 			v4EP.ProviderSpecific = make(endpoint.ProviderSpecific, len(ep.ProviderSpecific))
-			for k, v := range ep.ProviderSpecific {
-				v4EP.ProviderSpecific.Set(k, v)
-			}
+			maps.Copy(v4EP.ProviderSpecific, ep.ProviderSpecific)
 		}
 
 		additionalEndpoints = append(additionalEndpoints, v4EP)

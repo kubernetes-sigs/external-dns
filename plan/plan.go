@@ -18,6 +18,7 @@ package plan
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -298,17 +299,7 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
-	if len(desired.ProviderSpecific) != len(current.ProviderSpecific) {
-		return true
-	}
-
-	for key, desiredValue := range desired.ProviderSpecific {
-		if currentValue, exists := current.ProviderSpecific[key]; !exists || currentValue != desiredValue {
-			return true
-		}
-	}
-
-	return false
+	return !maps.Equal(desired.ProviderSpecific, current.ProviderSpecific)
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
