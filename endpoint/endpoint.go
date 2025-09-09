@@ -19,12 +19,12 @@ package endpoint
 import (
 	"fmt"
 	"net/netip"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/pkg/events"
 )
@@ -80,11 +80,10 @@ type MXTarget struct {
 	host     string
 }
 
-// NewTargets is a convenience method to create a new Targets object from a vararg of strings
+// NewTargets is a convenience method to create a new Targets object from a vararg of strings.
+// Returns a new Targets slice with duplicates removed and elements sorted in order.
 func NewTargets(target ...string) Targets {
-	t := make(Targets, 0, len(target))
-	t = append(t, target...)
-	return t
+	return set.New(target...).SortedList()
 }
 
 func (t Targets) String() string {
@@ -113,7 +112,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares to Targets and returns true if they are identical (case-insensitive)
+// Same compares two Targets and returns true if they are identical (case-insensitive)
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -372,20 +371,6 @@ func (e *Endpoint) String() string {
 
 func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
-}
-
-// UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
-func (e *Endpoint) UniqueOrderedTargets() {
-	result := make([]string, 0, len(e.Targets))
-	existing := make(map[string]bool)
-	for _, target := range e.Targets {
-		if _, ok := existing[target]; !ok {
-			result = append(result, target)
-			existing[target] = true
-		}
-	}
-	slices.Sort(result)
-	e.Targets = result
 }
 
 // FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes

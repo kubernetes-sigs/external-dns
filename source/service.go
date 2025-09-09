@@ -294,10 +294,10 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 					continue
 				}
 				existing[0].Targets = append(existing[0].Targets, ep.Targets...)
-				existing[0].UniqueOrderedTargets()
+				existing[0].Targets = endpoint.NewTargets(existing[0].Targets...)
 				mergedEndpoints[key] = existing
 			} else {
-				ep.UniqueOrderedTargets()
+				ep.Targets = endpoint.NewTargets(ep.Targets...)
 				mergedEndpoints[key] = []*endpoint.Endpoint{ep}
 			}
 		}

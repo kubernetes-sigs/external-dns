@@ -27,6 +27,7 @@ nav:
     - DynamoDB: docs/registry/dynamodb.md
   - Advanced Topics:
     - Initial Design: docs/initial-design.md
+    - Kubernetes Events: docs/advanced/events.md
     - Leader Election: docs/proposal/001-leader-election.md
     - Monitoring: docs/monitoring/*
     - MultiTarget: docs/proposal/multi-target.md
@@ -116,5 +117,5 @@ plugins:
       j2_block_end_string: '%]]'
       j2_variable_start_string: '[['
       j2_variable_end_string: ']]'
-      j2_comment_start_string: '[#'
-      j2_comment_end_string: '#]'
+      j2_comment_start_string: '[[#'
+      j2_comment_end_string: '#]]'

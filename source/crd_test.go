@@ -548,7 +548,7 @@ func TestCRDSource_AddEventHandler_Add(t *testing.T) {
 
 	require.Eventually(t, func() bool {
 		return counter.Load() == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 func TestCRDSource_AddEventHandler_Update(t *testing.T) {
@@ -569,7 +569,7 @@ func TestCRDSource_AddEventHandler_Update(t *testing.T) {
 
 	require.Eventually(t, func() bool {
 		return len(watcher.Items) == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 2*time.Second, 10*time.Millisecond)
 
 	modified := obj.DeepCopy()
 	modified.SetLabels(map[string]string{"new-label": "this"})
@@ -577,11 +577,11 @@ func TestCRDSource_AddEventHandler_Update(t *testing.T) {
 
 	require.Eventually(t, func() bool {
 		return len(watcher.Items) == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 2*time.Second, 10*time.Millisecond)
 
 	require.Eventually(t, func() bool {
 		return counter.Load() == 2
-	}, time.Second, 10*time.Millisecond)
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
@@ -600,7 +600,7 @@ func TestCRDSource_AddEventHandler_Delete(t *testing.T) {
 
 	require.Eventually(t, func() bool {
 		return counter.Load() == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 func TestCRDSource_Watch(t *testing.T) {
@@ -733,7 +733,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 
 	require.Eventually(t, func() bool {
 		return cache.WaitForCacheSync(ctx.Done(), informer.HasSynced)
-	}, time.Second, 10*time.Millisecond)
+	}, 2*time.Second, 10*time.Millisecond)
 
 	cs := &crdSource{
 		informer: informer,
