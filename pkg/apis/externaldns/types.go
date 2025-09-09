@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -421,14 +423,78 @@ func allLogLevelsAsStrings() []string {
 
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags(args []string) error {
-	app := App(cfg)
+	backend := ""
+	pruned := make([]string, 0, len(args))
+	skipNext := false
+	for i := 0; i < len(args); i++ {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+		a := args[i]
+		if strings.HasPrefix(a, "--cli-backend") {
+			val := ""
+			if a == "--cli-backend" {
+				if i+1 < len(args) {
+					val = args[i+1]
+					skipNext = true
+				}
+			} else if strings.HasPrefix(a, "--cli-backend=") {
+				val = strings.TrimPrefix(a, "--cli-backend=")
+			}
+			if val != "" {
+				backend = val
+			}
+			continue
+		}
+		pruned = append(pruned, a)
+	}
+	if backend == "" {
+		backend = os.Getenv("EXTERNAL_DNS_CLI")
+	}
+	if strings.EqualFold(backend, "cobra") {
+		cmd := newCobraCommand(cfg)
+		cmd.SetArgs(pruned)
+		if err := cmd.Execute(); err != nil {
+			return err
+		}
+		return nil
+	}
 
-	_, err := app.Parse(args)
+	app := App(cfg)
+	_, err := app.Parse(pruned)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func newCobraCommand(cfg *Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:           "external-dns",
+		Short:         "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+	}
+
+	b := NewCobraBinder(cmd)
+
+	b.EnumVar("provider", "The DNS provider where the DNS records will be created.", defaultConfig.Provider, &cfg.Provider)
+	b.StringsVar("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources.", cfg.Sources, &cfg.Sources)
+
+	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
+	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
+	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
+
+	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
+	b.StringsVar("domain-filter", "Limit possible target zones by domain suffix (optional)", defaultConfig.DomainFilter, &cfg.DomainFilter)
+	b.StringVar("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name.", cfg.OCPRouterName, &cfg.OCPRouterName)
+
+	return cmd
 }
 
 func (cfg *Config) AddSourceWrapper(name string) {

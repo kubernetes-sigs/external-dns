@@ -532,6 +532,181 @@ func setEnv(t *testing.T, env map[string]string) map[string]string {
 	return originalEnv
 }
 
+// Additional tests to verify the experimental CLI switch behavior.
+// Default path should use kingpin and parse flags correctly.
+func TestParseFlagsDefaultKingpin(t *testing.T) {
+	t.Setenv("EXTERNAL_DNS_CLI", "")
+
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		"--source=ingress",
+		"--server=http://127.0.0.1:8080",
+		"--kubeconfig=/some/path",
+		"--request-timeout=2s",
+		"--namespace=ns",
+		"--domain-filter=example.org",
+		"--domain-filter=company.com",
+		"--openshift-router-name=default",
+	}
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
+
+	assert.Equal(t, "aws", cfg.Provider)
+	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
+	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
+	assert.Equal(t, "/some/path", cfg.KubeConfig)
+	assert.Equal(t, 2*time.Second, cfg.RequestTimeout)
+	assert.Equal(t, "ns", cfg.Namespace)
+	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
+	assert.Equal(t, "default", cfg.OCPRouterName)
+}
+
+// When EXTERNAL_DNS_CLI=cobra is set, cobra path should parse the subset of
+// flags it currently binds, yielding parity with kingpin for those fields.
+func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		"--source=ingress",
+		"--server=http://127.0.0.1:8080",
+		"--kubeconfig=/some/path",
+		"--request-timeout=2s",
+		"--namespace=ns",
+		"--domain-filter=example.org",
+		"--domain-filter=company.com",
+		"--openshift-router-name=default",
+	}
+
+	// Kingpin baseline
+	cfgK := NewConfig()
+	require.NoError(t, cfgK.ParseFlags(args))
+
+	// Cobra path via env switch
+	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
+	cfgC := NewConfig()
+	require.NoError(t, cfgC.ParseFlags(args))
+
+	// Compare selected fields bound in cobra
+	assert.Equal(t, cfgK.Provider, cfgC.Provider)
+	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
+	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
+	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
+	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
+	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
+	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
+	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
+}
+
+func TestNewCobraCommandBindsAndParsesSubset(t *testing.T) {
+	cfg := NewConfig()
+	cmd := newCobraCommand(cfg)
+
+	args := []string{
+		"--provider=aws",
+		"--source=service",
+		"--source=ingress",
+		"--server=http://127.0.0.1:8080",
+		"--kubeconfig=/some/path",
+		"--request-timeout=2s",
+		"--namespace=ns",
+		"--domain-filter=example.org",
+		"--domain-filter=company.com",
+		"--openshift-router-name=default",
+	}
+
+	cmd.SetArgs(args)
+	require.NoError(t, cmd.Execute())
+
+	assert.Equal(t, "aws", cfg.Provider)
+	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
+	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
+	assert.Equal(t, "/some/path", cfg.KubeConfig)
+	assert.Equal(t, 2*time.Second, cfg.RequestTimeout)
+	assert.Equal(t, "ns", cfg.Namespace)
+	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
+	assert.Equal(t, "default", cfg.OCPRouterName)
+}
+
+func TestNewCobraCommandDefaultsApplied(t *testing.T) {
+	cfg := NewConfig()
+	// Pre-populate some defaults to confirm they persist without args.
+	cfg.Sources = []string{"service"}
+
+	cmd := newCobraCommand(cfg)
+	cmd.SetArgs([]string{})
+	require.NoError(t, cmd.Execute())
+
+	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
+	// DomainFilter uses the package default for this binding.
+	assert.Empty(t, cfg.DomainFilter)
+}
+
+func TestParseFlagsCliFlagCobraParitySubset(t *testing.T) {
+	args := []string{
+		"--cli-backend=cobra",
+		"--provider=aws",
+		"--source=service",
+		"--source=ingress",
+		"--server=http://127.0.0.1:8080",
+		"--kubeconfig=/some/path",
+		"--request-timeout=2s",
+		"--namespace=ns",
+		"--domain-filter=example.org",
+		"--domain-filter=company.com",
+		"--openshift-router-name=default",
+	}
+
+	// Kingpin baseline without the hidden flag
+	baselineArgs := append([]string{}, args[1:]...)
+	cfgK := NewConfig()
+	require.NoError(t, cfgK.ParseFlags(baselineArgs))
+
+	cfgC := NewConfig()
+	require.NoError(t, cfgC.ParseFlags(args))
+
+	assert.Equal(t, cfgK.Provider, cfgC.Provider)
+	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
+	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
+	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
+	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
+	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
+	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
+	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
+}
+
+func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
+	// Env requests cobra; CLI flag forces kingpin.
+	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
+	args := []string{
+		"--cli-backend=kingpin",
+		"--provider=aws",
+		"--source=service",
+		// Flag not bound in Cobra newCobraCommand path; will error if cobra is used.
+		"--log-format=json",
+	}
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
+	assert.Equal(t, "aws", cfg.Provider)
+	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
+	assert.Equal(t, "json", cfg.LogFormat)
+}
+
+func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
+	// Support "--cli-backend", "cobra" form as well.
+	args := []string{
+		"--cli-backend", "cobra",
+		"--provider=aws",
+		"--source=service",
+	}
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
+	assert.Equal(t, "aws", cfg.Provider)
+	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
+}
+
 func restoreEnv(t *testing.T, originalEnv map[string]string) {
 	for k, v := range originalEnv {
 		require.NoError(t, os.Setenv(k, v))
