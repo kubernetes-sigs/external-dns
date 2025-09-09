@@ -66,8 +66,6 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return endpoints, nil
 	}
 
-	fmt.Println("TTTTT")
-
 	for _, ep := range endpoints {
 		if ep == nil {
 			continue
