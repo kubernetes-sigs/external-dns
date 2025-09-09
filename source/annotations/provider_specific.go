@@ -33,21 +33,18 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
 			setIdentifier = v
-		} else if strings.HasPrefix(k, AWSPrefix) {
-			attr := strings.TrimPrefix(k, AWSPrefix)
+		} else if attr, ok := strings.CutPrefix(k, AWSPrefix); ok {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, SCWPrefix) {
-			attr := strings.TrimPrefix(k, SCWPrefix)
+		} else if attr, ok := strings.CutPrefix(k, SCWPrefix); ok {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, WebhookPrefix) {
+		} else if attr, ok := strings.CutPrefix(k, WebhookPrefix); ok {
 			// Support for wildcard annotations for webhook providers
-			attr := strings.TrimPrefix(k, WebhookPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("webhook/%s", attr),
 				Value: v,

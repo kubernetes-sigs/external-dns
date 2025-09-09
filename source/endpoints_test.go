@@ -155,7 +155,25 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			},
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
-			expected:  endpoint.Targets{"192.0.2.1", "158.123.32.23"},
+			expected:  endpoint.Targets{"158.123.32.23", "192.0.2.1"},
+		},
+		{
+			name: "matching service with duplicate external IPs",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc1",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "nginx"},
+						ExternalIPs: []string{"192.0.2.1", "192.0.2.1", "158.123.32.23"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"158.123.32.23", "192.0.2.1"},
 		},
 		{
 			name: "no matching service as service without selector",

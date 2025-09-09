@@ -123,6 +123,20 @@ func testDedupEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
+		{
+			"no endpoints returns empty endpoints",
+			[]*endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
+		},
+		{
+			"one endpoint with multiple targets returns one endpoint and targets without duplicates",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4", "34.66.66.77", "34.66.66.77"}},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4", "34.66.66.77"}},
+			},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			mockSource := new(testutils.MockSource)
