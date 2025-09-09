@@ -4967,7 +4967,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 func TestConvertToEndpointSlices(t *testing.T) {
 	t.Run("converts valid EndpointSlices", func(t *testing.T) {
 		validSlice := &discoveryv1.EndpointSlice{
-			ObjectMeta:	 metav1.ObjectMeta{Name: "valid-slice"},
+			ObjectMeta:	metav1.ObjectMeta{Name: "valid-slice"},
 			AddressType: discoveryv1.AddressTypeIPv4,
 		}
 
@@ -5133,8 +5133,8 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 	t.Run("sorts endpoints deterministically", func(t *testing.T) {
 		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
-			{DNSName: "z.example.com", RecordType: endpoint.RecordTypeA}:	 {"1.2.3.4"},
-			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA}:	 {"5.6.7.8"},
+			{DNSName: "z.example.com", RecordType: endpoint.RecordTypeA}:		{"1.2.3.4"},
+			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA}:		{"5.6.7.8"},
 			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
