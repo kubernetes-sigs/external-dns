@@ -255,8 +255,14 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
-	for idx, target := range targets {
-		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+
+	if recordType == RecordTypeSRV {
+		log.Debug("Record is of type SRV, not trimming final dot from targets (RFC2782)")
+		copy(cleanTargets, targets)
+	} else {
+		for idx, target := range targets {
+			cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		}
 	}
 
 	for label := range strings.SplitSeq(dnsName, ".") {
@@ -474,11 +480,11 @@ func (t Targets) ValidateMXRecord() bool {
 
 func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
-		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
+		// SRV records must have a priority, weight, a port value and end with a final dot, e.g. "10 5 5060 example.com."
 		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
 		targetParts := strings.Fields(strings.TrimSpace(target))
 		if len(targetParts) != 4 {
-			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
+			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, a port value and end with a final dot, e.g. '10 5 5060 example.com.'", target)
 			return false
 		}
 
