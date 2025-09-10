@@ -1,4 +1,4 @@
-# Managing and Importing Existing DNS Records with ExternalDNS
+# Import Existing DNS Records
 
 Sometimes DNS records are created manually (e.g., through Route53, CloudDNS, or AzureDNS), but you still want ExternalDNS to take ownership of them for ongoing management. This tutorial shows how to “import” such records into ExternalDNS by creating the appropriate TXT records.
 
