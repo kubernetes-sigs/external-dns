@@ -1,0 +1,89 @@
+suite: Webhook configuration
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should use the new sidecar values for the webhook container if enabled
+    set:
+      provider.name: webhook
+      provider.webhook.sidecar.enabled: true
+      provider.webhook.sidecar.image.repository: docker.io/new/webhook-container
+      provider.webhook.sidecar.image.tag: v0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook")].image
+          value: docker.io/new/webhook-container:v0
+
+  - it: should omit the webhook container if new sidecar is disabled
+    set:
+      provider.name: webhook
+      provider.webhook.sidecar.enabled: false
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+
+  - it: should use the deprecated values for the webhook container if new sidecar values are empty
+    set:
+      provider.name: webhook
+      provider.webhook.sidecar:
+      provider.webhook.image.repository: docker.io/deprecated/webhook-container
+      provider.webhook.image.tag: v0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook")].image
+          value: docker.io/deprecated/webhook-container:v0
+
+  - it: should use the common webhook fields if set and legecy sidecar enabled
+    set:
+      provider.name: webhook
+      provider.webhook.sidecar:
+      provider.webhook.image.repository: docker.io/deprecated/webhook-container
+      provider.webhook.image.tag: v1.1.1
+      provider.webhook.url: https://webhook:8080
+      provider.webhook.readTimeout: 111
+      provider.webhook.writeTimeout: 222
+    asserts:
+      - exists :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=webhook
+            - --webhook-provider-read-timeout=111
+            - --webhook-provider-write-timeout=222
+            - --webhook-provider-url=https://webhook:8080
+
+  - it: should use the common webhook fields if set and new sidecar enabled
+    set:
+      provider.name: webhook
+      provider.webhook.sidecar.enabled: true
+      provider.webhook.sidecar.image.repository: docker.io/new/webhook-container
+      provider.webhook.sidecar.image.tag: v0
+      provider.webhook.url: https://webhook:8888
+      provider.webhook.readTimeout: 222
+      provider.webhook.writeTimeout: 333
+    asserts:
+      - exists :
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+      - equal :
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=webhook
+            - --webhook-provider-read-timeout=222
+            - --webhook-provider-write-timeout=333
+            - --webhook-provider-url=https://webhook:8888
