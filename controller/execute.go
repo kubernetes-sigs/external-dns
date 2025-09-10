@@ -448,8 +448,13 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 	// Combine multiple sources into a single, deduplicated source.
 	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
 	cfg.AddSourceWrapper("dedup")
-	combinedSource = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-	cfg.AddSourceWrapper("nat64")
+	if len(cfg.NAT64Networks) > 0 {
+		combinedSource, err = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create NAT64 source wrapper: %w", err)
+		}
+		cfg.AddSourceWrapper("nat64")
+	}
 	// Filter targets
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
 	if targetFilter.IsEnabled() {
