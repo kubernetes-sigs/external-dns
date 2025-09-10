@@ -2084,14 +2084,8 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 				Targets:    endpoint.Targets{"foo.eu-central-1.elb.amazonaws.com"},
 				RecordType: endpoint.RecordTypeA,
 				ProviderSpecific: endpoint.ProviderSpecific{
-					endpoint.ProviderSpecificProperty{
-						Name:  providerSpecificAlias,
-						Value: "true",
-					},
-					endpoint.ProviderSpecificProperty{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: key,
-					},
+					providerSpecificAlias:                "true",
+					providerSpecificEvaluateTargetHealth: key,
 				},
 			},
 			{
@@ -2099,14 +2093,8 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 				Targets:    endpoint.Targets{"foo.eu-central-1.elb.amazonaws.com"},
 				RecordType: endpoint.RecordTypeAAAA,
 				ProviderSpecific: endpoint.ProviderSpecific{
-					endpoint.ProviderSpecificProperty{
-						Name:  providerSpecificAlias,
-						Value: "true",
-					},
-					endpoint.ProviderSpecificProperty{
-						Name:  providerSpecificEvaluateTargetHealth,
-						Value: key,
-					},
+					providerSpecificAlias:                "true",
+					providerSpecificEvaluateTargetHealth: key,
 				},
 			},
 		}

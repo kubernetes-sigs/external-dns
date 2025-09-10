@@ -18,6 +18,7 @@ package testutils
 
 import (
 	"fmt"
+	"maps"
 	"math/rand"
 	"net/netip"
 	"reflect"
@@ -28,12 +29,6 @@ import (
 )
 
 /** test utility functions for endpoints verifications */
-
-type byNames endpoint.ProviderSpecific
-
-func (p byNames) Len() int           { return len(p) }
-func (p byNames) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p byNames) Less(i, j int) bool { return p[i].Name < p[j].Name }
 
 type byAllFields []*endpoint.Endpoint
 
@@ -47,11 +42,7 @@ func (b byAllFields) Less(i, j int) bool {
 		// This rather bad, we need a more complex comparison for Targets, which considers all elements
 		if b[i].Targets.Same(b[j].Targets) {
 			if b[i].RecordType == (b[j].RecordType) {
-				sa := b[i].ProviderSpecific
-				sb := b[j].ProviderSpecific
-				sort.Sort(byNames(sa))
-				sort.Sort(byNames(sb))
-				return reflect.DeepEqual(sa, sb)
+				return SameProviderSpecific(b[i].ProviderSpecific, b[j].ProviderSpecific)
 			}
 			return b[i].RecordType <= b[j].RecordType
 		}
@@ -118,13 +109,9 @@ func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
 }
 
-// SameProviderSpecific verifies that two maps contain the same string/string key/value pairs
+// SameProviderSpecific verifies that two maps contain the same key/value pairs
 func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
-	sa := a
-	sb := b
-	sort.Sort(byNames(sa))
-	sort.Sort(byNames(sb))
-	return reflect.DeepEqual(sa, sb)
+	return maps.Equal(a, b)
 }
 
 // NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)

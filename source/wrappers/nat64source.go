@@ -19,6 +19,7 @@ package wrappers
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/netip"
 
 	log "github.com/sirupsen/logrus"
@@ -102,9 +103,23 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			continue
 		}
 
-		v4EP := ep.DeepCopy()
-		v4EP.Targets = v4Targets
-		v4EP.RecordType = endpoint.RecordTypeA
+		v4EP := &endpoint.Endpoint{
+			DNSName:       ep.DNSName,
+			Targets:       v4Targets,
+			RecordType:    endpoint.RecordTypeA,
+			SetIdentifier: ep.SetIdentifier,
+			RecordTTL:     ep.RecordTTL,
+		}
+
+		if ep.Labels != nil {
+			v4EP.Labels = make(endpoint.Labels, len(ep.Labels))
+			maps.Copy(v4EP.Labels, ep.Labels)
+		}
+
+		if ep.ProviderSpecific != nil {
+			v4EP.ProviderSpecific = make(endpoint.ProviderSpecific, len(ep.ProviderSpecific))
+			maps.Copy(v4EP.ProviderSpecific, ep.ProviderSpecific)
+		}
 
 		additionalEndpoints = append(additionalEndpoints, v4EP)
 	}
