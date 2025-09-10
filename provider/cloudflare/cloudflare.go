@@ -738,6 +738,12 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
+		if p.DNSRecordsConfig.Comment != "" {
+			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !found {
+				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
+			}
+		}
+
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
