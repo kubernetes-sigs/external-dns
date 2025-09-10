@@ -37,12 +37,16 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
-	"sigs.k8s.io/external-dns/source/informers"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
+
+// pointerToBool returns a pointer to the given bool value.
+func pointerToBool(b bool) *bool {
+	return &b
+}
 
 type ServiceSuite struct {
 	suite.Suite
@@ -5092,4 +5096,275 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			tt.asserts(t, svcSource)
 		})
 	}
+}
+
+// Test helper functions created during extractHeadlessEndpoints refactoring
+
+func TestConvertToEndpointSlices(t *testing.T) {
+	t.Run("converts valid EndpointSlices", func(t *testing.T) {
+		validSlice := &discoveryv1.EndpointSlice{
+			ObjectMeta:  metav1.ObjectMeta{Name: "valid-slice"},
+			AddressType: discoveryv1.AddressTypeIPv4,
+		}
+
+		rawObjects := []interface{}{validSlice}
+		result := convertToEndpointSlices(rawObjects)
+
+		assert.Len(t, result, 1)
+		assert.Equal(t, "valid-slice", result[0].Name)
+	})
+
+	t.Run("skips invalid objects", func(t *testing.T) {
+		invalidObject := "not-an-endpoint-slice"
+		validSlice := &discoveryv1.EndpointSlice{
+			ObjectMeta:  metav1.ObjectMeta{Name: "valid-slice"},
+			AddressType: discoveryv1.AddressTypeIPv4,
+		}
+
+		rawObjects := []interface{}{invalidObject, validSlice}
+		result := convertToEndpointSlices(rawObjects)
+
+		assert.Len(t, result, 1)
+		assert.Equal(t, "valid-slice", result[0].Name)
+	})
+
+	t.Run("handles empty input", func(t *testing.T) {
+		result := convertToEndpointSlices([]interface{}{})
+		assert.Empty(t, result)
+	})
+
+	t.Run("handles all invalid objects", func(t *testing.T) {
+		rawObjects := []interface{}{"invalid1", 123, map[string]string{"key": "value"}}
+		result := convertToEndpointSlices(rawObjects)
+		assert.Empty(t, result)
+	})
+}
+
+// Test for processEndpointSlice: publishPodIPs true and pod == nil
+
+func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
+	sc := &serviceSource{}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "missing-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+			},
+		},
+	}
+	pods := []*v1.Pod{} // No pods, so pod == nil
+	hostname := "test.example.com"
+	endpointsType := "IPv4"
+	publishPodIPs := true
+	publishNotReadyAddresses := false
+
+	params := HeadlessEndpointParams{
+		sc:                       sc,
+		endpointSlices:           []*discoveryv1.EndpointSlice{endpointSlice},
+		pods:                     pods,
+		hostname:                 hostname,
+		endpointsType:            endpointsType,
+		publishPodIPs:            publishPodIPs,
+		publishNotReadyAddresses: publishNotReadyAddresses,
+	}
+	result := processHeadlessEndpointSlices(params)
+	assert.Empty(t, result, "No targets should be added when pod is nil and publishPodIPs is true")
+}
+
+// Test for processEndpointSlice: publishPodIPs true and unsupported address type triggers log.Debugf skip
+
+func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T) {
+	sc := &serviceSource{}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice2", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeFQDN, // unsupported type
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "some-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+			},
+		},
+	}
+	pods := []*v1.Pod{{ObjectMeta: metav1.ObjectMeta{Name: "some-pod"}}}
+	hostname := "test.example.com"
+	endpointsType := "FQDN"
+	publishPodIPs := true
+	publishNotReadyAddresses := false
+
+	params := HeadlessEndpointParams{
+		sc:                       sc,
+		endpointSlices:           []*discoveryv1.EndpointSlice{endpointSlice},
+		pods:                     pods,
+		hostname:                 hostname,
+		endpointsType:            endpointsType,
+		publishPodIPs:            publishPodIPs,
+		publishNotReadyAddresses: publishNotReadyAddresses,
+	}
+	result := processHeadlessEndpointSlices(params)
+	assert.Empty(t, result, "No targets should be added for unsupported address type when publishPodIPs is true")
+}
+
+func TestFindPodForEndpoint(t *testing.T) {
+	pods := []*v1.Pod{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "pod1"},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "pod2"},
+		},
+	}
+
+	t.Run("finds matching pod", func(t *testing.T) {
+		endpoint := discoveryv1.Endpoint{
+			TargetRef: &v1.ObjectReference{
+				Kind: "Pod",
+				Name: "pod1",
+			},
+		}
+
+		result := findPodForEndpoint(endpoint, pods)
+		assert.NotNil(t, result)
+		assert.Equal(t, "pod1", result.Name)
+	})
+
+	t.Run("returns nil for nil TargetRef", func(t *testing.T) {
+		endpoint := discoveryv1.Endpoint{
+			TargetRef: nil,
+		}
+
+		result := findPodForEndpoint(endpoint, pods)
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns nil for non-Pod kind", func(t *testing.T) {
+		endpoint := discoveryv1.Endpoint{
+			TargetRef: &v1.ObjectReference{
+				Kind: "Service",
+				Name: "pod1",
+			},
+		}
+
+		result := findPodForEndpoint(endpoint, pods)
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns nil for non-empty APIVersion", func(t *testing.T) {
+		endpoint := discoveryv1.Endpoint{
+			TargetRef: &v1.ObjectReference{
+				Kind:       "Pod",
+				Name:       "pod1",
+				APIVersion: "v1",
+			},
+		}
+
+		result := findPodForEndpoint(endpoint, pods)
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns nil for non-existent pod", func(t *testing.T) {
+		endpoint := discoveryv1.Endpoint{
+			TargetRef: &v1.ObjectReference{
+				Kind: "Pod",
+				Name: "non-existent-pod",
+			},
+		}
+
+		result := findPodForEndpoint(endpoint, pods)
+		assert.Nil(t, result)
+	})
+}
+
+func TestBuildHeadlessEndpoints(t *testing.T) {
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service",
+			Namespace: "default",
+		},
+	}
+
+	t.Run("builds endpoints from targets", func(t *testing.T) {
+		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
+			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}:    {"1.2.3.4", "5.6.7.8"},
+			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
+		}
+
+		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(0), svc)
+
+		assert.Len(t, result, 2)
+
+		// Check A record
+		aRecord := findEndpointByType(result, endpoint.RecordTypeA)
+		assert.NotNil(t, aRecord)
+		assert.Equal(t, "test.example.com", aRecord.DNSName)
+		assert.Contains(t, aRecord.Targets, "1.2.3.4")
+		assert.Contains(t, aRecord.Targets, "5.6.7.8")
+		assert.Equal(t, "service/default/test-service", aRecord.Labels[endpoint.ResourceLabelKey])
+
+		// Check AAAA record
+		aaaaRecord := findEndpointByType(result, endpoint.RecordTypeAAAA)
+		assert.NotNil(t, aaaaRecord)
+		assert.Equal(t, "test.example.com", aaaaRecord.DNSName)
+		assert.Contains(t, aaaaRecord.Targets, "2001:db8::1")
+	})
+
+	t.Run("deduplicates targets", func(t *testing.T) {
+		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
+			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}: {"1.2.3.4", "1.2.3.4", "5.6.7.8"},
+		}
+
+		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(0), svc)
+
+		assert.Len(t, result, 1)
+		assert.Len(t, result[0].Targets, 2)
+		assert.Contains(t, result[0].Targets, "1.2.3.4")
+		assert.Contains(t, result[0].Targets, "5.6.7.8")
+	})
+
+	t.Run("handles TTL configuration", func(t *testing.T) {
+		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
+			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}: {"1.2.3.4"},
+		}
+
+		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(300), svc)
+
+		assert.Len(t, result, 1)
+		assert.Equal(t, endpoint.TTL(300), result[0].RecordTTL)
+	})
+
+	t.Run("sorts endpoints deterministically", func(t *testing.T) {
+		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
+			{DNSName: "z.example.com", RecordType: endpoint.RecordTypeA}:    {"1.2.3.4"},
+			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA}:    {"5.6.7.8"},
+			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
+		}
+
+		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(0), svc)
+
+		assert.Len(t, result, 3)
+		// Should be sorted by DNSName first, then by RecordType
+		assert.Equal(t, "a.example.com", result[0].DNSName)
+		assert.Equal(t, endpoint.RecordTypeA, result[0].RecordType)
+		assert.Equal(t, "a.example.com", result[1].DNSName)
+		assert.Equal(t, endpoint.RecordTypeAAAA, result[1].RecordType)
+		assert.Equal(t, "z.example.com", result[2].DNSName)
+	})
+
+	t.Run("handles empty targets", func(t *testing.T) {
+		result := buildHeadlessEndpoints(map[endpoint.EndpointKey]endpoint.Targets{}, endpoint.TTL(0), svc)
+		assert.Empty(t, result)
+	})
+}
+
+// Helper function to find endpoint by record type
+func findEndpointByType(endpoints []*endpoint.Endpoint, recordType string) *endpoint.Endpoint {
+	for _, ep := range endpoints {
+		if ep.RecordType == recordType {
+			return ep
+		}
+	}
+	return nil
 }
