@@ -346,11 +346,16 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
-	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
-	for _, endpointSlice := range endpointSlices {
-		processEndpointSlice(sc, endpointSlice, pods, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses, targetsByHeadlessDomainAndType)
+	params := HeadlessEndpointParams{
+		sc:                       sc,
+		endpointSlices:           endpointSlices,
+		pods:                     pods,
+		hostname:                 hostname,
+		endpointsType:            endpointsType,
+		publishPodIPs:            publishPodIPs,
+		publishNotReadyAddresses: publishNotReadyAddresses,
 	}
-
+	targetsByHeadlessDomainAndType := processHeadlessEndpointSlices(params)
 	endpoints = buildHeadlessEndpoints(targetsByHeadlessDomainAndType, ttl, svc)
 	return endpoints
 }
@@ -369,40 +374,55 @@ func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.End
 	return endpointSlices
 }
 
-// Helper to process each EndpointSlice
-func processEndpointSlice(sc *serviceSource, endpointSlice *discoveryv1.EndpointSlice, pods []*v1.Pod, hostname string, endpointsType string, publishPodIPs, publishNotReadyAddresses bool, targetsByHeadlessDomainAndType map[endpoint.EndpointKey]endpoint.Targets) {
-	for _, ep := range endpointSlice.Endpoints {
-		if !conditionToBool(ep.Conditions.Ready) && !publishNotReadyAddresses {
-			continue
-		}
-		if publishPodIPs && endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 && endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
-			log.Debugf("Skipping EndpointSlice %s/%s because its address type is unsupported: %s", endpointSlice.Namespace, endpointSlice.Name, endpointSlice.AddressType)
-			continue
-		}
-		pod := findPodForEndpoint(ep, pods)
-		if pod == nil {
-			if ep.TargetRef != nil {
-				log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
-			} else {
-				log.Errorf("Pod not found for endpoint with nil TargetRef: %v", ep)
+// processHeadlessEndpointSlices processes only headless EndpointSlices and returns deduped targets by domain/type.
+// TODO: Consider refactoring with generics when available: https://github.com/kubernetes/kubernetes/issues/133544
+type HeadlessEndpointParams struct {
+	sc                       *serviceSource
+	endpointSlices           []*discoveryv1.EndpointSlice
+	pods                     []*v1.Pod
+	hostname                 string
+	endpointsType            string
+	publishPodIPs            bool
+	publishNotReadyAddresses bool
+}
+
+func processHeadlessEndpointSlices(params HeadlessEndpointParams) map[endpoint.EndpointKey]endpoint.Targets {
+	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
+	for _, endpointSlice := range params.endpointSlices {
+		for _, ep := range endpointSlice.Endpoints {
+			if !conditionToBool(ep.Conditions.Ready) && !params.publishNotReadyAddresses {
+				continue
 			}
-			continue
-		}
-		headlessDomains := []string{hostname}
-		if pod.Spec.Hostname != "" {
-			headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
-		}
-		for _, headlessDomain := range headlessDomains {
-			targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
-			for _, target := range targets {
-				key := endpoint.EndpointKey{
-					DNSName:    headlessDomain,
-					RecordType: suitableType(target),
+			if params.publishPodIPs && endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 && endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
+				log.Debugf("Skipping EndpointSlice %s/%s because its address type is unsupported: %s", endpointSlice.Namespace, endpointSlice.Name, endpointSlice.AddressType)
+				continue
+			}
+			pod := findPodForEndpoint(ep, params.pods)
+			if pod == nil {
+				if ep.TargetRef != nil {
+					log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
+				} else {
+					log.Errorf("Pod not found for endpoint with nil TargetRef: %v", ep)
 				}
-				targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
+				continue
+			}
+			headlessDomains := []string{params.hostname}
+			if pod.Spec.Hostname != "" {
+				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, params.hostname))
+			}
+			for _, headlessDomain := range headlessDomains {
+				targets := getTargetsForDomain(params.sc, pod, ep, endpointSlice, params.endpointsType, headlessDomain)
+				for _, target := range targets {
+					key := endpoint.EndpointKey{
+						DNSName:    headlessDomain,
+						RecordType: suitableType(target),
+					}
+					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
+				}
 			}
 		}
 	}
+	return targetsByHeadlessDomainAndType
 }
 
 // Helper to find pod for endpoint

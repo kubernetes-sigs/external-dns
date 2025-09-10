@@ -37,12 +37,16 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
-	"sigs.k8s.io/external-dns/source/informers"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
+
+// pointerToBool returns a pointer to the given bool value.
+func pointerToBool(b bool) *bool {
+	return &b
+}
 
 type ServiceSuite struct {
 	suite.Suite
@@ -4967,7 +4971,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 func TestConvertToEndpointSlices(t *testing.T) {
 	t.Run("converts valid EndpointSlices", func(t *testing.T) {
 		validSlice := &discoveryv1.EndpointSlice{
-			ObjectMeta:	metav1.ObjectMeta{Name: "valid-slice"},
+			ObjectMeta:  metav1.ObjectMeta{Name: "valid-slice"},
 			AddressType: discoveryv1.AddressTypeIPv4,
 		}
 
@@ -5002,6 +5006,74 @@ func TestConvertToEndpointSlices(t *testing.T) {
 		result := convertToEndpointSlices(rawObjects)
 		assert.Empty(t, result)
 	})
+}
+
+// Test for processEndpointSlice: publishPodIPs true and pod == nil
+
+func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
+	sc := &serviceSource{}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "missing-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+			},
+		},
+	}
+	pods := []*v1.Pod{} // No pods, so pod == nil
+	hostname := "test.example.com"
+	endpointsType := "IPv4"
+	publishPodIPs := true
+	publishNotReadyAddresses := false
+
+	params := HeadlessEndpointParams{
+		sc:                       sc,
+		endpointSlices:           []*discoveryv1.EndpointSlice{endpointSlice},
+		pods:                     pods,
+		hostname:                 hostname,
+		endpointsType:            endpointsType,
+		publishPodIPs:            publishPodIPs,
+		publishNotReadyAddresses: publishNotReadyAddresses,
+	}
+	result := processHeadlessEndpointSlices(params)
+	assert.Empty(t, result, "No targets should be added when pod is nil and publishPodIPs is true")
+}
+
+// Test for processEndpointSlice: publishPodIPs true and unsupported address type triggers log.Debugf skip
+
+func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T) {
+	sc := &serviceSource{}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice2", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeFQDN, // unsupported type
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "some-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+			},
+		},
+	}
+	pods := []*v1.Pod{{ObjectMeta: metav1.ObjectMeta{Name: "some-pod"}}}
+	hostname := "test.example.com"
+	endpointsType := "FQDN"
+	publishPodIPs := true
+	publishNotReadyAddresses := false
+
+	params := HeadlessEndpointParams{
+		sc:                       sc,
+		endpointSlices:           []*discoveryv1.EndpointSlice{endpointSlice},
+		pods:                     pods,
+		hostname:                 hostname,
+		endpointsType:            endpointsType,
+		publishPodIPs:            publishPodIPs,
+		publishNotReadyAddresses: publishNotReadyAddresses,
+	}
+	result := processHeadlessEndpointSlices(params)
+	assert.Empty(t, result, "No targets should be added for unsupported address type when publishPodIPs is true")
 }
 
 func TestFindPodForEndpoint(t *testing.T) {
@@ -5084,7 +5156,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 	t.Run("builds endpoints from targets", func(t *testing.T) {
 		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
-			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}:	{"1.2.3.4", "5.6.7.8"},
+			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}:    {"1.2.3.4", "5.6.7.8"},
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
@@ -5133,8 +5205,8 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 	t.Run("sorts endpoints deterministically", func(t *testing.T) {
 		targetsByHeadlessDomainAndType := map[endpoint.EndpointKey]endpoint.Targets{
-			{DNSName: "z.example.com", RecordType: endpoint.RecordTypeA}:		{"1.2.3.4"},
-			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA}:		{"5.6.7.8"},
+			{DNSName: "z.example.com", RecordType: endpoint.RecordTypeA}:    {"1.2.3.4"},
+			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeA}:    {"5.6.7.8"},
 			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
