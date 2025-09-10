@@ -112,11 +112,11 @@ by the optional strategy annotation:
 external-dns.alpha.kubernetes.io/target-strategy: <strategy>
 ```
 
-Supported strategies (current behavior for Gateway *Route sources):
+Supported strategies (on all Gateway *Route resources):
 
 | Strategy         | Behavior | Fallback Order | Publishes Multiple Target Sets? |
 |------------------|----------|----------------|----------------------------------|
-| `route-preferred` (default when omitted or unrecognized) | Use Route targets if present; otherwise Gateway targets if present; otherwise addresses | Route → Gateway → Addresses | No (at most one set) |
+| `route-preferred` (default) | Use Route targets if present; otherwise Gateway targets if present; otherwise addresses | Route → Gateway → Addresses | No (at most one set) |
 | `route-only`     | Use Route targets only if present; otherwise fall back directly to addresses (Gateway targets are ignored even if set) | Route → Addresses | No |
 | `gateway-only`   | Use Gateway targets only if present; otherwise fall back to addresses (Route targets are ignored) | Gateway → Addresses | No |
 | `merge`          | Combine Route and Gateway targets (deduped). If neither annotation supplies targets, fall back to addresses | (Route ∪ Gateway) → Addresses | Yes |
