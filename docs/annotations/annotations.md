@@ -175,7 +175,9 @@ are published as CNAME records.
 Specifies the TTL (time to live) for the resource's DNS records.
 
 The value may be specified as either a duration or an integer number of seconds.
-It must be between 1 and 2,147,483,647 seconds.
+It must be between `1` and `2,147,483,647` seconds.
+
+> Note; setting the value to `0` means, that TTL is not configured and thus use default.
 
 ## Provider-specific annotations
 

@@ -989,3 +989,50 @@ func TestTargets_UniqueOrdered(t *testing.T) {
 		})
 	}
 }
+
+func TestEndpoint_WithMinTTL(t *testing.T) {
+	tests := []struct {
+		name         string
+		initialTTL   TTL
+		inputTTL     int64
+		expectedTTL  TTL
+		isConfigured bool
+	}{
+		{
+			name:         "sets TTL when not configured and input > 0",
+			initialTTL:   0,
+			inputTTL:     300,
+			expectedTTL:  300,
+			isConfigured: true,
+		},
+		{
+			name:         "does not override when already configured",
+			initialTTL:   120,
+			inputTTL:     300,
+			expectedTTL:  120,
+			isConfigured: true,
+		},
+		{
+			name:         "does not set when input is zero",
+			initialTTL:   30,
+			inputTTL:     0,
+			expectedTTL:  30,
+			isConfigured: true,
+		},
+		{
+			name:        "does not set when input is negative",
+			initialTTL:  0,
+			inputTTL:    -10,
+			expectedTTL: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &Endpoint{RecordTTL: tt.initialTTL}
+			ep.WithMinTTL(tt.inputTTL)
+			assert.Equal(t, tt.expectedTTL, ep.RecordTTL)
+			assert.Equal(t, tt.isConfigured, ep.RecordTTL.IsConfigured())
+		})
+	}
+}

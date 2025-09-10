@@ -31,6 +31,7 @@ Wrappers solve these key challenges:
 |    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources. |
 | `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                 |
 |    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.              |
+|   `PostProcessor`    | Add records post-processing.            | Configure TTL for all endpoints.      |
 
 ### Use Cases
 

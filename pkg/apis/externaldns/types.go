@@ -149,6 +149,7 @@ type Config struct {
 	TXTEncryptAESKey                              string `secure:"yes"`
 	Interval                                      time.Duration
 	MinEventSyncInterval                          time.Duration
+	MinTTL                                        time.Duration
 	Once                                          bool
 	DryRun                                        bool
 	UpdateEvents                                  bool
@@ -720,6 +721,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
 	app.Flag("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)").BoolVar(&cfg.UpdateEvents)
+	app.Flag("min-ttl", "Configure global TTL for records in duration format. This value is used when the TTL for a source is not set or set to 0. (optional; examples: 1m12s, 72s, 72)").DurationVar(&cfg.MinTTL)
 
 	// Miscellaneous flags
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")

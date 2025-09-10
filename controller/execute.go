@@ -456,6 +456,7 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 		combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
 		cfg.AddSourceWrapper("target-filter")
 	}
+	combinedSource = wrappers.NewPostProcessor(combinedSource, wrappers.WithTTL(cfg.MinTTL))
 	return combinedSource, nil
 }
 
