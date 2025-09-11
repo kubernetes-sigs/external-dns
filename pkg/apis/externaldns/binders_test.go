@@ -150,7 +150,7 @@ func TestCobraRegexValueSetStringType(t *testing.T) {
 
 	require.Equal(t, "regexp", rv.Type())
 	// empty when target nil
-	assert.Equal(t, "", rv.String())
+	assert.Empty(t, rv.String())
 
 	// invalid pattern returns error
 	err := rv.Set("(")
@@ -195,7 +195,7 @@ func TestCobraStringMapVarDefaultEmpty(t *testing.T) {
 	err := cmd.Execute()
 	require.NoError(t, err)
 	require.NotNil(t, m)
-	assert.Equal(t, 0, len(m))
+	assert.Empty(t, m)
 }
 
 func TestKingpinRegexpVarDefaultAndParse(t *testing.T) {

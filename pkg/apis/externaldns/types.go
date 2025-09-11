@@ -585,7 +585,6 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 }
 
 func bindFlags(b FlagBinder, cfg *Config) {
-
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
