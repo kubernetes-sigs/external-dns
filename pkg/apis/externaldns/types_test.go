@@ -24,7 +24,9 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -519,6 +521,29 @@ func TestParseFlags(t *testing.T) {
 	}
 }
 
+func TestParseFlagsCobraExecuteError(t *testing.T) {
+	cfg := NewConfig()
+	err := cfg.ParseFlags([]string{"--cli-backend=cobra", "--unknown-flag"})
+	require.Error(t, err)
+}
+
+func TestParseFlagsKingpinParseError(t *testing.T) {
+	cfg := NewConfig()
+	err := cfg.ParseFlags([]string{"--unknown-flag"})
+	require.Error(t, err)
+}
+
+func TestConfigStringMasksSecureFields(t *testing.T) {
+	cfg := NewConfig()
+	cfg.AWSAssumeRoleExternalID = "sensitive-value"
+	cfg.GoDaddyAPIKey = "another-secret"
+
+	s := cfg.String()
+	require.NotContains(t, s, "sensitive-value")
+	require.NotContains(t, s, "another-secret")
+	require.Contains(t, s, passwordMask)
+}
+
 // helper functions
 
 func setEnv(t *testing.T, env map[string]string) map[string]string {
@@ -532,8 +557,7 @@ func setEnv(t *testing.T, env map[string]string) map[string]string {
 	return originalEnv
 }
 
-// Additional tests to verify the experimental CLI switch behavior.
-// Default path should use kingpin and parse flags correctly.
+// Default path should use kingpin and parse flags correctly
 func TestParseFlagsDefaultKingpin(t *testing.T) {
 	t.Setenv("EXTERNAL_DNS_CLI", "")
 
@@ -633,6 +657,8 @@ func TestNewCobraCommandDefaultsApplied(t *testing.T) {
 	cfg := NewConfig()
 	// Pre-populate some defaults to confirm they persist without args.
 	cfg.Sources = []string{"service"}
+	// provider to preserve the original test intent.
+	cfg.Provider = "aws"
 
 	cmd := newCobraCommand(cfg)
 	cmd.SetArgs([]string{})
@@ -975,4 +1001,154 @@ func TestParseFlagsMiscListeners(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t, "--listen-endpoint-events")
 	assert.True(t, cfg.ListenEndpointEvents)
+}
+
+func TestNewCobraCommandValidationMissingProvider(t *testing.T) {
+	cfg := NewConfig()
+	cfg.Provider = ""
+	cfg.Sources = nil
+
+	cmd := newCobraCommand(cfg)
+	cmd.SetArgs([]string{})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--provider is required")
+}
+
+func TestNewCobraCommandValidationInvalidProvider(t *testing.T) {
+	cfg := NewConfig()
+	cfg.Provider = "not-a-provider"
+	cfg.Sources = []string{"service"}
+
+	cmd := newCobraCommand(cfg)
+	cmd.SetArgs([]string{})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid provider")
+}
+
+func TestNewCobraCommandValidationMissingSource(t *testing.T) {
+	cfg := NewConfig()
+	cfg.Provider = "aws"
+	cfg.Sources = nil
+
+	cmd := newCobraCommand(cfg)
+	cmd.SetArgs([]string{"--provider=aws"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--source is required")
+}
+
+func TestNewCobraCommandValidationInvalidSource(t *testing.T) {
+	cfg := NewConfig()
+	cmd := newCobraCommand(cfg)
+	cmd.SetArgs([]string{"--provider=aws", "--source=bogus"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid source")
+}
+
+func TestNewCobraCommandValidationValid(t *testing.T) {
+	cfg := NewConfig()
+	cmd := newCobraCommand(cfg)
+	cmd.SetArgs([]string{"--provider=aws", "--source=service"})
+	err := cmd.Execute()
+	require.NoError(t, err)
+}
+
+func TestSourceWrapperHelpers(t *testing.T) {
+	cfg := NewConfig()
+	assert.False(t, cfg.IsSourceWrapperInstrumented("nat64"))
+	cfg.AddSourceWrapper("nat64")
+	assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
+}
+
+// Helpers to run bindFlags + parse for each binder.
+func runWithKingpin(t *testing.T, args []string) *Config {
+	t.Helper()
+	cfg := &Config{}
+	cfg.AWSSDCreateTag = map[string]string{}
+	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
+	app := kingpin.New("test", "")
+	bindFlags(NewKingpinBinder(app), cfg)
+	_, err := app.Parse(args)
+	require.NoError(t, err)
+	return cfg
+}
+
+func runWithCobra(t *testing.T, args []string) *Config {
+	t.Helper()
+	cfg := &Config{}
+	cfg.AWSSDCreateTag = map[string]string{}
+	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
+	cmd := &cobra.Command{Use: "test"}
+	bindFlags(NewCobraBinder(cmd), cfg)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	require.NoError(t, err)
+	return cfg
+}
+
+func TestBinderParityScalars(t *testing.T) {
+	cases := []struct {
+		name   string
+		args   []string
+		getter func(*Config) interface{}
+		want   interface{}
+	}{
+		{"fqdn-template", []string{"--fqdn-template=tpl"}, func(c *Config) interface{} { return c.FQDNTemplate }, "tpl"},
+		{"dry-run", []string{"--dry-run"}, func(c *Config) interface{} { return c.DryRun }, true},
+		{"interval", []string{"--interval=2s"}, func(c *Config) interface{} { return c.Interval }, 2 * time.Second},
+		{"google-batch-change-size", []string{"--google-batch-change-size=123"}, func(c *Config) interface{} { return c.GoogleBatchChangeSize }, 123},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cfgK := runWithKingpin(t, tc.args)
+			cfgC := runWithCobra(t, tc.args)
+			assert.Equal(t, tc.want, tc.getter(cfgK))
+			assert.Equal(t, tc.getter(cfgK), tc.getter(cfgC))
+		})
+	}
+}
+
+func TestBinderParityRepeatable(t *testing.T) {
+	args := []string{"--managed-record-types=A", "--managed-record-types=TXT"}
+	cfgK := runWithKingpin(t, args)
+	cfgC := runWithCobra(t, args)
+	assert.ElementsMatch(t, []string{"A", "TXT"}, cfgK.ManagedDNSRecordTypes)
+	assert.ElementsMatch(t, cfgK.ManagedDNSRecordTypes, cfgC.ManagedDNSRecordTypes)
+}
+
+func TestBinderParityMapAndRegexp(t *testing.T) {
+	args := []string{"--regex-domain-filter=^ex.*$", "--aws-sd-create-tag=foo=bar"}
+	cfgK := runWithKingpin(t, args)
+	cfgC := runWithCobra(t, args)
+
+	require.NotNil(t, cfgK.RegexDomainFilter)
+	require.NotNil(t, cfgC.RegexDomainFilter)
+	assert.Equal(t, cfgK.RegexDomainFilter.String(), cfgC.RegexDomainFilter.String())
+
+	require.NotNil(t, cfgK.AWSSDCreateTag)
+	require.NotNil(t, cfgC.AWSSDCreateTag)
+	assert.Equal(t, map[string]string{"foo": "bar"}, cfgK.AWSSDCreateTag)
+	assert.Equal(t, cfgK.AWSSDCreateTag, cfgC.AWSSDCreateTag)
+}
+
+// Kingpin validates enum values at parse time while Cobra does not
+// assert both behaviors so it is obvious and intentional
+func TestBinderEnumValidationDifference(t *testing.T) {
+	// Kingpin should reject unknown enum values
+	appArgs := []string{"--google-zone-visibility=bogus"}
+	app := kingpin.New("test", "")
+	cfgK := &Config{}
+	bindFlags(NewKingpinBinder(app), cfgK)
+	_, err := app.Parse(appArgs)
+	require.Error(t, err)
+
+	// Cobra should accept and set the value
+	cfgC := runWithCobra(t, appArgs)
+	assert.Equal(t, "bogus", cfgC.GoogleZoneVisibility)
 }

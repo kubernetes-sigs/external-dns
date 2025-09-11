@@ -415,6 +415,33 @@ var providerNames = []string{
 	"webhook",
 }
 
+var allowedSources = []string{
+	"service",
+	"ingress",
+	"node",
+	"pod",
+	"gateway-httproute",
+	"gateway-grpcroute",
+	"gateway-tlsroute",
+	"gateway-tcproute",
+	"gateway-udproute",
+	"istio-gateway",
+	"istio-virtualservice",
+	"cloudfoundry",
+	"contour-httpproxy",
+	"gloo-proxy",
+	"fake",
+	"connector",
+	"crd",
+	"empty",
+	"skipper-routegroup",
+	"openshift-route",
+	"ambassador-host",
+	"kong-tcpingress",
+	"f5-virtualserver",
+	"f5-transportserver",
+	"traefik-proxy",
+}
 
 // NewConfig returns new Config object
 func NewConfig() *Config {
@@ -513,42 +540,71 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 		},
 	}
 
+	// Recreate a minimal post-parse validation for Cobra so it behaves like
+	// Kingpin's Required/Enum validations.
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// Enforce required provider (must be present) like Kingpin.
+		if cfg.Provider == "" {
+			return fmt.Errorf("--provider is required when using cobra backend")
+		}
+		validProvider := false
+		for _, p := range providerNames {
+			if p == cfg.Provider {
+				validProvider = true
+				break
+			}
+		}
+		if !validProvider {
+			return fmt.Errorf("invalid provider %q; valid values: %s", cfg.Provider, strings.Join(providerNames, ", "))
+		}
+
+		// Enforce at least one source is present and validate allowed values.
+		if len(cfg.Sources) == 0 {
+			return fmt.Errorf("--source is required when using cobra backend")
+		}
+		for _, src := range cfg.Sources {
+			valid := false
+			for _, as := range allowedSources {
+				if src == as {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				return fmt.Errorf("invalid source %q; valid values: %s", src, strings.Join(allowedSources, ", "))
+			}
+		}
+
+		return nil
+	}
+
 	b := NewCobraBinder(cmd)
 	bindFlags(b, cfg)
 
 	return cmd
 }
 
-// bindFlags registers CLI flags using the provided binder. It is intended to be
-// used by both Kingpin- and Cobra-based CLI frontends to avoid drift.
 func bindFlags(b FlagBinder, cfg *Config) {
-	// Providers list for help text consistency
 
 	// Flags related to Kubernetes
-
-	// Kubernetes
-
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
 	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
 	b.DurationVar("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
-
 	b.BoolVar("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs", false, &cfg.ResolveServiceLoadBalancerHostname)
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
-	// Common processing filters
-
-	// Cloud Foundry
+	// Flags related to cloud foundry
 	b.StringVar("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting", defaultConfig.CFAPIEndpoint, &cfg.CFAPIEndpoint)
 	b.StringVar("cf-username", "The username to log into the cloud foundry API", defaultConfig.CFUsername, &cfg.CFUsername)
 	b.StringVar("cf-password", "The password to log into the cloud foundry API", defaultConfig.CFPassword, &cfg.CFPassword)
 
-	// Gloo and Skipper
+	// Flags related to Gloo
 	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
+
+	// Flags related to Skipper RouteGroup
 	b.StringVar("skipper-routegroup-groupversion", "The resource version for skipper routegroup", defaultConfig.SkipperRouteGroupVersion, &cfg.SkipperRouteGroupVersion)
 
-	// Provider cache
-
-	// Processing source flags
+	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
@@ -581,18 +637,20 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.BoolVar("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)", false, &cfg.PublishHostIP)
 	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
-	// Accept multiple sources; enum validation is not enforced on Cobra binder.
 	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)", nil, &cfg.TargetNetFilter)
 	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
 	b.BoolVar("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group", defaultConfig.TraefikDisableNew, &cfg.TraefikDisableNew)
+
 	b.StringsVar("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)", defaultConfig.EmitEvents, &cfg.EmitEvents)
-	if _, ok := b.(*CobraBinder); ok {
-		b.StringVar("provider", "The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook)", defaultConfig.Provider, &cfg.Provider);
-		b.StringsVar("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)", append([]string(nil), cfg.Sources...), &cfg.Sources)
-	}
 
 	// Flags related to providers
-	// For historical parity with Kingpin's Default("") behavior we default to a single empty string entry, not nil.
+	if _, ok := b.(*CobraBinder); ok {
+		providerHelp := "The DNS provider where the DNS records will be created (required, options: " + strings.Join(providerNames, ", ") + ")"
+		b.StringVar("provider", providerHelp, cfg.Provider, &cfg.Provider)
+
+		sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(allowedSources, ", ") + ")"
+		b.StringsVar("source", sourceHelp, append([]string(nil), cfg.Sources...), &cfg.Sources)
+	}
 	b.DurationVar("provider-cache-time", "The time to cache the DNS provider record list requests.", defaultConfig.ProviderCacheTime, &cfg.ProviderCacheTime)
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
 	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.ExcludeDomains)
@@ -600,16 +658,12 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.RegexpVar("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); Require 'regex-domain-filter' ", defaultConfig.RegexDomainExclusion, &cfg.RegexDomainExclusion)
 	b.StringsVar("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneNameFilter)
 	b.StringsVar("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneIDFilter)
-
-	// Google provider
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)
 	b.IntVar("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.", defaultConfig.GoogleBatchChangeSize, &cfg.GoogleBatchChangeSize)
 	b.DurationVar("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.", defaultConfig.GoogleBatchChangeInterval, &cfg.GoogleBatchChangeInterval)
 	b.EnumVar("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)", defaultConfig.GoogleZoneVisibility, &cfg.GoogleZoneVisibility, "", "public", "private")
 	b.StringVar("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)", defaultConfig.AlibabaCloudConfigFile, &cfg.AlibabaCloudConfigFile)
 	b.EnumVar("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)", defaultConfig.AlibabaCloudZoneType, &cfg.AlibabaCloudZoneType, "", "public", "private")
-
-	// AWS provider
 	b.EnumVar("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, default: any, options: public, private)", defaultConfig.AWSZoneType, &cfg.AWSZoneType, "", "public", "private")
 	b.StringsVar("aws-zone-tags", "When using the AWS provider, filter for zones with these tags", []string{""}, &cfg.AWSZoneTagFilter)
 	b.StringsVar("aws-profile", "When using the AWS provider, name of the profile to use", []string{""}, &cfg.AWSProfiles)
@@ -626,8 +680,6 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.BoolVar("aws-zone-match-parent", "Expand limit possible target by sub-domains (default: disabled)", defaultConfig.AWSZoneMatchParent, &cfg.AWSZoneMatchParent)
 	b.BoolVar("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)", defaultConfig.AWSSDServiceCleanup, &cfg.AWSSDServiceCleanup)
 	b.StringMapVar("aws-sd-create-tag", "When using the AWS CloudMap provider, add tag to created services. The flag can be used multiple times", &cfg.AWSSDCreateTag)
-
-	// Azure provider
 	b.StringVar("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure)", defaultConfig.AzureConfigFile, &cfg.AzureConfigFile)
 	b.StringVar("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)", defaultConfig.AzureResourceGroup, &cfg.AzureResourceGroup)
 	b.StringVar("azure-subscription-id", "When using the Azure provider, override the Azure subscription to use (optional)", defaultConfig.AzureSubscriptionID, &cfg.AzureSubscriptionID)
@@ -635,76 +687,57 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.DurationVar("azure-zones-cache-duration", "When using the Azure provider, set the zones list cache TTL (0s to disable).", defaultConfig.AzureZonesCacheDuration, &cfg.AzureZonesCacheDuration)
 	b.IntVar("azure-maxretries-count", "When using the Azure provider, set the number of retries for API calls (When less than 0, it disables retries). (optional)", defaultConfig.AzureMaxRetriesCount, &cfg.AzureMaxRetriesCount)
 
-	// Cloudflare provider
 	b.BoolVar("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)", false, &cfg.CloudflareProxied)
 	b.BoolVar("cloudflare-custom-hostnames", "When using the Cloudflare provider, specify if the Custom Hostnames feature will be used. Requires \"Cloudflare for SaaS\" enabled. (default: disabled)", false, &cfg.CloudflareCustomHostnames)
 	b.EnumVar("cloudflare-custom-hostnames-min-tls-version", "When using the Cloudflare provider with the Custom Hostnames, specify which Minimum TLS Version will be used by default. (default: 1.0, options: 1.0, 1.1, 1.2, 1.3)", "1.0", &cfg.CloudflareCustomHostnamesMinTLSVersion, "1.0", "1.1", "1.2", "1.3")
 	b.EnumVar("cloudflare-custom-hostnames-certificate-authority", "When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none)", "none", &cfg.CloudflareCustomHostnamesCertificateAuthority, "google", "ssl_com", "lets_encrypt", "none")
 	b.IntVar("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)", defaultConfig.CloudflareDNSRecordsPerPage, &cfg.CloudflareDNSRecordsPerPage)
 	b.BoolVar("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)", defaultConfig.CloudflareRegionalServices, &cfg.CloudflareRegionalServices)
-
-	// Original Kingpin registration did not set an explicit default for region-key
 	b.StringVar("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)", "", &cfg.CloudflareRegionKey)
 	b.StringVar("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')", "", &cfg.CloudflareDNSRecordsComment)
 
-	// CoreDNS
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
-
-	// Akamai provider
 	b.StringVar("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiServiceConsumerDomain, &cfg.AkamaiServiceConsumerDomain)
 	b.StringVar("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientToken, &cfg.AkamaiClientToken)
 	b.StringVar("akamai-client-secret", "When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientSecret, &cfg.AkamaiClientSecret)
 	b.StringVar("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiAccessToken, &cfg.AkamaiAccessToken)
 	b.StringVar("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)", defaultConfig.AkamaiEdgercPath, &cfg.AkamaiEdgercPath)
 	b.StringVar("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)", defaultConfig.AkamaiEdgercSection, &cfg.AkamaiEdgercSection)
-
-	// OCI provider
 	b.StringVar("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci", defaultConfig.OCIConfigFile, &cfg.OCIConfigFile)
 	b.StringVar("oci-compartment-ocid", "When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.", defaultConfig.OCICompartmentOCID, &cfg.OCICompartmentOCID)
 	b.EnumVar("oci-zone-scope", "When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.", defaultConfig.OCIZoneScope, &cfg.OCIZoneScope, "", "GLOBAL", "PRIVATE")
 	b.BoolVar("oci-auth-instance-principal", "When using the OCI provider, specify whether OCI IAM instance principal authentication should be used (instead of key-based auth via the OCI config file).", defaultConfig.OCIAuthInstancePrincipal, &cfg.OCIAuthInstancePrincipal)
 	b.DurationVar("oci-zones-cache-duration", "When using the OCI provider, set the zones list cache TTL (0s to disable).", defaultConfig.OCIZoneCacheDuration, &cfg.OCIZoneCacheDuration)
-
-	// In-memory provider
 	b.StringsVar("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)", []string{""}, &cfg.InMemoryZones)
-
-	// OVH provider
 	b.StringVar("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)", defaultConfig.OVHEndpoint, &cfg.OVHEndpoint)
 	b.IntVar("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)", defaultConfig.OVHApiRateLimit, &cfg.OVHApiRateLimit)
 	b.BoolVar("ovh-enable-cname-relative", "When using the OVH provider, specify if CNAME should be treated as relative on target without final dot (default: false)", defaultConfig.OVHEnableCNAMERelative, &cfg.OVHEnableCNAMERelative)
-
-	// PowerDNS/PDNS provider
 	b.StringVar("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)", defaultConfig.PDNSServer, &cfg.PDNSServer)
 	b.StringVar("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)", defaultConfig.PDNSServerID, &cfg.PDNSServerID)
 	b.StringVar("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)", defaultConfig.PDNSAPIKey, &cfg.PDNSAPIKey)
 	b.BoolVar("pdns-skip-tls-verify", "When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false)", defaultConfig.PDNSSkipTLSVerify, &cfg.PDNSSkipTLSVerify)
-
-	// NS1 provider
 	b.StringVar("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)", defaultConfig.NS1Endpoint, &cfg.NS1Endpoint)
 	b.BoolVar("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)", defaultConfig.NS1IgnoreSSL, &cfg.NS1IgnoreSSL)
 	b.IntVar("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.", cfg.NS1MinTTLSeconds, &cfg.NS1MinTTLSeconds)
-
-	// DigitalOcean provider
 	b.IntVar("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.", defaultConfig.DigitalOceanAPIPageSize, &cfg.DigitalOceanAPIPageSize)
-
-	// GoDaddy provider
+	// GoDaddy flags
 	b.StringVar("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)", defaultConfig.GoDaddyAPIKey, &cfg.GoDaddyAPIKey)
 	b.StringVar("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)", defaultConfig.GoDaddySecretKey, &cfg.GoDaddySecretKey)
 	b.Int64Var("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.", cfg.GoDaddyTTL, &cfg.GoDaddyTTL)
 	b.BoolVar("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)", defaultConfig.GoDaddyOTE, &cfg.GoDaddyOTE)
 
-	// TLS communication
+	// Flags related to TLS communication
 	b.StringVar("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)", defaultConfig.TLSCA, &cfg.TLSCA)
 	b.StringVar("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)", defaultConfig.TLSClientCert, &cfg.TLSClientCert)
 	b.StringVar("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)", defaultConfig.TLSClientCertKey, &cfg.TLSClientCertKey)
 
-	// Exoscale provider
+	// Flags related to Exoscale provider
 	b.StringVar("exoscale-apienv", "When using Exoscale provider, specify the API environment (optional)", defaultConfig.ExoscaleAPIEnvironment, &cfg.ExoscaleAPIEnvironment)
 	b.StringVar("exoscale-apizone", "When using Exoscale provider, specify the API Zone (optional)", defaultConfig.ExoscaleAPIZone, &cfg.ExoscaleAPIZone)
 	b.StringVar("exoscale-apikey", "Provide your API Key for the Exoscale provider", defaultConfig.ExoscaleAPIKey, &cfg.ExoscaleAPIKey)
 	b.StringVar("exoscale-apisecret", "Provide your API Secret for the Exoscale provider", defaultConfig.ExoscaleAPISecret, &cfg.ExoscaleAPISecret)
 
-	// RFC2136 provider (additional)
+	// Flags related to RFC2136 provider
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)
 	b.IntVar("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server", defaultConfig.RFC2136Port, &cfg.RFC2136Port)
 	b.StringsVar("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)", nil, &cfg.RFC2136Zone)
@@ -713,7 +746,6 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
 	b.StringVar("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecretAlg, &cfg.RFC2136TSIGSecretAlg)
-	// Kingpin did not set an explicit default; keep it false by default
 	b.BoolVar("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", false, &cfg.RFC2136TAXFR)
 	b.DurationVar("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this", defaultConfig.RFC2136MinTTL, &cfg.RFC2136MinTTL)
 	b.BoolVar("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)", defaultConfig.RFC2136GSSTSIG, &cfg.RFC2136GSSTSIG)
@@ -725,24 +757,24 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.BoolVar("rfc2136-skip-tls-verify", "When using TLS with the RFC2136 provider, disable verification of any TLS certificates", defaultConfig.RFC2136SkipTLSVerify, &cfg.RFC2136SkipTLSVerify)
 	b.EnumVar("rfc2136-load-balancing-strategy", "When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled)", defaultConfig.RFC2136LoadBalancingStrategy, &cfg.RFC2136LoadBalancingStrategy, "random", "round-robin", "disabled")
 
-	// TransIP provider
+	// Flags related to TransIP provider
 	b.StringVar("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)", defaultConfig.TransIPAccountName, &cfg.TransIPAccountName)
 	b.StringVar("transip-keyfile", "When using the TransIP provider, specify the path to the private key file (required when --provider=transip)", defaultConfig.TransIPPrivateKeyFile, &cfg.TransIPPrivateKeyFile)
 
-	// Pihole provider
+	// Flags related to Pihole provider
 	b.StringVar("pihole-server", "When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole)", defaultConfig.PiholeServer, &cfg.PiholeServer)
 	b.StringVar("pihole-password", "When using the Pihole provider, the password to the server if it is protected", defaultConfig.PiholePassword, &cfg.PiholePassword)
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
 	b.StringVar("pihole-api-version", "When using the Pihole provider, specify the pihole API version (default: 5, options: 5, 6)", defaultConfig.PiholeApiVersion, &cfg.PiholeApiVersion)
 
-	// Plural provider
+	// Flags related to the Plural provider
 	b.StringVar("plural-cluster", "When using the plural provider, specify the cluster name you're running with", defaultConfig.PluralCluster, &cfg.PluralCluster)
 	b.StringVar("plural-provider", "When using the plural provider, specify the provider name you're running with", defaultConfig.PluralProvider, &cfg.PluralProvider)
 
-	// Policies
+	// Flags related to policies
 	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "sync", "upsert-only", "create-only")
 
-	// Registry
+	// Flags related to the registry
 	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)", defaultConfig.Registry, &cfg.Registry, "txt", "noop", "dynamodb", "aws-sd")
 	b.StringVar("txt-owner-id", "When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default)", defaultConfig.TXTOwnerID, &cfg.TXTOwnerID)
 	b.StringVar("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!", defaultConfig.TXTPrefix, &cfg.TXTPrefix)
@@ -753,7 +785,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.StringVar("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)", cfg.AWSDynamoDBRegion, &cfg.AWSDynamoDBRegion)
 	b.StringVar("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")", defaultConfig.AWSDynamoDBTable, &cfg.AWSDynamoDBTable)
 
-	// Main control loop
+	// Flags related to the main control loop
 	b.DurationVar("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)", defaultConfig.TXTCacheInterval, &cfg.TXTCacheInterval)
 	b.DurationVar("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)", defaultConfig.Interval, &cfg.Interval)
 	b.DurationVar("min-event-sync-interval", "The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)", defaultConfig.MinEventSyncInterval, &cfg.MinEventSyncInterval)
@@ -761,7 +793,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.BoolVar("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)", defaultConfig.DryRun, &cfg.DryRun)
 	b.BoolVar("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)", defaultConfig.UpdateEvents, &cfg.UpdateEvents)
 
-	// Miscellaneous
+	// Miscellaneous flags
 	b.EnumVar("log-format", "The format in which log messages are printed (default: text, options: text, json)", defaultConfig.LogFormat, &cfg.LogFormat, "text", "json")
 	b.StringVar("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)", defaultConfig.MetricsAddress, &cfg.MetricsAddress)
 	b.EnumVar("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal)", defaultConfig.LogLevel, &cfg.LogLevel, allLogLevelsAsStrings()...)
@@ -771,8 +803,6 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.DurationVar("webhook-provider-read-timeout", "The read timeout for the webhook provider in duration format (default: 5s)", defaultConfig.WebhookProviderReadTimeout, &cfg.WebhookProviderReadTimeout)
 	b.DurationVar("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)", defaultConfig.WebhookProviderWriteTimeout, &cfg.WebhookProviderWriteTimeout)
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
-	// Alibaba Cloud provider
-
 }
 
 func (cfg *Config) AddSourceWrapper(name string) {
@@ -796,7 +826,6 @@ func App(cfg *Config) *kingpin.Application {
 	app.Version(Version)
 	app.DefaultEnvars()
 
-	// Flags related to Kubernetes (bound via binder to keep parity)
 	bindFlags(NewKingpinBinder(app), cfg)
 
 	// Kingpin-only semantics: preserve Required/PlaceHolder and enum validation

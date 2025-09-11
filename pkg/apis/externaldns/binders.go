@@ -17,6 +17,7 @@ limitations under the License.
 package externaldns
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -158,18 +159,18 @@ func (b *CobraBinder) StringMapVar(name, help string, target *map[string]string)
 	b.Cmd.Flags().StringToStringVar(target, name, map[string]string{}, help)
 }
 
-type regexValue struct {
+type regexpValue struct {
 	target **regexp.Regexp
 }
 
-func (rv *regexValue) String() string {
+func (rv *regexpValue) String() string {
 	if rv == nil || rv.target == nil || *rv.target == nil {
 		return ""
 	}
 	return (*rv.target).String()
 }
 
-func (rv *regexValue) Set(s string) error {
+func (rv *regexpValue) Set(s string) error {
 	re, err := regexp.Compile(s)
 	if err != nil {
 		return err
@@ -178,13 +179,23 @@ func (rv *regexValue) Set(s string) error {
 	return nil
 }
 
-func (rv *regexValue) Type() string { return "regexp" }
+func (rv *regexpValue) Type() string { return "regexp" }
+
+type regexpSetter interface {
+	Set(string) error
+}
+
+func setRegexpDefault(rs regexpSetter, def *regexp.Regexp, name string) {
+	if def != nil {
+		if err := rs.Set(def.String()); err != nil {
+			panic(fmt.Errorf("invalid default regexp for flag %s: %w", name, err))
+		}
+	}
+}
 
 func (b *CobraBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
-	rv := &regexValue{target: target}
+	rv := &regexpValue{target: target}
 	// set default value to mirror kingpin's Default(def.String()) behavior
-	if def != nil {
-		_ = rv.Set(def.String())
-	}
+	setRegexpDefault(rv, def, name)
 	b.Cmd.Flags().Var(rv, name, help)
 }
