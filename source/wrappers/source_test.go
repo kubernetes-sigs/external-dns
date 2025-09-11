@@ -30,7 +30,8 @@ func sortEndpoints(endpoints []*endpoint.Endpoint) {
 			ep.Targets = endpoint.NewTargets(ep.Targets...)
 		}
 	}
-	sort.Slice(endpoints, func(i, k int) bool {
+
+	sort.SliceStable(endpoints, func(i, k int) bool {
 		// Sort by DNSName, RecordType, and Targets
 		ei, ek := endpoints[i], endpoints[k]
 		if ei == nil || ek == nil {
