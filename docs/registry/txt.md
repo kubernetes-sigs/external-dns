@@ -287,4 +287,3 @@ spec:
 
 If you didn't set the owner ID, the value set by external-dns is `default`. You can set the
 `--from-txt-owner` flag to `default` to migrate the associated records.
-
