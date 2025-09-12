@@ -17,6 +17,8 @@ limitations under the License.
 package externaldns
 
 import (
+	"fmt"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -33,6 +35,13 @@ type FlagBinder interface {
 	Int64Var(name, help string, def int64, target *int64)
 	StringsVar(name, help string, def []string, target *[]string)
 	EnumVar(name, help, def string, target *string, allowed ...string)
+	// StringsEnumVar binds a repeatable string flag with an allowed set.
+	// Implementations may not enforce allowed values.
+	StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string)
+	// StringMapVar binds key=value repeatable flags into a map.
+	StringMapVar(name, help string, target *map[string]string)
+	// RegexpVar binds a regular expression value.
+	RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp)
 }
 
 // KingpinBinder implements FlagBinder using github.com/alecthomas/kingpin/v2.
@@ -81,6 +90,60 @@ func (b *KingpinBinder) EnumVar(name, help, def string, target *string, allowed 
 	b.App.Flag(name, help).Default(def).EnumVar(target, allowed...)
 }
 
+func (b *KingpinBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
+	if len(def) > 0 {
+		b.App.Flag(name, help).Default(def...).EnumsVar(target, allowed...)
+		return
+	}
+	b.App.Flag(name, help).EnumsVar(target, allowed...)
+}
+
+func (b *KingpinBinder) StringMapVar(name, help string, target *map[string]string) {
+	b.App.Flag(name, help).StringMapVar(target)
+}
+
+func (b *KingpinBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
+	defStr := ""
+	if def != nil {
+		defStr = def.String()
+	}
+	b.App.Flag(name, help).Default(defStr).RegexpVar(target)
+}
+
+type regexpValue struct {
+	target **regexp.Regexp
+}
+
+func (rv *regexpValue) String() string {
+	if rv == nil || rv.target == nil || *rv.target == nil {
+		return ""
+	}
+	return (*rv.target).String()
+}
+
+func (rv *regexpValue) Set(s string) error {
+	re, err := regexp.Compile(s)
+	if err != nil {
+		return err
+	}
+	*rv.target = re
+	return nil
+}
+
+func (rv *regexpValue) Type() string { return "regexp" }
+
+type regexpSetter interface {
+	Set(string) error
+}
+
+func setRegexpDefault(rs regexpSetter, def *regexp.Regexp, name string) {
+	if def != nil {
+		if err := rs.Set(def.String()); err != nil {
+			panic(fmt.Errorf("invalid default regexp for flag %s: %w", name, err))
+		}
+	}
+}
+
 // CobraBinder implements FlagBinder using github.com/spf13/cobra.
 type CobraBinder struct {
 	Cmd *cobra.Command
@@ -118,4 +181,21 @@ func (b *CobraBinder) StringsVar(name, help string, def []string, target *[]stri
 
 func (b *CobraBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
 	b.Cmd.Flags().StringVar(target, name, def, help)
+}
+
+func (b *CobraBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
+	// pflag does not enforce enums.
+	b.Cmd.Flags().StringArrayVar(target, name, def, help)
+}
+
+func (b *CobraBinder) StringMapVar(name, help string, target *map[string]string) {
+	// Use StringToStringVar for key=value pairs.
+	b.Cmd.Flags().StringToStringVar(target, name, map[string]string{}, help)
+}
+
+func (b *CobraBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
+	rv := &regexpValue{target: target}
+	// set default value to mirror kingpin's Default(def.String()) behavior
+	setRegexpDefault(rv, def, name)
+	b.Cmd.Flags().Var(rv, name, help)
 }
