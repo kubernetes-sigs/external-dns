@@ -144,6 +144,19 @@ func TestCobraBinderEnumNotValidatedHere(t *testing.T) {
 	assert.Equal(t, "c", e)
 }
 
+// Cobra requires --<flag>=false
+func TestCobraBinderNoBooleanNegationFormUnsupported(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	b := NewCobraBinder(cmd)
+
+	var v bool
+	b.BoolVar("v", "bool flag", true, &v)
+
+	cmd.SetArgs([]string{"--no-v"})
+	err := cmd.Execute()
+	require.Error(t, err)
+}
+
 func TestCobraRegexValueSetStringType(t *testing.T) {
 	var r *regexp.Regexp
 	rv := &regexpValue{target: &r}

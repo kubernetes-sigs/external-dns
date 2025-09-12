@@ -110,6 +110,40 @@ func (b *KingpinBinder) RegexpVar(name, help string, def *regexp.Regexp, target 
 	b.App.Flag(name, help).Default(defStr).RegexpVar(target)
 }
 
+type regexpValue struct {
+	target **regexp.Regexp
+}
+
+func (rv *regexpValue) String() string {
+	if rv == nil || rv.target == nil || *rv.target == nil {
+		return ""
+	}
+	return (*rv.target).String()
+}
+
+func (rv *regexpValue) Set(s string) error {
+	re, err := regexp.Compile(s)
+	if err != nil {
+		return err
+	}
+	*rv.target = re
+	return nil
+}
+
+func (rv *regexpValue) Type() string { return "regexp" }
+
+type regexpSetter interface {
+	Set(string) error
+}
+
+func setRegexpDefault(rs regexpSetter, def *regexp.Regexp, name string) {
+	if def != nil {
+		if err := rs.Set(def.String()); err != nil {
+			panic(fmt.Errorf("invalid default regexp for flag %s: %w", name, err))
+		}
+	}
+}
+
 // CobraBinder implements FlagBinder using github.com/spf13/cobra.
 type CobraBinder struct {
 	Cmd *cobra.Command
@@ -150,47 +184,13 @@ func (b *CobraBinder) EnumVar(name, help, def string, target *string, allowed ..
 }
 
 func (b *CobraBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
-	// pflag does not enforce enums; use StringArrayVar to collect values.
+	// pflag does not enforce enums.
 	b.Cmd.Flags().StringArrayVar(target, name, def, help)
 }
 
 func (b *CobraBinder) StringMapVar(name, help string, target *map[string]string) {
-	// Use StringToStringVar for key=value pairs; default empty map.
+	// Use StringToStringVar for key=value pairs.
 	b.Cmd.Flags().StringToStringVar(target, name, map[string]string{}, help)
-}
-
-type regexpValue struct {
-	target **regexp.Regexp
-}
-
-func (rv *regexpValue) String() string {
-	if rv == nil || rv.target == nil || *rv.target == nil {
-		return ""
-	}
-	return (*rv.target).String()
-}
-
-func (rv *regexpValue) Set(s string) error {
-	re, err := regexp.Compile(s)
-	if err != nil {
-		return err
-	}
-	*rv.target = re
-	return nil
-}
-
-func (rv *regexpValue) Type() string { return "regexp" }
-
-type regexpSetter interface {
-	Set(string) error
-}
-
-func setRegexpDefault(rs regexpSetter, def *regexp.Regexp, name string) {
-	if def != nil {
-		if err := rs.Set(def.String()); err != nil {
-			panic(fmt.Errorf("invalid default regexp for flag %s: %w", name, err))
-		}
-	}
 }
 
 func (b *CobraBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {

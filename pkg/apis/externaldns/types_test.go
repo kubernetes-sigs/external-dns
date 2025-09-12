@@ -17,8 +17,11 @@ limitations under the License.
 package externaldns
 
 import (
+	"fmt"
 	"os"
+	"reflect"
 	"regexp"
+	"sort"
 	"testing"
 	"time"
 
@@ -733,6 +736,22 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 
+// Env vars are accpeted by Kingpin backend but ignored by Cobra
+func TestEnvVarsIgnoredByCobraBackend(t *testing.T) {
+	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
+	t.Setenv("EXTERNAL_DNS_NAMESPACE", "ns-from-env")
+	t.Setenv("EXTERNAL_DNS_DRY_RUN", "1")
+
+	cfg := NewConfig()
+	// Only required args for Cobra validation
+	args := []string{"--provider=aws", "--source=service"}
+	require.NoError(t, cfg.ParseFlags(args))
+
+	// Ignore env vars and keep defaults
+	assert.Empty(t, cfg.Namespace)
+	assert.False(t, cfg.DryRun)
+}
+
 func restoreEnv(t *testing.T, originalEnv map[string]string) {
 	for k, v := range originalEnv {
 		require.NoError(t, os.Setenv(k, v))
@@ -1061,6 +1080,327 @@ func TestSourceWrapperHelpers(t *testing.T) {
 	assert.False(t, cfg.IsSourceWrapperInstrumented("nat64"))
 	cfg.AddSourceWrapper("nat64")
 	assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
+}
+
+// Accepted binder/backend differences:
+// - Enum validation
+// - Boolean negation form
+// - Env var handling
+
+// Binder parity helpers
+
+// flagKind represents the kind of a bound flag.
+type flagKind int
+
+const (
+	fkString flagKind = iota
+	fkBool
+	fkDuration
+	fkInt
+	fkInt64
+	fkStrings
+	fkEnum
+	fkStringMap
+	fkRegexp
+)
+
+type flagMeta struct {
+	name    string
+	kind    flagKind
+	allowed []string // for enums
+}
+
+// recordingBinder wraps a real binder and records what was bound.
+type recordingBinder struct {
+	inner FlagBinder
+	flags []flagMeta
+}
+
+func (r *recordingBinder) record(name string, kind flagKind, allowed ...string) {
+	r.flags = append(r.flags, flagMeta{name: name, kind: kind, allowed: append([]string(nil), allowed...)})
+}
+
+func (r *recordingBinder) StringVar(name, help, def string, target *string) {
+	r.record(name, fkString)
+	r.inner.StringVar(name, help, def, target)
+}
+func (r *recordingBinder) BoolVar(name, help string, def bool, target *bool) {
+	r.record(name, fkBool)
+	r.inner.BoolVar(name, help, def, target)
+}
+func (r *recordingBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
+	r.record(name, fkDuration)
+	r.inner.DurationVar(name, help, def, target)
+}
+func (r *recordingBinder) IntVar(name, help string, def int, target *int) {
+	r.record(name, fkInt)
+	r.inner.IntVar(name, help, def, target)
+}
+func (r *recordingBinder) Int64Var(name, help string, def int64, target *int64) {
+	r.record(name, fkInt64)
+	r.inner.Int64Var(name, help, def, target)
+}
+func (r *recordingBinder) StringsVar(name, help string, def []string, target *[]string) {
+	r.record(name, fkStrings)
+	r.inner.StringsVar(name, help, def, target)
+}
+func (r *recordingBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
+	r.record(name, fkEnum, allowed...)
+	r.inner.EnumVar(name, help, def, target, allowed...)
+}
+func (r *recordingBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
+	// Not used by bindFlags currently; keep for completeness.
+	r.record(name, fkStrings)
+	r.inner.StringsEnumVar(name, help, def, target, allowed...)
+}
+func (r *recordingBinder) StringMapVar(name, help string, target *map[string]string) {
+	r.record(name, fkStringMap)
+	r.inner.StringMapVar(name, help, target)
+}
+func (r *recordingBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
+	r.record(name, fkRegexp)
+	r.inner.RegexpVar(name, help, def, target)
+}
+
+// collectAllFlags binds flags to a Cobra binder (which includes provider/source)
+// and records all bound flags for test generation.
+func collectAllFlags(t *testing.T) []flagMeta {
+	t.Helper()
+	cmd := &cobra.Command{Use: "test"}
+	rb := &recordingBinder{inner: NewCobraBinder(cmd)}
+	cfg := &Config{}
+	// mirror helpers used elsewhere to stabilize defaults
+	cfg.AWSSDCreateTag = map[string]string{}
+	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
+	bindFlags(rb, cfg)
+
+	// Make names unique and sorted for stable test order
+	byName := map[string]flagMeta{}
+	for _, f := range rb.flags {
+		byName[f.name] = f
+	}
+	names := make([]string, 0, len(byName))
+	for n := range byName {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	out := make([]flagMeta, 0, len(names))
+	for _, n := range names {
+		out = append(out, byName[n])
+	}
+	return out
+}
+
+func buildArgsCobra(f flagMeta) []string {
+	sw := func(n, v string) string { return fmt.Sprintf("--%s=%s", n, v) }
+	switch f.kind {
+	case fkString:
+		return []string{sw(f.name, "val")}
+	case fkBool:
+		return []string{sw(f.name, "true")}
+	case fkDuration:
+		return []string{sw(f.name, "2s")}
+	case fkInt:
+		return []string{sw(f.name, "42")}
+	case fkInt64:
+		return []string{sw(f.name, "64")}
+	case fkStrings:
+		return []string{sw(f.name, "one"), sw(f.name, "two")}
+	case fkEnum:
+		val := ""
+		for _, a := range f.allowed {
+			if a != "" {
+				val = a
+				break
+			}
+		}
+		if val == "" && len(f.allowed) > 0 {
+			val = f.allowed[0]
+		}
+		if val == "" {
+			val = "x"
+		}
+		return []string{sw(f.name, val)}
+	case fkStringMap:
+		return []string{sw(f.name, "foo=bar")}
+	case fkRegexp:
+		return []string{sw(f.name, "^ex[a-z]+$")}
+	default:
+		return nil
+	}
+}
+
+func buildArgsKingpin(f flagMeta) []string {
+	switch f.kind {
+	case fkString:
+		return []string{"--" + f.name + "=val"}
+	case fkBool:
+		// Kingpin expects --flag=true
+		return []string{"--" + f.name}
+	case fkDuration:
+		return []string{"--" + f.name + "=2s"}
+	case fkInt:
+		return []string{"--" + f.name + "=42"}
+	case fkInt64:
+		return []string{"--" + f.name + "=64"}
+	case fkStrings:
+		return []string{"--" + f.name + "=one", "--" + f.name + "=two"}
+	case fkEnum:
+		val := ""
+		for _, a := range f.allowed {
+			if a != "" {
+				val = a
+				break
+			}
+		}
+		if val == "" && len(f.allowed) > 0 {
+			val = f.allowed[0]
+		}
+		if val == "" {
+			val = "x"
+		}
+		return []string{"--" + f.name + "=" + val}
+	case fkStringMap:
+		return []string{"--" + f.name + "=foo=bar"}
+	case fkRegexp:
+		return []string{"--" + f.name + "=^ex[a-z]+$"}
+	default:
+		return nil
+	}
+}
+
+func normalizeConfig(c *Config) *Config {
+	cp := *c
+	// Regex fields: compare by string; ignore pointer identity
+	cp.RegexDomainFilter = nil
+	cp.RegexDomainExclusion = nil
+	// Treat nil/empty maps equivalently for comparison
+	if cp.AWSSDCreateTag == nil {
+		cp.AWSSDCreateTag = map[string]string{}
+	}
+	// Normalize nil slices to empty slices for parity
+	rv := reflect.ValueOf(&cp).Elem()
+	rt := rv.Type()
+	for i := 0; i < rv.NumField(); i++ {
+		f := rv.Field(i)
+		if f.Kind() == reflect.Slice && f.IsNil() {
+			f.Set(reflect.MakeSlice(rt.Field(i).Type, 0, 0))
+		}
+	}
+	return &cp
+}
+
+func TestBinderParity_AllFlags(t *testing.T) {
+	t.Parallel()
+	flags := collectAllFlags(t)
+
+	// Skip provider/source here: Kingpin does not bind them via bindFlags.
+	base := []string{}
+
+	for _, f := range flags {
+
+		if f.name == "provider" || f.name == "source" {
+			continue
+		}
+		t.Run(f.name, func(t *testing.T) {
+			t.Parallel()
+			argsK := append([]string{}, base...)
+			argsK = append(argsK, buildArgsKingpin(f)...)
+			argsC := append([]string{}, base...)
+			argsC = append(argsC, buildArgsCobra(f)...)
+
+			cfgK := runWithKingpin(t, argsK)
+			cfgC := runWithCobra(t, argsC)
+
+			nK := normalizeConfig(cfgK)
+			nC := normalizeConfig(cfgC)
+
+			if !reflect.DeepEqual(nK, nC) {
+				t.Fatalf("config mismatch for --%s\nKingpin args: %v\nCobra args: %v\nKingpin: %#v\n  Cobra: %#v", f.name, argsK, argsC, nK, nC)
+			}
+		})
+	}
+}
+
+func TestBinderParity_BoolFalse(t *testing.T) {
+	t.Parallel()
+	flags := collectAllFlags(t)
+	for _, f := range flags {
+		if f.kind != fkBool || f.name == "provider" || f.name == "source" {
+			continue
+		}
+
+		t.Run(f.name+"=false", func(t *testing.T) {
+			t.Parallel()
+			// Kingpin: --no-flag
+			argsK := []string{"--no-" + f.name}
+			// Cobra: --flag=false
+			argsC := []string{"--" + f.name + "=false"}
+
+			cfgK := runWithKingpin(t, argsK)
+			cfgC := runWithCobra(t, argsC)
+
+			nK := normalizeConfig(cfgK)
+			nC := normalizeConfig(cfgC)
+			if !reflect.DeepEqual(nK, nC) {
+				t.Fatalf("config mismatch for --%s=false\nKingpin args: %v\nCobra args: %v\nKingpin: %#v\n  Cobra: %#v", f.name, argsK, argsC, nK, nC)
+			}
+		})
+	}
+}
+
+func TestBinderParity_EnumsAllValues(t *testing.T) {
+	t.Parallel()
+	flags := collectAllFlags(t)
+	for _, f := range flags {
+		if f.kind != fkEnum || f.name == "provider" || f.name == "source" {
+			continue
+		}
+		// Deduplicate allowed values
+		seen := map[string]struct{}{}
+		for _, val := range f.allowed {
+			if _, ok := seen[val]; ok {
+				continue
+			}
+			seen[val] = struct{}{}
+			v := val // capture
+			t.Run(f.name+"="+v, func(t *testing.T) {
+				t.Parallel()
+				// Build args for each backend including empty string case
+				var argsK, argsC []string
+				if v == "" {
+					argsK = []string{"--" + f.name + "="}
+					argsC = []string{"--" + f.name + "="}
+				} else {
+					argsK = []string{"--" + f.name + "=" + v}
+					argsC = []string{"--" + f.name + "=" + v}
+				}
+
+				cfgK := runWithKingpin(t, argsK)
+				cfgC := runWithCobra(t, argsC)
+
+				nK := normalizeConfig(cfgK)
+				nC := normalizeConfig(cfgC)
+				if !reflect.DeepEqual(nK, nC) {
+					t.Fatalf("enum config mismatch for --%s=%q\nKingpin: %#v\n  Cobra: %#v", f.name, v, nK, nC)
+				}
+			})
+		}
+	}
+}
+
+// Verify defaults parity (no args) across binders. This asserts that
+// bindFlags applies the same default values irrespective of backend.
+func TestBinderParity_Defaults(t *testing.T) {
+	t.Parallel()
+	cfgK := runWithKingpin(t, []string{})
+	cfgC := runWithCobra(t, []string{})
+
+	nK := normalizeConfig(cfgK)
+	nC := normalizeConfig(cfgC)
+	if !reflect.DeepEqual(nK, nC) {
+		t.Fatalf("defaults config mismatch with no args\nKingpin: %#v\n  Cobra: %#v", nK, nC)
+	}
 }
 
 // Helpers to run bindFlags + parse for each binder.
