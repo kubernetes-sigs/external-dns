@@ -378,8 +378,11 @@ func (e *Endpoint) Describe() string {
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
 	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+		endpointOwner, ok := ep.Labels[OwnerLabelKey]
+		if !ok {
+			log.Debugf(`Skipping endpoint %v because of missing owner label (required: "%s")`, ep, ownerID)
+		} else if endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match (found: "%s", required: "%s")`, ep, endpointOwner, ownerID)
 		} else {
 			filtered = append(filtered, ep)
 		}
@@ -418,6 +421,14 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateSRVRecord()
 	}
 	return true
+}
+
+// WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
+func (e *Endpoint) WithMinTTL(ttl int64) {
+	if !e.RecordTTL.IsConfigured() && ttl > 0 {
+		log.Debugf("Overriding existing TTL %d with new value %d for endpoint %s", e.RecordTTL, ttl, e.DNSName)
+		e.RecordTTL = TTL(ttl)
+	}
 }
 
 // NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")

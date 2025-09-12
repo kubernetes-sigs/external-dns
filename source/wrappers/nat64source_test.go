@@ -18,8 +18,11 @@ package wrappers
 
 import (
 	"context"
+	"net/netip"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
@@ -74,12 +77,11 @@ func testNat64Source(t *testing.T) {
 			mockSource.On("Endpoints").Return(tc.endpoints, nil)
 
 			// Create our object under test and get the endpoints.
-			source := NewNAT64Source(mockSource, []string{"2001:DB8::/96"})
+			source, err := NewNAT64Source(mockSource, []string{"2001:DB8::/96"})
+			require.NoError(t, err)
 
 			endpoints, err := source.Endpoints(context.Background())
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
@@ -112,10 +114,77 @@ func TestNat64Source_AddEventHandler(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			mockSource := testutils.NewMockSource()
 
-			src := NewNAT64Source(mockSource, tt.input)
+			src, err := NewNAT64Source(mockSource, tt.input)
+			require.NoError(t, err)
+
 			src.AddEventHandler(t.Context(), func() {})
 
 			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
+		})
+	}
+}
+
+func TestNewNAT64Source(t *testing.T) {
+	type args struct {
+		source        source.Source
+		nat64Prefixes []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    source.Source
+		wantErr bool
+	}{
+		{
+			name: "empty NAT64 prefixes should succeed",
+			args: args{
+				source:        &testutils.MockSource{},
+				nat64Prefixes: []string{},
+			},
+			want: &nat64Source{source: &testutils.MockSource{}, nat64Prefixes: []netip.Prefix{}},
+		},
+		{
+			name: "multiple valid NAT64 prefixes should succeed",
+			args: args{
+				source:        &testutils.MockSource{},
+				nat64Prefixes: []string{"2001:db8::/96", "64:ff9b::/96"},
+			},
+			want: &nat64Source{source: &testutils.MockSource{}, nat64Prefixes: []netip.Prefix{netip.MustParsePrefix("2001:db8::/96"), netip.MustParsePrefix("64:ff9b::/96")}},
+		},
+		{
+			name: "invalid NAT64 prefix should fail",
+			args: args{
+				source:        &testutils.MockSource{},
+				nat64Prefixes: []string{"invalid-prefix"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "NAT64 prefix with wrong mask length should fail",
+			args: args{
+				source:        &testutils.MockSource{},
+				nat64Prefixes: []string{"2001:db8::/64"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "IPv4 address as NAT64 prefix should fail",
+			args: args{
+				source:        &testutils.MockSource{},
+				nat64Prefixes: []string{"192.0.2.0/24"},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src, err := NewNAT64Source(tt.args.source, tt.args.nat64Prefixes)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.want, src)
 		})
 	}
 }

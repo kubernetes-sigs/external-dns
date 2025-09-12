@@ -148,6 +148,7 @@ type Config struct {
 	TXTEncryptAESKey                              string `secure:"yes"`
 	Interval                                      time.Duration
 	MinEventSyncInterval                          time.Duration
+	MinTTL                                        time.Duration
 	Once                                          bool
 	DryRun                                        bool
 	UpdateEvents                                  bool
