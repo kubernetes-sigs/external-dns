@@ -49,7 +49,7 @@ type DNSEndpointList struct {
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
 type DNSEndpointSpec struct {
-	Endpoints []*Endpoint `json:"endpoints"`
+	Endpoints []*Endpoint `json:"endpoints,omitempty"`
 }
 
 // ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
