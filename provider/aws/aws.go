@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	smithy "github.com/aws/smithy-go"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -754,6 +755,10 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
+				if isAccessDeniedErr(err) && hasTXTRecordChange(b) {
+					log.Warn("AccessDenied submitting a batch that includes TXT records. If using IAM ABAC, add 'TXT' to 'route53:ChangeResourceRecordSetsRecordTypes'. ExternalDNS uses TXT records for ownership (registry=txt). Consider allowing TXT or switching registry to 'dynamodb' or 'noop'.")
+				}
+
 				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
 
 				if len(changesByOwnership) > 1 {
@@ -770,6 +775,9 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 							failedUpdate = true
 							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
+							if isAccessDeniedErr(err) && hasTXTRecordChange(changes) {
+								log.Warn("AccessDenied submitting a change that includes a TXT record. If using IAM ABAC, add 'TXT' to 'route53:ChangeResourceRecordSetsRecordTypes'. ExternalDNS uses TXT records for ownership (registry=txt). Consider allowing TXT or switching registry to 'dynamodb' or 'noop'.")
+							}
 							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
 						} else {
 							successfulChanges = successfulChanges + len(changes)
@@ -814,6 +822,30 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 	}
 
 	return changes
+}
+
+func isAccessDeniedErr(err error) bool {
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		code := apiErr.ErrorCode()
+		if strings.Contains(code, "AccessDenied") {
+			return true
+		}
+	}
+	s := err.Error()
+	if strings.Contains(s, "AccessDenied") || strings.Contains(strings.ToLower(s), "access denied") {
+		return true
+	}
+	return false
+}
+
+func hasTXTRecordChange(cs Route53Changes) bool {
+	for _, c := range cs {
+		if c != nil && c.ResourceRecordSet != nil && c.ResourceRecordSet.Type == route53types.RRTypeTxt {
+			return true
+		}
+	}
+	return false
 }
 
 // AdjustEndpoints modifies the provided endpoints (coming from various sources) to match
