@@ -70,13 +70,6 @@ func TestEchoSourceReturnGivenSources(t *testing.T) {
 	}
 }
 
-func TestTargetFilterSource(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Interface", TestTargetFilterSourceImplementsSource)
-	t.Run("Endpoints", TestTargetFilterSourceEndpoints)
-}
-
 // TestTargetFilterSourceImplementsSource tests that targetFilterSource is a valid Source.
 func TestTargetFilterSourceImplementsSource(t *testing.T) {
 	var _ source.Source = &targetFilterSource{}
@@ -120,10 +113,7 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.title, func(t *testing.T) {
-			t.Parallel()
-
 			echo := testutils.NewMockSource(tt.endpoints...)
 			src := NewTargetFilterSource(echo, tt.filters)
 

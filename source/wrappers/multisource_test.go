@@ -45,9 +45,6 @@ func testMultiSourceImplementsSource(t *testing.T) {
 
 // testMultiSourceEndpoints tests merged endpoints from children are returned.
 func testMultiSourceEndpoints(t *testing.T) {
-	foo := &endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}}
-	bar := &endpoint.Endpoint{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}}
-
 	for _, tc := range []struct {
 		title           string
 		nestedEndpoints [][]*endpoint.Endpoint
@@ -65,19 +62,26 @@ func testMultiSourceEndpoints(t *testing.T) {
 		},
 		{
 			"single non-empty child source returns child's endpoints",
-			[][]*endpoint.Endpoint{{foo}},
-			[]*endpoint.Endpoint{foo},
+			[][]*endpoint.Endpoint{
+				{&endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}}},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}},
+			},
 		},
 		{
 			"multiple non-empty child sources returns merged children's endpoints",
-			[][]*endpoint.Endpoint{{foo}, {bar}},
-			[]*endpoint.Endpoint{foo, bar},
+			[][]*endpoint.Endpoint{{
+				&endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}},
+			}, {
+				&endpoint.Endpoint{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}}}},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}},
+				{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}}},
 		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
-			t.Parallel()
-
 			// Prepare the nested mock sources.
 			sources := make([]source.Source, 0, len(tc.nestedEndpoints))
 
