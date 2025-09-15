@@ -30,7 +30,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
-	smithy "github.com/aws/smithy-go"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -712,6 +711,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	var failedZones []string
+	var firstRoute53Error error
 	debugLevel := log.DebugLevel
 	for z, cs := range changesByZone {
 		log := log.WithFields(log.Fields{
@@ -755,8 +755,12 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
-				if isAccessDeniedErr(err) && hasTXTRecordChange(b) {
-					log.Warn("AccessDenied submitting a batch that includes TXT records. If using IAM ABAC, add 'TXT' to 'route53:ChangeResourceRecordSetsRecordTypes'. ExternalDNS uses TXT records for ownership (registry=txt). Consider allowing TXT or switching registry to 'dynamodb' or 'noop'.")
+				if firstRoute53Error == nil {
+					firstRoute53Error = err
+				}
+
+				if hasTXTRecordChange(b) {
+					log.Warnf("Route53 TXT change failed: %v", err)
 				}
 
 				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
@@ -775,8 +779,8 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 							failedUpdate = true
 							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
-							if isAccessDeniedErr(err) && hasTXTRecordChange(changes) {
-								log.Warn("AccessDenied submitting a change that includes a TXT record. If using IAM ABAC, add 'TXT' to 'route53:ChangeResourceRecordSetsRecordTypes'. ExternalDNS uses TXT records for ownership (registry=txt). Consider allowing TXT or switching registry to 'dynamodb' or 'noop'.")
+							if hasTXTRecordChange(changes) {
+								log.Warnf("Route53 TXT change failed: %v", err)
 							}
 							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
 						} else {
@@ -806,6 +810,9 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	if len(failedZones) > 0 {
+		if firstRoute53Error != nil {
+			return firstRoute53Error
+		}
 		return provider.NewSoftErrorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 
@@ -822,21 +829,6 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 	}
 
 	return changes
-}
-
-func isAccessDeniedErr(err error) bool {
-	var apiErr smithy.APIError
-	if errors.As(err, &apiErr) {
-		code := apiErr.ErrorCode()
-		if strings.Contains(code, "AccessDenied") {
-			return true
-		}
-	}
-	s := err.Error()
-	if strings.Contains(s, "AccessDenied") || strings.Contains(strings.ToLower(s), "access denied") {
-		return true
-	}
-	return false
 }
 
 func hasTXTRecordChange(cs Route53Changes) bool {
