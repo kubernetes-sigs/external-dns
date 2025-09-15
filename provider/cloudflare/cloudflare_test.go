@@ -1824,7 +1824,6 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	assert.True(t, provider.RegionalServicesConfig.Enabled, "expect regional services to be enabled")
 	assert.Equal(t, "us", provider.RegionalServicesConfig.RegionKey, "expected region key to be 'us'")
 }
-
 func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
@@ -3218,41 +3217,20 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 }
 
 func TestCloudFlareZonesDomainFilter(t *testing.T) {
-	// Set required environment variables for CloudFlare provider
-	t.Setenv("CF_API_TOKEN", "test-token")
-
-	client := NewMockCloudFlareClient()
-
 	// Create a domain filter that only matches "bar.com"
 	// This should filter out "foo.com" and trigger the debug log
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 
-	p, err := NewCloudFlareProvider(
-		domainFilter,
-		provider.NewZoneIDFilter([]string{""}), // empty zone ID filter so it uses ListZones path
-		false,                                  // proxied
-		false,                                  // dry run
-		RegionalServicesConfig{},
-		CustomHostnamesConfig{},
-		DNSRecordsConfig{PerPage: 50},
-	)
-	require.NoError(t, err)
-
-	// Replace the real client with our mock
-	p.Client = client
+	p := &CloudFlareProvider{
+		Client:       NewMockCloudFlareClient(),
+		domainFilter: domainFilter,
+	}
 
 	// Capture debug logs to verify the filter log message
-	oldLevel := log.GetLevel()
-	log.SetLevel(log.DebugLevel)
-	defer log.SetLevel(oldLevel)
-
-	// Use a custom formatter to capture log output
-	var logOutput strings.Builder
-	log.SetOutput(&logOutput)
-	defer log.SetOutput(os.Stderr)
+	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 	// Call Zones() which should trigger the domain filter logic
-	zones, err := p.Zones(context.Background())
+	zones, err := p.Zones(t.Context())
 	require.NoError(t, err)
 
 	// Should only return the "bar.com" zone since "foo.com" is filtered out
@@ -3261,9 +3239,8 @@ func TestCloudFlareZonesDomainFilter(t *testing.T) {
 	assert.Equal(t, "001", zones[0].ID)
 
 	// Verify that the debug log was written for the filtered zone
-	logString := logOutput.String()
-	assert.Contains(t, logString, `zone \"foo.com\" not in domain filter`)
-	assert.Contains(t, logString, "no zoneIDFilter configured, looking at all zones")
+	testutils.TestHelperLogContains("zone \"foo.com\" not in domain filter", hook, t)
+	testutils.TestHelperLogContains("no zoneIDFilter configured, looking at all zones", hook, t)
 }
 
 func TestZoneIDByNameIteratorError(t *testing.T) {
