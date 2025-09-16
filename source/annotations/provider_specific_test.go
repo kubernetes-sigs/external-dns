@@ -65,6 +65,16 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			setIdentifier: "",
 		},
 		{
+			name: "CoreDNS annotation",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/coredns-group": "g1",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "coredns/group", Value: "g1"},
+			},
+			setIdentifier: "",
+		},
+		{
 			name: "Set identifier annotation",
 			annotations: map[string]string{
 				SetIdentifierKey: "identifier",
