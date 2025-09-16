@@ -5012,6 +5012,9 @@ func TestConvertToEndpointSlices(t *testing.T) {
 
 func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	sc := &serviceSource{}
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
+	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
@@ -5029,16 +5032,9 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	publishPodIPs := true
 	publishNotReadyAddresses := false
 
-	params := HeadlessEndpointParams{
-		sc:                       sc,
-		endpointSlices:           []*discoveryv1.EndpointSlice{endpointSlice},
-		pods:                     pods,
-		hostname:                 hostname,
-		endpointsType:            endpointsType,
-		publishPodIPs:            publishPodIPs,
-		publishNotReadyAddresses: publishNotReadyAddresses,
-	}
-	result := processHeadlessEndpointSlices(params)
+	result := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added when pod is nil and publishPodIPs is true")
 }
 
@@ -5046,6 +5042,9 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 
 func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T) {
 	sc := &serviceSource{}
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
+	}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
 		ObjectMeta:  metav1.ObjectMeta{Name: "slice2", Namespace: "default"},
@@ -5063,17 +5062,118 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 	publishPodIPs := true
 	publishNotReadyAddresses := false
 
-	params := HeadlessEndpointParams{
-		sc:                       sc,
-		endpointSlices:           []*discoveryv1.EndpointSlice{endpointSlice},
-		pods:                     pods,
-		hostname:                 hostname,
-		endpointsType:            endpointsType,
-		publishPodIPs:            publishPodIPs,
-		publishNotReadyAddresses: publishNotReadyAddresses,
-	}
-	result := processHeadlessEndpointSlices(params)
+	result := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added for unsupported address type when publishPodIPs is true")
+}
+
+// Test for missing coverage: publishPodIPs false scenario
+func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
+	sc := &serviceSource{}
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
+	}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+				Addresses:  []string{"10.0.0.1"},
+			},
+		},
+	}
+	pods := []*v1.Pod{{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+	}}
+	hostname := "test.example.com"
+	endpointsType := "IPv4"
+	publishPodIPs := false // This should allow processing
+	publishNotReadyAddresses := false
+
+	result := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+	assert.NotEmpty(t, result, "Targets should be added when publishPodIPs is false")
+}
+
+// Test for missing coverage: not ready endpoints with publishNotReadyAddresses true
+func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
+	sc := &serviceSource{}
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
+	}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(false)}, // Not ready
+				Addresses:  []string{"10.0.0.1"},
+			},
+		},
+	}
+	pods := []*v1.Pod{{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+	}}
+	hostname := "test.example.com"
+	endpointsType := "IPv4"
+	publishPodIPs := false
+	publishNotReadyAddresses := true // This should allow not-ready endpoints
+
+	result := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+	assert.NotEmpty(t, result, "Not ready endpoints should be processed when publishNotReadyAddresses is true")
+}
+
+// Test getTargetsForDomain with empty ep.Addresses
+func TestGetTargetsForDomain_EmptyAddresses(t *testing.T) {
+	sc := &serviceSource{}
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+	}
+	ep := discoveryv1.Endpoint{
+		Addresses: []string{}, // Empty addresses
+	}
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "test-slice", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+	}
+	endpointsType := "IPv4"
+	headlessDomain := "test.example.com"
+
+	targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
+	assert.Empty(t, targets, "Should return empty targets when ep.Addresses is empty")
+}
+
+// Test getTargetsForDomain with EndpointsTypeHostIP
+func TestGetTargetsForDomain_HostIP(t *testing.T) {
+	sc := &serviceSource{publishHostIP: false}
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+		Status:     v1.PodStatus{HostIP: "192.168.1.100", PodIP: "10.0.0.1"},
+	}
+	ep := discoveryv1.Endpoint{
+		Addresses: []string{"10.0.0.1"},
+	}
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "test-slice", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+	}
+	endpointsType := EndpointsTypeHostIP
+	headlessDomain := "test.example.com"
+
+	targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
+	assert.Contains(t, targets, "192.168.1.100", "Should return HostIP when endpointsType is HostIP")
 }
 
 func TestFindPodForEndpoint(t *testing.T) {
@@ -5160,7 +5260,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
-		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(0), svc)
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(0))
 
 		assert.Len(t, result, 2)
 
@@ -5184,7 +5284,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}: {"1.2.3.4", "1.2.3.4", "5.6.7.8"},
 		}
 
-		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(0), svc)
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(0))
 
 		assert.Len(t, result, 1)
 		assert.Len(t, result[0].Targets, 2)
@@ -5197,7 +5297,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}: {"1.2.3.4"},
 		}
 
-		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(300), svc)
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(300))
 
 		assert.Len(t, result, 1)
 		assert.Equal(t, endpoint.TTL(300), result[0].RecordTTL)
@@ -5210,7 +5310,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
-		result := buildHeadlessEndpoints(targetsByHeadlessDomainAndType, endpoint.TTL(0), svc)
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(0))
 
 		assert.Len(t, result, 3)
 		// Should be sorted by DNSName first, then by RecordType
@@ -5222,7 +5322,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 	})
 
 	t.Run("handles empty targets", func(t *testing.T) {
-		result := buildHeadlessEndpoints(map[endpoint.EndpointKey]endpoint.Targets{}, endpoint.TTL(0), svc)
+		result := buildHeadlessEndpoints(svc, map[endpoint.EndpointKey]endpoint.Targets{}, endpoint.TTL(0))
 		assert.Empty(t, result)
 	})
 }

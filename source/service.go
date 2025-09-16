@@ -346,17 +346,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
-	params := HeadlessEndpointParams{
-		sc:                       sc,
-		endpointSlices:           endpointSlices,
-		pods:                     pods,
-		hostname:                 hostname,
-		endpointsType:            endpointsType,
-		publishPodIPs:            publishPodIPs,
-		publishNotReadyAddresses: publishNotReadyAddresses,
-	}
-	targetsByHeadlessDomainAndType := processHeadlessEndpointSlices(params)
-	endpoints = buildHeadlessEndpoints(targetsByHeadlessDomainAndType, ttl, svc)
+	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
 	return endpoints
 }
 
@@ -374,30 +366,29 @@ func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.End
 	return endpointSlices
 }
 
-// processHeadlessEndpointSlices processes only headless EndpointSlices and returns deduped targets by domain/type.
+// processHeadlessEndpointsFromSlices processes EndpointSlices specifically for headless services
+// and returns deduped targets by domain/type.
 // TODO: Consider refactoring with generics when available: https://github.com/kubernetes/kubernetes/issues/133544
-type HeadlessEndpointParams struct {
-	sc                       *serviceSource
-	endpointSlices           []*discoveryv1.EndpointSlice
-	pods                     []*v1.Pod
-	hostname                 string
-	endpointsType            string
-	publishPodIPs            bool
-	publishNotReadyAddresses bool
-}
-
-func processHeadlessEndpointSlices(params HeadlessEndpointParams) map[endpoint.EndpointKey]endpoint.Targets {
+func (sc *serviceSource) processHeadlessEndpointsFromSlices(
+	svc *v1.Service,
+	pods []*v1.Pod,
+	endpointSlices []*discoveryv1.EndpointSlice,
+	hostname string,
+	endpointsType string,
+	publishPodIPs bool,
+	publishNotReadyAddresses bool,
+) map[endpoint.EndpointKey]endpoint.Targets {
 	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
-	for _, endpointSlice := range params.endpointSlices {
+	for _, endpointSlice := range endpointSlices {
 		for _, ep := range endpointSlice.Endpoints {
-			if !conditionToBool(ep.Conditions.Ready) && !params.publishNotReadyAddresses {
+			if !conditionToBool(ep.Conditions.Ready) && !publishNotReadyAddresses {
 				continue
 			}
-			if params.publishPodIPs && endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 && endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
+			if publishPodIPs && endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 && endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
 				log.Debugf("Skipping EndpointSlice %s/%s because its address type is unsupported: %s", endpointSlice.Namespace, endpointSlice.Name, endpointSlice.AddressType)
 				continue
 			}
-			pod := findPodForEndpoint(ep, params.pods)
+			pod := findPodForEndpoint(ep, pods)
 			if pod == nil {
 				if ep.TargetRef != nil {
 					log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
@@ -406,12 +397,12 @@ func processHeadlessEndpointSlices(params HeadlessEndpointParams) map[endpoint.E
 				}
 				continue
 			}
-			headlessDomains := []string{params.hostname}
+			headlessDomains := []string{hostname}
 			if pod.Spec.Hostname != "" {
-				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, params.hostname))
+				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
 			for _, headlessDomain := range headlessDomains {
-				targets := getTargetsForDomain(params.sc, pod, ep, endpointSlice, params.endpointsType, headlessDomain)
+				targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
@@ -422,7 +413,12 @@ func processHeadlessEndpointSlices(params HeadlessEndpointParams) map[endpoint.E
 			}
 		}
 	}
-	return targetsByHeadlessDomainAndType
+	// Return a copy of the map to prevent external modifications
+	result := make(map[endpoint.EndpointKey]endpoint.Targets, len(targetsByHeadlessDomainAndType))
+	for k, v := range targetsByHeadlessDomainAndType {
+		result[k] = append(endpoint.Targets(nil), v...)
+	}
+	return result
 }
 
 // Helper to find pod for endpoint
@@ -476,7 +472,7 @@ func getTargetsForDomain(sc *serviceSource, pod *v1.Pod, ep discoveryv1.Endpoint
 }
 
 // Helper to build endpoints from deduped targets
-func buildHeadlessEndpoints(targetsByHeadlessDomainAndType map[endpoint.EndpointKey]endpoint.Targets, ttl endpoint.TTL, svc *v1.Service) []*endpoint.Endpoint {
+func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[endpoint.EndpointKey]endpoint.Targets, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 	headlessKeys := make([]endpoint.EndpointKey, 0, len(targetsByHeadlessDomainAndType))
 	for headlessKey := range targetsByHeadlessDomainAndType {
