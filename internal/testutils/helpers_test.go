@@ -45,3 +45,20 @@ func TestIsPointer(t *testing.T) {
 
 	assert.IsType(t, *ptr, value)
 }
+
+func TestIsParallel(t *testing.T) {
+	t.Run("not-parallel", func(t *testing.T) {
+		assert.False(t, IsParallel(t), "IsParallel returned true for a non-parallel test")
+		t.Run("not-parallel subtest", func(t *testing.T) {
+			assert.False(t, IsParallel(t), "IsParallel returned true for a non-parallel subtest")
+		})
+	})
+
+	t.Run("parallel", func(t *testing.T) {
+		t.Parallel()
+		assert.True(t, IsParallel(t), "IsParallel returned false for a parallel test")
+		t.Run("parallel subtest", func(t *testing.T) {
+			assert.True(t, IsParallel(t), "IsParallel returned false for a parallel subtest")
+		})
+	})
+}

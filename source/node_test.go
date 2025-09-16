@@ -44,8 +44,6 @@ import (
 )
 
 func TestNodeSource(t *testing.T) {
-	t.Parallel()
-
 	t.Run("NewNodeSource", testNodeSourceNewNodeSource)
 	t.Run("Endpoints", testNodeSourceEndpoints)
 	t.Run("EndpointsIPv6", testNodeEndpointsWithIPv6)

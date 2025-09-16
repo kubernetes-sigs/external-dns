@@ -26,6 +26,7 @@ import (
 	"github.com/cloudflare/cloudflare-go/v5/addressing"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
 	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/stretchr/testify/assert"
 
@@ -843,7 +844,6 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 }
 
 func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
-	t.Parallel()
 	type fields struct {
 		Records           map[string]dns.RecordResponse
 		RegionalHostnames []regionalHostname
@@ -1006,7 +1006,10 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+
+			if tt.expectDebug == "" {
+				t.Parallel()
+			}
 			records := tt.fields.Records
 			if records == nil {
 				records = map[string]dns.RecordResponse{}
@@ -1029,7 +1032,10 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 					RegionKey: tt.fields.RegionKey,
 				},
 			}
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			var hook *test.Hook
+			if tt.expectDebug != "" {
+				hook = testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			}
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
 			assert.Error(t, err, "ApplyChanges should return an error")
 			if tt.errMsg != "" && err != nil {
@@ -1043,7 +1049,6 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 }
 
 func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
-	t.Parallel()
 	type fields struct {
 		Records           map[string]dns.RecordResponse
 		RegionalHostnames []regionalHostname
@@ -1155,7 +1160,6 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			records := tt.fields.Records
 			if records == nil {
 				records = map[string]dns.RecordResponse{}

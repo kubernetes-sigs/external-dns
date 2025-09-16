@@ -685,7 +685,6 @@ func TestPodSource(t *testing.T) {
 }
 
 func TestPodSourceLogs(t *testing.T) {
-	t.Parallel()
 	// Generate unique pod names to avoid log conflicts across parallel tests.
 	// Since logs are globally shared, using the same pod names could cause
 	// false positives in unexpectedDebugLogs assertions.

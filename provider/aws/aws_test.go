@@ -17,7 +17,6 @@ limitations under the License.
 package aws
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math"
@@ -2200,11 +2199,10 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 }
 
 func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	host := "foo.elb.eastwest-1.amazonaws.com"
 	_ = canonicalHostedZone(host)
-	assert.Containsf(t, buf.String(), "Could not find canonical hosted zone for domain", host)
+	testutils.TestHelperLogContainsWithLogLevel(fmt.Sprintf("Could not find canonical hosted zone for domain %s.", host), log.WarnLevel, hook, t)
 }
 
 func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
