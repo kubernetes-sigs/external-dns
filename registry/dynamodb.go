@@ -21,6 +21,7 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -54,6 +55,8 @@ type DynamoDBRegistry struct {
 	// For migration from TXT registry
 	mapper              nameMapper
 	wildcardReplacement string
+	apexReplacement     string
+	apexDomains         []string
 	managedRecordTypes  []string
 	excludeRecordTypes  []string
 	txtEncryptAESKey    []byte
@@ -74,7 +77,7 @@ const dynamodbAttributeMigrate = "dynamodb/needs-migration"
 var dynamodbMaxBatchSize uint8 = 25
 
 // NewDynamoDBRegistry returns a new DynamoDBRegistry object.
-func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
+func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, txtApexReplacement string, txtApexDomains []string, managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -94,7 +97,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, txtApexReplacement, txtApexDomains)
 
 	return &DynamoDBRegistry{
 		provider:            provider,
@@ -186,6 +189,12 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				dnsNameSplit[0] = im.wildcardReplacement
 			}
 			dnsName := strings.Join(dnsNameSplit, ".")
+
+			// If specified, replace the apex domain with some other subdomain
+			if im.apexReplacement != "" && slices.Contains(im.apexDomains, dnsName) {
+				dnsName = strings.Join([]string{im.apexReplacement, dnsName}, ".")
+			}
+
 			key := endpoint.EndpointKey{
 				DNSName:       dnsName,
 				SetIdentifier: ep.SetIdentifier,

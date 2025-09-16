@@ -158,6 +158,7 @@ type Config struct {
 	LogLevel                                      string
 	TXTCacheInterval                              time.Duration
 	TXTWildcardReplacement                        string
+	TXTApexReplacement                            string
 	ExoscaleEndpoint                              string
 	ExoscaleAPIKey                                string `secure:"yes"`
 	ExoscaleAPISecret                             string `secure:"yes"`
@@ -375,6 +376,7 @@ var defaultConfig = &Config{
 	TXTPrefix:                    "",
 	TXTSuffix:                    "",
 	TXTWildcardReplacement:       "",
+	TXTApexReplacement:           "",
 	UpdateEvents:                 false,
 	WebhookProviderReadTimeout:   5 * time.Second,
 	WebhookProviderURL:           "http://localhost:8888",
@@ -709,6 +711,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
+	app.Flag("txt-apex-replacement", "When using the TXT registry, a custom string that's used for TXT records corresponding to apex domains defined by domain-filter (optional)").Default(defaultConfig.TXTApexReplacement).StringVar(&cfg.TXTApexReplacement)
 	app.Flag("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)").BoolVar(&cfg.TXTEncryptEnabled)
 	app.Flag("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)").Default(defaultConfig.TXTEncryptAESKey).StringVar(&cfg.TXTEncryptAESKey)
 	app.Flag("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)").Default(cfg.AWSDynamoDBRegion).StringVar(&cfg.AWSDynamoDBRegion)

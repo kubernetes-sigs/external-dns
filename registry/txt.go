@@ -19,6 +19,7 @@ package registry
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"strings"
 	"time"
@@ -52,6 +53,12 @@ type TXTRegistry struct {
 	// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
 	// having a '*' appear (not as the first character) - see https://tools.ietf.org/html/rfc1034#section-4.3.3
 	wildcardReplacement string
+
+	// optional string to use instead of the apex domain, to avoid invalid TXT
+	// ownership records such as `a-example.com`, instead replacing them with
+	// `a-replacement.example.com`
+	apexReplacement string
+	apexDomains     []string
 
 	managedRecordTypes []string
 	excludeRecordTypes []string
@@ -112,8 +119,8 @@ func (im *existingTXTs) reset() {
 // generate new format TXT records, otherwise it generates both old and new formats for
 // backwards compatibility.
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
-	cacheInterval time.Duration, txtWildcardReplacement string,
-	managedRecordTypes, excludeRecordTypes []string,
+	cacheInterval time.Duration, txtWildcardReplacement string, txtApexReplacement string,
+	txtApexDomains []string, managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
@@ -136,7 +143,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, txtApexReplacement, txtApexDomains)
 
 	return &TXTRegistry{
 		provider:            provider,
@@ -144,6 +151,8 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		mapper:              mapper,
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
+		apexReplacement:     txtApexReplacement,
+		apexDomains:         txtApexDomains,
 		managedRecordTypes:  managedRecordTypes,
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
@@ -229,6 +238,12 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			dnsNameSplit[0] = im.wildcardReplacement
 		}
 		dnsName := strings.Join(dnsNameSplit, ".")
+
+		// If specified, replace the apex domain with some other subdomain
+		if im.apexReplacement != "" && slices.Contains(im.apexDomains, dnsName) {
+			dnsName = strings.Join([]string{im.apexReplacement, dnsName}, ".")
+		}
+
 		key := endpoint.EndpointKey{
 			DNSName:       dnsName,
 			RecordType:    ep.RecordType,
@@ -386,12 +401,20 @@ type affixNameMapper struct {
 	prefix              string
 	suffix              string
 	wildcardReplacement string
+	apexReplacement     string
+	apexDomains         []string
 }
 
 var _ nameMapper = affixNameMapper{}
 
-func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMapper {
-	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}
+func newaffixNameMapper(prefix, suffix, wildcardReplacement, apexReplacement string, apexDomains []string) affixNameMapper {
+	return affixNameMapper{
+		prefix:              strings.ToLower(prefix),
+		suffix:              strings.ToLower(suffix),
+		wildcardReplacement: strings.ToLower(wildcardReplacement),
+		apexReplacement:     strings.ToLower(apexReplacement),
+		apexDomains:         apexDomains,
+	}
 }
 
 // extractRecordTypeDefaultPosition extracts record type from the default position
@@ -508,15 +531,18 @@ func (pr affixNameMapper) toTXTName(endpointDNSName, recordType string) string {
 		DNSName[0] = pr.wildcardReplacement
 	}
 
+	// If specified, prepend the apex replacement as the subdomain of apex domain
+	if pr.apexReplacement != "" && slices.Contains(pr.apexDomains, strings.Join(DNSName, ".")) {
+		DNSName = append([]string{pr.apexReplacement}, DNSName...)
+	}
+
 	if !pr.recordTypeInAffix() {
 		DNSName[0] = recordT + DNSName[0]
 	}
 
-	if len(DNSName) < 2 {
-		return prefix + DNSName[0] + suffix
-	}
+	DNSName[0] = prefix + DNSName[0] + suffix
 
-	return prefix + DNSName[0] + suffix + "." + DNSName[1]
+	return strings.Join(DNSName, ".")
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
