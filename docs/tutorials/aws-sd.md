@@ -74,7 +74,7 @@ Using tags, your `servicediscovery` policy can become:
         "ForAllValues:StringLike": {
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
           "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
-          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX", "TXT"]
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "CNAME", "MX", "TXT"]
         }
       }
     },

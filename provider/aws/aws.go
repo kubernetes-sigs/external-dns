@@ -759,10 +759,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 					firstRoute53Error = err
 				}
 
-				if hasTXTRecordChange(b) {
-					log.Warnf("Route53 TXT change failed: %v", err)
-				}
-
 				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
 
 				if len(changesByOwnership) > 1 {
@@ -779,9 +775,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 							failedUpdate = true
 							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
-							if hasTXTRecordChange(changes) {
-								log.Warnf("Route53 TXT change failed: %v", err)
-							}
 							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
 						} else {
 							successfulChanges = successfulChanges + len(changes)
@@ -829,15 +822,6 @@ func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*
 	}
 
 	return changes
-}
-
-func hasTXTRecordChange(cs Route53Changes) bool {
-	for _, c := range cs {
-		if c != nil && c.ResourceRecordSet != nil && c.ResourceRecordSet.Type == route53types.RRTypeTxt {
-			return true
-		}
-	}
-	return false
 }
 
 // AdjustEndpoints modifies the provided endpoints (coming from various sources) to match

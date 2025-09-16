@@ -59,7 +59,7 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
         "ForAllValues:StringLike": {
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
           "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
-          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX", "TXT"]
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "CNAME", "MX", "TXT"]
         }
       }
     },

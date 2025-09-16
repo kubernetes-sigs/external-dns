@@ -2224,54 +2224,6 @@ func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
 	}
 }
 
-func TestHasTXTRecordChange(t *testing.T) {
-	// change set without TXT
-	aChange := &Route53Change{Change: route53types.Change{Action: route53types.ChangeActionCreate, ResourceRecordSet: &route53types.ResourceRecordSet{Type: route53types.RRTypeA, Name: aws.String("a.example.org.")}}}
-	assert.False(t, hasTXTRecordChange(Route53Changes{aChange}))
-
-	// change set with TXT
-	txtChange := &Route53Change{Change: route53types.Change{Action: route53types.ChangeActionCreate, ResourceRecordSet: &route53types.ResourceRecordSet{Type: route53types.RRTypeTxt, Name: aws.String("a.example.org.")}}}
-	assert.True(t, hasTXTRecordChange(Route53Changes{aChange, txtChange}))
-}
-
-// Ensures we log a generic warning when a change batch that includes TXT records fails.
-func TestSubmitChangesLogsTXTFailureWarning(t *testing.T) {
-	provider, client := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
-
-	// Mock Route53 ChangeResourceRecordSets to always fail
-	client.MockMethod("ChangeResourceRecordSets", mock.Anything).Return((*route53.ChangeResourceRecordSetsOutput)(nil), fmt.Errorf("denied"))
-
-	// Prepare a plan that includes TXT records (to trigger the warning)
-	// Include two names to also exercise the per-change fallback path
-	create := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("warn-a.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
-		endpoint.NewEndpoint("warn-a.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, "\"owner=extdns\""),
-		endpoint.NewEndpoint("warn-b.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.5"),
-		endpoint.NewEndpoint("warn-b.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, "\"owner=extdns\""),
-	}
-
-	changes := &plan.Changes{Create: create}
-
-	// Capture logs
-	var buf bytes.Buffer
-	prevOut := log.StandardLogger().Out
-	prevLevel := log.GetLevel()
-	log.SetOutput(&buf)
-	log.SetLevel(log.DebugLevel)
-	t.Cleanup(func() {
-		log.SetOutput(prevOut)
-		log.SetLevel(prevLevel)
-	})
-
-	// Execute
-	ctx := context.Background()
-	err := provider.ApplyChanges(ctx, changes)
-	require.Error(t, err) // submission fails due to mocked error
-
-	out := buf.String()
-	assert.Contains(t, out, "Route53 TXT change failed", "expected generic TXT failure warning in logs")
-}
-
 // Ensures submitChanges returns the first underlying error when any zone submit fails.
 func TestSubmitChangesReturnsFirstError(t *testing.T) {
 	provider, client := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
