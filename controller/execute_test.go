@@ -394,6 +394,17 @@ func getRandomPort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
+func sendTerminationSignal() error {
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		return err
+	}
+	if runtime.GOOS == "windows" {
+		return proc.Signal(os.Interrupt)
+	}
+	return proc.Signal(syscall.SIGTERM)
+}
+
 func TestServeMetrics(t *testing.T) {
 	// Use a fresh DefaultServeMux for this test (do not restore to avoid data race with server goroutine)
 	http.DefaultServeMux = http.NewServeMux()
@@ -440,19 +451,19 @@ func TestHandleSigterm(t *testing.T) {
 
 	go handleSigterm(cancel)
 
-	// Simulate sending a SIGTERM signal
+	// Simulate sending a termination signal
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
+	signal.Notify(sigChan, terminationSignals()...)
 	defer signal.Stop(sigChan)
-	err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	err := sendTerminationSignal()
 	assert.NoError(t, err)
 
 	// Wait for cancel to be called
 	select {
 	case <-cancelCalled:
-		assert.Contains(t, logOutput.String(), "Received SIGTERM. Terminating...")
+		assert.Contains(t, logOutput.String(), "Received termination signal. Terminating...")
 	case sig := <-sigChan:
-		assert.Equal(t, syscall.SIGTERM, sig)
+		assert.Contains(t, terminationSignals(), sig)
 	case <-time.After(1 * time.Second):
 		t.Fatal("cancel function was not called")
 	}
@@ -782,14 +793,14 @@ func TestExecuteDefaultRunWithEventsStopsOnSigterm(t *testing.T) {
 	// Give goroutines time to start
 	time.Sleep(50 * time.Millisecond)
 
-	// Send SIGTERM to trigger handleSigterm(cancel)
-	_ = syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	// Send termination signal to trigger handleSigterm(cancel)
+	require.NoError(t, sendTerminationSignal())
 
 	select {
 	case <-done:
 		// ok
 	case <-time.After(2 * time.Second):
-		t.Fatal("Execute did not stop after SIGTERM")
+		t.Fatal("Execute did not stop after termination signal")
 	}
 }
 

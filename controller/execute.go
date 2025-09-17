@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -79,7 +80,15 @@ var sigtermSignals chan os.Signal
 
 func init() {
 	sigtermSignals = make(chan os.Signal, 1)
-	signal.Notify(sigtermSignals, syscall.SIGTERM)
+	signal.Notify(sigtermSignals, terminationSignals()...)
+}
+
+func terminationSignals() []os.Signal {
+	signals := []os.Signal{os.Interrupt}
+	if runtime.GOOS != "windows" {
+		signals = append(signals, syscall.SIGTERM)
+	}
+	return signals
 }
 
 func Execute() {
@@ -112,7 +121,7 @@ func Execute() {
 	// Connect global SIGTERM capture to this run's context cancellation.
 	go func() {
 		<-sigtermSignals
-		log.Info("Received SIGTERM. Terminating...")
+		log.Info("Received termination signal. Terminating...")
 		cancel()
 	}()
 
@@ -484,13 +493,13 @@ func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
 	}
 }
 
-// handleSigterm listens for a SIGTERM signal and triggers the provided cancel function
+// handleSigterm listens for termination signals and triggers the provided cancel function
 // to gracefully terminate the application. It logs a message when the signal is received.
 func handleSigterm(cancel func()) {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGTERM)
+	signal.Notify(signals, terminationSignals()...)
 	<-signals
-	log.Info("Received SIGTERM. Terminating...")
+	log.Info("Received termination signal. Terminating...")
 	cancel()
 	signal.Stop(signals)
 }
