@@ -185,11 +185,10 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
-
+			isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
+			isTXT := ep.RecordType == endpoint.RecordTypeTXT
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
-				isTXT := ep.RecordType == endpoint.RecordTypeTXT
 				hasDot := strings.HasSuffix(target, ".")
 				// Skip dot validation for TXT records as they can contain arbitrary text
 				if !isTXT && ((isNAPTR && !hasDot) || (!isNAPTR && hasDot)) {

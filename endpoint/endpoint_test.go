@@ -1038,7 +1038,6 @@ func TestEndpoint_WithMinTTL(t *testing.T) {
 	}
 }
 
-
 // TestNewEndpointWithTTLPreservesDotsInTXTRecords tests that trailing dots are preserved in TXT records
 func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	// TXT records should preserve trailing dots (and any arbitrary text)

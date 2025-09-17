@@ -258,9 +258,10 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	for idx, target := range targets {
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
 		// TXT records can contain arbitrary text including multiple dots
-		if recordType == RecordTypeTXT || recordType == RecordTypeNAPTR {
+		switch recordType {
+		case RecordTypeTXT, RecordTypeNAPTR:
 			cleanTargets[idx] = target
-		} else {
+		default:
 			cleanTargets[idx] = strings.TrimSuffix(target, ".")
 		}
 	}
