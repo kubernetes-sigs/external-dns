@@ -19,7 +19,6 @@ package aws
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"net"
