@@ -21,7 +21,6 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -53,13 +52,11 @@ type DynamoDBRegistry struct {
 	table       string
 
 	// For migration from TXT registry
-	mapper              nameMapper
-	wildcardReplacement string
-	apexReplacement     string
-	apexDomains         []string
-	managedRecordTypes  []string
-	excludeRecordTypes  []string
-	txtEncryptAESKey    []byte
+	mapper             nameMapper
+	nameReplacer       *nameReplacer
+	managedRecordTypes []string
+	excludeRecordTypes []string
+	txtEncryptAESKey   []byte
 
 	// cache the dynamodb records owned by us.
 	labels         map[endpoint.EndpointKey]endpoint.Labels
@@ -97,19 +94,21 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, txtApexReplacement, txtApexDomains)
+	replacer := newNameReplacer(txtWildcardReplacement, txtApexReplacement, txtApexDomains)
+
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, replacer)
 
 	return &DynamoDBRegistry{
-		provider:            provider,
-		ownerID:             ownerID,
-		dynamodbAPI:         dynamodbAPI,
-		table:               table,
-		mapper:              mapper,
-		wildcardReplacement: txtWildcardReplacement,
-		managedRecordTypes:  managedRecordTypes,
-		excludeRecordTypes:  excludeRecordTypes,
-		txtEncryptAESKey:    txtEncryptAESKey,
-		cacheInterval:       cacheInterval,
+		provider:           provider,
+		ownerID:            ownerID,
+		dynamodbAPI:        dynamodbAPI,
+		table:              table,
+		mapper:             mapper,
+		nameReplacer:       replacer,
+		managedRecordTypes: managedRecordTypes,
+		excludeRecordTypes: excludeRecordTypes,
+		txtEncryptAESKey:   txtEncryptAESKey,
+		cacheInterval:      cacheInterval,
 	}, nil
 }
 
@@ -183,17 +182,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				continue
 			}
 
-			dnsNameSplit := strings.Split(ep.DNSName, ".")
-			// If specified, replace a leading asterisk in the generated txt record name with some other string
-			if im.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
-				dnsNameSplit[0] = im.wildcardReplacement
-			}
-			dnsName := strings.Join(dnsNameSplit, ".")
-
-			// If specified, replace the apex domain with some other subdomain
-			if im.apexReplacement != "" && slices.Contains(im.apexDomains, dnsName) {
-				dnsName = strings.Join([]string{im.apexReplacement, dnsName}, ".")
-			}
+			dnsName := im.nameReplacer.replace(ep.DNSName)
 
 			key := endpoint.EndpointKey{
 				DNSName:       dnsName,

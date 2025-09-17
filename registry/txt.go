@@ -49,16 +49,8 @@ type TXTRegistry struct {
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
 
-	// optional string to use to replace the asterisk in wildcard entries - without using this,
-	// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
-	// having a '*' appear (not as the first character) - see https://tools.ietf.org/html/rfc1034#section-4.3.3
-	wildcardReplacement string
-
-	// optional string to use instead of the apex domain, to avoid invalid TXT
-	// ownership records such as `a-example.com`, instead replacing them with
-	// `a-replacement.example.com`
-	apexReplacement string
-	apexDomains     []string
+	// used to replace dns names that might cause compatibility issues in TXT records
+	nameReplacer *nameReplacer
 
 	managedRecordTypes []string
 	excludeRecordTypes []string
@@ -143,21 +135,21 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, txtApexReplacement, txtApexDomains)
+	replacer := newNameReplacer(txtWildcardReplacement, txtApexReplacement, txtApexDomains)
+
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, replacer)
 
 	return &TXTRegistry{
-		provider:            provider,
-		ownerID:             ownerID,
-		mapper:              mapper,
-		cacheInterval:       cacheInterval,
-		wildcardReplacement: txtWildcardReplacement,
-		apexReplacement:     txtApexReplacement,
-		apexDomains:         txtApexDomains,
-		managedRecordTypes:  managedRecordTypes,
-		excludeRecordTypes:  excludeRecordTypes,
-		txtEncryptEnabled:   txtEncryptEnabled,
-		txtEncryptAESKey:    txtEncryptAESKey,
-		existingTXTs:        newExistingTXTs(),
+		provider:           provider,
+		ownerID:            ownerID,
+		mapper:             mapper,
+		cacheInterval:      cacheInterval,
+		nameReplacer:       replacer,
+		managedRecordTypes: managedRecordTypes,
+		excludeRecordTypes: excludeRecordTypes,
+		txtEncryptEnabled:  txtEncryptEnabled,
+		txtEncryptAESKey:   txtEncryptAESKey,
+		existingTXTs:       newExistingTXTs(),
 	}, nil
 }
 
@@ -232,17 +224,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if ep.Labels == nil {
 			ep.Labels = endpoint.NewLabels()
 		}
-		dnsNameSplit := strings.Split(ep.DNSName, ".")
-		// If specified, replace a leading asterisk in the generated txt record name with some other string
-		if im.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
-			dnsNameSplit[0] = im.wildcardReplacement
-		}
-		dnsName := strings.Join(dnsNameSplit, ".")
 
-		// If specified, replace the apex domain with some other subdomain
-		if im.apexReplacement != "" && slices.Contains(im.apexDomains, dnsName) {
-			dnsName = strings.Join([]string{im.apexReplacement, dnsName}, ".")
-		}
+		dnsName := im.nameReplacer.replace(ep.DNSName)
 
 		key := endpoint.EndpointKey{
 			DNSName:       dnsName,
@@ -398,22 +381,18 @@ type nameMapper interface {
 }
 
 type affixNameMapper struct {
-	prefix              string
-	suffix              string
-	wildcardReplacement string
-	apexReplacement     string
-	apexDomains         []string
+	prefix   string
+	suffix   string
+	replacer *nameReplacer
 }
 
 var _ nameMapper = affixNameMapper{}
 
-func newaffixNameMapper(prefix, suffix, wildcardReplacement, apexReplacement string, apexDomains []string) affixNameMapper {
+func newaffixNameMapper(prefix, suffix string, replacer *nameReplacer) affixNameMapper {
 	return affixNameMapper{
-		prefix:              strings.ToLower(prefix),
-		suffix:              strings.ToLower(suffix),
-		wildcardReplacement: strings.ToLower(wildcardReplacement),
-		apexReplacement:     strings.ToLower(apexReplacement),
-		apexDomains:         apexDomains,
+		prefix:   strings.ToLower(prefix),
+		suffix:   strings.ToLower(suffix),
+		replacer: replacer,
 	}
 }
 
@@ -519,22 +498,16 @@ func (pr affixNameMapper) normalizeAffixTemplate(afix, recordType string) string
 }
 
 func (pr affixNameMapper) toTXTName(endpointDNSName, recordType string) string {
+	if pr.replacer != nil {
+		endpointDNSName = pr.replacer.replace(endpointDNSName)
+	}
+
 	DNSName := strings.SplitN(endpointDNSName, ".", 2)
 	recordType = strings.ToLower(recordType)
 	recordT := recordType + "-"
 
 	prefix := pr.normalizeAffixTemplate(pr.prefix, recordType)
 	suffix := pr.normalizeAffixTemplate(pr.suffix, recordType)
-
-	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if pr.wildcardReplacement != "" && DNSName[0] == "*" {
-		DNSName[0] = pr.wildcardReplacement
-	}
-
-	// If specified, prepend the apex replacement as the subdomain of apex domain
-	if pr.apexReplacement != "" && slices.Contains(pr.apexDomains, strings.Join(DNSName, ".")) {
-		DNSName = append([]string{pr.apexReplacement}, DNSName...)
-	}
 
 	if !pr.recordTypeInAffix() {
 		DNSName[0] = recordT + DNSName[0]
@@ -563,4 +536,48 @@ func (im *TXTRegistry) removeFromCache(ep *endpoint.Endpoint) {
 			return
 		}
 	}
+}
+
+// nameReplacer is used to perform replacements for dns names that might cause
+// compatibility issues in TXT records.
+//
+// Without using wildcard replacement,
+// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
+// having a '*' appear (not as the first character) - see https://tools.ietf.org/html/rfc1034#section-4.3.3
+//
+// Without using apex replacement, TXT records such as `a-example.com` could
+// attempt to be created for the owned domain `example.com`. Apex replacement
+// will use a specified subdomain instead the apex domain, such as
+// `a-replacement.example.com`.
+type nameReplacer struct {
+	wildcardReplacement string
+	apexReplacement     string
+	apexDomains         []string
+}
+
+func newNameReplacer(wildcardReplacement, apexReplacement string, apexDomains []string) *nameReplacer {
+	apexDomainsLower := make([]string, len(apexDomains))
+	for i, v := range apexDomains {
+		apexDomainsLower[i] = strings.ToLower(v)
+	}
+
+	return &nameReplacer{
+		wildcardReplacement: strings.ToLower(wildcardReplacement),
+		apexReplacement:     strings.ToLower(apexReplacement),
+		apexDomains:         apexDomainsLower,
+	}
+}
+
+func (nr nameReplacer) replace(dnsName string) string {
+	dnsNameSplit := strings.Split(dnsName, ".")
+	if nr.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
+		dnsNameSplit[0] = nr.wildcardReplacement
+		dnsName = strings.Join(dnsNameSplit, ".")
+	}
+
+	if nr.apexReplacement != "" && slices.Contains(nr.apexDomains, dnsName) {
+		dnsName = strings.Join([]string{nr.apexReplacement, dnsName}, ".")
+	}
+
+	return dnsName
 }
