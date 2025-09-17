@@ -1479,60 +1479,139 @@ func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
 }
 
 func TestProviderPropertiesIdempotency(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
-		Name                     string
-		ProviderProxiedByDefault bool
-		RecordsAreProxied        bool
-		ShouldBeUpdated          bool
+		Name                  string
+		SetupProvider         func(*CloudFlareProvider)
+		SetupRecord           func(*dns.RecordResponse)
+		CustomHostnames       []cloudflarev0.CustomHostname
+		RegionKey             string
+		ShouldBeUpdated       bool
+		PropertyKey           string
+		ExpectPropertyPresent bool
+		ExpectPropertyValue   string
 	}{
 		{
-			Name:                     "ProxyDefault: false, ShouldBeProxied: false, ExpectUpdates: false",
-			ProviderProxiedByDefault: false,
-			RecordsAreProxied:        false,
-			ShouldBeUpdated:          false,
+			Name:            "No custom properties, ExpectUpdates: false",
+			SetupProvider:   func(p *CloudFlareProvider) {},
+			SetupRecord:     func(r *dns.RecordResponse) {},
+			ShouldBeUpdated: false,
+		},
+		// Proxied tests
+		{
+			Name:            "ProxiedByDefault: true, ProxiedRecord: true, ExpectUpdates: false",
+			SetupProvider:   func(p *CloudFlareProvider) { p.proxiedByDefault = true },
+			SetupRecord:     func(r *dns.RecordResponse) { r.Proxied = true },
+			ShouldBeUpdated: false,
 		},
 		{
-			Name:                     "ProxyDefault: true, ShouldBeProxied: true, ExpectUpdates: false",
-			ProviderProxiedByDefault: true,
-			RecordsAreProxied:        true,
-			ShouldBeUpdated:          false,
+			Name:                "ProxiedByDefault: true, ProxiedRecord: false, ExpectUpdates: true",
+			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = true },
+			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = false },
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareProxiedKey,
+			ExpectPropertyValue: "true",
 		},
 		{
-			Name:                     "ProxyDefault: true, ShouldBeProxied: false, ExpectUpdates: true",
-			ProviderProxiedByDefault: true,
-			RecordsAreProxied:        false,
-			ShouldBeUpdated:          true,
+			Name:                "ProxiedByDefault: false, ProxiedRecord: true, ExpectUpdates: true",
+			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = false },
+			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = true },
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareProxiedKey,
+			ExpectPropertyValue: "false",
+		},
+		// Comment tests
+		{
+			Name:            "DefaultComment: 'foo', RecordComment: 'foo', ExpectUpdates: false",
+			SetupProvider:   func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
+			SetupRecord:     func(r *dns.RecordResponse) { r.Comment = "foo" },
+			ShouldBeUpdated: false,
 		},
 		{
-			Name:                     "ProxyDefault: false, ShouldBeProxied: true, ExpectUpdates: true",
-			ProviderProxiedByDefault: false,
-			RecordsAreProxied:        true,
-			ShouldBeUpdated:          true,
+			Name:                  "DefaultComment: '', RecordComment: none, ExpectUpdates: true",
+			SetupProvider:         func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "" },
+			SetupRecord:           func(r *dns.RecordResponse) { r.Comment = "foo" },
+			ShouldBeUpdated:       true,
+			PropertyKey:           annotations.CloudflareRecordCommentKey,
+			ExpectPropertyPresent: false,
 		},
+		{
+			Name:                "DefaultComment: 'foo', RecordComment: 'foo', ExpectUpdates: true",
+			SetupProvider:       func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
+			SetupRecord:         func(r *dns.RecordResponse) { r.Comment = "" },
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareRecordCommentKey,
+			ExpectPropertyValue: "foo",
+		},
+		// Regional Hostname tests
+		{
+			Name: "DefaultRegionKey: 'us', RecordRegionKey: 'us', ExpectUpdates: false",
+			SetupProvider: func(p *CloudFlareProvider) {
+				p.RegionalServicesConfig.Enabled = true
+				p.RegionalServicesConfig.RegionKey = "us"
+			},
+			RegionKey:       "us",
+			ShouldBeUpdated: false,
+		},
+		{
+			Name: "DefaultRegionKey: 'us', RecordRegionKey: 'us', ExpectUpdates: false",
+			SetupProvider: func(p *CloudFlareProvider) {
+				p.RegionalServicesConfig.Enabled = true
+				p.RegionalServicesConfig.RegionKey = "us"
+			},
+			RegionKey:           "eu",
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareRegionKey,
+			ExpectPropertyValue: "us",
+		},
+		// Custom Hostname tests
+		// TODO: add tests for custom hostnames when properly supported
 	}
 
 	for _, test := range testCases {
 		t.Run(test.Name, func(t *testing.T) {
+			t.Parallel()
+
+			record := dns.RecordResponse{
+				ID:      "1234567890",
+				Name:    "foobar.bar.com",
+				Type:    endpoint.RecordTypeA,
+				TTL:     120,
+				Content: "1.2.3.4",
+			}
+			if test.SetupRecord != nil {
+				test.SetupRecord(&record)
+			}
 			client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
-				"001": {
-					{
-						ID:      "1234567890",
-						Name:    "foobar.bar.com",
-						Type:    endpoint.RecordTypeA,
-						TTL:     120,
-						Content: "1.2.3.4",
-						Proxied: test.RecordsAreProxied,
-					},
-				},
+				"001": {record},
 			})
 
-			provider := &CloudFlareProvider{
-				Client:           client,
-				proxiedByDefault: test.ProviderProxiedByDefault,
+			if len(test.CustomHostnames) > 0 {
+				customHostnames := make([]cloudflarev0.CustomHostname, 0, len(test.CustomHostnames))
+				for _, ch := range test.CustomHostnames {
+					ch.CustomOriginServer = record.Name
+					customHostnames = append(customHostnames, ch)
+				}
+				client.customHostnames = map[string][]cloudflarev0.CustomHostname{
+					"001": customHostnames,
+				}
 			}
-			ctx := context.Background()
 
-			current, err := provider.Records(ctx)
+			if test.RegionKey != "" {
+				client.regionalHostnames = map[string][]regionalHostname{
+					"001": {{hostname: record.Name, regionKey: test.RegionKey}},
+				}
+			}
+
+			provider := &CloudFlareProvider{
+				Client: client,
+			}
+			if test.SetupProvider != nil {
+				test.SetupProvider(provider)
+			}
+
+			current, err := provider.Records(t.Context())
 			if err != nil {
 				t.Errorf("should not fail, %s", err)
 			}
@@ -1561,19 +1640,31 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			}
 
 			plan = *plan.Calculate()
-			assert.NotNil(t, plan.Changes, "should have plan")
-			if plan.Changes == nil {
-				return
-			}
+			require.NotNil(t, plan.Changes, "should have plan")
 			assert.Empty(t, plan.Changes.Create, "should not have creates")
 			assert.Empty(t, plan.Changes.Delete, "should not have deletes")
 
 			if test.ShouldBeUpdated {
-				assert.Len(t, plan.Changes.UpdateNew, 1, "should not have new updates")
-				assert.Len(t, plan.Changes.UpdateOld, 1, "should not have old updates")
+				assert.Len(t, plan.Changes.UpdateOld, 1, "should have old updates")
+				require.Len(t, plan.Changes.UpdateNew, 1, "should have new updates")
+				if test.PropertyKey != "" {
+					value, ok := plan.Changes.UpdateNew[0].GetProviderSpecificProperty(test.PropertyKey)
+					if test.ExpectPropertyPresent || test.ExpectPropertyValue != "" {
+						assert.Truef(t, ok, "should have property %s", test.PropertyKey)
+						assert.Equal(t, test.ExpectPropertyValue, value)
+					} else {
+						assert.Falsef(t, ok, "should not have property %s", test.PropertyKey)
+					}
+				} else {
+					assert.Empty(t, test.ExpectPropertyValue, "test misconfigured, should not expect property value if no property key set")
+					assert.False(t, test.ExpectPropertyPresent, "test misconfigured, should not expect property presence if no property key set")
+				}
 			} else {
 				assert.Empty(t, plan.Changes.UpdateNew, "should not have new updates")
 				assert.Empty(t, plan.Changes.UpdateOld, "should not have old updates")
+				assert.Empty(t, test.PropertyKey, "test misconfigured, should not expect property if no update expected")
+				assert.Empty(t, test.ExpectPropertyValue, "test misconfigured, should not expect property value if no update expected")
+				assert.False(t, test.ExpectPropertyPresent, "test misconfigured, should not expect property presence if no update expected")
 			}
 		})
 	}

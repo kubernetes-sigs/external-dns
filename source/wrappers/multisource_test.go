@@ -65,13 +65,13 @@ func testMultiSourceEndpoints(t *testing.T) {
 		},
 		{
 			"single non-empty child source returns child's endpoints",
-			[][]*endpoint.Endpoint{{foo}},
-			[]*endpoint.Endpoint{foo},
+			[][]*endpoint.Endpoint{{foo.DeepCopy()}},
+			[]*endpoint.Endpoint{foo.DeepCopy()},
 		},
 		{
 			"multiple non-empty child sources returns merged children's endpoints",
-			[][]*endpoint.Endpoint{{foo}, {bar}},
-			[]*endpoint.Endpoint{foo, bar},
+			[][]*endpoint.Endpoint{{foo.DeepCopy()}, {bar.DeepCopy()}},
+			[]*endpoint.Endpoint{foo.DeepCopy(), bar.DeepCopy()},
 		},
 	} {
 
