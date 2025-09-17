@@ -31,9 +31,9 @@
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
 | `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional, default: false) |
 | `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
-| `--gateway-label-filter=GATEWAY-LABEL-FILTER` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
-| `--gateway-name=GATEWAY-NAME` | Limit Gateways of Route endpoints to a specific name (default: all names) |
-| `--gateway-namespace=GATEWAY-NAMESPACE` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
+| `--gateway-label-filter=""` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
+| `--gateway-name=""` | Limit Gateways of Route endpoints to a specific name (default: all names) |
+| `--gateway-namespace=""` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
 | `--[no-]ignore-hostname-annotation` | Ignore hostname annotation when generating DNS names, valid only when --fqdn-template is set (default: false) |
 | `--[no-]ignore-ingress-rules-spec` | Ignore the spec.rules section in Ingress resources (default: false) |
 | `--[no-]ignore-ingress-tls-spec` | Ignore the spec.tls section in Ingress resources (default: false) |
@@ -43,17 +43,15 @@
 | `--managed-record-types=A...` | Record types to manage; specify multiple times to include many; (default: A,AAAA,CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT) |
 | `--namespace=""` | Limit resources queried for endpoints to a specific namespace (default: all namespaces) |
 | `--nat64-networks=NAT64-NETWORKS` | Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional) |
-| `--openshift-router-name=OPENSHIFT-ROUTER-NAME` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
+| `--openshift-router-name=""` | if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record. |
 | `--pod-source-domain=""` | Domain to use for pods records (optional) |
 | `--[no-]publish-host-ip` | Allow external-dns to publish host-ip for headless services (optional) |
 | `--[no-]publish-internal-services` | Allow external-dns to publish DNS records for ClusterIP services (optional) |
 | `--service-type-filter=SERVICE-TYPE-FILTER` | The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName) |
-| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
 | `--target-net-filter=TARGET-NET-FILTER` | Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional) |
 | `--[no-]traefik-enable-legacy` | Enable legacy listeners on Resources under the traefik.containo.us API Group |
 | `--[no-]traefik-disable-new` | Disable listeners on Resources under the traefik.io API Group |
 | `--events-emit=EVENTS-EMIT` | Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError) |
-| `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook) |
 | `--provider-cache-time=0s` | The time to cache the DNS provider record list requests. |
 | `--domain-filter=` | Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional) |
 | `--exclude-domains=` | Exclude subdomains (optional) |
@@ -95,7 +93,7 @@
 | `--cloudflare-custom-hostnames-certificate-authority=none` | When using the Cloudflare provider with the Custom Hostnames, specify which Certificate Authority will be used. A value of none indicates no Certificate Authority will be sent to the Cloudflare API (default: none, options: google, ssl_com, lets_encrypt, none) |
 | `--cloudflare-dns-records-per-page=100` | When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100) |
 | `--[no-]cloudflare-regional-services` | When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled) |
-| `--cloudflare-region-key=CLOUDFLARE-REGION-KEY` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
+| `--cloudflare-region-key=""` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
@@ -105,7 +103,7 @@
 | `--akamai-edgerc-path=""` | When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified) |
 | `--akamai-edgerc-section=""` | When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified) |
 | `--oci-config-file="/etc/kubernetes/oci.yaml"` | When using the OCI provider, specify the OCI configuration file (required when --provider=oci |
-| `--oci-compartment-ocid=OCI-COMPARTMENT-OCID` | When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication. |
+| `--oci-compartment-ocid=""` | When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication. |
 | `--oci-zone-scope=GLOBAL` | When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both. |
 | `--[no-]oci-auth-instance-principal` | When using the OCI provider, specify whether OCI IAM instance principal authentication should be used (instead of key-based auth via the OCI config file). |
 | `--oci-zones-cache-duration=0s` | When using the OCI provider, set the zones list cache TTL (0s to disable). |
@@ -119,11 +117,11 @@
 | `--[no-]pdns-skip-tls-verify` | When using the PowerDNS/PDNS provider, disable verification of any TLS certificates (optional when --provider=pdns) (default: false) |
 | `--ns1-endpoint=""` | When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/) |
 | `--[no-]ns1-ignoressl` | When using the NS1 provider, specify whether to verify the SSL certificate (default: false) |
-| `--ns1-min-ttl=NS1-MIN-TTL` | Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this. |
+| `--ns1-min-ttl=0` | Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this. |
 | `--digitalocean-api-page-size=50` | Configure the page size used when querying the DigitalOcean API. |
 | `--godaddy-api-key=""` | When using the GoDaddy provider, specify the API Key (required when --provider=godaddy) |
 | `--godaddy-api-secret=""` | When using the GoDaddy provider, specify the API secret (required when --provider=godaddy) |
-| `--godaddy-api-ttl=GODADDY-API-TTL` | TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided. |
+| `--godaddy-api-ttl=0` | TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided. |
 | `--[no-]godaddy-api-ote` | When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy) |
 | `--tls-ca=""` | When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS) |
 | `--tls-client-cert=""` | When using TLS communication, the path to the certificate to present as a client (not required for TLS) |
@@ -174,7 +172,6 @@
 | `--[no-]once` | When enabled, exits the synchronization loop after the first iteration (default: disabled) |
 | `--[no-]dry-run` | When enabled, prints DNS record changes rather than actually performing them (default: disabled) |
 | `--[no-]events` | When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled) |
-| `--min-ttl=MIN-TTL` | Configure global TTL for records in duration format. This value is used when the TTL for a source is not set or set to 0. (optional; examples: 1m12s, 72s, 72) |
 | `--log-format=text` | The format in which log messages are printed (default: text, options: text, json) |
 | `--metrics-address=":7979"` | Specify where to serve the metrics and health check endpoint (default: :7979) |
 | `--log-level=info` | Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal) |
@@ -182,3 +179,5 @@
 | `--webhook-provider-read-timeout=5s` | The read timeout for the webhook provider in duration format (default: 5s) |
 | `--webhook-provider-write-timeout=10s` | The write timeout for the webhook provider in duration format (default: 10s) |
 | `--[no-]webhook-server` | When enabled, runs as a webhook server instead of a controller. (default: false). |
+| `--provider=provider` | The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook) |
+| `--source=source` | The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy) |
