@@ -711,7 +711,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	var failedZones []string
-	var firstRoute53Error error
 	debugLevel := log.DebugLevel
 	for z, cs := range changesByZone {
 		log := log.WithFields(log.Fields{
@@ -754,10 +753,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			client := p.clients[zones[z].profile]
 			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
 				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
-
-				if firstRoute53Error == nil {
-					firstRoute53Error = err
-				}
 
 				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
 
@@ -803,9 +798,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	if len(failedZones) > 0 {
-		if firstRoute53Error != nil {
-			return firstRoute53Error
-		}
 		return provider.NewSoftErrorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 

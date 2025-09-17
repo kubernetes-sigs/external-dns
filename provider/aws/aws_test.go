@@ -2224,25 +2224,6 @@ func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
 	}
 }
 
-// Ensures submitChanges returns the first underlying error when any zone submit fails.
-func TestSubmitChangesReturnsFirstError(t *testing.T) {
-	provider, client := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
-
-	expectedErr := errors.New("sentinel-error")
-	client.MockMethod("ChangeResourceRecordSets", mock.Anything).Return((*route53.ChangeResourceRecordSetsOutput)(nil), expectedErr)
-
-	create := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("firsterr.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
-	}
-	changes := &plan.Changes{Create: create}
-
-	// Execute
-	ctx := context.Background()
-	err := provider.ApplyChanges(ctx, changes)
-	require.Error(t, err)
-	require.ErrorIs(t, err, expectedErr)
-}
-
 func TestAWSSuitableZones(t *testing.T) {
 	zones := map[string]*profiledZone{
 		// Public domain
