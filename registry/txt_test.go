@@ -1242,7 +1242,7 @@ func TestCacheMethods(t *testing.T) {
 }
 
 func TestDropPrefix(t *testing.T) {
-	mapper := newaffixNameMapper("foo-%{record_type}-", "", "", "", []string{})
+	mapper := newaffixNameMapper("foo-%{record_type}-", "", nil)
 	expectedOutput := "test.example.com"
 
 	tests := []string{
@@ -1260,7 +1260,7 @@ func TestDropPrefix(t *testing.T) {
 }
 
 func TestDropSuffix(t *testing.T) {
-	mapper := newaffixNameMapper("", "-%{record_type}-foo", "", "", []string{})
+	mapper := newaffixNameMapper("", "-%{record_type}-foo", nil)
 	expectedOutput := "test.example.com"
 
 	tests := []string{
@@ -1325,105 +1325,105 @@ func TestToEndpointNameNewTXT(t *testing.T) {
 	}{
 		{
 			name:       "prefix",
-			mapper:     newaffixNameMapper("foo", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("foo", "", nil),
 			domain:     "example.com",
 			recordType: "A",
 			txtDomain:  "fooa-example.com",
 		},
 		{
 			name:       "suffix",
-			mapper:     newaffixNameMapper("", "foo", "", "", []string{}),
+			mapper:     newaffixNameMapper("", "foo", nil),
 			domain:     "example",
 			recordType: "AAAA",
 			txtDomain:  "aaaa-examplefoo",
 		},
 		{
 			name:       "suffix",
-			mapper:     newaffixNameMapper("", "foo", "", "", []string{}),
+			mapper:     newaffixNameMapper("", "foo", nil),
 			domain:     "example.com",
 			recordType: "AAAA",
 			txtDomain:  "aaaa-examplefoo.com",
 		},
 		{
 			name:       "prefix with dash",
-			mapper:     newaffixNameMapper("foo-", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("foo-", "", nil),
 			domain:     "example.com",
 			recordType: "A",
 			txtDomain:  "foo-a-example.com",
 		},
 		{
 			name:       "suffix with dash",
-			mapper:     newaffixNameMapper("", "-foo", "", "", []string{}),
+			mapper:     newaffixNameMapper("", "-foo", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "cname-example-foo.com",
 		},
 		{
 			name:       "prefix with dot",
-			mapper:     newaffixNameMapper("foo.", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("foo.", "", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "foo.cname-example.com",
 		},
 		{
 			name:       "suffix with dot",
-			mapper:     newaffixNameMapper("", ".foo", "", "", []string{}),
+			mapper:     newaffixNameMapper("", ".foo", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "cname-example.foo.com",
 		},
 		{
 			name:       "prefix with multiple dots",
-			mapper:     newaffixNameMapper("foo.bar.", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("foo.bar.", "", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "foo.bar.cname-example.com",
 		},
 		{
 			name:       "suffix with multiple dots",
-			mapper:     newaffixNameMapper("", ".foo.bar.test", "", "", []string{}),
+			mapper:     newaffixNameMapper("", ".foo.bar.test", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "cname-example.foo.bar.test.com",
 		},
 		{
 			name:       "templated prefix",
-			mapper:     newaffixNameMapper("%{record_type}-foo", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("%{record_type}-foo", "", nil),
 			domain:     "example.com",
 			recordType: "A",
 			txtDomain:  "a-fooexample.com",
 		},
 		{
 			name:       "templated suffix",
-			mapper:     newaffixNameMapper("", "foo-%{record_type}", "", "", []string{}),
+			mapper:     newaffixNameMapper("", "foo-%{record_type}", nil),
 			domain:     "example.com",
 			recordType: "A",
 			txtDomain:  "examplefoo-a.com",
 		},
 		{
 			name:       "templated prefix with dot",
-			mapper:     newaffixNameMapper("%{record_type}foo.", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("%{record_type}foo.", "", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "cnamefoo.example.com",
 		},
 		{
 			name:       "templated suffix with dot",
-			mapper:     newaffixNameMapper("", ".foo%{record_type}", "", "", []string{}),
+			mapper:     newaffixNameMapper("", ".foo%{record_type}", nil),
 			domain:     "example.com",
 			recordType: "A",
 			txtDomain:  "example.fooa.com",
 		},
 		{
 			name:       "templated prefix with multiple dots",
-			mapper:     newaffixNameMapper("bar.%{record_type}.foo.", "", "", "", []string{}),
+			mapper:     newaffixNameMapper("bar.%{record_type}.foo.", "", nil),
 			domain:     "example.com",
 			recordType: "CNAME",
 			txtDomain:  "bar.cname.foo.example.com",
 		},
 		{
 			name:       "templated suffix with multiple dots",
-			mapper:     newaffixNameMapper("", ".foo%{record_type}.bar", "", "", []string{}),
+			mapper:     newaffixNameMapper("", ".foo%{record_type}.bar", nil),
 			domain:     "example.com",
 			recordType: "A",
 			txtDomain:  "example.fooa.bar.com",
