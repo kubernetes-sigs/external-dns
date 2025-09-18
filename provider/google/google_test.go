@@ -403,6 +403,78 @@ func TestGoogleApplyChanges(t *testing.T) {
 	})
 }
 
+func TestGoogleApplyChangesTypeSwap(t *testing.T) {
+	provider := newGoogleProvider(
+		t,
+		endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		[]*endpoint.Endpoint{},
+		nil,
+		nil,
+	)
+
+	existing := endpoint.NewEndpointWithTTL(
+		"typeswap.zone-1.ext-dns-test-2.gcp.zalan.do",
+		endpoint.RecordTypeA,
+		endpoint.TTL(180),
+		"203.0.113.10",
+	)
+
+	setupGoogleRecords(t, provider, []*endpoint.Endpoint{existing})
+
+	records, err := provider.Records(context.Background())
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+
+	deleteRecord := endpoint.NewEndpointWithTTL(
+		existing.DNSName,
+		existing.RecordType,
+		existing.RecordTTL,
+		records[0].Targets...,
+	)
+	deleteRecord.Labels = map[string]string{endpoint.OwnerLabelKey: "owner-1"}
+
+	createRecord := endpoint.NewEndpoint(
+		existing.DNSName,
+		endpoint.RecordTypeCNAME,
+		"target.typeswap.example.",
+	)
+	createRecord.Labels = nil
+	require.True(t, provider.domainFilter.Match(createRecord.DNSName))
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{createRecord},
+		Delete: []*endpoint.Endpoint{deleteRecord},
+	}
+
+	swaps, remainingCreates, remainingDeletes := provider.extractTypeSwaps(changes.Create, changes.Delete)
+	require.Len(t, swaps, 1)
+	require.Empty(t, remainingCreates)
+	require.Empty(t, remainingDeletes)
+	deletionRecords := provider.newFilteredRecords([]*endpoint.Endpoint{swaps[0].old})
+	additionRecords := provider.newFilteredRecords([]*endpoint.Endpoint{swaps[0].new})
+	require.Len(t, deletionRecords, 1)
+	require.Len(t, additionRecords, 1)
+
+	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
+
+	updatedRecords, err := provider.Records(context.Background())
+	require.NoError(t, err)
+
+	expectedRecord := endpoint.NewEndpointWithTTL(
+		existing.DNSName,
+		endpoint.RecordTypeCNAME,
+		endpoint.TTL(defaultTTL),
+		"target.typeswap.example.",
+	)
+
+	validateEndpoints(t, updatedRecords, []*endpoint.Endpoint{expectedRecord})
+
+	require.NotNil(t, createRecord.Labels)
+	assert.Equal(t, "owner-1", createRecord.Labels[endpoint.OwnerLabelKey])
+}
+
 func TestGoogleApplyChangesDryRun(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, defaultTTL, "8.8.8.8"),

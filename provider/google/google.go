@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -230,18 +231,117 @@ func (p *GoogleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	return endpoints, nil
 }
 
+type typeSwap struct {
+	old *endpoint.Endpoint
+	new *endpoint.Endpoint
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	swaps, creates, deletes := p.extractTypeSwaps(changes.Create, changes.Delete)
+
 	change := &dns.Change{}
 
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
+	for _, swap := range swaps {
+		change.Deletions = append(change.Deletions, p.newFilteredRecords([]*endpoint.Endpoint{swap.old})...)
+		change.Additions = append(change.Additions, p.newFilteredRecords([]*endpoint.Endpoint{swap.new})...)
+	}
+
+	change.Additions = append(change.Additions, p.newFilteredRecords(creates)...)
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew)...)
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
 
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(deletes)...)
 
 	return p.submitChange(ctx, change)
+}
+
+func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.Endpoint) ([]typeSwap, []*endpoint.Endpoint, []*endpoint.Endpoint) {
+	swaps := make([]typeSwap, 0)
+	remainingCreates := make([]*endpoint.Endpoint, 0, len(create))
+	remainingDeletes := make([]*endpoint.Endpoint, 0)
+
+	deletesByName := map[string][]*endpoint.Endpoint{}
+
+	for _, del := range deleteEndpoints {
+		if !eligibleForTypeSwap(del) {
+			remainingDeletes = append(remainingDeletes, del)
+			continue
+		}
+		key := swapKey(del.DNSName)
+		deletesByName[key] = append(deletesByName[key], del)
+	}
+
+	for _, createEP := range create {
+		if !eligibleForTypeSwap(createEP) {
+			remainingCreates = append(remainingCreates, createEP)
+			continue
+		}
+
+		key := swapKey(createEP.DNSName)
+		dels, ok := deletesByName[key]
+		if !ok {
+			remainingCreates = append(remainingCreates, createEP)
+			continue
+		}
+
+		matchIdx := -1
+		for i, del := range dels {
+			if del.RecordType != createEP.RecordType {
+				matchIdx = i
+				break
+			}
+		}
+
+		if matchIdx == -1 {
+			remainingCreates = append(remainingCreates, createEP)
+			continue
+		}
+
+		matched := dels[matchIdx]
+		remaining := append([]*endpoint.Endpoint{}, dels[:matchIdx]...)
+		remaining = append(remaining, dels[matchIdx+1:]...)
+		if len(remaining) > 0 {
+			deletesByName[key] = remaining
+		} else {
+			delete(deletesByName, key)
+		}
+
+		if matched.Labels != nil {
+			if createEP.Labels == nil {
+				createEP.Labels = map[string]string{}
+			}
+			if owner, ok := matched.Labels[endpoint.OwnerLabelKey]; ok {
+				if _, exists := createEP.Labels[endpoint.OwnerLabelKey]; !exists {
+					createEP.Labels[endpoint.OwnerLabelKey] = owner
+				}
+			}
+		}
+
+		swaps = append(swaps, typeSwap{
+			old: matched,
+			new: createEP,
+		})
+	}
+
+	for _, leftovers := range deletesByName {
+		remainingDeletes = append(remainingDeletes, leftovers...)
+	}
+
+	return swaps, remainingCreates, remainingDeletes
+}
+
+func eligibleForTypeSwap(ep *endpoint.Endpoint) bool {
+	if ep == nil {
+		return false
+	}
+
+	return ep.RecordType != endpoint.RecordTypeTXT
+}
+
+func swapKey(name string) string {
+	return strings.ToLower(provider.EnsureTrailingDot(name))
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider
