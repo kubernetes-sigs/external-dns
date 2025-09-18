@@ -5366,6 +5366,55 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 	})
 }
 
+// Test for missing coverage: pod with hostname creates additional headless domains
+func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
+	sc := &serviceSource{}
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
+	}
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
+				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
+				Addresses:  []string{"10.0.0.1"},
+			},
+		},
+	}
+	pods := []*v1.Pod{{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+		Spec:       v1.PodSpec{Hostname: "my-pod"}, // Non-empty hostname
+		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+	}}
+	hostname := "test.example.com"
+	endpointsType := "IPv4"
+	publishPodIPs := false
+	publishNotReadyAddresses := false
+
+	result := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+
+	assert.NotEmpty(t, result, "Should create targets for pod with hostname")
+
+	// Check that both the base hostname and pod-specific hostname are created
+	var foundBaseHostname, foundPodHostname bool
+	for key := range result {
+		if key.DNSName == "test.example.com" {
+			foundBaseHostname = true
+		}
+		if key.DNSName == "my-pod.test.example.com" {
+			foundPodHostname = true
+		}
+	}
+
+	assert.True(t, foundBaseHostname, "Should create endpoint for base hostname")
+	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
+}
+
 // Helper function to find endpoint by record type
 func findEndpointByType(endpoints []*endpoint.Endpoint, recordType string) *endpoint.Endpoint {
 	for _, ep := range endpoints {
