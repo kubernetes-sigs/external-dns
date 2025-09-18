@@ -402,7 +402,7 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
 			for _, headlessDomain := range headlessDomains {
-				targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
+				targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
@@ -436,7 +436,7 @@ func findPodForEndpoint(ep discoveryv1.Endpoint, pods []*v1.Pod) *v1.Pod {
 }
 
 // Helper to get targets for domain
-func getTargetsForDomain(sc *serviceSource, pod *v1.Pod, ep discoveryv1.Endpoint, endpointSlice *discoveryv1.EndpointSlice, endpointsType string, headlessDomain string) endpoint.Targets {
+func (sc *serviceSource) getTargetsForDomain(pod *v1.Pod, ep discoveryv1.Endpoint, endpointSlice *discoveryv1.EndpointSlice, endpointsType string, headlessDomain string) endpoint.Targets {
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 	if len(targets) == 0 {
 		if endpointsType == EndpointsTypeNodeExternalIP {

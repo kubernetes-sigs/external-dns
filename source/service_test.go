@@ -36,17 +36,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
-
-// pointerToBool returns a pointer to the given bool value.
-func pointerToBool(b bool) *bool {
-	return &b
-}
 
 type ServiceSuite struct {
 	suite.Suite
@@ -5022,7 +5018,7 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "missing-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
 			},
 		},
 	}
@@ -5052,7 +5048,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "some-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
 			},
 		},
 	}
@@ -5081,7 +5077,7 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(true)},
+				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(true)},
 				Addresses:  []string{"10.0.0.1"},
 			},
 		},
@@ -5114,7 +5110,7 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: "test-pod"},
-				Conditions: discoveryv1.EndpointConditions{Ready: pointerToBool(false)}, // Not ready
+				Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(false)}, // Not ready
 				Addresses:  []string{"10.0.0.1"},
 			},
 		},
@@ -5151,7 +5147,7 @@ func TestGetTargetsForDomain_EmptyAddresses(t *testing.T) {
 	endpointsType := "IPv4"
 	headlessDomain := "test.example.com"
 
-	targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
+	targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 	assert.Empty(t, targets, "Should return empty targets when ep.Addresses is empty")
 }
 
@@ -5172,8 +5168,51 @@ func TestGetTargetsForDomain_HostIP(t *testing.T) {
 	endpointsType := EndpointsTypeHostIP
 	headlessDomain := "test.example.com"
 
-	targets := getTargetsForDomain(sc, pod, ep, endpointSlice, endpointsType, headlessDomain)
+	targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 	assert.Contains(t, targets, "192.168.1.100", "Should return HostIP when endpointsType is HostIP")
+}
+
+// Test getTargetsForDomain with NodeExternalIP and nodeInformer
+func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
+	// Create a fake node informer with a node
+	node := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "203.0.113.10"},
+				{Type: v1.NodeInternalIP, Address: "10.0.0.10"},
+			},
+		},
+	}
+
+	client := fake.NewSimpleClientset(node)
+	kubeInformers := kubeinformers.NewSharedInformerFactory(client, 0)
+	nodeInformer := kubeInformers.Core().V1().Nodes()
+
+	// Add the node to the informer
+	nodeInformer.Informer().GetStore().Add(node)
+
+	sc := &serviceSource{
+		nodeInformer: nodeInformer,
+	}
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+		Spec:       v1.PodSpec{NodeName: "test-node"},
+		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+	}
+	ep := discoveryv1.Endpoint{
+		Addresses: []string{"10.0.0.1"},
+	}
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta:  metav1.ObjectMeta{Name: "test-slice", Namespace: "default"},
+		AddressType: discoveryv1.AddressTypeIPv4,
+	}
+	endpointsType := EndpointsTypeNodeExternalIP
+	headlessDomain := "test.example.com"
+
+	targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
+	assert.Contains(t, targets, "203.0.113.10", "Should return NodeExternalIP")
 }
 
 func TestFindPodForEndpoint(t *testing.T) {
