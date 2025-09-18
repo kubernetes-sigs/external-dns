@@ -79,6 +79,9 @@ type serviceSource struct {
 	endpointSlicesInformer         discoveryinformers.EndpointSliceInformer
 	podInformer                    coreinformers.PodInformer
 	nodeInformer                   coreinformers.NodeInformer
+	nodeEventHandler               func()
+	nodeEventHandlerRegistered     bool
+	nodeEventsNeeded               bool
 	serviceTypeFilter              *serviceTypes
 	exposeInternalIPv6             bool
 
@@ -401,6 +404,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 							log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
 							continue
 						}
+						sc.markNodeEventsNeeded()
 						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
 						if err != nil {
 							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
@@ -749,6 +753,8 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		nodes       []*v1.Node
 	)
 
+	sc.markNodeEventsNeeded()
+
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
 		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc)
 	} else {
@@ -845,9 +851,151 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
-	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
-		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	sc.nodeEventHandler = handler
+	if !sc.nodeEventsNeeded && sc.publishHostIP {
+		sc.nodeEventsNeeded = true
 	}
+	if !sc.nodeEventsNeeded && sc.detectNodeDependentServices() {
+		sc.nodeEventsNeeded = true
+	}
+	sc.ensureNodeEventHandlerRegistered()
+}
+
+func (sc *serviceSource) detectNodeDependentServices() bool {
+	if sc.nodeInformer == nil {
+		return false
+	}
+	services, err := sc.listServicesForNodeDetection()
+	if err != nil {
+		log.Debugf("skipping node dependency detection: %v", err)
+		return false
+	}
+	services = sc.filterByServiceType(services)
+	services, err = sc.filterByAnnotations(services)
+	if err != nil {
+		log.Errorf("unable to apply annotation filter during node dependency detection: %v", err)
+		return true
+	}
+	for _, svc := range services {
+		if sc.serviceRequiresNodeData(svc) {
+			return true
+		}
+	}
+	return false
+}
+
+func (sc *serviceSource) listServicesForNodeDetection() ([]*v1.Service, error) {
+	if sc.serviceInformer == nil {
+		return nil, fmt.Errorf("service informer not configured")
+	}
+	var (
+		services []*v1.Service
+		listErr  error
+	)
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				listErr = fmt.Errorf("service informer indexer unavailable: %v", r)
+			}
+		}()
+		services, listErr = sc.serviceInformer.Lister().Services(sc.namespace).List(sc.labelSelector)
+	}()
+	return services, listErr
+}
+
+func (sc *serviceSource) serviceRequiresNodeData(svc *v1.Service) bool {
+	if svc.Spec.Type == v1.ServiceTypeNodePort {
+		return true
+	}
+	if svc.Spec.ClusterIP == v1.ClusterIPNone {
+		endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
+		if endpointsType == EndpointsTypeNodeExternalIP {
+			return true
+		}
+		if sc.publishHostIP {
+			return true
+		}
+	}
+	return false
+}
+
+func (sc *serviceSource) ensureNodeEventHandlerRegistered() {
+	if !sc.nodeEventsNeeded || sc.nodeEventHandlerRegistered || sc.nodeInformer == nil || sc.nodeEventHandler == nil {
+		return
+	}
+	_, _ = sc.nodeInformer.Informer().AddEventHandler(&nodeAddressChangeHandler{
+		source:  sc,
+		handler: sc.nodeEventHandler,
+	})
+	sc.nodeEventHandlerRegistered = true
+}
+
+func (sc *serviceSource) markNodeEventsNeeded() {
+	if sc.nodeEventsNeeded {
+		return
+	}
+	sc.nodeEventsNeeded = true
+	sc.ensureNodeEventHandlerRegistered()
+}
+
+type nodeAddressChangeHandler struct {
+	source  *serviceSource
+	handler func()
+}
+
+func (h *nodeAddressChangeHandler) OnAdd(obj interface{}, isInInitialList bool) {
+	if isInInitialList {
+		return
+	}
+	h.handler()
+}
+
+func (h *nodeAddressChangeHandler) OnUpdate(oldObj, newObj interface{}) {
+	oldNode, okOld := oldObj.(*v1.Node)
+	newNode, okNew := newObj.(*v1.Node)
+	if !okOld || !okNew {
+		h.handler()
+		return
+	}
+	if nodeAddressSetsEqual(oldNode, newNode) {
+		return
+	}
+	h.handler()
+}
+
+func (h *nodeAddressChangeHandler) OnDelete(obj interface{}) {
+	h.handler()
+}
+
+func nodeAddressSetsEqual(a, b *v1.Node) bool {
+	return addressSetEquals(nodeAddressSet(a), nodeAddressSet(b))
+}
+
+func nodeAddressSet(node *v1.Node) map[string]struct{} {
+	if node == nil {
+		return nil
+	}
+	result := make(map[string]struct{})
+	for _, address := range node.Status.Addresses {
+		switch address.Type {
+		case v1.NodeExternalIP, v1.NodeInternalIP:
+			key := string(address.Type) + "|" + address.Address
+			result[key] = struct{}{}
+		}
+	}
+	return result
+}
+
+func addressSetEquals(a, b map[string]struct{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key := range a {
+		if _, ok := b[key]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 type serviceTypes struct {
