@@ -398,7 +398,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
-							if sc.nodeInformer == nil {
+						if sc.nodeInformer == nil {
 							log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
 							continue
 						}
@@ -749,7 +749,6 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		ipv6IPs     endpoint.Targets
 		nodes       []*v1.Node
 	)
-
 
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
 		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc)
