@@ -280,57 +280,58 @@ func TestRun(t *testing.T) {
 func TestShouldRunOnce(t *testing.T) {
 	ctrl := &Controller{Interval: 10 * time.Minute, MinEventSyncInterval: 15 * time.Second}
 
-	start := time.Now()
+	now := time.Now()
 
 	// First run of Run loop should execute RunOnce
-	assert.True(t, ctrl.ShouldRunOnce(start))
-	assert.Equal(t, start.Add(ctrl.Interval), ctrl.nextRunAt)
+	assert.True(t, ctrl.ShouldRunOnce(now))
+	assert.Equal(t, now.Add(10*time.Minute), ctrl.nextRunAt)
 
 	// Second run should not
-	assert.False(t, ctrl.ShouldRunOnce(start))
-	ctrl.lastRunAt = start
+	assert.False(t, ctrl.ShouldRunOnce(now))
+	ctrl.lastRunAt = now
 
-	eventTime := start.Add(10 * time.Second)
+	now = now.Add(10 * time.Second)
 	// Changes happen in ingresses or services
-	ctrl.ScheduleRunOnce(eventTime)
-	ctrl.ScheduleRunOnce(eventTime)
+	ctrl.ScheduleRunOnce(now)
+	ctrl.ScheduleRunOnce(now)
 
-	// Because we batch changes, ShouldRunOnce returns False until the throttle conditions are satisfied
-	earliest := ctrl.lastRunAt.Add(ctrl.Interval)
-	if ready := eventTime.Add(ctrl.MinEventSyncInterval); ready.After(earliest) {
-		earliest = ready
-	}
-	assert.False(t, ctrl.ShouldRunOnce(earliest.Add(-time.Second)))
-	assert.True(t, ctrl.ShouldRunOnce(earliest))
-	assert.False(t, ctrl.ShouldRunOnce(earliest))
+	// Because we batch changes, ShouldRunOnce returns False at first
+	assert.False(t, ctrl.ShouldRunOnce(now))
+	assert.False(t, ctrl.ShouldRunOnce(now.Add(100*time.Microsecond)))
 
-	// Simulate successful reconciliation updating lastRunAt
-	ctrl.lastRunAt = earliest
+	// But after MinInterval we should run reconciliation
+	now = now.Add(5 * time.Second)
+	assert.True(t, ctrl.ShouldRunOnce(now))
+
+	// But just one time
+	assert.False(t, ctrl.ShouldRunOnce(now))
 
 	// We should wait maximum possible time after last reconciliation started
-	beforeNext := ctrl.lastRunAt.Add(ctrl.Interval - time.Second)
-	assert.False(t, ctrl.ShouldRunOnce(beforeNext))
+	now = now.Add(10*time.Minute - time.Second)
+	assert.False(t, ctrl.ShouldRunOnce(now))
 
 	// After exactly Interval it's OK again to reconcile
-	onInterval := beforeNext.Add(time.Second)
-	assert.True(t, ctrl.ShouldRunOnce(onInterval))
-	assert.False(t, ctrl.ShouldRunOnce(onInterval))
+	now = now.Add(time.Second)
+	assert.True(t, ctrl.ShouldRunOnce(now))
 
-	// Multiple ingresses or services changes, closer than MinEventSyncInterval from each other
-	ctrl.lastRunAt = onInterval
-	firstChangeTime := onInterval
+	// But not two times
+	assert.False(t, ctrl.ShouldRunOnce(now))
+
+	// Multiple ingresses or services changes, closer than MinInterval from each other
+	ctrl.lastRunAt = now
+	firstChangeTime := now
 	secondChangeTime := firstChangeTime.Add(time.Second)
 	// First change
 	ctrl.ScheduleRunOnce(firstChangeTime)
 	// Second change
 	ctrl.ScheduleRunOnce(secondChangeTime)
 
-	earliest = ctrl.lastRunAt.Add(ctrl.Interval)
-	if ready := secondChangeTime.Add(ctrl.MinEventSyncInterval); ready.After(earliest) {
-		earliest = ready
-	}
-	assert.False(t, ctrl.ShouldRunOnce(earliest.Add(-time.Second)))
-	assert.True(t, ctrl.ShouldRunOnce(earliest))
+	// Executions should be spaced by at least MinEventSyncInterval
+	assert.False(t, ctrl.ShouldRunOnce(now.Add(5*time.Second)))
+
+	// Should not postpone the reconciliation further than firstChangeTime + MinInterval
+	now = now.Add(ctrl.MinEventSyncInterval)
+	assert.True(t, ctrl.ShouldRunOnce(now))
 }
 
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter *endpoint.DomainFilter, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {

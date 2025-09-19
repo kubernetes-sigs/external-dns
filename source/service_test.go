@@ -5022,7 +5022,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		asserts func(t *testing.T, s *serviceSource)
 	}{
 		{
-			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
+			name:   "AddEventHandler registers service + endpoint handlers only (empty filter, no node need)",
 			filter: []string{},
 			times:  2,
 			asserts: func(t *testing.T, s *serviceSource) {
@@ -5032,7 +5032,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "AddEventHandler should trigger only service event handler",
+			name:   "AddEventHandler only service handler (no endpoint slice types enabled)",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer)},
 			times:  1,
 			asserts: func(t *testing.T, s *serviceSource) {
@@ -5042,7 +5042,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "AddEventHandler should configure only service event handler",
+			name:   "AddEventHandler service + endpoint slice handlers",
 			filter: []string{string(v1.ServiceTypeExternalName), string(v1.ServiceTypeLoadBalancer), string(v1.ServiceTypeClusterIP)},
 			times:  2,
 			asserts: func(t *testing.T, s *serviceSource) {
@@ -5052,12 +5052,9 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			},
 		},
 		{
-			name:   "AddEventHandler should configure all service event handlers",
+			name:   "AddEventHandler registers node handler for NodePort",
 			filter: []string{string(v1.ServiceTypeNodePort)},
 			times:  3,
-			prepare: func(s *serviceSource) {
-				s.nodeEventsNeeded = true
-			},
 			asserts: func(t *testing.T, s *serviceSource) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)

@@ -259,6 +259,24 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	return nil
 }
 
+func earliest(r time.Time, times ...time.Time) time.Time {
+	for _, t := range times {
+		if t.Before(r) {
+			r = t
+		}
+	}
+	return r
+}
+
+func latest(r time.Time, times ...time.Time) time.Time {
+	for _, t := range times {
+		if t.After(r) {
+			r = t
+		}
+	}
+	return r
+}
+
 // Counts the intersections of records in endpoint and registry.
 func countMatchingAddressRecords(rec *metricsRecorder, endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint, metric metrics.GaugeVecMetric) {
 	recordsMap := make(map[string]map[string]struct{})
@@ -300,12 +318,13 @@ func countAddressRecords(rec *metricsRecorder, endpoints []*endpoint.Endpoint, m
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.runAtMutex.Lock()
 	defer c.runAtMutex.Unlock()
-	preferred := c.lastRunAt.Add(c.Interval)
-	eventReadyAt := now.Add(c.MinEventSyncInterval)
-	if preferred.Before(eventReadyAt) {
-		preferred = eventReadyAt
-	}
-	c.nextRunAt = preferred
+	c.nextRunAt = latest(
+		c.lastRunAt.Add(c.MinEventSyncInterval),
+		earliest(
+			now.Add(5*time.Second),
+			c.nextRunAt,
+		),
+	)
 }
 
 func (c *Controller) ShouldRunOnce(now time.Time) bool {
