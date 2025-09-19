@@ -222,39 +222,6 @@ func (ps ProviderSpecific) Delete(key string) {
 	delete(ps, key)
 }
 
-// String returns a stable, backwards-compatible string form.
-// For compatibility with older branches where ProviderSpecific was
-// []ProviderSpecificProperty, we render:
-// - empty or nil as "[]"
-// - non-empty as slice-like entries sorted by key, e.g. "[{k1 v1} {k2 v2}]"
-// This preserves previous log expectations and keeps output deterministic.
-func (ps ProviderSpecific) String() string {
-	if len(ps) == 0 {
-		return "[]"
-	}
-	// Collect and sort keys for stable output.
-	keys := make([]string, 0, len(ps))
-	for k := range ps {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	// Build entries like "{key value}" preserving stable order.
-	b := strings.Builder{}
-	b.WriteByte('[')
-	for i, k := range keys {
-		if i > 0 {
-			b.WriteByte(' ')
-		}
-		b.WriteByte('{')
-		b.WriteString(k)
-		b.WriteByte(' ')
-		b.WriteString(ps[k])
-		b.WriteByte('}')
-	}
-	b.WriteByte(']')
-	return b.String()
-}
-
 // EndpointKey is the type of a map key for separating endpoints or targets.
 type EndpointKey struct {
 	DNSName       string

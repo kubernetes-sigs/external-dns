@@ -1471,8 +1471,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
 			},
 			logExpectations: []string{
-				"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 []]",
-				"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 []]",
+				"Endpoints generated from HTTPRoute default/one: [test.one.internal 0 IN A  1.2.3.4 map[]]",
+				"Endpoints generated from HTTPRoute default/two: [test.two.internal 0 IN A  2.3.4.5 map[]]",
 			},
 		},
 		{
