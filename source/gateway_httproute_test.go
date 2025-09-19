@@ -1540,6 +1540,699 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
 			},
 		},
+		{
+			title: "TargetStrategyMergeBothAnnotations",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "gw-merge",
+					Namespace:   "gateway-namespace",
+					Annotations: map[string]string{targetAnnotationKey: "5.5.5.5"},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("1.1.1.1"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-merge",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "4.4.4.4",
+						targetStrategyAnnotationKey: "merge",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("merge.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-merge"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-merge"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("merge.example.internal", "A", "4.4.4.4", "5.5.5.5"),
+			},
+		},
+		{
+			title: "TargetStrategyMergeOnlyRouteAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-merge-route-only",
+					Namespace: "gateway-namespace",
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("50.50.50.50"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-merge-route-only",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "44.44.44.44",
+						targetStrategyAnnotationKey: "merge",
+					}},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("mergerouteonly.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-merge-route-only"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-merge-route-only"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mergerouteonly.example.internal", "A", "44.44.44.44"),
+			},
+		},
+		{
+			title: "TargetStrategyMergeOnlyGatewayAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-merge-gw-only",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "55.55.55.55",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("50.50.50.50"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-merge-gw-only",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetStrategyAnnotationKey: "merge",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("mergegwonly.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-merge-gw-only"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-merge-gw-only"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mergegwonly.example.internal", "A", "55.55.55.55"),
+			},
+		},
+		{
+			title: "TargetStrategyMergeNoAnnotationsFallsBackToAddresses",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("gateway-namespace", "gw-merge-none"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("50.50.50.50"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-merge-none",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetStrategyAnnotationKey: "merge",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("mergenone.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-merge-none"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-merge-none"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mergenone.example.internal", "A", "50.50.50.50"),
+			},
+		},
+		{
+			title: "TargetStrategyRouteOnlyHasRouteTargets",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("gateway-namespace", "gw-route-only"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("9.9.9.9"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-only",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "7.7.7.7",
+						targetStrategyAnnotationKey: "route-only",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeonly.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-only"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-only"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeonly.example.internal", "A", "7.7.7.7"),
+			},
+		},
+		{
+			title: "TargetStrategyRouteOnlyNoRouteTargetsFallsBackToAddresses",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("gateway-namespace", "gw-route-fallback"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("9.9.9.9"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-fallback",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "", // empty should not contribute targets
+						targetStrategyAnnotationKey: "route-only",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeonlyfallback.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-fallback"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-fallback"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeonlyfallback.example.internal", "A", "9.9.9.9"),
+			},
+		},
+		{
+			title: "TargetStrategyGatewayOnlyGatewayTargets",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "gw-gateway-only",
+					Namespace:   "gateway-namespace",
+					Annotations: map[string]string{targetAnnotationKey: "5.5.5.5"},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("1.1.1.1"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-gateway-only",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "7.7.7.7", // ignored
+						targetStrategyAnnotationKey: "gateway-only",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("gatewayonly.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-gateway-only"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-gateway-only"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("gatewayonly.example.internal", "A", "5.5.5.5"),
+			},
+		},
+		{
+			title: "TargetStrategyGatewayOnlyNoGatewayTargetsFallsBackToAddresses",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("gateway-namespace", "gw-gateway-fallback"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("1.1.1.1"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-gateway-fallback",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetStrategyAnnotationKey: "gateway-only",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("gatewayonlyfallback.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-gateway-fallback"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-gateway-fallback"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("gatewayonlyfallback.example.internal", "A", "1.1.1.1"),
+			},
+		},
+		{
+			title: "TargetStrategyDefaultRoutePreferredBothAnnotations",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-default-pref-both",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "22.22.22.22",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-default-pref-both",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "11.11.11.11",
+					}, // strategy annotation intentionally omitted
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("defaultprefboth.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-default-pref-both"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-default-pref-both"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("defaultprefboth.example.internal", "A", "11.11.11.11"),
+			},
+		},
+		{
+			title: "TargetStrategyDefaultRoutePreferredNoRouteTargetsUsesGatewayAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-default-pref-gwonly",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "22.22.22.22",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-default-pref-gwonly",
+					Namespace: "route-namespace",
+				}, // no annotations
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("defaultprefgwonly.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-default-pref-gwonly"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-default-pref-gwonly"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("defaultprefgwonly.example.internal", "A", "22.22.22.22"),
+			},
+		},
+		{
+			title: "TargetStrategyDefaultRoutePreferredNoTargetsFallsBackToAddresses",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("gateway-namespace", "gw-default-pref-none"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-default-pref-none",
+					Namespace: "route-namespace",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("defaultprefnone.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-default-pref-none"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-default-pref-none"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("defaultprefnone.example.internal", "A", "30.30.30.30"),
+			},
+		},
+		{
+			title: "TargetStrategyRoutePreferredBothAnnotations",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-route-pref-both",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "20.20.20.20",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-pref-both",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "10.10.10.10",
+						targetStrategyAnnotationKey: "route-preferred",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeprefboth.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-pref-both"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-pref-both"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeprefboth.example.internal", "A", "10.10.10.10"),
+			},
+		},
+		{
+			title: "TargetStrategyRoutePreferredOnlyGatewayAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-route-pref-gwonly",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "20.20.20.20",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-pref-gwonly",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetStrategyAnnotationKey: "route-preferred",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeprefgwonly.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-pref-gwonly"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-pref-gwonly"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeprefgwonly.example.internal", "A", "20.20.20.20"),
+			},
+		},
+		{
+			title: "TargetStrategyRoutePreferredNoAnnotationsFallsBackToAddresses",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("gateway-namespace", "gw-route-pref-none"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-pref-none",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetStrategyAnnotationKey: "route-preferred",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeprefnone.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-pref-none"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-pref-none"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeprefnone.example.internal", "A", "30.30.30.30"),
+			},
+		},
+		{
+			title: "TargetStrategyRouteOnlyIgnoresGatewayAnnotation",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-route-only-ignore-gw",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "20.20.20.20",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-only-ignore-gw",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey:         "10.10.10.10",
+						targetStrategyAnnotationKey: "route-only",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeonlyignoregw.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-only-ignore-gw"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-only-ignore-gw"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeonlyignoregw.example.internal", "A", "10.10.10.10"),
+			},
+		},
+		{
+			title: "TargetStrategyRouteOnlyNoRouteTargetsIgnoresGatewayAnnotationAndFallsBackToAddresses",
+			config: Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gw-route-only-fallback-ignore-gw",
+					Namespace: "gateway-namespace",
+					Annotations: map[string]string{
+						targetAnnotationKey: "20.20.20.20",
+					},
+				},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol:      v1.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
+				},
+				Status: gatewayStatus("30.30.30.30"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rt-route-only-fallback-ignore-gw",
+					Namespace: "route-namespace",
+					Annotations: map[string]string{
+						targetStrategyAnnotationKey: "route-only",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("routeonlyfallbackignoregw.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "gw-route-only-fallback-ignore-gw"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("gateway-namespace", "gw-route-only-fallback-ignore-gw"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("routeonlyfallbackignoregw.example.internal", "A", "30.30.30.30"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
