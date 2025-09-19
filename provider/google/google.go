@@ -262,15 +262,21 @@ func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.En
 	remainingCreates := make([]*endpoint.Endpoint, 0, len(create))
 	remainingDeletes := make([]*endpoint.Endpoint, 0)
 
-	deletesByName := map[string][]*endpoint.Endpoint{}
+	// Index deletions by name then by record type
+	typeBucketByName := make(map[string]map[string][]*endpoint.Endpoint)
 
 	for _, del := range deleteEndpoints {
 		if !eligibleForTypeSwap(del) {
 			remainingDeletes = append(remainingDeletes, del)
 			continue
 		}
-		key := swapKey(del.DNSName)
-		deletesByName[key] = append(deletesByName[key], del)
+		nameKey := swapKey(del.DNSName)
+		buckets := typeBucketByName[nameKey]
+		if buckets == nil {
+			buckets = make(map[string][]*endpoint.Endpoint)
+			typeBucketByName[nameKey] = buckets
+		}
+		buckets[del.RecordType] = append(buckets[del.RecordType], del)
 	}
 
 	for _, createEP := range create {
@@ -279,35 +285,41 @@ func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.En
 			continue
 		}
 
-		key := swapKey(createEP.DNSName)
-		dels, ok := deletesByName[key]
+		nameKey := swapKey(createEP.DNSName)
+		buckets, ok := typeBucketByName[nameKey]
 		if !ok {
 			remainingCreates = append(remainingCreates, createEP)
 			continue
 		}
 
-		matchIdx := -1
-		for i, del := range dels {
-			if del.RecordType != createEP.RecordType {
-				matchIdx = i
-				break
+		// Find any delete with a different type to form a swap.
+		var matched *endpoint.Endpoint
+		var matchedType string
+		for delType, list := range buckets {
+			if delType == createEP.RecordType || len(list) == 0 {
+				continue
 			}
+			matched = list[0]
+			matchedType = delType
+
+			if len(list) == 1 {
+				delete(buckets, delType)
+			} else {
+				buckets[delType] = list[1:]
+			}
+			break
 		}
 
-		if matchIdx == -1 {
+		if matched == nil {
 			remainingCreates = append(remainingCreates, createEP)
 			continue
 		}
 
-		matched := dels[matchIdx]
-		remaining := append([]*endpoint.Endpoint{}, dels[:matchIdx]...)
-		remaining = append(remaining, dels[matchIdx+1:]...)
-		if len(remaining) > 0 {
-			deletesByName[key] = remaining
-		} else {
-			delete(deletesByName, key)
+		if len(buckets) == 0 {
+			delete(typeBucketByName, nameKey)
 		}
 
+		// Ensure create endpoint has owner label
 		if matched.Labels != nil {
 			if createEP.Labels == nil {
 				createEP.Labels = map[string]string{}
@@ -319,19 +331,20 @@ func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.En
 			}
 		}
 
-		swaps = append(swaps, typeSwap{
-			old: matched,
-			new: createEP,
-		})
+		swaps = append(swaps, typeSwap{old: matched, new: createEP})
+		_ = matchedType // silence unused if future logging added
 	}
 
-	for _, leftovers := range deletesByName {
-		remainingDeletes = append(remainingDeletes, leftovers...)
+	for _, byType := range typeBucketByName {
+		for _, list := range byType {
+			remainingDeletes = append(remainingDeletes, list...)
+		}
 	}
 
 	return swaps, remainingCreates, remainingDeletes
 }
 
+// Returns true only for non-TXT records
 func eligibleForTypeSwap(ep *endpoint.Endpoint) bool {
 	if ep == nil {
 		return false

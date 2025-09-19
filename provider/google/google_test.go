@@ -705,6 +705,80 @@ func TestSoftErrListRecordsConflict(t *testing.T) {
 	require.Empty(t, records)
 }
 
+func TestGoogleExtractTypeSwapsIgnoreTXT(t *testing.T) {
+	gp := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+
+	name := "txt-swap-test.zone-1.ext-dns-test-2.gcp.zalan.do"
+
+	// Create A, delete TXT -> no swap
+	createA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "1.2.3.4")
+	deleteTXT := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, "txt-value")
+	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createA}, []*endpoint.Endpoint{deleteTXT})
+	require.Len(t, swaps, 0)
+	require.Len(t, remCreates, 1)
+	require.Len(t, remDeletes, 1)
+
+	// Create TXT, delete A -> no swap
+	createTXT := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, "txt-value")
+	deleteA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "1.2.3.4")
+	swaps, remCreates, remDeletes = gp.extractTypeSwaps([]*endpoint.Endpoint{createTXT}, []*endpoint.Endpoint{deleteA})
+	require.Len(t, swaps, 0)
+	require.Len(t, remCreates, 1)
+	require.Len(t, remDeletes, 1)
+}
+
+func TestGoogleExtractTypeSwapsConsumesSingleDelete(t *testing.T) {
+	gp := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+
+	name := "multi-delete-swap.zone-1.ext-dns-test-2.gcp.zalan.do"
+
+	delA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "192.0.2.1")
+	delA.Labels = map[string]string{endpoint.OwnerLabelKey: "owner-a"}
+	delAAAA := endpoint.NewEndpoint(name, endpoint.RecordTypeAAAA, "2001:db8::1")
+
+	createCNAME := endpoint.NewEndpoint(name, endpoint.RecordTypeCNAME, "target.example.")
+
+	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createCNAME}, []*endpoint.Endpoint{delA, delAAAA})
+
+	require.Len(t, swaps, 1)
+	require.Len(t, remCreates, 0)
+	require.Len(t, remDeletes, 1)
+	assert.Equal(t, delAAAA, remDeletes[0])
+	assert.NotNil(t, swaps[0].new.Labels)
+	assert.Equal(t, "owner-a", swaps[0].new.Labels[endpoint.OwnerLabelKey])
+}
+
+func TestGoogleExtractTypeSwapsCaseInsensitiveName(t *testing.T) {
+	gp := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+
+	// Mixed case create vs lower-case delete
+	createName := "CaseSwap.ZONE-1.ext-dns-test-2.gcp.zalan.do"
+	deleteName := strings.ToLower(createName)
+
+	delA := endpoint.NewEndpoint(deleteName, endpoint.RecordTypeA, "198.51.100.10")
+	createCNAME := endpoint.NewEndpoint(createName, endpoint.RecordTypeCNAME, "target.caseswap.example.")
+
+	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createCNAME}, []*endpoint.Endpoint{delA})
+	require.Len(t, swaps, 1)
+	require.Len(t, remCreates, 0)
+	require.Len(t, remDeletes, 0)
+	assert.Equal(t, delA, swaps[0].old)
+	assert.Equal(t, createCNAME, swaps[0].new)
+}
+
+func TestGoogleExtractTypeSwapsSameTypeNoSwap(t *testing.T) {
+	gp := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+
+	name := "same-type.zone-1.ext-dns-test-2.gcp.zalan.do"
+	delA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "203.0.113.55")
+	createA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "203.0.113.56")
+
+	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createA}, []*endpoint.Endpoint{delA})
+	require.Len(t, swaps, 0)
+	require.Len(t, remCreates, 1)
+	require.Len(t, remDeletes, 1)
+}
+
 func sortChangesByName(cs *dns.Change) {
 	sort.SliceStable(cs.Additions, func(i, j int) bool {
 		return cs.Additions[i].Name < cs.Additions[j].Name
