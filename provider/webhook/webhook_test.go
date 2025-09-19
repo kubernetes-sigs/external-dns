@@ -395,8 +395,9 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Len(t, changes.Create, 1)
 			assert.Len(t, changes.Create[0].ProviderSpecific, 1)
-			assert.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
-			assert.Equal(t, "value1", changes.Create[0].ProviderSpecific[0].Value)
+			v, ok := changes.Create[0].ProviderSpecific.Get("prop1")
+			assert.True(t, ok)
+			assert.Equal(t, "value1", v)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -413,10 +414,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			"",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			endpoint.ProviderSpecificProperty{
-				Name:  "prop1",
-				Value: "value1",
-			},
+			"prop1": "value1",
 		},
 	}
 	err = p.ApplyChanges(context.TODO(), &plan.Changes{

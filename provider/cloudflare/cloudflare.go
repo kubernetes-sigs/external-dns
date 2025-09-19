@@ -924,15 +924,12 @@ func getCustomHostnamesSSLOptions(customHostnamesConfig CustomHostnamesConfig) *
 func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
-	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareProxiedKey {
-			b, err := strconv.ParseBool(v.Value)
-			if err != nil {
-				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedKey, err)
-			} else {
-				proxied = b
-			}
-			break
+	if value, exists := ep.ProviderSpecific.Get(annotations.CloudflareProxiedKey); exists {
+		b, err := strconv.ParseBool(value)
+		if err != nil {
+			log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedKey, err)
+		} else {
+			proxied = b
 		}
 	}
 
@@ -943,11 +940,9 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 }
 
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
-	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareCustomHostnameKey {
-			customHostnames := strings.Split(v.Value, ",")
-			return customHostnames
-		}
+	if value, exists := ep.ProviderSpecific.Get(annotations.CloudflareCustomHostnameKey); exists {
+		customHostnames := strings.Split(value, ",")
+		return customHostnames
 	}
 	return []string{}
 }

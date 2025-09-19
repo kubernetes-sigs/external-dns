@@ -206,14 +206,21 @@ func (t Targets) IsLess(o Targets) bool {
 	return false
 }
 
-// ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
-type ProviderSpecificProperty struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
+// ProviderSpecific holds configuration which is specific to individual DNS providers
+type ProviderSpecific map[string]string
+
+func (ps ProviderSpecific) Set(key, value string) {
+	ps[key] = value
 }
 
-// ProviderSpecific holds configuration which is specific to individual DNS providers
-type ProviderSpecific []ProviderSpecificProperty
+func (ps ProviderSpecific) Get(key string) (string, bool) {
+	value, ok := ps[key]
+	return value, ok
+}
+
+func (ps ProviderSpecific) Delete(key string) {
+	delete(ps, key)
+}
 
 // EndpointKey is the type of a map key for separating endpoints or targets.
 type EndpointKey struct {
@@ -224,7 +231,6 @@ type EndpointKey struct {
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
-// +kubebuilder:object:generate=true
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string `json:"dnsName,omitempty"`
@@ -293,37 +299,26 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 
 // GetProviderSpecificProperty returns the value of a ProviderSpecificProperty if the property exists.
 func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
-	for _, providerSpecific := range e.ProviderSpecific {
-		if providerSpecific.Name == key {
-			return providerSpecific.Value, true
-		}
+	if e.ProviderSpecific == nil {
+		return "", false
 	}
-	return "", false
+	return e.ProviderSpecific.Get(key)
 }
 
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
-	for i, providerSpecific := range e.ProviderSpecific {
-		if providerSpecific.Name == key {
-			e.ProviderSpecific[i] = ProviderSpecificProperty{
-				Name:  key,
-				Value: value,
-			}
-			return
-		}
+	if e.ProviderSpecific == nil {
+		e.ProviderSpecific = make(ProviderSpecific)
 	}
-
-	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+	e.ProviderSpecific.Set(key, value)
 }
 
 // DeleteProviderSpecificProperty deletes any ProviderSpecificProperty of the specified name.
 func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
-	for i, providerSpecific := range e.ProviderSpecific {
-		if providerSpecific.Name == key {
-			e.ProviderSpecific = append(e.ProviderSpecific[:i], e.ProviderSpecific[i+1:]...)
-			return
-		}
+	if e.ProviderSpecific == nil {
+		return
 	}
+	e.ProviderSpecific.Delete(key)
 }
 
 // WithLabel adds or updates a label for the Endpoint.
