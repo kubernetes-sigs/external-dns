@@ -344,15 +344,3 @@ func TestEndpointTargetsFromServicesWithFixtures(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, targets.Len())
 }
-
-func TestDefaultEndpointTargetValidator(t *testing.T) {
-	validator := &defaultEndpointTargetValidator{}
-	assert.True(t, validator.IsInvalid("example.com."))
-	assert.False(t, validator.IsInvalid("example.com"))
-}
-
-func TestArbitraryTextEndpointTargetValidator(t *testing.T) {
-	validator := &arbitraryTextEndpointTargetValidator{}
-	assert.False(t, validator.IsInvalid("example.com."))
-	assert.False(t, validator.IsInvalid("example.com"))
-}

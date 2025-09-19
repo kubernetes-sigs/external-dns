@@ -15,7 +15,6 @@ package source
 
 import (
 	"fmt"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -110,26 +109,4 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 		}
 	}
 	return endpoint.NewTargets(targets...), nil
-}
-
-// endpointTargetValidator is a function that validates a target string for a given record type
-// It returns true if the target is _invalid_, and false if it is valid.
-type endpointTargetValidator interface {
-	IsInvalid(target string) bool
-}
-
-// defaultEndpointTargetValidator is a function that validates a target string for a given record type, trimming trailing dots which are not allowed
-// for most record types.
-type defaultEndpointTargetValidator struct{}
-
-func (v *defaultEndpointTargetValidator) IsInvalid(target string) bool {
-	return strings.HasSuffix(target, ".")
-}
-
-// arbitraryTextTargetValidator is a function that validates a target string for a given record type, allowing arbitrary text including trailing dots.
-// This is used for TXT and NAPTR records.
-type arbitraryTextEndpointTargetValidator struct{}
-
-func (v *arbitraryTextEndpointTargetValidator) IsInvalid(target string) bool {
-	return false
 }

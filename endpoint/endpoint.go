@@ -255,17 +255,15 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
-	var cleaner endpointTargetCleaner
-	switch recordType {
-	case RecordTypeTXT, RecordTypeNAPTR:
+	for idx, target := range targets {
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
 		// TXT records can contain arbitrary text including multiple dots
-		cleaner = &arbitraryTextEndpointTargetCleaner{}
-	default:
-		cleaner = &defaultEndpointTargetCleaner{}
-	}
-	for idx, target := range targets {
-		cleanTargets[idx] = cleaner.Clean(target)
+		switch recordType {
+		case RecordTypeTXT, RecordTypeNAPTR:
+			cleanTargets[idx] = target
+		default:
+			cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		}
 	}
 
 	for label := range strings.SplitSeq(dnsName, ".") {
