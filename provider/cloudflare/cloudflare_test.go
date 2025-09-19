@@ -948,6 +948,15 @@ func TestCloudflareProvider(t *testing.T) {
 		Key   string
 		Value string
 	}
+	const (
+		cfEmailEnvKey    = "CF_API_EMAIL"
+		cfAPIKeyEnvKey   = "CF_API_KEY"
+		cfAPITokenEnvKey = "CF_API_TOKEN"
+	)
+	// unset environment variables to avoid interference with tests
+	t.Setenv(cfEmailEnvKey, "")
+	t.Setenv(cfAPIKeyEnvKey, "")
+	t.Setenv(cfAPITokenEnvKey, "")
 
 	tokenFile := "/tmp/cf_api_token"
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
@@ -962,22 +971,22 @@ func TestCloudflareProvider(t *testing.T) {
 		{
 			Name: "use_api_token",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: "abc123def"},
+				{Key: cfAPITokenEnvKey, Value: "abc123def"},
 			},
 			ShouldFail: false,
 		},
 		{
 			Name: "use_api_token_file_contents",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: tokenFile},
+				{Key: cfAPITokenEnvKey, Value: tokenFile},
 			},
 			ShouldFail: false,
 		},
 		{
 			Name: "use_email_and_key",
 			Environment: []EnvVar{
-				{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
-				{Key: "CF_API_EMAIL", Value: "test@test.com"},
+				{Key: cfAPIKeyEnvKey, Value: "xxxxxxxxxxxxxxxxx"},
+				{Key: cfEmailEnvKey, Value: "test@test.com"},
 			},
 			ShouldFail: false,
 		},
@@ -989,14 +998,14 @@ func TestCloudflareProvider(t *testing.T) {
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: "file://abc"},
+				{Key: cfAPITokenEnvKey, Value: "file://abc"},
 			},
 			ShouldFail: true,
 		},
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
+				{Key: cfAPITokenEnvKey, Value: "file:/tmp/cf_api_token"},
 			},
 			ShouldFail: false,
 		},
