@@ -1825,20 +1825,24 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	assert.Equal(t, "us", provider.RegionalServicesConfig.RegionKey, "expected region key to be 'us'")
 }
 func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
-	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
-	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
+	t.Parallel()
 
-	p, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"example.com"}),
-		provider.ZoneIDFilter{},
-		true,
-		false,
-		RegionalServicesConfig{Enabled: true, RegionKey: "us"},
-		CustomHostnamesConfig{Enabled: false},
-		DNSRecordsConfig{PerPage: 50},
-	)
-	if err != nil {
-		t.Fatal(err)
+	comment := string(make([]byte, paidZoneMaxCommentLength+1))
+	freeValidComment := comment[:freeZoneMaxCommentLength]
+	freeInvalidComment := comment[:freeZoneMaxCommentLength+1]
+	paidValidComment := comment[:paidZoneMaxCommentLength]
+	paidInvalidComment := comment[:paidZoneMaxCommentLength+1]
+
+	freeProvider := &CloudFlareProvider{
+		Client:                 NewMockCloudFlareClient(),
+		domainFilter:           endpoint.NewDomainFilter([]string{"example.com"}),
+		RegionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+	}
+	paidProvider := &CloudFlareProvider{
+		Client:                 NewMockCloudFlareClient(),
+		domainFilter:           endpoint.NewDomainFilter([]string{"bar.com"}),
+		RegionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+		DNSRecordsConfig:       DNSRecordsConfig{Comment: paidValidComment},
 	}
 
 	ep := &endpoint.Endpoint{
@@ -1847,44 +1851,11 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		Targets:    []string{"192.0.2.1"},
 	}
 
-	change, _ := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
+	change, _ := freeProvider.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
 	if change.RegionalHostname.regionKey != "us" {
 		t.Errorf("expected region key to be 'us', but got '%s'", change.RegionalHostname.regionKey)
 	}
 
-	var freeValidCommentBuilder strings.Builder
-	for range freeZoneMaxCommentLength {
-		freeValidCommentBuilder.WriteString("x")
-	}
-
-	var freeInvalidCommentBuilder strings.Builder
-	for range freeZoneMaxCommentLength + 1 {
-		freeInvalidCommentBuilder.WriteString("x")
-	}
-
-	var paidValidCommentBuilder strings.Builder
-	for range paidZoneMaxCommentLength {
-		paidValidCommentBuilder.WriteString("x")
-	}
-	var paidInvalidCommentBuilder strings.Builder
-	for range paidZoneMaxCommentLength + 1 {
-		paidInvalidCommentBuilder.WriteString("x")
-	}
-
-	paidProvider, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"bar.com"}),
-		provider.ZoneIDFilter{},
-		true,
-		false,
-		RegionalServicesConfig{Enabled: true, RegionKey: "us"},
-		CustomHostnamesConfig{Enabled: false},
-		DNSRecordsConfig{PerPage: 50, Comment: paidValidCommentBuilder.String()},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	paidProvider.Client = NewMockCloudFlareClient()
 	commentTestCases := []struct {
 		name     string
 		provider *CloudFlareProvider
@@ -1893,7 +1864,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	}{
 		{
 			name:     "For free Zone respecting comment length, expect no trimming",
-			provider: p,
+			provider: freeProvider,
 			endpoint: &endpoint.Endpoint{
 				DNSName:    "example.com",
 				RecordType: "A",
@@ -1901,15 +1872,15 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
 						Name:  annotations.CloudflareRecordCommentKey,
-						Value: freeValidCommentBuilder.String(),
+						Value: freeValidComment,
 					},
 				},
 			},
-			expected: len(freeValidCommentBuilder.String()),
+			expected: len(freeValidComment),
 		},
 		{
 			name:     "For free Zones not respecting comment length, expect trimmed comments",
-			provider: p,
+			provider: freeProvider,
 			endpoint: &endpoint.Endpoint{
 				DNSName:    "example.com",
 				RecordType: "A",
@@ -1917,7 +1888,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
 						Name:  annotations.CloudflareRecordCommentKey,
-						Value: freeInvalidCommentBuilder.String(),
+						Value: freeInvalidComment,
 					},
 				},
 			},
@@ -1933,11 +1904,11 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
 						Name:  annotations.CloudflareRecordCommentKey,
-						Value: paidValidCommentBuilder.String(),
+						Value: paidValidComment,
 					},
 				},
 			},
-			expected: len(paidValidCommentBuilder.String()),
+			expected: len(paidValidComment),
 		},
 		{
 			name:     "For paid Zones not respecting comment length, expect trimmed comments",
@@ -1949,7 +1920,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
 						Name:  annotations.CloudflareRecordCommentKey,
-						Value: paidInvalidCommentBuilder.String(),
+						Value: paidInvalidComment,
 					},
 				},
 			},
@@ -1959,6 +1930,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 
 	for _, test := range commentTestCases {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			change, err := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
 			assert.NoError(t, err)
 			if len(change.ResourceRecord.Comment) != test.expected {
@@ -3215,7 +3187,6 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 		})
 	}
 }
-
 func TestCloudFlareZonesDomainFilter(t *testing.T) {
 	// Create a domain filter that only matches "bar.com"
 	// This should filter out "foo.com" and trigger the debug log
