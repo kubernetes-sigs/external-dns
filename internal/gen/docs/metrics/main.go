@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -71,6 +72,7 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 			"process_network_transmit_bytes_total",
 		}...)
 		sort.Strings(runtimeMetrics)
+		runtimeMetrics = slices.Compact(runtimeMetrics)
 	} else {
 		runtimeMetrics = []string{}
 	}
