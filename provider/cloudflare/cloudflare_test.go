@@ -948,13 +948,8 @@ func TestCloudflareProvider(t *testing.T) {
 		Key   string
 		Value string
 	}
-	const (
-		cfEmailEnvKey    = "CF_API_EMAIL"
-		cfAPIKeyEnvKey   = "CF_API_KEY"
-		cfAPITokenEnvKey = "CF_API_TOKEN"
-	)
 	// unset environment variables to avoid interference with tests
-	t.Setenv(cfEmailEnvKey, "")
+	t.Setenv(cfAPIEmailEnvKey, "")
 	t.Setenv(cfAPIKeyEnvKey, "")
 	t.Setenv(cfAPITokenEnvKey, "")
 
@@ -986,7 +981,7 @@ func TestCloudflareProvider(t *testing.T) {
 			Name: "use_email_and_key",
 			Environment: []EnvVar{
 				{Key: cfAPIKeyEnvKey, Value: "xxxxxxxxxxxxxxxxx"},
-				{Key: cfEmailEnvKey, Value: "test@test.com"},
+				{Key: cfAPIEmailEnvKey, Value: "test@test.com"},
 			},
 			ShouldFail: false,
 		},
@@ -1818,8 +1813,8 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 }
 
 func TestCloudFlareProvider_Region(t *testing.T) {
-	t.Setenv("CF_API_TOKEN", "abc123def")
-	t.Setenv("CF_API_EMAIL", "test@test.com")
+	t.Setenv(cfAPITokenEnvKey, "abc123def")
+	t.Setenv(cfAPIEmailEnvKey, "test@test.com")
 	provider, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"example.com"}),
 		provider.ZoneIDFilter{},
