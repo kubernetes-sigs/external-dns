@@ -331,22 +331,11 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	serviceKey := cache.ObjectName{Namespace: svc.Namespace, Name: svc.Name}.String()
 	rawEndpointSlices, err := sc.endpointSlicesInformer.Informer().GetIndexer().ByIndex(serviceNameIndexKey, serviceKey)
 	if err != nil {
-		// Should never happen as long as the index exists
 		log.Errorf("Get EndpointSlices of service[%s] error:%v", svc.GetName(), err)
 		return nil
 	}
 
-	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
-	for _, obj := range rawEndpointSlices {
-		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
-		if !ok {
-			// Should never happen as the indexer can only contain EndpointSlice objects
-			log.Errorf("Expected %T but got %T instead, skipping", endpointSlice, obj)
-			continue
-		}
-		endpointSlices = append(endpointSlices, endpointSlice)
-	}
-
+	endpointSlices := convertToEndpointSlices(rawEndpointSlices)
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
 		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
@@ -357,74 +346,63 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
+	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
+	return endpoints
+}
+
+// Helper to convert raw objects to EndpointSlice
+func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.EndpointSlice {
+	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
+	for _, obj := range rawEndpointSlices {
+		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+		if !ok {
+			log.Errorf("Expected EndpointSlice but got %T instead, skipping", obj)
+			continue
+		}
+		endpointSlices = append(endpointSlices, endpointSlice)
+	}
+	return endpointSlices
+}
+
+// processHeadlessEndpointsFromSlices processes EndpointSlices specifically for headless services
+// and returns deduped targets by domain/type.
+// TODO: Consider refactoring with generics when available: https://github.com/kubernetes/kubernetes/issues/133544
+func (sc *serviceSource) processHeadlessEndpointsFromSlices(
+	svc *v1.Service,
+	pods []*v1.Pod,
+	endpointSlices []*discoveryv1.EndpointSlice,
+	hostname string,
+	endpointsType string,
+	publishPodIPs bool,
+	publishNotReadyAddresses bool,
+) map[endpoint.EndpointKey]endpoint.Targets {
 	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
 	for _, endpointSlice := range endpointSlices {
 		for _, ep := range endpointSlice.Endpoints {
 			if !conditionToBool(ep.Conditions.Ready) && !publishNotReadyAddresses {
 				continue
 			}
-
-			if publishPodIPs &&
-				endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 &&
-				endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
+			if publishPodIPs && endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 && endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
 				log.Debugf("Skipping EndpointSlice %s/%s because its address type is unsupported: %s", endpointSlice.Namespace, endpointSlice.Name, endpointSlice.AddressType)
 				continue
 			}
-
-			// find pod for this address
-			if ep.TargetRef == nil || ep.TargetRef.APIVersion != "" || ep.TargetRef.Kind != "Pod" {
-				log.Debugf("Skipping address because its target is not a pod: %v", ep)
-				continue
-			}
-			var pod *v1.Pod
-			for _, v := range pods {
-				if v.Name == ep.TargetRef.Name {
-					pod = v
-					break
-				}
-			}
+			pod := findPodForEndpoint(ep, pods)
 			if pod == nil {
-				log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
+				if ep.TargetRef != nil {
+					log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
+				} else {
+					log.Errorf("Pod not found for endpoint with nil TargetRef: %v", ep)
+				}
 				continue
 			}
-
 			headlessDomains := []string{hostname}
 			if pod.Spec.Hostname != "" {
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
-
 			for _, headlessDomain := range headlessDomains {
-				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
-				if len(targets) == 0 {
-					if endpointsType == EndpointsTypeNodeExternalIP {
-						if sc.nodeInformer == nil {
-							log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
-							continue
-						}
-						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
-						if err != nil {
-							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
-							return endpoints
-						}
-						for _, address := range node.Status.Addresses {
-							if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
-								targets = append(targets, address.Address)
-								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
-							}
-						}
-					} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
-						targets = endpoint.Targets{pod.Status.HostIP}
-						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
-					} else {
-						if len(ep.Addresses) == 0 {
-							log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
-							continue
-						}
-						address := ep.Addresses[0] // Only use the first address, as additional addresses have no semantic defined
-						targets = endpoint.Targets{address}
-						log.Debugf("Generating matching endpoint %s with EndpointSliceAddress IP %s", headlessDomain, address)
-					}
-				}
+				targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
@@ -435,8 +413,68 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 		}
 	}
+	// Return a copy of the map to prevent external modifications
+	result := make(map[endpoint.EndpointKey]endpoint.Targets, len(targetsByHeadlessDomainAndType))
+	for k, v := range targetsByHeadlessDomainAndType {
+		result[k] = append(endpoint.Targets(nil), v...)
+	}
+	return result
+}
 
-	headlessKeys := []endpoint.EndpointKey{}
+// Helper to find pod for endpoint
+func findPodForEndpoint(ep discoveryv1.Endpoint, pods []*v1.Pod) *v1.Pod {
+	if ep.TargetRef == nil || ep.TargetRef.APIVersion != "" || ep.TargetRef.Kind != "Pod" {
+		log.Debugf("Skipping address because its target is not a pod: %v", ep)
+		return nil
+	}
+	for _, v := range pods {
+		if v.Name == ep.TargetRef.Name {
+			return v
+		}
+	}
+	return nil
+}
+
+// Helper to get targets for domain
+func (sc *serviceSource) getTargetsForDomain(pod *v1.Pod, ep discoveryv1.Endpoint, endpointSlice *discoveryv1.EndpointSlice, endpointsType string, headlessDomain string) endpoint.Targets {
+	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
+	if len(targets) == 0 {
+		if endpointsType == EndpointsTypeNodeExternalIP {
+			if sc.nodeInformer == nil {
+				log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
+				return nil
+			}
+			node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+			if err != nil {
+				log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
+				return nil
+			}
+			for _, address := range node.Status.Addresses {
+				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+					targets = append(targets, address.Address)
+					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
+				}
+			}
+		} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
+			targets = endpoint.Targets{pod.Status.HostIP}
+			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
+		} else {
+			if len(ep.Addresses) == 0 {
+				log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
+				return nil
+			}
+			address := ep.Addresses[0]
+			targets = endpoint.Targets{address}
+			log.Debugf("Generating matching endpoint %s with EndpointSliceAddress IP %s", headlessDomain, address)
+		}
+	}
+	return targets
+}
+
+// Helper to build endpoints from deduped targets
+func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[endpoint.EndpointKey]endpoint.Targets, ttl endpoint.TTL) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+	headlessKeys := make([]endpoint.EndpointKey, 0, len(targetsByHeadlessDomainAndType))
 	for headlessKey := range targetsByHeadlessDomainAndType {
 		headlessKeys = append(headlessKeys, headlessKey)
 	}
@@ -449,31 +487,26 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	for _, headlessKey := range headlessKeys {
 		allTargets := targetsByHeadlessDomainAndType[headlessKey]
 		targets := []string{}
-
 		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
 			if _, ok := deduppedTargets[target]; ok {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
 			}
-
 			deduppedTargets[target] = struct{}{}
 			targets = append(targets, target)
 		}
-
 		var ep *endpoint.Endpoint
 		if ttl.IsConfigured() {
 			ep = endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
 		} else {
 			ep = endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...)
 		}
-
 		if ep != nil {
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 			endpoints = append(endpoints, ep)
 		}
 	}
-
 	return endpoints
 }
 
