@@ -26,8 +26,10 @@ import (
 	b64 "encoding/base64"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -63,6 +65,9 @@ type TXTRegistry struct {
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
 	existingTXTs *existingTXTs
+
+	blockDelegatedApexRecords bool
+	apexChecker               *apexChecker
 }
 
 // existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
@@ -108,6 +113,34 @@ func (im *existingTXTs) reset() {
 	im.entries = make(map[recordKey]struct{})
 }
 
+type apexChecker struct {
+	apexes set.Set[string]
+}
+
+func newApexChecker() *apexChecker {
+	return &apexChecker{
+		apexes: set.New[string](),
+	}
+}
+
+func (a *apexChecker) addApexCandidate(ep *endpoint.Endpoint) {
+	if ep.RecordType != endpoint.RecordTypeNS {
+		return
+	}
+	a.apexes.Insert(idna.NormalizeDNSName(ep.DNSName))
+}
+
+func (a *apexChecker) isApex(ep *endpoint.Endpoint) bool {
+	return a.apexes.Has(idna.NormalizeDNSName(ep.DNSName))
+}
+
+func (a *apexChecker) reset() {
+	if a == nil {
+		return
+	}
+	a.apexes = set.New[string]()
+}
+
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
 // generate new format TXT records, otherwise it generates both old and new formats for
 // backwards compatibility.
@@ -138,17 +171,28 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
 
+	// txt prefix with record type template and ending with dot can create delegated apex records only.
+	// e.g. txtPrefix="%{record_type}-txt." and create record "A example.com" will create TXT record for "a-txt.example.com"
+	blockDelegatedApexRecords := !(strings.Contains(txtPrefix, recordTemplate) && strings.HasSuffix(txtPrefix, "."))
+
+	var apexChecker *apexChecker
+	if blockDelegatedApexRecords {
+		apexChecker = newApexChecker()
+	}
+
 	return &TXTRegistry{
-		provider:            provider,
-		ownerID:             ownerID,
-		mapper:              mapper,
-		cacheInterval:       cacheInterval,
-		wildcardReplacement: txtWildcardReplacement,
-		managedRecordTypes:  managedRecordTypes,
-		excludeRecordTypes:  excludeRecordTypes,
-		txtEncryptEnabled:   txtEncryptEnabled,
-		txtEncryptAESKey:    txtEncryptAESKey,
-		existingTXTs:        newExistingTXTs(),
+		provider:                  provider,
+		ownerID:                   ownerID,
+		mapper:                    mapper,
+		cacheInterval:             cacheInterval,
+		wildcardReplacement:       txtWildcardReplacement,
+		managedRecordTypes:        managedRecordTypes,
+		excludeRecordTypes:        excludeRecordTypes,
+		txtEncryptEnabled:         txtEncryptEnabled,
+		txtEncryptAESKey:          txtEncryptAESKey,
+		existingTXTs:              newExistingTXTs(),
+		blockDelegatedApexRecords: blockDelegatedApexRecords,
+		apexChecker:               apexChecker,
 	}, nil
 }
 
@@ -186,6 +230,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	txtRecordsMap := map[string]struct{}{}
 
 	for _, record := range records {
+		if im.blockDelegatedApexRecords {
+			im.apexChecker.addApexCandidate(record)
+		}
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
 			continue
@@ -308,24 +355,32 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	defer im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
+	defer im.apexChecker.reset()  // reset apex checker for the next reconciliation loop
 
-	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
-	}
-	for _, r := range filteredChanges.Create {
+	filteredCreates := make([]*endpoint.Endpoint, 0, len(changes.Create))
+	for _, r := range changes.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
+		if im.blockDelegatedApexRecords && im.apexChecker.isApex(r) {
+			log.Warnf(`%s record for %s cannot be created because it is an apex record. With the current txtPrefix settings, the ownership TXT record would be generated outside of any managed zone.`,
+				r.RecordType, r.DNSName)
+			continue
+		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		filteredCreates = append(filteredCreates, r)
+		filteredCreates = append(filteredCreates, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
+	}
+
+	filteredChanges := &plan.Changes{
+		Create:    filteredCreates,
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
 	for _, r := range filteredChanges.Delete {
