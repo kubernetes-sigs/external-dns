@@ -236,6 +236,12 @@ type typeSwap struct {
 	new *endpoint.Endpoint
 }
 
+var typeSwapTypePriority = map[string]int{
+	endpoint.RecordTypeA:     0,
+	endpoint.RecordTypeAAAA:  1,
+	endpoint.RecordTypeCNAME: 2,
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	swaps, creates, deletes := p.extractTypeSwaps(changes.Create, changes.Delete)
@@ -257,10 +263,13 @@ func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	return p.submitChange(ctx, change)
 }
 
+// extractTypeSwaps pairs create/delete records of differing types so we can swap
+// them while preserving ownership labels, skipping TXT records and preferring
+// higher-priority, labeled deletions.
 func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.Endpoint) ([]typeSwap, []*endpoint.Endpoint, []*endpoint.Endpoint) {
 	swaps := make([]typeSwap, 0)
 	remainingCreates := make([]*endpoint.Endpoint, 0, len(create))
-	remainingDeletes := make([]*endpoint.Endpoint, 0)
+	remainingDeletes := make([]*endpoint.Endpoint, 0, len(deleteEndpoints))
 
 	// Index deletions by name then by record type
 	typeBucketByName := make(map[string]map[string][]*endpoint.Endpoint)
@@ -293,26 +302,54 @@ func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.En
 		}
 
 		// Find any delete with a different type to form a swap.
-		var matched *endpoint.Endpoint
-		var matchedType string
+		var (
+			matched       *endpoint.Endpoint
+			matchedType   string
+			matchedIndex  int
+			bestTypeRank  int
+			bestOwnerRank int
+		)
+
+		bestTypeRank = len(typeSwapTypePriority) + 1
+		bestOwnerRank = 1
+
 		for delType, list := range buckets {
 			if delType == createEP.RecordType || len(list) == 0 {
 				continue
 			}
-			matched = list[0]
-			matchedType = delType
 
-			if len(list) == 1 {
-				delete(buckets, delType)
-			} else {
-				buckets[delType] = list[1:]
+			typeRank := swapTypePriority(delType)
+
+			for idx, candidate := range list {
+				ownerRank := 1
+				if candidate.Labels != nil {
+					if _, ok := candidate.Labels[endpoint.OwnerLabelKey]; ok {
+						ownerRank = 0
+					}
+				}
+
+				if matched == nil || typeRank < bestTypeRank || (typeRank == bestTypeRank && ownerRank < bestOwnerRank) || (typeRank == bestTypeRank && ownerRank == bestOwnerRank && idx < matchedIndex) || (typeRank == bestTypeRank && ownerRank == bestOwnerRank && idx == matchedIndex && delType < matchedType) {
+					matched = candidate
+					matchedType = delType
+					matchedIndex = idx
+					bestTypeRank = typeRank
+					bestOwnerRank = ownerRank
+				}
 			}
-			break
 		}
 
 		if matched == nil {
 			remainingCreates = append(remainingCreates, createEP)
 			continue
+		}
+
+		// Consume the matched deletion from the bucket.
+		bucket := buckets[matchedType]
+		switch len(bucket) {
+		case 1:
+			delete(buckets, matchedType)
+		default:
+			buckets[matchedType] = append(bucket[:matchedIndex], bucket[matchedIndex+1:]...)
 		}
 
 		if len(buckets) == 0 {
@@ -332,12 +369,23 @@ func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.En
 		}
 
 		swaps = append(swaps, typeSwap{old: matched, new: createEP})
-		_ = matchedType // silence unused if future logging added
 	}
 
-	for _, byType := range typeBucketByName {
-		for _, list := range byType {
-			remainingDeletes = append(remainingDeletes, list...)
+	nameKeys := make([]string, 0, len(typeBucketByName))
+	for name := range typeBucketByName {
+		nameKeys = append(nameKeys, name)
+	}
+	sort.Strings(nameKeys)
+
+	for _, name := range nameKeys {
+		byType := typeBucketByName[name]
+		typeKeys := make([]string, 0, len(byType))
+		for recordType := range byType {
+			typeKeys = append(typeKeys, recordType)
+		}
+		sort.Strings(typeKeys)
+		for _, recordType := range typeKeys {
+			remainingDeletes = append(remainingDeletes, byType[recordType]...)
 		}
 	}
 
@@ -355,6 +403,14 @@ func eligibleForTypeSwap(ep *endpoint.Endpoint) bool {
 
 func swapKey(name string) string {
 	return strings.ToLower(provider.EnsureTrailingDot(name))
+}
+
+func swapTypePriority(recordType string) int {
+	if priority, ok := typeSwapTypePriority[recordType]; ok {
+		return priority
+	}
+
+	return len(typeSwapTypePriority) + 1
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider

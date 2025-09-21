@@ -714,7 +714,7 @@ func TestGoogleExtractTypeSwapsIgnoreTXT(t *testing.T) {
 	createA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "1.2.3.4")
 	deleteTXT := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, "txt-value")
 	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createA}, []*endpoint.Endpoint{deleteTXT})
-	require.Len(t, swaps, 0)
+	require.Empty(t, swaps)
 	require.Len(t, remCreates, 1)
 	require.Len(t, remDeletes, 1)
 
@@ -722,7 +722,7 @@ func TestGoogleExtractTypeSwapsIgnoreTXT(t *testing.T) {
 	createTXT := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, "txt-value")
 	deleteA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "1.2.3.4")
 	swaps, remCreates, remDeletes = gp.extractTypeSwaps([]*endpoint.Endpoint{createTXT}, []*endpoint.Endpoint{deleteA})
-	require.Len(t, swaps, 0)
+	require.Empty(t, swaps)
 	require.Len(t, remCreates, 1)
 	require.Len(t, remDeletes, 1)
 }
@@ -741,7 +741,8 @@ func TestGoogleExtractTypeSwapsConsumesSingleDelete(t *testing.T) {
 	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createCNAME}, []*endpoint.Endpoint{delA, delAAAA})
 
 	require.Len(t, swaps, 1)
-	require.Len(t, remCreates, 0)
+	assert.Equal(t, delA, swaps[0].old)
+	require.Empty(t, remCreates)
 	require.Len(t, remDeletes, 1)
 	assert.Equal(t, delAAAA, remDeletes[0])
 	assert.NotNil(t, swaps[0].new.Labels)
@@ -760,8 +761,8 @@ func TestGoogleExtractTypeSwapsCaseInsensitiveName(t *testing.T) {
 
 	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createCNAME}, []*endpoint.Endpoint{delA})
 	require.Len(t, swaps, 1)
-	require.Len(t, remCreates, 0)
-	require.Len(t, remDeletes, 0)
+	require.Empty(t, remCreates)
+	require.Empty(t, remDeletes)
 	assert.Equal(t, delA, swaps[0].old)
 	assert.Equal(t, createCNAME, swaps[0].new)
 }
@@ -774,7 +775,7 @@ func TestGoogleExtractTypeSwapsSameTypeNoSwap(t *testing.T) {
 	createA := endpoint.NewEndpoint(name, endpoint.RecordTypeA, "203.0.113.56")
 
 	swaps, remCreates, remDeletes := gp.extractTypeSwaps([]*endpoint.Endpoint{createA}, []*endpoint.Endpoint{delA})
-	require.Len(t, swaps, 0)
+	require.Empty(t, swaps)
 	require.Len(t, remCreates, 1)
 	require.Len(t, remDeletes, 1)
 }
