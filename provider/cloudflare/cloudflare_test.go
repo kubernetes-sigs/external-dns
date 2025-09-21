@@ -948,10 +948,13 @@ func TestCloudflareProvider(t *testing.T) {
 		Key   string
 		Value string
 	}
+
 	// unset environment variables to avoid interference with tests
-	t.Setenv(cfAPIEmailEnvKey, "")
-	t.Setenv(cfAPIKeyEnvKey, "")
-	t.Setenv(cfAPITokenEnvKey, "")
+	testutils.TestHelperEnvSetter(t, map[string]string{
+		cfAPIEmailEnvKey: "",
+		cfAPIKeyEnvKey:   "",
+		cfAPITokenEnvKey: "",
+	})
 
 	tokenFile := "/tmp/cf_api_token"
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
