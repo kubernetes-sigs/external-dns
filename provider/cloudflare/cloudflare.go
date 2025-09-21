@@ -332,10 +332,10 @@ func NewCloudFlareProvider(
 		configV4 *cloudflare.Client
 		err      error
 	)
-	if os.Getenv(cfAPITokenEnvKey) != "" {
-		token := os.Getenv(cfAPITokenEnvKey)
-		if strings.HasPrefix(token, "file:") {
-			tokenBytes, err := os.ReadFile(strings.TrimPrefix(token, "file:"))
+	token := os.Getenv(cfAPITokenEnvKey)
+	if token != "" {
+		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
+			tokenBytes, err := os.ReadFile(trimed)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
 			}

@@ -1816,8 +1816,10 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 }
 
 func TestCloudFlareProvider_Region(t *testing.T) {
-	t.Setenv(cfAPITokenEnvKey, "abc123def")
-	t.Setenv(cfAPIEmailEnvKey, "test@test.com")
+	testutils.TestHelperEnvSetter(t, map[string]string{
+		cfAPITokenEnvKey: "abc123def",
+		cfAPIEmailEnvKey: "test@test.com",
+	})
 	provider, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"example.com"}),
 		provider.ZoneIDFilter{},
