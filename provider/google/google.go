@@ -266,7 +266,9 @@ func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // extractTypeSwaps pairs create/delete records of differing types so we can swap
 // them while preserving ownership labels, skipping TXT records and preferring
 // higher-priority, labeled deletions.
-func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.Endpoint) ([]typeSwap, []*endpoint.Endpoint, []*endpoint.Endpoint) {
+func (p *GoogleProvider) extractTypeSwaps(
+	create, deleteEndpoints []*endpoint.Endpoint,
+) ([]typeSwap, []*endpoint.Endpoint, []*endpoint.Endpoint) {
 	swaps := make([]typeSwap, 0)
 	remainingCreates := make([]*endpoint.Endpoint, 0, len(create))
 	remainingDeletes := make([]*endpoint.Endpoint, 0, len(deleteEndpoints))
@@ -328,7 +330,21 @@ func (p *GoogleProvider) extractTypeSwaps(create, deleteEndpoints []*endpoint.En
 					}
 				}
 
-				if matched == nil || typeRank < bestTypeRank || (typeRank == bestTypeRank && ownerRank < bestOwnerRank) || (typeRank == bestTypeRank && ownerRank == bestOwnerRank && idx < matchedIndex) || (typeRank == bestTypeRank && ownerRank == bestOwnerRank && idx == matchedIndex && delType < matchedType) {
+				better := matched == nil
+				if !better && typeRank != bestTypeRank {
+					better = typeRank < bestTypeRank
+				}
+				if !better && ownerRank != bestOwnerRank {
+					better = ownerRank < bestOwnerRank
+				}
+				if !better && idx != matchedIndex {
+					better = idx < matchedIndex
+				}
+				if !better && delType != matchedType {
+					better = delType < matchedType
+				}
+
+				if better {
 					matched = candidate
 					matchedType = delType
 					matchedIndex = idx
