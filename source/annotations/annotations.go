@@ -29,6 +29,7 @@ const (
 	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
+	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
 	SCWPrefix        = AnnotationKeyPrefix + "scw-"
 	WebhookPrefix    = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"

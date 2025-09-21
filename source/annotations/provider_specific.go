@@ -49,6 +49,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Name:  fmt.Sprintf("webhook/%s", attr),
 				Value: v,
 			})
+		} else if attr, ok := strings.CutPrefix(k, CoreDNSPrefix); ok {
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("coredns/%s", attr),
+				Value: v,
+			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
 			if strings.Contains(k, CloudflareCustomHostnameKey) {
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
