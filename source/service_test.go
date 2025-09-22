@@ -4963,7 +4963,6 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 }
 
 // Test helper functions created during extractHeadlessEndpoints refactoring
-
 func TestConvertToEndpointSlices(t *testing.T) {
 	t.Run("converts valid EndpointSlices", func(t *testing.T) {
 		validSlice := &discoveryv1.EndpointSlice{
