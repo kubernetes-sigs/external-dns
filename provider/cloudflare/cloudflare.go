@@ -46,6 +46,11 @@ import (
 type changeAction int
 
 const (
+	// Environment variable names for CloudFlare authentication
+	cfAPIEmailEnvKey = "CF_API_EMAIL"
+	cfAPIKeyEnvKey   = "CF_API_KEY"
+	cfAPITokenEnvKey = "CF_API_TOKEN"
+
 	// cloudFlareCreate is a ChangeAction enum value
 	cloudFlareCreate changeAction = iota
 	// cloudFlareDelete is a ChangeAction enum value
@@ -327,12 +332,12 @@ func NewCloudFlareProvider(
 		configV4 *cloudflare.Client
 		err      error
 	)
-	if os.Getenv("CF_API_TOKEN") != "" {
-		token := os.Getenv("CF_API_TOKEN")
-		if strings.HasPrefix(token, "file:") {
-			tokenBytes, err := os.ReadFile(strings.TrimPrefix(token, "file:"))
+	token := os.Getenv(cfAPITokenEnvKey)
+	if token != "" {
+		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
+			tokenBytes, err := os.ReadFile(trimed)
 			if err != nil {
-				return nil, fmt.Errorf("failed to read CF_API_TOKEN from file: %w", err)
+				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
 			}
 			token = strings.TrimSpace(string(tokenBytes))
 		}
@@ -341,10 +346,10 @@ func NewCloudFlareProvider(
 			option.WithAPIToken(token),
 		)
 	} else {
-		config, err = cloudflarev0.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
+		config, err = cloudflarev0.New(os.Getenv(cfAPIKeyEnvKey), os.Getenv(cfAPIEmailEnvKey))
 		configV4 = cloudflare.NewClient(
-			option.WithAPIKey(os.Getenv("CF_API_KEY")),
-			option.WithAPIEmail(os.Getenv("CF_API_EMAIL")),
+			option.WithAPIKey(os.Getenv(cfAPIKeyEnvKey)),
+			option.WithAPIEmail(os.Getenv(cfAPIEmailEnvKey)),
 		)
 	}
 	if err != nil {
