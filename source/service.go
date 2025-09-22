@@ -357,6 +357,8 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
+	perPodDNSMode, perPodDNS := svc.Annotations[servicePodEndpointsKey]
+
 	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
 	for _, endpointSlice := range endpointSlices {
 		for _, ep := range endpointSlice.Endpoints {
@@ -393,6 +395,21 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
 
+                        if perPodDNS {
+				switch perPodDNSMode {
+				case ServicePodEndpointsPodName:
+					headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Name, hostname))
+				case ServicePodEndpointsFqdnTemplate:
+					if hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, pod); err == nil {
+						headlessDomains = append(headlessDomains, hostnames...)
+					} else {
+						log.Errorf("Error executing template for pod %s: %v", pod.Name, err)
+					}
+				default:
+					log.Errorf("Unknown `service-pod-endpoints` value %s", perPodDNSMode)
+					return endpoints
+				}
+			}
 			for _, headlessDomain := range headlessDomains {
 				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
