@@ -23,12 +23,14 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
+	"sigs.k8s.io/external-dns/registry"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -460,7 +462,7 @@ func validateServices(services map[string]Service, expectedServices map[string][
 		}
 		found := false
 		for i, expectedServiceEntry := range expectedServiceEntries {
-			if value.Host == expectedServiceEntry.Host && value.Text == expectedServiceEntry.Text && value.Group == expectedServiceEntry.Group {
+			if value.Host == expectedServiceEntry.Host && value.Text == expectedServiceEntry.Text && value.Group == expectedServiceEntry.Group && value.SetIdentifier == expectedServiceEntry.SetIdentifier {
 				expectedServiceEntries = append(expectedServiceEntries[:i], expectedServiceEntries[i+1:]...)
 				found = true
 				break
@@ -753,7 +755,7 @@ func TestNewCoreDNSProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.TestHelperEnvSetter(t, tt.envs)
 
-			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", false)
+			provider, err := NewCoreDNSProvider(&endpoint.DomainFilter{}, "/prefix/", "", false)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.errMsg)
@@ -803,7 +805,7 @@ func TestFindEp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, ok := findEp(tt.slice, tt.dnsName)
+			got, ok := findEp(tt.slice, tt.dnsName, "")
 			assert.Equal(t, tt.wantBool, ok)
 			if ok {
 				assert.Equal(t, tt.dnsName, got.DNSName)
@@ -907,4 +909,73 @@ func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
 	} else if prop != "test1" {
 		t.Errorf("got unexpected Group name: %s != %s", prop, "test1")
 	}
+}
+
+func TestApplyChangesWithSetIdentifier(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+		setIdentifier: "bla",
+	}
+
+	changes1 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5").WithSetIdentifier("asd"),
+			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "5.5.5.6"),
+			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes1)
+
+	expectedServices1 := map[string][]*Service{
+		"/skydns/local/domain1": {{Host: "5.5.5.5", SetIdentifier: "asd"}},
+		"/skydns/local/domain2": {{Host: "5.5.5.6", SetIdentifier: "bla"}},
+		"/skydns/local/domain3": {{Host: "5.5.5.7", SetIdentifier: "bla"}},
+	}
+	validateServices(client.services, expectedServices1, t, 1)
+}
+
+func TestRecordsWithSetIdentifier(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/a-domain1/45bd7d0d": {
+				Text:          "\"heritage=external-dns,external-dns/owner=cluster-a,external-dns/resource=resource1\"",
+				TargetStrip:   1,
+				SetIdentifier: "cluster-a",
+			},
+			"/skydns/local/a-domain1/56615f35": {
+				Text:          "\"heritage=external-dns,external-dns/owner=cluster-b,external-dns/resource=resource1\"",
+				TargetStrip:   1,
+				SetIdentifier: "cluster-b",
+			},
+			"/skydns/local/domain1/29afc1cc": {
+				Host:          "10.15.1.1",
+				Text:          "\"heritage=external-dns,external-dns/owner=cluster-b,external-dns/resource=resource1\"",
+				TargetStrip:   1,
+				SetIdentifier: "cluster-b",
+			},
+			"/skydns/local/domain1/738fb9f0": {
+				Host:          "10.25.1.1",
+				Text:          "\"heritage=external-dns,external-dns/owner=cluster-a,external-dns/resource=resource1\"",
+				TargetStrip:   1,
+				SetIdentifier: "cluster-a",
+			},
+		},
+	}
+	p := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+	r, _ := registry.NewTXTRegistry(p, "", "", "cluster-b", time.Hour, "", []string{}, []string{}, false, nil)
+	endpoints, err := r.Records(context.Background())
+	require.NoError(t, err)
+	assert.Len(t, endpoints, 2)
+	identifierMap := map[string]bool{}
+	for _, endpoint := range endpoints {
+		identifierMap[endpoint.SetIdentifier] = true
+	}
+	assert.Len(t, identifierMap, 2)
 }
