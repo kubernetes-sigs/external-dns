@@ -240,29 +240,84 @@ func TestRecords_NonOKStatusCode(t *testing.T) {
 }
 
 func TestApplyChanges(t *testing.T) {
-	successfulApplyChanges := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}
+
 		assert.Equal(t, "/records", r.URL.Path)
-		if successfulApplyChanges {
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		defer r.Body.Close()
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		require.JSONEq(t, `{
+			  "create": [
+			    {
+			      "dnsName": "foo",
+			      "providerSpecific": [{ "name": "prop1", "value": "value1" }],
+			      "labels": { "owner": "external-dns" },
+			      "recordTTL": 10
+			    }
+			  ],
+			  "updateOld": [{ "dnsName": "bar" }],
+			  "updateNew": [{ "dnsName": "baz" }],
+			  "delete": [{ "dnsName": "qux" }]
+			}`, string(body),
+		)
+		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer svr.Close()
 
 	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(context.TODO(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:   "foo",
+				RecordTTL: 10,
+				Labels: map[string]string{
+					"owner": "external-dns",
+				},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"prop1": "value1",
+				},
+			},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName: "bar",
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName: "baz",
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName: "qux",
+			},
+		},
+	})
 	require.NoError(t, err)
+}
 
-	successfulApplyChanges = false
+func TestApplyChanges_InternalServerError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
 
+		assert.Equal(t, "/records", r.URL.Path)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer svr.Close()
+
+	p, err := NewWebhookProvider(svr.URL)
+	require.NoError(t, err)
 	err = p.ApplyChanges(context.TODO(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
@@ -415,7 +470,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		if r.URL.Path == "/records" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			// assert that the request contains the provider-specific property
-			var changes plan.Changes
+			var changes webhookPlanChanges
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
 			assert.NoError(t, err)
@@ -423,8 +478,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Len(t, changes.Create, 1)
 			assert.Len(t, changes.Create[0].ProviderSpecific, 1)
-			v, ok := changes.Create[0].ProviderSpecific.Get("prop1")
-			assert.True(t, ok)
+			v := changes.Create[0].ProviderSpecific[0].Value
 			assert.Equal(t, "value1", v)
 			w.WriteHeader(http.StatusNoContent)
 			return

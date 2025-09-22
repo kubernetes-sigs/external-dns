@@ -196,14 +196,29 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	return adapter.ToInternalEndpoints(apiEndpoints), nil
 }
 
+type webhookPlanChanges struct {
+	Create    []*apiv1alpha1.Endpoint `json:"create,omitempty"`
+	Delete    []*apiv1alpha1.Endpoint `json:"delete,omitempty"`
+	UpdateOld []*apiv1alpha1.Endpoint `json:"updateOld,omitempty"`
+	UpdateNew []*apiv1alpha1.Endpoint `json:"updateNew,omitempty"`
+}
+
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 
 	b := new(bytes.Buffer)
-	// TODO: convert changes
-	if err := json.NewEncoder(b).Encode(changes); err != nil {
+	var webhookChanges *webhookPlanChanges
+	if changes != nil {
+		webhookChanges = &webhookPlanChanges{
+			Create:    adapter.ToAPIEndpoints(changes.Create),
+			Delete:    adapter.ToAPIEndpoints(changes.Delete),
+			UpdateOld: adapter.ToAPIEndpoints(changes.UpdateOld),
+			UpdateNew: adapter.ToAPIEndpoints(changes.UpdateNew),
+		}
+	}
+	if err := json.NewEncoder(b).Encode(webhookChanges); err != nil {
 		applyChangesErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to encode changes: %s", err.Error())
 		return err
