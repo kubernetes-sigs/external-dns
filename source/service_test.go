@@ -5034,7 +5034,6 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 }
 
 // Test for processEndpointSlice: publishPodIPs true and unsupported address type triggers log.Debugf skip
-
 func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T) {
 	sc := &serviceSource{}
 	svc := &v1.Service{
