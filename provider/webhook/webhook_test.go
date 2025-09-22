@@ -127,7 +127,12 @@ func TestRecords(t *testing.T) {
 		}
 		assert.Equal(t, "/records", r.URL.Path)
 		w.Write([]byte(`[{
-			"dnsName" : "test.example.com"
+			"dnsName" : "test.example.com",
+			"recordType" : "A",
+			"targets" : ["1.1.1.1"],
+			"recordTTL" : 300,
+			"labels" : {"owner": "external-dns"},
+			"providerSpecific" : [{"name": "prop1", "value": "value1"}]
 		}]`))
 	}))
 	defer svr.Close()
@@ -139,6 +144,17 @@ func TestRecords(t *testing.T) {
 	require.NotNil(t, endpoints)
 	require.Equal(t, []*endpoint.Endpoint{{
 		DNSName: "test.example.com",
+		Targets: endpoint.Targets{
+			"1.1.1.1",
+		},
+		RecordType: "A",
+		RecordTTL:  300,
+		Labels: map[string]string{
+			"owner": "external-dns",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			"prop1": "value1",
+		},
 	}}, endpoints)
 }
 
@@ -410,10 +426,11 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		DNSName:    "test.example.com",
 		RecordTTL:  10,
 		RecordType: "A",
-		Targets: endpoint.Targets{
+		Targets: []string{
 			"",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
+			//{Name: "prop1", Value: "value1"},
 			"prop1": "value1",
 		},
 	}

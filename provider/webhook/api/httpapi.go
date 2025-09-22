@@ -53,11 +53,13 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		}
 		w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
+		// TODO: convert
 		if err := json.NewEncoder(w).Encode(records); err != nil {
 			log.Errorf("Failed to encode records: %v", err)
 		}
 		return
 	case http.MethodPost:
+		// TODO: use another type
 		var changes plan.Changes
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 			log.Errorf("Failed to decode changes: %v", err)
@@ -85,6 +87,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 
+	// TODO: use another type
 	var pve []*endpoint.Endpoint
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)

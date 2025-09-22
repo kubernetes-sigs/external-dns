@@ -24,7 +24,9 @@ import (
 	"net/http"
 	"net/url"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/adapter"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -184,13 +186,14 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 
-	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	var apiEndpoints []*apiv1alpha1.Endpoint
+	if err := json.NewDecoder(resp.Body).Decode(&apiEndpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
-	return endpoints, nil
+
+	return adapter.ToInternalEndpoints(apiEndpoints), nil
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
@@ -199,6 +202,7 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 
 	b := new(bytes.Buffer)
+	// TODO: convert changes
 	if err := json.NewEncoder(b).Encode(changes); err != nil {
 		applyChangesErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to encode changes: %s", err.Error())

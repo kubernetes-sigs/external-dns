@@ -43,6 +43,7 @@ import (
 	cachetesting "k8s.io/client-go/tools/cache/testing"
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/adapter"
 )
 
 type CRDSuite struct {
@@ -513,10 +514,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate received endpoints against expected endpoints.
-			endpoints := make([]*endpoint.Endpoint, 0, len(ti.endpoints))
-			for _, ep := range ti.endpoints {
-				endpoints = append(endpoints, ep.ToInternal())
-			}
+			endpoints := adapter.ToInternalEndpoints(ti.endpoints)
 			validateEndpoints(t, receivedEndpoints, endpoints)
 
 			for _, e := range receivedEndpoints {
