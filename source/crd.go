@@ -160,23 +160,6 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 	}
 }
 
-func fromCRDEndpoint(crdEp *apiv1alpha1.Endpoint) *endpoint.Endpoint {
-	p := make(endpoint.ProviderSpecific)
-	for _, ps := range crdEp.ProviderSpecific {
-		p.Set(ps.Name, ps.Value)
-	}
-	ep := &endpoint.Endpoint{
-		DNSName:          crdEp.DNSName,
-		Targets:          crdEp.Targets,
-		RecordType:       crdEp.RecordType,
-		SetIdentifier:    crdEp.SetIdentifier,
-		RecordTTL:        endpoint.TTL(crdEp.RecordTTL),
-		Labels:           crdEp.Labels,
-		ProviderSpecific: p,
-	}
-	return ep
-}
-
 // Endpoints returns endpoint objects.
 func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
@@ -199,7 +182,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	for _, dnsEndpoint := range result.Items {
 		var crdEndpoints []*endpoint.Endpoint
 		for _, crdEp := range dnsEndpoint.Spec.Endpoints {
-			ep := fromCRDEndpoint(crdEp)
+			ep := crdEp.ToInternal()
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}

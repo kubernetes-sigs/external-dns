@@ -515,7 +515,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			// Validate received endpoints against expected endpoints.
 			endpoints := make([]*endpoint.Endpoint, 0, len(ti.endpoints))
 			for _, ep := range ti.endpoints {
-				endpoints = append(endpoints, fromCRDEndpoint(ep))
+				endpoints = append(endpoints, ep.ToInternal())
 			}
 			validateEndpoints(t, receivedEndpoints, endpoints)
 
