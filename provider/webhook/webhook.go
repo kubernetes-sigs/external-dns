@@ -244,7 +244,6 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustEndpointsRequestsGauge.Gauge.Inc()
-	var endpoints []*endpoint.Endpoint
 	u, err := url.JoinPath(p.remoteServerURL.String(), webhookapi.UrlAdjustEndpoints)
 	if err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
@@ -253,7 +252,8 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	}
 
 	b := new(bytes.Buffer)
-	if err := json.NewEncoder(b).Encode(e); err != nil {
+	apiEps := adapter.ToAPIEndpoints(e)
+	if err := json.NewEncoder(b).Encode(apiEps); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to encode endpoints, %s", err)
 		return nil, err
@@ -286,14 +286,14 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		}
 		return nil, err
 	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	apiEps = []*apiv1alpha1.Endpoint{}
+	if err := json.NewDecoder(resp.Body).Decode(&apiEps); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
 
-	return endpoints, nil
+	return adapter.ToInternalEndpoints(apiEps), nil
 }
 
 // GetDomainFilter make calls to get the serialized version of the domain filter

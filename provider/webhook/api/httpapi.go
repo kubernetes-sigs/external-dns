@@ -23,7 +23,8 @@ import (
 	"net/http"
 	"time"
 
-	"sigs.k8s.io/external-dns/endpoint"
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
+	"sigs.k8s.io/external-dns/pkg/adapter"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -87,19 +88,20 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 
-	// TODO: use another type
-	var pve []*endpoint.Endpoint
+	var pve []*apiv1alpha1.Endpoint
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
-	pve, err := p.Provider.AdjustEndpoints(pve)
+	endpoints := adapter.ToInternalEndpoints(pve)
+	endpoints, err := p.Provider.AdjustEndpoints(endpoints)
 	if err != nil {
 		log.Errorf("Failed to call adjust endpoints: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+	pve = adapter.ToAPIEndpoints(endpoints)
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
 		log.Errorf("Failed to encode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

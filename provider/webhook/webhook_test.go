@@ -28,7 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -320,7 +320,7 @@ func TestAdjustEndpoints(t *testing.T) {
 		}
 		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 
-		var endpoints []*endpoint.Endpoint
+		var endpoints []*apiv1alpha1.Endpoint
 		defer r.Body.Close()
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -349,6 +349,12 @@ func TestAdjustEndpoints(t *testing.T) {
 			Targets: endpoint.Targets{
 				"",
 			},
+			Labels: map[string]string{
+				"owner": "external-dns",
+			},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"prop1": "value1",
+			},
 		},
 	}
 	adjustedEndpoints, err := provider.AdjustEndpoints(endpoints)
@@ -359,6 +365,12 @@ func TestAdjustEndpoints(t *testing.T) {
 		RecordType: "A",
 		Targets: endpoint.Targets{
 			"",
+		},
+		Labels: map[string]string{
+			"owner": "external-dns",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			"prop1": "value1",
 		},
 	}}, adjustedEndpoints)
 }
@@ -430,7 +442,6 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			"",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			//{Name: "prop1", Value: "value1"},
 			"prop1": "value1",
 		},
 	}
