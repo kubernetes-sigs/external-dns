@@ -31,7 +31,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/adapter"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -78,6 +80,13 @@ func TestMain(m *testing.M) {
 		{
 			DNSName:    "foo.bar.com",
 			RecordType: "A",
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"prop1": "value",
+			},
+			Labels: map[string]string{
+				"label1": "value1",
+			},
+			RecordTTL: 10,
 		},
 	}
 	m.Run()
@@ -98,11 +107,11 @@ func TestRecordsHandlerRecords(t *testing.T) {
 	// require that the res has the same endpoints as the records slice
 	defer res.Body.Close()
 	require.NotNil(t, res.Body)
-	var endpoints []*endpoint.Endpoint
+	var endpoints []*apiv1alpha1.Endpoint
 	if err := json.NewDecoder(res.Body).Decode(&endpoints); err != nil {
 		t.Errorf("Failed to decode response body: %s", err.Error())
 	}
-	require.Equal(t, records, endpoints)
+	require.Equal(t, adapter.ToAPIEndpoints(records), endpoints)
 }
 
 func TestRecordsHandlerRecordsWithErrors(t *testing.T) {
@@ -132,12 +141,22 @@ func TestRecordsHandlerApplyChangesWithBadRequest(t *testing.T) {
 }
 
 func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
-	changes := &plan.Changes{
-		Create: []*endpoint.Endpoint{
+	changes := &Changes{
+		Create: []*apiv1alpha1.Endpoint{
 			{
 				DNSName:    "foo.bar.com",
 				RecordType: "A",
 				Targets:    endpoint.Targets{},
+				RecordTTL:  10,
+				ProviderSpecific: []apiv1alpha1.ProviderSpecificProperty{
+					{
+						Name:  "prop1",
+						Value: "value",
+					},
+				},
+				Labels: map[string]string{
+					"label1": "value1",
+				},
 			},
 		},
 	}
@@ -150,7 +169,25 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		Provider: &FakeWebhookProvider{},
+		Provider: &FakeWebhookProvider{
+			assertChanges: func(changes *plan.Changes) {
+				t.Helper()
+				require.Equal(t, []*endpoint.Endpoint{
+					{
+						DNSName:    "foo.bar.com",
+						RecordType: "A",
+						Targets:    nil,
+						RecordTTL:  10,
+						ProviderSpecific: endpoint.ProviderSpecific{
+							"prop1": "value",
+						},
+						Labels: map[string]string{
+							"label1": "value1",
+						},
+					},
+				}, changes.Create)
+			},
+		},
 	}
 	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
@@ -158,8 +195,8 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 }
 
 func TestRecordsHandlerApplyChangesWithErrors(t *testing.T) {
-	changes := &plan.Changes{
-		Create: []*endpoint.Endpoint{
+	changes := &Changes{
+		Create: []*apiv1alpha1.Endpoint{
 			{
 				DNSName:    "foo.bar.com",
 				RecordType: "A",
@@ -198,7 +235,7 @@ func TestRecordsHandlerWithWrongHTTPMethod(t *testing.T) {
 }
 
 func TestRecordsHandlerWithMixedCase(t *testing.T) {
-	input := `{"Create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux"}]}`
+	input := `{"Create":[{"dnsName":"foo","providerSpecific":[{"name":"prop1","value":"value"}]}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux","labels":{"label1":"value1"}}]}`
 	req := httptest.NewRequest(http.MethodPost, UrlRecords, strings.NewReader(input))
 	w := httptest.NewRecorder()
 
@@ -211,16 +248,24 @@ func TestRecordsHandlerWithMixedCase(t *testing.T) {
 				require.Equal(t, []*endpoint.Endpoint{
 					{
 						DNSName: "foo",
+						ProviderSpecific: endpoint.ProviderSpecific{
+							"prop1": "value",
+						},
 					},
 				}, changes.Create)
 				require.Equal(t, []*endpoint.Endpoint{
 					{
-						DNSName: "bar",
+						DNSName:          "bar",
+						ProviderSpecific: endpoint.ProviderSpecific{},
 					},
 				}, changes.UpdateOld)
 				require.Equal(t, []*endpoint.Endpoint{
 					{
-						DNSName: "qux",
+						DNSName:          "qux",
+						ProviderSpecific: endpoint.ProviderSpecific{},
+						Labels: map[string]string{
+							"label1": "value1",
+						},
 					},
 				}, changes.Delete)
 			},

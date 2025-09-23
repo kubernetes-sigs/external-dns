@@ -39,6 +39,13 @@ const (
 	UrlRecords                = "/records"
 )
 
+type Changes struct {
+	Create    []*apiv1alpha1.Endpoint `json:"create,omitempty"`
+	Delete    []*apiv1alpha1.Endpoint `json:"delete,omitempty"`
+	UpdateOld []*apiv1alpha1.Endpoint `json:"updateOld,omitempty"`
+	UpdateNew []*apiv1alpha1.Endpoint `json:"updateNew,omitempty"`
+}
+
 type WebhookServer struct {
 	Provider provider.Provider
 }
@@ -54,20 +61,25 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		}
 		w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
-		// TODO: convert
-		if err := json.NewEncoder(w).Encode(records); err != nil {
+		apiRecords := adapter.ToAPIEndpoints(records)
+		if err := json.NewEncoder(w).Encode(apiRecords); err != nil {
 			log.Errorf("Failed to encode records: %v", err)
 		}
 		return
 	case http.MethodPost:
-		// TODO: use another type
-		var changes plan.Changes
+		var changes Changes
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 			log.Errorf("Failed to decode changes: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := p.Provider.ApplyChanges(context.Background(), &changes)
+		internalChanges := &plan.Changes{
+			Create:    adapter.ToInternalEndpoints(changes.Create),
+			Delete:    adapter.ToInternalEndpoints(changes.Delete),
+			UpdateOld: adapter.ToInternalEndpoints(changes.UpdateOld),
+			UpdateNew: adapter.ToInternalEndpoints(changes.UpdateNew),
+		}
+		err := p.Provider.ApplyChanges(context.Background(), internalChanges)
 		if err != nil {
 			log.Errorf("Failed to apply changes: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

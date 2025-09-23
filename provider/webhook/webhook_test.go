@@ -470,7 +470,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		if r.URL.Path == "/records" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			// assert that the request contains the provider-specific property
-			var changes webhookPlanChanges
+			var changes webhookapi.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
 			assert.NoError(t, err)
