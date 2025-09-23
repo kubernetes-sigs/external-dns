@@ -937,6 +937,13 @@ func TestCloudflareProvider(t *testing.T) {
 		Value string
 	}
 
+	// unset environment variables to avoid interference with tests
+	testutils.TestHelperEnvSetter(t, map[string]string{
+		cfAPIEmailEnvKey: "",
+		cfAPIKeyEnvKey:   "",
+		cfAPITokenEnvKey: "",
+	})
+
 	tokenFile := "/tmp/cf_api_token"
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
@@ -950,22 +957,22 @@ func TestCloudflareProvider(t *testing.T) {
 		{
 			Name: "use_api_token",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: "abc123def"},
+				{Key: cfAPITokenEnvKey, Value: "abc123def"},
 			},
 			ShouldFail: false,
 		},
 		{
 			Name: "use_api_token_file_contents",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: tokenFile},
+				{Key: cfAPITokenEnvKey, Value: tokenFile},
 			},
 			ShouldFail: false,
 		},
 		{
 			Name: "use_email_and_key",
 			Environment: []EnvVar{
-				{Key: "CF_API_KEY", Value: "xxxxxxxxxxxxxxxxx"},
-				{Key: "CF_API_EMAIL", Value: "test@test.com"},
+				{Key: cfAPIKeyEnvKey, Value: "xxxxxxxxxxxxxxxxx"},
+				{Key: cfAPIEmailEnvKey, Value: "test@test.com"},
 			},
 			ShouldFail: false,
 		},
@@ -977,14 +984,14 @@ func TestCloudflareProvider(t *testing.T) {
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: "file://abc"},
+				{Key: cfAPITokenEnvKey, Value: "file://abc"},
 			},
 			ShouldFail: true,
 		},
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key: "CF_API_TOKEN", Value: "file:/tmp/cf_api_token"},
+				{Key: cfAPITokenEnvKey, Value: "file:/tmp/cf_api_token"},
 			},
 			ShouldFail: false,
 		},
@@ -1770,8 +1777,10 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 }
 
 func TestCloudFlareProvider_Region(t *testing.T) {
-	t.Setenv("CF_API_TOKEN", "abc123def")
-	t.Setenv("CF_API_EMAIL", "test@test.com")
+	testutils.TestHelperEnvSetter(t, map[string]string{
+		cfAPITokenEnvKey: "abc123def",
+		cfAPIEmailEnvKey: "test@test.com",
+	})
 	provider, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"example.com"}),
 		provider.ZoneIDFilter{},

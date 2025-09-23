@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -972,4 +973,30 @@ func TestEndpoint_WithMinTTL(t *testing.T) {
 			assert.Equal(t, tt.isConfigured, ep.RecordTTL.IsConfigured())
 		})
 	}
+}
+
+// TestNewEndpointWithTTLPreservesDotsInTXTRecords tests that trailing dots are preserved in TXT records
+func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
+	// TXT records should preserve trailing dots (and any arbitrary text)
+	txtEndpoint := NewEndpointWithTTL("example.com", RecordTypeTXT, TTL(300),
+		"v=1;some_signature=aBx3d5..",
+		"text.with.dots...",
+		"simple-text")
+
+	require.NotNil(t, txtEndpoint, "TXT endpoint should be created")
+	require.Len(t, txtEndpoint.Targets, 3, "should have 3 targets")
+
+	// All dots should be preserved in TXT targets
+	assert.Equal(t, "v=1;some_signature=aBx3d5..", txtEndpoint.Targets[0])
+	assert.Equal(t, "text.with.dots...", txtEndpoint.Targets[1])
+	assert.Equal(t, "simple-text", txtEndpoint.Targets[2])
+
+	// Domain name record types should still have trailing dots trimmed
+	aEndpoint := NewEndpointWithTTL("example.com", RecordTypeA, TTL(300), "1.2.3.4.")
+	require.NotNil(t, aEndpoint, "A endpoint should be created")
+	assert.Equal(t, "1.2.3.4", aEndpoint.Targets[0], "A record should have trailing dot trimmed")
+
+	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
+	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
+	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
