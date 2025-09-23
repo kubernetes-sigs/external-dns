@@ -279,6 +279,7 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) dns.RecordUpda
 			Content:  cloudflare.F(cfc.ResourceRecord.Content),
 			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
+			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
 		},
 	}
 }
@@ -295,6 +296,7 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNew
 			Content:  cloudflare.F(cfc.ResourceRecord.Content),
 			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
+			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
 		},
 	}
 }
@@ -827,6 +829,17 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		comment = val
 	}
 
+	var tags []string
+    if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+        // Split the comma-separated string of tags
+        for _, tag := range strings.Split(val, ",") {
+            trimmedTag := strings.TrimSpace(tag)
+            if trimmedTag != "" {
+                tags = append(tags, trimmedTag)
+            }
+        }
+    }
+
 	if len(comment) > freeZoneMaxCommentLength {
 		comment = p.DNSRecordsConfig.trimAndValidateComment(ep.DNSName, comment, p.ZoneHasPaidPlan)
 	}
@@ -851,6 +864,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			Type:     dns.RecordResponseType(ep.RecordType),
 			Content:  target,
 			Comment:  comment,
+			Tags:     tags,
 			Priority: priority,
 		},
 		RegionalHostname:    p.regionalHostname(ep),
