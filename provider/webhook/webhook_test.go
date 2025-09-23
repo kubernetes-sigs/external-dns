@@ -250,8 +250,8 @@ func TestApplyChanges(t *testing.T) {
 		assert.Equal(t, "/records", r.URL.Path)
 		defer r.Body.Close()
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.JSONEq(t, `{
+		assert.NoError(t, err)
+		assert.JSONEq(t, `{
 			  "create": [
 			    {
 			      "dnsName": "foo",
