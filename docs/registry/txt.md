@@ -3,9 +3,11 @@
 The TXT registry is the default registry.
 It stores DNS record metadata in TXT records, using the same provider.
 
-If you plan to manage apex domains with external-dns whilst using a txt registry, you should ensure when using --txt-prefix that you specify the record type substitution and that it ends in a period (**.**). The record should be created under the same domain as the apex record being managed, i.e. --txt-prefix=someprefix-%{record_type}.
-
-> Note: `--txt-prefix` and `--txt-suffix` contribute to the 63-byte maximum record length. To avoid errors, use them only if absolutely required and keep them as short as possible.
+> Note:
+>
+> - If you plan to manage apex domains with external-dns whilst using a txt registry, you should ensure when using `--txt-prefix` that you specify the record type substitution and that it ends in a period (**.**).
+>   The record should be created under the same domain as the apex record being managed, i.e. `--txt-prefix=someprefix-%{record_type}.`
+> - `--txt-prefix` and `--txt-suffix` contribute to the 63-byte maximum record length. To avoid errors, use them only if absolutely required and keep them as short as possible.
 
 ## Record Format Options
 
@@ -17,24 +19,28 @@ The TXT registry supports single format for storing DNS record metadata:
 
 The TXT registry would try to guarantee a consistency in between providers and sources, if provider supports the behaviour.
 
-If you are dealing with APEX domains, like `example.com` and TXT records are failing to be created for managed record types specified by `--managed-record-types`, consider following options:
+If configured `--txt-prefix="%{record_type}-abc-."` for apex domain `ex.com` the expected result is
 
-1. TXT record with prefix based on requirements. Example `--txt-prefix="%{record_type}-abc-"` or `--txt-prefix="%{record_type}.abc-"`
-2. TXT record with suffix based on requirements. Example `--txt-suffix="-abc-%{record_type}"` or `--txt-suffix="-abc.%{record_type}."`
+|         Name         |  TYPE   |
+| :------------------: | :-----: |
+| `cname-abc-.ex.com.` |  `TXT`  |
+|      `ex.com.`       | `CNAME` |
 
-If configured `--txt-prefix="%{record_type}-abc-"` for apex domain `ex.com` the expected result is
+For the domain `www.ex.com` the expected result is
 
-|              Name              |  TYPE   |
-|:------------------------------:|:-------:|
-| `cname-a-abc-nginx-v2.ex.com.` |  `TXT`  |
-|       `nginx-v2.ex.com.`       | `CNAME` |
+|           Name           |  TYPE   |
+| :----------------------: | :-----: |
+| `cname-abc-.www.ex.com.` |  `TXT`  |
+|      `www.ex.com.`       | `CNAME` |
 
-If configured `--txt-suffix="-abc.%{record_type}"` for apex domain `ex.com` the expected result is
+If configured `--txt-suffix="-.%{record_type}"` for apex domain `ex.com`, the expected result would be `ex-.a.com`, which fails to create a TXT record because it does not exist within the managed zone.
 
-|              Name              |  TYPE   |
-|:------------------------------:|:-------:|
-| `cname-nginx-v2-abc.a.ex.com.` |  `TXT`  |
-|      `nginx-v3.ex.com.`       | `CNAME` |
+For the domain `www.ex.com` the expected result is
+
+|         Name         |  TYPE   |
+| :------------------: | :-----: |
+| `www-.cname.ex.com.` |  `TXT`  |
+|    `www.ex.com.`     | `CNAME` |
 
 ### Manually Cleanup Legacy TXT Records
 
@@ -80,7 +86,7 @@ When transitioning from dual-format to new-format-only records:
 
 - Ensure all your `external-dns` instances support the new format
 - Enable the `--txt-new-format-only` flag on your external-dns instances
-Manually clean up any existing legacy format TXT records from your DNS provider
+  Manually clean up any existing legacy format TXT records from your DNS provider
 
 ## Prefixes and Suffixes
 
@@ -99,7 +105,7 @@ the `--txt-suffix` flag. The two flags are mutually exclusive.
 
 ## Wildcard Replacement
 
-The `--txt-wildcard-replacement` flag specifies a string to use to replace the "*" in
+The `--txt-wildcard-replacement` flag specifies a string to use to replace the "\*" in
 registry TXT records for wildcard domains. Without using this, registry TXT records for
 wildcard domains will have invalid domain syntax and be rejected by most providers.
 
