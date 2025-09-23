@@ -743,6 +743,19 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
 		}
 
+		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+			tags := strings.Split(val, ",")
+			cleanedTags := make([]string, 0, len(tags))
+			for _, tag := range tags {
+				trimmed := strings.TrimSpace(tag)
+				if trimmed != "" {
+					cleanedTags = append(cleanedTags, trimmed)
+				}
+			}
+			sort.Strings(cleanedTags)
+			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(cleanedTags, ","))
+		}
+
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
@@ -830,15 +843,15 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	}
 
 	var tags []string
-    if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
-        // Split the comma-separated string of tags
-        for _, tag := range strings.Split(val, ",") {
-            trimmedTag := strings.TrimSpace(tag)
-            if trimmedTag != "" {
-                tags = append(tags, trimmedTag)
-            }
-        }
-    }
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+		// Split the comma-separated string of tags
+		for _, tag := range strings.Split(val, ",") {
+			trimmedTag := strings.TrimSpace(tag)
+			if trimmedTag != "" {
+				tags = append(tags, trimmedTag)
+			}
+		}
+	}
 
 	if len(comment) > freeZoneMaxCommentLength {
 		comment = p.DNSRecordsConfig.trimAndValidateComment(ep.DNSName, comment, p.ZoneHasPaidPlan)
@@ -1028,6 +1041,13 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 
 		if records[0].Comment != "" {
 			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
+		}
+
+		if records[0].Tags != nil {
+			if tags, ok := records[0].Tags.([]string); ok && len(tags) > 0 {
+				sort.Strings(tags)
+				e = e.WithProviderSpecific(annotations.CloudflareTagsKey, strings.Join(tags, ","))
+			}
 		}
 
 		endpoints = append(endpoints, e)
