@@ -664,6 +664,8 @@ func testTXTRegistryApplyChangesWithApex(t *testing.T) {
 					Create: []*endpoint.Endpoint{
 						// NS record for the apex of the zone
 						newEndpointWithOwner("test-zone.example.org", "ns1.example.org", endpoint.RecordTypeNS, ""),
+						// NS record for the apex of the child zone
+						newEndpointWithOwner("child.test-zone.example.org", "ns1.child.example.org", endpoint.RecordTypeNS, ""),
 
 						// other existing records
 						newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
@@ -693,6 +695,8 @@ func testTXTRegistryApplyChangesWithApex(t *testing.T) {
 					Create: []*endpoint.Endpoint{
 						// apex record
 						newEndpointWithOwnerResource("test-zone.example.org", "apex.loadbalancer.com", apexRecordType, "", "ingress/default/my-ingress"),
+						// child apex record
+						newEndpointWithOwnerResource("child.test-zone.example.org", "child-apex.loadbalancer.com", apexRecordType, "", "ingress/default/my-ingress"),
 
 						newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress"),
 						newEndpointWithOwnerResource("multiple.test-zone.example.org", "lb3.loadbalancer.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress").WithSetIdentifier("test-set-3"),
@@ -712,6 +716,8 @@ func testTXTRegistryApplyChangesWithApex(t *testing.T) {
 				}
 				expected := &plan.Changes{
 					Create: []*endpoint.Endpoint{
+						newEndpointWithOwnerResource("child.test-zone.example.org", "child-apex.loadbalancer.com", apexRecordType, "owner", "ingress/default/my-ingress"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("child.test-zone.example.org", apexRecordType), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "child.test-zone.example.org"),
 						newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress"),
 
 						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("new-record-1.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
@@ -2203,5 +2209,321 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 				})
 			}
 		}
+	}
+}
+
+func TestRootApexDetector(t *testing.T) {
+	tests := []struct {
+		name            string
+		txtPrefix       string
+		existingRecords []*endpoint.Endpoint
+		recordsToCreate []*endpoint.Endpoint
+		expectedAllowed []string
+	}{
+		{
+			name:      "A record at root apex with no prefix should be blocked",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+		{
+			name:      "A record at root apex and normal domain with no prefix should block only root apex",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "api.test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"api.test-zone.example.org",
+			},
+		},
+		{
+			name:      "A record at root apex with templated dot prefix should be allowed",
+			txtPrefix: "%{record_type}.",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "api.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "api.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "hoge.api.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"test-zone.example.org",
+				"api.example.org",
+				"hoge.api.example.org",
+			},
+		},
+		{
+			name:      "Parent and child zones should block only parent zone apex",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "child.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "child.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"child.example.org",
+			},
+		},
+		{
+			name:      "Siblings should be removed when parent apex is observed",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "b.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "b.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"a.example.org",
+				"b.example.org",
+			},
+		},
+		{
+			name:      "Multiple nested zones should block only top-level apex",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "sub.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "deep.sub.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "sub.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "deep.sub.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"sub.example.org",
+				"deep.sub.example.org",
+			},
+		},
+		{
+			name:      "Different record types at root apex should all be blocked with non-templated prefix",
+			txtPrefix: "txt-",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+		{
+			name:      "Different record types at root apex should all be allowed with templated dot prefix",
+			txtPrefix: "%{record_type}.",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+				},
+			},
+			expectedAllowed: []string{
+				"example.org",
+				"example.org",
+			},
+		},
+		{
+			name:      "Non-NS records in existing records should be ignored",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "fake.example.org",
+					RecordType: endpoint.RecordTypeA, // Not NS, should be ignored
+				},
+				{
+					DNSName:    "another.example.org",
+					RecordType: endpoint.RecordTypeCNAME, // Not NS, should be ignored
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"fake.example.org",
+			},
+		},
+		{
+			name:      "Dot prefix with no template should block root apex records",
+			txtPrefix: "txt.",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+		{
+			name:      "Template prefix without dot should block root apex records",
+			txtPrefix: "%{record_type}",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create registry with the test prefix
+			p := inmemory.NewInMemoryProvider()
+			registry, _ := NewTXTRegistry(p, tt.txtPrefix, "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+
+			// Add existing records to root apex detector
+			for _, record := range tt.existingRecords {
+				registry.rootApexDetector.addCandidate(record)
+			}
+
+			// Test which records would be allowed
+			var created []string
+			for _, record := range tt.recordsToCreate {
+				if !registry.shouldBlockApex(record) {
+					created = append(created, record.DNSName)
+				}
+			}
+			assert.Equal(t, tt.expectedAllowed, created)
+		})
 	}
 }
