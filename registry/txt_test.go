@@ -653,7 +653,9 @@ func testTXTRegistryApplyChangesWithApex(t *testing.T) {
 		} {
 			t.Run(apexRecordType+"-"+tt.name, func(t *testing.T) {
 				p := inmemory.NewInMemoryProvider()
-				p.CreateZone(testZone)
+				p.CreateZone("test-zone.example.org")
+				p.CreateZone("test-zone2.example.org")
+
 				ctxEndpoints := []*endpoint.Endpoint{}
 				ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
 				p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
@@ -664,6 +666,7 @@ func testTXTRegistryApplyChangesWithApex(t *testing.T) {
 					Create: []*endpoint.Endpoint{
 						// NS record for the apex of the zone
 						newEndpointWithOwner("test-zone.example.org", "ns1.example.org", endpoint.RecordTypeNS, ""),
+						newEndpointWithOwner("test-zone2.example.org", "ns1.example.org", endpoint.RecordTypeNS, ""),
 						// NS record for the apex of the child zone
 						newEndpointWithOwner("child.test-zone.example.org", "ns1.child.example.org", endpoint.RecordTypeNS, ""),
 
@@ -689,6 +692,12 @@ func testTXTRegistryApplyChangesWithApex(t *testing.T) {
 						newEndpointWithOwner(r.mapper.toTXTName("foobar.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 						newEndpointWithOwner(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-1"),
 						newEndpointWithOwner(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
+
+						// Existing apex record created before apex blocking was implemented.
+						// Before apex blocking, TXT record creation could fail while the main record was created successfully,
+						// resulting in records without TXT ownership records. This tests backward compatibility -
+						// existing apex records should remain unaffected by the new blocking functionality.
+						newEndpointWithOwner("test-zone2.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
 					},
 				})
 				changes := &plan.Changes{
