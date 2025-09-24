@@ -327,7 +327,7 @@ func normalizeOverrides(m map[string]string) map[string]string {
 		vv := strings.ToLower(strings.TrimSpace(v))
 
 		if kk == "" || vv == "" {
-			log.Debugf("Encounted empty string for zone handle override: key=%s, value=%s", kk, vv)
+			log.Debugf("Encountered empty string for zone handle override: key=%s, value=%s", kk, vv)
 			continue
 		}
 
