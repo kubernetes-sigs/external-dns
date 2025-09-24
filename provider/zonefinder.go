@@ -20,7 +20,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/idna"
+
+	"sigs.k8s.io/external-dns/internal/idna"
 )
 
 type ZoneIDName map[string]string
@@ -48,7 +49,7 @@ func (z ZoneIDName) FindZone(hostname string) (string, string) {
 		if strings.Contains(label, "_") {
 			continue
 		}
-		convertedLabel, err := idna.Lookup.ToUnicode(label)
+		convertedLabel, err := idna.Profile.ToUnicode(label)
 		if err != nil {
 			log.Warnf("Failed to convert label %q of hostname %q to its Unicode form: %v", label, hostname, err)
 			convertedLabel = label

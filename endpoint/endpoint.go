@@ -19,12 +19,14 @@ package endpoint
 import (
 	"fmt"
 	"net/netip"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/set"
+
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -78,11 +80,10 @@ type MXTarget struct {
 	host     string
 }
 
-// NewTargets is a convenience method to create a new Targets object from a vararg of strings
+// NewTargets is a convenience method to create a new Targets object from a vararg of strings.
+// Returns a new Targets slice with duplicates removed and elements sorted in order.
 func NewTargets(target ...string) Targets {
-	t := make(Targets, 0, len(target))
-	t = append(t, target...)
-	return t
+	return set.New(target...).SortedList()
 }
 
 func (t Targets) String() string {
@@ -111,7 +112,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares to Targets and returns true if they are identical (case-insensitive)
+// Same compares two Targets and returns true if they are identical (case-insensitive)
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -241,6 +242,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// refObject stores reference object
+	// +optional
+	refObject *events.ObjectReference
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -252,7 +256,14 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
 	for idx, target := range targets {
-		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
+		// TXT records can contain arbitrary text including multiple dots
+		switch recordType {
+		case RecordTypeTXT, RecordTypeNAPTR:
+			cleanTargets[idx] = target
+		default:
+			cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		}
 	}
 
 	for label := range strings.SplitSeq(dnsName, ".") {
@@ -335,6 +346,17 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
+// WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
+// This can be used to associate the Endpoint with a specific Kubernetes object.
+func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+	e.refObject = obj
+	return e
+}
+
+func (e *Endpoint) RefObject() *events.ObjectReference {
+	return e.refObject
+}
+
 // Key returns the EndpointKey of the Endpoint.
 func (e *Endpoint) Key() EndpointKey {
 	return EndpointKey{
@@ -354,18 +376,8 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
-// UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
-func (e *Endpoint) UniqueOrderedTargets() {
-	result := make([]string, 0, len(e.Targets))
-	existing := make(map[string]bool)
-	for _, target := range e.Targets {
-		if _, ok := existing[target]; !ok {
-			result = append(result, target)
-			existing[target] = true
-		}
-	}
-	slices.Sort(result)
-	e.Targets = result
+func (e *Endpoint) Describe() string {
+	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
 
 // FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
@@ -373,8 +385,11 @@ func (e *Endpoint) UniqueOrderedTargets() {
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
 	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+		endpointOwner, ok := ep.Labels[OwnerLabelKey]
+		if !ok {
+			log.Debugf(`Skipping endpoint %v because of missing owner label (required: "%s")`, ep, ownerID)
+		} else if endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match (found: "%s", required: "%s")`, ep, endpointOwner, ownerID)
 		} else {
 			filtered = append(filtered, ep)
 		}
@@ -413,6 +428,14 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateSRVRecord()
 	}
 	return true
+}
+
+// WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
+func (e *Endpoint) WithMinTTL(ttl int64) {
+	if !e.RecordTTL.IsConfigured() && ttl > 0 {
+		log.Debugf("Overriding existing TTL %d with new value %d for endpoint %s", e.RecordTTL, ttl, e.DNSName)
+		e.RecordTTL = TTL(ttl)
+	}
 }
 
 // NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")

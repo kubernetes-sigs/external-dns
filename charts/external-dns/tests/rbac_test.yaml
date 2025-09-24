@@ -52,6 +52,50 @@ tests:
               resources: ["ingresses"]
               verbs: ["get","watch","list"]
 
+  - it: should create no RBAC rules when no sources are set
+    set:
+      sources: []
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value: null
+
+  - it: should create default RBAC rules for 'ingresses' with source 'ingress'
+    set:
+      sources:
+        - ingress
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+
+  - it: should create default RBAC rules for 'nodes', 'pods', 'services' and 'endpointslices' with source 'service'
+    set:
+      sources:
+        - service
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["list", "watch"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "watch", "list"]
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["discovery.k8s.io"]
+              resources: ["endpointslices"]
+              verbs: ["get","watch","list"]
+
   - it: should create default RBAC rules for 'ambassador-host'
     set:
       sources:
@@ -391,3 +435,88 @@ tests:
       - isKind:
           of: RoleBinding
         template: clusterrolebinding.yaml
+
+  - it: should create only Role when namespaced=true for istio sources
+    set:
+      namespaced: true
+      sources:
+        - istio-virtualservice
+        - istio-gateway
+    asserts:
+      - isKind:
+          of: Role
+        template: clusterrole.yaml
+      - isKind:
+          of: RoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: rules
+          value:
+          - apiGroups: [""]
+            resources: ["services"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["extensions","networking.k8s.io"]
+            resources: ["ingresses"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["networking.istio.io"]
+            resources: ["gateways"]
+            verbs: ["get","watch","list"]
+          - apiGroups: ["networking.istio.io"]
+            resources: ["virtualservices"]
+            verbs: ["get","watch","list"]
+        template: clusterrole.yaml
+
+  - it: should create only ClusterRole for istio-gateway with ingress permissions
+    set:
+      namespaced: false
+      sources:
+        - istio-gateway
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["networking.istio.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+        template: clusterrole.yaml
+
+  - it: should create only ClusterRole for istio-virtualservice with ingress permissions required
+    set:
+      namespaced: false
+      sources:
+        - istio-virtualservice
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebinding.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["extensions","networking.k8s.io"]
+              resources: ["ingresses"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["networking.istio.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["networking.istio.io"]
+              resources: ["virtualservices"]
+              verbs: ["get","watch","list"]
+        template: clusterrole.yaml

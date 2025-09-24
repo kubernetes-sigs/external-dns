@@ -22,8 +22,8 @@ import (
 	"maps"
 	"slices"
 
-	cloudflarev4 "github.com/cloudflare/cloudflare-go/v4"
-	"github.com/cloudflare/cloudflare-go/v4/addressing"
+	"github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/addressing"
 
 	log "github.com/sirupsen/logrus"
 
@@ -56,52 +56,52 @@ type regionalHostnameChange struct {
 }
 
 func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
-	return z.serviceV4.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)
+	return z.service.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)
 }
 
 func (z zoneService) CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error {
-	_, err := z.serviceV4.Addressing.RegionalHostnames.New(ctx, params)
+	_, err := z.service.Addressing.RegionalHostnames.New(ctx, params)
 	return err
 }
 
 func (z zoneService) UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error {
-	_, err := z.serviceV4.Addressing.RegionalHostnames.Edit(ctx, hostname, params)
+	_, err := z.service.Addressing.RegionalHostnames.Edit(ctx, hostname, params)
 	return err
 }
 
 func (z zoneService) DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error {
-	_, err := z.serviceV4.Addressing.RegionalHostnames.Delete(ctx, hostname, params)
+	_, err := z.service.Addressing.RegionalHostnames.Delete(ctx, hostname, params)
 	return err
 }
 
 // listDataLocalizationRegionalHostnamesParams is a function that returns the appropriate RegionalHostname List Param based on the zoneID
 func listDataLocalizationRegionalHostnamesParams(zoneID string) addressing.RegionalHostnameListParams {
 	return addressing.RegionalHostnameListParams{
-		ZoneID: cloudflarev4.F(zoneID),
+		ZoneID: cloudflare.F(zoneID),
 	}
 }
 
 // createDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func createDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameNewParams {
 	return addressing.RegionalHostnameNewParams{
-		ZoneID:    cloudflarev4.F(zoneID),
-		Hostname:  cloudflarev4.F(rhc.hostname),
-		RegionKey: cloudflarev4.F(rhc.regionKey),
+		ZoneID:    cloudflare.F(zoneID),
+		Hostname:  cloudflare.F(rhc.hostname),
+		RegionKey: cloudflare.F(rhc.regionKey),
 	}
 }
 
 // updateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func updateDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameEditParams {
 	return addressing.RegionalHostnameEditParams{
-		ZoneID:    cloudflarev4.F(zoneID),
-		RegionKey: cloudflarev4.F(rhc.regionKey),
+		ZoneID:    cloudflare.F(zoneID),
+		RegionKey: cloudflare.F(rhc.regionKey),
 	}
 }
 
 // deleteDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
 func deleteDataLocalizationRegionalHostnameParams(zoneID string, rhc regionalHostnameChange) addressing.RegionalHostnameDeleteParams {
 	return addressing.RegionalHostnameDeleteParams{
-		ZoneID: cloudflarev4.F(zoneID),
+		ZoneID: cloudflare.F(zoneID),
 	}
 }
 
@@ -222,11 +222,32 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 	}
 
 	for _, ep := range supportedEndpoints {
+		var regionKey string
 		if rh, found := regionalHostnames[ep.DNSName]; found {
-			ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, rh.regionKey)
+			regionKey = rh.regionKey
 		}
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, regionKey)
 	}
 	return nil
+}
+
+// adjustEnpointProviderSpecificRegionKeyProperty updates the given endpoint's provider-specific
+// Cloudflare region key based on the provider's RegionalServicesConfig.
+//   - If regional services are disabled or the endpoint's record type does not
+//     support regional hostnames, the Cloudflare region key is removed.
+//   - If enabled and supported, and the key is not already set, it is initialized
+//     to the provider's default RegionKey.
+//
+// The endpoint is modified in place and any explicitly set region key is left unchanged.
+func (p *CloudFlareProvider) adjustEndpointProviderSpecificRegionKeyProperty(ep *endpoint.Endpoint) {
+	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
+		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionKey)
+		return
+	}
+	// Add default region key if not set
+	if _, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); !ok {
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, p.RegionalServicesConfig.RegionKey)
+	}
 }
 
 // desiredRegionalHostnames builds a list of desired regional hostnames from changes.

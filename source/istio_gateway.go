@@ -28,12 +28,13 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -43,7 +44,7 @@ import (
 
 // IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
 // instead of a standard LoadBalancer service type
-const IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
+const IstioGatewayIngressSource = annotations.Ingress
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
@@ -58,6 +59,7 @@ type gatewaySource struct {
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
 	gatewayInformer          networkingv1beta1informer.GatewayInformer
+	ingressInformer          netinformers.IngressInformer
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -82,32 +84,31 @@ func NewIstioGatewaySource(
 	serviceInformer := informerFactory.Core().V1().Services()
 	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
 	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
+	ingressInformer := informerFactory.Networking().V1().Ingresses()
+
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	// Add default resource event handlers to properly initialize informer.
-	_, _ = serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("service added")
-			},
-		},
-	)
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	err = serviceInformer.Informer().SetTransform(informers.TransformerWithOptions[*corev1.Service](
+		informers.TransformWithSpecSelector(),
+		informers.TransformWithSpecExternalIPs(),
+		informers.TransformWithStatusLoadBalancer(),
+	))
+	if err != nil {
+		return nil, err
+	}
 
-	_, _ = gatewayInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Debug("gateway added")
-			},
-		},
-	)
+	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -121,6 +122,7 @@ func NewIstioGatewaySource(
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
 		gatewayInformer:          gatewayInformer,
+		ingressInformer:          ingressInformer,
 	}, nil
 }
 
@@ -200,7 +202,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.
-func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
 	_, _ = sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
@@ -230,7 +232,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1beta1.Gatew
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
+func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -241,7 +243,7 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 
 	targets := make(endpoint.Targets, 0)
 
-	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
+	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -264,7 +266,7 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 
 	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
 	if ok && ingressStr != "" {
-		return sc.targetsFromIngress(ctx, ingressStr, gateway)
+		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
 	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)

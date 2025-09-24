@@ -30,6 +30,7 @@ const (
 	CloudflareRecordTagsKey     = "external-dns.alpha.kubernetes.io/cloudflare-record-tags"
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
+	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
 	SCWPrefix        = AnnotationKeyPrefix + "scw-"
 	WebhookPrefix    = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
@@ -41,19 +42,21 @@ const (
 	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
 	AliasKey         = AnnotationKeyPrefix + "alias"
 	TargetKey        = AnnotationKeyPrefix + "target"
-	// The annotation used for figuring out which controller is responsible
+	// ControllerKey The annotation used for figuring out which controller is responsible
 	ControllerKey = AnnotationKeyPrefix + "controller"
-	// The annotation used for defining the desired hostname
+	// HostnameKey The annotation used for defining the desired hostname
 	HostnameKey = AnnotationKeyPrefix + "hostname"
-	// The annotation used for specifying whether the public or private interface address is used
+	// AccessKey The annotation used for specifying whether the public or private interface address is used
 	AccessKey = AnnotationKeyPrefix + "access"
-	// The annotation used for specifying the type of endpoints to use for headless services
+	// EndpointsTypeKey The annotation used for specifying the type of endpoints to use for headless services
 	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
-	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
+	// Ingress the annotation used to determine if the gateway is implemented by an Ingress object
+	Ingress = AnnotationKeyPrefix + "ingress"
+	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
-	// The value of the controller annotation so that we feel responsible
+	// ControllerValue The value of the controller annotation so that we feel responsible
 	ControllerValue = "dns-controller"
-	// The annotation used for defining the desired hostname
+	// InternalHostnameKey The annotation used for defining the desired hostname
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 )

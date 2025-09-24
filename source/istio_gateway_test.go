@@ -19,18 +19,22 @@ package source
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	networkingv1alpha3api "istio.io/api/networking/v1beta1"
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istionetworking "istio.io/api/networking/v1beta1"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -1477,7 +1481,8 @@ func testGatewayEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			fakeKubernetesClient := fake.NewSimpleClientset()
+			fakeKubernetesClient := fake.NewClientset()
+			targetNamespace := ti.targetNamespace
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
@@ -1487,6 +1492,9 @@ func testGatewayEndpoints(t *testing.T) {
 
 			for _, ing := range ti.ingresses {
 				ingress := ing.Ingress()
+				if ingress.Namespace != targetNamespace {
+					targetNamespace = v1.NamespaceAll
+				}
 				_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
@@ -1502,7 +1510,7 @@ func testGatewayEndpoints(t *testing.T) {
 				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				ti.targetNamespace,
+				targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
@@ -1522,9 +1530,362 @@ func testGatewayEndpoints(t *testing.T) {
 	}
 }
 
+func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
+	tests := []struct {
+		name      string
+		selectors map[string]string
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			name: "gw single selector match with single service selector",
+			selectors: map[string]string{
+				"version": "v1",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+		{
+			name: "gw selector match all service selectors",
+			selectors: map[string]string{
+				"app":     "demo",
+				"env":     "prod",
+				"team":    "devops",
+				"version": "v1",
+				"release": "stable",
+				"track":   "daily",
+				"tier":    "backend",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+		{
+			name: "gw selector has subset of service selectors",
+			selectors: map[string]string{
+				"version": "v1",
+				"release": "stable",
+				"tier":    "backend",
+				"app":     "demo",
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeKubeClient := fake.NewClientset()
+			fakeIstioClient := istiofake.NewSimpleClientset()
+
+			svc := &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-service",
+					Namespace: "default",
+					UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
+				},
+				Spec: v1.ServiceSpec{
+					Selector: map[string]string{
+						"app":     "demo",
+						"env":     "prod",
+						"team":    "devops",
+						"version": "v1",
+						"release": "stable",
+						"track":   "daily",
+						"tier":    "backend",
+					},
+					ExternalIPs: []string{"10.10.10.255"},
+				},
+			}
+			_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			gw := &networkingv1beta1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "fake-gateway",
+					Namespace: "default",
+				},
+				Spec: istionetworking.Gateway{
+					Servers: []*istionetworking.Server{
+						{
+							Hosts: []string{"example.org"},
+						},
+					},
+					Selector: tt.selectors,
+				},
+			}
+
+			_, err = fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(context.Background(), gw, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewIstioGatewaySource(
+				t.Context(),
+				fakeKubeClient,
+				fakeIstioClient,
+				"",
+				"",
+				"",
+				false,
+				false,
+			)
+			require.NoError(t, err)
+			require.NotNil(t, src)
+
+			res, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+
+			validateEndpoints(t, res, tt.expected)
+		})
+	}
+}
+
+func TestTransformerInIstioGatewaySource(t *testing.T) {
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake-service",
+			Namespace: "default",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+				"label3": "value3",
+			},
+			Annotations: map[string]string{
+				"user-annotation": "value",
+				"external-dns.alpha.kubernetes.io/hostname": "test-hostname",
+				"external-dns.alpha.kubernetes.io/random":   "value",
+				"other/annotation":                          "value",
+			},
+			UID: "someuid",
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"selector":  "one",
+				"selector2": "two",
+				"selector3": "three",
+			},
+			ExternalIPs: []string{"1.2.3.4"},
+			Ports: []v1.ServicePort{
+				{
+					Name:       "http",
+					Port:       80,
+					TargetPort: intstr.FromInt32(8080),
+					Protocol:   v1.ProtocolTCP,
+				},
+				{
+					Name:       "https",
+					Port:       443,
+					TargetPort: intstr.FromInt32(8443),
+					Protocol:   v1.ProtocolTCP,
+				},
+			},
+			Type: v1.ServiceTypeLoadBalancer,
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{
+					{IP: "5.6.7.8", Hostname: "lb.example.com"},
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:               "Available",
+					Status:             metav1.ConditionTrue,
+					Reason:             "MinimumReplicasAvailable",
+					Message:            "Service is available",
+					LastTransitionTime: metav1.Now(),
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset()
+
+	_, err := fakeClient.CoreV1().Services(svc.Namespace).Create(context.Background(), svc, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeClient,
+		istiofake.NewSimpleClientset(),
+		"",
+		"",
+		"",
+		false,
+		false)
+	require.NoError(t, err)
+	gwSource, ok := src.(*gatewaySource)
+	require.True(t, ok)
+
+	rService, err := gwSource.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, "fake-service", rService.Name)
+	assert.Empty(t, rService.Labels)
+	assert.Empty(t, rService.Annotations)
+	assert.Empty(t, rService.UID)
+	assert.NotEmpty(t, rService.Status.LoadBalancer)
+	assert.Empty(t, rService.Status.Conditions)
+	assert.Equal(t, map[string]string{
+		"selector":  "one",
+		"selector2": "two",
+		"selector3": "three",
+	}, rService.Spec.Selector)
+}
+
+func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
+	fakeKubeClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	gw := &networkingv1beta1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "argocd",
+			Namespace: "argocd",
+		},
+		Spec: istionetworking.Gateway{
+			Servers: []*istionetworking.Server{
+				{
+					Hosts: []string{"example.org"},
+					Tls: &istionetworking.ServerTLSSettings{
+						HttpsRedirect: true,
+					},
+				},
+				{
+					Hosts: []string{"example.org"},
+					Tls: &istionetworking.ServerTLSSettings{
+						ServerCertificate: IstioGatewayIngressSource,
+						Mode:              istionetworking.ServerTLSSettings_SIMPLE,
+					},
+				},
+			},
+			Selector: map[string]string{
+				"istio": "ingressgateway",
+			},
+		},
+	}
+
+	services := []*v1.Service{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "istio-ingressgateway",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.223.3",
+				ClusterIPs:            []string{"10.118.223.3"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "http2",
+						Port:       80,
+						Protocol:   v1.ProtocolTCP,
+						TargetPort: intstr.FromInt32(8080),
+						NodePort:   30127,
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgateway",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "istio-ingressgatewayudp",
+				Namespace: "default",
+				Labels: map[string]string{
+					"app":   "istio-ingressgatewayudp",
+					"istio": "ingressgateway",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeLoadBalancer,
+				ClusterIP:             "10.118.220.130",
+				ClusterIPs:            []string{"10.118.220.130"},
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyCluster,
+				IPFamilies:            []v1.IPFamily{v1.IPv4Protocol},
+				IPFamilyPolicy:        testutils.ToPtr(v1.IPFamilyPolicySingleStack),
+				Ports: []v1.ServicePort{
+					{
+						Name:       "upd-dns",
+						Port:       53,
+						Protocol:   v1.ProtocolUDP,
+						TargetPort: intstr.FromInt32(5353),
+						NodePort:   30873,
+					},
+				},
+				Selector: map[string]string{
+					"app":   "istio-ingressgatewayudp",
+					"istio": "ingressgateway",
+				},
+				SessionAffinity: v1.ServiceAffinityNone,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{
+						{
+							IP:     "34.66.66.77",
+							IPMode: testutils.ToPtr(v1.LoadBalancerIPModeVIP),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.NotNil(t, services)
+
+	for _, svc := range services {
+		_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	_, err := fakeIstioClient.NetworkingV1beta1().Gateways(gw.Namespace).Create(t.Context(), gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeKubeClient,
+		fakeIstioClient,
+		"",
+		"",
+		"",
+		false,
+		false,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, src)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	validateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "gateway/argocd/argocd"),
+		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "gateway/argocd/argocd"),
+	})
+}
+
 // gateway specific helper functions
 func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
-	fakeKubernetesClient := fake.NewSimpleClientset()
+	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
@@ -1612,22 +1973,22 @@ type fakeGatewayConfig struct {
 	selector    map[string]string
 }
 
-func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
-	gw := &networkingv1alpha3.Gateway{
+func (c fakeGatewayConfig) Config() *networkingv1beta1.Gateway {
+	gw := &networkingv1beta1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
 			Annotations: c.annotations,
 		},
-		Spec: networkingv1alpha3api.Gateway{
+		Spec: istionetworking.Gateway{
 			Servers:  nil,
 			Selector: c.selector,
 		},
 	}
 
-	var servers []*networkingv1alpha3api.Server
+	var servers []*istionetworking.Server
 	for _, dnsnames := range c.dnsnames {
-		servers = append(servers, &networkingv1alpha3api.Server{
+		servers = append(servers, &istionetworking.Server{
 			Hosts: dnsnames,
 		})
 	}

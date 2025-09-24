@@ -65,13 +65,13 @@ func testMultiSourceEndpoints(t *testing.T) {
 		},
 		{
 			"single non-empty child source returns child's endpoints",
-			[][]*endpoint.Endpoint{{foo}},
-			[]*endpoint.Endpoint{foo},
+			[][]*endpoint.Endpoint{{foo.DeepCopy()}},
+			[]*endpoint.Endpoint{foo.DeepCopy()},
 		},
 		{
 			"multiple non-empty child sources returns merged children's endpoints",
-			[][]*endpoint.Endpoint{{foo}, {bar}},
-			[]*endpoint.Endpoint{foo, bar},
+			[][]*endpoint.Endpoint{{foo.DeepCopy()}, {bar.DeepCopy()}},
+			[]*endpoint.Endpoint{foo.DeepCopy(), bar.DeepCopy()},
 		},
 	} {
 
@@ -268,4 +268,44 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 
 		src.AssertExpectations(t)
 	})
+}
+
+func TestMultiSource_AddEventHandler(t *testing.T) {
+	tests := []struct {
+		title   string
+		sources []source.Source
+		times   int
+	}{
+		{
+			title:   "should not add event handler when sources are empty",
+			sources: []source.Source{},
+			times:   0,
+		},
+		{
+			title: "should add event handler when sources not empty",
+			sources: []source.Source{
+				testutils.NewMockSource(),
+				testutils.NewMockSource(),
+				testutils.NewMockSource(),
+			},
+			times: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			src := NewMultiSource(tt.sources, []string{}, true)
+			src.AddEventHandler(t.Context(), func() {})
+
+			count := 0
+
+			for _, mockSource := range tt.sources {
+				mSource := mockSource.(*testutils.MockSource)
+				mSource.AssertNumberOfCalls(t, "AddEventHandler", 1)
+				count += 1
+			}
+
+			assert.Equal(t, tt.times, count)
+		})
+	}
 }

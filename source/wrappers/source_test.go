@@ -26,11 +26,16 @@ import (
 
 func sortEndpoints(endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
-		sort.Strings([]string(ep.Targets))
+		if ep != nil {
+			ep.Targets = endpoint.NewTargets(ep.Targets...)
+		}
 	}
 	sort.Slice(endpoints, func(i, k int) bool {
 		// Sort by DNSName, RecordType, and Targets
 		ei, ek := endpoints[i], endpoints[k]
+		if ei == nil || ek == nil {
+			return true
+		}
 		if ei.DNSName != ek.DNSName {
 			return ei.DNSName < ek.DNSName
 		}
@@ -68,6 +73,10 @@ func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
 
 func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	t.Helper()
+
+	if endpoint == nil && expected == nil {
+		return
+	}
 
 	if endpoint.DNSName != expected.DNSName {
 		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)

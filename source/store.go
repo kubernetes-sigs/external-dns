@@ -37,6 +37,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
+	"sigs.k8s.io/external-dns/source/types"
+
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -332,53 +334,53 @@ func ByNames(ctx context.Context, p ClientGenerator, names []string, cfg *Config
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
 	switch source {
-	case "node":
+	case types.Node:
 		return buildNodeSource(ctx, p, cfg)
-	case "service":
+	case types.Service:
 		return buildServiceSource(ctx, p, cfg)
-	case "ingress":
+	case types.Ingress:
 		return buildIngressSource(ctx, p, cfg)
-	case "pod":
+	case types.Pod:
 		return buildPodSource(ctx, p, cfg)
-	case "gateway-httproute":
+	case types.GatewayHttpRoute:
 		return NewGatewayHTTPRouteSource(p, cfg)
-	case "gateway-grpcroute":
+	case types.GatewayGrpcRoute:
 		return NewGatewayGRPCRouteSource(p, cfg)
-	case "gateway-tlsroute":
+	case types.GatewayTlsRoute:
 		return NewGatewayTLSRouteSource(p, cfg)
-	case "gateway-tcproute":
+	case types.GatewayTcpRoute:
 		return NewGatewayTCPRouteSource(p, cfg)
-	case "gateway-udproute":
+	case types.GatewayUdpRoute:
 		return NewGatewayUDPRouteSource(p, cfg)
-	case "istio-gateway":
+	case types.IstioGateway:
 		return buildIstioGatewaySource(ctx, p, cfg)
-	case "istio-virtualservice":
+	case types.IstioVirtualService:
 		return buildIstioVirtualServiceSource(ctx, p, cfg)
-	case "cloudfoundry":
+	case types.Cloudfoundry:
 		return buildCloudFoundrySource(ctx, p, cfg)
-	case "ambassador-host":
+	case types.AmbassadorHost:
 		return buildAmbassadorHostSource(ctx, p, cfg)
-	case "contour-httpproxy":
+	case types.ContourHTTPProxy:
 		return buildContourHTTPProxySource(ctx, p, cfg)
-	case "gloo-proxy":
+	case types.GlooProxy:
 		return buildGlooProxySource(ctx, p, cfg)
-	case "traefik-proxy":
+	case types.TraefikProxy:
 		return buildTraefikProxySource(ctx, p, cfg)
-	case "openshift-route":
+	case types.OpenShiftRoute:
 		return buildOpenShiftRouteSource(ctx, p, cfg)
-	case "fake":
+	case types.Fake:
 		return NewFakeSource(cfg.FQDNTemplate)
-	case "connector":
+	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
-	case "crd":
+	case types.CRD:
 		return buildCRDSource(ctx, p, cfg)
-	case "skipper-routegroup":
+	case types.SkipperRouteGroup:
 		return buildSkipperRouteGroupSource(ctx, cfg)
-	case "kong-tcpingress":
+	case types.KongTCPIngress:
 		return buildKongTCPIngressSource(ctx, p, cfg)
-	case "f5-virtualserver":
+	case types.F5VirtualServer:
 		return buildF5VirtualServerSource(ctx, p, cfg)
-	case "f5-transportserver":
+	case types.F5TransportServer:
 		return buildF5TransportServerSource(ctx, p, cfg)
 	}
 	return nil, ErrSourceNotFound

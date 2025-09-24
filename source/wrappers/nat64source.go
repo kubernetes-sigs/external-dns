@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net/netip"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -28,18 +30,13 @@ import (
 // nat64Source is a Source that adds A endpoints for AAAA records including an NAT64 address.
 type nat64Source struct {
 	source        source.Source
-	nat64Prefixes []string
+	nat64Prefixes []netip.Prefix
 }
 
 // NewNAT64Source creates a new nat64Source wrapping the provided Source.
-func NewNAT64Source(source source.Source, nat64Prefixes []string) source.Source {
-	return &nat64Source{source: source, nat64Prefixes: nat64Prefixes}
-}
-
-// Endpoints collects endpoints from its wrapped source and returns them without duplicates.
-func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func NewNAT64Source(source source.Source, nat64Prefixes []string) (source.Source, error) {
 	parsedNAT64Prefixes := make([]netip.Prefix, 0)
-	for _, prefix := range s.nat64Prefixes {
+	for _, prefix := range nat64Prefixes {
 		pPrefix, err := netip.ParsePrefix(prefix)
 		if err != nil {
 			return nil, err
@@ -50,6 +47,12 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 		parsedNAT64Prefixes = append(parsedNAT64Prefixes, pPrefix)
 	}
+	return &nat64Source{source: source, nat64Prefixes: parsedNAT64Prefixes}, nil
+}
+
+// Endpoints collects endpoints from its wrapped source and returns them without duplicates.
+func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debug("nat64Source: collecting endpoints and processing NAT64 translation")
 
 	additionalEndpoints := []*endpoint.Endpoint{}
 
@@ -73,7 +76,7 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 			var sPrefix *netip.Prefix
 
-			for _, cPrefix := range parsedNAT64Prefixes {
+			for _, cPrefix := range s.nat64Prefixes {
 				if cPrefix.Contains(ip) {
 					sPrefix = &cPrefix
 				}
@@ -109,5 +112,6 @@ func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 }
 
 func (s *nat64Source) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("nat64Source: adding event handler")
 	s.source.AddEventHandler(ctx, handler)
 }

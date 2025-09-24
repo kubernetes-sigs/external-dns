@@ -62,6 +62,19 @@ func Test_newV2Config(t *testing.T) {
 		assert.Equal(t, "AKIAIOSFODNN7EXAMPLE", creds.AccessKeyID)
 		assert.Equal(t, "topsecret", creds.SecretAccessKey)
 	})
+
+	t.Run("should not error when AWS_CA_BUNDLE set", func(t *testing.T) {
+		// setup
+		os.Setenv("AWS_CA_BUNDLE", "../../internal/testresources/ca.pem")
+		defer os.Unsetenv("AWS_CA_BUNDLE")
+
+		// when
+		_, err := newV2Config(AWSSessionConfig{})
+		require.NoError(t, err)
+
+		// then
+		assert.NoError(t, err)
+	})
 }
 
 func prepareCredentialsFile(t *testing.T) (*os.File, error) {

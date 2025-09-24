@@ -176,3 +176,36 @@ func NewGaugeFuncMetric(opts prometheus.GaugeOpts) GaugeFuncMetric {
 		GaugeFunc: prometheus.NewGaugeFunc(opts, func() float64 { return 1 }),
 	}
 }
+
+type SummaryVecMetric struct {
+	Metric
+	SummaryVec prometheus.SummaryVec
+}
+
+func (s SummaryVecMetric) Get() *Metric {
+	return &s.Metric
+}
+
+func (s SummaryVecMetric) SetWithLabels(value float64, labels prometheus.Labels) {
+	s.SummaryVec.With(labels).Observe(value)
+}
+
+func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) SummaryVecMetric {
+	opts.Namespace = Namespace
+	return SummaryVecMetric{
+		Metric: Metric{
+			Type:      "summaryVec",
+			Name:      opts.Name,
+			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+			Namespace: opts.Namespace,
+			Subsystem: opts.Subsystem,
+			Help:      opts.Help,
+		},
+		SummaryVec: *prometheus.NewSummaryVec(opts, labels),
+	}
+}
+
+func PathProcessor(path string) string {
+	parts := strings.Split(path, "/")
+	return parts[len(parts)-1]
+}

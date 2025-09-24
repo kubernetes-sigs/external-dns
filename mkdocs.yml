@@ -19,22 +19,24 @@ nav:
       - Providers: docs/providers.md
   - Tutorials: docs/tutorials/*
   - Annotations:
-    - About: docs/annotations/annotations.md
+      - About: docs/annotations/annotations.md
   - Sources: docs/sources/*
   - Registries:
-    - About: docs/registry/registry.md
-    - TXT: docs/registry/txt.md
-    - DynamoDB: docs/registry/dynamodb.md
+      - About: docs/registry/registry.md
+      - TXT: docs/registry/txt.md
+      - DynamoDB: docs/registry/dynamodb.md
   - Advanced Topics:
-    - Initial Design: docs/initial-design.md
-    - Leader Election: docs/proposal/001-leader-election.md
-    - Monitoring: docs/monitoring/*
-    - MultiTarget: docs/proposal/multi-target.md
-    - NAT64: docs/advanced/nat64.md
-    - Rate Limits: docs/advanced/rate-limits.md
-    - TTL: docs/advanced/ttl.md
-    - FQDN Templating: docs/advanced/fqdn-templating.md
-    - Decisions: docs/proposal/0*.md
+      - FQDN Templating: docs/advanced/fqdn-templating.md
+      - Import Records: docs/advanced/import-records.md
+      - Initial Design: docs/initial-design.md
+      - Kubernetes Events: docs/advanced/events.md
+      - Leader Election: docs/proposal/001-leader-election.md
+      - Monitoring: docs/monitoring/*
+      - MultiTarget: docs/proposal/multi-target.md
+      - NAT64: docs/advanced/nat64.md
+      - Rate Limits: docs/advanced/rate-limits.md
+      - TTL: docs/advanced/ttl.md
+      - Decisions: docs/proposal/0*.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.md
@@ -116,5 +118,5 @@ plugins:
       j2_block_end_string: '%]]'
       j2_variable_start_string: '[['
       j2_variable_end_string: ']]'
-      j2_comment_start_string: '[#'
-      j2_comment_end_string: '#]'
+      j2_comment_start_string: '[[#'
+      j2_comment_end_string: '#]]'

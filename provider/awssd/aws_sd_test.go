@@ -254,14 +254,14 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 	ctx := context.Background()
 
 	// apply creates
-	provider.ApplyChanges(ctx, &plan.Changes{
+	_ = provider.ApplyChanges(ctx, &plan.Changes{
 		Create: oldEndpoints,
 	})
 
 	ctx = context.Background()
 
 	// apply update
-	provider.ApplyChanges(ctx, &plan.Changes{
+	_ = provider.ApplyChanges(ctx, &plan.Changes{
 		UpdateOld: oldEndpoints,
 		UpdateNew: newEndpoints,
 	})
@@ -306,6 +306,7 @@ func TestAWSSDProvider_ListNamespaces(t *testing.T) {
 	}{
 		{"public filter", endpoint.NewDomainFilter([]string{}), "public", []*sdtypes.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"])}},
 		{"private filter", endpoint.NewDomainFilter([]string{}), "private", []*sdtypes.NamespaceSummary{namespaceToNamespaceSummary(namespaces["private"])}},
+		{"optional filter", endpoint.NewDomainFilter([]string{}), "", []*sdtypes.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"]), namespaceToNamespaceSummary(namespaces["private"])}},
 		{"domain filter", endpoint.NewDomainFilter([]string{"public.com"}), "", []*sdtypes.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"])}},
 		{"non-existing domain", endpoint.NewDomainFilter([]string{"xxx.com"}), "", []*sdtypes.NamespaceSummary{}},
 	} {
@@ -913,7 +914,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	}
 
 	// AWS NLB instance (ALIAS)
-	provider.RegisterInstance(context.Background(), services["private"]["alias-srv"], &endpoint.Endpoint{
+	_ = provider.RegisterInstance(context.Background(), services["private"]["alias-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeCNAME,
 		DNSName:    "service1.private.com.",
 		RecordTTL:  300,
@@ -927,7 +928,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	}
 
 	// CNAME instance
-	provider.RegisterInstance(context.Background(), services["private"]["cname-srv"], &endpoint.Endpoint{
+	_ = provider.RegisterInstance(context.Background(), services["private"]["cname-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeCNAME,
 		DNSName:    "service2.private.com.",
 		RecordTTL:  300,
@@ -1001,7 +1002,7 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	provider.DeregisterInstance(context.Background(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
+	_ = provider.DeregisterInstance(context.Background(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
 
 	assert.Empty(t, instances["srv1"])
 }

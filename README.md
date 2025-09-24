@@ -66,6 +66,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 - [Plural](https://www.plural.sh/)
 - [Pi-hole](https://pi-hole.net/)
 - [Alibaba Cloud DNS](https://www.alibabacloud.com/help/en/dns)
+- [Myra Security DNS](https://www.myrasecurity.com/en/saasp/application-security/secure-dns/)
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones.
 We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster.
@@ -104,11 +105,13 @@ from the usage of any externally developed webhook.
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
+| Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
 | RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
+| SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
@@ -160,13 +163,19 @@ The following table clarifies the current status of the providers according to t
 
 ## Kubernetes version compatibility
 
-A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) was added in external-dns v0.10.0.
+Breaking changes were introduced in external-dns in the following versions:
 
-| ExternalDNS                    |      <= 0.9.x      |     >= 0.10.0      |
-| ------------------------------ | :----------------: | :----------------: |
-| Kubernetes <= 1.18             | :white_check_mark: |        :x:         |
-| Kubernetes >= 1.19 and <= 1.21 | :white_check_mark: | :white_check_mark: |
-| Kubernetes >= 1.22             |        :x:         | :white_check_mark: |
+- [`v0.10.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.10.0): use of `networking.k8s.io/ingresses` instead of `extensions/ingresses` (see [#2281](https://github.com/kubernetes-sigs/external-dns/pull/2281))
+- [`v0.18.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.18.0): use of `discovery.k8s.io/endpointslices` instead of `endpoints` (see [#5493](https://github.com/kubernetes-sigs/external-dns/pull/5493))
+- [`v0.19.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.19.0): expose external ipv6 by default (see [#5575](https://github.com/kubernetes-sigs/external-dns/pull/5575) and disable legacy listeners on traefik.containo.us API Group (see [#5565](https://github.com/kubernetes-sigs/external-dns/pull/5565))
+
+| ExternalDNS                  |      ≤ 0.9.x       | ≥ 0.10.x and ≤ 0.17.x |      ≥ 0.18.x      |
+| ---------------------------- | :----------------: | :-------------------: | :----------------: |
+| Kubernetes ≤ 1.18            | :white_check_mark: |          :x:          |        :x:         |
+| Kubernetes 1.19 and 1.20     | :white_check_mark: |  :white_check_mark:   |        :x:         |
+| Kubernetes 1.21              | :white_check_mark: |  :white_check_mark:   | :white_check_mark: |
+| Kubernetes ≥ 1.22 and ≤ 1.32 |        :x:         |  :white_check_mark:   | :white_check_mark: |
+| Kubernetes ≥ 1.33            |        :x:         |          :x:          | :white_check_mark: |
 
 ## Running ExternalDNS
 
@@ -203,6 +212,7 @@ The following tutorials are provided:
 - [IONOS Cloud](docs/tutorials/ionoscloud.md)
 - [Istio Gateway Source](docs/sources/istio.md)
 - [Linode](docs/tutorials/linode.md)
+- [Myra Security](docs/tutorials/myra.md)
 - [NS1](docs/tutorials/ns1.md)
 - [NS Record Creation with CRD Source](docs/sources/ns-record.md)
 - [MX Record Creation with CRD Source](docs/sources/mx-record.md)

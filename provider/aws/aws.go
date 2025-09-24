@@ -96,6 +96,7 @@ var canonicalHostedZones = map[string]string{
 	"ap-southeast-3.elb.amazonaws.com":    "Z08888821HLRG5A9ZRTER",
 	"ap-southeast-4.elb.amazonaws.com":    "Z09517862IB2WZLPXG76F",
 	"ap-southeast-5.elb.amazonaws.com":    "Z06010284QMVVW7WO5J",
+	"ap-southeast-6.elb.amazonaws.com":    "Z023301818UFJ50CIO0MV",
 	"ap-southeast-7.elb.amazonaws.com":    "Z0390008CMBRTHFGWBCB",
 	"ap-northeast-1.elb.amazonaws.com":    "Z14GRHDCWA56QT",
 	"eu-central-1.elb.amazonaws.com":      "Z215JYRZR1TBD5",
@@ -134,6 +135,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ap-southeast-3.amazonaws.com":    "Z01971771FYVNCOVWJU1G",
 	"elb.ap-southeast-4.amazonaws.com":    "Z01156963G8MIIL7X90IV",
 	"elb.ap-southeast-5.amazonaws.com":    "Z026317210H9ACVTRO6FB",
+	"elb.ap-southeast-6.amazonaws.com":    "Z01392953RKV2Q3RBP0KU",
 	"elb.ap-southeast-7.amazonaws.com":    "Z054363131YWATEMWRG5L",
 	"elb.ap-northeast-1.amazonaws.com":    "Z31USIVHYNEOWT",
 	"elb.eu-central-1.amazonaws.com":      "Z3F0SRJ5LGBH90",
@@ -734,56 +736,59 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 				log.Infof("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 			}
 
-			if !p.dryRun {
-				params := &route53.ChangeResourceRecordSetsInput{
-					HostedZoneId: aws.String(z),
-					ChangeBatch: &route53types.ChangeBatch{
-						Changes: b.Route53Changes(),
-					},
-				}
+			if p.dryRun {
+				log.Debug("Dry run mode, skipping change submission")
+				continue
+			}
 
-				successfulChanges := 0
+			params := &route53.ChangeResourceRecordSetsInput{
+				HostedZoneId: aws.String(z),
+				ChangeBatch: &route53types.ChangeBatch{
+					Changes: b.Route53Changes(),
+				},
+			}
 
-				client := p.clients[zones[z].profile]
-				if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-					log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
+			successfulChanges := 0
 
-					changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+			client := p.clients[zones[z].profile]
+			if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+				log.Errorf("Failure in zone %s when submitting change batch: %v", *zones[z].zone.Name, err)
 
-					if len(changesByOwnership) > 1 {
-						log.Debug("Trying to submit change sets one-by-one instead")
-						for _, changes := range changesByOwnership {
-							if log.Logger.IsLevelEnabled(debugLevel) {
-								for _, c := range changes {
-									log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
-								}
-							}
-							params.ChangeBatch = &route53types.ChangeBatch{
-								Changes: changes.Route53Changes(),
-							}
-							if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
-								failedUpdate = true
-								log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
-								p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
-							} else {
-								successfulChanges = successfulChanges + len(changes)
+				changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
+
+				if len(changesByOwnership) > 1 {
+					log.Debug("Trying to submit change sets one-by-one instead")
+					for _, changes := range changesByOwnership {
+						if log.Logger.IsLevelEnabled(debugLevel) {
+							for _, c := range changes {
+								log.Debugf("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 							}
 						}
-					} else {
-						failedUpdate = true
+						params.ChangeBatch = &route53types.ChangeBatch{
+							Changes: changes.Route53Changes(),
+						}
+						if _, err := client.ChangeResourceRecordSets(ctx, params); err != nil {
+							failedUpdate = true
+							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
+							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
+						} else {
+							successfulChanges = successfulChanges + len(changes)
+						}
 					}
 				} else {
-					successfulChanges = len(b)
+					failedUpdate = true
 				}
+			} else {
+				successfulChanges = len(b)
+			}
 
-				if successfulChanges > 0 {
-					// z is the R53 Hosted Zone ID already as aws.StringValue
-					log.Infof("%d record(s) were successfully updated", successfulChanges)
-				}
+			if successfulChanges > 0 {
+				// z is the R53 Hosted Zone ID already as aws.StringValue
+				log.Infof("%d record(s) were successfully updated", successfulChanges)
+			}
 
-				if i != len(batchCs)-1 {
-					time.Sleep(p.batchChangeInterval)
-				}
+			if i != len(batchCs)-1 {
+				time.Sleep(p.batchChangeInterval)
 			}
 		}
 

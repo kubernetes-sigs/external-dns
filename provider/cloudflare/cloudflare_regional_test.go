@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/cloudflare/cloudflare-go/v4/addressing"
+	"github.com/cloudflare/cloudflare-go/v5/addressing"
+	"github.com/cloudflare/cloudflare-go/v5/dns"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func (m *mockCloudFlareClient) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
@@ -103,14 +104,14 @@ func (m *mockCloudFlareClient) DeleteDataLocalizationRegionalHostname(ctx contex
 func TestCloudflareRegionalHostnameActions(t *testing.T) {
 	tests := []struct {
 		name              string
-		records           map[string]cloudflare.DNSRecord
+		records           map[string]dns.RecordResponse
 		regionalHostnames []regionalHostname
 		endpoints         []*endpoint.Endpoint
 		want              []MockAction
 	}{
 		{
 			name:              "create",
-			records:           map[string]cloudflare.DNSRecord{},
+			records:           map[string]dns.RecordResponse{},
 			regionalHostnames: []regionalHostname{},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -130,13 +131,13 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Name:     "Create",
 					ZoneId:   "001",
 					RecordId: generateDNSRecordID("A", "create.bar.com", "127.0.0.1"),
-					RecordData: cloudflare.DNSRecord{
+					RecordData: dns.RecordResponse{
 						ID:      generateDNSRecordID("A", "create.bar.com", "127.0.0.1"),
 						Type:    "A",
 						Name:    "create.bar.com",
 						Content: "127.0.0.1",
 						TTL:     1,
-						Proxied: proxyDisabled,
+						Proxied: false,
 					},
 				},
 				{
@@ -151,14 +152,14 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 		},
 		{
 			name: "Update",
-			records: map[string]cloudflare.DNSRecord{
+			records: map[string]dns.RecordResponse{
 				"update.bar.com": {
 					ID:      generateDNSRecordID("A", "update.bar.com", "127.0.0.1"),
 					Type:    "A",
 					Name:    "update.bar.com",
 					Content: "127.0.0.1",
 					TTL:     1,
-					Proxied: proxyDisabled,
+					Proxied: false,
 				},
 			},
 			regionalHostnames: []regionalHostname{
@@ -185,13 +186,13 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Name:     "Update",
 					ZoneId:   "001",
 					RecordId: generateDNSRecordID("A", "update.bar.com", "127.0.0.1"),
-					RecordData: cloudflare.DNSRecord{
+					RecordData: dns.RecordResponse{
 						ID:      generateDNSRecordID("A", "update.bar.com", "127.0.0.1"),
 						Type:    "A",
 						Name:    "update.bar.com",
 						Content: "127.0.0.1",
 						TTL:     1,
-						Proxied: proxyDisabled,
+						Proxied: false,
 					},
 				},
 				{
@@ -206,14 +207,14 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 		},
 		{
 			name: "Delete",
-			records: map[string]cloudflare.DNSRecord{
+			records: map[string]dns.RecordResponse{
 				"update.bar.com": {
 					ID:      generateDNSRecordID("A", "delete.bar.com", "127.0.0.1"),
 					Type:    "A",
 					Name:    "delete.bar.com",
 					Content: "127.0.0.1",
 					TTL:     1,
-					Proxied: proxyDisabled,
+					Proxied: false,
 				},
 			},
 			regionalHostnames: []regionalHostname{
@@ -228,7 +229,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Name:       "Delete",
 					ZoneId:     "001",
 					RecordId:   generateDNSRecordID("A", "delete.bar.com", "127.0.0.1"),
-					RecordData: cloudflare.DNSRecord{},
+					RecordData: dns.RecordResponse{},
 				},
 				{
 					Name:   "DeleteDataLocalizationRegionalHostname",
@@ -241,14 +242,14 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 		},
 		{
 			name: "No change",
-			records: map[string]cloudflare.DNSRecord{
+			records: map[string]dns.RecordResponse{
 				"nochange.bar.com": {
 					ID:      generateDNSRecordID("A", "nochange.bar.com", "127.0.0.1"),
 					Type:    "A",
 					Name:    "nochange.bar.com",
 					Content: "127.0.0.1",
 					TTL:     1,
-					Proxied: proxyDisabled,
+					Proxied: false,
 				},
 			},
 			regionalHostnames: []regionalHostname{
@@ -281,7 +282,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Zones: map[string]string{
 						"001": "bar.com",
 					},
-					Records: map[string]map[string]cloudflare.DNSRecord{
+					Records: map[string]map[string]dns.RecordResponse{
 						"001": tt.records,
 					},
 					regionalHostnames: map[string][]regionalHostname{
@@ -309,26 +310,26 @@ func TestCloudflareRegionalHostnameDefaults(t *testing.T) {
 			Name:     "Create",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.1"),
-			RecordData: cloudflare.DNSRecord{
+			RecordData: dns.RecordResponse{
 				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.1"),
 				Type:    "A",
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: proxyDisabled,
+				Proxied: false,
 			},
 		},
 		{
 			Name:     "Create",
 			ZoneId:   "001",
 			RecordId: generateDNSRecordID("A", "bar.com", "127.0.0.2"),
-			RecordData: cloudflare.DNSRecord{
+			RecordData: dns.RecordResponse{
 				ID:      generateDNSRecordID("A", "bar.com", "127.0.0.2"),
 				Type:    "A",
 				Name:    "bar.com",
 				Content: "127.0.0.2",
 				TTL:     1,
-				Proxied: proxyDisabled,
+				Proxied: false,
 			},
 		},
 		{
@@ -829,7 +830,7 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 		Zones: map[string]string{
 			"rherror": "error.com",
 		},
-		Records: map[string]map[string]cloudflare.DNSRecord{
+		Records: map[string]map[string]dns.RecordResponse{
 			"rherror": {"foo.error.com": {Type: "A"}},
 		},
 	}
@@ -844,7 +845,7 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		Records           map[string]cloudflare.DNSRecord
+		Records           map[string]dns.RecordResponse
 		RegionalHostnames []regionalHostname
 		RegionKey         string
 	}
@@ -879,7 +880,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 		{
 			name: "create fails",
 			fields: fields{
-				Records:           map[string]cloudflare.DNSRecord{},
+				Records:           map[string]dns.RecordResponse{},
 				RegionalHostnames: []regionalHostname{},
 				RegionKey:         "us",
 			},
@@ -902,7 +903,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 		{
 			name: "update fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]dns.RecordResponse{
 					"rherror.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -944,7 +945,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 		{
 			name: "delete fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]dns.RecordResponse{
 					"rherror.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -974,7 +975,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 			// This should not happen in practice, but we test it to ensure we return an error.
 			name: "conflicting regional keys",
 			fields: fields{
-				Records:           map[string]cloudflare.DNSRecord{},
+				Records:           map[string]dns.RecordResponse{},
 				RegionalHostnames: []regionalHostname{},
 				RegionKey:         "us",
 			},
@@ -1008,7 +1009,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 			t.Parallel()
 			records := tt.fields.Records
 			if records == nil {
-				records = map[string]cloudflare.DNSRecord{}
+				records = map[string]dns.RecordResponse{}
 			}
 			p := &CloudFlareProvider{
 				Client: &mockCloudFlareClient{
@@ -1016,7 +1017,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 						"001":     "bar.com",
 						"rherror": "error.com",
 					},
-					Records: map[string]map[string]cloudflare.DNSRecord{
+					Records: map[string]map[string]dns.RecordResponse{
 						"001": records,
 					},
 					regionalHostnames: map[string][]regionalHostname{
@@ -1044,7 +1045,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		Records           map[string]cloudflare.DNSRecord
+		Records           map[string]dns.RecordResponse
 		RegionalHostnames []regionalHostname
 		RegionKey         string
 	}
@@ -1060,7 +1061,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 		{
 			name: "create dry run",
 			fields: fields{
-				Records:           map[string]cloudflare.DNSRecord{},
+				Records:           map[string]dns.RecordResponse{},
 				RegionalHostnames: []regionalHostname{},
 				RegionKey:         "us",
 			},
@@ -1083,7 +1084,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 		{
 			name: "update fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]dns.RecordResponse{
 					"foo.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -1125,7 +1126,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 		{
 			name: "delete fails",
 			fields: fields{
-				Records: map[string]cloudflare.DNSRecord{
+				Records: map[string]dns.RecordResponse{
 					"foo.bar.com": {
 						ID:      "123",
 						Type:    "A",
@@ -1157,7 +1158,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 			t.Parallel()
 			records := tt.fields.Records
 			if records == nil {
-				records = map[string]cloudflare.DNSRecord{}
+				records = map[string]dns.RecordResponse{}
 			}
 			p := &CloudFlareProvider{
 				DryRun: true,
@@ -1165,7 +1166,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 					Zones: map[string]string{
 						"001": "bar.com",
 					},
-					Records: map[string]map[string]cloudflare.DNSRecord{
+					Records: map[string]map[string]dns.RecordResponse{
 						"001": records,
 					},
 					regionalHostnames: map[string][]regionalHostname{
@@ -1182,6 +1183,112 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 			assert.NoError(t, err, "ApplyChanges should not fail")
 			if tt.expectDebug != "" {
 				testutils.TestHelperLogContains(tt.expectDebug, hook, t)
+			}
+		})
+	}
+}
+
+func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		recordType             string
+		regionalServicesConfig RegionalServicesConfig
+		initialRegionKey       string  // existing region key on endpoint
+		expectedRegionKey      *string // expected region key after AdjustEndpoints (nil = should not be present)
+	}{
+		// Supported types should get region key when enabled
+		{
+			name:                   "A record with regional services enabled",
+			recordType:             "A",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      testutils.ToPtr("us"),
+		},
+		{
+			name:                   "AAAA record with regional services enabled",
+			recordType:             "AAAA",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      testutils.ToPtr("us"),
+		},
+		{
+			name:                   "CNAME record with regional services enabled",
+			recordType:             "CNAME",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      testutils.ToPtr("us"),
+		},
+
+		// Unsupported types should NOT get region key even when enabled
+		{
+			name:                   "TXT record with regional services enabled",
+			recordType:             "TXT",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "",
+			expectedRegionKey:      nil,
+		},
+
+		// Disabled regional services should remove region key for all types
+		{
+			name:                   "A record with regional services disabled",
+			recordType:             "A",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: false},
+			initialRegionKey:       "existing-region",
+			expectedRegionKey:      nil,
+		},
+		{
+			name:                   "TXT record with regional services disabled",
+			recordType:             "TXT",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: false},
+			initialRegionKey:       "existing-region",
+			expectedRegionKey:      nil,
+		},
+
+		// Existing region key should be preserved when already set
+		{
+			name:                   "A record with existing custom region key",
+			recordType:             "A",
+			regionalServicesConfig: RegionalServicesConfig{Enabled: true, RegionKey: "us"},
+			initialRegionKey:       "eu",
+			expectedRegionKey:      testutils.ToPtr("eu"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create endpoint with initial region key if specified
+			testEndpoint := &endpoint.Endpoint{
+				RecordType: tc.recordType,
+				DNSName:    "test.bar.com",
+				Targets:    endpoint.Targets{"127.0.0.1"},
+			}
+
+			if tc.initialRegionKey != "" {
+				testEndpoint.ProviderSpecific = endpoint.ProviderSpecific{
+					endpoint.ProviderSpecificProperty{
+						Name:  annotations.CloudflareRegionKey,
+						Value: tc.initialRegionKey,
+					},
+				}
+			}
+
+			provider := &CloudFlareProvider{
+				RegionalServicesConfig: tc.regionalServicesConfig,
+			}
+
+			adjustedEndpoints, err := provider.AdjustEndpoints([]*endpoint.Endpoint{testEndpoint})
+			assert.NoError(t, err)
+			assert.Len(t, adjustedEndpoints, 1)
+
+			regionKey, exists := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareRegionKey)
+
+			if tc.expectedRegionKey != nil {
+				// Region key should be present with expected value
+				assert.True(t, exists, "Region key should be present")
+				assert.Equal(t, *tc.expectedRegionKey, regionKey, "Region key value should match expected")
+			} else {
+				// Region key should not be present
+				assert.False(t, exists, "Region key should not be present")
 			}
 		})
 	}
