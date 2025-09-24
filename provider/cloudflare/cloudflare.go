@@ -230,13 +230,11 @@ func (c *DNSRecordsConfig) validTags(dnsName string, paidZone func(string) bool,
 	}
 
 	if len(tagsFromAnnotation) > 0 {
-		sort.Strings(tagsFromAnnotation)
 		return tagsFromAnnotation
 	}
 
 	if c.Tags != "" {
 		tags := strings.Split(c.Tags, ",")
-		sort.Strings(tags)
 		return tags
 	}
 
@@ -392,6 +390,12 @@ func NewCloudFlareProvider(
 
 	if regionalServicesConfig.RegionKey != "" {
 		regionalServicesConfig.Enabled = true
+	}
+
+	if dnsRecordsConfig.Tags != "" {
+		tags := strings.Split(dnsRecordsConfig.Tags, ",")
+		sort.Strings(tags)
+		dnsRecordsConfig.Tags = strings.Join(tags, ",")
 	}
 
 	return &CloudFlareProvider{
@@ -663,13 +667,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
-				"record":  change.ResourceRecord.Name,
-				"type":    change.ResourceRecord.Type,
-				"ttl":     change.ResourceRecord.TTL,
-				"action":  change.Action,
-				"zone":    zoneID,
-				"comment": change.ResourceRecord.Comment,
-				"tags":    change.ResourceRecord.Tags,
+				"record": change.ResourceRecord.Name,
+				"type":   change.ResourceRecord.Type,
+				"ttl":    change.ResourceRecord.TTL,
+				"action": change.Action.String(),
+				"zone":   zoneID,
 			}
 
 			log.WithFields(logFields).Info("Changing record.")
@@ -786,13 +788,11 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			}
 		}
 
-		// if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !ok {
-		// 	e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
-		// }
-
-		// if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); !ok {
-		// 	e.SetProviderSpecificProperty(annotations.CloudflareRecordTagsKey, p.DNSRecordsConfig.Tags)
-		// }
+		if p.DNSRecordsConfig.Tags != "" {
+			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); !found {
+				e.SetProviderSpecificProperty(annotations.CloudflareRecordTagsKey, p.DNSRecordsConfig.Tags)
+			}
+		}
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
@@ -888,12 +888,17 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	}
 
 	var tagsFromAnnotation []string
-	// Load tags from program flag
 	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordTagsKey); ok {
-		// Replace comment with Ingress annotation
-		tagsFromAnnotation = strings.Split(val, ",")
+		// Replace tags with Ingress annotation
+		tags := strings.Split(val, ",")
+		sort.Strings(tags)
+		tagsFromAnnotation = tags
 	}
 
+	validTags := p.DNSRecordsConfig.validTags(ep.DNSName, p.ZoneHasPaidPlan, tagsFromAnnotation)
+	if len(validTags) > 0 {
+		fmt.Println("validTags in newCloudFlareChange", validTags)
+	}
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: dns.RecordResponse{
@@ -904,7 +909,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			Content:  target,
 			Comment:  comment,
 			Priority: priority,
-			Tags:     p.DNSRecordsConfig.validTags(ep.DNSName, p.ZoneHasPaidPlan, tagsFromAnnotation),
+			Tags:     validTags,
 		},
 		RegionalHostname:    p.regionalHostname(ep),
 		CustomHostnamesPrev: prevCustomHostnames,
@@ -1069,8 +1074,11 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
 		}
 
-		if len(records[0].Tags) > 0 {
-			e = e.WithProviderSpecific(annotations.CloudflareRecordTagsKey, strings.Join(records[0].Tags, ","))
+		tags := records[0].Tags.([]string)
+		if len(tags) > 0 {
+			fmt.Println("tags in groupByNameAndTypeWithCustomHostnames", tags)
+			sort.Strings(tags)
+			e = e.WithProviderSpecific(annotations.CloudflareRecordTagsKey, strings.Join(tags, ","))
 		}
 
 		endpoints = append(endpoints, e)
@@ -1092,6 +1100,10 @@ func dnsRecordResponseFromLegacyDNSRecord(record cloudflarev0.DNSRecord) dns.Rec
 	var priority float64
 	if record.Priority != nil {
 		priority = float64(*record.Priority)
+	}
+
+	if len(record.Tags) > 0 {
+		fmt.Println("tags in dnsRecordResponseFromLegacyDNSRecord", record.Tags)
 	}
 
 	return dns.RecordResponse{

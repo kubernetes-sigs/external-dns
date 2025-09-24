@@ -23,11 +23,11 @@ const (
 	AnnotationKeyPrefix = "external-dns.alpha.kubernetes.io/"
 
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
-	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
-	CloudflareRegionKey         = "external-dns.alpha.kubernetes.io/cloudflare-region-key"
-	CloudflareRecordCommentKey  = "external-dns.alpha.kubernetes.io/cloudflare-record-comment"
-	CloudflareRecordTagsKey     = "external-dns.alpha.kubernetes.io/cloudflare-record-tags"
+	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
+	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
+	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
+	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
+	CloudflareRecordTagsKey     = AnnotationKeyPrefix + "cloudflare-record-tags"
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
