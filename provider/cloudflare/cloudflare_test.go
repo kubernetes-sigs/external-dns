@@ -101,15 +101,15 @@ func TestCloudflareProviderTags(t *testing.T) {
 			{
 				name: "Correctly sorts and cleans tags from annotation",
 				inputEndpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
-					WithProviderSpecific(annotations.CloudflareTagsKey, "owner:nikhil, env:dev, app:test "),
-				expectedTags:   "app:test,env:dev,owner:nikhil",
+					WithProviderSpecific(annotations.CloudflareTagsKey, "owner:owner_name, env:dev, app:test "),
+				expectedTags:   "app:test,env:dev,owner:owner_name",
 				expectProperty: true,
 			},
 			{
 				name: "Handles a single tag",
 				inputEndpoint: endpoint.NewEndpoint("single.example.com", endpoint.RecordTypeA, "1.2.3.4").
-					WithProviderSpecific(annotations.CloudflareTagsKey, "owner:nikhil"),
-				expectedTags:   "owner:nikhil",
+					WithProviderSpecific(annotations.CloudflareTagsKey, "owner:owner_name"),
+				expectedTags:   "owner:owner_name",
 				expectProperty: true,
 			},
 			{
@@ -154,7 +154,7 @@ func TestCloudflareProviderTags(t *testing.T) {
 				Name:    "test.example.com",
 				Type:    "A",
 				Content: "1.2.3.4",
-				Tags:    []string{"owner:nikhil", "env:dev", "app:test"},
+				Tags:    []string{"owner:owner_name", "env:dev", "app:test"},
 			},
 		}
 
@@ -163,7 +163,7 @@ func TestCloudflareProviderTags(t *testing.T) {
 
 		val, ok := endpoints[0].GetProviderSpecificProperty(annotations.CloudflareTagsKey)
 		assert.True(t, ok)
-		assert.Equal(t, "app:test,env:dev,owner:nikhil", val, "Tags from API should be sorted")
+		assert.Equal(t, "app:test,env:dev,owner:owner_name", val, "Tags from API should be sorted")
 	})
 }
 
