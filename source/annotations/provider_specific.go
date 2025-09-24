@@ -76,11 +76,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 					Value: v,
 				})
 			} else if strings.Contains(k, CloudflareTagsKey) {
-                providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-                    Name:  CloudflareTagsKey,
-                    Value: v,
-                })
-            }
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  CloudflareTagsKey,
+					Value: v,
+				})
+			}
 		}
 	}
 	return providerSpecificAnnotations, setIdentifier

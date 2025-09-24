@@ -751,7 +751,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 				if trimmed != "" {
 					cleanedTags = append(cleanedTags, trimmed)
 				}
-			} 
+			}
 			sort.Strings(cleanedTags)
 			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(cleanedTags, ","))
 		}
