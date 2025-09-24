@@ -89,6 +89,84 @@ var ExampleDomain = []dns.RecordResponse{
 	},
 }
 
+func TestCloudflareProviderTags(t *testing.T) {
+	provider := &CloudFlareProvider{}
+	t.Run("AdjustEndpoints", func(t *testing.T) {
+		testCases := []struct {
+			name           string
+			inputEndpoint  *endpoint.Endpoint
+			expectedTags   string
+			expectProperty bool
+		}{
+			{
+				name: "Correctly sorts and cleans tags from annotation",
+				inputEndpoint: endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeA, "1.2.3.4").
+					WithProviderSpecific(annotations.CloudflareTagsKey, "owner:nikhil, env:dev, app:test "),
+				expectedTags:   "app:test,env:dev,owner:nikhil",
+				expectProperty: true,
+			},
+			{
+				name: "Handles a single tag",
+				inputEndpoint: endpoint.NewEndpoint("single.example.com", endpoint.RecordTypeA, "1.2.3.4").
+					WithProviderSpecific(annotations.CloudflareTagsKey, "owner:nikhil"),
+				expectedTags:   "owner:nikhil",
+				expectProperty: true,
+			},
+			{
+				name: "Handles empty tag value",
+				inputEndpoint: endpoint.NewEndpoint("empty.example.com", endpoint.RecordTypeA, "1.2.3.4").
+					WithProviderSpecific(annotations.CloudflareTagsKey, ""),
+				expectProperty: false,
+			},
+			{
+				name:           "No tag annotation present",
+				inputEndpoint:  endpoint.NewEndpoint("notags.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				expectProperty: false,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				adjustedEndpoints, err := provider.AdjustEndpoints([]*endpoint.Endpoint{tc.inputEndpoint})
+				require.NoError(t, err)
+				require.Len(t, adjustedEndpoints, 1)
+
+				val, ok := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareTagsKey)
+				if tc.expectProperty {
+					assert.True(t, ok, "Expected to find cloudflare-tags property")
+					assert.Equal(t, tc.expectedTags, val, "Tags should be sorted and cleaned")
+				} else {
+					// If we expect no property, either it's absent OR its value is empty.
+					// The current implementation will add an empty string if the annotation is present but empty.
+					// A more robust implementation might remove it entirely, but for now we check both.
+					if ok {
+						assert.Empty(t, val, "Expected tag property to be empty if present")
+					}
+				}
+			})
+		}
+	})
+
+	// Test cases for the groupByNameAndTypeWithCustomHostnames function (handling API response)
+	t.Run("groupByNameAndTypeWithCustomHostnames", func(t *testing.T) {
+		records := DNSRecordsMap{
+			DNSRecordIndex{Name: "test.example.com", Type: "A", Content: "1.2.3.4"}: {
+				Name:    "test.example.com",
+				Type:    "A",
+				Content: "1.2.3.4",
+				Tags:    []string{"owner:nikhil", "env:dev", "app:test"},
+			},
+		}
+
+		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, nil)
+		require.Len(t, endpoints, 1)
+
+		val, ok := endpoints[0].GetProviderSpecificProperty(annotations.CloudflareTagsKey)
+		assert.True(t, ok)
+		assert.Equal(t, "app:test,env:dev,owner:nikhil", val, "Tags from API should be sorted")
+	})
+}
+
 func NewMockCloudFlareClient() *mockCloudFlareClient {
 	return &mockCloudFlareClient{
 		Zones: map[string]string{
