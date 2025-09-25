@@ -1,6 +1,6 @@
 ## Annotations vs. CLI Flags Precedence
 
-ExternalDNS configuration can come from three sources: resource annotations, CLI flags, environment variables, and defaults.
+ExternalDNS configuration can come from these sources: resource annotations, CLI flags, environment variables, and defaults.
 The effective value is determined by the following precedence order:
 
 ```mermaid
