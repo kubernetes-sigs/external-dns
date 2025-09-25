@@ -51,8 +51,9 @@ jobs:
       run: make test
 
     - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
+      uses: coverallsapp/github-action@v2
       with:
-        path-to-profile: profile.cov
+        file: profile.cov
+        format: golang
       if: github.actor != 'nektos/act' && matrix.os == 'ubuntu-latest'
       continue-on-error: true
