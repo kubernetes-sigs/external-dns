@@ -38,16 +38,10 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    - name: Install additional CI for nektos/act
-      run: |
-            apt update
-            apt install -y make gcc libc-dev git
-      if: github.actor == 'nektos/act' && matrix.os == 'ubuntu-latest'
-
     - name: Test
       env:
-        GOMAXPROCS: 1
-        GOMEMLIMIT: 2048MiB
+        GOMAXPROCS: 4
+        GOMEMLIMIT: 8192MiB
       run: make test
 
     - name: Send coverage
@@ -57,7 +51,6 @@ jobs:
         format: golang
         flag-name: run-${{ join(matrix.*, '-') }}
         parallel: true
-      if: github.actor != 'nektos/act' && matrix.os == 'ubuntu-latest'
       continue-on-error: true
 
   finish:
