@@ -37,6 +37,7 @@ nav:
       - Rate Limits: docs/advanced/rate-limits.md
       - TTL: docs/advanced/ttl.md
       - Decisions: docs/proposal/0*.md
+      - Configuration Precedence: docs/advanced/configuration-precedence.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.md
