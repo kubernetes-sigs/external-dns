@@ -26,6 +26,7 @@ flowchart TD
    - Most configuration options can be set via annotations on supported resources.
    - When present, annotations override the corresponding CLI flags and defaults.
      - There could be exceptions that should be documented.
+     - Ignored when applied to `kind: DNSEndpoint`
    - Exception: filter flags (e.g. `--service-type-filter`, `--source`) define the *scope* of resources considered.
      - If a resource is excluded by a filter, annotations configured on the resource will not be applied.
 
