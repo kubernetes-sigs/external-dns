@@ -36,7 +36,7 @@ flowchart TD
 
 3. **Environment Variables**
    - May override defaults, and in some cases may take precedence over CLI flags and annotations.
-   - Behavior depends on how the variable is mapped in the code. Where or not it replicates CLI flag or provider specific, example `kubectl` or `cloudflare`.
+   - Behavior depends on how the variable is mapped in the code. Where or not it replicates CLI flag or provider specific. Example: `kubectl` or `cloudflare`.
 
 4. **Defaults**
    - If none of the above specify a value, ExternalDNS falls back to its defaults.
