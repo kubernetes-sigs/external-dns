@@ -191,27 +191,57 @@ func TestIsLess(t *testing.T) {
 }
 
 func TestGetProviderSpecificProperty(t *testing.T) {
-	e := &Endpoint{
-		ProviderSpecific: ProviderSpecific{
-			"name": "value",
+	tests := []struct {
+		name          string
+		endpoint      *Endpoint
+		key           string
+		expectedValue string
+		expectedOk    bool
+	}{
+		{
+			name: "key exists",
+			endpoint: &Endpoint{
+				ProviderSpecific: ProviderSpecific{
+					"region": "us-west-1",
+				},
+			},
+			key:           "region",
+			expectedValue: "us-west-1",
+			expectedOk:    true,
+		},
+		{
+			name: "key does not exist",
+			endpoint: &Endpoint{
+				ProviderSpecific: ProviderSpecific{
+					"region": "us-west-1",
+				},
+			},
+			key:           "zone",
+			expectedValue: "",
+			expectedOk:    false,
+		},
+		{
+			name: "empty ProviderSpecific",
+			endpoint: &Endpoint{
+				ProviderSpecific: nil,
+			},
+			key:           "region",
+			expectedValue: "",
+			expectedOk:    false,
 		},
 	}
 
-	t.Run("key is not present in provider specific", func(t *testing.T) {
-		val, ok := e.GetProviderSpecificProperty("hello")
-		assert.False(t, ok)
-		assert.Empty(t, val)
-	})
-
-	t.Run("key is present in provider specific", func(t *testing.T) {
-		val, ok := e.GetProviderSpecificProperty("name")
-		assert.True(t, ok)
-		assert.NotEmpty(t, val)
-
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, ok := tt.endpoint.GetProviderSpecificProperty(tt.key)
+			if value != tt.expectedValue || ok != tt.expectedOk {
+				t.Errorf("GetProviderSpecificProperty(%q) = (%q, %v); want (%q, %v)", tt.key, value, ok, tt.expectedValue, tt.expectedOk)
+			}
+		})
+	}
 }
 
-func TestSetProviderSpecficProperty(t *testing.T) {
+func TestSetProviderSpecificProperty(t *testing.T) {
 	cases := []struct {
 		name               string
 		endpoint           Endpoint
@@ -298,6 +328,25 @@ func TestSetProviderSpecficProperty(t *testing.T) {
 				"name1": "value2",
 			},
 		},
+		{
+			name: "provider specific is nil",
+			endpoint: Endpoint{
+				DNSName:       "example.org",
+				RecordTTL:     TTL(0),
+				RecordType:    RecordTypeA,
+				SetIdentifier: "identifier",
+				Targets: Targets{
+					"example.org", "example.com", "1.2.4.5",
+				},
+				ProviderSpecific: nil,
+			},
+			expectedIdentifier: "identifier",
+			key:                "name1",
+			value:              "value1",
+			expected: ProviderSpecific{
+				"name1": "value1",
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -357,6 +406,14 @@ func TestDeleteProviderSpecificProperty(t *testing.T) {
 			},
 			key:      "name1",
 			expected: ProviderSpecific{},
+		},
+		{
+			name: "provider specific is nil",
+			endpoint: Endpoint{
+				ProviderSpecific: nil,
+			},
+			key:      "name1",
+			expected: nil,
 		},
 	}
 
