@@ -74,10 +74,10 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 			return
 		}
 		internalChanges := &plan.Changes{
-			Create:    adapter.ToInternalEndpoints(changes.Create),
-			Delete:    adapter.ToInternalEndpoints(changes.Delete),
-			UpdateOld: adapter.ToInternalEndpoints(changes.UpdateOld),
-			UpdateNew: adapter.ToInternalEndpoints(changes.UpdateNew),
+			Create:    adapter.FromAPIEndpoints(changes.Create),
+			Delete:    adapter.FromAPIEndpoints(changes.Delete),
+			UpdateOld: adapter.FromAPIEndpoints(changes.UpdateOld),
+			UpdateNew: adapter.FromAPIEndpoints(changes.UpdateNew),
 		}
 		err := p.Provider.ApplyChanges(context.Background(), internalChanges)
 		if err != nil {
@@ -107,7 +107,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
-	endpoints := adapter.ToInternalEndpoints(pve)
+	endpoints := adapter.FromAPIEndpoints(pve)
 	endpoints, err := p.Provider.AdjustEndpoints(endpoints)
 	if err != nil {
 		log.Errorf("Failed to call adjust endpoints: %v", err)

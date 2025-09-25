@@ -193,7 +193,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 
-	return adapter.ToInternalEndpoints(apiEndpoints), nil
+	return adapter.FromAPIEndpoints(apiEndpoints), nil
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
@@ -301,7 +301,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	return adapter.ToInternalEndpoints(apiEps), nil
+	return adapter.FromAPIEndpoints(apiEps), nil
 }
 
 // GetDomainFilter make calls to get the serialized version of the domain filter

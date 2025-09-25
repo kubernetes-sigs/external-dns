@@ -183,7 +183,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	for _, dnsEndpoint := range result.Items {
 		var crdEndpoints []*endpoint.Endpoint
 		for _, crdEp := range dnsEndpoint.Spec.Endpoints {
-			ep := adapter.ToInternalEndpoint(crdEp)
+			ep := adapter.FromAPIEndpoint(crdEp)
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}

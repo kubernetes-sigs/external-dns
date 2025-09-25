@@ -556,7 +556,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate received endpoints against expected endpoints.
-			endpoints := adapter.ToInternalEndpoints(ti.endpoints)
+			endpoints := adapter.FromAPIEndpoints(ti.endpoints)
 			validateEndpoints(t, receivedEndpoints, endpoints)
 
 			for _, e := range receivedEndpoints {

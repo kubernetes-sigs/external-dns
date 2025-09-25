@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,67 +20,69 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func ToInternalEndpoint(crdEp *apiv1alpha1.Endpoint) *endpoint.Endpoint {
-	if crdEp == nil {
+// FromAPIEndpoint converts an API endpoint (v1alpha1.Endpoint) to an internal endpoint (endpoint.Endpoint).
+func FromAPIEndpoint(apiEndpoint *apiv1alpha1.Endpoint) *endpoint.Endpoint {
+	if apiEndpoint == nil {
 		return nil
 	}
 	p := make(endpoint.ProviderSpecific)
-	for _, ps := range crdEp.ProviderSpecific {
+	for _, ps := range apiEndpoint.ProviderSpecific {
 		p.Set(ps.Name, ps.Value)
 	}
-	ep := &endpoint.Endpoint{
-		DNSName:          crdEp.DNSName,
-		Targets:          crdEp.Targets,
-		RecordType:       crdEp.RecordType,
-		SetIdentifier:    crdEp.SetIdentifier,
-		RecordTTL:        endpoint.TTL(crdEp.RecordTTL),
-		Labels:           crdEp.Labels,
+	return &endpoint.Endpoint{
+		DNSName:          apiEndpoint.DNSName,
+		Targets:          apiEndpoint.Targets,
+		RecordType:       apiEndpoint.RecordType,
+		SetIdentifier:    apiEndpoint.SetIdentifier,
+		RecordTTL:        endpoint.TTL(apiEndpoint.RecordTTL),
+		Labels:           apiEndpoint.Labels,
 		ProviderSpecific: p,
 	}
-	return ep
 }
 
-func ToInternalEndpoints(crdEps []*apiv1alpha1.Endpoint) []*endpoint.Endpoint {
-	if len(crdEps) == 0 {
+// FromAPIEndpoints converts a slice of API endpoints to internal endpoints.
+func FromAPIEndpoints(apiEndpoints []*apiv1alpha1.Endpoint) []*endpoint.Endpoint {
+	if len(apiEndpoints) == 0 {
 		return nil
 	}
-	eps := make([]*endpoint.Endpoint, 0, len(crdEps))
-	for _, crdEp := range crdEps {
-		eps = append(eps, ToInternalEndpoint(crdEp))
+	eps := make([]*endpoint.Endpoint, 0, len(apiEndpoints))
+	for _, apiEndpoint := range apiEndpoints {
+		eps = append(eps, FromAPIEndpoint(apiEndpoint))
 	}
 	return eps
 }
 
-func ToAPIEndpoint(ep *endpoint.Endpoint) *apiv1alpha1.Endpoint {
-	if ep == nil {
+// ToAPIEndpoint converts an internal endpoint (endpoint.Endpoint) to an API endpoint (v1alpha1.Endpoint).
+func ToAPIEndpoint(internalEndpoint *endpoint.Endpoint) *apiv1alpha1.Endpoint {
+	if internalEndpoint == nil {
 		return nil
 	}
-	ps := make([]apiv1alpha1.ProviderSpecificProperty, 0, len(ep.ProviderSpecific))
-	for k, v := range ep.ProviderSpecific {
+	ps := make([]apiv1alpha1.ProviderSpecificProperty, 0, len(internalEndpoint.ProviderSpecific))
+	for k, v := range internalEndpoint.ProviderSpecific {
 		ps = append(ps, apiv1alpha1.ProviderSpecificProperty{
 			Name:  k,
 			Value: v,
 		})
 	}
-	crdEp := &apiv1alpha1.Endpoint{
-		DNSName:          ep.DNSName,
-		Targets:          ep.Targets,
-		RecordType:       ep.RecordType,
-		SetIdentifier:    ep.SetIdentifier,
-		RecordTTL:        int64(ep.RecordTTL),
-		Labels:           ep.Labels,
+	return &apiv1alpha1.Endpoint{
+		DNSName:          internalEndpoint.DNSName,
+		Targets:          internalEndpoint.Targets,
+		RecordType:       internalEndpoint.RecordType,
+		SetIdentifier:    internalEndpoint.SetIdentifier,
+		RecordTTL:        int64(internalEndpoint.RecordTTL),
+		Labels:           internalEndpoint.Labels,
 		ProviderSpecific: ps,
 	}
-	return crdEp
 }
 
-func ToAPIEndpoints(eps []*endpoint.Endpoint) []*apiv1alpha1.Endpoint {
-	if len(eps) == 0 {
+// ToAPIEndpoints converts a slice of internal endpoints to API endpoints.
+func ToAPIEndpoints(internalEndpoints []*endpoint.Endpoint) []*apiv1alpha1.Endpoint {
+	if len(internalEndpoints) == 0 {
 		return nil
 	}
-	crdEps := make([]*apiv1alpha1.Endpoint, 0, len(eps))
-	for _, ep := range eps {
-		crdEps = append(crdEps, ToAPIEndpoint(ep))
+	apiEndpoints := make([]*apiv1alpha1.Endpoint, 0, len(internalEndpoints))
+	for _, internalEndpoint := range internalEndpoints {
+		apiEndpoints = append(apiEndpoints, ToAPIEndpoint(internalEndpoint))
 	}
-	return crdEps
+	return apiEndpoints
 }

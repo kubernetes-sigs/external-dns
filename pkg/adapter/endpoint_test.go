@@ -140,7 +140,7 @@ func TestToInternalEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ToInternalEndpoint(tt.input)
+			result := FromAPIEndpoint(tt.input)
 			if tt.expected == nil {
 				assert.Nil(t, result)
 			} else {
@@ -344,7 +344,7 @@ func TestToInternalEndpoints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ToInternalEndpoints(tt.input)
+			result := FromAPIEndpoints(tt.input)
 			assert.True(t, testutils.SameEndpoints(tt.expected, result))
 		})
 	}
@@ -511,7 +511,7 @@ func TestRoundTripConversion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Convert internal -> API -> internal
 			apiEndpoint := ToAPIEndpoint(tt.original)
-			result := ToInternalEndpoint(apiEndpoint)
+			result := FromAPIEndpoint(apiEndpoint)
 
 			assert.True(t, testutils.SameEndpoint(tt.original, result))
 		})
