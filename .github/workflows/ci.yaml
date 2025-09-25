@@ -11,12 +11,12 @@ permissions:
 
 jobs:
 
-  build:
+  test:
     permissions:
       contents: read  #  to fetch code (actions/checkout)
       checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
 
-    name: Build
+    name: Test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -55,5 +55,18 @@ jobs:
       with:
         file: profile.cov
         format: golang
+        flag-name: run-${{ join(matrix.*, '-') }}
+        parallel: true
       if: github.actor != 'nektos/act' && matrix.os == 'ubuntu-latest'
       continue-on-error: true
+
+  finish:
+    needs: test
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@v2
+      with:
+        parallel-finished: true
+        carryforward: "run-ubuntu-latest,run-macos-latest"
