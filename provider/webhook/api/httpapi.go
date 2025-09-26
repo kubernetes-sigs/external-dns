@@ -23,7 +23,8 @@ import (
 	"net/http"
 	"time"
 
-	"sigs.k8s.io/external-dns/endpoint"
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
+	"sigs.k8s.io/external-dns/pkg/adapter"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -37,6 +38,13 @@ const (
 	UrlApplyChanges           = "/applychanges"
 	UrlRecords                = "/records"
 )
+
+type Changes struct {
+	Create    []*apiv1alpha1.Endpoint `json:"create,omitempty"`
+	Delete    []*apiv1alpha1.Endpoint `json:"delete,omitempty"`
+	UpdateOld []*apiv1alpha1.Endpoint `json:"updateOld,omitempty"`
+	UpdateNew []*apiv1alpha1.Endpoint `json:"updateNew,omitempty"`
+}
 
 type WebhookServer struct {
 	Provider provider.Provider
@@ -53,18 +61,25 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		}
 		w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(records); err != nil {
+		apiRecords := adapter.ToAPIEndpoints(records)
+		if err := json.NewEncoder(w).Encode(apiRecords); err != nil {
 			log.Errorf("Failed to encode records: %v", err)
 		}
 		return
 	case http.MethodPost:
-		var changes plan.Changes
+		var changes Changes
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 			log.Errorf("Failed to decode changes: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := p.Provider.ApplyChanges(context.Background(), &changes)
+		internalChanges := &plan.Changes{
+			Create:    adapter.FromAPIEndpoints(changes.Create),
+			Delete:    adapter.FromAPIEndpoints(changes.Delete),
+			UpdateOld: adapter.FromAPIEndpoints(changes.UpdateOld),
+			UpdateNew: adapter.FromAPIEndpoints(changes.UpdateNew),
+		}
+		err := p.Provider.ApplyChanges(context.Background(), internalChanges)
 		if err != nil {
 			log.Errorf("Failed to apply changes: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -85,18 +100,20 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 
-	var pve []*endpoint.Endpoint
+	var pve []*apiv1alpha1.Endpoint
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
-	pve, err := p.Provider.AdjustEndpoints(pve)
+	endpoints := adapter.FromAPIEndpoints(pve)
+	endpoints, err := p.Provider.AdjustEndpoints(endpoints)
 	if err != nil {
 		log.Errorf("Failed to call adjust endpoints: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+	pve = adapter.ToAPIEndpoints(endpoints)
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
 		log.Errorf("Failed to encode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

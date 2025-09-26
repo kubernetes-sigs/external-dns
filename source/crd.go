@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/pkg/adapter"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	log "github.com/sirupsen/logrus"
@@ -181,7 +182,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	for _, dnsEndpoint := range result.Items {
 		var crdEndpoints []*endpoint.Endpoint
-		for _, ep := range dnsEndpoint.Spec.Endpoints {
+		for _, crdEp := range dnsEndpoint.Spec.Endpoints {
+			ep := adapter.FromAPIEndpoint(crdEp)
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}

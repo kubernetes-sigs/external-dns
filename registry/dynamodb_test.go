@@ -213,10 +213,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 				endpoint.ResourceLabelKey: "ingress/default/other-ingress",
 			},
 			ProviderSpecific: endpoint.ProviderSpecific{
-				{
-					Name:  dynamodbAttributeMigrate,
-					Value: "true",
-				},
+				dynamodbAttributeMigrate: "true",
 			},
 		},
 		{
@@ -868,10 +865,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 							endpoint.ResourceLabelKey: "ingress/default/my-ingress",
 						},
 						ProviderSpecific: endpoint.ProviderSpecific{
-							{
-								Name:  dynamodbAttributeMigrate,
-								Value: "true",
-							},
+							dynamodbAttributeMigrate: "true",
 						},
 					},
 				},

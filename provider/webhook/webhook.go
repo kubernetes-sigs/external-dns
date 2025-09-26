@@ -24,7 +24,9 @@ import (
 	"net/http"
 	"net/url"
 
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/adapter"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -184,13 +186,14 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 
-	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	var apiEndpoints []*apiv1alpha1.Endpoint
+	if err := json.NewDecoder(resp.Body).Decode(&apiEndpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
-	return endpoints, nil
+
+	return adapter.FromAPIEndpoints(apiEndpoints), nil
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
@@ -199,7 +202,16 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 
 	b := new(bytes.Buffer)
-	if err := json.NewEncoder(b).Encode(changes); err != nil {
+	var webhookChanges *webhookapi.Changes
+	if changes != nil {
+		webhookChanges = &webhookapi.Changes{
+			Create:    adapter.ToAPIEndpoints(changes.Create),
+			Delete:    adapter.ToAPIEndpoints(changes.Delete),
+			UpdateOld: adapter.ToAPIEndpoints(changes.UpdateOld),
+			UpdateNew: adapter.ToAPIEndpoints(changes.UpdateNew),
+		}
+	}
+	if err := json.NewEncoder(b).Encode(webhookChanges); err != nil {
 		applyChangesErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to encode changes: %s", err.Error())
 		return err
@@ -240,7 +252,6 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustEndpointsRequestsGauge.Gauge.Inc()
-	var endpoints []*endpoint.Endpoint
 	u, err := url.JoinPath(p.remoteServerURL.String(), webhookapi.UrlAdjustEndpoints)
 	if err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
@@ -249,7 +260,8 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	}
 
 	b := new(bytes.Buffer)
-	if err := json.NewEncoder(b).Encode(e); err != nil {
+	apiEps := adapter.ToAPIEndpoints(e)
+	if err := json.NewEncoder(b).Encode(apiEps); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to encode endpoints, %s", err)
 		return nil, err
@@ -282,14 +294,14 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		}
 		return nil, err
 	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	apiEps = []*apiv1alpha1.Endpoint{}
+	if err := json.NewDecoder(resp.Body).Decode(&apiEps); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
 
-	return endpoints, nil
+	return adapter.FromAPIEndpoints(apiEps), nil
 }
 
 // GetDomainFilter make calls to get the serialized version of the domain filter

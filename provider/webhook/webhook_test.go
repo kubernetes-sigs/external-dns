@@ -28,7 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
+	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -127,7 +127,12 @@ func TestRecords(t *testing.T) {
 		}
 		assert.Equal(t, "/records", r.URL.Path)
 		w.Write([]byte(`[{
-			"dnsName" : "test.example.com"
+			"dnsName" : "test.example.com",
+			"recordType" : "A",
+			"targets" : ["1.1.1.1"],
+			"recordTTL" : 300,
+			"labels" : {"owner": "external-dns"},
+			"providerSpecific" : [{"name": "prop1", "value": "value1"}]
 		}]`))
 	}))
 	defer svr.Close()
@@ -139,6 +144,17 @@ func TestRecords(t *testing.T) {
 	require.NotNil(t, endpoints)
 	require.Equal(t, []*endpoint.Endpoint{{
 		DNSName: "test.example.com",
+		Targets: endpoint.Targets{
+			"1.1.1.1",
+		},
+		RecordType: "A",
+		RecordTTL:  300,
+		Labels: map[string]string{
+			"owner": "external-dns",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			"prop1": "value1",
+		},
 	}}, endpoints)
 }
 
@@ -224,29 +240,84 @@ func TestRecords_NonOKStatusCode(t *testing.T) {
 }
 
 func TestApplyChanges(t *testing.T) {
-	successfulApplyChanges := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}
+
 		assert.Equal(t, "/records", r.URL.Path)
-		if successfulApplyChanges {
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		defer r.Body.Close()
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.JSONEq(t, `{
+			  "create": [
+			    {
+			      "dnsName": "foo",
+			      "providerSpecific": [{ "name": "prop1", "value": "value1" }],
+			      "labels": { "owner": "external-dns" },
+			      "recordTTL": 10
+			    }
+			  ],
+			  "updateOld": [{ "dnsName": "bar" }],
+			  "updateNew": [{ "dnsName": "baz" }],
+			  "delete": [{ "dnsName": "qux" }]
+			}`, string(body),
+		)
+		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer svr.Close()
 
 	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(context.TODO(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:   "foo",
+				RecordTTL: 10,
+				Labels: map[string]string{
+					"owner": "external-dns",
+				},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					"prop1": "value1",
+				},
+			},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName: "bar",
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName: "baz",
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName: "qux",
+			},
+		},
+	})
 	require.NoError(t, err)
+}
 
-	successfulApplyChanges = false
+func TestApplyChanges_InternalServerError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
 
+		assert.Equal(t, "/records", r.URL.Path)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer svr.Close()
+
+	p, err := NewWebhookProvider(svr.URL)
+	require.NoError(t, err)
 	err = p.ApplyChanges(context.TODO(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
@@ -304,7 +375,7 @@ func TestAdjustEndpoints(t *testing.T) {
 		}
 		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 
-		var endpoints []*endpoint.Endpoint
+		var endpoints []*apiv1alpha1.Endpoint
 		defer r.Body.Close()
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -333,6 +404,12 @@ func TestAdjustEndpoints(t *testing.T) {
 			Targets: endpoint.Targets{
 				"",
 			},
+			Labels: map[string]string{
+				"owner": "external-dns",
+			},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				"prop1": "value1",
+			},
 		},
 	}
 	adjustedEndpoints, err := provider.AdjustEndpoints(endpoints)
@@ -343,6 +420,12 @@ func TestAdjustEndpoints(t *testing.T) {
 		RecordType: "A",
 		Targets: endpoint.Targets{
 			"",
+		},
+		Labels: map[string]string{
+			"owner": "external-dns",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			"prop1": "value1",
 		},
 	}}, adjustedEndpoints)
 }
@@ -387,7 +470,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		if r.URL.Path == "/records" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			// assert that the request contains the provider-specific property
-			var changes plan.Changes
+			var changes webhookapi.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
 			assert.NoError(t, err)
@@ -395,8 +478,8 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Len(t, changes.Create, 1)
 			assert.Len(t, changes.Create[0].ProviderSpecific, 1)
-			assert.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
-			assert.Equal(t, "value1", changes.Create[0].ProviderSpecific[0].Value)
+			v := changes.Create[0].ProviderSpecific[0].Value
+			assert.Equal(t, "value1", v)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -409,14 +492,11 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		DNSName:    "test.example.com",
 		RecordTTL:  10,
 		RecordType: "A",
-		Targets: endpoint.Targets{
+		Targets: []string{
 			"",
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
-			endpoint.ProviderSpecificProperty{
-				Name:  "prop1",
-				Value: "value1",
-			},
+			"prop1": "value1",
 		},
 	}
 	err = p.ApplyChanges(context.TODO(), &plan.Changes{
