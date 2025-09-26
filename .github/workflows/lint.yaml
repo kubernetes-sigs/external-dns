@@ -57,6 +57,24 @@ jobs:
       run: |
         go tool vacuum lint -d --fail-severity warn --show-rules api/*.yaml
 
+    - name: Check flags documentation
+      run: |
+        make generate-flags-documentation 
+        if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
+        then
+          echo "Schema not up to date. Please run make generate-flags-documentation and commit changes!" >&2
+          exit 1
+        fi
+
+    - name: Check metrics documentation
+      run: |
+        make generate-metrics-documentation
+        if [[ -n "$(git status --porcelain --untracked-files=no)" ]]
+        then
+          echo "Schema not up to date. Please run make generate-metrics-documentation and commit changes!" >&2
+          exit 1
+        fi
+
     - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action
     - name: Verify with pre-commit
