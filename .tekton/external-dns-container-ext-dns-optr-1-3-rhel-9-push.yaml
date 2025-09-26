@@ -210,6 +210,7 @@ spec:
       - name: BUILD_ARGS
         value:
         - $(params.build-args[*])
+        - 'FULL_COMMIT=$(tasks.clone-repository.results.commit)'
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
       - name: PRIVILEGED_NESTED
