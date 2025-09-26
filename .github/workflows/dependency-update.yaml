@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v5.0.0
       # https://github.com/renovatebot/github-action
       - name: self-hosted renovate
-        uses: renovatebot/github-action@v43.0.12
+        uses: renovatebot/github-action@v43.0.13
         with:
           # https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
           token: ${{ secrets.GITHUB_TOKEN }}
