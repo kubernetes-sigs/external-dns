@@ -117,6 +117,7 @@ from the usage of any externally developed webhook.
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
 | Yandex Cloud          | https://github.com/ismailbaskin/external-dns-yandex-webhook/         |
+| Volcengine Cloud      | https://github.com/volcengine/external-dns-volcengine-webhook        |
 
 ## Status of in-tree providers
 
