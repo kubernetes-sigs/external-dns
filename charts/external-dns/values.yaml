@@ -237,16 +237,83 @@ excludeDomains: []
 # -- Filter resources queried for endpoints by label selector.
 labelFilter:  # @schema type: [string,null]; default: null
 
-# -- Filter resources queried for endpoints by annotation selector.
-annotationFilter:  # @schema type: [string,null]; default: null
-
 # -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true
 
+# -- (object) Provider configuration
+# @default -- See _values.yaml_
 provider:  # @schema type: [object, string]
   # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
-  name: aws
-  webhook:
+  name: aws  # @schema type:[string, null]
+  # -- (object) Webhook configuration
+  # @default -- See _values.yaml_
+  webhook:  # @schema type: [object, null]
+    # -- (string) Webhook URL
+    url:  # @schema type:[string, null]; default: null
+    # -- (integer) Webhook read timeout
+    readTimeout:  # @schema type:[integer, null]; default: null
+    # -- (integer) Webhook write timeout
+    writeTimeout:  # @schema type:[integer, null]; default: null
+    # -- (object) Webhook sidecar container configuration
+    # @default -- See _values.yaml_
+    sidecar:  # @schema type: [object, null]; default: null
+      # -- (boolean) Whether or not to include a webhook sidecar in the external dns deployment
+      enabled: false
+      image:
+        # -- (string) Image repository for the `webhook` container.
+        repository:  # @schema type:[string, null]; default: null
+        # -- (string) Image tag for the `webhook` container.
+        tag:  # @schema type:[string, null]; default: null
+        # -- Image pull policy for the `webhook` container.
+        pullPolicy: IfNotPresent
+      # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
+      env: []
+      # -- Extra arguments to provide for the `webhook` container.
+      args: []
+      # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.
+      extraVolumeMounts: []
+      # -- [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container.
+      resources: {}
+      # -- [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container.
+      # @default -- See _values.yaml_
+      securityContext: {}
+      # -- [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
+      # @default -- See _values.yaml_
+      livenessProbe:
+        httpGet:
+          path: /healthz  # @schema type:[string, null]; default: null
+          port: http-webhook  # @schema type:[integer,string]; default: string
+        initialDelaySeconds: 10  # @schema type:[integer, null]; default: null
+        periodSeconds: 10  # @schema type:[integer, null]; default: null
+        timeoutSeconds: 5  # @schema type:[integer, null]; default: null
+        failureThreshold: 2  # @schema type:[integer, null]; default: null
+        successThreshold: 1  # @schema type:[integer, null]; default: null
+      # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.
+      # @default -- See _values.yaml_
+      readinessProbe:
+        httpGet:
+          path: /healthz  # @schema type:[string, null]; default: null
+          port: http-webhook  # @schema type:[integer,string]; default: string
+        initialDelaySeconds: 5  # @schema type:[integer, null]; default: null
+        periodSeconds: 10  # @schema type:[integer, null]; default: null
+        timeoutSeconds: 5  # @schema type:[integer, null]; default: null
+        failureThreshold: 6  # @schema type:[integer, null]; default: null
+        successThreshold: 1  # @schema type:[integer, null]; default: null
+      service:
+        # -- Webhook exposed HTTP port for the service.
+        port: 8080
+      # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
+      # @default -- See _values.yaml_
+      serviceMonitor:
+        interval:
+        scheme:
+        tlsConfig: {}
+        bearerTokenFile:
+        scrapeTimeout:
+        metricRelabelings: []
+        relabelings: []
+
+    # **DEPRECATED** webhook values
     image:
       # -- (string) Image repository for the `webhook` container.
       repository:  # @schema type:[string, null]; default: null

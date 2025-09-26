@@ -130,6 +130,17 @@ spec:
             - --managed-record-types={{ . }}
             {{- end }}
             - --provider={{ $providerName }}
+            {{- if kindIs "map" .Values.provider }}
+            {{- if .Values.provider.webhook.readTimeout  }}
+            - --webhook-provider-read-timeout={{ .Values.provider.webhook.readTimeout }}
+            {{- end }}
+            {{- if .Values.provider.webhook.writeTimeout }}
+            - --webhook-provider-write-timeout={{ .Values.provider.webhook.writeTimeout }}
+            {{- end }}
+            {{- if .Values.provider.webhook.url }}
+            - --webhook-provider-url={{ .Values.provider.webhook.url }}
+            {{- end }}
+            {{- end }}
             {{- if kindIs "map" .Values.extraArgs }}
             {{- range $key, $value := .Values.extraArgs }}
             {{- if not (kindIs "invalid" $value) }}
@@ -175,7 +186,44 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        {{- if eq $providerName "webhook" }}
+        {{- if eq $providerName "webhook"  }}
+        {{- if and .Values.provider.webhook.sidecar .Values.provider.webhook.sidecar.enabled }}
+        {{- with .Values.provider.webhook.sidecar }}
+        - name: webhook
+          image: {{ include "external-dns.webhookImage" . }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          {{- with .env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http-webhook
+              protocol: TCP
+              containerPort: 8080
+          livenessProbe:
+            {{- toYaml .livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .readinessProbe | nindent 12 }}
+          {{- if .extraVolumeMounts }}
+          volumeMounts:
+            {{- with .extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- else if not .Values.provider.webhook.sidecar }}
         {{- with .Values.provider.webhook }}
         - name: webhook
           image: {{ include "external-dns.webhookImage" . }}
@@ -210,6 +258,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- end }}
         {{- end }}
         {{- end }}
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
