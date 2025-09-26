@@ -722,6 +722,21 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	return nil
 }
 
+// parseTagsAnnotation is the single helper method to handle tags from the annotation string.
+// It splits the string, cleans up whitespace, and sorts the tags to create a canonical representation.
+func parseTagsAnnotation(tagString string) []string {
+	tags := strings.Split(tagString, ",")
+	cleanedTags := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			cleanedTags = append(cleanedTags, trimmed)
+		}
+	}
+	sort.Strings(cleanedTags)
+	return cleanedTags
+}
+
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var adjustedEndpoints []*endpoint.Endpoint
@@ -744,16 +759,8 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		}
 
 		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
-			tags := strings.Split(val, ",")
-			cleanedTags := make([]string, 0, len(tags))
-			for _, tag := range tags {
-				trimmed := strings.TrimSpace(tag)
-				if trimmed != "" {
-					cleanedTags = append(cleanedTags, trimmed)
-				}
-			}
-			sort.Strings(cleanedTags)
-			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(cleanedTags, ","))
+			sortedTags := parseTagsAnnotation(val)
+			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
 		}
 
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
@@ -844,13 +851,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	var tags []string
 	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
-		// Split the comma-separated string of tags
-		for _, tag := range strings.Split(val, ",") {
-			trimmedTag := strings.TrimSpace(tag)
-			if trimmedTag != "" {
-				tags = append(tags, trimmedTag)
-			}
-		}
+		tags = parseTagsAnnotation(val)
 	}
 
 	if len(comment) > freeZoneMaxCommentLength {
