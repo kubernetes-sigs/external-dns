@@ -27,6 +27,7 @@ const (
 	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
 	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
 	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
+	CloudflareRecordTagsKey     = AnnotationKeyPrefix + "cloudflare-record-tags"
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"

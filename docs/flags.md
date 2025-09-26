@@ -95,6 +95,7 @@
 | `--[no-]cloudflare-regional-services` | When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled) |
 | `--cloudflare-region-key=""` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
+| `--cloudflare-record-tags=""` | When using the Cloudflare provider for a paid zone, specify the tags for the DNS records as a comma-separated string (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-token=""` | When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified) |
