@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1571,7 +1572,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
-			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			var hook *test.Hook
+			if len(tt.logExpectations) > 0 {
+				hook = testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			}
 
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err, "failed to get Endpoints")

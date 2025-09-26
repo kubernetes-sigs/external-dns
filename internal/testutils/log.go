@@ -37,6 +37,9 @@ import (
 // testutils.TestHelperLogContains("expected debug log message", hook, t)
 func LogsUnderTestWithLogLevel(level log.Level, t *testing.T) *test.Hook {
 	t.Helper()
+	if IsParallel(t) {
+		t.Fatal("LogsUnderTestWithLogLevel can not be used in parallel tests")
+	}
 	logger, hook := test.NewNullLogger()
 
 	log.AddHook(hook)
