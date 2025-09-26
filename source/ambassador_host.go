@@ -49,7 +49,7 @@ const (
 	groupName = "getambassador.io"
 )
 
-var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
+var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
 
 var ambHostGVR = schemeGroupVersion.WithResource("hosts")
 
