@@ -183,7 +183,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "www.service-two.website.example.tld", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"www.bucket-name.amazonaws.com"}},
 			},
 		},
-				{
+		{
 			title:              "fqdn with endpoint-type annotation and loose service type filtering",
 			serviceTypesFilter: []string{},
 			services: []*v1.Service{
