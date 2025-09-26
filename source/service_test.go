@@ -3171,6 +3171,102 @@ func TestHeadlessServices(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"headless service with endpoints-type annotation is outside of serviceTypeFilter scope",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				annotations.HostnameKey:      "service.example.org",
+				annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP,
+			},
+			map[string]string{},
+			v1.ClusterIPNone,
+			[]string{"2001:db8::1"},
+			[]string{"2001:db8::4"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo"},
+			[]string{"", "", ""},
+			[]bool{true, true, true},
+			false,
+			[]v1.Node{
+				{
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{
+							{
+								Type:    v1.NodeExternalIP,
+								Address: "1.2.3.4",
+							},
+							{
+								Type:    v1.NodeInternalIP,
+								Address: "10.0.10.12",
+							},
+						},
+					},
+				},
+			},
+			[]string{string(v1.ServiceTypeClusterIP)},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
+			"headless service with endpoints-type annotation is in the scope of serviceTypeFilter",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				annotations.HostnameKey:      "service.example.org",
+				annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP,
+			},
+			map[string]string{},
+			v1.ClusterIPNone,
+			[]string{"2001:db8::1"},
+			[]string{"1.2.3.4"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo"},
+			[]string{"", "", ""},
+			[]bool{true, true, true},
+			false,
+			[]v1.Node{
+				{
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{
+							{
+								Type:    v1.NodeExternalIP,
+								Address: "1.2.3.4",
+							},
+							{
+								Type:    v1.NodeInternalIP,
+								Address: "10.0.10.12",
+							},
+						},
+					},
+				},
+			},
+			[]string{string(v1.ServiceTypeClusterIP), string(v1.ServiceTypeNodePort)},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
@@ -3198,7 +3294,7 @@ func TestHeadlessServices(t *testing.T) {
 			require.NoError(t, err)
 
 			var endpointSliceEndpoints []discoveryv1.Endpoint
-			for i, podname := range tc.podnames {
+			for i, podName := range tc.podnames {
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{},
@@ -3206,7 +3302,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:   tc.svcNamespace,
-						Name:        podname,
+						Name:        podName,
 						Labels:      tc.labels,
 						Annotations: tc.podAnnotations,
 					},
@@ -3224,7 +3320,7 @@ func TestHeadlessServices(t *testing.T) {
 					TargetRef: &v1.ObjectReference{
 						APIVersion: "",
 						Kind:       "Pod",
-						Name:       podname,
+						Name:       podName,
 					},
 					Conditions: discoveryv1.EndpointConditions{
 						Ready: &tc.podsReady[i],

@@ -87,7 +87,18 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool, exposeInternalIPv6 bool) (Source, error) {
+func NewServiceSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace, annotationFilter, fqdnTemplate string,
+	combineFqdnAnnotation bool, compatibility string,
+	publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool,
+	serviceTypeFilter []string,
+	ignoreHostnameAnnotation bool,
+	labelSelector labels.Selector,
+	resolveLoadBalancerHostname,
+	listenEndpointEvents, exposeInternalIPv6 bool,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -139,7 +150,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		// Transformer is used to reduce the memory usage of the informer.
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		_ = podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
 			pod, ok := i.(*v1.Pod)
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
@@ -349,6 +360,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
 		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
+
 	return endpoints
 }
 
@@ -436,7 +448,11 @@ func findPodForEndpoint(ep discoveryv1.Endpoint, pods []*v1.Pod) *v1.Pod {
 }
 
 // Helper to get targets for domain
-func (sc *serviceSource) getTargetsForDomain(pod *v1.Pod, ep discoveryv1.Endpoint, endpointSlice *discoveryv1.EndpointSlice, endpointsType string, headlessDomain string) endpoint.Targets {
+func (sc *serviceSource) getTargetsForDomain(
+	pod *v1.Pod,
+	ep discoveryv1.Endpoint,
+	endpointSlice *discoveryv1.EndpointSlice,
+	endpointsType, headlessDomain string) endpoint.Targets {
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 	if len(targets) == 0 {
 		if endpointsType == EndpointsTypeNodeExternalIP {
