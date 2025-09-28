@@ -204,10 +204,11 @@ Caching is enabled by specifying a cache duration with the `--txt-cache-interval
 
 The owner ID of the TXT records managed by external-dns instance can be updated.
 
-When `--migrate-txt-owner` is set, it will enable the migration checks
-in the run loop using `--txt-owner-id=new-owner-id` and `--from-txt-owner=old-owner-id`.
+When `--migrate-from-txt-owner` is set, it will enable the migration checks
+in the run loop using `--txt-owner-id=new-owner-id` and the value you defined for this flag.
 
-If `--migrate-txt-owner` is set, `--from-txt-owner` is mandatory.
+If you want to test the outputs of a migration beforehand, you can use the `--dry-run` flag
+along with `--migrate-from-txt-owner`.
 
 Example, if you had a standard deployment like so:
 
@@ -276,8 +277,7 @@ spec:
         - "--log-level=debug"
         - "--log-format=text"
         - "--txt-owner-id=new-owner"
-        - "--from-txt-owner=old-owner"
-        - "--migrate-txt-owner"
+        - "--migrate-from-txt-owner=old-owner"
         - "--policy=sync"
         - "--provider=some-provider"
         - "--registry=txt"
@@ -286,4 +286,4 @@ spec:
 ```
 
 If you didn't set the owner ID, the value set by external-dns is `default`. You can set the
-`--from-txt-owner` flag to `default` to migrate the associated records.
+`--migrate-from-txt-owner` flag to `default` to migrate the associated records.

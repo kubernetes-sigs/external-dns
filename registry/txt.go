@@ -61,8 +61,7 @@ type TXTRegistry struct {
 	txtEncryptAESKey  []byte
 
 	//Handle Owner ID migration
-	isMigrationEnabled bool
-	oldOwnerID         string
+	oldOwnerID string
 
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
@@ -119,13 +118,9 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte,
-	isMigrationEnabled bool, oldOwnerID string) (*TXTRegistry, error) {
+	oldOwnerID string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
-	}
-
-	if isMigrationEnabled && oldOwnerID == "" {
-		return nil, errors.New("oldOwnerID cannot be empty if isMigrationEnabled is true")
 	}
 
 	if len(txtEncryptAESKey) == 0 {
@@ -157,7 +152,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
-		isMigrationEnabled:  isMigrationEnabled,
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
 	}, nil
@@ -263,7 +257,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
-		if im.isMigrationEnabled && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
 		}
 
@@ -308,7 +302,7 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		recordType = endpoint.RecordTypeCNAME
 	}
 
-	if im.isMigrationEnabled && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 

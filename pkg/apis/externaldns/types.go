@@ -143,7 +143,6 @@ type Config struct {
 	Registry                                      string
 	TXTOwnerID                                    string
 	TXTOwnerOld                                   string
-	TXTOwnerMigrate                               bool
 	TXTPrefix                                     string
 	TXTSuffix                                     string
 	TXTEncryptEnabled                             bool
@@ -373,8 +372,7 @@ var defaultConfig = &Config{
 	TXTEncryptAESKey:             "",
 	TXTEncryptEnabled:            false,
 	TXTOwnerID:                   "default",
-	TXTOwnerOld:                  "default",
-	TXTOwnerMigrate:              false,
+	TXTOwnerOld:                  "",
 	TXTPrefix:                    "",
 	TXTSuffix:                    "",
 	TXTWildcardReplacement:       "",
@@ -786,8 +784,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.StringVar("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)", defaultConfig.TXTWildcardReplacement, &cfg.TXTWildcardReplacement)
 	b.BoolVar("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)", defaultConfig.TXTEncryptEnabled, &cfg.TXTEncryptEnabled)
 	b.StringVar("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)", defaultConfig.TXTEncryptAESKey, &cfg.TXTEncryptAESKey)
-	b.BoolVar("migrate-txt-owner", "When enabled, modify the previous txt-owner to the current txt-owner (default: disabled)", defaultConfig.TXTOwnerMigrate, &cfg.TXTOwnerMigrate)
-	b.StringVar("from-txt-owner", "Old txt-owner-id that needs to be overwritten (default: default)", defaultConfig.TXTOwnerOld, &cfg.TXTOwnerOld)
+	b.StringVar("migrate-from-txt-owner", "Old txt-owner-id that needs to be overwritten (default: default)", defaultConfig.TXTOwnerOld, &cfg.TXTOwnerOld)
 	b.StringVar("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)", cfg.AWSDynamoDBRegion, &cfg.AWSDynamoDBRegion)
 	b.StringVar("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")", defaultConfig.AWSDynamoDBTable, &cfg.AWSDynamoDBTable)
 
