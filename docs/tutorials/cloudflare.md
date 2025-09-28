@@ -397,6 +397,7 @@ metadata:
   annotations:
     # Assigns three tags to the DNS record created from this resource
     external-dns.alpha.kubernetes.io/cloudflare-tags: "owner:frontend-team, env:dev, component:api"
+```
 
 ## Using CRD source to manage DNS records in Cloudflare
 
