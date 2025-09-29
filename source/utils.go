@@ -46,11 +46,12 @@ func ParseIngress(ingress string) (string, string, error) {
 	var namespace, name string
 	var err error
 	parts := strings.Split(ingress, "/")
-	if len(parts) == 2 {
+	switch len(parts) {
+	case 2:
 		namespace, name = parts[0], parts[1]
-	} else if len(parts) == 1 {
+	case 1:
 		name = parts[0]
-	} else {
+	default:
 		err = fmt.Errorf("invalid ingress name (name or namespace/name) found %q", ingress)
 	}
 

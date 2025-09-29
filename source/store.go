@@ -20,9 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
-
 	"sync"
 	"time"
 
@@ -627,9 +625,7 @@ func instrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time
 		return nil, err
 	}
 
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return extdnshttp.NewInstrumentedTransport(rt)
-	}
+	config.WrapTransport = extdnshttp.NewInstrumentedTransport
 
 	config.Timeout = requestTimeout
 	return config, nil

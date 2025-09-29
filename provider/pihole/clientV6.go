@@ -191,7 +191,7 @@ func (p *piholeClientV6) listRecords(ctx context.Context, rtype string) ([]*endp
 		ep := endpoint.NewEndpointWithTTL(DNSName, rtype, Ttl, Target)
 
 		if oldEp, ok := endpoints[DNSName]; ok {
-			ep.Targets = append(oldEp.Targets, Target)
+			ep.Targets = append(oldEp.Targets, Target) // nolint: gocritic // appendAssign
 		}
 
 		endpoints[DNSName] = ep
@@ -353,11 +353,9 @@ func (p *piholeClientV6) retrieveNewToken(ctx context.Context) error {
 	var apiResponse ApiAuthResponse
 	if err := json.Unmarshal(jRes, &apiResponse); err != nil {
 		log.Errorf("Auth Query : failed to unmarshal error response: %v", err)
-	} else {
+	} else if apiResponse.Session.SID != "" {
 		// Set the token
-		if apiResponse.Session.SID != "" {
-			p.token = apiResponse.Session.SID
-		}
+		p.token = apiResponse.Session.SID
 	}
 	return err
 }

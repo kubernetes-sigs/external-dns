@@ -84,7 +84,7 @@ func TestExampleSameEndpoints(t *testing.T) {
 	// example.org 0 IN TXT  load-balancer.org []
 }
 
-func makeEndpoint(DNSName string) *endpoint.Endpoint {
+func makeEndpoint(DNSName string) *endpoint.Endpoint { // nolint: gocritic // captLocal
 	return &endpoint.Endpoint{
 		DNSName:       DNSName,
 		Targets:       endpoint.Targets{"target.com"},

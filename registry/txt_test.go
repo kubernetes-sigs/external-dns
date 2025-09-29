@@ -2032,7 +2032,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, "")
 					assert.NoError(t, err)
 
-					expectedRecords := append(existing, expectedCreate...)
+					expectedRecords := append(existing, expectedCreate...) // nolint:gocritic
 
 					// Simulate the reconciliation loop by executing multiple times
 					reconciliationLoops := 3

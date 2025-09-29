@@ -163,9 +163,10 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 	firstURL := strings.ToLower(etcdURLs[0])
 	etcdUsername := os.Getenv("ETCD_USERNAME")
 	etcdPassword := os.Getenv("ETCD_PASSWORD")
-	if strings.HasPrefix(firstURL, "http://") {
+	switch {
+	case strings.HasPrefix(firstURL, "http://"):
 		return &etcdcv3.Config{Endpoints: etcdURLs, Username: etcdUsername, Password: etcdPassword}, nil
-	} else if strings.HasPrefix(firstURL, "https://") {
+	case strings.HasPrefix(firstURL, "https://"):
 		tlsConfig, err := tlsutils.CreateTLSConfig("ETCD")
 		if err != nil {
 			return nil, err
@@ -177,7 +178,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 			Username:  etcdUsername,
 			Password:  etcdPassword,
 		}, nil
-	} else {
+	default:
 		return nil, errors.New("etcd URLs must start with either http:// or https://")
 	}
 }

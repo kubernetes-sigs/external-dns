@@ -154,7 +154,7 @@ func TestGatewayMatchingProtocol(t *testing.T) {
 						tt.route, tt.lis, ok, tt.ok,
 					)
 				}
-				//tt.a, tt.b = tt.b, tt.a
+				// tt.a, tt.b = tt.b, tt.a
 			}
 		})
 

@@ -60,7 +60,7 @@ type TXTRegistry struct {
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 
-	//Handle Owner ID migration
+	// Handle Owner ID migration
 	oldOwnerID string
 
 	// existingTXTs is the TXT records that already exist in the zone so that

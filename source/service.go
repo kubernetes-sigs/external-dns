@@ -455,7 +455,8 @@ func (sc *serviceSource) getTargetsForDomain(
 	endpointsType, headlessDomain string) endpoint.Targets {
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 	if len(targets) == 0 {
-		if endpointsType == EndpointsTypeNodeExternalIP {
+		switch {
+		case endpointsType == EndpointsTypeNodeExternalIP:
 			if sc.nodeInformer == nil {
 				log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
 				return nil
@@ -471,10 +472,10 @@ func (sc *serviceSource) getTargetsForDomain(
 					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 				}
 			}
-		} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
+		case endpointsType == EndpointsTypeHostIP || sc.publishHostIP:
 			targets = endpoint.Targets{pod.Status.HostIP}
 			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
-		} else {
+		default:
 			if len(ep.Addresses) == 0 {
 				log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
 				return nil
@@ -744,7 +745,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 			}
 
 			if _, ok := nodesMap[node]; !ok {
-				nodesMap[node] = *new(struct{})
+				nodesMap[node] = struct{}{}
 				nodesRunning = append(nodesRunning, node)
 
 				if isPodStatusReady(v.Status) {
@@ -761,14 +762,15 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	// Prioritize nodes with non-terminating ready pods
 	// If none available, fall back to nodes with ready pods
 	// If still none, use nodes with any running pods
-	if len(nodes) > 0 {
+	switch {
+	case len(nodes) > 0:
 		// Works the same as service endpoints
-	} else if len(nodesReady) > 0 {
+	case len(nodesReady) > 0:
 		// 2 level of panic modes as safeguard, because old wrong behavior can be used by someone
 		// Publish all endpoints not always a bad thing
 		log.Debugf("All pods in terminating state, use ready")
 		nodes = nodesReady
-	} else {
+	default:
 		log.Debugf("All pods not ready, use all running")
 		nodes = nodesRunning
 	}
