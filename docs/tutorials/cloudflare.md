@@ -388,7 +388,8 @@ Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-
 
 ## Setting Cloudflare DNS Record Tags
 
-Cloudflare allows you to add descriptive tags to DNS records. This can be useful for organizing your records, for example, by environment (`production`, `staging`) or by the team that owns them (`frontend-team`). ExternalDNS can manage these tags for you.
+Cloudflare allows you to add descriptive tags to DNS records. This can be useful for organizing your records.
+For example one can apply tags by environment (`production`, `staging`) or by the team that owns them (`frontend-team`, `backend-team`). ExternalDNS can manage these tags for you.
 
 To assign tags to a DNS record, add the `external-dns.alpha.kubernetes.io/cloudflare-tags` annotation to your Kubernetes resource (like a Service or Ingress). The value should be a comma-separated list of your desired tags.
 
