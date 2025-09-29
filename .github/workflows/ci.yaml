@@ -42,7 +42,7 @@ jobs:
       env:
         GOMAXPROCS: 4
         GOMEMLIMIT: 8192MiB
-      run: make test
+      run: make go-test
 
     - name: Send coverage
       uses: coverallsapp/github-action@v2
