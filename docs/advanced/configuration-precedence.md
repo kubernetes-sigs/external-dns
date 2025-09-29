@@ -5,10 +5,10 @@ The effective value is determined by the following precedence order:
 
 ```mermaid
 flowchart TD
-    A[Resource Annotations] -->|Override| Result
-    B[CLI Flags] -->|Used if no annotation| Result
-    C[Environment Variables] -->|May override defaults<br/>and in some cases flags/annotations| Result
-    D[Defaults] -->|Fallback| Result
+    A[1. Resource Annotations] -->|Override| Result
+    B[2. CLI Flags] -->|Used if no annotation| Result
+    C[3. Environment Variables] -->|May override defaults<br/>and in some cases flags/annotations| Result
+    D[4. Defaults] -->|Fallback| Result
 
     subgraph Flags
         B1[Filter Flags: --flag-with-filter] -->|Define scope<br/>Annotations outside scope ignored| B
