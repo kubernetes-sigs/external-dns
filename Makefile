@@ -74,7 +74,14 @@ crd: controller-gen-install
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
 test:
+	go test -race ./...
+
+
+.PHONY: test
+go-test:
 	go test -race -coverprofile=profile.cov ./...
+	go tool cover -func=profile.cov > coverage.summary
+	@tail -n 1 coverage.summary
 
 #? build: The build targets allow to build the binary and container image
 .PHONY: build
