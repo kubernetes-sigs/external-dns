@@ -16,9 +16,9 @@
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
-CONTROLLER_GEN := go tool controller-gen
-YQ := go tool yq
-YAMLFMT := go tool yamlfmt
+CONTROLLER_GEN := go tool -modfile=go.tool.mod  controller-gen
+YQ := go tool -modfile=go.tool.mod yq
+YAMLFMT := go tool -modfile=go.tool.mod yamlfmt
 
 cover:
 	@go test -cover -coverprofile=cover.out -v ./...
@@ -29,7 +29,10 @@ cover-html: cover
 
 #? go-tools: list installed go tools
 go-tools:
-	@go tool -n
+	@echo ">> go tools installed in go.mod"
+	@go tool  -n
+	@echo ">> go tools installed in go.tool.mod"
+	@go tool -modfile=go.tool.mod
 
 #? golangci-lint-install: Install golangci-lint tool
 golangci-lint-install:
