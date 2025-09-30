@@ -809,7 +809,7 @@ func TestDoV6AdditionalCases(t *testing.T) {
 				Transport: &errorTransportV6{},
 			},
 		}
-		req, _ := http.NewRequest("GET", "http://localhost", nil)
+		req, _ := http.NewRequest(http.MethodGet, "http://localhost", nil)
 		_, err := client.do(req)
 		if err == nil {
 			t.Fatal("expected an error, but got none")
@@ -837,7 +837,7 @@ func TestDoV6AdditionalCases(t *testing.T) {
 			httpClient: server.Client(),
 			token:      "test-token",
 		}
-		req, _ := http.NewRequest("PUT", server.URL+"/api/test", nil)
+		req, _ := http.NewRequest(http.MethodPut, server.URL+"/api/test", nil)
 		resp, err := client.do(req)
 		if err != nil {
 			t.Fatalf("expected no error for 'Item already present', but got '%v'", err)
@@ -865,7 +865,7 @@ func TestDoV6AdditionalCases(t *testing.T) {
 			httpClient: server.Client(),
 			token:      "test-token",
 		}
-		req, _ := http.NewRequest("DELETE", server.URL+"/api/test", nil)
+		req, _ := http.NewRequest(http.MethodDelete, server.URL+"/api/test", nil)
 		resp, err := client.do(req)
 		if err != nil {
 			t.Fatalf("expected no error for 404 on DELETE, but got '%v'", err)
