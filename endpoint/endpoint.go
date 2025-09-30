@@ -243,8 +243,9 @@ type Endpoint struct {
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
+	// +kubebuilder:skip
 	// +optional
-	refObject *events.ObjectReference
+	refObject *events.ObjectReference `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
