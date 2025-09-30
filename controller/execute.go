@@ -278,17 +278,17 @@ func buildProvider(
 		if cfg.OCIAuthInstancePrincipal {
 			if len(cfg.OCICompartmentOCID) == 0 {
 				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
-			} else {
-				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
-				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+				break
 			}
+			authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
+			config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
 		} else {
-			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+			if config, err = oci.LoadOCIConfig(cfg.OCIConfigFile); err != nil {
+				break
+			}
 		}
 		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
-		if err == nil {
-			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
-		}
+		p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
 	case "rfc2136":
 		tlsConfig := rfc2136.TLSConfig{
 			UseTLS:                cfg.RFC2136UseTLS,

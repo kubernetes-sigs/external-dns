@@ -265,6 +265,23 @@ func TestBuildProvider(t *testing.T) {
 			expectedType: "*provider.CachedProvider",
 		},
 		{
+			name: "oci provider instance principal without compartment OCID",
+			cfg: &externaldns.Config{
+				Provider:                 "oci",
+				OCIAuthInstancePrincipal: true,
+				OCICompartmentOCID:       "",
+			},
+			expectedError: "instance principal authentication requested, but no compartment OCID provided",
+		},
+		{
+			name: "oci provider without config file",
+			cfg: &externaldns.Config{
+				Provider:      "oci",
+				OCIConfigFile: "",
+			},
+			expectedError: "reading OCI config file",
+		},
+		{
 			name: "coredns provider",
 			cfg: &externaldns.Config{
 				Provider: "coredns",
