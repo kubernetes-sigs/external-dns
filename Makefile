@@ -60,7 +60,7 @@ licensecheck:
 #? oas-lint: Execute OpenAPI Specification (OAS) linting https://quobix.com/vacuum/
 .PHONY: go-lint
 oas-lint:
-	go tool vacuum lint -d --fail-severity warn api/*.yaml
+	go tool -modfile=go.tool.mod vacuum lint -d --fail-severity warn api/*.yaml
 
 #? lint: Run all the linters
 .PHONY: lint

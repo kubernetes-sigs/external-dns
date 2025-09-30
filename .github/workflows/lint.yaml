@@ -55,7 +55,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Increases rate limit from 60 to 5000 requests
       run: |
-        go tool vacuum lint -d --fail-severity warn --show-rules api/*.yaml
+        go tool -modfile=go.tool.mod vacuum lint -d --fail-severity warn --show-rules api/*.yaml
 
     - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action
