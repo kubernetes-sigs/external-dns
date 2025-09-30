@@ -223,6 +223,8 @@ type EndpointKey struct {
 	RecordTTL     TTL
 }
 
+type ObjectRef = events.ObjectReference
+
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
 // +k8s:deepcopy-gen=false
@@ -245,7 +247,7 @@ type Endpoint struct {
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
 	// +optional
-	refObject *events.ObjectReference
+	refObject *ObjectRef
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
