@@ -248,7 +248,6 @@ type Endpoint struct {
 	refObject *events.ObjectReference `json:"-"`
 }
 
-
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
