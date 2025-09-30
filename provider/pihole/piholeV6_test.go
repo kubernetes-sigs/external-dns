@@ -321,4 +321,3 @@ func TestProviderV6MultipleTargets(t *testing.T) {
 		requests.clear()
 	})
 }
-
