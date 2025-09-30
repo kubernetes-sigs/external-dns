@@ -225,6 +225,7 @@ type EndpointKey struct {
 
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
+// +k8s:deepcopy-gen=false
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string `json:"dnsName,omitempty"`
@@ -243,10 +244,10 @@ type Endpoint struct {
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
-	// +kubebuilder:skip
 	// +optional
 	refObject *events.ObjectReference `json:"-"`
 }
+
 
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {

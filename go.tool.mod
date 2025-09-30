@@ -3,7 +3,6 @@ module sigs.k8s.io/external-dns/tools
 go 1.25
 
 tool (
-	github.com/daveshanley/vacuum
 	github.com/google/yamlfmt/cmd/yamlfmt
 	github.com/mikefarah/yq/v4
 	sigs.k8s.io/controller-tools/cmd/controller-gen
@@ -32,7 +31,6 @@ require (
 	github.com/charmbracelet/x/input v0.3.7 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/charmbracelet/x/windows v0.2.1 // indirect
-	github.com/daveshanley/vacuum v0.18.5 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dop251/goja v0.0.0-20250630131328-58d95d85e994 // indirect
