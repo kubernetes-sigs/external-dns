@@ -48,6 +48,8 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				providerSpecificAnnotations.Set(CloudflareRegionKey, v)
 			} else if strings.Contains(k, CloudflareRecordCommentKey) {
 				providerSpecificAnnotations.Set(CloudflareRecordCommentKey, v)
+			} else if strings.Contains(k, CloudflareTagsKey) {
+				providerSpecificAnnotations.Set(CloudflareTagsKey, v)
 			}
 		}
 	}

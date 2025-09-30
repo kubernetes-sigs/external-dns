@@ -1002,6 +1002,32 @@ func (suite *PlanTestSuite) TestDualStackToSingleStack() {
 	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
 }
 
+func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
+	suite.fooA5.Labels[endpoint.OwnerLabelKey] = "bar"
+	current := []*endpoint.Endpoint{suite.fooA5}
+	desired := []*endpoint.Endpoint{suite.fooA5}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooA5}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
+		OldOwnerId:     "foo",
+	}
+
+	changes := p.Calculate().Changes
+
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
 func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }

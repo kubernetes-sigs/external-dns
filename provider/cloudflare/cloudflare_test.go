@@ -89,6 +89,110 @@ var ExampleDomain = []dns.RecordResponse{
 	},
 }
 
+func TestCloudflareProviderTags(t *testing.T) {
+	provider := &CloudFlareProvider{}
+	t.Run("parseTagsAnnotation", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			input    string
+			expected []string
+		}{
+			{
+				name:     "Correctly sorts and cleans tags",
+				input:    "owner:owner_name, env:dev, app:test ",
+				expected: []string{"app:test", "env:dev", "owner:owner_name"},
+			},
+			{
+				name:     "Handles a single tag",
+				input:    "owner:owner_name",
+				expected: []string{"owner:owner_name"},
+			},
+			{
+				name:     "Handles empty string",
+				input:    "",
+				expected: []string{},
+			},
+			{
+				name:     "Handles messy input with extra commas and spaces",
+				input:    " tag1 ,  tag2,,tag3 ",
+				expected: []string{"tag1", "tag2", "tag3"},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				assert.Equal(t, tc.expected, parseTagsAnnotation(tc.input))
+			})
+		}
+	})
+
+	// Test cases for the groupByNameAndTypeWithCustomHostnames function (handling API response)
+	t.Run("groupByNameAndTypeWithCustomHostnames", func(t *testing.T) {
+		records := DNSRecordsMap{
+			DNSRecordIndex{Name: "test.example.com", Type: "A", Content: "1.2.3.4"}: {
+				Name:    "test.example.com",
+				Type:    "A",
+				Content: "1.2.3.4",
+				Tags:    []string{"owner:owner_name", "env:dev", "app:test"},
+			},
+		}
+
+		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, nil)
+		require.Len(t, endpoints, 1)
+
+		val, ok := endpoints[0].GetProviderSpecificProperty(annotations.CloudflareTagsKey)
+		assert.True(t, ok)
+		assert.Equal(t, "app:test,env:dev,owner:owner_name", val, "Tags from API should be sorted")
+	})
+
+	// This sub-test verifies that AdjustEndpoints correctly sorts and cleans the tags string.
+	t.Run("AdjustEndpoints sorts tags", func(t *testing.T) {
+		// Arrange: Create an endpoint with unsorted tags, including extra whitespace.
+		endpointWithTags := []*endpoint.Endpoint{
+			{
+				DNSName:    "tags.example.com",
+				Targets:    endpoint.Targets{"1.2.3.4"},
+				RecordType: endpoint.RecordTypeA,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					annotations.CloudflareTagsKey: "owner:team-b, env:prod, app:api",
+				},
+			},
+		}
+		expectedTagsString := "app:api,env:prod,owner:team-b"
+
+		// Act: Call the function under test.
+		adjustedEndpoints, err := provider.AdjustEndpoints(endpointWithTags)
+
+		// Assert: Check that the endpoint's tag property is now a sorted, clean string.
+		require.NoError(t, err)
+		require.Len(t, adjustedEndpoints, 1)
+		val, ok := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareTagsKey)
+		assert.True(t, ok)
+		assert.Equal(t, expectedTagsString, val)
+	})
+
+	// This sub-test verifies that newCloudFlareChange correctly creates a sorted slice of tags.
+	t.Run("newCloudFlareChange creates sorted tags slice", func(t *testing.T) {
+		// Arrange: Create an endpoint with unsorted tags.
+		endpointWithTags := &endpoint.Endpoint{
+			DNSName:    "tags.example.com",
+			Targets:    endpoint.Targets{"1.2.3.4"},
+			RecordType: endpoint.RecordTypeA,
+			ProviderSpecific: endpoint.ProviderSpecific{
+				annotations.CloudflareTagsKey: "owner:team-b, env:prod, app:api ",
+			},
+		}
+		expectedTagsSlice := []string{"app:api", "env:prod", "owner:team-b"}
+
+		// Act: Call the function under test.
+		cfc, err := provider.newCloudFlareChange(cloudFlareCreate, endpointWithTags, "1.2.3.4", nil)
+
+		// Assert: Check that the resulting change object contains a sorted slice of strings for its tags.
+		require.NoError(t, err)
+		assert.Equal(t, expectedTagsSlice, cfc.ResourceRecord.Tags)
+	})
+}
+
 func NewMockCloudFlareClient() *mockCloudFlareClient {
 	return &mockCloudFlareClient{
 		Zones: map[string]string{

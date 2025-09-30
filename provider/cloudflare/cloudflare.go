@@ -279,6 +279,7 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) dns.RecordUpda
 			Content:  cloudflare.F(cfc.ResourceRecord.Content),
 			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
+			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
 		},
 	}
 }
@@ -295,6 +296,7 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNew
 			Content:  cloudflare.F(cfc.ResourceRecord.Content),
 			Priority: cloudflare.F(cfc.ResourceRecord.Priority),
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
+			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
 		},
 	}
 }
@@ -720,6 +722,21 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	return nil
 }
 
+// parseTagsAnnotation is the single helper method to handle tags from the annotation string.
+// It splits the string, cleans up whitespace, and sorts the tags to create a canonical representation.
+func parseTagsAnnotation(tagString string) []string {
+	tags := strings.Split(tagString, ",")
+	cleanedTags := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			cleanedTags = append(cleanedTags, trimmed)
+		}
+	}
+	sort.Strings(cleanedTags)
+	return cleanedTags
+}
+
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var adjustedEndpoints []*endpoint.Endpoint
@@ -739,6 +756,11 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		} else {
 			// ignore custom hostnames annotations if not enabled
 			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+		}
+
+		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+			sortedTags := parseTagsAnnotation(val)
+			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
 		}
 
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
@@ -827,6 +849,11 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 		comment = val
 	}
 
+	var tags []string
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+		tags = parseTagsAnnotation(val)
+	}
+
 	if len(comment) > freeZoneMaxCommentLength {
 		comment = p.DNSRecordsConfig.trimAndValidateComment(ep.DNSName, comment, p.ZoneHasPaidPlan)
 	}
@@ -851,6 +878,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			Type:     dns.RecordResponseType(ep.RecordType),
 			Content:  target,
 			Comment:  comment,
+			Tags:     tags,
 			Priority: priority,
 		},
 		RegionalHostname:    p.regionalHostname(ep),
@@ -1009,6 +1037,13 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 
 		if records[0].Comment != "" {
 			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
+		}
+
+		if records[0].Tags != nil {
+			if tags, ok := records[0].Tags.([]string); ok && len(tags) > 0 {
+				sort.Strings(tags)
+				e = e.WithProviderSpecific(annotations.CloudflareTagsKey, strings.Join(tags, ","))
+			}
 		}
 
 		endpoints = append(endpoints, e)
