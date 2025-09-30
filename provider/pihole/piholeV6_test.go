@@ -252,3 +252,73 @@ func TestProviderV6(t *testing.T) {
 		requests.clear()
 	})
 }
+
+func TestProviderV6MultipleTargets(t *testing.T) {
+	requests := requestTrackerV6{}
+	p := &PiholeProvider{
+		api:        &testPiholeClientV6{endpoints: make([]*endpoint.Endpoint, 0), requests: &requests},
+		apiVersion: "6",
+	}
+
+	t.Run("Update with multiple targets - merge and deduplicate", func(t *testing.T) {
+		// Create initial records with multiple targets
+		initialRecords := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.1", "192.168.1.2"}, RecordType: endpoint.RecordTypeA},
+		}
+		if err := p.ApplyChanges(context.Background(), &plan.Changes{Create: initialRecords}); err != nil {
+			t.Fatal(err)
+		}
+		requests.clear()
+
+		// Update with new targets that should be merged
+		updateOld := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.1", "192.168.1.2"}, RecordType: endpoint.RecordTypeA},
+		}
+		updateNew := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3"}, RecordType: endpoint.RecordTypeA},
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.4"}, RecordType: endpoint.RecordTypeA},
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3"}, RecordType: endpoint.RecordTypeA}, // Duplicate to test deduplication
+		}
+		if err := p.ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify that targets were merged and deduplicated
+		expectedCreate := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3", "192.168.1.4"}, RecordType: endpoint.RecordTypeA},
+		}
+		if len(requests.createRequests) != 1 {
+			t.Fatalf("Expected 1 create request, got %d", len(requests.createRequests))
+		}
+		if !cmp.Equal(requests.createRequests[0].Targets, expectedCreate[0].Targets) {
+			t.Error("Targets not merged correctly:", cmp.Diff(requests.createRequests[0].Targets, expectedCreate[0].Targets))
+		}
+		if len(requests.deleteRequests) != 1 {
+			t.Fatalf("Expected 1 delete request, got %d", len(requests.deleteRequests))
+		}
+		requests.clear()
+	})
+
+	t.Run("Update with exact match - should skip delete", func(t *testing.T) {
+		// Update where old and new have the same targets (exact match)
+		updateOld := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3", "192.168.1.4"}, RecordType: endpoint.RecordTypeA},
+		}
+		updateNew := []*endpoint.Endpoint{
+			{DNSName: "multi.example.com", Targets: []string{"192.168.1.3", "192.168.1.4"}, RecordType: endpoint.RecordTypeA},
+		}
+		if err := p.ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updateOld, UpdateNew: updateNew}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Should not create or delete anything since targets are the same
+		if len(requests.createRequests) != 0 {
+			t.Fatalf("Expected no create requests for exact match, got %d", len(requests.createRequests))
+		}
+		if len(requests.deleteRequests) != 0 {
+			t.Fatalf("Expected no delete requests for exact match, got %d", len(requests.deleteRequests))
+		}
+		requests.clear()
+	})
+}
+
