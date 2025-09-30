@@ -16,9 +16,9 @@
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
-CONTROLLER_GEN := sigs.k8s.io/controller-tools/cmd/controller-gen
-YQ := github.com/mikefarah/yq/v4
-YAMLFMT := github.com/google/yamlfmt/cmd/yamlfmt
+CONTROLLER_GEN := go tool controller-gen
+YQ := go tool yq
+YAMLFMT := go tool yamlfmt
 
 cover:
 	@go test -cover -coverprofile=cover.out -v ./...
@@ -66,11 +66,11 @@ lint: licensecheck go-lint oas-lint
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
 crd:
-	go tool controller-gen object crd:crdVersions=v1 paths="./endpoint/..."
-	go tool controller-gen object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout | \
-		go tool yamlfmt - | \
-		go tool yq eval '.' --no-doc --split-exp '"./config/crd/standard/" + .metadata.name + ".yaml"'
-	go tool yq eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
+	$(CONTROLLER_GEN) object crd:crdVersions=v1 paths="./endpoint/..."
+	$(CONTROLLER_GEN) object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout | \
+		$(YAMLFMT) - | \
+		$(YQ) eval '.' --no-doc --split-exp '"./config/crd/standard/" + .metadata.name + ".yaml"'
+	$(YQ) eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
 		--no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
 		./config/crd/standard/*.yaml
 
