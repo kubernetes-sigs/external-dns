@@ -12,17 +12,32 @@ This guide provides quick instructions for setting up and testing the [Myra Exte
 
 ## Quick Installation
 
-### 1. Build and Push the Docker Image
+### 1. Get the Docker Image
+
+#### Pull from container registry
+
+The image is published with each version to Github Container Registry under [external-dns-myrasec-webhook](https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook/pkgs/container/external-dns-myrasec-webhook).
+
+```bash
+# Pull the image
+docker pull ghcr.io/myra-security-gmbh/external-dns-myrasec-webhook:<VERSION>
+
+# For the sake of this tutorial, tag the image with "myra-webhook:latest"
+docker image tag ghcr.io/myra-security-gmbh/external-dns-myrasec-webhook:<VERSION> myra-webhook:latest
+
+```
+
+#### Build and Push the Docker Image
 
 ```bash
 # From the project root
 docker build -t myra-webhook:latest .
 
 # Tag the image for your container registry
-docker tag myra-webhook:latest YOUR_REGISTRY/myra-webhook:latest
+docker tag myra-webhook:latest <YOUR_REGISTRY>/myra-webhook:latest
 
 # Push to your container registry
-docker push YOUR_REGISTRY/myra-webhook:latest
+docker push <YOUR_REGISTRY>/myra-webhook:latest
 ```
 
 > **Important**: The image must be pushed to a container registry accessible by your Kubernetes cluster. Update the image reference in the deployment YAML file to match your registry path.
@@ -138,23 +153,26 @@ kubectl logs -l app=myra-externaldns -c myra-webhook | grep "Deleted DNS record"
 
 The webhook can be configured through the ConfigMap:
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `dry-run` | Run in dry-run mode without making actual changes | `"false"` |
-| `environment` | Environment name (affects private IP handling) | `"prod"` |
-| `log-level` | Logging level (debug, info, warn, error) | `"debug"` |
-| `ttl` | Default TTL for DNS records | `"300"` |
-| `webhook-listen-address` | Address and port for the webhook server | `":8080"` |
+| Parameter                | Description                                       | Default   |
+| ------------------------ | ------------------------------------------------- | --------- |
+| `disable-protection`     | Disabled Myra protection for DNS records          | `"false"` |
+| `dry-run`                | Run in dry-run mode without making actual changes | `"false"` |
+| `environment`            | Environment name (affects private IP handling)    | `"prod"`  |
+| `log-level`              | Logging level (debug, info, warn, error)          | `"debug"` |
+| `ttl`                    | Default TTL for DNS records                       | `"300"`   |
+| `webhook-listen-address` | Address and port for the webhook server           | `":8080"` |
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Webhook not receiving requests**
+
    - Ensure the `webhook-provider-url` in the external-dns args is correct
    - Check network connectivity between containers
 
 2. **DNS records not being created**
+
    - Verify MyraSec API credentials are correct
    - Check if the domain filter is properly configured
    - Look for error messages in the webhook and external-dns logs
@@ -185,14 +203,14 @@ kind: ConfigMap
 metadata:
   name: myra-externaldns-config
 data:
-  environment: "prod"  # Can be "prod", "staging", "dev", etc.
+  environment: "prod" # Can be "prod", "staging", "dev", etc.
 ```
 
 The environment setting affects how the webhook handles certain operations:
 
-| Environment | Behavior |
-|-------------|----------|
-| `prod`, `production`, `staging` | Strict mode: Skips private IP records, enforces stricter validation |
+| Environment                        | Behavior                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------- |
+| `prod`, `production`, `staging`    | Strict mode: Skips private IP records, enforces stricter validation     |
 | `dev`, `development`, `test`, etc. | Development mode: Allows private IP records, more permissive validation |
 
 To modify the environment:
