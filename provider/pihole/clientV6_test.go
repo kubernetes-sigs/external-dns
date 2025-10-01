@@ -92,6 +92,12 @@ func newTestServerV6(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 	return svr
 }
 
+type errorTransportV6 struct{}
+
+func (t *errorTransportV6) RoundTrip(req *http.Request) (*http.Response, error) {
+	return nil, errors.New("network error")
+}
+
 func TestNewPiholeClientV6(t *testing.T) {
 	// Test correct error on no server provided
 	_, err := newPiholeClientV6(PiholeConfig{APIVersion: "6"})
@@ -117,7 +123,10 @@ func TestNewPiholeClientV6(t *testing.T) {
 	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/auth" && r.Method == http.MethodPost {
 			var requestData map[string]string
-			json.NewDecoder(r.Body).Decode(&requestData)
+			err := json.NewDecoder(r.Body).Decode(&requestData)
+			if err != nil {
+				t.Fatal(err)
+			}
 			defer r.Body.Close()
 
 			w.Header().Set("Content-Type", "application/json")
@@ -125,7 +134,7 @@ func TestNewPiholeClientV6(t *testing.T) {
 			if requestData["password"] != "correct" {
 				// Return unsuccessful authentication response
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{
+				_, err = w.Write([]byte(`{
 				"session": {
 					"valid": false,
 					"totp": false,
@@ -135,11 +144,14 @@ func TestNewPiholeClientV6(t *testing.T) {
 				},
 				"took": 0.2
 			}`))
+				if err != nil {
+					t.Fatal(err)
+				}
 				return
 			}
 
 			// Return successful authentication response
-			w.Write([]byte(`{
+			_, err = w.Write([]byte(`{
 			"session": {
 				"valid": true,
 				"totp": false,
@@ -185,7 +197,7 @@ func TestListRecordsV6(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 
 			// Return A records
-			w.Write([]byte(`{
+			if _, err := w.Write([]byte(`{
 				"config": {
 					"dns": {
 						"hosts": [
@@ -205,7 +217,9 @@ func TestListRecordsV6(t *testing.T) {
 					}
 				},
 				"took": 5
-			}`))
+			}`)); err != nil {
+				t.Fatal(err)
+			}
 		} else if r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet {
 
 			w.WriteHeader(http.StatusOK)
@@ -384,9 +398,12 @@ func TestErrorsV6(t *testing.T) {
 		Server:     "not an url",
 		APIVersion: "6",
 	}
-	clErrURL, _ := newPiholeClientV6(cfgErrURL)
+	clErrURL, err := newPiholeClientV6(cfgErrURL)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	_, err := clErrURL.listRecords(context.Background(), endpoint.RecordTypeCNAME)
+	_, err = clErrURL.listRecords(context.Background(), endpoint.RecordTypeCNAME)
 	if err == nil {
 		t.Fatal("Expected error for using invalid URL")
 	}
@@ -783,6 +800,80 @@ func TestDoRetryOne(t *testing.T) {
 		t.Fatal("Should have a response")
 	}
 
+}
+
+func TestDoV6AdditionalCases(t *testing.T) {
+	t.Run("http client error", func(t *testing.T) {
+		client := &piholeClientV6{
+			httpClient: &http.Client{
+				Transport: &errorTransportV6{},
+			},
+		}
+		req, _ := http.NewRequest(http.MethodGet, "http://localhost", nil)
+		_, err := client.do(req)
+		if err == nil {
+			t.Fatal("expected an error, but got none")
+		}
+		if !strings.Contains(err.Error(), "network error") {
+			t.Fatalf("expected error to contain 'network error', but got '%v'", err)
+		}
+	})
+
+	t.Run("item already present", func(t *testing.T) {
+		server := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{
+				"error": {
+					"key": "bad_request",
+					"message": "Item already present",
+					"hint": "The item you're trying to add already exists"
+				},
+				"took": 0.1
+			}`))
+		})
+		defer server.Close()
+
+		client := &piholeClientV6{
+			httpClient: server.Client(),
+			token:      "test-token",
+		}
+		req, _ := http.NewRequest(http.MethodPut, server.URL+"/api/test", nil)
+		resp, err := client.do(req)
+		if err != nil {
+			t.Fatalf("expected no error for 'Item already present', but got '%v'", err)
+		}
+		if resp == nil {
+			t.Fatal("expected response, but got nil")
+		}
+	})
+
+	t.Run("404 on DELETE", func(t *testing.T) {
+		server := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{
+				"error": {
+					"key": "not_found",
+					"message": "Item not found",
+					"hint": "The item you're trying to delete does not exist"
+				},
+				"took": 0.1
+			}`))
+		})
+		defer server.Close()
+
+		client := &piholeClientV6{
+			httpClient: server.Client(),
+			token:      "test-token",
+		}
+		req, _ := http.NewRequest(http.MethodDelete, server.URL+"/api/test", nil)
+		resp, err := client.do(req)
+		if err != nil {
+			t.Fatalf("expected no error for 404 on DELETE, but got '%v'", err)
+		}
+		if resp == nil {
+			t.Fatal("expected response, but got nil")
+		}
+	})
 }
 
 func TestCreateRecordV6(t *testing.T) {

@@ -41,7 +41,7 @@ linters:
         - name: confusing-naming
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
-      max-complexity: 43
+      max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
       # Default: false
