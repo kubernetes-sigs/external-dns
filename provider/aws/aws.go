@@ -772,7 +772,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
 							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
 						} else {
-							successfulChanges = successfulChanges + len(changes)
+							successfulChanges += len(changes)
 						}
 					}
 				} else {

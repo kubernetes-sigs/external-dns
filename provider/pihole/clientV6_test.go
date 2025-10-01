@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -62,7 +63,7 @@ func TestIsValidIPv6(t *testing.T) {
 	}{
 		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", true},
 		{"2001:db8:85a3::8a2e:370:7334", true},
-		//IPv6 dual, the format is y:y:y:y:y:y:x.x.x.x.
+		// IPv6 dual, the format is y:y:y:y:y:y:x.x.x.x.
 		{"::ffff:192.168.20.3", true},
 		{"::1", true},
 		{"::", true},
@@ -191,7 +192,8 @@ func TestNewPiholeClientV6(t *testing.T) {
 func TestListRecordsV6(t *testing.T) {
 	// Create a test server
 	srvr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/config/dns/hosts" && r.Method == http.MethodGet {
+		switch {
+		case r.URL.Path == "/api/config/dns/hosts" && r.Method == http.MethodGet:
 
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
@@ -220,7 +222,7 @@ func TestListRecordsV6(t *testing.T) {
 			}`)); err != nil {
 				t.Fatal(err)
 			}
-		} else if r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet {
+		case r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet:
 
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
@@ -238,7 +240,7 @@ func TestListRecordsV6(t *testing.T) {
 				},
 				"took": 5
 			}`))
-		} else {
+		default:
 			http.NotFound(w, r)
 		}
 	})
@@ -391,7 +393,7 @@ func TestListRecordsV6(t *testing.T) {
 }
 
 func TestErrorsV6(t *testing.T) {
-	//Error test cases
+	// Error test cases
 
 	// Create a client
 	cfgErrURL := PiholeConfig{
@@ -439,7 +441,8 @@ func TestErrorsV6(t *testing.T) {
 
 	// bad record format return by server
 	srvrErr := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/config/dns/hosts" && r.Method == http.MethodGet {
+		switch {
+		case r.URL.Path == "/api/config/dns/hosts" && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
 
@@ -454,7 +457,7 @@ func TestErrorsV6(t *testing.T) {
 				},
 				"took": 5
 			}`))
-		} else if r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet {
+		case r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
 
@@ -470,7 +473,7 @@ func TestErrorsV6(t *testing.T) {
 				},
 				"took": 5
 			}`))
-		} else {
+		default:
 			http.NotFound(w, r)
 		}
 	})
@@ -619,7 +622,8 @@ func TestTokenValidity(t *testing.T) {
 func TestDo(t *testing.T) {
 
 	srvDo := newTestServerV6(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/auth/ok" && r.Method == http.MethodGet {
+		switch {
+		case r.URL.Path == "/api/auth/ok" && r.Method == http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			// Return bad content
@@ -634,7 +638,7 @@ func TestDo(t *testing.T) {
 			},
 			"took": 0.16
 			}`))
-		} else if r.URL.Path == "/api/auth" && r.Method == http.MethodPost {
+		case r.URL.Path == "/api/auth" && r.Method == http.MethodPost:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			// Return bad content
@@ -649,7 +653,7 @@ func TestDo(t *testing.T) {
 			},
 			"took": 0.15
 			}`))
-		} else if r.URL.Path == "/api/auth" && r.Method == http.MethodGet {
+		case r.URL.Path == "/api/auth" && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusUnauthorized)
 			// Return bad content
 			w.Write([]byte(`{
@@ -660,7 +664,7 @@ func TestDo(t *testing.T) {
 			},
 			"took": 0.14
 			}`))
-		} else if r.URL.Path == "/api/auth/418" && r.Method == http.MethodGet {
+		case r.URL.Path == "/api/auth/418" && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusTeapot)
 			// Return bad content
 			w.Write([]byte(`{
@@ -671,11 +675,11 @@ func TestDo(t *testing.T) {
 			},
 			"took": 0.13
 			}`))
-		} else if r.URL.Path == "/api/auth/nojson" && r.Method == http.MethodGet {
+		case r.URL.Path == "/api/auth/nojson" && r.Method == http.MethodGet:
 			// Return bad content
 			w.WriteHeader(http.StatusTeapot)
 			w.Write([]byte(`Not a JSON`))
-		} else if r.URL.Path == "/api/auth/401" && r.Method == http.MethodGet {
+		case r.URL.Path == "/api/auth/401" && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusUnauthorized)
 			// Return bad content
 			w.Write([]byte(`{

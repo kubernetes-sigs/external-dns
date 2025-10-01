@@ -353,7 +353,7 @@ func (c *Controller) Run(ctx context.Context) {
 					consecutiveSoftErrors.Gauge.Set(float64(softErrorCount))
 					log.Errorf("Failed to do run once: %v (consecutive soft errors: %d)", err, softErrorCount)
 				} else {
-					log.Fatalf("Failed to do run once: %v", err)
+					log.Fatalf("Failed to do run once: %v", err) // nolint: gocritic // exitAfterDefer
 				}
 			} else {
 				if softErrorCount > 0 {

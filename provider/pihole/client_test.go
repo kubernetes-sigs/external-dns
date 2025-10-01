@@ -238,7 +238,7 @@ func testErrorScenarios(t *testing.T, srvrErr *httptest.Server) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//set clExpired.token to a valid token
+	// set clExpired.token to a valid token
 	clExpired.(*piholeClient).token = "expired"
 	clExpired.(*piholeClient).cfg.Password = "notcorrect"
 
@@ -297,7 +297,7 @@ func TestErrorScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//set clExpired.token to a valid token
+	// set clExpired.token to a valid token
 	clExpired.(*piholeClient).token = "expired"
 	clExpired.(*piholeClient).cfg.Password = "notcorrect"
 

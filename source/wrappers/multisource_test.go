@@ -132,8 +132,8 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
 		defaultTargetsAAAA := []string{"2001:db8::1"}
 		defaultTargetsCName := []string{"foo.example.org"}
-		defaultTargets := append(defaultTargetsA, defaultTargetsCName...)
-		defaultTargets = append(defaultTargets, defaultTargetsAAAA...)
+		defaultTargets := append(defaultTargetsA, defaultTargetsCName...) // nolint: gocritic // appendAssign
+		defaultTargets = append(defaultTargets, defaultTargetsAAAA...)    // nolint: gocritic // appendAssign
 		labels := endpoint.Labels{"foo": "bar"}
 
 		// Endpoints FROM SOURCE has NO targets
@@ -200,8 +200,8 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
 		defaultTargetsAAAA := []string{"2001:db8::1"}
 		defaultTargetsCName := []string{"foo.example.org"}
-		defaultTargets := append(defaultTargetsA, defaultTargetsCName...)
-		defaultTargets = append(defaultTargets, defaultTargetsAAAA...)
+		defaultTargets := append(defaultTargetsA, defaultTargetsCName...) // nolint: gocritic // appendAssign
+		defaultTargets = append(defaultTargets, defaultTargetsAAAA...)    // nolint: gocritic // appendAssign
 		labels := endpoint.Labels{"foo": "bar"}
 
 		// Endpoints FROM SOURCE HAS targets
@@ -238,8 +238,8 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
 		defaultTargetsAAAA := []string{"2001:db8::1"}
 		defaultTargetsCName := []string{"foo.example.org"}
-		defaultTargets := append(defaultTargetsA, defaultTargetsAAAA...)
-		defaultTargets = append(defaultTargets, defaultTargetsCName...)
+		defaultTargets := append(defaultTargetsA, defaultTargetsAAAA...) // nolint: gocritic // appendAssign
+		defaultTargets = append(defaultTargets, defaultTargetsCName...)  // nolint: gocritic // appendAssign
 
 		labels := endpoint.Labels{"foo": "bar"}
 

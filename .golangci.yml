@@ -28,6 +28,7 @@ linters:
     - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
     - nonamedreturns # Checks that functions with named return values do not return named values. https://golangci-lint.run/usage/linters/#nonamedreturns
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
+    - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint

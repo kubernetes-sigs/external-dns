@@ -104,7 +104,7 @@ func Execute() {
 
 	endpointsSource, err := buildSource(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
 	domainFilter := createDomainFilter(cfg)
