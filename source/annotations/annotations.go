@@ -59,4 +59,11 @@ const (
 	ControllerValue = "dns-controller"
 	// InternalHostnameKey The annotation used for defining the desired hostname
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
+	// TargetStrategyKey controls how targets are selected for sources that support multiple target origins (e.g. Gateway Route sources).
+	// Supported values (for Gateway Route sources):
+	//   route-preferred -> prefer Route target annotation if non-empty; otherwise fall back to Gateway target annotation (if any) or gateway addresses
+	//   route-only    -> only use the Route target annotation if non-empty; otherwise fall back to gateway addresses
+	//   gateway-only  -> only use the Gateway target annotation (if any) otherwise fall back to gateway addresses
+	//   merge         -> merge Route and Gateway target annotations (deduped); if neither present use gateway addresses
+	TargetStrategyKey = AnnotationKeyPrefix + "target-strategy"
 )
