@@ -129,7 +129,7 @@ func TestNewGaugeFuncMetric(t *testing.T) {
 			subSystem:  "",
 			constLabels: prometheus.Labels{
 				"version":   "0.0.1",
-				"goversion": "1.24",
+				"goversion": "1.25",
 				"arch":      "arm64",
 			},
 			expectedFqName:          "external_dns_build_info",
