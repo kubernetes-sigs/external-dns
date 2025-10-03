@@ -18,6 +18,7 @@ package metrics
 
 import (
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -129,7 +130,7 @@ func TestNewGaugeFuncMetric(t *testing.T) {
 			subSystem:  "",
 			constLabels: prometheus.Labels{
 				"version":   "0.0.1",
-				"goversion": "1.25",
+				"goversion": runtime.Version(),
 				"arch":      "arm64",
 			},
 			expectedFqName:          "external_dns_build_info",
