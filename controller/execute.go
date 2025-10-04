@@ -285,8 +285,8 @@ func buildProvider(
 		} else {
 			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
 		}
-		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
 		if err == nil {
+			config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
 		}
 	case "rfc2136":
