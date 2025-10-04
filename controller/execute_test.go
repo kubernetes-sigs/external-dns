@@ -449,9 +449,6 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 				Sources:         []string{"fake"},
 				TargetNetFilter: []string{"10.0.0.0/8"},
 			},
-			asserts: func(t *testing.T, cfg *externaldns.Config) {
-				assert.True(t, cfg.IsSourceWrapperInstrumented("target-filter"))
-			},
 		},
 		{
 			name: "configuration with nat64 networks",
@@ -460,20 +457,12 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 				Sources:       []string{"fake"},
 				NAT64Networks: []string{"2001:db8::/96"},
 			},
-			asserts: func(t *testing.T, cfg *externaldns.Config) {
-				assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
-			},
 		},
 		{
 			name: "default configuration",
 			cfg: &externaldns.Config{
 				APIServerURL: svr.URL,
 				Sources:      []string{"fake"},
-			},
-			asserts: func(t *testing.T, cfg *externaldns.Config) {
-				assert.True(t, cfg.IsSourceWrapperInstrumented("dedup"))
-				assert.False(t, cfg.IsSourceWrapperInstrumented("nat64"))
-				assert.False(t, cfg.IsSourceWrapperInstrumented("target-filter"))
 			},
 		},
 	}
@@ -482,7 +471,6 @@ func TestBuildSourceWithWrappers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := buildSource(t.Context(), tt.cfg)
 			require.NoError(t, err)
-			tt.asserts(t, tt.cfg)
 		})
 	}
 }

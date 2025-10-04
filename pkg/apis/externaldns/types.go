@@ -217,7 +217,6 @@ type Config struct {
 	ExcludeUnschedulable                          bool
 	EmitEvents                                    []string
 	ForceDefaultTargets                           bool
-	sourceWrappers                                map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 var defaultConfig = &Config{
@@ -383,7 +382,6 @@ var defaultConfig = &Config{
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
 	ForceDefaultTargets:          false,
-	sourceWrappers:               map[string]bool{},
 }
 
 var providerNames = []string{
@@ -806,22 +804,6 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.DurationVar("webhook-provider-read-timeout", "The read timeout for the webhook provider in duration format (default: 5s)", defaultConfig.WebhookProviderReadTimeout, &cfg.WebhookProviderReadTimeout)
 	b.DurationVar("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)", defaultConfig.WebhookProviderWriteTimeout, &cfg.WebhookProviderWriteTimeout)
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
-}
-
-func (cfg *Config) AddSourceWrapper(name string) {
-	if cfg.sourceWrappers == nil {
-		cfg.sourceWrappers = make(map[string]bool)
-	}
-	cfg.sourceWrappers[name] = true
-}
-
-// IsSourceWrapperInstrumented returns whether a source wrapper is enabled or not.
-func (cfg *Config) IsSourceWrapperInstrumented(name string) bool {
-	if cfg.sourceWrappers == nil {
-		return false
-	}
-	_, ok := cfg.sourceWrappers[name]
-	return ok
 }
 
 func App(cfg *Config) *kingpin.Application {
