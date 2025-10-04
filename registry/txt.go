@@ -26,8 +26,10 @@ import (
 	b64 "encoding/base64"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -66,6 +68,9 @@ type TXTRegistry struct {
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
 	existingTXTs *existingTXTs
+
+	// rootApexDetector detects which domains are root zone apex domains
+	rootApexDetector *rootApexDetector
 }
 
 // existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
@@ -111,6 +116,95 @@ func (im *existingTXTs) reset() {
 	im.entries = make(map[recordKey]struct{})
 }
 
+// rootApexDetector detects and tracks root zone apex domains by analyzing NS records.
+// It maintains a set containing only the topmost apex domains within the observed NS records,
+// not the actual DNS root domain ("."). Each "root apex" is the highest zone in its hierarchy
+// among the zones that external-dns can observe.
+//
+// For example, if NS records exist for both "example.com" and "sub.example.com",
+// only "example.com" will be tracked as a root apex. However, if only "deep.sub.example.com"
+// has an NS record, then "deep.sub.example.com" becomes the root apex for that hierarchy.
+type rootApexDetector struct {
+	apexes set.Set[string]
+}
+
+func newRootApexDetector() *rootApexDetector {
+	return &rootApexDetector{
+		apexes: set.New[string](),
+	}
+}
+
+// addCandidate processes an NS record as a potential root apex candidate.
+// It maintains the invariant that only root apex domains (no parent-child relationships) are stored.
+func (d *rootApexDetector) addCandidate(ep *endpoint.Endpoint) {
+	if ep.RecordType != endpoint.RecordTypeNS {
+		return
+	}
+
+	domain := idna.NormalizeDNSName(ep.DNSName)
+
+	// Check if a parent apex already exists
+	if d.hasParentApex(domain) {
+		return // Don't add if parent apex exists
+	}
+
+	// Remove any child apexes that would be superseded
+	d.removeChildApexes(domain)
+
+	// Add this domain as a root apex
+	d.apexes.Insert(domain)
+}
+
+// hasParentApex checks if any parent domain of the given domain exists in the apex set.
+// For example, if "example.com." is in the set, "child.example.com." has a parent apex.
+func (d *rootApexDetector) hasParentApex(domain string) bool {
+	// Remove trailing dot before split to avoid empty element at the end
+	// e.g., "child.example.com." -> ["child", "example", "com"] not ["child", "example", "com", ""]
+	parts := strings.Split(strings.TrimSuffix(domain, "."), ".")
+	// Start from i=1 to skip the domain itself
+	for i := 1; i < len(parts); i++ {
+		parent := strings.Join(parts[i:], ".") + "."
+		if d.apexes.Has(parent) {
+			return true
+		}
+	}
+	return false
+}
+
+// removeChildApexes removes all child domains from the apex set.
+// For example, if adding "example.com.", this would remove both "api.example.com." and "www.example.com." if they exist.
+func (d *rootApexDetector) removeChildApexes(parentDomain string) {
+	suffix := "." + parentDomain
+	toRemove := make([]string, 0)
+
+	// Collect all child domains to remove
+	for domain := range d.apexes {
+		if strings.HasSuffix(domain, suffix) {
+			toRemove = append(toRemove, domain)
+		}
+	}
+
+	// Remove all collected child domains
+	for _, domain := range toRemove {
+		d.apexes.Delete(domain)
+	}
+}
+
+// isObservedRootApex determines whether the endpoint represents an observed root apex domain.
+// A root apex is a zone apex that has no parent zone among the observed NS records.
+// Note: This is not the DNS root domain (".") but rather the topmost zone in the observed hierarchy.
+func (d *rootApexDetector) isObservedRootApex(ep *endpoint.Endpoint) bool {
+	return d.apexes.Has(idna.NormalizeDNSName(ep.DNSName))
+}
+
+// reset clears the stored apex domains for the next reconciliation cycle.
+func (d *rootApexDetector) reset() {
+	if d == nil {
+		return
+	}
+	d.apexes = d.apexes.Clear()
+}
+
 // NewTXTRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
 // generate new format TXT records, otherwise it generates both old and new formats for
 // backwards compatibility.
@@ -142,6 +236,8 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
 
+	rootApexDetector := newRootApexDetector()
+
 	return &TXTRegistry{
 		provider:            provider,
 		ownerID:             ownerID,
@@ -154,6 +250,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		txtEncryptAESKey:    txtEncryptAESKey,
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
+		rootApexDetector:    rootApexDetector,
 	}, nil
 }
 
@@ -191,6 +288,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	txtRecordsMap := map[string]struct{}{}
 
 	for _, record := range records {
+		im.rootApexDetector.addCandidate(record)
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
 			continue
@@ -318,29 +416,49 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	return endpoints
 }
 
+// shouldBlockApex determines whether an apex record should be blocked from creation.
+// Returns true when the TXT format is unsafe AND the endpoint represents an apex domain.
+func (im *TXTRegistry) shouldBlockApex(ep *endpoint.Endpoint) bool {
+	// If mapper supports apex records, always allow
+	if im.mapper.supportsApex() {
+		return false
+	}
+
+	// Only block if it's actually a root apex domain
+	return im.rootApexDetector.isObservedRootApex(ep)
+}
+
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	defer im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
+	defer im.existingTXTs.reset()     // reset existing TXTs for the next reconciliation loop
+	defer im.rootApexDetector.reset() // reset root apex detector for the next reconciliation loop
 
-	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
-	}
+	filteredCreates := make([]*endpoint.Endpoint, 0, len(changes.Create))
 
-	for _, r := range filteredChanges.Create {
+	for _, r := range changes.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
+		if im.shouldBlockApex(r) {
+			log.Warnf(`Cannot create %s record for %s (apex): TXT ownership record would be outside managed zone. Use txtPrefix="%%{record_type}."`,
+				r.RecordType, r.DNSName)
+			continue
+		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		filteredCreates = append(filteredCreates, r)
+		filteredCreates = append(filteredCreates, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
+	}
+
+	filteredChanges := &plan.Changes{
+		Create:    filteredCreates,
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
 	for _, r := range filteredChanges.Delete {
@@ -395,6 +513,7 @@ type nameMapper interface {
 	toEndpointName(string) (endpointName string, recordType string)
 	toTXTName(string, string) string
 	recordTypeInAffix() bool
+	supportsApex() bool
 }
 
 type affixNameMapper struct {
@@ -501,6 +620,15 @@ func (pr affixNameMapper) recordTypeInAffix() bool {
 		return true
 	}
 	return false
+}
+
+func (pr affixNameMapper) supportsApex() bool {
+	// Apex records are supported only when:
+	// 1. prefix contains the record type template (%{record_type})
+	// 2. prefix ends with a dot (.)
+	// This ensures TXT records are created as subdomains within the same zone
+	// Example: prefix="%{record_type}." creates "a.example.com" TXT for "example.com" A record
+	return strings.Contains(pr.prefix, recordTemplate) && strings.HasSuffix(pr.prefix, ".")
 }
 
 func (pr affixNameMapper) normalizeAffixTemplate(afix, recordType string) string {

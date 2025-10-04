@@ -586,6 +586,198 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 	t.Run("With Templated Suffix", testTXTRegistryApplyChangesWithTemplatedSuffix)
 	t.Run("With Suffix", testTXTRegistryApplyChangesWithSuffix)
 	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
+	t.Run("With Apex", testTXTRegistryApplyChangesWithApex)
+}
+
+func testTXTRegistryApplyChangesWithApex(t *testing.T) {
+	for _, apexRecordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME} {
+		for _, tt := range []struct {
+			name                string
+			prefix              string
+			suffix              string
+			creatableApexRecord bool
+		}{
+			{
+				name:                "With templated prefix with dot should create apex record",
+				prefix:              "txt-%{record_type}.",
+				suffix:              "",
+				creatableApexRecord: true,
+			},
+			{
+				name:                "With templated prefix without dot should not create apex record",
+				prefix:              "txt-%{record_type}",
+				suffix:              "",
+				creatableApexRecord: false,
+			},
+			{
+				name:                "With templated suffix with dot should not create apex record",
+				prefix:              "",
+				suffix:              ".txt-%{record_type}",
+				creatableApexRecord: false,
+			},
+			{
+				name:                "With templated suffix without dot should not create apex record",
+				prefix:              "",
+				suffix:              "txt-%{record_type}",
+				creatableApexRecord: false,
+			},
+			{
+				name:                "With prefix with dot should not create apex record",
+				prefix:              "txt.",
+				suffix:              "",
+				creatableApexRecord: false,
+			},
+			{
+				name:   "With prefix without dot should not create apex record",
+				prefix: "txt",
+				suffix: "",
+			},
+			{
+				name:                "With suffix with dot should not create apex record",
+				prefix:              "",
+				suffix:              ".txt",
+				creatableApexRecord: false,
+			},
+			{
+				name:                "With suffix without dot should not create apex record",
+				prefix:              "",
+				suffix:              "txt",
+				creatableApexRecord: false,
+			},
+			{
+				name:                "No prefix should not create apex record",
+				prefix:              "",
+				suffix:              "",
+				creatableApexRecord: false,
+			},
+		} {
+			t.Run(apexRecordType+"-"+tt.name, func(t *testing.T) {
+				p := inmemory.NewInMemoryProvider()
+				p.CreateZone("test-zone.example.org")
+				p.CreateZone("test-zone2.example.org")
+
+				ctxEndpoints := []*endpoint.Endpoint{}
+				ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+				p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+					assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
+				}
+				r, _ := NewTXTRegistry(p, tt.prefix, tt.suffix, "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+				p.ApplyChanges(ctx, &plan.Changes{
+					Create: []*endpoint.Endpoint{
+						// NS record for the apex of the zone
+						newEndpointWithOwner("test-zone.example.org", "ns1.example.org", endpoint.RecordTypeNS, ""),
+						newEndpointWithOwner("test-zone2.example.org", "ns1.example.org", endpoint.RecordTypeNS, ""),
+						// NS record for the apex of the child zone
+						newEndpointWithOwner("child.test-zone.example.org", "ns1.child.example.org", endpoint.RecordTypeNS, ""),
+
+						// other existing records
+						newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+						newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
+						newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+						newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", endpoint.RecordTypeCNAME, ""),
+						newEndpointWithOwner("multiple.test-zone.example.org", "lb1.loadbalancer.com", endpoint.RecordTypeCNAME, "").WithSetIdentifier("test-set-1"),
+						newEndpointWithOwner("multiple.test-zone.example.org", "lb2.loadbalancer.com", endpoint.RecordTypeCNAME, "").WithSetIdentifier("test-set-2"),
+						newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+						newEndpointWithOwner("qux.test-zone.example.org", "random", endpoint.RecordTypeTXT, ""),
+
+						// existing records owned by external-dns(legacy)
+						newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+						newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+						newEndpointWithOwner("txt.multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
+						newEndpointWithOwner("txt.multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-1"),
+						newEndpointWithOwner("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+
+						// existing records owned by external-dns
+						newEndpointWithOwner(r.mapper.toTXTName("tar.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+						newEndpointWithOwner(r.mapper.toTXTName("foobar.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+						newEndpointWithOwner(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-1"),
+						newEndpointWithOwner(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
+
+						// Existing apex record created before apex blocking was implemented.
+						// Before apex blocking, TXT record creation could fail while the main record was created successfully,
+						// resulting in records without TXT ownership records. This tests backward compatibility -
+						// existing apex records should remain unaffected by the new blocking functionality.
+						newEndpointWithOwner("test-zone2.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+					},
+				})
+				changes := &plan.Changes{
+					Create: []*endpoint.Endpoint{
+						// apex record
+						newEndpointWithOwnerResource("test-zone.example.org", "apex.loadbalancer.com", apexRecordType, "", "ingress/default/my-ingress"),
+						// child apex record
+						newEndpointWithOwnerResource("child.test-zone.example.org", "child-apex.loadbalancer.com", apexRecordType, "", "ingress/default/my-ingress"),
+
+						newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress"),
+						newEndpointWithOwnerResource("multiple.test-zone.example.org", "lb3.loadbalancer.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress").WithSetIdentifier("test-set-3"),
+					},
+					Delete: []*endpoint.Endpoint{
+						newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+						newEndpointWithOwner("multiple.test-zone.example.org", "lb1.loadbalancer.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("test-set-1"),
+					},
+					UpdateNew: []*endpoint.Endpoint{
+						newEndpointWithOwnerResource("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress-2"),
+						newEndpointWithOwnerResource("multiple.test-zone.example.org", "new.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress-2").WithSetIdentifier("test-set-2"),
+					},
+					UpdateOld: []*endpoint.Endpoint{
+						newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+						newEndpointWithOwner("multiple.test-zone.example.org", "lb2.loadbalancer.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("test-set-2"),
+					},
+				}
+				expected := &plan.Changes{
+					Create: []*endpoint.Endpoint{
+						newEndpointWithOwnerResource("child.test-zone.example.org", "child-apex.loadbalancer.com", apexRecordType, "owner", "ingress/default/my-ingress"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("child.test-zone.example.org", apexRecordType), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "child.test-zone.example.org"),
+						newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress"),
+
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("new-record-1.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+						newEndpointWithOwnerResource("multiple.test-zone.example.org", "lb3.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress").WithSetIdentifier("test-set-3"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "multiple.test-zone.example.org").WithSetIdentifier("test-set-3"),
+					},
+					Delete: []*endpoint.Endpoint{
+						newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("foobar.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
+						newEndpointWithOwner("multiple.test-zone.example.org", "lb1.loadbalancer.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("test-set-1"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "multiple.test-zone.example.org").WithSetIdentifier("test-set-1"),
+					},
+					UpdateNew: []*endpoint.Endpoint{
+						newEndpointWithOwnerResource("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress-2"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("tar.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress-2\"", endpoint.RecordTypeTXT, "", "tar.test-zone.example.org"),
+						newEndpointWithOwnerResource("multiple.test-zone.example.org", "new.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress-2").WithSetIdentifier("test-set-2"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress-2\"", endpoint.RecordTypeTXT, "", "multiple.test-zone.example.org").WithSetIdentifier("test-set-2"),
+					},
+					UpdateOld: []*endpoint.Endpoint{
+						newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("tar.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "tar.test-zone.example.org"),
+						newEndpointWithOwner("multiple.test-zone.example.org", "lb2.loadbalancer.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("test-set-2"),
+						newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("multiple.test-zone.example.org", endpoint.RecordTypeCNAME), "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "multiple.test-zone.example.org").WithSetIdentifier("test-set-2"),
+					},
+				}
+				if tt.creatableApexRecord {
+					expected.Create = append(expected.Create, newEndpointWithOwnerResource("test-zone.example.org", "apex.loadbalancer.com", apexRecordType, "owner", "ingress/default/my-ingress"))
+					expected.Create = append(expected.Create, newEndpointWithOwnerAndOwnedRecord(r.mapper.toTXTName("test-zone.example.org", apexRecordType), "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "test-zone.example.org"))
+				}
+				p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+					mExpected := map[string][]*endpoint.Endpoint{
+						"Create":    expected.Create,
+						"UpdateNew": expected.UpdateNew,
+						"UpdateOld": expected.UpdateOld,
+						"Delete":    expected.Delete,
+					}
+					mGot := map[string][]*endpoint.Endpoint{
+						"Create":    got.Create,
+						"UpdateNew": got.UpdateNew,
+						"UpdateOld": got.UpdateOld,
+						"Delete":    got.Delete,
+					}
+					assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+					assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+				}
+				_, err := r.Records(ctx)
+				err = r.ApplyChanges(ctx, changes)
+				require.NoError(t, err)
+			})
+		}
+	}
 }
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
@@ -2061,6 +2253,322 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 				})
 			}
 		}
+	}
+}
+
+func TestRootApexDetector(t *testing.T) {
+	tests := []struct {
+		name            string
+		txtPrefix       string
+		existingRecords []*endpoint.Endpoint
+		recordsToCreate []*endpoint.Endpoint
+		expectedAllowed []string
+	}{
+		{
+			name:      "A record at root apex with no prefix should be blocked",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+		{
+			name:      "A record at root apex and normal domain with no prefix should block only root apex",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "api.test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"api.test-zone.example.org",
+			},
+		},
+		{
+			name:      "A record at root apex with templated dot prefix should be allowed",
+			txtPrefix: "%{record_type}.",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "api.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "test-zone.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "api.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "hoge.api.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"test-zone.example.org",
+				"api.example.org",
+				"hoge.api.example.org",
+			},
+		},
+		{
+			name:      "Parent and child zones should block only parent zone apex",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "child.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "child.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"child.example.org",
+			},
+		},
+		{
+			name:      "Siblings should be removed when parent apex is observed",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "b.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "a.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "b.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"a.example.org",
+				"b.example.org",
+			},
+		},
+		{
+			name:      "Multiple nested zones should block only top-level apex",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "sub.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "deep.sub.example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "sub.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "deep.sub.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"sub.example.org",
+				"deep.sub.example.org",
+			},
+		},
+		{
+			name:      "Different record types at root apex should all be blocked with non-templated prefix",
+			txtPrefix: "txt-",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+		{
+			name:      "Different record types at root apex should all be allowed with templated dot prefix",
+			txtPrefix: "%{record_type}.",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+				},
+			},
+			expectedAllowed: []string{
+				"example.org",
+				"example.org",
+			},
+		},
+		{
+			name:      "Non-NS records in existing records should be ignored",
+			txtPrefix: "",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+				{
+					DNSName:    "fake.example.org",
+					RecordType: endpoint.RecordTypeA, // Not NS, should be ignored
+				},
+				{
+					DNSName:    "another.example.org",
+					RecordType: endpoint.RecordTypeCNAME, // Not NS, should be ignored
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake.example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: []string{
+				"fake.example.org",
+			},
+		},
+		{
+			name:      "Dot prefix with no template should block root apex records",
+			txtPrefix: "txt.",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+		{
+			name:      "Template prefix without dot should block root apex records",
+			txtPrefix: "%{record_type}",
+			existingRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeNS,
+				},
+			},
+			recordsToCreate: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			expectedAllowed: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create registry with the test prefix
+			p := inmemory.NewInMemoryProvider()
+			registry, _ := NewTXTRegistry(p, tt.txtPrefix, "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "foo")
+
+			// Add existing records to root apex detector
+			for _, record := range tt.existingRecords {
+				registry.rootApexDetector.addCandidate(record)
+			}
+
+			// Test which records would be allowed
+			var created []string
+			for _, record := range tt.recordsToCreate {
+				if !registry.shouldBlockApex(record) {
+					created = append(created, record.DNSName)
+				}
+			}
+			assert.Equal(t, tt.expectedAllowed, created)
+		})
 	}
 }
 
