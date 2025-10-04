@@ -78,6 +78,153 @@ func TestMe(t *testing.T) {
 }
 ```
 
+## Complete test on local env
+
+With a Kind cluster, External DNS can be tested easily with coredns provider.
+
+1. Prepare the cluster
+
+```shell
+kubectl create ns dns
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm -n dns install etcd bitnami/etcd --set auth.rbac.create=false
+```
+
+2. Create file `coredns-values.yaml`
+
+```yaml
+isClusterService: false
+serviceType: ClusterIP
+servers:
+  - zones:
+      - zone: example.test.
+    port: 53
+    plugins:
+      - name: errors
+      - name: log
+      - name: etcd
+        parameters: example.test
+        configBlock: |
+          stubzones
+          path /skydns
+          endpoint http://etcd.dns.svc.cluster.local:2379
+      - name: forward
+        parameters: . /etc/resolv.conf
+      - name: cache
+        parameters: 30
+      - name: health
+      - name: ready
+```
+
+3. Create coredns instance
+
+```console
+helm -n dns install coredns-ext coredns/coredns -f coredns-values.yaml
+```
+
+4. Create & deploy `extdns.yaml`:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+  namespace: dns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services","endpoints","pods","nodes"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["networking.k8s.io","discovery.k8s.io","extensions"]
+  resources: ["ingresses","endpointslices"]
+  verbs: ["get","watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: dns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: dns
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: extdns:dev
+        imagePullPolicy: Never
+        args:
+          - --provider=coredns
+          - --source=ingress
+          - --source=service
+          - --domain-filter=example.test
+          - --log-level=debug
+        env:
+        - name: ETCD_URLS
+          value: http://etcd.dns.svc.cluster.local:2379
+```
+
+5. Create and deploy a test service (`hello.yaml`)
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: hello.example.test
+spec:
+  type: NodePort
+  selector:
+    app: hello
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+spec:
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+        - name: app
+          image: nginx:stable
+          ports:
+          - containerPort: 8080
+```
+
 ### Continuous Integration
 
 When submitting a pull request, you'll notice that we run several automated processes on your proposed change. Some of these processes are tests to ensure your contribution aligns with our standards. While we strive for accuracy, some users may find these tests confusing.
