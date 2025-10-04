@@ -69,6 +69,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -80,6 +81,12 @@ func Execute() {
 	log.Infof("config: %s", cfg)
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
+	}
+
+	// Set custom annotation prefix if provided
+	if cfg.AnnotationPrefix != "external-dns.alpha.kubernetes.io/" {
+		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
+		annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
 	}
 
 	configureLogger(cfg)

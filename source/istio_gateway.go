@@ -44,7 +44,8 @@ import (
 
 // IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
 // instead of a standard LoadBalancer service type
-const IstioGatewayIngressSource = annotations.Ingress
+// Using var instead of const because annotation keys can be customized
+var IstioGatewayIngressSource = annotations.Ingress
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.

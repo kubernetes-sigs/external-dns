@@ -19,6 +19,7 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -49,6 +50,14 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if err != nil {
 		return errors.New("--label-filter does not specify a valid label selector")
 	}
+
+	if cfg.AnnotationPrefix == "" {
+		return errors.New("--annotation-prefix cannot be empty")
+	}
+	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
+		return errors.New("--annotation-prefix must end with '/'")
+	}
+
 	return nil
 }
 
