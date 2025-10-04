@@ -48,6 +48,7 @@ type Config struct {
 	Sources                                       []string
 	Namespace                                     string
 	AnnotationFilter                              string
+	AnnotationPrefix                              string
 	LabelFilter                                   string
 	IngressClassNames                             []string
 	FQDNTemplate                                  string
@@ -229,6 +230,7 @@ var defaultConfig = &Config{
 	AkamaiServiceConsumerDomain: "",
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:            "",
+	AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
 	APIServerURL:                "",
 	AWSAPIRetries:               3,
 	AWSAssumeRole:               "",
@@ -449,7 +451,8 @@ var allowedSources = []string{
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
-		AWSSDCreateTag: map[string]string{},
+		AnnotationPrefix: "external-dns.alpha.kubernetes.io/",
+		AWSSDCreateTag:   map[string]string{},
 	}
 }
 
@@ -609,6 +612,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
+	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
 	b.BoolVar("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting (default: false)", false, &cfg.CombineFQDNAndAnnotation)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)

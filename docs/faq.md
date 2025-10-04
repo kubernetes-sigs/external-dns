@@ -269,6 +269,29 @@ In larger clusters with many resources which change frequently this can cause pe
 If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering).
 This means that only those resources which match the selector specified in `--label-filter` will be passed to the controller.
 
+**Split horizon DNS with custom annotation prefixes**
+
+For more advanced split horizon scenarios, you can use the `--annotation-prefix` flag to configure different instances to read different sets of annotations from the same resources. This is useful when you want a single Service or Ingress to create records in multiple DNS zones (e.g., internal and external).
+
+For example:
+```bash
+# Internal DNS instance
+--annotation-prefix=internal.company.io/ --provider=aws --aws-zone-type=private
+
+# External DNS instance
+--annotation-prefix=external-dns.alpha.kubernetes.io/ --provider=aws --aws-zone-type=public
+```
+
+Then annotate your resources with both prefixes:
+```yaml
+metadata:
+  annotations:
+    internal.company.io/hostname: app.internal.company.com
+    external-dns.alpha.kubernetes.io/hostname: app.company.com
+```
+
+See the [Split Horizon DNS guide](advanced/split-horizon.md) for detailed examples and configuration.
+
 ## How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 
 If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.

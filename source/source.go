@@ -27,7 +27,8 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-const (
+// Annotation key aliases - using var instead of const because annotation keys can be customized
+var (
 	controllerAnnotationKey       = annotations.ControllerKey
 	hostnameAnnotationKey         = annotations.HostnameKey
 	accessAnnotationKey           = annotations.AccessKey
@@ -38,7 +39,9 @@ const (
 	ingressHostnameSourceKey      = annotations.IngressHostnameSourceKey
 	controllerAnnotationValue     = annotations.ControllerValue
 	internalHostnameAnnotationKey = annotations.InternalHostnameKey
+)
 
+const (
 	EndpointsTypeNodeExternalIP = "NodeExternalIP"
 	EndpointsTypeHostIP         = "HostIP"
 )
