@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# renovate: datasource=github-releases depName=kubernetes-sigs/controller-tools
-CONTROLLER_TOOLS_GENERATOR_VERSION=v0.17.2
 # renovate: datasource=github-releases depName=golangci/golangci-lint
 GOLANG_CI_LINTER_VERSION=v2.5.0
 
@@ -34,35 +32,6 @@ Usage: $(basename "$0") <options>
     --generator         Install generator
     --golangci          Install golangci linter
 EOF
-}
-
-install_generator() {
-  # https://github.com/kubernetes-sigs/controller-tools/blob/main/cmd/controller-gen/main.go
-  local install=false
-  if [[ -x $(which controller-gen) ]]; then
-      local version=$(controller-gen --version | sed 's/Version: //')
-      if [[ "${version}" == "${CONTROLLER_TOOLS_GENERATOR_VERSION}" ]]; then
-          install=false
-        else
-          install=true
-      fi
-    else
-      install=true
-  fi
-  if [[ "$install" == true ]]; then
-      set -ex ;\
-      go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
-  fi
-
-  if [[ ! -x $(which yq) ]]; then
-      set -ex ;\
-      go install github.com/mikefarah/yq/v4@latest ;
-  fi
-
-  if [[ ! -x $(which yamlfmt) ]]; then
-      set -ex ;\
-      go install github.com/google/yamlfmt/cmd/yamlfmt@latest ;
-  fi
 }
 
 install_golangci() {
@@ -85,9 +54,6 @@ install_golangci() {
 
 function main() {
   case $1 in
-    --generator)
-      install_generator
-      ;;
     --golangci)
       install_golangci
       ;;
