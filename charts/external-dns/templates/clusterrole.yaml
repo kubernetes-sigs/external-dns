@@ -134,6 +134,13 @@ rules:
   {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewaySources" .) }}
+{{- /*
+     If namespaced=true and gatewayNamespace is NOT set, we need to list namespaces
+     cluster-wide to discover Gateways across the cluster. In that case, create a
+     ClusterRole to grant access to namespaces. If gatewayNamespace IS set, we are
+     fully namespaced for both scopes and can skip cluster-wide RBAC.
+  */ -}}
+{{- if not .Values.gatewayNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -145,6 +152,7 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["get","watch","list"]
+{{- end }}
 {{- if .Values.gatewayNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
