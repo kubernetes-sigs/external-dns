@@ -28,6 +28,7 @@ import (
 
 	cloudflarev0 "github.com/cloudflare/cloudflare-go"
 	"github.com/cloudflare/cloudflare-go/v5"
+	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
 	"github.com/maxatome/go-testdeep/td"
@@ -351,7 +352,8 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 		for idx := (page - 1) * perPage; idx < min(len(chs), page*perPage); idx++ {
 			ch := m.customHostnames[zoneID][idx]
 			if strings.HasPrefix(ch.Hostname, "newerror-list-") {
-				m.DeleteCustomHostname(ctx, zoneID, ch.ID)
+				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
+				m.DeleteCustomHostname(ctx, ch.ID, params)
 				return nil, cloudflarev0.ResultInfo{}, errors.New("failed to list erroring custom hostname")
 			}
 			result = append(result, ch)
@@ -389,7 +391,8 @@ func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID 
 	return &cloudflarev0.CustomHostnameResponse{}, nil
 }
 
-func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, zoneID string, customHostnameID string) error {
+func (m *mockCloudFlareClient) DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error {
+	zoneID := params.ZoneID.String()
 	idx := 0
 	if idx = getCustomHostnameIdxByID(m.customHostnames[zoneID], customHostnameID); idx < 0 {
 		return fmt.Errorf("Invalid custom hostname ID to delete")
@@ -3605,7 +3608,7 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("DeleteCustomHostname", func(t *testing.T) {
 		t.Parallel()
-		err := client.DeleteCustomHostname(ctx, zoneID, "foo")
+		err := client.DeleteCustomHostname(ctx, "1234", custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F("foo")})
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 
