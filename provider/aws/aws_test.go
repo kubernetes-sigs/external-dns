@@ -2870,7 +2870,7 @@ func TestAWSProvider_newChange_WarnForProviderSpecificWithoutSetIdentifier(t *te
 					{Name: providerSpecificWeight, Value: "100"},
 				},
 			},
-			expectedWarnLog: "Endpoint test.foo.bar. has provider-specific properties [aws/weight] that require a setIdentifier, but none was set; ignoring these properties",
+			expectedWarnLog:    "Endpoint test.foo.bar. has provider-specific properties [aws/weight] that require a setIdentifier, but none was set; ignoring these properties",
 			unexpectedWarnLogs: nil,
 		},
 		{
@@ -2883,7 +2883,7 @@ func TestAWSProvider_newChange_WarnForProviderSpecificWithoutSetIdentifier(t *te
 					{Name: providerSpecificRegion, Value: "us-east-1"},
 				},
 			},
-			expectedWarnLog: "Endpoint test.foo.bar. has provider-specific properties [aws/region] that require a setIdentifier, but none was set; ignoring these properties",
+			expectedWarnLog:    "Endpoint test.foo.bar. has provider-specific properties [aws/region] that require a setIdentifier, but none was set; ignoring these properties",
 			unexpectedWarnLogs: nil,
 		},
 		{
@@ -2898,7 +2898,7 @@ func TestAWSProvider_newChange_WarnForProviderSpecificWithoutSetIdentifier(t *te
 					{Name: providerSpecificFailover, Value: "PRIMARY"},
 				},
 			},
-			expectedWarnLog: "Endpoint test.foo.bar. has provider-specific properties [aws/weight aws/region aws/failover] that require a setIdentifier, but none was set; ignoring these properties",
+			expectedWarnLog:    "Endpoint test.foo.bar. has provider-specific properties [aws/failover aws/region aws/weight] that require a setIdentifier, but none was set; ignoring these properties",
 			unexpectedWarnLogs: nil,
 		},
 		{
