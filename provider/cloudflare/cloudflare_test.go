@@ -3221,7 +3221,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 				client.Zones = map[string]string{"zone1": "example.com"}
 				client.getZoneError = errors.New("client error 404")
 			},
-			function: func(p *CloudFlareProvider) error{
+			function: func(p *CloudFlareProvider) error {
 				p.zoneIDFilter.ZoneIDs = []string{"zone1"}
 				_, err := p.Zones(context.Background())
 				return err
