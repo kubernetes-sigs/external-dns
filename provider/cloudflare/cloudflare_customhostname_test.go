@@ -32,10 +32,10 @@ import (
 // TestZoneIDByName tests the ZoneIDByName function
 func TestZoneIDByName(t *testing.T) {
 	tests := []struct {
-		name          string
-		zoneName      string
-		mockZones     map[string]string
-		expectError   bool
+		name           string
+		zoneName       string
+		mockZones      map[string]string
+		expectError    bool
 		expectedZoneID string
 	}{
 		{
@@ -44,14 +44,14 @@ func TestZoneIDByName(t *testing.T) {
 			mockZones: map[string]string{
 				"zone123": "example.com",
 			},
-			expectError:   false,
+			expectError:    false,
 			expectedZoneID: "zone123",
 		},
 		{
-			name:          "Zone not found",
-			zoneName:      "notfound.com",
-			mockZones:     map[string]string{},
-			expectError:   true,
+			name:           "Zone not found",
+			zoneName:       "notfound.com",
+			mockZones:      map[string]string{},
+			expectError:    true,
 			expectedZoneID: "",
 		},
 	}
@@ -64,7 +64,7 @@ func TestZoneIDByName(t *testing.T) {
 			zs := zoneService{service: nil}
 			// Mock the client
 			provider := &CloudFlareProvider{Client: client}
-			
+
 			// We can't test zoneService.ZoneIDByName directly easily since it uses the real client
 			// But we can test through the provider's zone listing
 			zones, err := provider.Zones(context.Background())
@@ -142,7 +142,7 @@ func TestCustomHostnamesIntegration(t *testing.T) {
 	t.Run("NewCustomHostname_NoCertificateAuthority", func(t *testing.T) {
 		provider.CustomHostnamesConfig.CertificateAuthority = "none"
 		ch := provider.newCustomHostname("test.example.com", "origin.example.com")
-		assert.Equal(t, "", ch.SSL.CertificateAuthority)
+		assert.Empty(t, ch.SSL.CertificateAuthority)
 		provider.CustomHostnamesConfig.CertificateAuthority = "digicert"
 	})
 }
@@ -335,7 +335,7 @@ func TestTrimAndValidateComment(t *testing.T) {
 		}
 		paidZone := func(string) bool { return false }
 		result := config.trimAndValidateComment("example.com", comment, paidZone)
-		assert.Equal(t, 100, len(result), "Should trim to 100 chars for free zone")
+		assert.Len(t, result, 100, "Should trim to 100 chars for free zone")
 	})
 
 	t.Run("LongComment_PaidZone", func(t *testing.T) {
@@ -345,7 +345,7 @@ func TestTrimAndValidateComment(t *testing.T) {
 		}
 		paidZone := func(string) bool { return true }
 		result := config.trimAndValidateComment("example.com", comment, paidZone)
-		assert.Equal(t, 500, len(result), "Should trim to 500 chars for paid zone")
+		assert.Len(t, result, 500, "Should trim to 500 chars for paid zone")
 	})
 
 	t.Run("MediumComment_PaidZone", func(t *testing.T) {
