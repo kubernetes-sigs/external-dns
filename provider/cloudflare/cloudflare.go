@@ -229,7 +229,7 @@ func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch
 		ZoneID:   cloudflare.F(zoneID),
 		Hostname: cloudflare.F(ch.Hostname),
 	}
-	
+
 	if ch.SSL != nil {
 		sslParams := custom_hostnames.CustomHostnameNewParamsSSL{}
 		if ch.SSL.Method != "" {
@@ -251,7 +251,7 @@ func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch
 		}
 		params.SSL = cloudflare.F(sslParams)
 	}
-	
+
 	_, err := z.service.CustomHostnames.New(ctx, params)
 	return err
 }
@@ -386,7 +386,7 @@ func NewCloudFlareProvider(
 ) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var configV5 *cloudflare.Client
-	
+
 	token := os.Getenv(cfAPITokenEnvKey)
 	if token != "" {
 		if trimed, ok := strings.CutPrefix(token, "file:"); ok {
