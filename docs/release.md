@@ -28,6 +28,13 @@ These are the conventions that we will be using for releases following `0.7.6`:
 
 - **Major** version should be upgraded if we introduce breaking changes.
 
+### Semantic Versioning Discipline
+
+External-DNS follows semantic versioning principles:
+
+- `0.x` → pre-stable, APIs subject to change.
+- `1.x` → stable APIs and core functionality; breaking changes require a major bump.
+
 ## How to release a new image
 
 ### Prerequisite
