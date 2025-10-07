@@ -321,7 +321,7 @@ FATA[0060] failed to sync cache: timed out waiting for the condition
 You may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a `namespace` that you don't have these permissions in.
 By default, commands are run against the `default` namespace. Try changing this to your particular namespace to see if that fixes the issue.
 
-## When we plan to release a v1.0, our first breaking release?
+## When we plan to release a v1.0, our first `major` release?
 
 > We should really get away from 0.x only if we have APIs that we can declare stable.
 
