@@ -6,7 +6,7 @@ Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
 
 ## CloudFlare SDK Migration Status
 
-ExternalDNS has been fully migrated from the legacy CloudFlare Go SDK v0 to the modern v5 SDK to improve performance, reliability, and access to newer CloudFlare features.
+Since v0.20.0, ExternalDNS has been fully migrated from the legacy CloudFlare Go SDK v0 to the modern v5 SDK to improve performance, reliability, and access to newer CloudFlare features.
 
 **✅ Fully migrated to v5 SDK:**
 
