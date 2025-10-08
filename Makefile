@@ -48,16 +48,17 @@ go-lint: golangci-lint-install
 licensecheck:
 	@echo ">> checking license header"
 	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
-               awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
-       done); \
-       if [ -n "$${licRes}" ]; then \
-               echo "license header checking failed:"; echo "$${licRes}"; \
-               exit 1; \
-       fi
+            awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
+        done); \
+        if [ -n "$${licRes}" ]; then \
+            echo "license header checking failed:"; echo "$${licRes}"; \
+            exit 1; \
+        fi
 
-#? oas-lint: Requires to install spectral. See github.com/stoplightio/spectral
+#? oas-lint: Execute OpenAPI Specification (OAS) linting https://quobix.com/vacuum/
+.PHONY: go-lint
 oas-lint:
-	spectral lint api/*.yaml
+	go tool vacuum lint -d --fail-severity warn api/*.yaml
 
 #? lint: Run all the linters
 .PHONY: lint
@@ -73,7 +74,14 @@ crd: controller-gen-install
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
 test:
+	go test -race ./...
+
+
+.PHONY: test
+go-test:
 	go test -race -coverprofile=profile.cov ./...
+	go tool cover -func=profile.cov > coverage.summary
+	@tail -n 1 coverage.summary
 
 #? build: The build targets allow to build the binary and container image
 .PHONY: build

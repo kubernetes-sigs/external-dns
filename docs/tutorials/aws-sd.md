@@ -74,7 +74,7 @@ Using tags, your `servicediscovery` policy can become:
         "ForAllValues:StringLike": {
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
           "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
-          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX"]
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "CNAME", "MX", "TXT"]
         }
       }
     },
@@ -181,7 +181,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.19.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
@@ -208,7 +208,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -248,7 +251,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.19.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region

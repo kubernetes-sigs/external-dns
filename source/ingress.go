@@ -31,7 +31,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/source/informers"
 
@@ -100,12 +99,7 @@ func NewIngressSource(
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	// Add default resource event handlers to properly initialize informer.
-	ingressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
@@ -204,7 +198,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -299,7 +293,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			definedHostsEndpoints = append(definedHostsEndpoints, EndpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -310,7 +304,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 				if host == "" {
 					continue
 				}
-				definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+				definedHostsEndpoints = append(definedHostsEndpoints, EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 			}
 		}
 	}
@@ -319,7 +313,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	var annotationEndpoints []*endpoint.Endpoint
 	if !ignoreHostnameAnnotation {
 		for _, hostname := range annotations.HostnamesFromAnnotations(ing.Annotations) {
-			annotationEndpoints = append(annotationEndpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			annotationEndpoints = append(annotationEndpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -360,5 +354,5 @@ func (sc *ingressSource) AddEventHandler(ctx context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }

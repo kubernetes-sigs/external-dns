@@ -87,7 +87,18 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname, listenEndpointEvents bool, exposeInternalIPv6 bool) (Source, error) {
+func NewServiceSource(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	namespace, annotationFilter, fqdnTemplate string,
+	combineFqdnAnnotation bool, compatibility string,
+	publishInternal, publishHostIP, alwaysPublishNotReadyAddresses bool,
+	serviceTypeFilter []string,
+	ignoreHostnameAnnotation bool,
+	labelSelector labels.Selector,
+	resolveLoadBalancerHostname,
+	listenEndpointEvents, exposeInternalIPv6 bool,
+) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -97,66 +108,98 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	// Set the resync period to 0 to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	endpointSlicesInformer := informerFactory.Discovery().V1().EndpointSlices()
-	podInformer := informerFactory.Core().V1().Pods()
-	nodeInformer := informerFactory.Core().V1().Nodes()
 
 	// Add default resource event handlers to properly initialize informer.
-	serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	endpointSlicesInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	podInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 
-	// Add an indexer to the EndpointSlice informer to index by the service name label
-	err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
-		serviceNameIndexKey: func(obj any) ([]string, error) {
-			endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
-			if !ok {
-				// This should never happen because the Informer should only contain EndpointSlice objects
-				return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
-			}
-			serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
-			if serviceName == "" {
-				return nil, nil
-			}
-			key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
-			return []string{key}, nil
-		},
-	})
+	// Transform the slice into a map so it will be way much easier and fast to filter later
+	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
 	if err != nil {
 		return nil, err
+	}
+
+	var endpointSlicesInformer discoveryinformers.EndpointSliceInformer
+	var podInformer coreinformers.PodInformer
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
+		podInformer = informerFactory.Core().V1().Pods()
+
+		_, _ = endpointSlicesInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+		_, _ = podInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+		// Add an indexer to the EndpointSlice informer to index by the service name label
+		err = endpointSlicesInformer.Informer().AddIndexers(cache.Indexers{
+			serviceNameIndexKey: func(obj any) ([]string, error) {
+				endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+				if !ok {
+					// This should never happen because the Informer should only contain EndpointSlice objects
+					return nil, fmt.Errorf("expected %T but got %T instead", endpointSlice, obj)
+				}
+				serviceName := endpointSlice.Labels[discoveryv1.LabelServiceName]
+				if serviceName == "" {
+					return nil, nil
+				}
+				key := types.NamespacedName{Namespace: endpointSlice.Namespace, Name: serviceName}.String()
+				return []string{key}, nil
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Transformer is used to reduce the memory usage of the informer.
+		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
+		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
+		_ = podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+			pod, ok := i.(*v1.Pod)
+			if !ok {
+				return nil, fmt.Errorf("object is not a pod")
+			}
+			if pod.UID == "" {
+				// Pod was already transformed and we must be idempotent.
+				return pod, nil
+			}
+
+			// All pod level annotations we're interested in start with a common prefix
+			podAnnotations := map[string]string{}
+			for key, value := range pod.Annotations {
+				if strings.HasPrefix(key, annotations.AnnotationKeyPrefix) {
+					podAnnotations[key] = value
+				}
+			}
+			return &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					// Name/namespace must always be kept for the informer to work.
+					Name:      pod.Name,
+					Namespace: pod.Namespace,
+					// Used to match services.
+					Labels:            pod.Labels,
+					Annotations:       podAnnotations,
+					DeletionTimestamp: pod.DeletionTimestamp,
+				},
+				Spec: v1.PodSpec{
+					Hostname: pod.Spec.Hostname,
+					NodeName: pod.Spec.NodeName,
+				},
+				Status: v1.PodStatus{
+					HostIP:     pod.Status.HostIP,
+					Phase:      pod.Status.Phase,
+					Conditions: pod.Status.Conditions,
+				},
+			}, nil
+		})
+	}
+
+	var nodeInformer coreinformers.NodeInformer
+	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
+		nodeInformer = informerFactory.Core().V1().Nodes()
+		_, _ = nodeInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
 	}
 
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
-		return nil, err
-	}
-
-	// Transform the slice into a map so it will be way much easier and fast to filter later
-	sTypesFilter, err := newServiceTypesFilter(serviceTypeFilter)
-	if err != nil {
 		return nil, err
 	}
 
@@ -198,7 +241,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	for _, svc := range services {
 		// Check controller annotation to see if we are responsible.
@@ -252,6 +295,29 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		sort.Slice(endpoints, func(i, j int) bool {
 			return endpoints[i].Labels[endpoint.ResourceLabelKey] < endpoints[j].Labels[endpoint.ResourceLabelKey]
 		})
+		mergedEndpoints := make(map[endpoint.EndpointKey][]*endpoint.Endpoint)
+		for _, ep := range endpoints {
+			key := ep.Key()
+			if existing, ok := mergedEndpoints[key]; ok {
+				if existing[0].RecordType == endpoint.RecordTypeCNAME {
+					log.Debugf("CNAME %s with multiple targets found", ep.DNSName)
+					mergedEndpoints[key] = append(existing, ep)
+					continue
+				}
+				existing[0].Targets = append(existing[0].Targets, ep.Targets...)
+				existing[0].Targets = endpoint.NewTargets(existing[0].Targets...)
+				mergedEndpoints[key] = existing
+			} else {
+				ep.Targets = endpoint.NewTargets(ep.Targets...)
+				mergedEndpoints[key] = []*endpoint.Endpoint{ep}
+			}
+		}
+		processed := make([]*endpoint.Endpoint, 0, len(mergedEndpoints))
+		for _, ep := range mergedEndpoints {
+			processed = append(processed, ep...)
+		}
+		endpoints = processed
+
 		// Use stable sort to not disrupt the order of services
 		sort.SliceStable(endpoints, func(i, j int) bool {
 			if endpoints[i].DNSName != endpoints[j].DNSName {
@@ -259,31 +325,6 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			}
 			return endpoints[i].RecordType < endpoints[j].RecordType
 		})
-		mergedEndpoints := []*endpoint.Endpoint{}
-		mergedEndpoints = append(mergedEndpoints, endpoints[0])
-		for i := 1; i < len(endpoints); i++ {
-			lastMergedEndpoint := len(mergedEndpoints) - 1
-			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
-				mergedEndpoints[lastMergedEndpoint].RecordType != endpoint.RecordTypeCNAME && // It is against RFC-1034 for CNAME records to have multiple targets, so skip merging
-				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
-				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
-				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
-			} else {
-				mergedEndpoints = append(mergedEndpoints, endpoints[i])
-			}
-
-			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
-				mergedEndpoints[lastMergedEndpoint].RecordType == endpoint.RecordTypeCNAME {
-				log.Debugf("CNAME %s with multiple targets found", endpoints[i].DNSName)
-			}
-		}
-		endpoints = mergedEndpoints
-	}
-
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil
@@ -293,11 +334,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-	if err != nil {
-		return nil
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 	if err != nil {
 		return nil
 	}
@@ -305,22 +342,11 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	serviceKey := cache.ObjectName{Namespace: svc.Namespace, Name: svc.Name}.String()
 	rawEndpointSlices, err := sc.endpointSlicesInformer.Informer().GetIndexer().ByIndex(serviceNameIndexKey, serviceKey)
 	if err != nil {
-		// Should never happen as long as the index exists
 		log.Errorf("Get EndpointSlices of service[%s] error:%v", svc.GetName(), err)
 		return nil
 	}
 
-	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
-	for _, obj := range rawEndpointSlices {
-		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
-		if !ok {
-			// Should never happen as the indexer can only contain EndpointSlice objects
-			log.Errorf("Expected %T but got %T instead, skipping", endpointSlice, obj)
-			continue
-		}
-		endpointSlices = append(endpointSlices, endpointSlice)
-	}
-
+	endpointSlices := convertToEndpointSlices(rawEndpointSlices)
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
 		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
@@ -331,70 +357,64 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	publishPodIPs := endpointsType != EndpointsTypeNodeExternalIP && endpointsType != EndpointsTypeHostIP && !sc.publishHostIP
 	publishNotReadyAddresses := svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses
 
+	targetsByHeadlessDomainAndType := sc.processHeadlessEndpointsFromSlices(
+		svc, pods, endpointSlices, hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+	endpoints = buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, ttl)
+
+	return endpoints
+}
+
+// Helper to convert raw objects to EndpointSlice
+func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.EndpointSlice {
+	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
+	for _, obj := range rawEndpointSlices {
+		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
+		if !ok {
+			log.Errorf("Expected EndpointSlice but got %T instead, skipping", obj)
+			continue
+		}
+		endpointSlices = append(endpointSlices, endpointSlice)
+	}
+	return endpointSlices
+}
+
+// processHeadlessEndpointsFromSlices processes EndpointSlices specifically for headless services
+// and returns deduped targets by domain/type.
+// TODO: Consider refactoring with generics when available: https://github.com/kubernetes/kubernetes/issues/133544
+func (sc *serviceSource) processHeadlessEndpointsFromSlices(
+	svc *v1.Service,
+	pods []*v1.Pod,
+	endpointSlices []*discoveryv1.EndpointSlice,
+	hostname string,
+	endpointsType string,
+	publishPodIPs bool,
+	publishNotReadyAddresses bool,
+) map[endpoint.EndpointKey]endpoint.Targets {
 	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
 	for _, endpointSlice := range endpointSlices {
 		for _, ep := range endpointSlice.Endpoints {
 			if !conditionToBool(ep.Conditions.Ready) && !publishNotReadyAddresses {
 				continue
 			}
-
-			if publishPodIPs &&
-				endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 &&
-				endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
+			if publishPodIPs && endpointSlice.AddressType != discoveryv1.AddressTypeIPv4 && endpointSlice.AddressType != discoveryv1.AddressTypeIPv6 {
 				log.Debugf("Skipping EndpointSlice %s/%s because its address type is unsupported: %s", endpointSlice.Namespace, endpointSlice.Name, endpointSlice.AddressType)
 				continue
 			}
-
-			// find pod for this address
-			if ep.TargetRef == nil || ep.TargetRef.APIVersion != "" || ep.TargetRef.Kind != "Pod" {
-				log.Debugf("Skipping address because its target is not a pod: %v", ep)
-				continue
-			}
-			var pod *v1.Pod
-			for _, v := range pods {
-				if v.Name == ep.TargetRef.Name {
-					pod = v
-					break
-				}
-			}
+			pod := findPodForEndpoint(ep, pods)
 			if pod == nil {
-				log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
+				if ep.TargetRef != nil {
+					log.Errorf("Pod %s not found for address %v", ep.TargetRef.Name, ep)
+				} else {
+					log.Errorf("Pod not found for endpoint with nil TargetRef: %v", ep)
+				}
 				continue
 			}
-
 			headlessDomains := []string{hostname}
 			if pod.Spec.Hostname != "" {
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
-
 			for _, headlessDomain := range headlessDomains {
-				targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
-				if len(targets) == 0 {
-					if endpointsType == EndpointsTypeNodeExternalIP {
-						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
-						if err != nil {
-							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
-							return endpoints
-						}
-						for _, address := range node.Status.Addresses {
-							if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
-								targets = append(targets, address.Address)
-								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
-							}
-						}
-					} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
-						targets = endpoint.Targets{pod.Status.HostIP}
-						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
-					} else {
-						if len(ep.Addresses) == 0 {
-							log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
-							continue
-						}
-						address := ep.Addresses[0] // Only use the first address, as additional addresses have no semantic defined
-						targets = endpoint.Targets{address}
-						log.Debugf("Generating matching endpoint %s with EndpointSliceAddress IP %s", headlessDomain, address)
-					}
-				}
+				targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
@@ -405,8 +425,73 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 		}
 	}
+	// Return a copy of the map to prevent external modifications
+	result := make(map[endpoint.EndpointKey]endpoint.Targets, len(targetsByHeadlessDomainAndType))
+	for k, v := range targetsByHeadlessDomainAndType {
+		result[k] = append(endpoint.Targets(nil), v...)
+	}
+	return result
+}
 
-	headlessKeys := []endpoint.EndpointKey{}
+// Helper to find pod for endpoint
+func findPodForEndpoint(ep discoveryv1.Endpoint, pods []*v1.Pod) *v1.Pod {
+	if ep.TargetRef == nil || ep.TargetRef.APIVersion != "" || ep.TargetRef.Kind != "Pod" {
+		log.Debugf("Skipping address because its target is not a pod: %v", ep)
+		return nil
+	}
+	for _, v := range pods {
+		if v.Name == ep.TargetRef.Name {
+			return v
+		}
+	}
+	return nil
+}
+
+// Helper to get targets for domain
+func (sc *serviceSource) getTargetsForDomain(
+	pod *v1.Pod,
+	ep discoveryv1.Endpoint,
+	endpointSlice *discoveryv1.EndpointSlice,
+	endpointsType, headlessDomain string) endpoint.Targets {
+	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
+	if len(targets) == 0 {
+		switch {
+		case endpointsType == EndpointsTypeNodeExternalIP:
+			if sc.nodeInformer == nil {
+				log.Warnf("Skipping EndpointSlice %s/%s as --service-type-filter disable node informer", endpointSlice.Namespace, endpointSlice.Name)
+				return nil
+			}
+			node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+			if err != nil {
+				log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
+				return nil
+			}
+			for _, address := range node.Status.Addresses {
+				if address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+					targets = append(targets, address.Address)
+					log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
+				}
+			}
+		case endpointsType == EndpointsTypeHostIP || sc.publishHostIP:
+			targets = endpoint.Targets{pod.Status.HostIP}
+			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
+		default:
+			if len(ep.Addresses) == 0 {
+				log.Warnf("EndpointSlice %s/%s has no addresses for endpoint %v", endpointSlice.Namespace, endpointSlice.Name, ep)
+				return nil
+			}
+			address := ep.Addresses[0]
+			targets = endpoint.Targets{address}
+			log.Debugf("Generating matching endpoint %s with EndpointSliceAddress IP %s", headlessDomain, address)
+		}
+	}
+	return targets
+}
+
+// Helper to build endpoints from deduped targets
+func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[endpoint.EndpointKey]endpoint.Targets, ttl endpoint.TTL) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+	headlessKeys := make([]endpoint.EndpointKey, 0, len(targetsByHeadlessDomainAndType))
 	for headlessKey := range targetsByHeadlessDomainAndType {
 		headlessKeys = append(headlessKeys, headlessKey)
 	}
@@ -419,31 +504,26 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	for _, headlessKey := range headlessKeys {
 		allTargets := targetsByHeadlessDomainAndType[headlessKey]
 		targets := []string{}
-
 		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
 			if _, ok := deduppedTargets[target]; ok {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
 			}
-
 			deduppedTargets[target] = struct{}{}
 			targets = append(targets, target)
 		}
-
 		var ep *endpoint.Endpoint
 		if ttl.IsConfigured() {
 			ep = endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
 		} else {
 			ep = endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...)
 		}
-
 		if ep != nil {
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 			endpoints = append(endpoints, ep)
 		}
 	}
-
 	return endpoints
 }
 
@@ -466,7 +546,8 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 // endpointsFromService extracts the endpoints from a service object
 func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-	// Skip endpoints if we do not want entries from annotations
+
+	// Skip endpoints if we do not want entries from annotations or service is excluded
 	if sc.ignoreHostnameAnnotation {
 		return endpoints
 	}
@@ -519,7 +600,7 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 	}
 	var result []*v1.Service
 	for _, service := range services {
-		if _, ok := sc.serviceTypeFilter.types[service.Spec.Type]; ok {
+		if sc.serviceTypeFilter.isProcessed(service.Spec.Type) {
 			result = append(result, service)
 		}
 	}
@@ -527,7 +608,7 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 	return result
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) (endpoints []*endpoint.Endpoint) {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
@@ -535,6 +616,8 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
 
 	targets := annotations.TargetsFromTargetAnnotation(svc.Annotations)
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	if len(targets) == 0 {
 		switch svc.Spec.Type {
@@ -569,7 +652,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		}
 	}
 
-	endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 
 	return endpoints
 }
@@ -662,7 +745,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 			}
 
 			if _, ok := nodesMap[node]; !ok {
-				nodesMap[node] = *new(struct{})
+				nodesMap[node] = struct{}{}
 				nodesRunning = append(nodesRunning, node)
 
 				if isPodStatusReady(v.Status) {
@@ -679,14 +762,15 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 	// Prioritize nodes with non-terminating ready pods
 	// If none available, fall back to nodes with ready pods
 	// If still none, use nodes with any running pods
-	if len(nodes) > 0 {
+	switch {
+	case len(nodes) > 0:
 		// Works the same as service endpoints
-	} else if len(nodesReady) > 0 {
+	case len(nodesReady) > 0:
 		// 2 level of panic modes as safeguard, because old wrong behavior can be used by someone
 		// Publish all endpoints not always a bad thing
 		log.Debugf("All pods in terminating state, use ready")
 		nodes = nodesReady
-	} else {
+	default:
 		log.Debugf("All pods not ready, use all running")
 		nodes = nodesRunning
 	}
@@ -696,11 +780,7 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 
 // pods retrieve a slice of pods associated with the given Service
 func (sc *serviceSource) pods(svc *v1.Service) []*v1.Pod {
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-	if err != nil {
-		return nil
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 	if err != nil {
 		return nil
 	}
@@ -747,13 +827,19 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	access := getAccessFromAnnotations(svc.Annotations)
 	switch access {
 	case "public":
-		return append(externalIPs, ipv6IPs...), nil
+		if sc.exposeInternalIPv6 {
+			return append(externalIPs, ipv6IPs...), nil
+		}
+		return externalIPs, nil
 	case "private":
 		return internalIPs, nil
 	}
 
 	if len(externalIPs) > 0 {
-		return append(externalIPs, ipv6IPs...), nil
+		if sc.exposeInternalIPv6 {
+			return append(externalIPs, ipv6IPs...), nil
+		}
+		return externalIPs, nil
 	}
 
 	return internalIPs, nil
@@ -806,9 +892,12 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	if sc.listenEndpointEvents {
-		sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
+		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
+	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
+		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
 }
 
@@ -826,18 +915,36 @@ func newServiceTypesFilter(filter []string) (*serviceTypes, error) {
 			enabled: false,
 		}, nil
 	}
-	types := make(map[v1.ServiceType]bool)
+	result := make(map[v1.ServiceType]bool)
 	for _, serviceType := range filter {
 		if _, ok := knownServiceTypes[v1.ServiceType(serviceType)]; !ok {
 			return nil, fmt.Errorf("unsupported service type filter: %q. Supported types are: %q", serviceType, slices.Collect(maps.Keys(knownServiceTypes)))
 		}
-		types[v1.ServiceType(serviceType)] = true
+		result[v1.ServiceType(serviceType)] = true
 	}
 
 	return &serviceTypes{
 		enabled: true,
-		types:   types,
+		types:   result,
 	}, nil
+}
+
+func (sc *serviceTypes) isProcessed(serviceType v1.ServiceType) bool {
+	return !sc.enabled || sc.types[serviceType]
+}
+
+// isRequired returns true if service type filtering is disabled or if any of the provided service types are present in the filter.
+// If no options are provided, it returns true.
+func (sc *serviceTypes) isRequired(opts ...v1.ServiceType) bool {
+	if len(opts) == 0 || !sc.enabled {
+		return true
+	}
+	for _, opt := range opts {
+		if _, ok := sc.types[opt]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // conditionToBool converts an EndpointConditions condition to a bool value.

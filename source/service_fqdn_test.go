@@ -32,13 +32,14 @@ import (
 func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 	for _, tt := range []struct {
-		title          string
-		services       []*v1.Service
-		endpointSlices []*discoveryv1.EndpointSlice
-		fqdnTemplate   string
-		combineFQDN    bool
-		publishHostIp  bool
-		expected       []*endpoint.Endpoint
+		title              string
+		services           []*v1.Service
+		endpointSlices     []*discoveryv1.EndpointSlice
+		fqdnTemplate       string
+		combineFQDN        bool
+		publishHostIp      bool
+		serviceTypesFilter []string
+		expected           []*endpoint.Endpoint
 	}{
 		{
 			title:       "templating with multiple services",
@@ -182,6 +183,129 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"api.example.tld"}},
 				{DNSName: "www.service-two.website.example.tld", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"www.bucket-name.amazonaws.com"}},
 			},
+		},
+		{
+			title:              "fqdn with endpoint-type annotation and loose service type filtering",
+			serviceTypesFilter: []string{},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "svc-ns",
+						Name:      "svc-one",
+						Annotations: map[string]string{
+							annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP,
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type:       v1.ServiceTypeClusterIP,
+						ClusterIP:  v1.ClusterIPNone,
+						ClusterIPs: []string{v1.ClusterIPNone},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{},
+					},
+				},
+			},
+			endpointSlices: []*discoveryv1.EndpointSlice{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-one-xxxxx",
+						Namespace: "svc-ns",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "svc-one",
+							v1.IsHeadlessService:         "",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"100.66.2.246"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "svc-ns",
+							},
+						},
+						{
+							Addresses: []string{"100.66.2.247"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "svc-ns",
+							},
+						},
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.{{.Namespace}}.cluster.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "ip-10-1-164-158.internal.svc-one.svc-ns.cluster.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "svc-one.svc-ns.cluster.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+			},
+		},
+		{
+			title:              "fqdn with endpoint-type annotation and service type filtering does not include required type",
+			serviceTypesFilter: []string{string(v1.ServiceTypeClusterIP)},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "svc-ns",
+						Name:      "svc-one",
+						Annotations: map[string]string{
+							annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP,
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type:       v1.ServiceTypeClusterIP,
+						ClusterIP:  v1.ClusterIPNone,
+						ClusterIPs: []string{v1.ClusterIPNone},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{},
+					},
+				},
+			},
+			endpointSlices: []*discoveryv1.EndpointSlice{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-one-xxxxx",
+						Namespace: "svc-ns",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "svc-one",
+							v1.IsHeadlessService:         "",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"100.66.2.246"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "svc-ns",
+							},
+						},
+						{
+							Addresses: []string{"100.66.2.247"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "svc-ns",
+							},
+						},
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.{{.Namespace}}.cluster.com",
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "templating resolve service with zone PreferSameTrafficDistribution and topology.kubernetes.io/zone annotation",
@@ -632,6 +756,17 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				require.NoError(t, err)
 			}
 
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "203.0.113.10"},
+						{Type: v1.NodeInternalIP, Address: "10.0.0.10"},
+					},
+				},
+			}, metav1.CreateOptions{})
+			require.NoError(t, err)
+
 			// Create endpoints and pods for the services
 			for _, el := range tt.endpointSlices {
 				_, err := kubeClient.DiscoveryV1().EndpointSlices(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
@@ -644,6 +779,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 						Spec: v1.PodSpec{
 							Hostname: *ep.Hostname,
+							NodeName: "test-node",
 						},
 						Status: v1.PodStatus{
 							HostIP: fmt.Sprintf("10.1.20.4%d", i),
@@ -664,7 +800,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				true,
 				tt.publishHostIp,
 				true,
-				[]string{},
+				tt.serviceTypesFilter,
 				false,
 				labels.Everything(),
 				false,

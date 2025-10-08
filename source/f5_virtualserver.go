@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -169,7 +168,13 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 			targets = append(targets, virtualServer.Status.VSAddress)
 		}
 
-		endpoints = append(endpoints, endpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+
+		for _, alias := range virtualServer.Spec.HostAliases {
+			if alias != "" {
+				endpoints = append(endpoints, EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+			}
+		}
 	}
 
 	return endpoints, nil
@@ -192,12 +197,7 @@ func newVSUnstructuredConverter() (*unstructuredConverter, error) {
 
 // filterByAnnotations filters a list of VirtualServers by a given annotation selector.
 func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.VirtualServer) ([]*f5.VirtualServer, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(vs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := annotations.ParseFilter(vs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

@@ -169,7 +169,7 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 			ttl := annotations.TTLFromAnnotations(ants, resource)
 			providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ants)
 			for _, domain := range virtualHost.Domains {
-				endpoints = append(endpoints, endpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
+				endpoints = append(endpoints, EndpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
 			}
 		}
 	}
@@ -229,8 +229,7 @@ func (gs *glooSource) proxyTargets(ctx context.Context, name string, namespace s
 }
 
 func sourceKind(kind string) *schema.GroupVersionResource {
-	switch kind {
-	case "*v1.VirtualService":
+	if kind == "*v1.VirtualService" {
 		return &virtualServiceGVR
 	}
 	return nil

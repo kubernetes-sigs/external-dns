@@ -117,7 +117,7 @@ func TestEndpointsForHostname(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := endpointsForHostname(tt.hostname, tt.targets, tt.ttl, tt.providerSpecific, tt.setIdentifier, tt.resource)
+			result := EndpointsForHostname(tt.hostname, tt.targets, tt.ttl, tt.providerSpecific, tt.setIdentifier, tt.resource)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -155,7 +155,25 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			},
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
-			expected:  endpoint.Targets{"192.0.2.1", "158.123.32.23"},
+			expected:  endpoint.Targets{"158.123.32.23", "192.0.2.1"},
+		},
+		{
+			name: "matching service with duplicate external IPs",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc1",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "nginx"},
+						ExternalIPs: []string{"192.0.2.1", "192.0.2.1", "158.123.32.23"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"158.123.32.23", "192.0.2.1"},
 		},
 		{
 			name: "no matching service as service without selector",
@@ -238,6 +256,55 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: "default",
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{},
+		},
+		{
+			name: "multiple selectors",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "fake",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "apache", "version": "v1"},
+						ExternalIPs: []string{"158.123.32.23"},
+					},
+				},
+			},
+			namespace: "default",
+			selector:  map[string]string{"version": "v1"},
+			expected:  endpoint.Targets{"158.123.32.23"},
+		},
+		{
+			name: "complex selectors",
+			services: []*corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "fake",
+						Namespace: "default",
+					},
+					Spec: corev1.ServiceSpec{
+						Selector: map[string]string{
+							"app":     "demo",
+							"env":     "prod",
+							"team":    "devops",
+							"version": "v1",
+							"release": "stable",
+							"track":   "daily",
+							"tier":    "backend",
+						},
+						ExternalIPs: []string{"158.123.32.23"},
+					},
+				},
+			},
+			namespace: "default",
+			selector: map[string]string{
+				"version": "v1",
+				"release": "stable",
+				"tier":    "backend",
+				"app":     "demo",
+			},
+			expected: endpoint.Targets{"158.123.32.23"},
 		},
 	}
 

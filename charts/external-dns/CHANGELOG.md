@@ -18,9 +18,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.19.0] - 2025-09-08
+
+### Added
+
+- Add option to configure `annotationFilter` via dedicated chart value. ([#5737](https://github.com/kubernetes-sigs/external-dns/pull/5737)) _@dshatokhin_
+
+### Changed
+
+- Grant `discovery.k8s.io/endpointslices` permission only when using `service` source. ([#5746](https://github.com/kubernetes-sigs/external-dns/pull/5746)) _@vflaux_
+- Update _ExternalDNS_ OCI image version to [v0.19.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.19.0). ([#5819](https://github.com/kubernetes-sigs/external-dns/pull/5819)) _@stevehipwell_
+
+## [v1.18.0] - 2025-07-14
+
 ### Changed
 
 - Update RBAC for `Service` source to support `EndpointSlices`. ([#5493](https://github.com/kubernetes-sigs/external-dns/pull/5493)) _@vflaux_
+- Update _ExternalDNS_ OCI image version to [v0.18.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.18.0). ([#5633](https://github.com/kubernetes-sigs/external-dns/pull/5633)) _@elafarge_
+
+### Fixed
+
+- Fixed the lack of schema support for `create-only` dns policy in helm values ([#5627](https://github.com/kubernetes-sigs/external-dns/pull/5627)) _@coltonhughes_
+- Fixed the type of `.extraContainers` from `object` to `list` (array). ([#5564](https://github.com/kubernetes-sigs/external-dns/pull/5564)) _@svengreb_
 
 ## [v1.17.0] - 2025-06-04
 
@@ -271,6 +290,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.19.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.19.0
+[v1.18.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.18.0
 [v1.17.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.17.0
 [v1.16.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.1
 [v1.16.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.16.0

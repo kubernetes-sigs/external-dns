@@ -20,11 +20,13 @@ curl https://localhost:7979/metrics
 
 | Name                             | Metric Type | Subsystem   |  Help                                                 |
 |:---------------------------------|:------------|:------------|:------------------------------------------------------|
+| build_info | Gauge |  | A metric with a constant '1' value labeled with 'version' and 'revision' of external_dns and the 'go_version', 'os' and the 'arch' used the build. |
 | consecutive_soft_errors | Gauge | controller | Number of consecutive soft errors in reconciliation loop. |
 | last_reconcile_timestamp_seconds | Gauge | controller | Timestamp of last attempted sync with the DNS provider |
 | last_sync_timestamp_seconds | Gauge | controller | Timestamp of last successful sync with the DNS provider |
 | no_op_runs_total | Counter | controller | Number of reconcile loops ending up with no changes on the DNS provider side. |
 | verified_records | Gauge | controller | Number of DNS records that exists both in source and registry (vector). |
+| request_duration_seconds | Summaryvec | http | The HTTP request latencies in seconds. |
 | cache_apply_changes_calls | Counter | provider | Number of calls to the provider cache ApplyChanges. |
 | cache_records_calls | Counter | provider | Number of calls to the provider cache Records list. |
 | endpoints_total | Gauge | registry | Number of Endpoints in the registry |
@@ -75,7 +77,6 @@ curl https://localhost:7979/metrics
 | go_memstats_sys_bytes |
 | go_sched_gomaxprocs_threads |
 | go_threads |
-| http_request_duration_seconds |
 | process_cpu_seconds_total |
 | process_max_fds |
 | process_network_receive_bytes_total |

@@ -24,6 +24,9 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/set"
+
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -71,11 +74,16 @@ func (ttl TTL) IsConfigured() bool {
 // Targets is a representation of a list of targets for an endpoint.
 type Targets []string
 
-// NewTargets is a convenience method to create a new Targets object from a vararg of strings
+// MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
+type MXTarget struct {
+	priority uint16
+	host     string
+}
+
+// NewTargets is a convenience method to create a new Targets object from a vararg of strings.
+// Returns a new Targets slice with duplicates removed and elements sorted in order.
 func NewTargets(target ...string) Targets {
-	t := make(Targets, 0, len(target))
-	t = append(t, target...)
-	return t
+	return set.New(target...).SortedList()
 }
 
 func (t Targets) String() string {
@@ -104,7 +112,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares to Targets and returns true if they are identical (case-insensitive)
+// Same compares two Targets and returns true if they are identical (case-insensitive)
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -234,6 +242,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// refObject stores reference object
+	// +optional
+	refObject *events.ObjectReference
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -245,7 +256,14 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
 	for idx, target := range targets {
-		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
+		// TXT records can contain arbitrary text including multiple dots
+		switch recordType {
+		case RecordTypeTXT, RecordTypeNAPTR:
+			cleanTargets[idx] = target
+		default:
+			cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		}
 	}
 
 	for label := range strings.SplitSeq(dnsName, ".") {
@@ -328,6 +346,17 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 	return e
 }
 
+// WithRefObject sets the reference object for the Endpoint and returns the Endpoint.
+// This can be used to associate the Endpoint with a specific Kubernetes object.
+func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+	e.refObject = obj
+	return e
+}
+
+func (e *Endpoint) RefObject() *events.ObjectReference {
+	return e.refObject
+}
+
 // Key returns the EndpointKey of the Endpoint.
 func (e *Endpoint) Key() EndpointKey {
 	return EndpointKey{
@@ -347,14 +376,22 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
-// Apply filter to slice of endpoints and return new filtered slice that includes
+func (e *Endpoint) Describe() string {
+	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
+}
+
+// FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
 	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
-		} else {
+		endpointOwner, ok := ep.Labels[OwnerLabelKey]
+		switch {
+		case !ok:
+			log.Debugf(`Skipping endpoint %v because of missing owner label (required: "%s")`, ep, ownerID)
+		case endpointOwner != ownerID:
+			log.Debugf(`Skipping endpoint %v because owner id does not match (found: "%s", required: "%s")`, ep, endpointOwner, ownerID)
+		default:
 			filtered = append(filtered, ep)
 		}
 	}
@@ -394,22 +431,52 @@ func (e *Endpoint) CheckEndpoint() bool {
 	return true
 }
 
+// WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
+func (e *Endpoint) WithMinTTL(ttl int64) {
+	if !e.RecordTTL.IsConfigured() && ttl > 0 {
+		log.Debugf("Overriding existing TTL %d with new value %d for endpoint %s", e.RecordTTL, ttl, e.DNSName)
+		e.RecordTTL = TTL(ttl)
+	}
+}
+
+// NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")
+// and returns an MXTarget struct. Returns an error if the input is invalid.
+func NewMXRecord(target string) (*MXTarget, error) {
+	parts := strings.Fields(strings.TrimSpace(target))
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+	}
+
+	priority, err := strconv.ParseUint(parts[0], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("invalid integer value in target: %s", target)
+	}
+
+	return &MXTarget{
+		priority: uint16(priority),
+		host:     parts[1],
+	}, nil
+}
+
+// GetPriority returns the priority of the MX record target.
+func (m *MXTarget) GetPriority() *uint16 {
+	return &m.priority
+}
+
+// GetHost returns the host of the MX record target.
+func (m *MXTarget) GetHost() *string {
+	return &m.host
+}
+
 func (t Targets) ValidateMXRecord() bool {
 	for _, target := range t {
-		// MX records must have a preference value to indicate priority, e.g. "10 example.com"
-		// as per https://www.rfc-editor.org/rfc/rfc974.txt
-		targetParts := strings.Fields(strings.TrimSpace(target))
-		if len(targetParts) != 2 {
-			log.Debugf("Invalid MX record target: %s. MX records must have a preference value to indicate priority, e.g. '10 example.com'", target)
-			return false
-		}
-		preferenceRaw := targetParts[0]
-		_, err := strconv.ParseUint(preferenceRaw, 10, 16)
+		_, err := NewMXRecord(target)
 		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
+			log.Debugf("Invalid MX record target: %s. %v", target, err)
 			return false
 		}
 	}
+
 	return true
 }
 

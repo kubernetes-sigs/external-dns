@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package wrappers
 
 import (
 	"context"
@@ -23,21 +23,23 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
 type dedupSource struct {
-	source Source
+	source source.Source
 }
 
 // NewDedupSource creates a new dedupSource wrapping the provided Source.
-func NewDedupSource(source Source) Source {
+func NewDedupSource(source source.Source) source.Source {
 	return &dedupSource{source: source}
 }
 
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	result := []*endpoint.Endpoint{}
+	log.Debug("dedupSource: collecting endpoints and removing duplicates")
+	result := make([]*endpoint.Endpoint, 0)
 	collected := map[string]bool{}
 
 	endpoints, err := ms.source.Endpoints(ctx)
@@ -48,6 +50,10 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	for _, ep := range endpoints {
 		if ep == nil {
 			continue
+		}
+
+		if len(ep.Targets) > 1 {
+			ep.Targets = endpoint.NewTargets(ep.Targets...)
 		}
 
 		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
@@ -65,5 +71,6 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("dedupSource: adding event handler")
 	ms.source.AddEventHandler(ctx, handler)
 }

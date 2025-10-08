@@ -51,7 +51,7 @@ type crdSource struct {
 	codec            runtime.ParameterCodec
 	annotationFilter string
 	labelSelector    labels.Selector
-	informer         *cache.SharedInformer
+	informer         cache.SharedInformer
 }
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
@@ -123,9 +123,9 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	if startInformer {
 		// external-dns already runs its sync-handler periodically (controlled by `--interval` flag) to ensure any
 		// missed or dropped events are handled. specify resync period 0 to avoid unnecessary sync handler invocations.
-		informer := cache.NewSharedInformer(
+		sourceCrd.informer = cache.NewSharedInformer(
 			&cache.ListWatch{
-				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (result runtime.Object, err error) {
+				ListWithContextFunc: func(ctx context.Context, lo metav1.ListOptions) (runtime.Object, error) {
 					return sourceCrd.List(ctx, &lo)
 				},
 				WatchFuncWithContext: func(ctx context.Context, lo metav1.ListOptions) (watch.Interface, error) {
@@ -134,8 +134,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 			},
 			&apiv1alpha1.DNSEndpoint{},
 			0)
-		sourceCrd.informer = &informer
-		go informer.Run(wait.NeverStop)
+		go sourceCrd.informer.Run(wait.NeverStop)
 	}
 	return &sourceCrd, nil
 }
@@ -145,8 +144,7 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 		log.Debug("Adding event handler for CRD")
 		// Right now there is no way to remove event handler from informer, see:
 		// https://github.com/kubernetes/kubernetes/issues/79610
-		informer := *cs.informer
-		_, _ = informer.AddEventHandler(
+		_, _ = cs.informer.AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
 					handler()
@@ -187,14 +185,13 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
-
+			isNAPTR := ep.RecordType == endpoint.RecordTypeNAPTR
+			isTXT := ep.RecordType == endpoint.RecordTypeTXT
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if ep.RecordType != endpoint.RecordTypeNAPTR && strings.HasSuffix(target, ".") {
-					illegalTarget = true
-					break
-				}
-				if ep.RecordType == endpoint.RecordTypeNAPTR && !strings.HasSuffix(target, ".") {
+				hasDot := strings.HasSuffix(target, ".")
+				// Skip dot validation for TXT records as they can contain arbitrary text
+				if !isTXT && ((isNAPTR && !hasDot) || (!isNAPTR && hasDot)) {
 					illegalTarget = true
 					break
 				}
@@ -235,20 +232,19 @@ func (cs *crdSource) watch(ctx context.Context, opts *metav1.ListOptions) (watch
 		Watch(ctx)
 }
 
-func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result *apiv1alpha1.DNSEndpointList, err error) {
-	result = &apiv1alpha1.DNSEndpointList{}
-	err = cs.crdClient.Get().
+func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (*apiv1alpha1.DNSEndpointList, error) {
+	result := &apiv1alpha1.DNSEndpointList{}
+	return result, cs.crdClient.Get().
 		Namespace(cs.namespace).
 		Resource(cs.crdResource).
 		VersionedParams(opts, cs.codec).
 		Do(ctx).
 		Into(result)
-	return
 }
 
-func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (result *apiv1alpha1.DNSEndpoint, err error) {
-	result = &apiv1alpha1.DNSEndpoint{}
-	err = cs.crdClient.Put().
+func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint) (*apiv1alpha1.DNSEndpoint, error) {
+	result := &apiv1alpha1.DNSEndpoint{}
+	return result, cs.crdClient.Put().
 		Namespace(dnsEndpoint.Namespace).
 		Resource(cs.crdResource).
 		Name(dnsEndpoint.Name).
@@ -256,7 +252,6 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 		Body(dnsEndpoint).
 		Do(ctx).
 		Into(result)
-	return
 }
 
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.

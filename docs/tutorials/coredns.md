@@ -133,7 +133,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.19.0
         args:
         - --source=ingress
         - --provider=coredns
@@ -153,7 +153,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -200,7 +203,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.19.0
         args:
         - --source=ingress
         - --provider=coredns
@@ -257,3 +260,78 @@ dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#
 ```
+
+## Specific service annotation options
+
+### Groups
+
+Groups can be used to group set of services together. The main use of this is to limit recursion,
+i.e. don't return all records, but only a subset. Let's say we have a configuration like this:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: a
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: a.domain.local
+    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+spec:
+  type: LoadBalancer
+  ...
+status:
+  loadBalancer:
+    ingress:
+      - ip: 127.0.0.1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: b
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: b.domain.local
+    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+spec:
+  type: LoadBalancer
+  ...
+status:
+  loadBalancer:
+    ingress:
+      - ip: 127.0.0.2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: c
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: c.subdom.domain.local
+    external-dns.alpha.kubernetes.io/coredns-group: "g2"
+spec:
+  type: LoadBalancer
+  ...
+status:
+  loadBalancer:
+    ingress:
+      - ip: 127.0.0.3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: d
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: d.subdom.domain.local
+    external-dns.alpha.kubernetes.io/coredns-group: "g2"
+spec:
+  type: LoadBalancer
+  ...
+status:
+  loadBalancer:
+    ingress:
+      - ip: 127.0.0.4
+
+```
+
+And we want domain.local to return (127.0.0.1 and 127.0.0.2) and subdom.domain.local to return (127.0.0.3 and 127.0.0.4).
+For this the two domains, need to be in different groups. What those groups are does not matter,
+as long as a and b belong to the same group which is different from the group c and d belong to.
+If a service is found without a group it is always included.

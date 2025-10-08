@@ -18,37 +18,45 @@ import (
 )
 
 const (
+	// AnnotationKeyPrefix is set on all annotations consumed by external-dns (outside of user templates)
+	// to provide easy filtering.
+	AnnotationKeyPrefix = "external-dns.alpha.kubernetes.io/"
+
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
-	CloudflareCustomHostnameKey = "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname"
-	CloudflareRegionKey         = "external-dns.alpha.kubernetes.io/cloudflare-region-key"
-	CloudflareRecordCommentKey  = "external-dns.alpha.kubernetes.io/cloudflare-record-comment"
+	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
+	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
+	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
+	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
+	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
 
-	AWSPrefix        = "external-dns.alpha.kubernetes.io/aws-"
-	SCWPrefix        = "external-dns.alpha.kubernetes.io/scw-"
-	WebhookPrefix    = "external-dns.alpha.kubernetes.io/webhook-"
-	CloudflarePrefix = "external-dns.alpha.kubernetes.io/cloudflare-"
+	AWSPrefix        = AnnotationKeyPrefix + "aws-"
+	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
+	SCWPrefix        = AnnotationKeyPrefix + "scw-"
+	WebhookPrefix    = AnnotationKeyPrefix + "webhook-"
+	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
 
-	TtlKey     = "external-dns.alpha.kubernetes.io/ttl"
+	TtlKey     = AnnotationKeyPrefix + "ttl"
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
 
-	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
-	AliasKey         = "external-dns.alpha.kubernetes.io/alias"
-	TargetKey        = "external-dns.alpha.kubernetes.io/target"
-	// The annotation used for figuring out which controller is responsible
-	ControllerKey = "external-dns.alpha.kubernetes.io/controller"
-	// The annotation used for defining the desired hostname
-	HostnameKey = "external-dns.alpha.kubernetes.io/hostname"
-	// The annotation used for specifying whether the public or private interface address is used
-	AccessKey = "external-dns.alpha.kubernetes.io/access"
-	// The annotation used for specifying the type of endpoints to use for headless services
-	EndpointsTypeKey = "external-dns.alpha.kubernetes.io/endpoints-type"
-	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
+	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
+	AliasKey         = AnnotationKeyPrefix + "alias"
+	TargetKey        = AnnotationKeyPrefix + "target"
+	// ControllerKey The annotation used for figuring out which controller is responsible
+	ControllerKey = AnnotationKeyPrefix + "controller"
+	// HostnameKey The annotation used for defining the desired hostname
+	HostnameKey = AnnotationKeyPrefix + "hostname"
+	// AccessKey The annotation used for specifying whether the public or private interface address is used
+	AccessKey = AnnotationKeyPrefix + "access"
+	// EndpointsTypeKey The annotation used for specifying the type of endpoints to use for headless services
+	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
+	// Ingress the annotation used to determine if the gateway is implemented by an Ingress object
+	Ingress = AnnotationKeyPrefix + "ingress"
+	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
-	IngressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
-	// The value of the controller annotation so that we feel responsible
+	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
+	// ControllerValue The value of the controller annotation so that we feel responsible
 	ControllerValue = "dns-controller"
-	// The annotation used for defining the desired hostname
-	InternalHostnameKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+	// InternalHostnameKey The annotation used for defining the desired hostname
+	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 )

@@ -9,9 +9,6 @@ Record Sets and Hosted Zones. You'll want to create this Policy in IAM first. In
 our example, we'll call the policy `AllowExternalDNSUpdates` (but you can call
 it whatever you prefer).
 
-If you prefer, you may fine-tune the policy to permit updates only to explicit
-Hosted Zone IDs.
-
 ```json
 {
   "Version": "2012-10-17",
@@ -19,7 +16,9 @@ Hosted Zone IDs.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
       ],
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
@@ -28,9 +27,7 @@ Hosted Zone IDs.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
+        "route53:ListHostedZones"
       ],
       "Resource": [
         "*"
@@ -51,7 +48,9 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ChangeResourceRecordSets"
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
       ],
       "Resource": [
         "arn:aws:route53:::hostedzone/*"
@@ -60,16 +59,14 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
         "ForAllValues:StringLike": {
           "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
           "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
-          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "MX"]
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "CNAME", "MX", "TXT"]
         }
       }
     },
     {
       "Effect": "Allow",
       "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
+        "route53:ListHostedZones"
       ],
       "Resource": [
         "*"
@@ -78,6 +75,11 @@ You can use Attribute-based access control(ABAC) for advanced deployments.
   ]
 }
 ```
+
+### Further improvements
+
+Both policies can be further enhanced by tightening them down following the [principle of least privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege).
+Explicitly providing a list of selected zones instead of `*` you can scope the deployment down allowing changes only to zones from the list hence reducing the blast radius and improving auditability.
 
 Additional resources:
 
@@ -473,6 +475,8 @@ env:
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
 
 ```shell
+helm repo add --force-update external-dns https://kubernetes-sigs.github.io/external-dns/
+
 helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
 
@@ -500,7 +504,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.17.0
+          image: registry.k8s.io/external-dns/external-dns:v0.19.0
           args:
             - --source=service
             - --source=ingress
@@ -894,6 +898,11 @@ For any given DNS name, only **one** of the following routing policies can be us
   - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
   - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
   - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+- Geoproximity routing:
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-region`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-local-zone-group`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-coordinates`
+  - `external-dns.alpha.kubernetes.io/aws-geoproximity-bias`
 - Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ### Associating DNS records with healthchecks
@@ -1046,7 +1055,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.17.0
+        image: registry.k8s.io/external-dns/external-dns:v0.19.0
         command:
         - /bin/sh
         - -c

@@ -61,8 +61,9 @@ func TestMustRegister(t *testing.T) {
 				NewCounterWithOpts(prometheus.CounterOpts{Name: "test_counter_3"}),
 				NewCounterVecWithOpts(prometheus.CounterOpts{Name: "test_counter_vec_3"}, []string{"label"}),
 				NewGaugedVectorOpts(prometheus.GaugeOpts{Name: "test_gauge_v_3"}, []string{"label"}),
+				NewSummaryVecWithOpts(prometheus.SummaryOpts{Name: "test_summary_v_3"}, []string{"label"}),
 			},
-			expected: 4,
+			expected: 5,
 		},
 		{
 			name: "unsupported metric",
@@ -70,6 +71,14 @@ func TestMustRegister(t *testing.T) {
 				&MockMetric{FQDN: "unsupported_metric"},
 			},
 			expected: 0,
+		},
+		{
+			name: "skip if metric exists",
+			metrics: []IMetric{
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "existing_metric"}),
+				NewGaugeWithOpts(prometheus.GaugeOpts{Name: "existing_metric"}),
+			},
+			expected: 1,
 		},
 	}
 

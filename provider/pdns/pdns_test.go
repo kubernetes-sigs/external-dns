@@ -688,11 +688,12 @@ func (c *PDNSAPIClientStubEmptyZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zo
 }
 
 func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	if strings.Contains(zoneID, "example.com") {
+	switch {
+	case strings.Contains(zoneID, "example.com"):
 		return ZoneEmpty, nil, nil
-	} else if strings.Contains(zoneID, "mock.test") {
+	case strings.Contains(zoneID, "mock.test"):
 		return ZoneEmpty2, nil, nil
-	} else if strings.Contains(zoneID, "long.domainname.example.com") {
+	case strings.Contains(zoneID, "long.domainname.example.com"):
 		return ZoneEmptyLong, nil, nil
 	}
 	return pgo.Zone{}, nil, nil
@@ -751,13 +752,14 @@ func (c *PDNSAPIClientStubPartitionZones) ListZones() ([]pgo.Zone, *http.Respons
 }
 
 func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	if strings.Contains(zoneID, "example.com") {
+	switch {
+	case strings.Contains(zoneID, "example.com"):
 		return ZoneEmpty, nil, nil
-	} else if strings.Contains(zoneID, "mock.test") {
+	case strings.Contains(zoneID, "mock.test"):
 		return ZoneEmpty2, nil, nil
-	} else if strings.Contains(zoneID, "long.domainname.example.com") {
+	case strings.Contains(zoneID, "long.domainname.example.com"):
 		return ZoneEmptyLong, nil, nil
-	} else if strings.Contains(zoneID, "simexample.com") {
+	case strings.Contains(zoneID, "simexample.com"):
 		return ZoneEmptySimilar, nil, nil
 	}
 	return pgo.Zone{}, nil, nil

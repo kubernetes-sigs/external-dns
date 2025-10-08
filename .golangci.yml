@@ -11,6 +11,7 @@ linters:
     - ineffassign
     - misspell
     - revive
+    - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/usage/linters/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
     - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/usage/linters/#errchkjson
     - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/usage/linters/#errcheck
@@ -25,7 +26,9 @@ linters:
     - sloglint # Ensure consistent code style when using log/slog
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
     - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
+    - nonamedreturns # Checks that functions with named return values do not return named values. https://golangci-lint.run/usage/linters/#nonamedreturns
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
+    - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint
@@ -39,7 +42,7 @@ linters:
         - name: confusing-naming
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
-      max-complexity: 51
+      max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
       # Default: false

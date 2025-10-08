@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -53,7 +54,7 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to generate markdown file '%s': %v\n", path, err)
 		os.Exit(1)
 	}
-	content = content + "\n"
+	content += "\n"
 	_ = utils.WriteToFile(path, content)
 }
 
@@ -71,6 +72,7 @@ func generateMarkdownTable(m *metrics.MetricRegistry, withRuntime bool) (string,
 			"process_network_transmit_bytes_total",
 		}...)
 		sort.Strings(runtimeMetrics)
+		runtimeMetrics = slices.Compact(runtimeMetrics)
 	} else {
 		runtimeMetrics = []string{}
 	}
@@ -117,6 +119,7 @@ func getRuntimeMetrics(reg prometheus.Registerer) []string {
 				runtimeMetrics = append(runtimeMetrics, k)
 			}
 		}
+	default:
 	}
 	sort.Strings(runtimeMetrics)
 	return runtimeMetrics

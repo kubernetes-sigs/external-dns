@@ -18,13 +18,15 @@ package plan
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/idna"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 )
 
 // PropertyComparator is used in Plan for comparing the previous and current custom annotations.
@@ -50,6 +52,8 @@ type Plan struct {
 	ExcludeRecords []string
 	// OwnerID of records to manage
 	OwnerID string
+	// Old owner ID we migrate from
+	OldOwnerId string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -124,13 +128,13 @@ func (t planTableRow) String() string {
 	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
 }
 
-func (t planTable) addCurrent(e *endpoint.Endpoint) {
+func (t *planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].current = append(t.rows[key].current, e)
 	t.rows[key].records[e.RecordType].current = e
 }
 
-func (t planTable) addCandidate(e *endpoint.Endpoint) {
+func (t *planTable) addCandidate(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].candidates = append(t.rows[key].candidates, e)
 	t.rows[key].records[e.RecordType].candidates = append(t.rows[key].records[e.RecordType].candidates, e)
@@ -159,7 +163,7 @@ func (c *Changes) HasChanges() bool {
 	if len(c.Create) > 0 || len(c.Delete) > 0 {
 		return true
 	}
-	return !cmp.Equal(c.UpdateNew, c.UpdateOld)
+	return !cmp.Equal(c.UpdateNew, c.UpdateOld, cmpopts.IgnoreUnexported(endpoint.Endpoint{}))
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -222,7 +226,8 @@ func (p *Plan) Calculate() *Plan {
 				if records.current != nil && len(records.candidates) > 0 {
 					update := t.resolver.ResolveUpdate(records.current, records.candidates)
 
-					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) {
+					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) ||
+						p.isOldOwnerIdSetAndDifferent(records.current) {
 						inheritOwner(records.current, update)
 						changes.UpdateNew = append(changes.UpdateNew, update)
 						changes.UpdateOld = append(changes.UpdateOld, records.current)
@@ -274,6 +279,10 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
+func (p *Plan) isOldOwnerIdSetAndDifferent(current *endpoint.Endpoint) bool {
+	return len(p.OldOwnerId) != 0 && current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerId
+}
+
 func inheritOwner(from, to *endpoint.Endpoint) {
 	if to.Labels == nil {
 		to.Labels = map[string]string{}
@@ -316,7 +325,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
-// Currently this just removes TXT records to prevent them from being
+// Currently, this just removes TXT records to prevent them from being
 // deleted erroneously by the planner (only the TXT registry should do this.)
 //
 // Per RFC 1034, CNAME records conflict with all other records - it is the
@@ -342,7 +351,7 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Ma
 // normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
 // it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
 func normalizeDNSName(dnsName string) string {
-	s, err := idna.Lookup.ToASCII(strings.TrimSpace(dnsName))
+	s, err := idna.Profile.ToASCII(strings.TrimSpace(dnsName))
 	if err != nil {
 		log.Warnf(`Got error while parsing DNSName %s: %v`, dnsName, err)
 	}
@@ -353,15 +362,8 @@ func normalizeDNSName(dnsName string) string {
 }
 
 func IsManagedRecord(record string, managedRecords, excludeRecords []string) bool {
-	for _, r := range excludeRecords {
-		if record == r {
-			return false
-		}
+	if slices.Contains(excludeRecords, record) {
+		return false
 	}
-	for _, r := range managedRecords {
-		if record == r {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(managedRecords, record)
 }

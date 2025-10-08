@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -68,6 +69,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
 func Execute() {
@@ -102,7 +104,7 @@ func Execute() {
 
 	endpointsSource, err := buildSource(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
 	domainFilter := createDomainFilter(cfg)
@@ -117,7 +119,7 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(cfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, endpointsSource, prvdr, domainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -215,7 +217,10 @@ func buildProvider(
 			zoneIDFilter,
 			cfg.CloudflareProxied,
 			cfg.DryRun,
-			cfg.CloudflareRegionKey,
+			cloudflare.RegionalServicesConfig{
+				Enabled:   cfg.CloudflareRegionalServices,
+				RegionKey: cfg.CloudflareRegionKey,
+			},
 			cloudflare.CustomHostnamesConfig{
 				Enabled:              cfg.CloudflareCustomHostnames,
 				MinTLSVersion:        cfg.CloudflareCustomHostnamesMinTLSVersion,
@@ -339,7 +344,13 @@ func buildProvider(
 	return p, err
 }
 
-func buildController(cfg *externaldns.Config, src source.Source, p provider.Provider, filter *endpoint.DomainFilter) (*Controller, error) {
+func buildController(
+	ctx context.Context,
+	cfg *externaldns.Config,
+	src source.Source,
+	p provider.Provider,
+	filter *endpoint.DomainFilter,
+) (*Controller, error) {
 	policy, ok := plan.Policies[cfg.Policy]
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
@@ -348,6 +359,20 @@ func buildController(cfg *externaldns.Config, src source.Source, p provider.Prov
 	if err != nil {
 		return nil, err
 	}
+	eventsCfg := events.NewConfig(
+		events.WithKubeConfig(cfg.KubeConfig, cfg.APIServerURL, cfg.RequestTimeout),
+		events.WithEmitEvents(cfg.EmitEvents),
+		events.WithDryRun(cfg.DryRun))
+	var eventEmitter events.EventEmitter
+	if eventsCfg.IsEnabled() {
+		eventCtrl, err := events.NewEventController(eventsCfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		eventCtrl.Run(ctx)
+		eventEmitter = eventCtrl
+	}
+
 	return &Controller{
 		Source:               src,
 		Registry:             reg,
@@ -357,6 +382,8 @@ func buildController(cfg *externaldns.Config, src source.Source, p provider.Prov
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
+		EventEmitter:         eventEmitter,
 	}, nil
 }
 
@@ -392,7 +419,7 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTNewFormatOnly)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
@@ -420,11 +447,22 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 		return nil, err
 	}
 	// Combine multiple sources into a single, deduplicated source.
-	combinedSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
+	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
+	cfg.AddSourceWrapper("dedup")
+	if len(cfg.NAT64Networks) > 0 {
+		combinedSource, err = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create NAT64 source wrapper: %w", err)
+		}
+		cfg.AddSourceWrapper("nat64")
+	}
 	// Filter targets
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-	combinedSource = source.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-	combinedSource = source.NewTargetFilterSource(combinedSource, targetFilter)
+	if targetFilter.IsEnabled() {
+		combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
+		cfg.AddSourceWrapper("target-filter")
+	}
+	combinedSource = wrappers.NewPostProcessor(combinedSource, wrappers.WithTTL(cfg.MinTTL))
 	return combinedSource, nil
 }
 

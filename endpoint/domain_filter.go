@@ -25,7 +25,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/idna"
+
+	"sigs.k8s.io/external-dns/internal/idna"
 )
 
 type MatchAllDomainFilters []DomainFilterInterface
@@ -121,13 +122,12 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 			continue
 		}
 
-		if strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter) {
+		switch {
+		case strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter):
 			return true
-		} else if strings.Count(strippedDomain, ".") == strings.Count(filter, ".") {
-			if strippedDomain == filter {
-				return true
-			}
-		} else if strings.HasSuffix(strippedDomain, "."+filter) {
+		case strings.Count(strippedDomain, ".") == strings.Count(filter, ".") && strippedDomain == filter:
+			return true
+		case strings.HasSuffix(strippedDomain, "."+filter):
 			return true
 		}
 	}
@@ -247,9 +247,9 @@ func (df *DomainFilter) MatchParent(domain string) bool {
 }
 
 // normalizeDomain converts a domain to a canonical form, so that we can filter on it
-// it: trim "." suffix, get Unicode version of domain complient with Section 5 of RFC 5891
+// it: trim "." suffix, get Unicode version of domain compliant with Section 5 of RFC 5891
 func normalizeDomain(domain string) string {
-	s, err := idna.Lookup.ToUnicode(strings.TrimSuffix(domain, "."))
+	s, err := idna.Profile.ToUnicode(strings.TrimSuffix(domain, "."))
 	if err != nil {
 		log.Warnf(`Got error while parsing domain %s: %v`, domain, err)
 	}

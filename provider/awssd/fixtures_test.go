@@ -19,9 +19,7 @@ package awssd
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
 
@@ -58,7 +56,7 @@ type AWSSDClientStub struct {
 
 func (s *AWSSDClientStub) CreateService(_ context.Context, input *servicediscovery.CreateServiceInput, _ ...func(*servicediscovery.Options)) (*servicediscovery.CreateServiceOutput, error) {
 	srv := &types.Service{
-		Id:               aws.String(strconv.Itoa(rand.Intn(10000))),
+		Id:               input.Name,
 		DnsConfig:        input.DnsConfig,
 		Name:             input.Name,
 		Description:      input.Description,

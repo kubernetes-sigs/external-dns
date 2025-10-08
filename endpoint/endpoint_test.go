@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -58,7 +60,7 @@ func TestNewTargets(t *testing.T) {
 		{
 			name:     "multiple targets",
 			input:    []string{"example.com", "8.8.8.8", "::0001"},
-			expected: Targets{"example.com", "8.8.8.8", "::0001"},
+			expected: Targets{"8.8.8.8", "::0001", "example.com"},
 		},
 	}
 
@@ -67,7 +69,6 @@ func TestNewTargets(t *testing.T) {
 			Targets := NewTargets(c.input...)
 			changedTarget := Targets.String()
 			assert.Equal(t, c.expected.String(), changedTarget)
-
 		})
 	}
 }
@@ -814,4 +815,251 @@ func TestPDNScheckEndpoint(t *testing.T) {
 		actual := tt.endpoint.CheckEndpoint()
 		assert.Equal(t, tt.expected, actual)
 	}
+}
+
+func TestNewMXTarget(t *testing.T) {
+	tests := []struct {
+		description string
+		target      string
+		expected    *MXTarget
+		expectError bool
+	}{
+		{
+			description: "Valid MX record",
+			target:      "10 example.com",
+			expected:    &MXTarget{priority: 10, host: "example.com"},
+			expectError: false,
+		},
+		{
+			description: "Invalid MX record with missing priority",
+			target:      "example.com",
+			expectError: true,
+		},
+		{
+			description: "Invalid MX record with non-integer priority",
+			target:      "abc example.com",
+			expectError: true,
+		},
+		{
+			description: "Invalid MX record with too many parts",
+			target:      "10 example.com extra",
+			expectError: true,
+		},
+		{
+			description: "Missing host",
+			target:      "10 ",
+			expected:    nil,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := NewMXRecord(tt.target)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestCheckEndpoint(t *testing.T) {
+	tests := []struct {
+		description string
+		endpoint    Endpoint
+		expected    bool
+	}{
+		{
+			description: "Valid MX record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"10 example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid MX record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+				Targets:    Targets{"example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid SRV record target",
+			endpoint: Endpoint{
+				DNSName:    "_service._tcp.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 5 5060 example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid SRV record target",
+			endpoint: Endpoint{
+				DNSName:    "_service._tcp.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 5 example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Non-MX/SRV record type",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{"192.168.1.1"},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual := tt.endpoint.CheckEndpoint()
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestEndpoint_WithRefObject(t *testing.T) {
+	ep := &Endpoint{}
+	ref := &events.ObjectReference{
+		Kind:      "Service",
+		Namespace: "default",
+		Name:      "my-service",
+	}
+	result := ep.WithRefObject(ref)
+
+	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
+	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+}
+
+func TestTargets_UniqueOrdered(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Targets
+		expected Targets
+	}{
+		{
+			name:     "no duplicates",
+			input:    Targets{"a.example.com", "b.example.com"},
+			expected: Targets{"a.example.com", "b.example.com"},
+		},
+		{
+			name:     "with duplicates",
+			input:    Targets{"a.example.com", "b.example.com", "a.example.com"},
+			expected: Targets{"a.example.com", "b.example.com"},
+		},
+		{
+			name:     "all duplicates",
+			input:    []string{"a.example.com", "a.example.com", "a.example.com"},
+			expected: Targets{"a.example.com"},
+		},
+		{
+			name:     "already sorted",
+			input:    Targets{"a.example.com", "c.example.com", "d.example.com"},
+			expected: Targets{"a.example.com", "c.example.com", "d.example.com"},
+		},
+		{
+			name:     "unsorted input",
+			input:    Targets{"z.example.com", "a.example.com", "m.example.com"},
+			expected: Targets{"a.example.com", "m.example.com", "z.example.com"},
+		},
+		{
+			name:     "empty input",
+			input:    Targets{},
+			expected: Targets{},
+		},
+		{
+			name:     "single element",
+			input:    Targets{"only.example.com"},
+			expected: Targets{"only.example.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NewTargets(tt.input...)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestEndpoint_WithMinTTL(t *testing.T) {
+	tests := []struct {
+		name         string
+		initialTTL   TTL
+		inputTTL     int64
+		expectedTTL  TTL
+		isConfigured bool
+	}{
+		{
+			name:         "sets TTL when not configured and input > 0",
+			initialTTL:   0,
+			inputTTL:     300,
+			expectedTTL:  300,
+			isConfigured: true,
+		},
+		{
+			name:         "does not override when already configured",
+			initialTTL:   120,
+			inputTTL:     300,
+			expectedTTL:  120,
+			isConfigured: true,
+		},
+		{
+			name:         "does not set when input is zero",
+			initialTTL:   30,
+			inputTTL:     0,
+			expectedTTL:  30,
+			isConfigured: true,
+		},
+		{
+			name:        "does not set when input is negative",
+			initialTTL:  0,
+			inputTTL:    -10,
+			expectedTTL: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &Endpoint{RecordTTL: tt.initialTTL}
+			ep.WithMinTTL(tt.inputTTL)
+			assert.Equal(t, tt.expectedTTL, ep.RecordTTL)
+			assert.Equal(t, tt.isConfigured, ep.RecordTTL.IsConfigured())
+		})
+	}
+}
+
+// TestNewEndpointWithTTLPreservesDotsInTXTRecords tests that trailing dots are preserved in TXT records
+func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
+	// TXT records should preserve trailing dots (and any arbitrary text)
+	txtEndpoint := NewEndpointWithTTL("example.com", RecordTypeTXT, TTL(300),
+		"v=1;some_signature=aBx3d5..",
+		"text.with.dots...",
+		"simple-text")
+
+	require.NotNil(t, txtEndpoint, "TXT endpoint should be created")
+	require.Len(t, txtEndpoint.Targets, 3, "should have 3 targets")
+
+	// All dots should be preserved in TXT targets
+	assert.Equal(t, "v=1;some_signature=aBx3d5..", txtEndpoint.Targets[0])
+	assert.Equal(t, "text.with.dots...", txtEndpoint.Targets[1])
+	assert.Equal(t, "simple-text", txtEndpoint.Targets[2])
+
+	// Domain name record types should still have trailing dots trimmed
+	aEndpoint := NewEndpointWithTTL("example.com", RecordTypeA, TTL(300), "1.2.3.4.")
+	require.NotNil(t, aEndpoint, "A endpoint should be created")
+	assert.Equal(t, "1.2.3.4", aEndpoint.Targets[0], "A record should have trailing dot trimmed")
+
+	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
+	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
+	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }

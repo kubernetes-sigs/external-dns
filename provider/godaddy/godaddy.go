@@ -121,7 +121,9 @@ func (z gdZoneIDName) add(zoneID string, zoneRecord *gdRecords) {
 	z[zoneID] = zoneRecord
 }
 
-func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, suitableZoneRecord *gdRecords) {
+func (z gdZoneIDName) findZoneRecord(hostname string) (string, *gdRecords) {
+	var suitableZoneID string
+	var suitableZoneRecord *gdRecords
 	for zoneID, zoneRecord := range z {
 		if hostname == zoneRecord.zone || strings.HasSuffix(hostname, "."+zoneRecord.zone) {
 			if suitableZoneRecord == nil || len(zoneRecord.zone) > len(suitableZoneRecord.zone) {
@@ -131,11 +133,11 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, su
 		}
 	}
 
-	return
+	return suitableZoneID, suitableZoneRecord
 }
 
 // NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(ctx context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
+func NewGoDaddyProvider(_ context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
 	client, err := NewClient(useOTE, apiKey, apiSecret)
 	if err != nil {
 		return nil, err
@@ -176,16 +178,17 @@ func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gd
 		return nil, nil, err
 	}
 
-	if len(zones) == 0 {
+	switch len(zones) {
+	case 0:
 		allRecords = []gdRecords{}
-	} else if len(zones) == 1 {
+	case 1:
 		record, err := p.records(&ctx, zones[0], all)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		allRecords = append(allRecords, *record)
-	} else {
+	default:
 		chRecords := make(chan gdRecords, len(zones))
 
 		eg, ctx := errgroup.WithContext(ctx)
@@ -218,7 +221,7 @@ func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gd
 	return zones, allRecords, nil
 }
 
-func (p *GDProvider) records(ctx *context.Context, zone string, all bool) (*gdRecords, error) {
+func (p *GDProvider) records(_ *context.Context, zone string, all bool) (*gdRecords, error) {
 	var recordsIds []gdRecordField
 
 	log.Debugf("GoDaddy: Getting records for %s", zone)

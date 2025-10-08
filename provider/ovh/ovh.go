@@ -195,7 +195,7 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) map[string]*pl
 	return output
 }
 
-func (p OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
+func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
 	allChanges := []ovhChange{}
 	var computedChanges []ovhChange
 
@@ -242,7 +242,7 @@ func (p *OVHProvider) handleSingleZoneUpdate(ctx context.Context, zoneName strin
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) (err error) {
+func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, records := p.lastRunZones, p.lastRunRecords
 	defer func() {
 		p.lastRunRecords = []ovhRecord{}
@@ -496,7 +496,7 @@ func ovhGroupByNameAndType(records []ovhRecord) []*endpoint.Endpoint {
 	return endpoints
 }
 
-func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, []ovhRecord) {
+func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, []ovhRecord) {
 	var ovhChanges []ovhChange
 	var toDeleteIds []int
 
@@ -552,7 +552,7 @@ func (p OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint.
 	return ovhChanges, existingRecords
 }
 
-func convertDNSNameIntoSubDomain(DNSName string, zoneName string) string {
+func convertDNSNameIntoSubDomain(DNSName string, zoneName string) string { // nolint: gocritic // captLocal
 	if DNSName == zoneName {
 		return ""
 	}
@@ -564,7 +564,7 @@ func normalizeDNSName(dnsName string) string {
 	return strings.TrimSpace(strings.ToLower(dnsName))
 }
 
-func (p OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
+func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zoneNameIDMapper.Add(zone, zone)
 
@@ -709,7 +709,7 @@ func (c *ovhChange) String() string {
 	return fmt.Sprintf("%s zone action(%s) : %s %d IN %s %s", c.Zone, action, c.SubDomain, c.TTL, c.FieldType, c.Target)
 }
 
-func (p OVHProvider) formatCNAMETarget(change *ovhChange) {
+func (p *OVHProvider) formatCNAMETarget(change *ovhChange) {
 	if change.FieldType != endpoint.RecordTypeCNAME {
 		return
 	}

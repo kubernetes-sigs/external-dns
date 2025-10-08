@@ -7,7 +7,7 @@ The `external-dns` is the work of thousands of contributors, and is maintained b
 Building and/or testing `external-dns` requires additional tooling.
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.24+](https://golang.org/dl/)
+- [Go 1.25+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [ko](https://ko.build/)
@@ -70,11 +70,11 @@ import (
 )
 
 func TestMe(t *testing.T) {
-  hook := testutils.LogsUnderTestWithLogLeve(log.WarnLevel, t)
+  hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
   ... function under tests ...
   testutils.TestHelperLogContains("example warning message", hook, t)
   // provide negative assertion
-  testuitls.TestHelperLogNotContains("this message should not be shown", hook, t)
+  testutils.TestHelperLogNotContains("this message should not be shown", hook, t)
 }
 ```
 

@@ -28,10 +28,20 @@ import (
 // MockSource returns mock endpoints.
 type MockSource struct {
 	mock.Mock
+	endpoints []*endpoint.Endpoint
+}
+
+func NewMockSource(endpoints ...*endpoint.Endpoint) *MockSource {
+	m := &MockSource{
+		endpoints: endpoints,
+	}
+	m.On("Endpoints").Return(endpoints, nil)
+	m.On("AddEventHandler", mock.AnythingOfType("*context.cancelCtx")).Return()
+	return m
 }
 
 // Endpoints returns the desired mock endpoints.
-func (m *MockSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (m *MockSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	args := m.Called()
 
 	endpoints := args.Get(0)
@@ -44,6 +54,10 @@ func (m *MockSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 // AddEventHandler adds an event handler that should be triggered if something in source changes
 func (m *MockSource) AddEventHandler(ctx context.Context, handler func()) {
+	m.Called(ctx)
+	if handler == nil {
+		return
+	}
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()

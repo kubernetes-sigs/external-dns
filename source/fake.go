@@ -26,7 +26,12 @@ import (
 	"math/rand"
 	"net"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // fakeSource is an implementation of Source that provides dummy endpoints for
@@ -50,7 +55,7 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	}, nil
 }
 
-func (sc *fakeSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *fakeSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects.
@@ -58,20 +63,30 @@ func (sc *fakeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 	endpoints := make([]*endpoint.Endpoint, 10)
 
 	for i := 0; i < 10; i++ {
-		endpoints[i], _ = sc.generateEndpoint()
+		endpoints[i] = sc.generateEndpoint()
 	}
 
 	return endpoints, nil
 }
 
-func (sc *fakeSource) generateEndpoint() (*endpoint.Endpoint, error) {
+func (sc *fakeSource) generateEndpoint() *endpoint.Endpoint {
 	ep := endpoint.NewEndpoint(
 		generateDNSName(4, sc.dnsName),
 		endpoint.RecordTypeA,
 		generateIPAddress(),
 	)
-
-	return ep, nil
+	ep.SetIdentifier = types.Fake
+	ep.WithRefObject(events.NewObjectReference(&v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      types.Fake + "-" + ep.DNSName,
+			Namespace: v1.NamespaceDefault,
+		},
+	}, types.Fake))
+	return ep
 }
 
 func generateIPAddress() string {

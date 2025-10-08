@@ -460,7 +460,7 @@ func validateServices(services map[string]Service, expectedServices map[string][
 		}
 		found := false
 		for i, expectedServiceEntry := range expectedServiceEntries {
-			if value.Host == expectedServiceEntry.Host && value.Text == expectedServiceEntry.Text {
+			if value.Host == expectedServiceEntry.Host && value.Text == expectedServiceEntry.Text && value.Group == expectedServiceEntry.Group {
 				expectedServiceEntries = append(expectedServiceEntries[:i], expectedServiceEntries[i+1:]...)
 				found = true
 				break
@@ -862,4 +862,49 @@ func TestCoreDNSProvider_updateTXTRecords_ClearsExtraText(t *testing.T) {
 
 	assert.Equal(t, "txt-value", services[0].Text)
 	assert.Empty(t, services[1].Text)
+}
+
+func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	changes1 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "5.5.5.6").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7").WithProviderSpecific(providerSpecificGroup, "test2"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes1)
+
+	expectedServices1 := map[string][]*Service{
+		"/skydns/local/domain1": {{Host: "5.5.5.5", Group: "test1"}},
+		"/skydns/local/domain2": {{Host: "5.5.5.6", Group: "test1"}},
+		"/skydns/local/domain3": {{Host: "5.5.5.7", Group: "test2"}},
+	}
+	validateServices(client.services, expectedServices1, t, 1)
+}
+
+func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+	endpoints, err := coredns.Records(context.Background())
+	require.NoError(t, err)
+	if prop, ok := endpoints[0].GetProviderSpecificProperty(providerSpecificGroup); !ok {
+		t.Error("go no Group name")
+	} else if prop != "test1" {
+		t.Errorf("got unexpected Group name: %s != %s", prop, "test1")
+	}
 }
