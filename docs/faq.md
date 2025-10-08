@@ -327,7 +327,7 @@ By default, commands are run against the `default` namespace. Try changing this 
 
 The jump to `1.0` isn’t just symbolic—it’s a promise. If the `External-DNS` maintainers can confidently say that config structures, CRDs, and flags won’t break unexpectedly, that’s the moment to move to `1.0`
 
-Before moving to 1.0, review and lock down:
+Before moving to `1.0`, review and lock down:
 
 - CRD schemas (especially DNSEndpoint if applicable)
 - Annotations support
