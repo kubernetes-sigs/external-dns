@@ -334,5 +334,4 @@ Before moving to 1.0, review and lock down:
 - Command-line flags and configuration behavior
 - Environment variables and metrics
 - Provider interface stability
-- Helm chart values — these often break user setups more than code changes
 - Once these are considered stable and documented, then a `1.0` tag makes sense.
