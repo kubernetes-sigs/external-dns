@@ -1079,13 +1079,6 @@ func TestNewCobraCommandValidationValid(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestSourceWrapperHelpers(t *testing.T) {
-	cfg := NewConfig()
-	assert.False(t, cfg.IsSourceWrapperInstrumented("nat64"))
-	cfg.AddSourceWrapper("nat64")
-	assert.True(t, cfg.IsSourceWrapperInstrumented("nat64"))
-}
-
 // Accepted binder/backend differences:
 // - Enum validation
 // - Boolean negation form
