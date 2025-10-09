@@ -17,6 +17,7 @@ By default, all external-dns instances use the same annotation prefix: `external
 ### Basic Split Horizon Setup
 
 **Internal DNS Instance:**
+
 ```bash
 external-dns \
   --annotation-prefix=internal.company.io/ \
@@ -29,6 +30,7 @@ external-dns \
 ```
 
 **External DNS Instance:**
+
 ```bash
 external-dns \
   --annotation-prefix=external-dns.alpha.kubernetes.io/ \  # default, can be omitted
@@ -68,6 +70,7 @@ spec:
 ```
 
 **Result:**
+
 - **Internal DNS** (Route53 Private Zone `internal.company.com`): `myapp.internal.company.com → 10.0.1.50`
 - **External DNS** (Route53 Public Zone `company.com`): `myapp.company.com → 203.0.113.10` (LoadBalancer IP)
 
@@ -76,6 +79,7 @@ spec:
 You can use the Helm chart to deploy multiple instances:
 
 **values-internal.yaml:**
+
 ```yaml
 annotationPrefix: "internal.company.io/"
 
@@ -96,6 +100,7 @@ sources:
 ```
 
 **values-external.yaml:**
+
 ```yaml
 # annotationPrefix defaults to "external-dns.alpha.kubernetes.io/"
 # can be omitted or set explicitly:
@@ -118,6 +123,7 @@ sources:
 ```
 
 **Deploy:**
+
 ```bash
 # Internal instance
 helm install external-dns-internal external-dns/external-dns \
@@ -160,6 +166,7 @@ spec:
 ```
 
 **Deploy three instances:**
+
 ```bash
 # Internal
 --annotation-prefix=internal.company.io/ --provider=aws --aws-zone-type=private
@@ -192,6 +199,7 @@ spec:
 ```
 
 **Deploy:**
+
 ```bash
 # AWS instance
 --annotation-prefix=aws.company.io/ --provider=aws
@@ -211,6 +219,7 @@ spec:
 4. **TXT ownership records** - Each instance should have a unique `--txt-owner-id` to avoid conflicts in ownership tracking.
 
 5. **Provider-specific annotations** - Provider-specific annotations (like `cloudflare-proxied`, `aws-alias`) also use the custom prefix:
+
    ```yaml
    custom.io/hostname: example.com
    custom.io/cloudflare-proxied: "true"  # NOT external-dns.alpha.kubernetes.io/cloudflare-proxied
@@ -239,6 +248,7 @@ external-dns.alpha.kubernetes.io/hostname: example.com  # Second one overwrites 
 **Problem:** The annotation prefix doesn't end with a forward slash.
 
 **Solution:** Always end your custom prefix with `/`:
+
 ```bash
 # ✅ Correct
 --annotation-prefix=custom.io/
@@ -252,6 +262,7 @@ external-dns.alpha.kubernetes.io/hostname: example.com  # Second one overwrites 
 **Problem:** Cloudflare/AWS-specific annotations are not being applied.
 
 **Solution:** Provider-specific annotations must use the same prefix as the hostname:
+
 ```yaml
 # If using custom prefix
 custom.io/hostname: example.com
