@@ -204,6 +204,11 @@ func (z zoneService) CustomHostnames(ctx context.Context, zoneID string) ([]Cust
 		ZoneID: cloudflare.F(zoneID),
 	}
 	iter := z.service.CustomHostnames.ListAutoPaging(ctx, params)
+	return listAllCustomHostnames(iter)
+}
+
+// listAllCustomHostnames extracts all custom hostnames from the iterator (for testability)
+func listAllCustomHostnames(iter autoPager[custom_hostnames.CustomHostnameListResponse]) ([]CustomHostname, error) {
 	var customHostnames []CustomHostname
 	for ch := range autoPagerIterator(iter) {
 		customHostnames = append(customHostnames, CustomHostname{
@@ -385,7 +390,8 @@ func NewCloudFlareProvider(
 	dnsRecordsConfig DNSRecordsConfig,
 ) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
-	var configV5 *cloudflare.Client
+
+	var client *cloudflare.Client
 
 	token := os.Getenv(cfAPITokenEnvKey)
 	if token != "" {
@@ -396,7 +402,7 @@ func NewCloudFlareProvider(
 			}
 			token = strings.TrimSpace(string(tokenBytes))
 		}
-		configV5 = cloudflare.NewClient(
+		client = cloudflare.NewClient(
 			option.WithAPIToken(token),
 		)
 	} else {
@@ -405,12 +411,12 @@ func NewCloudFlareProvider(
 		if apiKey == "" || apiEmail == "" {
 			return nil, fmt.Errorf("cloudflare credentials are not configured: set either %s or both %s and %s environment variables", cfAPITokenEnvKey, cfAPIKeyEnvKey, cfAPIEmailEnvKey)
 		}
-		configV5 = cloudflare.NewClient(
+		client = cloudflare.NewClient(
 			option.WithAPIKey(apiKey),
 			option.WithAPIEmail(apiEmail),
 		)
 	}
-	if configV5 == nil {
+	if client == nil {
 		return nil, fmt.Errorf("failed to initialize cloudflare provider")
 	}
 
@@ -419,7 +425,7 @@ func NewCloudFlareProvider(
 	}
 
 	return &CloudFlareProvider{
-		Client:                 zoneService{configV5},
+		Client:                 zoneService{client},
 		domainFilter:           domainFilter,
 		zoneIDFilter:           zoneIDFilter,
 		proxiedByDefault:       proxiedByDefault,
