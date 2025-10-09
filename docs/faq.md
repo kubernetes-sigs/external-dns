@@ -274,6 +274,7 @@ This means that only those resources which match the selector specified in `--la
 For more advanced split horizon scenarios, you can use the `--annotation-prefix` flag to configure different instances to read different sets of annotations from the same resources. This is useful when you want a single Service or Ingress to create records in multiple DNS zones (e.g., internal and external).
 
 For example:
+
 ```bash
 # Internal DNS instance
 --annotation-prefix=internal.company.io/ --provider=aws --aws-zone-type=private
@@ -283,6 +284,7 @@ For example:
 ```
 
 Then annotate your resources with both prefixes:
+
 ```yaml
 metadata:
   annotations:
