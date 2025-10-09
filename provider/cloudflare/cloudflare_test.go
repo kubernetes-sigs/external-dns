@@ -329,24 +329,37 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, recordID str
 	return nil
 }
 
-func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string) ([]CustomHostname, error) {
+func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string) autoPager[custom_hostnames.CustomHostnameListResponse] {
 	if strings.HasPrefix(zoneID, "newerror-") {
-		return nil, errors.New("failed to list custom hostnames")
+		return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+			err: errors.New("failed to list custom hostnames"),
+		}
 	}
 
-	result := []CustomHostname{}
+	result := []custom_hostnames.CustomHostnameListResponse{}
 	if chs, ok := m.customHostnames[zoneID]; ok {
 		for _, ch := range chs {
 			if strings.HasPrefix(ch.Hostname, "newerror-list-") {
 				params := custom_hostnames.CustomHostnameDeleteParams{ZoneID: cloudflare.F(zoneID)}
 				m.DeleteCustomHostname(ctx, ch.ID, params)
-				return nil, errors.New("failed to list erroring custom hostname")
+				return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+					err: errors.New("failed to list erroring custom hostname"),
+				}
 			}
-			result = append(result, ch)
+			result = append(result, custom_hostnames.CustomHostnameListResponse{
+				ID:     ch.ID,
+				Hostname: ch.Hostname,
+				CustomOriginServer: ch.CustomOriginServer,
+				// Map other fields as needed
+			})
 		}
-		return result, nil
+		return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+			items: result,
+		}
 	}
-	return result, nil
+	return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+		items: result,
+	}
 }
 
 func (m *mockCloudFlareClient) CreateCustomHostname(ctx context.Context, zoneID string, ch CustomHostname) error {
@@ -3448,7 +3461,8 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("CustomHostnames", func(t *testing.T) {
 		t.Parallel()
-		ch, err := client.CustomHostnames(ctx, zoneID)
+		iter := client.CustomHostnames(ctx, zoneID)
+		ch, err := listAllCustomHostnames(iter)
 		assert.Empty(t, ch)
 		assert.ErrorIs(t, err, context.Canceled)
 	})
@@ -4093,5 +4107,125 @@ func TestErrorHandling(t *testing.T) {
 
 		err := provider.Client.CreateCustomHostname(ctx, "001", ch)
 		assert.Error(t, err, "Should error for newerror-create hostname")
+	})
+}
+
+// TestListAllCustomHostnames tests the listAllCustomHostnames helper function
+func TestListAllCustomHostnames(t *testing.T) {
+	t.Run("EmptyIterator", func(t *testing.T) {
+		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{}
+
+		hostnames, err := listAllCustomHostnames(pager)
+
+		assert.NoError(t, err)
+		assert.Empty(t, hostnames)
+	})
+
+	t.Run("SingleCustomHostname", func(t *testing.T) {
+		mockHostname := custom_hostnames.CustomHostnameListResponse{
+			ID:                 "ch1",
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+			CustomOriginSNI:    "sni.example.com",
+		}
+		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+			items: []custom_hostnames.CustomHostnameListResponse{mockHostname},
+		}
+
+		hostnames, err := listAllCustomHostnames(pager)
+
+		assert.NoError(t, err)
+		assert.Len(t, hostnames, 1)
+		assert.Equal(t, "ch1", hostnames[0].ID)
+		assert.Equal(t, "test.example.com", hostnames[0].Hostname)
+		assert.Equal(t, "origin.example.com", hostnames[0].CustomOriginServer)
+		assert.Equal(t, "sni.example.com", hostnames[0].CustomOriginSNI)
+	})
+
+	t.Run("MultipleCustomHostnames", func(t *testing.T) {
+		mockHostnames := []custom_hostnames.CustomHostnameListResponse{
+			{
+				ID:                 "ch1",
+				Hostname:           "test1.example.com",
+				CustomOriginServer: "origin1.example.com",
+				CustomOriginSNI:    "sni1.example.com",
+			},
+			{
+				ID:                 "ch2",
+				Hostname:           "test2.example.com",
+				CustomOriginServer: "origin2.example.com",
+				CustomOriginSNI:    "sni2.example.com",
+			},
+			{
+				ID:                 "ch3",
+				Hostname:           "test3.example.com",
+				CustomOriginServer: "origin3.example.com",
+				CustomOriginSNI:    "sni3.example.com",
+			},
+		}
+		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+			items: mockHostnames,
+		}
+
+		hostnames, err := listAllCustomHostnames(pager)
+
+		assert.NoError(t, err)
+		assert.Len(t, hostnames, 3)
+
+		// Verify all hostnames are correctly converted
+		for i, hostname := range hostnames {
+			expected := mockHostnames[i]
+			assert.Equal(t, expected.ID, hostname.ID)
+			assert.Equal(t, expected.Hostname, hostname.Hostname)
+			assert.Equal(t, expected.CustomOriginServer, hostname.CustomOriginServer)
+			assert.Equal(t, expected.CustomOriginSNI, hostname.CustomOriginSNI)
+		}
+	})
+
+	t.Run("IteratorError", func(t *testing.T) {
+		expectedErr := errors.New("iterator error")
+		mockHostname := custom_hostnames.CustomHostnameListResponse{
+			ID:                 "ch1",
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+		}
+		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+			items:    []custom_hostnames.CustomHostnameListResponse{mockHostname},
+			err:      expectedErr,
+			errIndex: 1, // Error after first item
+		}
+
+		hostnames, err := listAllCustomHostnames(pager)
+
+		assert.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Empty(t, hostnames) // Should be empty on error
+	})
+
+	t.Run("PartialIteratorError", func(t *testing.T) {
+		expectedErr := errors.New("partial iterator error")
+		mockHostnames := []custom_hostnames.CustomHostnameListResponse{
+			{
+				ID:                 "ch1",
+				Hostname:           "test1.example.com",
+				CustomOriginServer: "origin1.example.com",
+			},
+			{
+				ID:                 "ch2",
+				Hostname:           "test2.example.com",
+				CustomOriginServer: "origin2.example.com",
+			},
+		}
+		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
+			items:    mockHostnames,
+			err:      expectedErr,
+			errIndex: 2, // Error after second item
+		}
+
+		hostnames, err := listAllCustomHostnames(pager)
+
+		assert.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+		assert.Empty(t, hostnames) // Should be empty on error
 	})
 }

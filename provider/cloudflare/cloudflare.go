@@ -145,7 +145,7 @@ type cloudFlareDNS interface {
 	CreateDataLocalizationRegionalHostname(ctx context.Context, params addressing.RegionalHostnameNewParams) error
 	UpdateDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameEditParams) error
 	DeleteDataLocalizationRegionalHostname(ctx context.Context, hostname string, params addressing.RegionalHostnameDeleteParams) error
-	CustomHostnames(ctx context.Context, zoneID string) ([]CustomHostname, error)
+	CustomHostnames(ctx context.Context, zoneID string) autoPager[custom_hostnames.CustomHostnameListResponse]
 	DeleteCustomHostname(ctx context.Context, customHostnameID string, params custom_hostnames.CustomHostnameDeleteParams) error
 	CreateCustomHostname(ctx context.Context, zoneID string, ch CustomHostname) error
 }
@@ -199,12 +199,11 @@ func (z zoneService) GetZone(ctx context.Context, zoneID string) (*zones.Zone, e
 	return z.service.Zones.Get(ctx, zones.ZoneGetParams{ZoneID: cloudflare.F(zoneID)})
 }
 
-func (z zoneService) CustomHostnames(ctx context.Context, zoneID string) ([]CustomHostname, error) {
+func (z zoneService) CustomHostnames(ctx context.Context, zoneID string) autoPager[custom_hostnames.CustomHostnameListResponse] {
 	params := custom_hostnames.CustomHostnameListParams{
 		ZoneID: cloudflare.F(zoneID),
 	}
-	iter := z.service.CustomHostnames.ListAutoPaging(ctx, params)
-	return listAllCustomHostnames(iter)
+	return z.service.CustomHostnames.ListAutoPaging(ctx, params)
 }
 
 // listAllCustomHostnames extracts all custom hostnames from the iterator (for testability)
@@ -981,7 +980,8 @@ func (p *CloudFlareProvider) listCustomHostnamesWithPagination(ctx context.Conte
 		return nil, nil
 	}
 	chs := make(CustomHostnamesMap)
-	customHostnames, err := p.Client.CustomHostnames(ctx, zoneID)
+	iter := p.Client.CustomHostnames(ctx, zoneID)
+	customHostnames, err := listAllCustomHostnames(iter)
 	if err != nil {
 		convertedError := convertCloudflareError(err)
 		if !errors.Is(convertedError, provider.SoftError) {
