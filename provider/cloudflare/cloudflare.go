@@ -721,7 +721,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	}
 
 	if len(failedZones) > 0 {
-		return fmt.Errorf("failed to submit all changes for the following zones: %q", failedZones)
+		return provider.NewSoftErrorf("failed to submit all changes for the following zones: %q", failedZones)
 	}
 
 	return nil
