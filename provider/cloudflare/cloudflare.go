@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"os"
 	"slices"
 	"sort"
@@ -367,6 +368,15 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNew
 }
 
 func convertCloudflareError(err error) error {
+	// Handle CloudFlare v5 SDK errors according to the documentation:
+	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
+	var apierr *cloudflare.Error
+	if errors.As(err, &apierr) {
+		if apierr.StatusCode == http.StatusTooManyRequests {
+			return provider.NewSoftError(err)
+		}
+	}
+
 	// This is a workaround because Cloudflare library does not return a specific error type for rate limit exceeded.
 	// See https://github.com/cloudflare/cloudflare-go/issues/4155 and https://github.com/kubernetes-sigs/external-dns/pull/5524
 	errStr := err.Error()

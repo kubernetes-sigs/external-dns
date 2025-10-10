@@ -41,6 +41,21 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
+// cloudflareV5Error wraps CloudFlare v5 SDK errors for testing without internal nil pointer issues
+type cloudflareV5Error struct {
+	cfError *cloudflare.Error
+	message string
+}
+
+func (e *cloudflareV5Error) Error() string {
+	return e.message
+}
+
+// Unwrap allows errors.As to work with the wrapped cloudflare.Error
+func (e *cloudflareV5Error) Unwrap() error {
+	return e.cfError
+}
+
 type MockAction struct {
 	Name             string
 	ZoneId           string
@@ -3103,6 +3118,18 @@ func TestConvertCloudflareError(t *testing.T) {
 			description:     "CloudFlare client rate limited error should be converted to soft error",
 		},
 		{
+			name:            "CloudFlare v5 rate limit error",
+			inputError:      &cloudflareV5Error{cfError: &cloudflare.Error{StatusCode: 429}, message: "rate limit exceeded"},
+			expectSoftError: true,
+			description:     "CloudFlare v5 SDK rate limit error should be converted to soft error",
+		},
+		{
+			name:            "CloudFlare v5 server error",
+			inputError:      &cloudflareV5Error{cfError: &cloudflare.Error{StatusCode: 500}, message: "internal server error"},
+			expectSoftError: false,
+			description:     "CloudFlare v5 SDK server error should not be converted to soft error",
+		},
+		{
 			name:            "Server error 500",
 			inputError:      errors.New("server error 500"),
 			expectSoftError: false,
@@ -3173,8 +3200,12 @@ func TestConvertCloudflareError(t *testing.T) {
 					"Expected soft error for %s: %s", tt.name, tt.description)
 
 				// Verify the original error message is preserved in the soft error
-				assert.Contains(t, result.Error(), tt.inputError.Error(),
-					"Original error message should be preserved")
+				// Skip this check for CloudFlare v5 errors that may have internal nil pointers
+				var cfErr *cloudflare.Error
+				if !errors.As(tt.inputError, &cfErr) {
+					assert.Contains(t, result.Error(), tt.inputError.Error(),
+						"Original error message should be preserved")
+				}
 			} else {
 				assert.NotErrorIs(t, result, provider.SoftError,
 					"Expected non-soft error for %s: %s", tt.name, tt.description)
