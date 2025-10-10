@@ -362,8 +362,8 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 				}
 			}
 			result = append(result, custom_hostnames.CustomHostnameListResponse{
-				ID:     ch.ID,
-				Hostname: ch.Hostname,
+				ID:                 ch.ID,
+				Hostname:           ch.Hostname,
 				CustomOriginServer: ch.CustomOriginServer,
 				// Map other fields as needed
 			})
