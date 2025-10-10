@@ -50,6 +50,7 @@ func (b *Buffer) AppendByte(v byte) {
 	b.bs = append(b.bs, v)
 }
 
+<<<<<<< HEAD
 // AppendString writes a string to the Buffer.
 func (b *Buffer) AppendString(s string) {
 	b.bs = append(b.bs, s...)
@@ -344,6 +345,11 @@ func (b *Buffer) AppendByte(v byte) {
 }
 
 // AppendBytes writes a single byte to the Buffer.
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+// AppendBytes writes a single byte to the Buffer.
+=======
+// AppendBytes writes the given slice of bytes to the Buffer.
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 func (b *Buffer) AppendBytes(v []byte) {
 	b.bs = append(b.bs, v...)
 }

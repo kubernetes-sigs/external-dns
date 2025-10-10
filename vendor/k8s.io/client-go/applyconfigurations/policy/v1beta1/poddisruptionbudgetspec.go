@@ -20,6 +20,7 @@ package v1beta1
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
@@ -62,20 +63,25 @@ func (b *PodDisruptionBudgetSpecApplyConfiguration) WithMaxUnavailable(value int
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 	v1beta1 "k8s.io/api/policy/v1beta1"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	v1beta1 "k8s.io/api/policy/v1beta1"
+=======
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// PodDisruptionBudgetSpecApplyConfiguration represents an declarative configuration of the PodDisruptionBudgetSpec type for use
+// PodDisruptionBudgetSpecApplyConfiguration represents a declarative configuration of the PodDisruptionBudgetSpec type for use
 // with apply.
 type PodDisruptionBudgetSpecApplyConfiguration struct {
-	MinAvailable               *intstr.IntOrString                     `json:"minAvailable,omitempty"`
-	Selector                   *v1.LabelSelectorApplyConfiguration     `json:"selector,omitempty"`
-	MaxUnavailable             *intstr.IntOrString                     `json:"maxUnavailable,omitempty"`
-	UnhealthyPodEvictionPolicy *v1beta1.UnhealthyPodEvictionPolicyType `json:"unhealthyPodEvictionPolicy,omitempty"`
+	MinAvailable               *intstr.IntOrString                           `json:"minAvailable,omitempty"`
+	Selector                   *v1.LabelSelectorApplyConfiguration           `json:"selector,omitempty"`
+	MaxUnavailable             *intstr.IntOrString                           `json:"maxUnavailable,omitempty"`
+	UnhealthyPodEvictionPolicy *policyv1beta1.UnhealthyPodEvictionPolicyType `json:"unhealthyPodEvictionPolicy,omitempty"`
 }
 
-// PodDisruptionBudgetSpecApplyConfiguration constructs an declarative configuration of the PodDisruptionBudgetSpec type for use with
+// PodDisruptionBudgetSpecApplyConfiguration constructs a declarative configuration of the PodDisruptionBudgetSpec type for use with
 // apply.
 func PodDisruptionBudgetSpec() *PodDisruptionBudgetSpecApplyConfiguration {
 	return &PodDisruptionBudgetSpecApplyConfiguration{}
@@ -108,7 +114,7 @@ func (b *PodDisruptionBudgetSpecApplyConfiguration) WithMaxUnavailable(value int
 // WithUnhealthyPodEvictionPolicy sets the UnhealthyPodEvictionPolicy field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UnhealthyPodEvictionPolicy field is set to the value of the last call.
-func (b *PodDisruptionBudgetSpecApplyConfiguration) WithUnhealthyPodEvictionPolicy(value v1beta1.UnhealthyPodEvictionPolicyType) *PodDisruptionBudgetSpecApplyConfiguration {
+func (b *PodDisruptionBudgetSpecApplyConfiguration) WithUnhealthyPodEvictionPolicy(value policyv1beta1.UnhealthyPodEvictionPolicyType) *PodDisruptionBudgetSpecApplyConfiguration {
 	b.UnhealthyPodEvictionPolicy = &value
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return b

@@ -55,4 +55,4 @@ limitations under the License.
 // +k8s:prerelease-lifecycle-gen=true
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-package v1beta1 // import "k8s.io/api/batch/v1beta1"
+package v1beta1

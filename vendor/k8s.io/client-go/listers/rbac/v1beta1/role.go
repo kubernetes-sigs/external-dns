@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	v1beta1 "k8s.io/api/rbac/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // RoleLister helps list Roles.
@@ -38,7 +38,7 @@ import (
 type RoleLister interface {
 	// List lists all Roles in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Role, err error)
+	List(selector labels.Selector) (ret []*rbacv1beta1.Role, err error)
 	// Roles returns an object that can list and get Roles.
 	Roles(namespace string) RoleNamespaceLister
 	RoleListerExpansion
@@ -46,25 +46,17 @@ type RoleLister interface {
 
 // roleLister implements the RoleLister interface.
 type roleLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rbacv1beta1.Role]
 }
 
 // NewRoleLister returns a new RoleLister.
 func NewRoleLister(indexer cache.Indexer) RoleLister {
-	return &roleLister{indexer: indexer}
-}
-
-// List lists all Roles in the indexer.
-func (s *roleLister) List(selector labels.Selector) (ret []*v1beta1.Role, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Role))
-	})
-	return ret, err
+	return &roleLister{listers.New[*rbacv1beta1.Role](indexer, rbacv1beta1.Resource("role"))}
 }
 
 // Roles returns an object that can list and get Roles.
 func (s *roleLister) Roles(namespace string) RoleNamespaceLister {
-	return roleNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return roleNamespaceLister{listers.NewNamespaced[*rbacv1beta1.Role](s.ResourceIndexer, namespace)}
 }
 
 // RoleNamespaceLister helps list and get Roles.
@@ -72,9 +64,10 @@ func (s *roleLister) Roles(namespace string) RoleNamespaceLister {
 type RoleNamespaceLister interface {
 	// List lists all Roles in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.Role, err error)
+	List(selector labels.Selector) (ret []*rbacv1beta1.Role, err error)
 	// Get retrieves the Role from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -280,32 +273,16 @@ type RoleNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Get(name string) (*v1beta1.Role, error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1beta1.Role, error)
+=======
+	Get(name string) (*rbacv1beta1.Role, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	RoleNamespaceListerExpansion
 }
 
 // roleNamespaceLister implements the RoleNamespaceLister
 // interface.
 type roleNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Roles in the indexer for a given namespace.
-func (s roleNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.Role, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.Role))
-	})
-	return ret, err
-}
-
-// Get retrieves the Role from the indexer for a given namespace and name.
-func (s roleNamespaceLister) Get(name string) (*v1beta1.Role, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("role"), name)
-	}
-	return obj.(*v1beta1.Role), nil
+	listers.ResourceIndexer[*rbacv1beta1.Role]
 }

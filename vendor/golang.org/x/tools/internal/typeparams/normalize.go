@@ -60,6 +60,7 @@ var ErrEmptyTypeSet = errors.New("empty type set")
 //
 // StructuralTerms makes no guarantees about the order of terms, except that it
 // is deterministic.
+<<<<<<< HEAD
 func StructuralTerms(tparam *TypeParam) ([]*Term, error) {
 	constraint := tparam.Constraint()
 	if constraint == nil {
@@ -200,6 +201,149 @@ func computeTermSetInternal(t types.Type, seen map[types.Type]*termSet, depth in
 			}
 		}
 	case *TypeParam:
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+func StructuralTerms(tparam *types.TypeParam) ([]*types.Term, error) {
+	constraint := tparam.Constraint()
+	if constraint == nil {
+		return nil, fmt.Errorf("%s has nil constraint", tparam)
+	}
+	iface, _ := constraint.Underlying().(*types.Interface)
+	if iface == nil {
+		return nil, fmt.Errorf("constraint is %T, not *types.Interface", constraint.Underlying())
+	}
+	return InterfaceTermSet(iface)
+}
+
+// InterfaceTermSet computes the normalized terms for a constraint interface,
+// returning an error if the term set cannot be computed or is empty. In the
+// latter case, the error will be ErrEmptyTypeSet.
+//
+// See the documentation of StructuralTerms for more information on
+// normalization.
+func InterfaceTermSet(iface *types.Interface) ([]*types.Term, error) {
+	return computeTermSet(iface)
+}
+
+// UnionTermSet computes the normalized terms for a union, returning an error
+// if the term set cannot be computed or is empty. In the latter case, the
+// error will be ErrEmptyTypeSet.
+//
+// See the documentation of StructuralTerms for more information on
+// normalization.
+func UnionTermSet(union *types.Union) ([]*types.Term, error) {
+	return computeTermSet(union)
+}
+
+func computeTermSet(typ types.Type) ([]*types.Term, error) {
+	tset, err := computeTermSetInternal(typ, make(map[types.Type]*termSet), 0)
+	if err != nil {
+		return nil, err
+	}
+	if tset.terms.isEmpty() {
+		return nil, ErrEmptyTypeSet
+	}
+	if tset.terms.isAll() {
+		return nil, nil
+	}
+	var terms []*types.Term
+	for _, term := range tset.terms {
+		terms = append(terms, types.NewTerm(term.tilde, term.typ))
+	}
+	return terms, nil
+}
+
+// A termSet holds the normalized set of terms for a given type.
+//
+// The name termSet is intentionally distinct from 'type set': a type set is
+// all types that implement a type (and includes method restrictions), whereas
+// a term set just represents the structural restrictions on a type.
+type termSet struct {
+	complete bool
+	terms    termlist
+}
+
+func indentf(depth int, format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, strings.Repeat(".", depth)+format+"\n", args...)
+}
+
+func computeTermSetInternal(t types.Type, seen map[types.Type]*termSet, depth int) (res *termSet, err error) {
+	if t == nil {
+		panic("nil type")
+	}
+
+	if debug {
+		indentf(depth, "%s", t.String())
+		defer func() {
+			if err != nil {
+				indentf(depth, "=> %s", err)
+			} else {
+				indentf(depth, "=> %s", res.terms.String())
+			}
+		}()
+	}
+
+	const maxTermCount = 100
+	if tset, ok := seen[t]; ok {
+		if !tset.complete {
+			return nil, fmt.Errorf("cycle detected in the declaration of %s", t)
+		}
+		return tset, nil
+	}
+
+	// Mark the current type as seen to avoid infinite recursion.
+	tset := new(termSet)
+	defer func() {
+		tset.complete = true
+	}()
+	seen[t] = tset
+
+	switch u := t.Underlying().(type) {
+	case *types.Interface:
+		// The term set of an interface is the intersection of the term sets of its
+		// embedded types.
+		tset.terms = allTermlist
+		for i := 0; i < u.NumEmbeddeds(); i++ {
+			embedded := u.EmbeddedType(i)
+			if _, ok := embedded.Underlying().(*types.TypeParam); ok {
+				return nil, fmt.Errorf("invalid embedded type %T", embedded)
+			}
+			tset2, err := computeTermSetInternal(embedded, seen, depth+1)
+			if err != nil {
+				return nil, err
+			}
+			tset.terms = tset.terms.intersect(tset2.terms)
+		}
+	case *types.Union:
+		// The term set of a union is the union of term sets of its terms.
+		tset.terms = nil
+		for i := 0; i < u.Len(); i++ {
+			t := u.Term(i)
+			var terms termlist
+			switch t.Type().Underlying().(type) {
+			case *types.Interface:
+				tset2, err := computeTermSetInternal(t.Type(), seen, depth+1)
+				if err != nil {
+					return nil, err
+				}
+				terms = tset2.terms
+			case *types.TypeParam, *types.Union:
+				// A stand-alone type parameter or union is not permitted as union
+				// term.
+				return nil, fmt.Errorf("invalid union term %T", t)
+			default:
+				if t.Type() == types.Typ[types.Invalid] {
+					continue
+				}
+				terms = termlist{{t.Tilde(), t.Type()}}
+			}
+			tset.terms = tset.terms.union(terms)
+			if len(tset.terms) > maxTermCount {
+				return nil, fmt.Errorf("exceeded max term count %d", maxTermCount)
+			}
+		}
+	case *types.TypeParam:
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		panic("unreachable")
 	default:
 		// For all other types, the term set is just a single non-tilde term

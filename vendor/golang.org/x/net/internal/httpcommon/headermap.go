@@ -1,0 +1,521 @@
+// Copyright 2025 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package httpcommon
+
+import (
+<<<<<<< HEAD:vendor/golang.org/x/net/http2/headermap.go
+	"net/http"
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+	"sync"
+)
+
+var (
+	commonBuildOnce   sync.Once
+	commonLowerHeader map[string]string // Go-Canonical-Case -> lower-case
+	commonCanonHeader map[string]string // lower-case -> Go-Canonical-Case
+)
+
+func buildCommonHeaderMapsOnce() {
+	commonBuildOnce.Do(buildCommonHeaderMaps)
+}
+
+func buildCommonHeaderMaps() {
+	common := []string{
+		"accept",
+		"accept-charset",
+		"accept-encoding",
+		"accept-language",
+		"accept-ranges",
+		"age",
+		"access-control-allow-credentials",
+		"access-control-allow-headers",
+		"access-control-allow-methods",
+		"access-control-allow-origin",
+		"access-control-expose-headers",
+		"access-control-max-age",
+		"access-control-request-headers",
+		"access-control-request-method",
+		"allow",
+		"authorization",
+		"cache-control",
+		"content-disposition",
+		"content-encoding",
+		"content-language",
+		"content-length",
+		"content-location",
+		"content-range",
+		"content-type",
+		"cookie",
+		"date",
+		"etag",
+		"expect",
+		"expires",
+		"from",
+		"host",
+		"if-match",
+		"if-modified-since",
+		"if-none-match",
+		"if-unmodified-since",
+		"last-modified",
+		"link",
+		"location",
+		"max-forwards",
+		"origin",
+		"proxy-authenticate",
+		"proxy-authorization",
+		"range",
+		"referer",
+		"refresh",
+		"retry-after",
+		"server",
+		"set-cookie",
+		"strict-transport-security",
+		"trailer",
+		"transfer-encoding",
+		"user-agent",
+		"vary",
+		"via",
+		"www-authenticate",
+		"x-forwarded-for",
+		"x-forwarded-proto",
+	}
+	commonLowerHeader = make(map[string]string, len(common))
+	commonCanonHeader = make(map[string]string, len(common))
+	for _, v := range common {
+		chk := http.CanonicalHeaderKey(v)
+		commonLowerHeader[chk] = v
+		commonCanonHeader[v] = chk
+	}
+}
+
+func lowerHeader(v string) (lower string, ascii bool) {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonLowerHeader[v]; ok {
+		return s, true
+	}
+	return asciiToLower(v)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"strings"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
+	"sync"
+)
+
+var (
+	commonBuildOnce   sync.Once
+	commonLowerHeader map[string]string // Go-Canonical-Case -> lower-case
+	commonCanonHeader map[string]string // lower-case -> Go-Canonical-Case
+)
+
+func buildCommonHeaderMapsOnce() {
+	commonBuildOnce.Do(buildCommonHeaderMaps)
+}
+
+func buildCommonHeaderMaps() {
+	common := []string{
+		"accept",
+		"accept-charset",
+		"accept-encoding",
+		"accept-language",
+		"accept-ranges",
+		"age",
+		"access-control-allow-origin",
+		"allow",
+		"authorization",
+		"cache-control",
+		"content-disposition",
+		"content-encoding",
+		"content-language",
+		"content-length",
+		"content-location",
+		"content-range",
+		"content-type",
+		"cookie",
+		"date",
+		"etag",
+		"expect",
+		"expires",
+		"from",
+		"host",
+		"if-match",
+		"if-modified-since",
+		"if-none-match",
+		"if-unmodified-since",
+		"last-modified",
+		"link",
+		"location",
+		"max-forwards",
+		"proxy-authenticate",
+		"proxy-authorization",
+		"range",
+		"referer",
+		"refresh",
+		"retry-after",
+		"server",
+		"set-cookie",
+		"strict-transport-security",
+		"trailer",
+		"transfer-encoding",
+		"user-agent",
+		"vary",
+		"via",
+		"www-authenticate",
+	}
+	commonLowerHeader = make(map[string]string, len(common))
+	commonCanonHeader = make(map[string]string, len(common))
+	for _, v := range common {
+		chk := http.CanonicalHeaderKey(v)
+		commonLowerHeader[chk] = v
+		commonCanonHeader[v] = chk
+	}
+}
+
+func lowerHeader(v string) (lower string, ascii bool) {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonLowerHeader[v]; ok {
+		return s, true
+	}
+<<<<<<< HEAD
+	return strings.ToLower(v)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return strings.ToLower(v)
+=======
+	return asciiToLower(v)
+>>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+||||||| parent of 6b7ce455e (update vendored files)
+	"strings"
+=======
+>>>>>>> 6b7ce455e (update vendored files)
+	"sync"
+)
+
+var (
+	commonBuildOnce   sync.Once
+	commonLowerHeader map[string]string // Go-Canonical-Case -> lower-case
+	commonCanonHeader map[string]string // lower-case -> Go-Canonical-Case
+)
+
+func buildCommonHeaderMapsOnce() {
+	commonBuildOnce.Do(buildCommonHeaderMaps)
+}
+
+func buildCommonHeaderMaps() {
+	common := []string{
+		"accept",
+		"accept-charset",
+		"accept-encoding",
+		"accept-language",
+		"accept-ranges",
+		"age",
+		"access-control-allow-origin",
+		"allow",
+		"authorization",
+		"cache-control",
+		"content-disposition",
+		"content-encoding",
+		"content-language",
+		"content-length",
+		"content-location",
+		"content-range",
+		"content-type",
+		"cookie",
+		"date",
+		"etag",
+		"expect",
+		"expires",
+		"from",
+		"host",
+		"if-match",
+		"if-modified-since",
+		"if-none-match",
+		"if-unmodified-since",
+		"last-modified",
+		"link",
+		"location",
+		"max-forwards",
+		"proxy-authenticate",
+		"proxy-authorization",
+		"range",
+		"referer",
+		"refresh",
+		"retry-after",
+		"server",
+		"set-cookie",
+		"strict-transport-security",
+		"trailer",
+		"transfer-encoding",
+		"user-agent",
+		"vary",
+		"via",
+		"www-authenticate",
+	}
+	commonLowerHeader = make(map[string]string, len(common))
+	commonCanonHeader = make(map[string]string, len(common))
+	for _, v := range common {
+		chk := http.CanonicalHeaderKey(v)
+		commonLowerHeader[chk] = v
+		commonCanonHeader[v] = chk
+	}
+}
+
+func lowerHeader(v string) (lower string, ascii bool) {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonLowerHeader[v]; ok {
+		return s, true
+	}
+<<<<<<< HEAD
+	return strings.ToLower(v)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return strings.ToLower(v)
+=======
+	return asciiToLower(v)
+>>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"strings"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
+	"sync"
+)
+
+var (
+	commonBuildOnce   sync.Once
+	commonLowerHeader map[string]string // Go-Canonical-Case -> lower-case
+	commonCanonHeader map[string]string // lower-case -> Go-Canonical-Case
+)
+
+func buildCommonHeaderMapsOnce() {
+	commonBuildOnce.Do(buildCommonHeaderMaps)
+}
+
+func buildCommonHeaderMaps() {
+	common := []string{
+		"accept",
+		"accept-charset",
+		"accept-encoding",
+		"accept-language",
+		"accept-ranges",
+		"age",
+		"access-control-allow-origin",
+		"allow",
+		"authorization",
+		"cache-control",
+		"content-disposition",
+		"content-encoding",
+		"content-language",
+		"content-length",
+		"content-location",
+		"content-range",
+		"content-type",
+		"cookie",
+		"date",
+		"etag",
+		"expect",
+		"expires",
+		"from",
+		"host",
+		"if-match",
+		"if-modified-since",
+		"if-none-match",
+		"if-unmodified-since",
+		"last-modified",
+		"link",
+		"location",
+		"max-forwards",
+		"proxy-authenticate",
+		"proxy-authorization",
+		"range",
+		"referer",
+		"refresh",
+		"retry-after",
+		"server",
+		"set-cookie",
+		"strict-transport-security",
+		"trailer",
+		"transfer-encoding",
+		"user-agent",
+		"vary",
+		"via",
+		"www-authenticate",
+	}
+	commonLowerHeader = make(map[string]string, len(common))
+	commonCanonHeader = make(map[string]string, len(common))
+	for _, v := range common {
+		chk := http.CanonicalHeaderKey(v)
+		commonLowerHeader[chk] = v
+		commonCanonHeader[v] = chk
+	}
+}
+
+func lowerHeader(v string) (lower string, ascii bool) {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonLowerHeader[v]; ok {
+		return s, true
+	}
+<<<<<<< HEAD
+	return strings.ToLower(v)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return strings.ToLower(v)
+=======
+	return asciiToLower(v)
+>>>>>>> 4d7e5ad26 (update vendored files)
+}
+
+func canonicalHeader(v string) string {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonCanonHeader[v]; ok {
+		return s
+	}
+	return http.CanonicalHeaderKey(v)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	"strings"
+=======
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/golang.org/x/net/http2/headermap.go
+	"net/http"
+=======
+	"net/textproto"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/golang.org/x/net/internal/httpcommon/headermap.go
+	"sync"
+)
+
+var (
+	commonBuildOnce   sync.Once
+	commonLowerHeader map[string]string // Go-Canonical-Case -> lower-case
+	commonCanonHeader map[string]string // lower-case -> Go-Canonical-Case
+)
+
+func buildCommonHeaderMapsOnce() {
+	commonBuildOnce.Do(buildCommonHeaderMaps)
+}
+
+func buildCommonHeaderMaps() {
+	common := []string{
+		"accept",
+		"accept-charset",
+		"accept-encoding",
+		"accept-language",
+		"accept-ranges",
+		"age",
+		"access-control-allow-credentials",
+		"access-control-allow-headers",
+		"access-control-allow-methods",
+		"access-control-allow-origin",
+		"access-control-expose-headers",
+		"access-control-max-age",
+		"access-control-request-headers",
+		"access-control-request-method",
+		"allow",
+		"authorization",
+		"cache-control",
+		"content-disposition",
+		"content-encoding",
+		"content-language",
+		"content-length",
+		"content-location",
+		"content-range",
+		"content-type",
+		"cookie",
+		"date",
+		"etag",
+		"expect",
+		"expires",
+		"from",
+		"host",
+		"if-match",
+		"if-modified-since",
+		"if-none-match",
+		"if-unmodified-since",
+		"last-modified",
+		"link",
+		"location",
+		"max-forwards",
+		"origin",
+		"proxy-authenticate",
+		"proxy-authorization",
+		"range",
+		"referer",
+		"refresh",
+		"retry-after",
+		"server",
+		"set-cookie",
+		"strict-transport-security",
+		"trailer",
+		"transfer-encoding",
+		"user-agent",
+		"vary",
+		"via",
+		"www-authenticate",
+		"x-forwarded-for",
+		"x-forwarded-proto",
+	}
+	commonLowerHeader = make(map[string]string, len(common))
+	commonCanonHeader = make(map[string]string, len(common))
+	for _, v := range common {
+		chk := textproto.CanonicalMIMEHeaderKey(v)
+		commonLowerHeader[chk] = v
+		commonCanonHeader[v] = chk
+	}
+}
+
+// LowerHeader returns the lowercase form of a header name,
+// used on the wire for HTTP/2 and HTTP/3 requests.
+func LowerHeader(v string) (lower string, ascii bool) {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonLowerHeader[v]; ok {
+		return s, true
+	}
+	return asciiToLower(v)
+}
+
+// CanonicalHeader canonicalizes a header name. (For example, "host" becomes "Host".)
+func CanonicalHeader(v string) string {
+	buildCommonHeaderMapsOnce()
+	if s, ok := commonCanonHeader[v]; ok {
+		return s
+	}
+<<<<<<< HEAD:vendor/golang.org/x/net/http2/headermap.go
+<<<<<<< HEAD
+	return strings.ToLower(v)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return strings.ToLower(v)
+=======
+	return http.CanonicalHeaderKey(v)
+>>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/golang.org/x/net/http2/headermap.go
+	return http.CanonicalHeaderKey(v)
+=======
+	return textproto.CanonicalMIMEHeaderKey(v)
+}
+
+// CachedCanonicalHeader returns the canonical form of a well-known header name.
+func CachedCanonicalHeader(v string) (string, bool) {
+	buildCommonHeaderMapsOnce()
+	s, ok := commonCanonHeader[v]
+	return s, ok
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules):vendor/golang.org/x/net/internal/httpcommon/headermap.go
+}

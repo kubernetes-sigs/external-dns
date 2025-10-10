@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "k8s.io/api/storagemigration/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	storagemigrationv1alpha1 "k8s.io/api/storagemigration/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // StorageVersionMigrationLister helps list StorageVersionMigrations.
@@ -30,39 +30,19 @@ import (
 type StorageVersionMigrationLister interface {
 	// List lists all StorageVersionMigrations in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.StorageVersionMigration, err error)
+	List(selector labels.Selector) (ret []*storagemigrationv1alpha1.StorageVersionMigration, err error)
 	// Get retrieves the StorageVersionMigration from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.StorageVersionMigration, error)
+	Get(name string) (*storagemigrationv1alpha1.StorageVersionMigration, error)
 	StorageVersionMigrationListerExpansion
 }
 
 // storageVersionMigrationLister implements the StorageVersionMigrationLister interface.
 type storageVersionMigrationLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*storagemigrationv1alpha1.StorageVersionMigration]
 }
 
 // NewStorageVersionMigrationLister returns a new StorageVersionMigrationLister.
 func NewStorageVersionMigrationLister(indexer cache.Indexer) StorageVersionMigrationLister {
-	return &storageVersionMigrationLister{indexer: indexer}
-}
-
-// List lists all StorageVersionMigrations in the indexer.
-func (s *storageVersionMigrationLister) List(selector labels.Selector) (ret []*v1alpha1.StorageVersionMigration, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.StorageVersionMigration))
-	})
-	return ret, err
-}
-
-// Get retrieves the StorageVersionMigration from the index for a given name.
-func (s *storageVersionMigrationLister) Get(name string) (*v1alpha1.StorageVersionMigration, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("storageversionmigration"), name)
-	}
-	return obj.(*v1alpha1.StorageVersionMigration), nil
+	return &storageVersionMigrationLister{listers.New[*storagemigrationv1alpha1.StorageVersionMigration](indexer, storagemigrationv1alpha1.Resource("storageversionmigration"))}
 }

@@ -58,8 +58,8 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 			return nil, fmt.Errorf("%w: Invalid number of fields, found: %v", ErrFileParse, parts)
 		}
 
-		node := strings.TrimRight(parts[1], ",")
-		zone := strings.TrimRight(parts[3], ",")
+		node := strings.TrimSuffix(parts[1], ",")
+		zone := strings.TrimSuffix(parts[3], ",")
 		arraySize := len(parts[4:])
 
 		if bucketCount == -1 {
@@ -74,6 +74,7 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 		for i := 0; i < arraySize; i++ {
 			sizes[i], err = strconv.ParseFloat(parts[i+4], 64)
 			if err != nil {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -119,6 +120,11 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 =======
 				return nil, fmt.Errorf("%s: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+				return nil, fmt.Errorf("%s: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
+=======
+				return nil, fmt.Errorf("%w: Invalid valid in buddyinfo: %f: %w", ErrFileParse, sizes[i], err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 			}
 		}
 

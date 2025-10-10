@@ -397,7 +397,7 @@ func (u *Unstructured) SetDeletionGracePeriodSeconds(deletionGracePeriodSeconds 
 }
 
 func (u *Unstructured) GetLabels() map[string]string {
-	m, _, _ := NestedStringMap(u.Object, "metadata", "labels")
+	m, _, _ := NestedNullCoercingStringMap(u.Object, "metadata", "labels")
 	return m
 }
 
@@ -410,7 +410,7 @@ func (u *Unstructured) SetLabels(labels map[string]string) {
 }
 
 func (u *Unstructured) GetAnnotations() map[string]string {
-	m, _, _ := NestedStringMap(u.Object, "metadata", "annotations")
+	m, _, _ := NestedNullCoercingStringMap(u.Object, "metadata", "annotations")
 	return m
 }
 
@@ -482,8 +482,12 @@ func (u *Unstructured) SetClusterName(clusterName string) {
 =======
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (u *Unstructured) GetManagedFields() []metav1.ManagedFieldsEntry {
-	items, found, err := NestedSlice(u.Object, "metadata", "managedFields")
+	v, found, err := NestedFieldNoCopy(u.Object, "metadata", "managedFields")
 	if !found || err != nil {
+		return nil
+	}
+	items, ok := v.([]interface{})
+	if !ok {
 		return nil
 	}
 	managedFields := []metav1.ManagedFieldsEntry{}

@@ -17,6 +17,7 @@ limitations under the License.
 // +k8s:deepcopy-gen=package
 // +k8s:protobuf-gen=package
 // +k8s:openapi-gen=true
+// +k8s:prerelease-lifecycle-gen=true
 
 // Package policy is for any kind of policy object.  Suitable examples, even if
 <<<<<<< HEAD
@@ -26,4 +27,4 @@ limitations under the License.
 // they aren't all here, are PodDisruptionBudget,
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // NetworkPolicy, etc.
-package v1 // import "k8s.io/api/policy/v1"
+package v1

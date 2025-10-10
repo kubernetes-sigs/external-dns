@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2/hpack"
+	"golang.org/x/net/internal/httpcommon"
 )
 
 // writeFramer is implemented by any type that is used to write frames.
@@ -130,6 +131,16 @@ func (se StreamError) writeFrame(ctx writeContext) error {
 }
 
 func (se StreamError) staysWithinBuffer(max int) bool { return frameHeaderLen+4 <= max }
+
+type writePing struct {
+	data [8]byte
+}
+
+func (w writePing) writeFrame(ctx writeContext) error {
+	return ctx.Framer().WritePing(false, w.data)
+}
+
+func (w writePing) staysWithinBuffer(max int) bool { return frameHeaderLen+len(w.data) <= max }
 
 type writePingAck struct{ pf *PingFrame }
 
@@ -349,7 +360,13 @@ func encodeHeaders(enc *hpack.Encoder, h http.Header, keys []string) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		k, ascii := lowerHeader(k)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		k, ascii := lowerHeader(k)
+=======
+		k, ascii := httpcommon.LowerHeader(k)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		if !ascii {
 			// Skip writing invalid headers. Per RFC 7540, Section 8.1.2, header
 			// field names have to be ASCII characters (just as in HTTP/1.x).

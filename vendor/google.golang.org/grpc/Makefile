@@ -38,20 +38,27 @@ testdeps:
 	GO111MODULE=on go get -d -v -t google.golang.org/grpc/...
 
 vet: vetdeps
-	./vet.sh
+	./scripts/vet.sh
 
 vetdeps:
-	./vet.sh -install
+	./scripts/vet.sh -install
 
 .PHONY: \
 	all \
 	build \
 	clean \
+	deps \
 	proto \
 	test \
+<<<<<<< HEAD
 	testappengine \
 	testappenginedeps \
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+	testsubmodule \
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	testrace \
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 build: deps
@@ -286,5 +293,9 @@ vetdeps:
 	updatetestdeps \
 =======
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+	testdeps \
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	vet \
 	vetdeps

@@ -4,6 +4,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build !purego && !appengine
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -14,6 +15,12 @@
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 // +build !purego,!appengine
 
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+//go:build !purego && !appengine
+// +build !purego,!appengine
+
+=======
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 package impl
 
 // When using unsafe pointers, we can just treat enum values as int32s.

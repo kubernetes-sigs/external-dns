@@ -2431,7 +2431,7 @@ func aberrantLoadMessageDescReentrant(t reflect.Type, name protoreflect.FullName
 	}
 	for _, fn := range methods {
 		for _, v := range fn.Func.Call([]reflect.Value{reflect.Zero(fn.Type.In(0))}) {
-			if vs, ok := v.Interface().([]interface{}); ok {
+			if vs, ok := v.Interface().([]any); ok {
 				for _, v := range vs {
 					oneofWrappers = append(oneofWrappers, reflect.TypeOf(v))
 				}
@@ -2525,12 +2525,9 @@ func aberrantAppendField(md *filedesc.Message, goType reflect.Type, tag, tagKey,
 	fd.L0.Parent = md
 	fd.L0.Index = n
 
-	if fd.L1.IsWeak || fd.L1.EditionFeatures.IsPacked {
+	if fd.L1.EditionFeatures.IsPacked {
 		fd.L1.Options = func() protoreflect.ProtoMessage {
 			opts := descopts.Field.ProtoReflect().New()
-			if fd.L1.IsWeak {
-				opts.Set(opts.Descriptor().Fields().ByName("weak"), protoreflect.ValueOfBool(true))
-			}
 			if fd.L1.EditionFeatures.IsPacked {
 				opts.Set(opts.Descriptor().Fields().ByName("packed"), protoreflect.ValueOfBool(fd.L1.EditionFeatures.IsPacked))
 			}
@@ -2791,6 +2788,6 @@ func (m aberrantMessage) ProtoMethods() *protoiface.Methods {
 	return aberrantProtoMethods
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
-func (m aberrantMessage) protoUnwrap() interface{} {
+func (m aberrantMessage) protoUnwrap() any {
 	return m.v.Interface()
 }

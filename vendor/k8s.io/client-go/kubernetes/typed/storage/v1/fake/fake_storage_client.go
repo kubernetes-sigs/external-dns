@@ -29,17 +29,17 @@ type FakeStorageV1 struct {
 }
 
 func (c *FakeStorageV1) CSIDrivers() v1.CSIDriverInterface {
-	return &FakeCSIDrivers{c}
+	return newFakeCSIDrivers(c)
 }
 
 func (c *FakeStorageV1) CSINodes() v1.CSINodeInterface {
-	return &FakeCSINodes{c}
+	return newFakeCSINodes(c)
 }
 
 <<<<<<< HEAD
 <<<<<<< HEAD
 func (c *FakeStorageV1) CSIStorageCapacities(namespace string) v1.CSIStorageCapacityInterface {
-	return &FakeCSIStorageCapacities{c, namespace}
+	return newFakeCSIStorageCapacities(c, namespace)
 }
 
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -53,11 +53,11 @@ func (c *FakeStorageV1) CSIStorageCapacities(namespace string) v1.CSIStorageCapa
 
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (c *FakeStorageV1) StorageClasses() v1.StorageClassInterface {
-	return &FakeStorageClasses{c}
+	return newFakeStorageClasses(c)
 }
 
 func (c *FakeStorageV1) VolumeAttachments() v1.VolumeAttachmentInterface {
-	return &FakeVolumeAttachments{c}
+	return newFakeVolumeAttachments(c)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

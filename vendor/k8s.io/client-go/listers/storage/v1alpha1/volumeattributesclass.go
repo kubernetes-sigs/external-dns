@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "k8s.io/api/storage/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	storagev1alpha1 "k8s.io/api/storage/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // VolumeAttributesClassLister helps list VolumeAttributesClasses.
@@ -30,39 +30,19 @@ import (
 type VolumeAttributesClassLister interface {
 	// List lists all VolumeAttributesClasses in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.VolumeAttributesClass, err error)
+	List(selector labels.Selector) (ret []*storagev1alpha1.VolumeAttributesClass, err error)
 	// Get retrieves the VolumeAttributesClass from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.VolumeAttributesClass, error)
+	Get(name string) (*storagev1alpha1.VolumeAttributesClass, error)
 	VolumeAttributesClassListerExpansion
 }
 
 // volumeAttributesClassLister implements the VolumeAttributesClassLister interface.
 type volumeAttributesClassLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*storagev1alpha1.VolumeAttributesClass]
 }
 
 // NewVolumeAttributesClassLister returns a new VolumeAttributesClassLister.
 func NewVolumeAttributesClassLister(indexer cache.Indexer) VolumeAttributesClassLister {
-	return &volumeAttributesClassLister{indexer: indexer}
-}
-
-// List lists all VolumeAttributesClasses in the indexer.
-func (s *volumeAttributesClassLister) List(selector labels.Selector) (ret []*v1alpha1.VolumeAttributesClass, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.VolumeAttributesClass))
-	})
-	return ret, err
-}
-
-// Get retrieves the VolumeAttributesClass from the index for a given name.
-func (s *volumeAttributesClassLister) Get(name string) (*v1alpha1.VolumeAttributesClass, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("volumeattributesclass"), name)
-	}
-	return obj.(*v1alpha1.VolumeAttributesClass), nil
+	return &volumeAttributesClassLister{listers.New[*storagev1alpha1.VolumeAttributesClass](indexer, storagev1alpha1.Resource("volumeattributesclass"))}
 }

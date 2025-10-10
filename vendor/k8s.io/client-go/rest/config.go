@@ -40,6 +40,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/runtime/serializer/cbor"
+	"k8s.io/client-go/features"
 	"k8s.io/client-go/pkg/version"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/transport"
@@ -121,6 +124,9 @@ type Config struct {
 
 	// QPS indicates the maximum QPS to the master from this client.
 	// If it's zero, the created RESTClient will use DefaultQPS: 5
+	//
+	// Setting this to a negative value will disable client-side ratelimiting
+	// unless `Ratelimiter` is also set.
 	QPS float32
 
 	// Maximum burst for throttle.
@@ -131,9 +137,22 @@ type Config struct {
 	RateLimiter flowcontrol.RateLimiter
 
 	// WarningHandler handles warnings in server responses.
-	// If not set, the default warning handler is used.
-	// See documentation for SetDefaultWarningHandler() for details.
+	// If this and WarningHandlerWithContext are not set, the
+	// default warning handler is used. If both are set,
+	// WarningHandlerWithContext is used.
+	//
+	// See documentation for [SetDefaultWarningHandler] for details.
+	//
+	//logcheck:context // WarningHandlerWithContext should be used instead of WarningHandler in code which supports contextual logging.
 	WarningHandler WarningHandler
+
+	// WarningHandlerWithContext handles warnings in server responses.
+	// If this and WarningHandler are not set, the
+	// default warning handler is used. If both are set,
+	// WarningHandlerWithContext is used.
+	//
+	// See documentation for [SetDefaultWarningHandler] for details.
+	WarningHandlerWithContext WarningHandlerWithContext
 
 	// The maximum length of time to wait before giving up on a server request. A value of zero means no timeout.
 	Timeout time.Duration
@@ -2954,10 +2973,25 @@ func RESTClientForConfigAndClient(config *Config, httpClient *http.Client) (*RES
 	}
 
 	restClient, err := NewRESTClient(baseURL, versionedAPIPath, clientContent, rateLimiter, httpClient)
-	if err == nil && config.WarningHandler != nil {
-		restClient.warningHandler = config.WarningHandler
-	}
+	maybeSetWarningHandler(restClient, config.WarningHandler, config.WarningHandlerWithContext)
 	return restClient, err
+}
+
+// maybeSetWarningHandler sets the handlerWithContext if non-nil,
+// otherwise the handler with a wrapper if non-nil,
+// and does nothing if both are nil.
+//
+// May be called for a nil client.
+func maybeSetWarningHandler(c *RESTClient, handler WarningHandler, handlerWithContext WarningHandlerWithContext) {
+	if c == nil {
+		return
+	}
+	switch {
+	case handlerWithContext != nil:
+		c.warningHandler = handlerWithContext
+	case handler != nil:
+		c.warningHandler = warningLoggerNopContext{l: handler}
+	}
 }
 
 // UnversionedRESTClientFor is the same as RESTClientFor, except that it allows
@@ -3021,9 +3055,7 @@ func UnversionedRESTClientForConfigAndClient(config *Config, httpClient *http.Cl
 	}
 
 	restClient, err := NewRESTClient(baseURL, versionedAPIPath, clientContent, rateLimiter, httpClient)
-	if err == nil && config.WarningHandler != nil {
-		restClient.warningHandler = config.WarningHandler
-	}
+	maybeSetWarningHandler(restClient, config.WarningHandler, config.WarningHandlerWithContext)
 	return restClient, err
 }
 
@@ -3105,6 +3137,7 @@ func InClusterConfig() (*Config, error) {
 	tlsClientConfig := TLSClientConfig{}
 
 	if _, err := certutil.NewPool(rootCAFile); err != nil {
+		//nolint:logcheck // The decision to log this instead of returning an error goes back to ~2016. It's part of the client-go API now, so not changing it just to support contextual logging.
 		klog.Errorf("Expected to load root CA config from %s, but got err: %v", rootCAFile, err)
 	} else {
 		tlsClientConfig.CAFile = rootCAFile
@@ -3189,15 +3222,16 @@ func AnonymousClientConfig(config *Config) *Config {
 			CAData:     config.TLSClientConfig.CAData,
 			NextProtos: config.TLSClientConfig.NextProtos,
 		},
-		RateLimiter:        config.RateLimiter,
-		WarningHandler:     config.WarningHandler,
-		UserAgent:          config.UserAgent,
-		DisableCompression: config.DisableCompression,
-		QPS:                config.QPS,
-		Burst:              config.Burst,
-		Timeout:            config.Timeout,
-		Dial:               config.Dial,
-		Proxy:              config.Proxy,
+		RateLimiter:               config.RateLimiter,
+		WarningHandler:            config.WarningHandler,
+		WarningHandlerWithContext: config.WarningHandlerWithContext,
+		UserAgent:                 config.UserAgent,
+		DisableCompression:        config.DisableCompression,
+		QPS:                       config.QPS,
+		Burst:                     config.Burst,
+		Timeout:                   config.Timeout,
+		Dial:                      config.Dial,
+		Proxy:                     config.Proxy,
 	}
 }
 
@@ -3231,17 +3265,18 @@ func CopyConfig(config *Config) *Config {
 			CAData:     config.TLSClientConfig.CAData,
 			NextProtos: config.TLSClientConfig.NextProtos,
 		},
-		UserAgent:          config.UserAgent,
-		DisableCompression: config.DisableCompression,
-		Transport:          config.Transport,
-		WrapTransport:      config.WrapTransport,
-		QPS:                config.QPS,
-		Burst:              config.Burst,
-		RateLimiter:        config.RateLimiter,
-		WarningHandler:     config.WarningHandler,
-		Timeout:            config.Timeout,
-		Dial:               config.Dial,
-		Proxy:              config.Proxy,
+		UserAgent:                 config.UserAgent,
+		DisableCompression:        config.DisableCompression,
+		Transport:                 config.Transport,
+		WrapTransport:             config.WrapTransport,
+		QPS:                       config.QPS,
+		Burst:                     config.Burst,
+		RateLimiter:               config.RateLimiter,
+		WarningHandler:            config.WarningHandler,
+		WarningHandlerWithContext: config.WarningHandlerWithContext,
+		Timeout:                   config.Timeout,
+		Dial:                      config.Dial,
+		Proxy:                     config.Proxy,
 	}
 <<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -3252,4 +3287,20 @@ func CopyConfig(config *Config) *Config {
 	}
 	return c
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+}
+
+// CodecFactoryForGeneratedClient returns the provided CodecFactory if there are no enabled client
+// feature gates affecting serialization. Otherwise, it constructs and returns a new CodecFactory
+// from the provided Scheme.
+//
+// This is supported ONLY for use by clients generated with client-gen. The caller is responsible
+// for ensuring that the CodecFactory argument was constructed using the Scheme argument.
+func CodecFactoryForGeneratedClient(scheme *runtime.Scheme, codecs serializer.CodecFactory) serializer.CodecFactory {
+	if !features.FeatureGates().Enabled(features.ClientsAllowCBOR) {
+		// NOTE: This assumes client-gen will not generate CBOR-enabled Codecs as long as
+		// the feature gate exists.
+		return codecs
+	}
+
+	return serializer.NewCodecFactory(scheme, serializer.WithSerializer(cbor.NewSerializerInfo))
 }

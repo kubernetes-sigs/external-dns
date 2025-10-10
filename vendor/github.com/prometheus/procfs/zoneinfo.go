@@ -83,6 +83,7 @@ func (fs FS) Zoneinfo() ([]Zoneinfo, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
 	}
 	zoneinfo, err := parseZoneinfo(data)
@@ -173,10 +174,15 @@ func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
 =======
 		return nil, fmt.Errorf("%s: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
+=======
+		return nil, fmt.Errorf("%w: error reading zoneinfo %q: %w", ErrFileRead, fs.proc.Path("zoneinfo"), err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 	zoneinfo, err := parseZoneinfo(data)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error parsing zoneinfo %q: %w", ErrFileParse, fs.proc.Path("zoneinfo"), err)
+		return nil, fmt.Errorf("%w: error parsing zoneinfo %q: %w", ErrFileParse, fs.proc.Path("zoneinfo"), err)
 	}
 	return zoneinfo, nil
 }

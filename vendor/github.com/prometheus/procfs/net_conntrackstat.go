@@ -66,6 +66,7 @@ func readConntrackStat(path string) ([]ConntrackStatEntry, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read conntrack stats from %q: %w", path, err)
 	}
 
@@ -488,6 +489,11 @@ func parseConntrackStatField(field string) (uint64, error) {
 =======
 		return nil, fmt.Errorf("%s: Cannot read file: %v: %w", ErrFileRead, path, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: Cannot read file: %v: %w", ErrFileRead, path, err)
+=======
+		return nil, fmt.Errorf("%w: Cannot read file: %v: %w", ErrFileRead, path, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return stat, nil
@@ -515,7 +521,7 @@ func parseConntrackStat(r io.Reader) ([]ConntrackStatEntry, error) {
 func parseConntrackStatEntry(fields []string) (*ConntrackStatEntry, error) {
 	entries, err := util.ParseHexUint64s(fields)
 	if err != nil {
-		return nil, fmt.Errorf("%s: Cannot parse entry: %d: %w", ErrFileParse, entries, err)
+		return nil, fmt.Errorf("%w: Cannot parse entry: %d: %w", ErrFileParse, entries, err)
 	}
 	numEntries := len(entries)
 	if numEntries < 16 || numEntries > 17 {

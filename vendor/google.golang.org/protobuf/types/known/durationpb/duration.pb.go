@@ -88,6 +88,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 	time "time"
+	unsafe "unsafe"
 )
 
 // A Duration represents a signed, fixed-length span of time represented
@@ -149,10 +150,7 @@ import (
 // be expressed in JSON format as "3.000000001s", and 3 seconds and 1
 // microsecond should be expressed in JSON format as "3.000001s".
 type Duration struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+	state protoimpl.MessageState `protogen:"open.v1"`
 	// Signed seconds of the span of time. Must be from -315,576,000,000
 	// to +315,576,000,000 inclusive. Note: these bounds are computed from:
 	// 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
@@ -163,7 +161,9 @@ type Duration struct {
 	// of one second or more, a non-zero value for the `nanos` field must be
 	// of the same sign as the `seconds` field. Must be from -999,999,999
 	// to +999,999,999 inclusive.
-	Nanos int32 `protobuf:"varint,2,opt,name=nanos,proto3" json:"nanos,omitempty"`
+	Nanos         int32 `protobuf:"varint,2,opt,name=nanos,proto3" json:"nanos,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 // New constructs a new Duration from the provided time.Duration.
@@ -253,11 +253,9 @@ func (x *Duration) check() uint {
 
 func (x *Duration) Reset() {
 	*x = Duration{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_google_protobuf_duration_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_google_protobuf_duration_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Duration) String() string {
@@ -268,7 +266,7 @@ func (*Duration) ProtoMessage() {}
 
 func (x *Duration) ProtoReflect() protoreflect.Message {
 	mi := &file_google_protobuf_duration_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -299,7 +297,7 @@ func (x *Duration) GetNanos() int32 {
 
 var File_google_protobuf_duration_proto protoreflect.FileDescriptor
 
-var file_google_protobuf_duration_proto_rawDesc = []byte{
+var file_google_protobuf_duration_proto_rawDesc = string([]byte{
 	0x0a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
 	0x66, 0x2f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x12, 0x0f, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
@@ -316,6 +314,7 @@ var file_google_protobuf_duration_proto_rawDesc = []byte{
 	0x50, 0x42, 0xaa, 0x02, 0x1e, 0x47, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x50, 0x72, 0x6f, 0x74,
 	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x57, 0x65, 0x6c, 0x6c, 0x4b, 0x6e, 0x6f, 0x77, 0x6e, 0x54, 0x79,
 	0x70, 0x65, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -1560,21 +1559,26 @@ var file_google_protobuf_duration_proto_rawDesc = []byte{
 	0x70, 0x65, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 }
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+}
+=======
+})
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 var (
 	file_google_protobuf_duration_proto_rawDescOnce sync.Once
-	file_google_protobuf_duration_proto_rawDescData = file_google_protobuf_duration_proto_rawDesc
+	file_google_protobuf_duration_proto_rawDescData []byte
 )
 
 func file_google_protobuf_duration_proto_rawDescGZIP() []byte {
 	file_google_protobuf_duration_proto_rawDescOnce.Do(func() {
-		file_google_protobuf_duration_proto_rawDescData = protoimpl.X.CompressGZIP(file_google_protobuf_duration_proto_rawDescData)
+		file_google_protobuf_duration_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_google_protobuf_duration_proto_rawDesc), len(file_google_protobuf_duration_proto_rawDesc)))
 	})
 	return file_google_protobuf_duration_proto_rawDescData
 }
 
 var file_google_protobuf_duration_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_google_protobuf_duration_proto_goTypes = []interface{}{
+var file_google_protobuf_duration_proto_goTypes = []any{
 	(*Duration)(nil), // 0: google.protobuf.Duration
 }
 var file_google_protobuf_duration_proto_depIdxs = []int32{
@@ -1590,25 +1594,11 @@ func file_google_protobuf_duration_proto_init() {
 	if File_google_protobuf_duration_proto != nil {
 		return
 	}
-	if !protoimpl.UnsafeEnabled {
-		file_google_protobuf_duration_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Duration); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_google_protobuf_duration_proto_rawDesc,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_google_protobuf_duration_proto_rawDesc), len(file_google_protobuf_duration_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
@@ -1619,7 +1609,6 @@ func file_google_protobuf_duration_proto_init() {
 		MessageInfos:      file_google_protobuf_duration_proto_msgTypes,
 	}.Build()
 	File_google_protobuf_duration_proto = out.File
-	file_google_protobuf_duration_proto_rawDesc = nil
 	file_google_protobuf_duration_proto_goTypes = nil
 	file_google_protobuf_duration_proto_depIdxs = nil
 }

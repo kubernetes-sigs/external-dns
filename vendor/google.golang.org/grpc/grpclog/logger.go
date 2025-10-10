@@ -26,11 +26,18 @@ package grpclog
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "google.golang.org/grpc/internal/grpclog"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+import "google.golang.org/grpc/internal/grpclog"
+=======
+import "google.golang.org/grpc/grpclog/internal"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 // Logger mimics golang's standard Logger as an interface.
 //
 // Deprecated: use LoggerV2.
+<<<<<<< HEAD
 type Logger interface {
 	Fatal(args ...interface{})
 	Fatalf(format string, args ...interface{})
@@ -160,12 +167,25 @@ type Logger interface {
 	Printf(format string, args ...any)
 	Println(args ...any)
 }
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+type Logger interface {
+	Fatal(args ...any)
+	Fatalf(format string, args ...any)
+	Fatalln(args ...any)
+	Print(args ...any)
+	Printf(format string, args ...any)
+	Println(args ...any)
+}
+=======
+type Logger internal.Logger
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 // SetLogger sets the logger that is used in grpc. Call only from
 // init() functions.
 //
 // Deprecated: use SetLoggerV2.
 func SetLogger(l Logger) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 	logger = &loggerWrapper{Logger: l}
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -220,4 +240,55 @@ func (g *loggerWrapper) Errorf(format string, args ...any) {
 func (g *loggerWrapper) V(l int) bool {
 	// Returns true for all verbose level.
 	return true
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	grpclog.Logger = &loggerWrapper{Logger: l}
+}
+
+// loggerWrapper wraps Logger into a LoggerV2.
+type loggerWrapper struct {
+	Logger
+}
+
+func (g *loggerWrapper) Info(args ...any) {
+	g.Logger.Print(args...)
+}
+
+func (g *loggerWrapper) Infoln(args ...any) {
+	g.Logger.Println(args...)
+}
+
+func (g *loggerWrapper) Infof(format string, args ...any) {
+	g.Logger.Printf(format, args...)
+}
+
+func (g *loggerWrapper) Warning(args ...any) {
+	g.Logger.Print(args...)
+}
+
+func (g *loggerWrapper) Warningln(args ...any) {
+	g.Logger.Println(args...)
+}
+
+func (g *loggerWrapper) Warningf(format string, args ...any) {
+	g.Logger.Printf(format, args...)
+}
+
+func (g *loggerWrapper) Error(args ...any) {
+	g.Logger.Print(args...)
+}
+
+func (g *loggerWrapper) Errorln(args ...any) {
+	g.Logger.Println(args...)
+}
+
+func (g *loggerWrapper) Errorf(format string, args ...any) {
+	g.Logger.Printf(format, args...)
+}
+
+func (g *loggerWrapper) V(l int) bool {
+	// Returns true for all verbose level.
+	return true
+=======
+	internal.LoggerV2Impl = &internal.LoggerWrapper{Logger: l}
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }

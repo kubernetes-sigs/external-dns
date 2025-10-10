@@ -843,7 +843,7 @@ const (
 	// InvalidCap occurs when an argument to the cap built-in function is not of
 	// supported type.
 	//
-	// See https://golang.org/ref/spec#Lengthand_capacity for information on
+	// See https://golang.org/ref/spec#Length_and_capacity for information on
 	// which underlying types are supported as arguments to cap and len.
 	//
 	// Example:
@@ -864,7 +864,7 @@ const (
 	// InvalidCopy occurs when the arguments are not of slice type or do not
 	// have compatible type.
 	//
-	// See https://golang.org/ref/spec#Appendingand_copying_slices for more
+	// See https://golang.org/ref/spec#Appending_and_copying_slices for more
 	// information on the type requirements for the copy built-in.
 	//
 	// Example:
@@ -902,7 +902,7 @@ const (
 	// InvalidLen occurs when an argument to the len built-in function is not of
 	// supported type.
 	//
-	// See https://golang.org/ref/spec#Lengthand_capacity for information on
+	// See https://golang.org/ref/spec#Length_and_capacity for information on
 	// which underlying types are supported as arguments to cap and len.
 	//
 	// Example:
@@ -919,7 +919,7 @@ const (
 
 	// InvalidMake occurs when make is called with an unsupported type argument.
 	//
-	// See https://golang.org/ref/spec#Makingslices_maps_and_channels for
+	// See https://golang.org/ref/spec#Making_slices_maps_and_channels for
 	// information on the types that may be created using make.
 	//
 	// Example:
@@ -1454,10 +1454,10 @@ const (
 	NotAGenericType
 
 	// WrongTypeArgCount occurs when a type or function is instantiated with an
-	// incorrent number of type arguments, including when a generic type or
+	// incorrect number of type arguments, including when a generic type or
 	// function is used without instantiation.
 	//
-	// Errors inolving failed type inference are assigned other error codes.
+	// Errors involving failed type inference are assigned other error codes.
 	//
 	// Example:
 	//  type T[p any] int

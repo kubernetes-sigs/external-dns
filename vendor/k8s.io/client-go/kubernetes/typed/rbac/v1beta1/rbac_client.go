@@ -23,10 +23,16 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	"net/http"
+=======
+	http "net/http"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
-	v1beta1 "k8s.io/api/rbac/v1beta1"
-	"k8s.io/client-go/kubernetes/scheme"
+	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -64,9 +70,7 @@ func (c *RbacV1beta1Client) RoleBindings(namespace string) RoleBindingInterface 
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*RbacV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -78,9 +82,7 @@ func NewForConfig(c *rest.Config) (*RbacV1beta1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*RbacV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -245,17 +247,15 @@ func New(c rest.Interface) *RbacV1beta1Client {
 	return &RbacV1beta1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1beta1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := rbacv1beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -86,7 +86,7 @@ func New(cfg Config) (*Client, error) {
 // service interface implementations and do not need connection management.
 func NewCtxClient(ctx context.Context, opts ...Option) *Client {
 	cctx, cancel := context.WithCancel(ctx)
-	c := &Client{ctx: cctx, cancel: cancel, lgMu: new(sync.RWMutex)}
+	c := &Client{ctx: cctx, cancel: cancel, lgMu: new(sync.RWMutex), mu: new(sync.RWMutex)}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -148,7 +148,7 @@ func (c *Client) Close() error {
 		c.Lease.Close()
 	}
 	if c.conn != nil {
-		return toErr(c.ctx, c.conn.Close())
+		return ContextError(c.ctx, c.conn.Close())
 	}
 	return c.ctx.Err()
 }
@@ -892,7 +892,9 @@ func isUnavailableErr(ctx context.Context, err error) bool {
 	return false
 }
 
-func toErr(ctx context.Context, err error) error {
+// ContextError converts the error into an EtcdError if the error message matches one of
+// the defined messages; otherwise, it tries to retrieve the context error.
+func ContextError(ctx context.Context, err error) error {
 	if err == nil {
 		return nil
 	}

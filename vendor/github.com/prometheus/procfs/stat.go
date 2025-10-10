@@ -101,6 +101,7 @@ func parseCPUStat(line string) (CPUStat, int64, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return CPUStat{}, -1, fmt.Errorf("couldn't parse %q (cpu): %w", line, err)
 	}
 	if count == 0 {
@@ -731,6 +732,11 @@ func (fs FS) Stat() (Stat, error) {
 =======
 		return CPUStat{}, -1, fmt.Errorf("%s: couldn't parse %q (cpu): %w", ErrFileParse, line, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return CPUStat{}, -1, fmt.Errorf("%s: couldn't parse %q (cpu): %w", ErrFileParse, line, err)
+=======
+		return CPUStat{}, -1, fmt.Errorf("%w: couldn't parse %q (cpu): %w", ErrFileParse, line, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 	if count == 0 {
 		return CPUStat{}, -1, fmt.Errorf("%w: couldn't parse %q (cpu): 0 elements parsed", ErrFileParse, line)
@@ -753,7 +759,7 @@ func (fs FS) Stat() (Stat, error) {
 
 	cpuID, err := strconv.ParseInt(cpu[3:], 10, 64)
 	if err != nil {
-		return CPUStat{}, -1, fmt.Errorf("%s: couldn't parse %q (cpu/cpuid): %w", ErrFileParse, line, err)
+		return CPUStat{}, -1, fmt.Errorf("%w: couldn't parse %q (cpu/cpuid): %w", ErrFileParse, line, err)
 	}
 
 	return cpuStat, cpuID, nil
@@ -773,7 +779,7 @@ func parseSoftIRQStat(line string) (SoftIRQStat, uint64, error) {
 		&softIRQStat.Hrtimer, &softIRQStat.Rcu)
 
 	if err != nil {
-		return SoftIRQStat{}, 0, fmt.Errorf("%s: couldn't parse %q (softirq): %w", ErrFileParse, line, err)
+		return SoftIRQStat{}, 0, fmt.Errorf("%w: couldn't parse %q (softirq): %w", ErrFileParse, line, err)
 	}
 
 	return softIRQStat, total, nil
@@ -838,34 +844,34 @@ func parseStat(r io.Reader, fileName string) (Stat, error) {
 		switch {
 		case parts[0] == "btime":
 			if stat.BootTime, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("%s: couldn't parse %q (btime): %w", ErrFileParse, parts[1], err)
+				return Stat{}, fmt.Errorf("%w: couldn't parse %q (btime): %w", ErrFileParse, parts[1], err)
 			}
 		case parts[0] == "intr":
 			if stat.IRQTotal, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("%s: couldn't parse %q (intr): %w", ErrFileParse, parts[1], err)
+				return Stat{}, fmt.Errorf("%w: couldn't parse %q (intr): %w", ErrFileParse, parts[1], err)
 			}
 			numberedIRQs := parts[2:]
 			stat.IRQ = make([]uint64, len(numberedIRQs))
 			for i, count := range numberedIRQs {
 				if stat.IRQ[i], err = strconv.ParseUint(count, 10, 64); err != nil {
-					return Stat{}, fmt.Errorf("%s: couldn't parse %q (intr%d): %w", ErrFileParse, count, i, err)
+					return Stat{}, fmt.Errorf("%w: couldn't parse %q (intr%d): %w", ErrFileParse, count, i, err)
 				}
 			}
 		case parts[0] == "ctxt":
 			if stat.ContextSwitches, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("%s: couldn't parse %q (ctxt): %w", ErrFileParse, parts[1], err)
+				return Stat{}, fmt.Errorf("%w: couldn't parse %q (ctxt): %w", ErrFileParse, parts[1], err)
 			}
 		case parts[0] == "processes":
 			if stat.ProcessCreated, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("%s: couldn't parse %q (processes): %w", ErrFileParse, parts[1], err)
+				return Stat{}, fmt.Errorf("%w: couldn't parse %q (processes): %w", ErrFileParse, parts[1], err)
 			}
 		case parts[0] == "procs_running":
 			if stat.ProcessesRunning, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("%s: couldn't parse %q (procs_running): %w", ErrFileParse, parts[1], err)
+				return Stat{}, fmt.Errorf("%w: couldn't parse %q (procs_running): %w", ErrFileParse, parts[1], err)
 			}
 		case parts[0] == "procs_blocked":
 			if stat.ProcessesBlocked, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("%s: couldn't parse %q (procs_blocked): %w", ErrFileParse, parts[1], err)
+				return Stat{}, fmt.Errorf("%w: couldn't parse %q (procs_blocked): %w", ErrFileParse, parts[1], err)
 			}
 		case parts[0] == "softirq":
 			softIRQStats, total, err := parseSoftIRQStat(line)
@@ -889,6 +895,7 @@ func parseStat(r io.Reader, fileName string) (Stat, error) {
 
 	if err := scanner.Err(); err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return Stat{}, fmt.Errorf("couldn't parse %s: %s", fileName, err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
@@ -896,6 +903,11 @@ func parseStat(r io.Reader, fileName string) (Stat, error) {
 =======
 		return Stat{}, fmt.Errorf("%s: couldn't parse %q: %w", ErrFileParse, fileName, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return Stat{}, fmt.Errorf("%s: couldn't parse %q: %w", ErrFileParse, fileName, err)
+=======
+		return Stat{}, fmt.Errorf("%w: couldn't parse %q: %w", ErrFileParse, fileName, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return stat, nil

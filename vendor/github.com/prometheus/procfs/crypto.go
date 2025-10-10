@@ -63,11 +63,20 @@ func (fs FS) Crypto() ([]Crypto, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: Cannot read file %v: %w", ErrFileRead, b, err)
+
+=======
+		return nil, fmt.Errorf("%w: Cannot read file %v: %w", ErrFileRead, b, err)
+
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	crypto, err := parseCrypto(bytes.NewReader(b))
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -150,6 +159,11 @@ func (fs FS) Crypto() ([]Crypto, error) {
 =======
 		return nil, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, crypto, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: Cannot parse %v: %w", ErrFileParse, crypto, err)
+=======
+		return nil, fmt.Errorf("%w: Cannot parse %v: %w", ErrFileParse, crypto, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return crypto, nil
@@ -172,7 +186,7 @@ func parseCrypto(r io.Reader) ([]Crypto, error) {
 
 		kv := strings.Split(text, ":")
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("%w: Cannot parae line: %q", ErrFileParse, text)
+			return nil, fmt.Errorf("%w: Cannot parse line: %q", ErrFileParse, text)
 		}
 
 		k := strings.TrimSpace(kv[0])

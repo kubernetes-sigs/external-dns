@@ -62,7 +62,7 @@ message Endpoint {
   // targetRef is a reference to a Kubernetes object that represents this
   // endpoint.
   // +optional
-  optional k8s.io.api.core.v1.ObjectReference targetRef = 4;
+  optional .k8s.io.api.core.v1.ObjectReference targetRef = 4;
 
   // topology contains arbitrary topology information associated with the
   // endpoint. These key/value pairs must conform with the label format.
@@ -869,6 +869,13 @@ message EndpointHints {
   // enable topology aware routing. May contain a maximum of 8 entries.
   // +listType=atomic
   repeated ForZone forZones = 1;
+
+  // forNodes indicates the node(s) this endpoint should be consumed by when
+  // using topology aware routing. May contain a maximum of 8 entries.
+  // This is an Alpha feature and is only used when the PreferSameTrafficDistribution
+  // feature gate is enabled.
+  // +listType=atomic
+  repeated ForNode forNodes = 2;
 }
 
 // EndpointPort represents a Port used by an EndpointSlice
@@ -908,7 +915,7 @@ message EndpointPort {
 message EndpointSlice {
   // Standard object's metadata.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // addressType specifies the type of address carried by this EndpointSlice.
   // All addresses in this slice must be the same type. This field is
@@ -938,11 +945,17 @@ message EndpointSlice {
 message EndpointSliceList {
   // Standard list metadata.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is the list of endpoint slices
   repeated EndpointSlice items = 2;
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// ForNode provides information about which nodes should consume this endpoint.
+message ForNode {
+  // name represents the name of the node.
+  optional string name = 1;
 }
 
 // ForZone provides information about which zones should consume this endpoint.

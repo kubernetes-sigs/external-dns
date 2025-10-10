@@ -15119,6 +15119,7 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procEnumServicesStatusExW                                = modadvapi32.NewProc("EnumServicesStatusExW")
 	procEqualSid                                             = modadvapi32.NewProc("EqualSid")
 	procFreeSid                                              = modadvapi32.NewProc("FreeSid")
+	procGetAce                                               = modadvapi32.NewProc("GetAce")
 	procGetLengthSid                                         = modadvapi32.NewProc("GetLengthSid")
 	procGetNamedSecurityInfoW                                = modadvapi32.NewProc("GetNamedSecurityInfoW")
 	procGetSecurityDescriptorControl                         = modadvapi32.NewProc("GetSecurityDescriptorControl")
@@ -15208,10 +15209,15 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procDnsRecordListFree                                    = moddnsapi.NewProc("DnsRecordListFree")
 	procDwmGetWindowAttribute                                = moddwmapi.NewProc("DwmGetWindowAttribute")
 	procDwmSetWindowAttribute                                = moddwmapi.NewProc("DwmSetWindowAttribute")
+	procCancelMibChangeNotify2                               = modiphlpapi.NewProc("CancelMibChangeNotify2")
 	procGetAdaptersAddresses                                 = modiphlpapi.NewProc("GetAdaptersAddresses")
 	procGetAdaptersInfo                                      = modiphlpapi.NewProc("GetAdaptersInfo")
 	procGetBestInterfaceEx                                   = modiphlpapi.NewProc("GetBestInterfaceEx")
 	procGetIfEntry                                           = modiphlpapi.NewProc("GetIfEntry")
+	procGetIfEntry2Ex                                        = modiphlpapi.NewProc("GetIfEntry2Ex")
+	procGetUnicastIpAddressEntry                             = modiphlpapi.NewProc("GetUnicastIpAddressEntry")
+	procNotifyIpInterfaceChange                              = modiphlpapi.NewProc("NotifyIpInterfaceChange")
+	procNotifyUnicastIpAddressChange                         = modiphlpapi.NewProc("NotifyUnicastIpAddressChange")
 	procAddDllDirectory                                      = modkernel32.NewProc("AddDllDirectory")
 	procAssignProcessToJobObject                             = modkernel32.NewProc("AssignProcessToJobObject")
 	procCancelIo                                             = modkernel32.NewProc("CancelIo")
@@ -15274,7 +15280,9 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procGetCommandLineW                                      = modkernel32.NewProc("GetCommandLineW")
 	procGetComputerNameExW                                   = modkernel32.NewProc("GetComputerNameExW")
 	procGetComputerNameW                                     = modkernel32.NewProc("GetComputerNameW")
+	procGetConsoleCP                                         = modkernel32.NewProc("GetConsoleCP")
 	procGetConsoleMode                                       = modkernel32.NewProc("GetConsoleMode")
+	procGetConsoleOutputCP                                   = modkernel32.NewProc("GetConsoleOutputCP")
 	procGetConsoleScreenBufferInfo                           = modkernel32.NewProc("GetConsoleScreenBufferInfo")
 	procGetCurrentDirectoryW                                 = modkernel32.NewProc("GetCurrentDirectoryW")
 	procGetCurrentProcessId                                  = modkernel32.NewProc("GetCurrentProcessId")
@@ -15300,8 +15308,10 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procGetMaximumProcessorCount                             = modkernel32.NewProc("GetMaximumProcessorCount")
 	procGetModuleFileNameW                                   = modkernel32.NewProc("GetModuleFileNameW")
 	procGetModuleHandleExW                                   = modkernel32.NewProc("GetModuleHandleExW")
+	procGetNamedPipeClientProcessId                          = modkernel32.NewProc("GetNamedPipeClientProcessId")
 	procGetNamedPipeHandleStateW                             = modkernel32.NewProc("GetNamedPipeHandleStateW")
 	procGetNamedPipeInfo                                     = modkernel32.NewProc("GetNamedPipeInfo")
+	procGetNamedPipeServerProcessId                          = modkernel32.NewProc("GetNamedPipeServerProcessId")
 	procGetOverlappedResult                                  = modkernel32.NewProc("GetOverlappedResult")
 	procGetPriorityClass                                     = modkernel32.NewProc("GetPriorityClass")
 	procGetProcAddress                                       = modkernel32.NewProc("GetProcAddress")
@@ -15374,8 +15384,10 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procSetCommMask                                          = modkernel32.NewProc("SetCommMask")
 	procSetCommState                                         = modkernel32.NewProc("SetCommState")
 	procSetCommTimeouts                                      = modkernel32.NewProc("SetCommTimeouts")
+	procSetConsoleCP                                         = modkernel32.NewProc("SetConsoleCP")
 	procSetConsoleCursorPosition                             = modkernel32.NewProc("SetConsoleCursorPosition")
 	procSetConsoleMode                                       = modkernel32.NewProc("SetConsoleMode")
+	procSetConsoleOutputCP                                   = modkernel32.NewProc("SetConsoleOutputCP")
 	procSetCurrentDirectoryW                                 = modkernel32.NewProc("SetCurrentDirectoryW")
 	procSetDefaultDllDirectories                             = modkernel32.NewProc("SetDefaultDllDirectories")
 	procSetDllDirectoryW                                     = modkernel32.NewProc("SetDllDirectoryW")
@@ -15429,6 +15441,7 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procTransmitFile                                         = modmswsock.NewProc("TransmitFile")
 	procNetApiBufferFree                                     = modnetapi32.NewProc("NetApiBufferFree")
 	procNetGetJoinInformation                                = modnetapi32.NewProc("NetGetJoinInformation")
+	procNetUserEnum                                          = modnetapi32.NewProc("NetUserEnum")
 	procNetUserGetInfo                                       = modnetapi32.NewProc("NetUserGetInfo")
 	procNtCreateFile                                         = modntdll.NewProc("NtCreateFile")
 	procNtCreateNamedPipeFile                                = modntdll.NewProc("NtCreateNamedPipeFile")
@@ -15504,12 +15517,16 @@ func WSASocket(af int32, typ int32, protocol int32, protoInfo *WSAProtocolInfo, 
 	procGetDesktopWindow                                     = moduser32.NewProc("GetDesktopWindow")
 	procGetForegroundWindow                                  = moduser32.NewProc("GetForegroundWindow")
 	procGetGUIThreadInfo                                     = moduser32.NewProc("GetGUIThreadInfo")
+	procGetKeyboardLayout                                    = moduser32.NewProc("GetKeyboardLayout")
 	procGetShellWindow                                       = moduser32.NewProc("GetShellWindow")
 	procGetWindowThreadProcessId                             = moduser32.NewProc("GetWindowThreadProcessId")
 	procIsWindow                                             = moduser32.NewProc("IsWindow")
 	procIsWindowUnicode                                      = moduser32.NewProc("IsWindowUnicode")
 	procIsWindowVisible                                      = moduser32.NewProc("IsWindowVisible")
+	procLoadKeyboardLayoutW                                  = moduser32.NewProc("LoadKeyboardLayoutW")
 	procMessageBoxW                                          = moduser32.NewProc("MessageBoxW")
+	procToUnicodeEx                                          = moduser32.NewProc("ToUnicodeEx")
+	procUnloadKeyboardLayout                                 = moduser32.NewProc("UnloadKeyboardLayout")
 	procCreateEnvironmentBlock                               = moduserenv.NewProc("CreateEnvironmentBlock")
 	procDestroyEnvironmentBlock                              = moduserenv.NewProc("DestroyEnvironmentBlock")
 	procGetUserProfileDirectoryW                             = moduserenv.NewProc("GetUserProfileDirectoryW")
@@ -15810,6 +15827,14 @@ func EqualSid(sid1 *SID, sid2 *SID) (isEqual bool) {
 func FreeSid(sid *SID) (err error) {
 	r1, _, e1 := syscall.Syscall(procFreeSid.Addr(), 1, uintptr(unsafe.Pointer(sid)), 0, 0)
 	if r1 != 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func GetAce(acl *ACL, aceIndex uint32, pAce **ACCESS_ALLOWED_ACE) (err error) {
+	r1, _, e1 := syscall.Syscall(procGetAce.Addr(), 3, uintptr(unsafe.Pointer(acl)), uintptr(aceIndex), uintptr(unsafe.Pointer(pAce)))
+	if r1 == 0 {
 		err = errnoErr(e1)
 	}
 	return
@@ -16616,6 +16641,14 @@ func DwmSetWindowAttribute(hwnd HWND, attribute uint32, value unsafe.Pointer, si
 	return
 }
 
+func CancelMibChangeNotify2(notificationHandle Handle) (errcode error) {
+	r0, _, _ := syscall.Syscall(procCancelMibChangeNotify2.Addr(), 1, uintptr(notificationHandle), 0, 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
 func GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) {
 	r0, _, _ := syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, uintptr(family), uintptr(flags), uintptr(reserved), uintptr(unsafe.Pointer(adapterAddresses)), uintptr(unsafe.Pointer(sizePointer)), 0)
 	if r0 != 0 {
@@ -16642,6 +16675,46 @@ func getBestInterfaceEx(sockaddr unsafe.Pointer, pdwBestIfIndex *uint32) (errcod
 
 func GetIfEntry(pIfRow *MibIfRow) (errcode error) {
 	r0, _, _ := syscall.Syscall(procGetIfEntry.Addr(), 1, uintptr(unsafe.Pointer(pIfRow)), 0, 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
+func GetIfEntry2Ex(level uint32, row *MibIfRow2) (errcode error) {
+	r0, _, _ := syscall.Syscall(procGetIfEntry2Ex.Addr(), 2, uintptr(level), uintptr(unsafe.Pointer(row)), 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
+func GetUnicastIpAddressEntry(row *MibUnicastIpAddressRow) (errcode error) {
+	r0, _, _ := syscall.Syscall(procGetUnicastIpAddressEntry.Addr(), 1, uintptr(unsafe.Pointer(row)), 0, 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
+func NotifyIpInterfaceChange(family uint16, callback uintptr, callerContext unsafe.Pointer, initialNotification bool, notificationHandle *Handle) (errcode error) {
+	var _p0 uint32
+	if initialNotification {
+		_p0 = 1
+	}
+	r0, _, _ := syscall.Syscall6(procNotifyIpInterfaceChange.Addr(), 5, uintptr(family), uintptr(callback), uintptr(callerContext), uintptr(_p0), uintptr(unsafe.Pointer(notificationHandle)), 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
+func NotifyUnicastIpAddressChange(family uint16, callback uintptr, callerContext unsafe.Pointer, initialNotification bool, notificationHandle *Handle) (errcode error) {
+	var _p0 uint32
+	if initialNotification {
+		_p0 = 1
+	}
+	r0, _, _ := syscall.Syscall6(procNotifyUnicastIpAddressChange.Addr(), 5, uintptr(family), uintptr(callback), uintptr(callerContext), uintptr(_p0), uintptr(unsafe.Pointer(notificationHandle)), 0)
 	if r0 != 0 {
 		errcode = syscall.Errno(r0)
 	}
@@ -17176,9 +17249,27 @@ func GetComputerName(buf *uint16, n *uint32) (err error) {
 	return
 }
 
+func GetConsoleCP() (cp uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procGetConsoleCP.Addr(), 0, 0, 0, 0)
+	cp = uint32(r0)
+	if cp == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func GetConsoleMode(console Handle, mode *uint32) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetConsoleMode.Addr(), 2, uintptr(console), uintptr(unsafe.Pointer(mode)), 0)
 	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func GetConsoleOutputCP() (cp uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procGetConsoleOutputCP.Addr(), 0, 0, 0, 0)
+	cp = uint32(r0)
+	if cp == 0 {
 		err = errnoErr(e1)
 	}
 	return
@@ -17385,6 +17476,14 @@ func GetModuleHandleEx(flags uint32, moduleName *uint16, module *Handle) (err er
 	return
 }
 
+func GetNamedPipeClientProcessId(pipe Handle, clientProcessID *uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procGetNamedPipeClientProcessId.Addr(), 2, uintptr(pipe), uintptr(unsafe.Pointer(clientProcessID)), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func GetNamedPipeHandleState(pipe Handle, state *uint32, curInstances *uint32, maxCollectionCount *uint32, collectDataTimeout *uint32, userName *uint16, maxUserNameSize uint32) (err error) {
 	r1, _, e1 := syscall.Syscall9(procGetNamedPipeHandleStateW.Addr(), 7, uintptr(pipe), uintptr(unsafe.Pointer(state)), uintptr(unsafe.Pointer(curInstances)), uintptr(unsafe.Pointer(maxCollectionCount)), uintptr(unsafe.Pointer(collectDataTimeout)), uintptr(unsafe.Pointer(userName)), uintptr(maxUserNameSize), 0, 0)
 	if r1 == 0 {
@@ -17395,6 +17494,14 @@ func GetNamedPipeHandleState(pipe Handle, state *uint32, curInstances *uint32, m
 
 func GetNamedPipeInfo(pipe Handle, flags *uint32, outSize *uint32, inSize *uint32, maxInstances *uint32) (err error) {
 	r1, _, e1 := syscall.Syscall6(procGetNamedPipeInfo.Addr(), 5, uintptr(pipe), uintptr(unsafe.Pointer(flags)), uintptr(unsafe.Pointer(outSize)), uintptr(unsafe.Pointer(inSize)), uintptr(unsafe.Pointer(maxInstances)), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func GetNamedPipeServerProcessId(pipe Handle, serverProcessID *uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procGetNamedPipeServerProcessId.Addr(), 2, uintptr(pipe), uintptr(unsafe.Pointer(serverProcessID)), 0)
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -18052,6 +18159,14 @@ func SetCommTimeouts(handle Handle, timeouts *CommTimeouts) (err error) {
 	return
 }
 
+func SetConsoleCP(cp uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procSetConsoleCP.Addr(), 1, uintptr(cp), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func setConsoleCursorPosition(console Handle, position uint32) (err error) {
 	r1, _, e1 := syscall.Syscall(procSetConsoleCursorPosition.Addr(), 2, uintptr(console), uintptr(position), 0)
 	if r1 == 0 {
@@ -18062,6 +18177,14 @@ func setConsoleCursorPosition(console Handle, position uint32) (err error) {
 
 func SetConsoleMode(console Handle, mode uint32) (err error) {
 	r1, _, e1 := syscall.Syscall(procSetConsoleMode.Addr(), 2, uintptr(console), uintptr(mode), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func SetConsoleOutputCP(cp uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procSetConsoleOutputCP.Addr(), 1, uintptr(cp), 0, 0)
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -18508,6 +18631,14 @@ func NetApiBufferFree(buf *byte) (neterr error) {
 
 func NetGetJoinInformation(server *uint16, name **uint16, bufType *uint32) (neterr error) {
 	r0, _, _ := syscall.Syscall(procNetGetJoinInformation.Addr(), 3, uintptr(unsafe.Pointer(server)), uintptr(unsafe.Pointer(name)), uintptr(unsafe.Pointer(bufType)))
+	if r0 != 0 {
+		neterr = syscall.Errno(r0)
+	}
+	return
+}
+
+func NetUserEnum(serverName *uint16, level uint32, filter uint32, buf **byte, prefMaxLen uint32, entriesRead *uint32, totalEntries *uint32, resumeHandle *uint32) (neterr error) {
+	r0, _, _ := syscall.Syscall9(procNetUserEnum.Addr(), 8, uintptr(unsafe.Pointer(serverName)), uintptr(level), uintptr(filter), uintptr(unsafe.Pointer(buf)), uintptr(prefMaxLen), uintptr(unsafe.Pointer(entriesRead)), uintptr(unsafe.Pointer(totalEntries)), uintptr(unsafe.Pointer(resumeHandle)), 0)
 	if r0 != 0 {
 		neterr = syscall.Errno(r0)
 	}
@@ -19092,6 +19223,12 @@ func GetGUIThreadInfo(thread uint32, info *GUIThreadInfo) (err error) {
 	return
 }
 
+func GetKeyboardLayout(tid uint32) (hkl Handle) {
+	r0, _, _ := syscall.Syscall(procGetKeyboardLayout.Addr(), 1, uintptr(tid), 0, 0)
+	hkl = Handle(r0)
+	return
+}
+
 func GetShellWindow() (shellWindow HWND) {
 	r0, _, _ := syscall.Syscall(procGetShellWindow.Addr(), 0, 0, 0, 0)
 	shellWindow = HWND(r0)
@@ -19125,10 +19262,33 @@ func IsWindowVisible(hwnd HWND) (isVisible bool) {
 	return
 }
 
+func LoadKeyboardLayout(name *uint16, flags uint32) (hkl Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procLoadKeyboardLayoutW.Addr(), 2, uintptr(unsafe.Pointer(name)), uintptr(flags), 0)
+	hkl = Handle(r0)
+	if hkl == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func MessageBox(hwnd HWND, text *uint16, caption *uint16, boxtype uint32) (ret int32, err error) {
 	r0, _, e1 := syscall.Syscall6(procMessageBoxW.Addr(), 4, uintptr(hwnd), uintptr(unsafe.Pointer(text)), uintptr(unsafe.Pointer(caption)), uintptr(boxtype), 0, 0)
 	ret = int32(r0)
 	if ret == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func ToUnicodeEx(vkey uint32, scancode uint32, keystate *byte, pwszBuff *uint16, cchBuff int32, flags uint32, hkl Handle) (ret int32) {
+	r0, _, _ := syscall.Syscall9(procToUnicodeEx.Addr(), 7, uintptr(vkey), uintptr(scancode), uintptr(unsafe.Pointer(keystate)), uintptr(unsafe.Pointer(pwszBuff)), uintptr(cchBuff), uintptr(flags), uintptr(hkl), 0, 0)
+	ret = int32(r0)
+	return
+}
+
+func UnloadKeyboardLayout(hkl Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procUnloadKeyboardLayout.Addr(), 1, uintptr(hkl), 0, 0)
+	if r1 == 0 {
 		err = errnoErr(e1)
 	}
 	return

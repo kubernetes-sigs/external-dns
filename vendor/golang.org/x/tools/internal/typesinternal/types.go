@@ -53,6 +53,7 @@ func ReadGo116ErrorData(err types.Error) (code ErrorCode, start, end token.Pos, 
 	return ErrorCode(data[0]), token.Pos(data[1]), token.Pos(data[2]), true
 }
 
+<<<<<<< HEAD
 var SetGoVersion = func(conf *types.Config, version string) bool { return false }
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -168,3 +169,20 @@ func ReadGo116ErrorData(err types.Error) (code ErrorCode, start, end token.Pos, 
 	return ErrorCode(data[0]), token.Pos(data[1]), token.Pos(data[2]), true
 }
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+// NameRelativeTo returns a types.Qualifier that qualifies members of
+// all packages other than pkg, using only the package name.
+// (By contrast, [types.RelativeTo] uses the complete package path,
+// which is often excessive.)
+//
+// If pkg is nil, it is equivalent to [*types.Package.Name].
+func NameRelativeTo(pkg *types.Package) types.Qualifier {
+	return func(other *types.Package) string {
+		if pkg != nil && pkg == other {
+			return "" // same package; unqualified
+		}
+		return other.Name()
+	}
+}
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

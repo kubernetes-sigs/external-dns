@@ -93,11 +93,11 @@ func (r *lengthDelimitedFrameReader) Read(data []byte) (int, error) {
 	}
 	n, err := io.ReadAtLeast(r.r, data[:max], int(max))
 	r.remaining -= n
-	if err == io.ErrShortBuffer || r.remaining > 0 {
-		return n, io.ErrShortBuffer
-	}
 	if err != nil {
 		return n, err
+	}
+	if r.remaining > 0 {
+		return n, io.ErrShortBuffer
 	}
 	if n != expect {
 		return n, io.ErrUnexpectedEOF
@@ -378,7 +378,6 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 
 	// RawMessage#Unmarshal appends to data - we reset the slice down to 0 and will either see
 	// data written to data, or be larger than data and a different array.
-	n := len(data)
 	m := json.RawMessage(data[:0])
 	if err := r.decoder.Decode(&m); err != nil {
 		return 0, err
@@ -387,6 +386,7 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 	// If capacity of data is less than length of the message, decoder will allocate a new slice
 	// and set m to it, which means we need to copy the partial result back into data and preserve
 	// the remaining result for subsequent reads.
+<<<<<<< HEAD
 	if len(m) > n {
 <<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -397,7 +397,27 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 		data = append(data[0:0], m[:n]...)
 		r.remaining = m[n:]
 		return n, io.ErrShortBuffer
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	if len(m) > n {
+		//nolint:staticcheck // SA4006,SA4010 underlying array of data is modified here.
+		data = append(data[0:0], m[:n]...)
+		r.remaining = m[n:]
+		return n, io.ErrShortBuffer
+=======
+	if len(m) > cap(data) {
+		copy(data, m)
+		r.remaining = m[len(data):]
+		return len(data), io.ErrShortBuffer
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
+
+	if len(m) > len(data) {
+		// The bytes beyond len(data) were stored in data's underlying array, which we do
+		// not own after this function returns.
+		r.remaining = append([]byte(nil), m[len(data):]...)
+		return len(data), io.ErrShortBuffer
+	}
+
 	return len(m), nil
 }
 

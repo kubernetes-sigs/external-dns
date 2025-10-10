@@ -86,7 +86,7 @@ message StorageVersionCondition {
 // Storage version of a specific resource.
 message StorageVersion {
   // The name is <group>.<resource>.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // Spec is an empty spec. It is here to comply with Kubernetes API style.
   optional StorageVersionSpec spec = 2;
@@ -111,8 +111,14 @@ message StorageVersionCondition {
   optional int64 observedGeneration = 3;
 
   // Last time the condition transitioned from one status to another.
+<<<<<<< HEAD
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
+=======
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
   // The reason for the condition's last transition.
   // +required
@@ -128,7 +134,7 @@ message StorageVersionList {
   // Standard list metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items holds a list of StorageVersion
   repeated StorageVersion items = 2;

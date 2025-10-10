@@ -18,7 +18,7 @@ limitations under the License.
 
 package v1
 
-// ProbeApplyConfiguration represents an declarative configuration of the Probe type for use
+// ProbeApplyConfiguration represents a declarative configuration of the Probe type for use
 // with apply.
 type ProbeApplyConfiguration struct {
 <<<<<<< HEAD
@@ -71,7 +71,7 @@ func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfi
 	TerminationGracePeriodSeconds  *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 }
 
-// ProbeApplyConfiguration constructs an declarative configuration of the Probe type for use with
+// ProbeApplyConfiguration constructs a declarative configuration of the Probe type for use with
 // apply.
 func Probe() *ProbeApplyConfiguration {
 	return &ProbeApplyConfiguration{}
@@ -81,7 +81,7 @@ func Probe() *ProbeApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Exec field is set to the value of the last call.
 func (b *ProbeApplyConfiguration) WithExec(value *ExecActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.Exec = value
+	b.ProbeHandlerApplyConfiguration.Exec = value
 	return b
 }
 
@@ -89,7 +89,7 @@ func (b *ProbeApplyConfiguration) WithExec(value *ExecActionApplyConfiguration) 
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the HTTPGet field is set to the value of the last call.
 func (b *ProbeApplyConfiguration) WithHTTPGet(value *HTTPGetActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.HTTPGet = value
+	b.ProbeHandlerApplyConfiguration.HTTPGet = value
 	return b
 }
 
@@ -97,7 +97,7 @@ func (b *ProbeApplyConfiguration) WithHTTPGet(value *HTTPGetActionApplyConfigura
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TCPSocket field is set to the value of the last call.
 func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfiguration) *ProbeApplyConfiguration {
-	b.TCPSocket = value
+	b.ProbeHandlerApplyConfiguration.TCPSocket = value
 	return b
 }
 
@@ -105,6 +105,7 @@ func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfi
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GRPC field is set to the value of the last call.
 func (b *ProbeApplyConfiguration) WithGRPC(value *GRPCActionApplyConfiguration) *ProbeApplyConfiguration {
+<<<<<<< HEAD
 	b.GRPC = value
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4d7e5ad26 (update vendored files)
@@ -201,6 +202,11 @@ func (b *ProbeApplyConfiguration) WithTCPSocket(value *TCPSocketActionApplyConfi
 func (b *ProbeApplyConfiguration) WithGRPC(value *GRPCActionApplyConfiguration) *ProbeApplyConfiguration {
 	b.GRPC = value
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	b.GRPC = value
+=======
+	b.ProbeHandlerApplyConfiguration.GRPC = value
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	return b
 }
 

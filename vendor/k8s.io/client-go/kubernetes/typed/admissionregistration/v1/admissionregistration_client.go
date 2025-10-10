@@ -23,10 +23,16 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	"net/http"
+=======
+	http "net/http"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
-	v1 "k8s.io/api/admissionregistration/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -179,6 +185,7 @@ func (c *AdmissionregistrationV1Client) ValidatingWebhookConfigurations() Valida
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*AdmissionregistrationV1Client, error) {
 	config := *c
+<<<<<<< HEAD
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
@@ -188,6 +195,13 @@ func NewForConfig(c *rest.Config) (*AdmissionregistrationV1Client, error) {
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	client, err := rest.RESTClientFor(&config)
 =======
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+=======
+	setConfigDefaults(&config)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -199,9 +213,7 @@ func NewForConfig(c *rest.Config) (*AdmissionregistrationV1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*AdmissionregistrationV1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	if err != nil {
@@ -225,17 +237,15 @@ func New(c rest.Interface) *AdmissionregistrationV1Client {
 	return &AdmissionregistrationV1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := admissionregistrationv1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

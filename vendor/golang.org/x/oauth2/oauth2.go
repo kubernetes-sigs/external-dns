@@ -58,7 +58,7 @@ type Config struct {
 	// the OAuth flow, after the resource owner's URLs.
 	RedirectURL string
 
-	// Scope specifies optional requested permissions.
+	// Scopes specifies optional requested permissions.
 	Scopes []string
 }
 

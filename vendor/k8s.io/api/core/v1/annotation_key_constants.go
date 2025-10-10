@@ -31,6 +31,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// MirrorAnnotationKey represents the annotation key set by kubelets when creating mirror pods
 	MirrorPodAnnotationKey string = "kubernetes.io/config.mirror"
 
@@ -591,6 +592,11 @@ const (
 =======
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	// MirrorAnnotationKey represents the annotation key set by kubelets when creating mirror pods
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	// MirrorAnnotationKey represents the annotation key set by kubelets when creating mirror pods
+=======
+	// MirrorPodAnnotationKey represents the annotation key set by kubelets when creating mirror pods
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	MirrorPodAnnotationKey string = "kubernetes.io/config.mirror"
 
 	// TolerationsAnnotationKey represents the key of tolerations data (json serialized)
@@ -647,7 +653,7 @@ const (
 	// This annotation can be attached to node.
 	ObjectTTLAnnotationKey string = "node.alpha.kubernetes.io/ttl"
 
-	// annotation key prefix used to identify non-convertible json paths.
+	// NonConvertibleAnnotationPrefix is the annotation key prefix used to identify non-convertible json paths.
 	NonConvertibleAnnotationPrefix = "non-convertible.kubernetes.io"
 
 	kubectlPrefix = "kubectl.kubernetes.io/"

@@ -45,6 +45,7 @@ const (
 <<<<<<< HEAD
 // +genclient:method=ApplyScale,verb=apply,subresource=scale,input=k8s.io/api/autoscaling/v1.Scale,result=k8s.io/api/autoscaling/v1.Scale
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // StatefulSet represents a set of pods with consistent identities.
 // Identities are defined as:
@@ -3155,7 +3156,7 @@ const (
 	// PersistentVolumeClaims associated with StatefulSet VolumeClaimTemplates
 	// will not be deleted.
 	RetainPersistentVolumeClaimRetentionPolicyType PersistentVolumeClaimRetentionPolicyType = "Retain"
-	// RetentionPersistentVolumeClaimRetentionPolicyType specifies that
+	// DeletePersistentVolumeClaimRetentionPolicyType specifies that
 	// PersistentVolumeClaims associated with StatefulSet VolumeClaimTemplates
 	// will be deleted in the scenario specified in
 	// StatefulSetPersistentVolumeClaimRetentionPolicy.
@@ -3233,6 +3234,7 @@ type StatefulSetSpec struct {
 	// the network identity of the set. Pods get DNS/hostnames that follow the
 	// pattern: pod-specific-string.serviceName.default.svc.cluster.local
 	// where "pod-specific-string" is managed by the StatefulSet controller.
+	// +optional
 	ServiceName string `json:"serviceName" protobuf:"bytes,5,opt,name=serviceName"`
 
 	// podManagementPolicy controls how pods are created during initial scale up,
@@ -3268,15 +3270,13 @@ type StatefulSetSpec struct {
 	// volume claims are created as needed and retained until manually deleted. This
 	// policy allows the lifecycle to be altered, for example by deleting persistent
 	// volume claims when their stateful set is deleted, or when their pod is scaled
-	// down. This requires the StatefulSetAutoDeletePVC feature gate to be enabled,
-	// which is alpha.  +optional
+	// down.
+	// +optional
 	PersistentVolumeClaimRetentionPolicy *StatefulSetPersistentVolumeClaimRetentionPolicy `json:"persistentVolumeClaimRetentionPolicy,omitempty" protobuf:"bytes,10,opt,name=persistentVolumeClaimRetentionPolicy"`
 
 	// ordinals controls the numbering of replica indices in a StatefulSet. The
 	// default ordinals behavior assigns a "0" index to the first replica and
-	// increments the index by one for each additional replica requested. Using
-	// the ordinals field requires the StatefulSetStartOrdinal feature gate to be
-	// enabled, which is beta.
+	// increments the index by one for each additional replica requested.
 	// +optional
 	Ordinals *StatefulSetOrdinals `json:"ordinals,omitempty" protobuf:"bytes,11,opt,name=ordinals"`
 }
@@ -3349,6 +3349,7 @@ type StatefulSetCondition struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // StatefulSetList is a collection of StatefulSets.
 type StatefulSetList struct {
@@ -3367,6 +3368,7 @@ type StatefulSetList struct {
 // +genclient:method=UpdateScale,verb=update,subresource=scale,input=k8s.io/api/autoscaling/v1.Scale,result=k8s.io/api/autoscaling/v1.Scale
 // +genclient:method=ApplyScale,verb=apply,subresource=scale,input=k8s.io/api/autoscaling/v1.Scale,result=k8s.io/api/autoscaling/v1.Scale
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // Deployment enables declarative updates for Pods and ReplicaSets.
 type Deployment struct {
@@ -3499,19 +3501,19 @@ type DeploymentStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,1,opt,name=observedGeneration"`
 
-	// Total number of non-terminated pods targeted by this deployment (their labels match the selector).
+	// Total number of non-terminating pods targeted by this deployment (their labels match the selector).
 	// +optional
 	Replicas int32 `json:"replicas,omitempty" protobuf:"varint,2,opt,name=replicas"`
 
-	// Total number of non-terminated pods targeted by this deployment that have the desired template spec.
+	// Total number of non-terminating pods targeted by this deployment that have the desired template spec.
 	// +optional
 	UpdatedReplicas int32 `json:"updatedReplicas,omitempty" protobuf:"varint,3,opt,name=updatedReplicas"`
 
-	// readyReplicas is the number of pods targeted by this Deployment with a Ready Condition.
+	// Total number of non-terminating pods targeted by this Deployment with a Ready Condition.
 	// +optional
 	ReadyReplicas int32 `json:"readyReplicas,omitempty" protobuf:"varint,7,opt,name=readyReplicas"`
 
-	// Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
+	// Total number of available non-terminating pods (ready for at least minReadySeconds) targeted by this deployment.
 	// +optional
 	AvailableReplicas int32 `json:"availableReplicas,omitempty" protobuf:"varint,4,opt,name=availableReplicas"`
 
@@ -3520,6 +3522,13 @@ type DeploymentStatus struct {
 	// either be pods that are running but not yet available or pods that still have not been created.
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty" protobuf:"varint,5,opt,name=unavailableReplicas"`
+
+	// Total number of terminating pods targeted by this deployment. Terminating pods have a non-null
+	// .metadata.deletionTimestamp and have not yet reached the Failed or Succeeded .status.phase.
+	//
+	// This is an alpha field. Enable DeploymentReplicaSetTerminatingReplicas to be able to use this field.
+	// +optional
+	TerminatingReplicas *int32 `json:"terminatingReplicas,omitempty" protobuf:"varint,9,opt,name=terminatingReplicas"`
 
 	// Represents the latest available observations of a deployment's current state.
 	// +patchMergeKey=type
@@ -3569,6 +3578,7 @@ type DeploymentCondition struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // DeploymentList is a list of Deployments.
 type DeploymentList struct {
@@ -3761,6 +3771,7 @@ type DaemonSetCondition struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // DaemonSet represents the configuration of a daemon set.
 type DaemonSet struct {
@@ -3792,6 +3803,7 @@ const (
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // DaemonSetList is a collection of daemon sets.
 type DaemonSetList struct {
@@ -3810,6 +3822,7 @@ type DaemonSetList struct {
 // +genclient:method=UpdateScale,verb=update,subresource=scale,input=k8s.io/api/autoscaling/v1.Scale,result=k8s.io/api/autoscaling/v1.Scale
 // +genclient:method=ApplyScale,verb=apply,subresource=scale,input=k8s.io/api/autoscaling/v1.Scale,result=k8s.io/api/autoscaling/v1.Scale
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // ReplicaSet ensures that a specified number of pod replicas are running at any given time.
 type ReplicaSet struct {
@@ -3837,6 +3850,7 @@ type ReplicaSet struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // ReplicaSetList is a collection of ReplicaSets.
 type ReplicaSetList struct {
@@ -3847,16 +3861,16 @@ type ReplicaSetList struct {
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// List of ReplicaSets.
-	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller
+	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset
 	Items []ReplicaSet `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 // ReplicaSetSpec is the specification of a ReplicaSet.
 type ReplicaSetSpec struct {
-	// Replicas is the number of desired replicas.
+	// Replicas is the number of desired pods.
 	// This is a pointer to distinguish between explicit zero and unspecified.
 	// Defaults to 1.
-	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/#what-is-a-replicationcontroller
+	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
 
@@ -3874,21 +3888,22 @@ type ReplicaSetSpec struct {
 
 	// Template is the object that describes the pod that will be created if
 	// insufficient replicas are detected.
-	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller#pod-template
+	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#pod-template
 	// +optional
 	Template v1.PodTemplateSpec `json:"template,omitempty" protobuf:"bytes,3,opt,name=template"`
 }
 
 // ReplicaSetStatus represents the current status of a ReplicaSet.
 type ReplicaSetStatus struct {
-	// Replicas is the most recently observed number of replicas.
-	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/#what-is-a-replicationcontroller
+	// Replicas is the most recently observed number of non-terminating pods.
+	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset
 	Replicas int32 `json:"replicas" protobuf:"varint,1,opt,name=replicas"`
 
-	// The number of pods that have labels matching the labels of the pod template of the replicaset.
+	// The number of non-terminating pods that have labels matching the labels of the pod template of the replicaset.
 	// +optional
 	FullyLabeledReplicas int32 `json:"fullyLabeledReplicas,omitempty" protobuf:"varint,2,opt,name=fullyLabeledReplicas"`
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 	// The number of ready replicas for this replica set.
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -3897,12 +3912,24 @@ type ReplicaSetStatus struct {
 =======
 	// readyReplicas is the number of pods targeted by this ReplicaSet with a Ready Condition.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	// readyReplicas is the number of pods targeted by this ReplicaSet with a Ready Condition.
+=======
+	// The number of non-terminating pods targeted by this ReplicaSet with a Ready Condition.
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	// +optional
 	ReadyReplicas int32 `json:"readyReplicas,omitempty" protobuf:"varint,4,opt,name=readyReplicas"`
 
-	// The number of available replicas (ready for at least minReadySeconds) for this replica set.
+	// The number of available non-terminating pods (ready for at least minReadySeconds) for this replica set.
 	// +optional
 	AvailableReplicas int32 `json:"availableReplicas,omitempty" protobuf:"varint,5,opt,name=availableReplicas"`
+
+	// The number of terminating pods for this replica set. Terminating pods have a non-null .metadata.deletionTimestamp
+	// and have not yet reached the Failed or Succeeded .status.phase.
+	//
+	// This is an alpha field. Enable DeploymentReplicaSetTerminatingReplicas to be able to use this field.
+	// +optional
+	TerminatingReplicas *int32 `json:"terminatingReplicas,omitempty" protobuf:"varint,7,opt,name=terminatingReplicas"`
 
 	// ObservedGeneration reflects the generation of the most recently observed ReplicaSet.
 	// +optional
@@ -3946,6 +3973,7 @@ type ReplicaSetCondition struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // ControllerRevision implements an immutable snapshot of state data. Clients
 // are responsible for serializing and deserializing the objects that contain
@@ -3971,6 +3999,7 @@ type ControllerRevision struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
 
 // ControllerRevisionList is a resource containing a list of ControllerRevision objects.
 type ControllerRevisionList struct {

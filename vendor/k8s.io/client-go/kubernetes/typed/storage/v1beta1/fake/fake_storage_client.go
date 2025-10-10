@@ -29,11 +29,11 @@ type FakeStorageV1beta1 struct {
 }
 
 func (c *FakeStorageV1beta1) CSIDrivers() v1beta1.CSIDriverInterface {
-	return &FakeCSIDrivers{c}
+	return newFakeCSIDrivers(c)
 }
 
 func (c *FakeStorageV1beta1) CSINodes() v1beta1.CSINodeInterface {
-	return &FakeCSINodes{c}
+	return newFakeCSINodes(c)
 }
 
 <<<<<<< HEAD
@@ -45,7 +45,7 @@ func (c *FakeStorageV1beta1) CSINodes() v1beta1.CSINodeInterface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 func (c *FakeStorageV1beta1) CSIStorageCapacities(namespace string) v1beta1.CSIStorageCapacityInterface {
-	return &FakeCSIStorageCapacities{c, namespace}
+	return newFakeCSIStorageCapacities(c, namespace)
 }
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -89,11 +89,15 @@ func (c *FakeStorageV1beta1) CSIStorageCapacities(namespace string) v1beta1.CSIS
 
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (c *FakeStorageV1beta1) StorageClasses() v1beta1.StorageClassInterface {
-	return &FakeStorageClasses{c}
+	return newFakeStorageClasses(c)
 }
 
 func (c *FakeStorageV1beta1) VolumeAttachments() v1beta1.VolumeAttachmentInterface {
-	return &FakeVolumeAttachments{c}
+	return newFakeVolumeAttachments(c)
+}
+
+func (c *FakeStorageV1beta1) VolumeAttributesClasses() v1beta1.VolumeAttributesClassInterface {
+	return newFakeVolumeAttributesClasses(c)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

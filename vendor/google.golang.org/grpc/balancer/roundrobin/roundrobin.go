@@ -24,12 +24,16 @@ package roundrobin
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+	"math/rand"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	"sync/atomic"
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/internal/grpcrand"
 )
 
 // Name is the name of round_robin balancer.
@@ -219,7 +223,7 @@ func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 		// Start at a random index, as the same RR balancer rebuilds a new
 		// picker when SubConn states change, and we don't want to apply excess
 		// load to the first server in the list.
-		next: uint32(grpcrand.Intn(len(scs))),
+		next: uint32(rand.Intn(len(scs))),
 	}
 }
 

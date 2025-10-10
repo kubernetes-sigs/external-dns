@@ -4,18 +4,27 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 //go:build !purego && !appengine
 // +build !purego,!appengine
 
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+//go:build !purego && !appengine
+// +build !purego,!appengine
+
+=======
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 package impl
 
 import (
 	"reflect"
 	"sync/atomic"
 	"unsafe"
+
+	"google.golang.org/protobuf/internal/protolazy"
 )
 
 const UnsafeEnabled = true
@@ -28,7 +37,7 @@ type Pointer unsafe.Pointer
 type offset uintptr
 
 // offsetOf returns a field offset for the struct field.
-func offsetOf(f reflect.StructField, x exporter) offset {
+func offsetOf(f reflect.StructField) offset {
 	return offset(f.Offset)
 }
 
@@ -55,7 +64,7 @@ func pointerOfValue(v reflect.Value) pointer {
 }
 
 // pointerOfIface returns the pointer portion of an interface.
-func pointerOfIface(v interface{}) pointer {
+func pointerOfIface(v any) pointer {
 	type ifaceHeader struct {
 		Type unsafe.Pointer
 		Data unsafe.Pointer
@@ -85,7 +94,7 @@ func (p pointer) AsValueOf(t reflect.Type) reflect.Value {
 
 // AsIfaceOf treats p as a pointer to an object of type t and returns the value.
 // It is equivalent to p.AsValueOf(t).Interface()
-func (p pointer) AsIfaceOf(t reflect.Type) interface{} {
+func (p pointer) AsIfaceOf(t reflect.Type) any {
 	// TODO: Use tricky unsafe magic to directly create ifaceHeader.
 	return p.AsValueOf(t).Interface()
 }
@@ -259,8 +268,14 @@ func (p pointer) Bytes() *[]byte                        { return (*[]byte)(p.p) 
 func (p pointer) BytesPtr() **[]byte                    { return (**[]byte)(p.p) }
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (p pointer) BytesSlice() *[][]byte                 { return (*[][]byte)(p.p) }
-func (p pointer) WeakFields() *weakFields               { return (*weakFields)(p.p) }
 func (p pointer) Extensions() *map[int32]ExtensionField { return (*map[int32]ExtensionField)(p.p) }
+func (p pointer) LazyInfoPtr() **protolazy.XXX_lazyUnmarshalInfo {
+	return (**protolazy.XXX_lazyUnmarshalInfo)(p.p)
+}
+
+func (p pointer) PresenceInfo() presence {
+	return presence{P: p.p}
+}
 
 func (p pointer) Elem() pointer {
 	return pointer{p: *(*unsafe.Pointer)(p.p)}

@@ -2028,9 +2028,8 @@ func NewDiscoveryClientForConfigOrDie(c *restclient.Config) *DiscoveryClient {
 	"sync"
 	"time"
 
-	//nolint:staticcheck // SA1019 Keep using module since it's still being maintained and the api of google.golang.org/protobuf/proto differs
-	"github.com/golang/protobuf/proto"
 	openapi_v2 "github.com/google/gnostic-models/openapiv2"
+	"google.golang.org/protobuf/proto"
 
 	apidiscoveryv2 "k8s.io/api/apidiscovery/v2"
 	apidiscoveryv2beta1 "k8s.io/api/apidiscovery/v2beta1"

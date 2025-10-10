@@ -41,8 +41,6 @@ type ListOptions struct {
 	// assume bookmarks are returned at any specific interval, nor may they
 	// assume the server will send any BOOKMARK event during a session.
 	// If this is not a watch, this field is ignored.
-	// If the feature gate WatchBookmarks is not enabled in apiserver,
-	// this field is ignored.
 	AllowWatchBookmarks bool
 <<<<<<< HEAD
 <<<<<<< HEAD

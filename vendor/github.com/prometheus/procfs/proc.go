@@ -119,6 +119,7 @@ func (fs FS) AllProcs() (Procs, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return Procs{}, fmt.Errorf("could not read %q: %w", d.Name(), err)
 	}
 
@@ -865,6 +866,11 @@ func (p Proc) fileDescriptors() ([]string, error) {
 =======
 		return Procs{}, fmt.Errorf("%s: Cannot read file: %v: %w", ErrFileRead, names, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return Procs{}, fmt.Errorf("%s: Cannot read file: %v: %w", ErrFileRead, names, err)
+=======
+		return Procs{}, fmt.Errorf("%w: Cannot read file: %v: %w", ErrFileRead, names, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	p := Procs{}
@@ -890,7 +896,7 @@ func (p Proc) CmdLine() ([]string, error) {
 		return []string{}, nil
 	}
 
-	return strings.Split(string(bytes.TrimRight(data, string("\x00"))), string(byte(0))), nil
+	return strings.Split(string(bytes.TrimRight(data, "\x00")), "\x00"), nil
 }
 
 // Wchan returns the wchan (wait channel) of a process.
@@ -965,7 +971,7 @@ func (p Proc) FileDescriptors() ([]uintptr, error) {
 	for i, n := range names {
 		fd, err := strconv.ParseInt(n, 10, 32)
 		if err != nil {
-			return nil, fmt.Errorf("%s: Cannot parse line: %v: %w", ErrFileParse, i, err)
+			return nil, fmt.Errorf("%w: Cannot parse line: %v: %w", ErrFileParse, i, err)
 		}
 		fds[i] = uintptr(fd)
 	}
@@ -1051,6 +1057,7 @@ func (p Proc) fileDescriptors() ([]string, error) {
 	names, err := d.Readdirnames(-1)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("could not read %s: %s", d.Name(), err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
@@ -1058,6 +1065,11 @@ func (p Proc) fileDescriptors() ([]string, error) {
 =======
 		return nil, fmt.Errorf("%s: Cannot read file: %v: %w", ErrFileRead, names, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: Cannot read file: %v: %w", ErrFileRead, names, err)
+=======
+		return nil, fmt.Errorf("%w: Cannot read file: %v: %w", ErrFileRead, names, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return names, nil

@@ -2094,5 +2094,14 @@ const (
 	SYS_LSM_GET_SELF_ATTR            = 459
 	SYS_LSM_SET_SELF_ATTR            = 460
 	SYS_LSM_LIST_MODULES             = 461
+<<<<<<< HEAD
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+	SYS_MSEAL                        = 462
+	SYS_SETXATTRAT                   = 463
+	SYS_GETXATTRAT                   = 464
+	SYS_LISTXATTRAT                  = 465
+	SYS_REMOVEXATTRAT                = 466
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 )

@@ -25,6 +25,7 @@ limitations under the License.
 //   - Multiple consumers and producers. In particular, it is allowed for an
 //     item to be reenqueued while it is being processed.
 //   - Shutdown notifications.
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //  * Fair: items processed in the order in which they are added.
@@ -53,3 +54,8 @@ limitations under the License.
 //   - Shutdown notifications.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 package workqueue // import "k8s.io/client-go/util/workqueue"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+package workqueue // import "k8s.io/client-go/util/workqueue"
+=======
+package workqueue
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

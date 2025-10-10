@@ -77,6 +77,7 @@ func readSockstat(name string) (*NetSockstat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
 	}
 
@@ -211,6 +212,11 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 =======
 		return nil, fmt.Errorf("%s: sockstats from %q: %w", ErrFileRead, name, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: sockstats from %q: %w", ErrFileRead, name, err)
+=======
+		return nil, fmt.Errorf("%w: sockstats from %q: %w", ErrFileRead, name, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return stat, nil
@@ -231,6 +237,7 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 		kvs, err := parseSockstatKVs(fields[1:])
 		if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
@@ -238,6 +245,11 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 =======
 			return nil, fmt.Errorf("%s: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+			return nil, fmt.Errorf("%s: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
+=======
+			return nil, fmt.Errorf("%w: sockstat key/value pairs from %q: %w", ErrFileParse, s.Text(), err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 
 		// The first field is the protocol. We must trim its colon suffix.

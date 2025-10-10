@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	v1beta1 "k8s.io/api/storage/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	storagev1beta1 "k8s.io/api/storage/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CSIDriverLister helps list CSIDrivers.
@@ -38,9 +38,10 @@ import (
 type CSIDriverLister interface {
 	// List lists all CSIDrivers in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.CSIDriver, err error)
+	List(selector labels.Selector) (ret []*storagev1beta1.CSIDriver, err error)
 	// Get retrieves the CSIDriver from the index for a given name.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -110,35 +111,20 @@ type CSIDriverLister interface {
 	// Objects returned here must be treated as read-only.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Get(name string) (*v1beta1.CSIDriver, error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1beta1.CSIDriver, error)
+=======
+	Get(name string) (*storagev1beta1.CSIDriver, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	CSIDriverListerExpansion
 }
 
 // cSIDriverLister implements the CSIDriverLister interface.
 type cSIDriverLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*storagev1beta1.CSIDriver]
 }
 
 // NewCSIDriverLister returns a new CSIDriverLister.
 func NewCSIDriverLister(indexer cache.Indexer) CSIDriverLister {
-	return &cSIDriverLister{indexer: indexer}
-}
-
-// List lists all CSIDrivers in the indexer.
-func (s *cSIDriverLister) List(selector labels.Selector) (ret []*v1beta1.CSIDriver, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.CSIDriver))
-	})
-	return ret, err
-}
-
-// Get retrieves the CSIDriver from the index for a given name.
-func (s *cSIDriverLister) Get(name string) (*v1beta1.CSIDriver, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("csidriver"), name)
-	}
-	return obj.(*v1beta1.CSIDriver), nil
+	return &cSIDriverLister{listers.New[*storagev1beta1.CSIDriver](indexer, storagev1beta1.Resource("csidriver"))}
 }

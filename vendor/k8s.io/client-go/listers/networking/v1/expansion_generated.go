@@ -26,6 +26,14 @@ package v1
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+// IPAddressListerExpansion allows custom methods to be added to
+// IPAddressLister.
+type IPAddressListerExpansion interface{}
+
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 // IngressListerExpansion allows custom methods to be added to
 // IngressLister.
 type IngressListerExpansion interface{}
@@ -117,3 +125,7 @@ type NetworkPolicyListerExpansion interface{}
 // NetworkPolicyNamespaceListerExpansion allows custom methods to be added to
 // NetworkPolicyNamespaceLister.
 type NetworkPolicyNamespaceListerExpansion interface{}
+
+// ServiceCIDRListerExpansion allows custom methods to be added to
+// ServiceCIDRLister.
+type ServiceCIDRListerExpansion interface{}

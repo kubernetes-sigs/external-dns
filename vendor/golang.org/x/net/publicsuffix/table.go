@@ -21072,8 +21072,14 @@ const version = "publicsuffix.org's public_suffix_list.dat, git revision 3c213aa
 =======
 import _ "embed"
 
+<<<<<<< HEAD
 const version = "publicsuffix.org's public_suffix_list.dat, git revision 63cbc63d470d7b52c35266aa96c4c98c96ec499c (2023-08-03T10:01:25Z)"
 >>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+const version = "publicsuffix.org's public_suffix_list.dat, git revision 63cbc63d470d7b52c35266aa96c4c98c96ec499c (2023-08-03T10:01:25Z)"
+=======
+const version = "publicsuffix.org's public_suffix_list.dat, git revision 2c960dac3d39ba521eb5db9da192968f5be0aded (2025-03-18T07:22:13Z)"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 const (
 	nodesBits           = 40
@@ -21095,7 +21101,7 @@ const (
 )
 
 // numTLD is the number of top level domains.
-const numTLD = 1474
+const numTLD = 1454
 
 // text is the combined text of all labels.
 //
@@ -21132,6 +21138,7 @@ var nodes uint40String
 //go:embed data/children
 var children uint32String
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 // max children 669 (capacity 1023)
 // max text offset 32017 (capacity 65535)
@@ -31753,7 +31760,15 @@ var children = [...]uint32{
 =======
 // max children 743 (capacity 1023)
 // max text offset 30876 (capacity 65535)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+// max children 743 (capacity 1023)
+// max text offset 30876 (capacity 65535)
+=======
+// max children 870 (capacity 1023)
+// max text offset 31785 (capacity 65535)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 // max text length 31 (capacity 63)
+<<<<<<< HEAD
 // max hi 9322 (capacity 16383)
 // max lo 9317 (capacity 16383)
 >>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
@@ -31845,3 +31860,10 @@ var children uint32String
 // max hi 9322 (capacity 16383)
 // max lo 9317 (capacity 16383)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+// max hi 9322 (capacity 16383)
+// max lo 9317 (capacity 16383)
+=======
+// max hi 10100 (capacity 16383)
+// max lo 10095 (capacity 16383)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

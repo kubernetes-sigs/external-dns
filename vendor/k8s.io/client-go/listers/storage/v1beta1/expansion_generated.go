@@ -105,3 +105,7 @@ type StorageClassListerExpansion interface{}
 // VolumeAttachmentListerExpansion allows custom methods to be added to
 // VolumeAttachmentLister.
 type VolumeAttachmentListerExpansion interface{}
+
+// VolumeAttributesClassListerExpansion allows custom methods to be added to
+// VolumeAttributesClassLister.
+type VolumeAttributesClassListerExpansion interface{}

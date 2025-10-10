@@ -1401,6 +1401,11 @@ func (in *CSIDriverSpec) DeepCopyInto(out *CSIDriverSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.NodeAllocatableUpdatePeriodSeconds != nil {
+		in, out := &in.NodeAllocatableUpdatePeriodSeconds, &out.NodeAllocatableUpdatePeriodSeconds
+		*out = new(int64)
+		**out = **in
+	}
 	return
 }
 
@@ -1853,6 +1858,11 @@ func (in *VolumeAttachmentStatus) DeepCopy() *VolumeAttachmentStatus {
 func (in *VolumeError) DeepCopyInto(out *VolumeError) {
 	*out = *in
 	in.Time.DeepCopyInto(&out.Time)
+	if in.ErrorCode != nil {
+		in, out := &in.ErrorCode, &out.ErrorCode
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 

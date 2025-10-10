@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	v1 "k8s.io/api/policy/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
@@ -56,9 +57,14 @@ func NewForConfig(c *rest.Config) (*PolicyV1Client, error) {
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 	"net/http"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	"net/http"
+=======
+	http "net/http"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
-	v1 "k8s.io/api/policy/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	policyv1 "k8s.io/api/policy/v1"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -86,9 +92,7 @@ func (c *PolicyV1Client) PodDisruptionBudgets(namespace string) PodDisruptionBud
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*PolicyV1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -100,9 +104,7 @@ func NewForConfig(c *rest.Config) (*PolicyV1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*PolicyV1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4d7e5ad26 (update vendored files)
@@ -230,17 +232,15 @@ func New(c rest.Interface) *PolicyV1Client {
 	return &PolicyV1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := policyv1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

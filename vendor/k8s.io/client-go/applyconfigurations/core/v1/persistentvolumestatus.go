@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+<<<<<<< HEAD
 	v1 "k8s.io/api/core/v1"
 <<<<<<< HEAD
 )
@@ -60,19 +61,24 @@ func (b *PersistentVolumeStatusApplyConfiguration) WithReason(value string) *Per
 	b.Reason = &value
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	v1 "k8s.io/api/core/v1"
+=======
+	corev1 "k8s.io/api/core/v1"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PersistentVolumeStatusApplyConfiguration represents an declarative configuration of the PersistentVolumeStatus type for use
+// PersistentVolumeStatusApplyConfiguration represents a declarative configuration of the PersistentVolumeStatus type for use
 // with apply.
 type PersistentVolumeStatusApplyConfiguration struct {
-	Phase                   *v1.PersistentVolumePhase `json:"phase,omitempty"`
-	Message                 *string                   `json:"message,omitempty"`
-	Reason                  *string                   `json:"reason,omitempty"`
-	LastPhaseTransitionTime *metav1.Time              `json:"lastPhaseTransitionTime,omitempty"`
+	Phase                   *corev1.PersistentVolumePhase `json:"phase,omitempty"`
+	Message                 *string                       `json:"message,omitempty"`
+	Reason                  *string                       `json:"reason,omitempty"`
+	LastPhaseTransitionTime *metav1.Time                  `json:"lastPhaseTransitionTime,omitempty"`
 }
 
-// PersistentVolumeStatusApplyConfiguration constructs an declarative configuration of the PersistentVolumeStatus type for use with
+// PersistentVolumeStatusApplyConfiguration constructs a declarative configuration of the PersistentVolumeStatus type for use with
 // apply.
 func PersistentVolumeStatus() *PersistentVolumeStatusApplyConfiguration {
 	return &PersistentVolumeStatusApplyConfiguration{}
@@ -81,7 +87,7 @@ func PersistentVolumeStatus() *PersistentVolumeStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *PersistentVolumeStatusApplyConfiguration) WithPhase(value v1.PersistentVolumePhase) *PersistentVolumeStatusApplyConfiguration {
+func (b *PersistentVolumeStatusApplyConfiguration) WithPhase(value corev1.PersistentVolumePhase) *PersistentVolumeStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

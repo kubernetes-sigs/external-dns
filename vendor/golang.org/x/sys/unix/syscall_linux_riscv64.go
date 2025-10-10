@@ -999,4 +999,10 @@ func RISCVHWProbe(pairs []RISCVHWProbePairs, set *CPUSet, flags uint) (err error
 	}
 	return riscvHWProbe(pairs, setSize, set, flags)
 }
+<<<<<<< HEAD
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+
+const SYS_FSTATAT = SYS_NEWFSTATAT
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

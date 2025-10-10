@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 //go:build !providerless
@@ -39,6 +40,12 @@ import (
 //go:build !providerless
 // +build !providerless
 
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+//go:build !providerless
+// +build !providerless
+
+=======
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 /*
 Copyright 2016 The Kubernetes Authors.
 

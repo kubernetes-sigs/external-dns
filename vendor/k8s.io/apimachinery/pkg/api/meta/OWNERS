@@ -117,8 +117,8 @@ reviewers:
   - mikedanese
   - liggitt
   - janetkuo
-  - ncdc
   - dims
+<<<<<<< HEAD
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -177,3 +177,8 @@ reviewers:
   - ncdc
   - dims
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+emeritus_reviewers:
+  - ncdc
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

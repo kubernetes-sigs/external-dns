@@ -2052,6 +2052,44 @@ message HTTPIngressRuleValue {
   repeated HTTPIngressPath paths = 1;
 }
 
+// IPAddress represents a single IP of a single IP Family. The object is designed to be used by APIs
+// that operate on IP addresses. The object is used by the Service core API for allocation of IP addresses.
+// An IP address can be represented in different formats, to guarantee the uniqueness of the IP,
+// the name of the object is the IP address in canonical format, four decimal digits separated
+// by dots suppressing leading zeros for IPv4 and the representation defined by RFC 5952 for IPv6.
+// Valid: 192.168.1.5 or 2001:db8::1 or 2001:db8:aaaa:bbbb:cccc:dddd:eeee:1
+// Invalid: 10.01.2.3 or 2001:db8:0:0:0::1
+message IPAddress {
+  // Standard object's metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // spec is the desired state of the IPAddress.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+  // +optional
+  optional IPAddressSpec spec = 2;
+}
+
+// IPAddressList contains a list of IPAddress.
+message IPAddressList {
+  // Standard object's metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  // items is the list of IPAddresses.
+  repeated IPAddress items = 2;
+}
+
+// IPAddressSpec describe the attributes in an IP Address.
+message IPAddressSpec {
+  // ParentRef references the resource that an IPAddress is attached to.
+  // An IPAddress must reference a parent object.
+  // +required
+  optional ParentReference parentRef = 1;
+}
+
 // IPBlock describes a particular CIDR (Ex. "192.168.1.0/24","2001:db8::/64") that is allowed
 // to the pods matched by a NetworkPolicySpec's podSelector. The except entry describes CIDRs
 // that should not be included within this rule.
@@ -2076,7 +2114,7 @@ message Ingress {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec is the desired state of the Ingress.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
@@ -2101,7 +2139,7 @@ message IngressBackend {
   // service.Port must not be specified.
   // This is a mutually exclusive setting with "Service".
   // +optional
-  optional k8s.io.api.core.v1.TypedLocalObjectReference resource = 3;
+  optional .k8s.io.api.core.v1.TypedLocalObjectReference resource = 3;
 }
 
 // IngressClass represents the class of the Ingress, referenced by the Ingress
@@ -2113,7 +2151,7 @@ message IngressClass {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec is the desired state of the IngressClass.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
@@ -2125,7 +2163,7 @@ message IngressClass {
 message IngressClassList {
   // Standard list metadata.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is the list of IngressClasses.
   repeated IngressClass items = 2;
@@ -2180,7 +2218,7 @@ message IngressList {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is the list of Ingress.
   repeated Ingress items = 2;
@@ -2361,7 +2399,7 @@ message NetworkPolicy {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec represents the specification of the desired behavior for this NetworkPolicy.
   // +optional
@@ -2418,7 +2456,7 @@ message NetworkPolicyList {
   // Standard list metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of schema objects.
   repeated NetworkPolicy items = 2;
@@ -2434,7 +2472,7 @@ message NetworkPolicyPeer {
   // the pods matching podSelector in the Namespaces selected by NamespaceSelector.
   // Otherwise it selects the pods matching podSelector in the policy's own namespace.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector podSelector = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector podSelector = 1;
 
   // namespaceSelector selects namespaces using cluster-scoped labels. This field follows
   // standard label selector semantics; if present but empty, it selects all namespaces.
@@ -2443,7 +2481,7 @@ message NetworkPolicyPeer {
   // the pods matching podSelector in the namespaces selected by namespaceSelector.
   // Otherwise it selects all pods in the namespaces selected by namespaceSelector.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector namespaceSelector = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector namespaceSelector = 2;
 
   // ipBlock defines policy on a particular IPBlock. If this field is set then
   // neither of the other fields can be.
@@ -2463,7 +2501,7 @@ message NetworkPolicyPort {
   // numbers.
   // If present, only traffic on the specified protocol AND port will be matched.
   // +optional
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString port = 2;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString port = 2;
 
   // endPort indicates that the range of ports from port to endPort if set, inclusive,
   // should be allowed by the policy. This field cannot be defined if the port field
@@ -2481,7 +2519,7 @@ message NetworkPolicySpec {
   // the ingress rules for each are combined additively.
   // This field is NOT optional and follows standard label selector semantics.
   // An empty podSelector matches all pods in this namespace.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector podSelector = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector podSelector = 1;
 
   // ingress is a list of ingress rules to be applied to the selected pods.
   // Traffic is allowed to a pod if there are no NetworkPolicies selecting the pod
@@ -2521,7 +2559,27 @@ message NetworkPolicySpec {
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
+// ParentReference describes a reference to a parent object.
+message ParentReference {
+  // Group is the group of the object being referenced.
+  // +optional
+  optional string group = 1;
+
+  // Resource is the resource of the object being referenced.
+  // +required
+  optional string resource = 2;
+
+  // Namespace is the namespace of the object being referenced.
+  // +optional
+  optional string namespace = 3;
+
+  // Name is the name of the object being referenced.
+  // +required
+  optional string name = 4;
+}
+
 // ServiceBackendPort is the service port being referenced.
+// +structType=atomic
 message ServiceBackendPort {
   // name is the name of the port on the Service.
   // This is a mutually exclusive setting with "Number".
@@ -2532,5 +2590,57 @@ message ServiceBackendPort {
   // This is a mutually exclusive setting with "Name".
   // +optional
   optional int32 number = 2;
+}
+
+// ServiceCIDR defines a range of IP addresses using CIDR format (e.g. 192.168.0.0/24 or 2001:db2::/64).
+// This range is used to allocate ClusterIPs to Service objects.
+message ServiceCIDR {
+  // Standard object's metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // spec is the desired state of the ServiceCIDR.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+  // +optional
+  optional ServiceCIDRSpec spec = 2;
+
+  // status represents the current state of the ServiceCIDR.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+  // +optional
+  optional ServiceCIDRStatus status = 3;
+}
+
+// ServiceCIDRList contains a list of ServiceCIDR objects.
+message ServiceCIDRList {
+  // Standard object's metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  // items is the list of ServiceCIDRs.
+  repeated ServiceCIDR items = 2;
+}
+
+// ServiceCIDRSpec define the CIDRs the user wants to use for allocating ClusterIPs for Services.
+message ServiceCIDRSpec {
+  // CIDRs defines the IP blocks in CIDR notation (e.g. "192.168.0.0/24" or "2001:db8::/64")
+  // from which to assign service cluster IPs. Max of two CIDRs is allowed, one of each IP family.
+  // This field is immutable.
+  // +optional
+  // +listType=atomic
+  repeated string cidrs = 1;
+}
+
+// ServiceCIDRStatus describes the current state of the ServiceCIDR.
+message ServiceCIDRStatus {
+  // conditions holds an array of metav1.Condition that describe the state of the ServiceCIDR.
+  // Current service state
+  // +optional
+  // +patchMergeKey=type
+  // +patchStrategy=merge
+  // +listType=map
+  // +listMapKey=type
+  repeated .k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 1;
 }
 

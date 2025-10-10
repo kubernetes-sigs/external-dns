@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "k8s.io/api/networking/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	networkingv1alpha1 "k8s.io/api/networking/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ServiceCIDRLister helps list ServiceCIDRs.
@@ -30,39 +30,19 @@ import (
 type ServiceCIDRLister interface {
 	// List lists all ServiceCIDRs in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.ServiceCIDR, err error)
+	List(selector labels.Selector) (ret []*networkingv1alpha1.ServiceCIDR, err error)
 	// Get retrieves the ServiceCIDR from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.ServiceCIDR, error)
+	Get(name string) (*networkingv1alpha1.ServiceCIDR, error)
 	ServiceCIDRListerExpansion
 }
 
 // serviceCIDRLister implements the ServiceCIDRLister interface.
 type serviceCIDRLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*networkingv1alpha1.ServiceCIDR]
 }
 
 // NewServiceCIDRLister returns a new ServiceCIDRLister.
 func NewServiceCIDRLister(indexer cache.Indexer) ServiceCIDRLister {
-	return &serviceCIDRLister{indexer: indexer}
-}
-
-// List lists all ServiceCIDRs in the indexer.
-func (s *serviceCIDRLister) List(selector labels.Selector) (ret []*v1alpha1.ServiceCIDR, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ServiceCIDR))
-	})
-	return ret, err
-}
-
-// Get retrieves the ServiceCIDR from the index for a given name.
-func (s *serviceCIDRLister) Get(name string) (*v1alpha1.ServiceCIDR, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("servicecidr"), name)
-	}
-	return obj.(*v1alpha1.ServiceCIDR), nil
+	return &serviceCIDRLister{listers.New[*networkingv1alpha1.ServiceCIDR](indexer, networkingv1alpha1.Resource("servicecidr"))}
 }

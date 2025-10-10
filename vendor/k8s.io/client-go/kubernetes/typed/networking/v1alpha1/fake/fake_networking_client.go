@@ -34,12 +34,18 @@ func (c *FakeNetworkingV1alpha1) ClusterCIDRs() v1alpha1.ClusterCIDRInterface {
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 func (c *FakeNetworkingV1alpha1) IPAddresses() v1alpha1.IPAddressInterface {
-	return &FakeIPAddresses{c}
+	return newFakeIPAddresses(c)
 }
 
 func (c *FakeNetworkingV1alpha1) ServiceCIDRs() v1alpha1.ServiceCIDRInterface {
+<<<<<<< HEAD
 	return &FakeServiceCIDRs{c}
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	return &FakeServiceCIDRs{c}
+=======
+	return newFakeServiceCIDRs(c)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

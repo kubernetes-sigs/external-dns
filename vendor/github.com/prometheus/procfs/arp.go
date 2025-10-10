@@ -63,7 +63,13 @@ func (fs FS) GatherARPEntries() ([]ARPEntry, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: error reading arp %s: %w", ErrFileRead, fs.proc.Path("net/arp"), err)
+=======
+		return nil, fmt.Errorf("%w: error reading arp %s: %w", ErrFileRead, fs.proc.Path("net/arp"), err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return parseARPEntries(data)
@@ -86,6 +92,7 @@ func parseARPEntries(data []byte) ([]ARPEntry, error) {
 		} else if width == expectedDataWidth {
 			entry, err := parseARPEntry(columns)
 			if err != nil {
+<<<<<<< HEAD
 				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -239,10 +246,15 @@ func parseARPEntries(data []byte) ([]ARPEntry, error) {
 =======
 				return []ARPEntry{}, fmt.Errorf("%s: Failed to parse ARP entry: %v: %w", ErrFileParse, entry, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+				return []ARPEntry{}, fmt.Errorf("%s: Failed to parse ARP entry: %v: %w", ErrFileParse, entry, err)
+=======
+				return []ARPEntry{}, fmt.Errorf("%w: Failed to parse ARP entry: %v: %w", ErrFileParse, entry, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 			}
 			entries = append(entries, entry)
 		} else {
-			return []ARPEntry{}, fmt.Errorf("%s: %d columns found, but expected %d: %w", ErrFileParse, width, expectedDataWidth, err)
+			return []ARPEntry{}, fmt.Errorf("%w: %d columns found, but expected %d: %w", ErrFileParse, width, expectedDataWidth, err)
 		}
 
 	}

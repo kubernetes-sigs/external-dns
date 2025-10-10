@@ -18,7 +18,7 @@ limitations under the License.
 
 package v1
 
-// VolumeProjectionApplyConfiguration represents an declarative configuration of the VolumeProjection type for use
+// VolumeProjectionApplyConfiguration represents a declarative configuration of the VolumeProjection type for use
 // with apply.
 type VolumeProjectionApplyConfiguration struct {
 	Secret              *SecretProjectionApplyConfiguration              `json:"secret,omitempty"`
@@ -68,7 +68,7 @@ func (b *VolumeProjectionApplyConfiguration) WithServiceAccountToken(value *Serv
 	ClusterTrustBundle  *ClusterTrustBundleProjectionApplyConfiguration  `json:"clusterTrustBundle,omitempty"`
 }
 
-// VolumeProjectionApplyConfiguration constructs an declarative configuration of the VolumeProjection type for use with
+// VolumeProjectionApplyConfiguration constructs a declarative configuration of the VolumeProjection type for use with
 // apply.
 func VolumeProjection() *VolumeProjectionApplyConfiguration {
 	return &VolumeProjectionApplyConfiguration{}

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Indexed package import.
-// See cmd/compile/internal/gc/iexport.go for the export data format.
+// See iexport.go for the export data format.
 
 // This file is a copy of $GOROOT/src/go/internal/gcimporter/iimport.go.
 
@@ -1893,6 +1893,7 @@ const (
 	iexportVersionPosCol   = 1
 	iexportVersionGo1_18   = 2
 	iexportVersionGenerics = 2
+	iexportVersion         = iexportVersionGenerics
 
 	iexportVersionCurrent = 2
 )
@@ -2050,6 +2051,7 @@ func iimportCommon(fset *token.FileSet, getPackages GetPackagesFunc, data []byte
 	p := iimporter{
 		version: int(version),
 		ipath:   path,
+		aliases: aliases.Enabled(),
 		shallow: shallow,
 		reportf: reportf,
 
@@ -2209,6 +2211,7 @@ type iimporter struct {
 	version int
 	ipath   string
 
+	aliases bool
 	shallow bool
 	reportf ReportFunc // if non-nil, used to report bugs
 
@@ -2378,7 +2381,7 @@ func canReuse(def *types.Named, rhs types.Type) bool {
 	if def == nil {
 		return true
 	}
-	iface, _ := aliases.Unalias(rhs).(*types.Interface)
+	iface, _ := types.Unalias(rhs).(*types.Interface)
 	if iface == nil {
 		return true
 	}
@@ -2400,14 +2403,14 @@ func (r *importReader) obj(name string) {
 	pos := r.pos()
 
 	switch tag {
-	case aliasTag:
+	case aliasTag, genericAliasTag:
+		var tparams []*types.TypeParam
+		if tag == genericAliasTag {
+			tparams = r.tparamList()
+		}
 		typ := r.typ()
-		// TODO(adonovan): support generic aliases:
-		// if tag == genericAliasTag {
-		// 	tparams := r.tparamList()
-		// 	alias.SetTypeParams(tparams)
-		// }
-		r.declare(aliases.NewAlias(pos, r.currPkg, name, typ))
+		obj := aliases.NewAlias(r.p.aliases, pos, r.currPkg, name, typ, tparams)
+		r.declare(obj)
 
 	case constTag:
 		typ, val := r.value()
@@ -2453,7 +2456,7 @@ func (r *importReader) obj(name string) {
 				if targs.Len() > 0 {
 					rparams = make([]*types.TypeParam, targs.Len())
 					for i := range rparams {
-						rparams[i] = aliases.Unalias(targs.At(i)).(*types.TypeParam)
+						rparams[i] = types.Unalias(targs.At(i)).(*types.TypeParam)
 					}
 				}
 				msig := r.signature(recv, rparams, nil)
@@ -2483,7 +2486,7 @@ func (r *importReader) obj(name string) {
 		}
 		constraint := r.typ()
 		if implicit {
-			iface, _ := aliases.Unalias(constraint).(*types.Interface)
+			iface, _ := types.Unalias(constraint).(*types.Interface)
 			if iface == nil {
 				errorf("non-interface constraint marked implicit")
 			}
@@ -2690,7 +2693,7 @@ func (r *importReader) typ() types.Type {
 }
 
 func isInterface(t types.Type) bool {
-	_, ok := aliases.Unalias(t).(*types.Interface)
+	_, ok := types.Unalias(t).(*types.Interface)
 	return ok
 }
 
@@ -2700,7 +2703,7 @@ func (r *importReader) string() string      { return r.p.stringAt(r.uint64()) }
 func (r *importReader) doType(base *types.Named) (res types.Type) {
 	k := r.kind()
 	if debug {
-		r.p.trace("importing type %d (base: %s)", k, base)
+		r.p.trace("importing type %d (base: %v)", k, base)
 		r.p.indent++
 		defer func() {
 			r.p.indent--
@@ -2797,7 +2800,7 @@ func (r *importReader) doType(base *types.Named) (res types.Type) {
 			methods[i] = method
 		}
 
-		typ := newInterface(methods, embeddeds)
+		typ := types.NewInterfaceType(methods, embeddeds)
 		r.p.interfaceList = append(r.p.interfaceList, typ)
 		return typ
 
@@ -2889,7 +2892,7 @@ func (r *importReader) tparamList() []*types.TypeParam {
 	for i := range xs {
 		// Note: the standard library importer is tolerant of nil types here,
 		// though would panic in SetTypeParams.
-		xs[i] = aliases.Unalias(r.typ()).(*types.TypeParam)
+		xs[i] = types.Unalias(r.typ()).(*types.TypeParam)
 	}
 	return xs
 }

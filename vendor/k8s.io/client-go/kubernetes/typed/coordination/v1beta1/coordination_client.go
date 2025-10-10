@@ -23,16 +23,23 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	"net/http"
+=======
+	http "net/http"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
-	v1beta1 "k8s.io/api/coordination/v1beta1"
-	"k8s.io/client-go/kubernetes/scheme"
+	coordinationv1beta1 "k8s.io/api/coordination/v1beta1"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
 type CoordinationV1beta1Interface interface {
 	RESTClient() rest.Interface
 	LeasesGetter
+	LeaseCandidatesGetter
 }
 
 // CoordinationV1beta1Client is used to interact with features provided by the coordination.k8s.io group.
@@ -44,14 +51,16 @@ func (c *CoordinationV1beta1Client) Leases(namespace string) LeaseInterface {
 	return newLeases(c, namespace)
 }
 
+func (c *CoordinationV1beta1Client) LeaseCandidates(namespace string) LeaseCandidateInterface {
+	return newLeaseCandidates(c, namespace)
+}
+
 // NewForConfig creates a new CoordinationV1beta1Client for the given config.
 // NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
 // where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*CoordinationV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	httpClient, err := rest.HTTPClientFor(&config)
 	if err != nil {
 		return nil, err
@@ -63,9 +72,7 @@ func NewForConfig(c *rest.Config) (*CoordinationV1beta1Client, error) {
 // Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*CoordinationV1beta1Client, error) {
 	config := *c
-	if err := setConfigDefaults(&config); err != nil {
-		return nil, err
-	}
+	setConfigDefaults(&config)
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -200,17 +207,15 @@ func New(c rest.Interface) *CoordinationV1beta1Client {
 	return &CoordinationV1beta1Client{c}
 }
 
-func setConfigDefaults(config *rest.Config) error {
-	gv := v1beta1.SchemeGroupVersion
+func setConfigDefaults(config *rest.Config) {
+	gv := coordinationv1beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
 	}
-
-	return nil
 }
 
 // RESTClient returns a RESTClient that is used to communicate

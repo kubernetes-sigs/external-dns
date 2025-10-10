@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ContainerApplyConfiguration represents an declarative configuration of the Container type for use
+// ContainerApplyConfiguration represents a declarative configuration of the Container type for use
 // with apply.
 type ContainerApplyConfiguration struct {
 <<<<<<< HEAD
@@ -172,7 +172,7 @@ func (b *ContainerApplyConfiguration) WithResources(value *ResourceRequirementsA
 	TTY                      *bool                                     `json:"tty,omitempty"`
 }
 
-// ContainerApplyConfiguration constructs an declarative configuration of the Container type for use with
+// ContainerApplyConfiguration constructs a declarative configuration of the Container type for use with
 // apply.
 func Container() *ContainerApplyConfiguration {
 	return &ContainerApplyConfiguration{}

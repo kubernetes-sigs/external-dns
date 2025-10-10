@@ -728,6 +728,7 @@ func parseUint(s string) (uint64, error) {
 	i, err := strconv.ParseUint(s, 10, 64)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return 0, fmt.Errorf("couldn't parse value %s: %s", s, err)
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
@@ -735,6 +736,11 @@ func parseUint(s string) (uint64, error) {
 =======
 		return 0, fmt.Errorf("%s: couldn't parse value %q: %w", ErrFileParse, s, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return 0, fmt.Errorf("%s: couldn't parse value %q: %w", ErrFileParse, s, err)
+=======
+		return 0, fmt.Errorf("%w: couldn't parse value %q: %w", ErrFileParse, s, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 	return i, nil
 }

@@ -37,7 +37,7 @@ type FakeBatchV1 struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 func (c *FakeBatchV1) CronJobs(namespace string) v1.CronJobInterface {
-	return &FakeCronJobs{c, namespace}
+	return newFakeCronJobs(c, namespace)
 }
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -81,7 +81,7 @@ func (c *FakeBatchV1) CronJobs(namespace string) v1.CronJobInterface {
 
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 func (c *FakeBatchV1) Jobs(namespace string) v1.JobInterface {
-	return &FakeJobs{c, namespace}
+	return newFakeJobs(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

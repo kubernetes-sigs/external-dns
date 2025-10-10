@@ -36,6 +36,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/infobloxopen/infoblox-go-client/v2 v2.12.0
 	github.com/linode/linodego v1.69.0
 	github.com/maxatome/go-testdeep v1.15.0
 	github.com/miekg/dns v1.1.72

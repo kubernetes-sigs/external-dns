@@ -18,7 +18,7 @@ limitations under the License.
 
 package v1alpha1
 
-// ServerStorageVersionApplyConfiguration represents an declarative configuration of the ServerStorageVersion type for use
+// ServerStorageVersionApplyConfiguration represents a declarative configuration of the ServerStorageVersion type for use
 // with apply.
 type ServerStorageVersionApplyConfiguration struct {
 	APIServerID       *string  `json:"apiServerID,omitempty"`
@@ -60,7 +60,7 @@ func (b *ServerStorageVersionApplyConfiguration) WithDecodableVersions(values ..
 	ServedVersions    []string `json:"servedVersions,omitempty"`
 }
 
-// ServerStorageVersionApplyConfiguration constructs an declarative configuration of the ServerStorageVersion type for use with
+// ServerStorageVersionApplyConfiguration constructs a declarative configuration of the ServerStorageVersion type for use with
 // apply.
 func ServerStorageVersion() *ServerStorageVersionApplyConfiguration {
 	return &ServerStorageVersionApplyConfiguration{}

@@ -1333,6 +1333,7 @@ type Logger struct {
 
 	development bool
 	addCaller   bool
+	onPanic     zapcore.CheckWriteHook // default is WriteThenPanic
 	onFatal     zapcore.CheckWriteHook // default is WriteThenFatal
 
 	name        string
@@ -1635,27 +1636,12 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 	// Set up any required terminal behavior.
 	switch ent.Level {
 	case zapcore.PanicLevel:
-		ce = ce.After(ent, zapcore.WriteThenPanic)
+		ce = ce.After(ent, terminalHookOverride(zapcore.WriteThenPanic, log.onPanic))
 	case zapcore.FatalLevel:
-		onFatal := log.onFatal
-		// nil or WriteThenNoop will lead to continued execution after
-		// a Fatal log entry, which is unexpected. For example,
-		//
-		//   f, err := os.Open(..)
-		//   if err != nil {
-		//     log.Fatal("cannot open", zap.Error(err))
-		//   }
-		//   fmt.Println(f.Name())
-		//
-		// The f.Name() will panic if we continue execution after the
-		// log.Fatal.
-		if onFatal == nil || onFatal == zapcore.WriteThenNoop {
-			onFatal = zapcore.WriteThenFatal
-		}
-		ce = ce.After(ent, onFatal)
+		ce = ce.After(ent, terminalHookOverride(zapcore.WriteThenFatal, log.onFatal))
 	case zapcore.DPanicLevel:
 		if log.development {
-			ce = ce.After(ent, zapcore.WriteThenPanic)
+			ce = ce.After(ent, terminalHookOverride(zapcore.WriteThenPanic, log.onPanic))
 		}
 	}
 
@@ -1720,4 +1706,21 @@ func (log *Logger) check(lvl zapcore.Level, msg string) *zapcore.CheckedEntry {
 
 	return ce
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func terminalHookOverride(defaultHook, override zapcore.CheckWriteHook) zapcore.CheckWriteHook {
+	// A nil or WriteThenNoop hook will lead to continued execution after
+	// a Panic or Fatal log entry, which is unexpected. For example,
+	//
+	//   f, err := os.Open(..)
+	//   if err != nil {
+	//     log.Fatal("cannot open", zap.Error(err))
+	//   }
+	//   fmt.Println(f.Name())
+	//
+	// The f.Name() will panic if we continue execution after the log.Fatal.
+	if override == nil || override == zapcore.WriteThenNoop {
+		return defaultHook
+	}
+	return override
 }

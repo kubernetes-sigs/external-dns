@@ -32,6 +32,7 @@ type Interface interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -44,12 +45,19 @@ type Interface interface {
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+	// IPAddresses returns a IPAddressInformer.
+	IPAddresses() IPAddressInformer
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	// Ingresses returns a IngressInformer.
 	Ingresses() IngressInformer
 	// IngressClasses returns a IngressClassInformer.
 	IngressClasses() IngressClassInformer
 	// NetworkPolicies returns a NetworkPolicyInformer.
 	NetworkPolicies() NetworkPolicyInformer
+	// ServiceCIDRs returns a ServiceCIDRInformer.
+	ServiceCIDRs() ServiceCIDRInformer
 }
 
 type version struct {
@@ -61,6 +69,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// IPAddresses returns a IPAddressInformer.
+func (v *version) IPAddresses() IPAddressInformer {
+	return &iPAddressInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Ingresses returns a IngressInformer.
@@ -156,4 +169,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // NetworkPolicies returns a NetworkPolicyInformer.
 func (v *version) NetworkPolicies() NetworkPolicyInformer {
 	return &networkPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceCIDRs returns a ServiceCIDRInformer.
+func (v *version) ServiceCIDRs() ServiceCIDRInformer {
+	return &serviceCIDRInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

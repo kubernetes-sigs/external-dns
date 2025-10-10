@@ -2,10 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 <<<<<<< HEAD:vendor/google.golang.org/protobuf/internal/strs/strings_unsafe.go
 <<<<<<< HEAD
 //go:build !purego && !appengine
 // +build !purego,!appengine
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+//go:build !purego && !appengine && !go1.21
+// +build !purego,!appengine,!go1.21
+=======
+//go:build !go1.21
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 package strs
 

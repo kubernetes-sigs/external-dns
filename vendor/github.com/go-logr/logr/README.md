@@ -5,6 +5,7 @@
 # A minimal logging API for Go
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-logr/logr.svg)](https://pkg.go.dev/github.com/go-logr/logr)
+<<<<<<< HEAD
 
 logr offers an(other) opinion on how Go programs and libraries can do logging
 without becoming coupled to a particular logging implementation.  This is not
@@ -590,6 +591,10 @@ a way to ensure they *can* be implemented.  All of the real work is behind the
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-logr/logr.svg)](https://pkg.go.dev/github.com/go-logr/logr)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+[![Go Report Card](https://goreportcard.com/badge/github.com/go-logr/logr)](https://goreportcard.com/report/github.com/go-logr/logr)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/go-logr/logr/badge)](https://securityscorecards.dev/viewer/?platform=github.com&org=go-logr&repo=logr)
 
 logr offers an(other) opinion on how Go programs and libraries can do logging

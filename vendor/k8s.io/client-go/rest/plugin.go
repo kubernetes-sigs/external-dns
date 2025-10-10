@@ -29,8 +29,14 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	"k8s.io/klog/v2"
+
+=======
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
@@ -73,7 +79,10 @@ func RegisterAuthProviderPlugin(name string, plugin Factory) error {
 	if _, found := plugins[name]; found {
 		return fmt.Errorf("auth Provider Plugin %q was registered twice", name)
 	}
-	klog.V(4).Infof("Registered Auth Provider Plugin %q", name)
+	// RegisterAuthProviderPlugin gets called during the init phase before
+	// logging is initialized and therefore should not emit logs. If you
+	// need this message for debugging something, then uncomment it.
+	// klog.V(4).Infof("Registered Auth Provider Plugin %q", name)
 	plugins[name] = plugin
 	return nil
 }

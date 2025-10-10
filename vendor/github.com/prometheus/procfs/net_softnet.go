@@ -72,6 +72,7 @@ func (fs FS) NetSoftnetStat() ([]SoftnetStat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to parse /proc/net/softnet_stat: %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -109,6 +110,11 @@ func (fs FS) NetSoftnetStat() ([]SoftnetStat, error) {
 =======
 		return nil, fmt.Errorf("%s: /proc/net/softnet_stat: %w", ErrFileParse, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return nil, fmt.Errorf("%s: /proc/net/softnet_stat: %w", ErrFileParse, err)
+=======
+		return nil, fmt.Errorf("%w: /proc/net/softnet_stat: %w", ErrFileParse, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return entries, nil

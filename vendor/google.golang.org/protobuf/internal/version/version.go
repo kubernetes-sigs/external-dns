@@ -164,8 +164,8 @@ const (
 //  10. Send out the CL for review and submit it.
 const (
 	Major      = 1
-	Minor      = 34
-	Patch      = 1
+	Minor      = 36
+	Patch      = 5
 	PreRelease = ""
 )
 

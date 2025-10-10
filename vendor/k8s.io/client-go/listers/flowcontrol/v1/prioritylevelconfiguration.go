@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "k8s.io/api/flowcontrol/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	flowcontrolv1 "k8s.io/api/flowcontrol/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // PriorityLevelConfigurationLister helps list PriorityLevelConfigurations.
@@ -38,6 +38,7 @@ import (
 type PriorityLevelConfigurationLister interface {
 	// List lists all PriorityLevelConfigurations in the indexer.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 	List(selector labels.Selector) (ret []*v1alpha1.PriorityLevelConfiguration, err error)
 	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
 	// Objects returned here must be treated as read-only.
@@ -102,6 +103,11 @@ type PriorityLevelConfigurationLister interface {
 	// List lists all PriorityLevelConfigurations in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.PriorityLevelConfiguration, err error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	List(selector labels.Selector) (ret []*v1.PriorityLevelConfiguration, err error)
+=======
+	List(selector labels.Selector) (ret []*flowcontrolv1.PriorityLevelConfiguration, err error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	// Get retrieves the PriorityLevelConfiguration from the index for a given name.
 <<<<<<< HEAD:vendor/k8s.io/client-go/listers/flowcontrol/v1alpha1/prioritylevelconfiguration.go
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -110,37 +116,23 @@ type PriorityLevelConfigurationLister interface {
 	Get(name string) (*v1alpha1.PriorityLevelConfiguration, error)
 =======
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 	Get(name string) (*v1.PriorityLevelConfiguration, error)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/listers/flowcontrol/v1/prioritylevelconfiguration.go
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1.PriorityLevelConfiguration, error)
+=======
+	Get(name string) (*flowcontrolv1.PriorityLevelConfiguration, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	PriorityLevelConfigurationListerExpansion
 }
 
 // priorityLevelConfigurationLister implements the PriorityLevelConfigurationLister interface.
 type priorityLevelConfigurationLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*flowcontrolv1.PriorityLevelConfiguration]
 }
 
 // NewPriorityLevelConfigurationLister returns a new PriorityLevelConfigurationLister.
 func NewPriorityLevelConfigurationLister(indexer cache.Indexer) PriorityLevelConfigurationLister {
-	return &priorityLevelConfigurationLister{indexer: indexer}
-}
-
-// List lists all PriorityLevelConfigurations in the indexer.
-func (s *priorityLevelConfigurationLister) List(selector labels.Selector) (ret []*v1.PriorityLevelConfiguration, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.PriorityLevelConfiguration))
-	})
-	return ret, err
-}
-
-// Get retrieves the PriorityLevelConfiguration from the index for a given name.
-func (s *priorityLevelConfigurationLister) Get(name string) (*v1.PriorityLevelConfiguration, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("prioritylevelconfiguration"), name)
-	}
-	return obj.(*v1.PriorityLevelConfiguration), nil
+	return &priorityLevelConfigurationLister{listers.New[*flowcontrolv1.PriorityLevelConfiguration](indexer, flowcontrolv1.Resource("prioritylevelconfiguration"))}
 }

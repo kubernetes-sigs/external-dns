@@ -26,6 +26,12 @@ package v1
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+type IPAddressExpansion interface{}
+
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 type IngressExpansion interface{}
 
 type IngressClassExpansion interface{}
@@ -71,3 +77,5 @@ type IngressClassExpansion interface{}
 
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 type NetworkPolicyExpansion interface{}
+
+type ServiceCIDRExpansion interface{}

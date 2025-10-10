@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 <<<<<<< HEAD:vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe.go
 <<<<<<< HEAD
 //go:build !purego && !appengine
@@ -15,6 +16,12 @@
 //go:build !purego && !appengine && !go1.21
 // +build !purego,!appengine,!go1.21
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/google.golang.org/protobuf/reflect/protoreflect/value_unsafe_go120.go
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+//go:build !purego && !appengine && !go1.21
+// +build !purego,!appengine,!go1.21
+=======
+//go:build !go1.21
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 package protoreflect
 
@@ -56,7 +63,7 @@ var (
 
 // typeOf returns a pointer to the Go type information.
 // The pointer is comparable and equal if and only if the types are identical.
-func typeOf(t interface{}) unsafe.Pointer {
+func typeOf(t any) unsafe.Pointer {
 	return (*ifaceHeader)(unsafe.Pointer(&t)).Type
 }
 
@@ -91,7 +98,7 @@ func valueOfBytes(v []byte) Value {
 	p := (*sliceHeader)(unsafe.Pointer(&v))
 	return Value{typ: bytesType, ptr: p.Data, num: uint64(len(v))}
 }
-func valueOfIface(v interface{}) Value {
+func valueOfIface(v any) Value {
 	p := (*ifaceHeader)(unsafe.Pointer(&v))
 	return Value{typ: p.Type, ptr: p.Data}
 }
@@ -104,7 +111,7 @@ func (v Value) getBytes() (x []byte) {
 	*(*sliceHeader)(unsafe.Pointer(&x)) = sliceHeader{Data: v.ptr, Len: int(v.num), Cap: int(v.num)}
 	return x
 }
-func (v Value) getIface() (x interface{}) {
+func (v Value) getIface() (x any) {
 	*(*ifaceHeader)(unsafe.Pointer(&x)) = ifaceHeader{Type: v.typ, Data: v.ptr}
 	return x
 }

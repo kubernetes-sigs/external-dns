@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
@@ -37,6 +38,13 @@ import (
 	openapi_v2 "github.com/google/gnostic/openapiv2"
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	"gopkg.in/yaml.v2"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
+	"gopkg.in/yaml.v2"
+=======
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
+	yaml "sigs.k8s.io/yaml/goyaml.v2"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 )
 
 func newSchemaError(path *Path, format string, a ...interface{}) error {

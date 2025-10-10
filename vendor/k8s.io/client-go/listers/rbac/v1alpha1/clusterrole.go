@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "k8s.io/api/rbac/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	rbacv1alpha1 "k8s.io/api/rbac/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ClusterRoleLister helps list ClusterRoles.
@@ -38,9 +38,10 @@ import (
 type ClusterRoleLister interface {
 	// List lists all ClusterRoles in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.ClusterRole, err error)
+	List(selector labels.Selector) (ret []*rbacv1alpha1.ClusterRole, err error)
 	// Get retrieves the ClusterRole from the index for a given name.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -110,35 +111,20 @@ type ClusterRoleLister interface {
 	// Objects returned here must be treated as read-only.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Get(name string) (*v1alpha1.ClusterRole, error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1alpha1.ClusterRole, error)
+=======
+	Get(name string) (*rbacv1alpha1.ClusterRole, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	ClusterRoleListerExpansion
 }
 
 // clusterRoleLister implements the ClusterRoleLister interface.
 type clusterRoleLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*rbacv1alpha1.ClusterRole]
 }
 
 // NewClusterRoleLister returns a new ClusterRoleLister.
 func NewClusterRoleLister(indexer cache.Indexer) ClusterRoleLister {
-	return &clusterRoleLister{indexer: indexer}
-}
-
-// List lists all ClusterRoles in the indexer.
-func (s *clusterRoleLister) List(selector labels.Selector) (ret []*v1alpha1.ClusterRole, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ClusterRole))
-	})
-	return ret, err
-}
-
-// Get retrieves the ClusterRole from the index for a given name.
-func (s *clusterRoleLister) Get(name string) (*v1alpha1.ClusterRole, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("clusterrole"), name)
-	}
-	return obj.(*v1alpha1.ClusterRole), nil
+	return &clusterRoleLister{listers.New[*rbacv1alpha1.ClusterRole](indexer, rbacv1alpha1.Resource("clusterrole"))}
 }

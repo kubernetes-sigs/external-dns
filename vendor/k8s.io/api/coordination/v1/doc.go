@@ -17,7 +17,8 @@ limitations under the License.
 // +k8s:deepcopy-gen=package
 // +k8s:protobuf-gen=package
 // +k8s:openapi-gen=true
+// +k8s:prerelease-lifecycle-gen=true
 
 // +groupName=coordination.k8s.io
 
-package v1 // import "k8s.io/api/coordination/v1"
+package v1

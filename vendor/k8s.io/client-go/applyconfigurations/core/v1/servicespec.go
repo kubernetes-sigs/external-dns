@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ServiceSpecApplyConfiguration represents an declarative configuration of the ServiceSpec type for use
+// ServiceSpecApplyConfiguration represents a declarative configuration of the ServiceSpec type for use
 // with apply.
 type ServiceSpecApplyConfiguration struct {
 	Ports                         []ServicePortApplyConfiguration          `json:"ports,omitempty"`
@@ -235,7 +235,7 @@ func (b *ServiceSpecApplyConfiguration) WithInternalTrafficPolicy(value corev1.S
 	TrafficDistribution           *string                                  `json:"trafficDistribution,omitempty"`
 }
 
-// ServiceSpecApplyConfiguration constructs an declarative configuration of the ServiceSpec type for use with
+// ServiceSpecApplyConfiguration constructs a declarative configuration of the ServiceSpec type for use with
 // apply.
 func ServiceSpec() *ServiceSpecApplyConfiguration {
 	return &ServiceSpecApplyConfiguration{}

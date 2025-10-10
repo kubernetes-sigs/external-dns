@@ -1,8 +1,31 @@
 # Changes
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+## [0.5.0](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.4.0...compute/metadata/v0.5.0) (2024-07-10)
+
+
+### Features
+
+* **compute/metadata:** Add sys check for windows OnGCE ([#10521](https://github.com/googleapis/google-cloud-go/issues/10521)) ([3b9a830](https://github.com/googleapis/google-cloud-go/commit/3b9a83063960d2a2ac20beb47cc15818a68bd302))
+
+## [0.4.0](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.3.0...compute/metadata/v0.4.0) (2024-07-01)
+
+
+### Features
+
+* **compute/metadata:** Add context for all functions/methods ([#10370](https://github.com/googleapis/google-cloud-go/issues/10370)) ([66b8efe](https://github.com/googleapis/google-cloud-go/commit/66b8efe7ad877e052b2987bb4475477e38c67bb3))
+
+
+### Documentation
+
+* **compute/metadata:** Update OnGCE description ([#10408](https://github.com/googleapis/google-cloud-go/issues/10408)) ([6a46dca](https://github.com/googleapis/google-cloud-go/commit/6a46dca4eae4f88ec6f88822e01e5bf8aeca787f))
+
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 ## [0.3.0](https://github.com/googleapis/google-cloud-go/compare/compute/metadata/v0.2.3...compute/metadata/v0.3.0) (2024-04-15)
 
 

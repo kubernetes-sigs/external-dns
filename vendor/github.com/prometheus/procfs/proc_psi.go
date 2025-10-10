@@ -69,6 +69,7 @@ func (fs FS) PSIStatsForResource(resource string) (PSIStats, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %q: %w", resource, err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -106,6 +107,11 @@ func (fs FS) PSIStatsForResource(resource string) (PSIStats, error) {
 =======
 		return PSIStats{}, fmt.Errorf("%s: psi_stats: unavailable for %q: %w", ErrFileRead, resource, err)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		return PSIStats{}, fmt.Errorf("%s: psi_stats: unavailable for %q: %w", ErrFileRead, resource, err)
+=======
+		return PSIStats{}, fmt.Errorf("%w: psi_stats: unavailable for %q: %w", ErrFileRead, resource, err)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	}
 
 	return parsePSIStats(bytes.NewReader(data))

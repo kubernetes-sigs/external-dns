@@ -27,6 +27,12 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+
+	cbor "k8s.io/apimachinery/pkg/runtime/serializer/cbor/direct"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 )
 
 const RFC3339Micro = "2006-01-02T15:04:05.000000Z07:00"
@@ -137,6 +143,25 @@ func (t *MicroTime) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (t *MicroTime) UnmarshalCBOR(b []byte) error {
+	var s *string
+	if err := cbor.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	if s == nil {
+		t.Time = time.Time{}
+		return nil
+	}
+
+	parsed, err := time.Parse(RFC3339Micro, *s)
+	if err != nil {
+		return err
+	}
+
+	t.Time = parsed.Local()
+	return nil
+}
+
 // UnmarshalQueryParameter converts from a URL query parameter value to an object
 func (t *MicroTime) UnmarshalQueryParameter(str string) error {
 	if len(str) == 0 {
@@ -166,6 +191,13 @@ func (t MicroTime) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(t.UTC().Format(RFC3339Micro))
+}
+
+func (t MicroTime) MarshalCBOR() ([]byte, error) {
+	if t.IsZero() {
+		return cbor.Marshal(nil)
+	}
+	return cbor.Marshal(t.UTC().Format(RFC3339Micro))
 }
 
 // OpenAPISchemaType is used by the kube-openapi generator when constructing

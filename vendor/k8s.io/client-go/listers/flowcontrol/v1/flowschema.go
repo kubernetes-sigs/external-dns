@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "k8s.io/api/flowcontrol/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	flowcontrolv1 "k8s.io/api/flowcontrol/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // FlowSchemaLister helps list FlowSchemas.
@@ -38,6 +38,7 @@ import (
 type FlowSchemaLister interface {
 	// List lists all FlowSchemas in the indexer.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 	List(selector labels.Selector) (ret []*v1alpha1.FlowSchema, err error)
 	// Get retrieves the FlowSchema from the index for a given name.
 	// Objects returned here must be treated as read-only.
@@ -102,6 +103,11 @@ type FlowSchemaLister interface {
 	// List lists all FlowSchemas in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.FlowSchema, err error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	List(selector labels.Selector) (ret []*v1.FlowSchema, err error)
+=======
+	List(selector labels.Selector) (ret []*flowcontrolv1.FlowSchema, err error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	// Get retrieves the FlowSchema from the index for a given name.
 <<<<<<< HEAD:vendor/k8s.io/client-go/listers/flowcontrol/v1alpha1/flowschema.go
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -110,37 +116,23 @@ type FlowSchemaLister interface {
 	Get(name string) (*v1alpha1.FlowSchema, error)
 =======
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 	Get(name string) (*v1.FlowSchema, error)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2):vendor/k8s.io/client-go/listers/flowcontrol/v1/flowschema.go
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1.FlowSchema, error)
+=======
+	Get(name string) (*flowcontrolv1.FlowSchema, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	FlowSchemaListerExpansion
 }
 
 // flowSchemaLister implements the FlowSchemaLister interface.
 type flowSchemaLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*flowcontrolv1.FlowSchema]
 }
 
 // NewFlowSchemaLister returns a new FlowSchemaLister.
 func NewFlowSchemaLister(indexer cache.Indexer) FlowSchemaLister {
-	return &flowSchemaLister{indexer: indexer}
-}
-
-// List lists all FlowSchemas in the indexer.
-func (s *flowSchemaLister) List(selector labels.Selector) (ret []*v1.FlowSchema, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.FlowSchema))
-	})
-	return ret, err
-}
-
-// Get retrieves the FlowSchema from the index for a given name.
-func (s *flowSchemaLister) Get(name string) (*v1.FlowSchema, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("flowschema"), name)
-	}
-	return obj.(*v1.FlowSchema), nil
+	return &flowSchemaLister{listers.New[*flowcontrolv1.FlowSchema](indexer, flowcontrolv1.Resource("flowschema"))}
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+<<<<<<< HEAD
 var allModes = []LoadMode{
 	NeedName,
 	NeedFiles,
@@ -22,8 +23,40 @@ var allModes = []LoadMode{
 	NeedSyntax,
 	NeedTypesInfo,
 	NeedTypesSizes,
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+var allModes = []LoadMode{
+	NeedName,
+	NeedFiles,
+	NeedCompiledGoFiles,
+	NeedImports,
+	NeedDeps,
+	NeedExportFile,
+	NeedTypes,
+	NeedSyntax,
+	NeedTypesInfo,
+	NeedTypesSizes,
+=======
+var modes = [...]struct {
+	mode LoadMode
+	name string
+}{
+	{NeedName, "NeedName"},
+	{NeedFiles, "NeedFiles"},
+	{NeedCompiledGoFiles, "NeedCompiledGoFiles"},
+	{NeedImports, "NeedImports"},
+	{NeedDeps, "NeedDeps"},
+	{NeedExportFile, "NeedExportFile"},
+	{NeedTypes, "NeedTypes"},
+	{NeedSyntax, "NeedSyntax"},
+	{NeedTypesInfo, "NeedTypesInfo"},
+	{NeedTypesSizes, "NeedTypesSizes"},
+	{NeedModule, "NeedModule"},
+	{NeedEmbedFiles, "NeedEmbedFiles"},
+	{NeedEmbedPatterns, "NeedEmbedPatterns"},
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
+<<<<<<< HEAD
 var modeStrings = []string{
 	"NeedName",
 	"NeedFiles",
@@ -68,20 +101,46 @@ var modeStrings = []string{
 func (mod LoadMode) String() string {
 	m := mod
 	if m == 0 {
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+var modeStrings = []string{
+	"NeedName",
+	"NeedFiles",
+	"NeedCompiledGoFiles",
+	"NeedImports",
+	"NeedDeps",
+	"NeedExportFile",
+	"NeedTypes",
+	"NeedSyntax",
+	"NeedTypesInfo",
+	"NeedTypesSizes",
+}
+
+func (mod LoadMode) String() string {
+	m := mod
+	if m == 0 {
+=======
+func (mode LoadMode) String() string {
+	if mode == 0 {
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		return "LoadMode(0)"
 	}
 	var out []string
-	for i, x := range allModes {
-		if x > m {
-			break
-		}
-		if (m & x) != 0 {
-			out = append(out, modeStrings[i])
-			m = m ^ x
+	// named bits
+	for _, item := range modes {
+		if (mode & item.mode) != 0 {
+			mode ^= item.mode
+			out = append(out, item.name)
 		}
 	}
-	if m != 0 {
-		out = append(out, "Unknown")
+	// unnamed residue
+	if mode != 0 {
+		if out == nil {
+			return fmt.Sprintf("LoadMode(%#x)", int(mode))
+		}
+		out = append(out, fmt.Sprintf("%#x", int(mode)))
 	}
-	return fmt.Sprintf("LoadMode(%s)", strings.Join(out, "|"))
+	if len(out) == 1 {
+		return out[0]
+	}
+	return "(" + strings.Join(out, "|") + ")"
 }

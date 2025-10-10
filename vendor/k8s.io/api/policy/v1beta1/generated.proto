@@ -1598,11 +1598,11 @@ option go_package = "k8s.io/api/policy/v1beta1";
 message Eviction {
   // ObjectMeta describes the pod that is being evicted.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // DeleteOptions may be provided
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 2;
 }
 
 // PodDisruptionBudget is an object to define the max disruption that can be caused to a collection of pods
@@ -1610,7 +1610,7 @@ message PodDisruptionBudget {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // Specification of the desired behavior of the PodDisruptionBudget.
   // +optional
@@ -1626,7 +1626,7 @@ message PodDisruptionBudgetList {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items list individual PodDisruptionBudget objects
   repeated PodDisruptionBudget items = 2;
@@ -1639,7 +1639,7 @@ message PodDisruptionBudgetSpec {
   // absence of the evicted pod.  So for example you can prevent all voluntary
   // evictions by specifying "100%".
   // +optional
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString minAvailable = 1;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString minAvailable = 1;
 
   // Label query over pods whose evictions are managed by the disruption
   // budget.
@@ -1647,14 +1647,14 @@ message PodDisruptionBudgetSpec {
   // An empty selector ({}) also selects no pods, which differs from standard behavior of selecting all pods.
   // In policy/v1, an empty selector will select all pods in the namespace.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 2;
 
   // An eviction is allowed if at most "maxUnavailable" pods selected by
   // "selector" are unavailable after the eviction, i.e. even in absence of
   // the evicted pod. For example, one can prevent all voluntary evictions
   // by specifying 0. This is a mutually exclusive setting with "minAvailable".
   // +optional
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString maxUnavailable = 3;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString maxUnavailable = 3;
 
   // UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods
   // should be considered for eviction. Current implementation considers healthy pods,
@@ -1678,9 +1678,6 @@ message PodDisruptionBudgetSpec {
   // Additional policies may be added in the future.
   // Clients making eviction decisions should disallow eviction of unhealthy pods
   // if they encounter an unrecognized policy in this field.
-  //
-  // This field is beta-level. The eviction API uses this field when
-  // the feature gate PDBUnhealthyPodEvictionPolicy is enabled (enabled by default).
   // +optional
   optional string unhealthyPodEvictionPolicy = 4;
 }
@@ -1705,7 +1702,7 @@ message PodDisruptionBudgetStatus {
   // If everything goes smooth this map should be empty for the most of the time.
   // Large number of entries in the map may indicate problems with pod deletions.
   // +optional
-  map<string, k8s.io.apimachinery.pkg.apis.meta.v1.Time> disruptedPods = 2;
+  map<string, .k8s.io.apimachinery.pkg.apis.meta.v1.Time> disruptedPods = 2;
 
   // Number of pod disruptions that are currently allowed.
   optional int32 disruptionsAllowed = 3;
@@ -1907,7 +1904,13 @@ message SupplementalGroupsStrategyOptions {
   // +patchStrategy=merge
   // +listType=map
   // +listMapKey=type
+<<<<<<< HEAD
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 7;
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 7;
+=======
+  repeated .k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 7;
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 

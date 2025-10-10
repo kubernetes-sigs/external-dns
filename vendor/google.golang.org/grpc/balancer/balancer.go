@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/channelz"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+<<<<<<< HEAD
 	"google.golang.org/grpc/internal"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
@@ -1457,6 +1458,10 @@ type Producer interface {
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+	estats "google.golang.org/grpc/experimental/stats"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/internal"
 	"google.golang.org/grpc/metadata"
@@ -1499,8 +1504,21 @@ func unregisterForTesting(name string) {
 	delete(m, name)
 }
 
+// connectedAddress returns the connected address for a SubConnState. The
+// address is only valid if the state is READY.
+func connectedAddress(scs SubConnState) resolver.Address {
+	return scs.connectedAddress
+}
+
+// setConnectedAddress sets the connected address for a SubConnState.
+func setConnectedAddress(scs *SubConnState, addr resolver.Address) {
+	scs.connectedAddress = addr
+}
+
 func init() {
 	internal.BalancerUnregister = unregisterForTesting
+	internal.ConnectedAddress = connectedAddress
+	internal.SetConnectedAddress = setConnectedAddress
 }
 
 // Get returns the resolver builder registered with the given name.
@@ -1543,7 +1561,7 @@ type SubConn interface {
 	// UpdateAddresses updates the addresses used in this SubConn.
 	// gRPC checks if currently-connected address is still in the new list.
 	// If it's in the list, the connection will be kept.
-	// If it's not in the list, the connection will gracefully closed, and
+	// If it's not in the list, the connection will gracefully close, and
 	// a new connection will be created.
 	//
 	// This will trigger a state transition for the SubConn.
@@ -1555,8 +1573,11 @@ type SubConn interface {
 	Connect()
 	// GetOrBuildProducer returns a reference to the existing Producer for this
 	// ProducerBuilder in this SubConn, or, if one does not currently exist,
-	// creates a new one and returns it.  Returns a close function which must
-	// be called when the Producer is no longer needed.
+	// creates a new one and returns it.  Returns a close function which may be
+	// called when the Producer is no longer needed.  Otherwise the producer
+	// will automatically be closed upon connection loss or subchannel close.
+	// Should only be called on a SubConn in state Ready.  Otherwise the
+	// producer will be unable to create streams.
 	GetOrBuildProducer(ProducerBuilder) (p Producer, close func())
 	// Shutdown shuts down the SubConn gracefully.  Any started RPCs will be
 	// allowed to complete.  No future calls should be made on the SubConn.
@@ -1670,6 +1691,10 @@ type BuildOptions struct {
 	// same resolver.Target as passed to the resolver. See the documentation for
 	// the resolver.Target type for details about what it contains.
 	Target resolver.Target
+	// MetricsRecorder is the metrics recorder that balancers can use to record
+	// metrics. Balancer implementations which do not register metrics on
+	// metrics registry and record on them can ignore this field.
+	MetricsRecorder estats.MetricsRecorder
 }
 
 // Builder creates a balancer.
@@ -1837,6 +1862,9 @@ type SubConnState struct {
 	// ConnectionError is set if the ConnectivityState is TransientFailure,
 	// describing the reason the SubConn failed.  Otherwise, it is nil.
 	ConnectionError error
+	// connectedAddr contains the connected address when ConnectivityState is
+	// Ready. Otherwise, it is indeterminate.
+	connectedAddress resolver.Address
 }
 
 // ClientConnState describes the state of a ClientConn relevant to the
@@ -1858,8 +1886,10 @@ type ProducerBuilder interface {
 	// Build creates a Producer.  The first parameter is always a
 	// grpc.ClientConnInterface (a type to allow creating RPCs/streams on the
 	// associated SubConn), but is declared as `any` to avoid a dependency
-	// cycle.  Should also return a close function that will be called when all
-	// references to the Producer have been given up.
+	// cycle.  Build also returns a close function that will be called when all
+	// references to the Producer have been given up for a SubConn, or when a
+	// connectivity state change occurs on the SubConn.  The close function
+	// should always block until all asynchronous cleanup work is completed.
 	Build(grpcClientConnInterface any) (p Producer, close func())
 }
 

@@ -30,6 +30,7 @@ var (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Version           = "3.5.0"
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -48,6 +49,11 @@ var (
 =======
 	Version           = "3.5.13"
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Version           = "3.5.13"
+=======
+	Version           = "3.5.21"
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	APIVersion        = "unknown"
 
 	// Git SHA Value will be set during build

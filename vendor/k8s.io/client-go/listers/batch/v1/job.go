@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "k8s.io/api/batch/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	batchv1 "k8s.io/api/batch/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // JobLister helps list Jobs.
@@ -38,7 +38,7 @@ import (
 type JobLister interface {
 	// List lists all Jobs in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Job, err error)
+	List(selector labels.Selector) (ret []*batchv1.Job, err error)
 	// Jobs returns an object that can list and get Jobs.
 	Jobs(namespace string) JobNamespaceLister
 	JobListerExpansion
@@ -46,25 +46,17 @@ type JobLister interface {
 
 // jobLister implements the JobLister interface.
 type jobLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*batchv1.Job]
 }
 
 // NewJobLister returns a new JobLister.
 func NewJobLister(indexer cache.Indexer) JobLister {
-	return &jobLister{indexer: indexer}
-}
-
-// List lists all Jobs in the indexer.
-func (s *jobLister) List(selector labels.Selector) (ret []*v1.Job, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Job))
-	})
-	return ret, err
+	return &jobLister{listers.New[*batchv1.Job](indexer, batchv1.Resource("job"))}
 }
 
 // Jobs returns an object that can list and get Jobs.
 func (s *jobLister) Jobs(namespace string) JobNamespaceLister {
-	return jobNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return jobNamespaceLister{listers.NewNamespaced[*batchv1.Job](s.ResourceIndexer, namespace)}
 }
 
 // JobNamespaceLister helps list and get Jobs.
@@ -72,9 +64,10 @@ func (s *jobLister) Jobs(namespace string) JobNamespaceLister {
 type JobNamespaceLister interface {
 	// List lists all Jobs in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Job, err error)
+	List(selector labels.Selector) (ret []*batchv1.Job, err error)
 	// Get retrieves the Job from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -280,32 +273,16 @@ type JobNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Get(name string) (*v1.Job, error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1.Job, error)
+=======
+	Get(name string) (*batchv1.Job, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	JobNamespaceListerExpansion
 }
 
 // jobNamespaceLister implements the JobNamespaceLister
 // interface.
 type jobNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Jobs in the indexer for a given namespace.
-func (s jobNamespaceLister) List(selector labels.Selector) (ret []*v1.Job, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Job))
-	})
-	return ret, err
-}
-
-// Get retrieves the Job from the indexer for a given namespace and name.
-func (s jobNamespaceLister) Get(name string) (*v1.Job, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("job"), name)
-	}
-	return obj.(*v1.Job), nil
+	listers.ResourceIndexer[*batchv1.Job]
 }

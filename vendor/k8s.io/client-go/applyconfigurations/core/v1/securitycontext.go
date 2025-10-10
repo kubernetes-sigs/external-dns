@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// SecurityContextApplyConfiguration represents an declarative configuration of the SecurityContext type for use
+// SecurityContextApplyConfiguration represents a declarative configuration of the SecurityContext type for use
 // with apply.
 type SecurityContextApplyConfiguration struct {
 	Capabilities             *CapabilitiesApplyConfiguration                  `json:"capabilities,omitempty"`
@@ -135,7 +135,7 @@ func (b *SecurityContextApplyConfiguration) WithSeccompProfile(value *SeccompPro
 	AppArmorProfile          *AppArmorProfileApplyConfiguration               `json:"appArmorProfile,omitempty"`
 }
 
-// SecurityContextApplyConfiguration constructs an declarative configuration of the SecurityContext type for use with
+// SecurityContextApplyConfiguration constructs a declarative configuration of the SecurityContext type for use with
 // apply.
 func SecurityContext() *SecurityContextApplyConfiguration {
 	return &SecurityContextApplyConfiguration{}

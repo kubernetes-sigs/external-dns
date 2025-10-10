@@ -3110,6 +3110,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 
 	s := &summary{
 		desc: desc,
+		now:  opts.now,
 
 		objectives:       opts.Objectives,
 		sortedObjectives: make([]float64, 0, len(opts.Objectives)),
@@ -3147,6 +3148,8 @@ type summary struct {
 
 	desc *Desc
 
+	now func() time.Time
+
 	objectives       map[float64]float64
 	sortedObjectives []float64
 
@@ -3174,7 +3177,7 @@ func (s *summary) Observe(v float64) {
 	s.bufMtx.Lock()
 	defer s.bufMtx.Unlock()
 
-	now := time.Now()
+	now := s.now()
 	if now.After(s.hotBufExpTime) {
 		s.asyncFlush(now)
 	}
@@ -3193,7 +3196,7 @@ func (s *summary) Write(out *dto.Metric) error {
 	s.bufMtx.Lock()
 	s.mtx.Lock()
 	// Swap bufs even if hotBuf is empty to set new hotBufExpTime.
-	s.swapBufs(time.Now())
+	s.swapBufs(s.now())
 	s.bufMtx.Unlock()
 
 	s.flushColdBuf()
@@ -3652,6 +3655,48 @@ func MustNewConstSummary(
 	labelValues ...string,
 ) Metric {
 	m, err := NewConstSummary(desc, count, sum, quantiles, labelValues...)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+// NewConstSummaryWithCreatedTimestamp does the same thing as NewConstSummary but sets the created timestamp.
+func NewConstSummaryWithCreatedTimestamp(
+	desc *Desc,
+	count uint64,
+	sum float64,
+	quantiles map[float64]float64,
+	ct time.Time,
+	labelValues ...string,
+) (Metric, error) {
+	if desc.err != nil {
+		return nil, desc.err
+	}
+	if err := validateLabelValues(labelValues, len(desc.variableLabels.names)); err != nil {
+		return nil, err
+	}
+	return &constSummary{
+		desc:       desc,
+		count:      count,
+		sum:        sum,
+		quantiles:  quantiles,
+		labelPairs: MakeLabelPairs(desc, labelValues),
+		createdTs:  timestamppb.New(ct),
+	}, nil
+}
+
+// MustNewConstSummaryWithCreatedTimestamp is a version of NewConstSummaryWithCreatedTimestamp that panics where
+// NewConstSummaryWithCreatedTimestamp would have returned an error.
+func MustNewConstSummaryWithCreatedTimestamp(
+	desc *Desc,
+	count uint64,
+	sum float64,
+	quantiles map[float64]float64,
+	ct time.Time,
+	labelValues ...string,
+) Metric {
+	m, err := NewConstSummaryWithCreatedTimestamp(desc, count, sum, quantiles, ct, labelValues...)
 	if err != nil {
 		panic(err)
 	}

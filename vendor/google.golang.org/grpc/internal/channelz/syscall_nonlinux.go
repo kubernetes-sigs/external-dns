@@ -156,7 +156,7 @@ type SocketOptionData struct {
 // Getsockopt defines the function to get socket options requested by channelz.
 // It is to be passed to syscall.RawConn.Control().
 // Windows OS doesn't support Socket Option
-func (s *SocketOptionData) Getsockopt(fd uintptr) {
+func (s *SocketOptionData) Getsockopt(uintptr) {
 	once.Do(func() {
 <<<<<<< HEAD
 		grpclog.Warningln("Channelz: socket options are not supported on non-linux os and appengine.")
@@ -224,6 +224,6 @@ func (s *SocketOptionData) Getsockopt(fd uintptr) {
 }
 
 // GetSocketOption gets the socket option info of the conn.
-func GetSocketOption(c any) *SocketOptionData {
+func GetSocketOption(any) *SocketOptionData {
 	return nil
 }

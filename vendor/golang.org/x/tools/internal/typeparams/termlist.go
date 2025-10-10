@@ -30,7 +30,12 @@ func (xl termlist) String() string {
 	var buf bytes.Buffer
 	for i, x := range xl {
 		if i > 0 {
+<<<<<<< HEAD
 			buf.WriteString(" ∪ ")
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+			buf.WriteString(" | ")
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 		}
 		buf.WriteString(x.String())
 	}

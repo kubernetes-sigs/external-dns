@@ -18,9 +18,14 @@ limitations under the License.
 
 package v1
 
-// LifecycleApplyConfiguration represents an declarative configuration of the Lifecycle type for use
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
+// LifecycleApplyConfiguration represents a declarative configuration of the Lifecycle type for use
 // with apply.
 type LifecycleApplyConfiguration struct {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -50,9 +55,17 @@ func (b *LifecycleApplyConfiguration) WithPreStop(value *HandlerApplyConfigurati
 =======
 	PostStart *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
 	PreStop   *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	PostStart *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
+	PreStop   *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
+=======
+	PostStart  *LifecycleHandlerApplyConfiguration `json:"postStart,omitempty"`
+	PreStop    *LifecycleHandlerApplyConfiguration `json:"preStop,omitempty"`
+	StopSignal *corev1.Signal                      `json:"stopSignal,omitempty"`
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
-// LifecycleApplyConfiguration constructs an declarative configuration of the Lifecycle type for use with
+// LifecycleApplyConfiguration constructs a declarative configuration of the Lifecycle type for use with
 // apply.
 func Lifecycle() *LifecycleApplyConfiguration {
 	return &LifecycleApplyConfiguration{}
@@ -122,5 +135,13 @@ func (b *LifecycleApplyConfiguration) WithPostStart(value *LifecycleHandlerApply
 func (b *LifecycleApplyConfiguration) WithPreStop(value *LifecycleHandlerApplyConfiguration) *LifecycleApplyConfiguration {
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	b.PreStop = value
+	return b
+}
+
+// WithStopSignal sets the StopSignal field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the StopSignal field is set to the value of the last call.
+func (b *LifecycleApplyConfiguration) WithStopSignal(value corev1.Signal) *LifecycleApplyConfiguration {
+	b.StopSignal = &value
 	return b
 }

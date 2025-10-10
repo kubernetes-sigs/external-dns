@@ -4,7 +4,7 @@ We definitely welcome your patches and contributions to gRPC! Please read the gR
 organization's [governance rules](https://github.com/grpc/grpc-community/blob/master/governance.md)
 and [contribution guidelines](https://github.com/grpc/grpc-community/blob/master/CONTRIBUTING.md) before proceeding.
 
-If you are new to github, please start by reading [Pull Request howto](https://help.github.com/articles/about-pull-requests/)
+If you are new to GitHub, please start by reading [Pull Request howto](https://help.github.com/articles/about-pull-requests/)
 
 ## Legal requirements
 
@@ -27,8 +27,8 @@ How to get your contributions merged smoothly and quickly.
   is a great place to start. These issues are well-documented and usually can be
   resolved with a single pull request.
 
-- If you are adding a new file, make sure it has the copyright message template 
-  at the top as a comment. You can copy over the message from an existing file 
+- If you are adding a new file, make sure it has the copyright message template
+  at the top as a comment. You can copy over the message from an existing file
   and update the year.
 
 - The grpc package should only depend on standard Go packages and a small number
@@ -41,12 +41,12 @@ How to get your contributions merged smoothly and quickly.
   proposal](https://github.com/grpc/proposal).
 
 - Provide a good **PR description** as a record of **what** change is being made
-  and **why** it was made. Link to a github issue if it exists.
+  and **why** it was made. Link to a GitHub issue if it exists.
 
-- If you want to fix formatting or style, consider whether your changes are an 
-  obvious improvement or might be considered a personal preference. If a style 
-  change is based on preference, it likely will not be accepted. If it corrects 
-  widely agreed-upon anti-patterns, then please do create a PR and explain the 
+- If you want to fix formatting or style, consider whether your changes are an
+  obvious improvement or might be considered a personal preference. If a style
+  change is based on preference, it likely will not be accepted. If it corrects
+  widely agreed-upon anti-patterns, then please do create a PR and explain the
   benefits of the change.
 
 - Unless your PR is trivial, you should expect there will be reviewer comments
@@ -68,6 +68,7 @@ How to get your contributions merged smoothly and quickly.
 - **All tests need to be passing** before your change can be merged. We
   recommend you **run tests locally** before creating your PR to catch breakages
   early on.
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -98,6 +99,11 @@ How to get your contributions merged smoothly and quickly.
   - optional `make testappengine` to run tests with appengine
 =======
   - `VET_SKIP_PROTO=1 ./vet.sh` to catch vet errors
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+  - `VET_SKIP_PROTO=1 ./vet.sh` to catch vet errors
+=======
+  - `./scripts/vet.sh` to catch vet errors
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
   - `go test -cpu 1,4 -timeout 7m ./...` to run the tests
   - `go test -race -cpu 1,4 -timeout 7m ./...` to run tests in race mode
 >>>>>>> 6b7ce455e (update vendored files)

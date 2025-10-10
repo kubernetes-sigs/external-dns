@@ -19,10 +19,10 @@ limitations under the License.
 package v1beta2
 
 import (
-	v1beta2 "k8s.io/api/apps/v1beta2"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // DaemonSetLister helps list DaemonSets.
@@ -38,7 +38,7 @@ import (
 type DaemonSetLister interface {
 	// List lists all DaemonSets in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error)
+	List(selector labels.Selector) (ret []*appsv1beta2.DaemonSet, err error)
 	// DaemonSets returns an object that can list and get DaemonSets.
 	DaemonSets(namespace string) DaemonSetNamespaceLister
 	DaemonSetListerExpansion
@@ -46,25 +46,17 @@ type DaemonSetLister interface {
 
 // daemonSetLister implements the DaemonSetLister interface.
 type daemonSetLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*appsv1beta2.DaemonSet]
 }
 
 // NewDaemonSetLister returns a new DaemonSetLister.
 func NewDaemonSetLister(indexer cache.Indexer) DaemonSetLister {
-	return &daemonSetLister{indexer: indexer}
-}
-
-// List lists all DaemonSets in the indexer.
-func (s *daemonSetLister) List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta2.DaemonSet))
-	})
-	return ret, err
+	return &daemonSetLister{listers.New[*appsv1beta2.DaemonSet](indexer, appsv1beta2.Resource("daemonset"))}
 }
 
 // DaemonSets returns an object that can list and get DaemonSets.
 func (s *daemonSetLister) DaemonSets(namespace string) DaemonSetNamespaceLister {
-	return daemonSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return daemonSetNamespaceLister{listers.NewNamespaced[*appsv1beta2.DaemonSet](s.ResourceIndexer, namespace)}
 }
 
 // DaemonSetNamespaceLister helps list and get DaemonSets.
@@ -72,9 +64,10 @@ func (s *daemonSetLister) DaemonSets(namespace string) DaemonSetNamespaceLister 
 type DaemonSetNamespaceLister interface {
 	// List lists all DaemonSets in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error)
+	List(selector labels.Selector) (ret []*appsv1beta2.DaemonSet, err error)
 	// Get retrieves the DaemonSet from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -280,32 +273,16 @@ type DaemonSetNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	Get(name string) (*v1beta2.DaemonSet, error)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	Get(name string) (*v1beta2.DaemonSet, error)
+=======
+	Get(name string) (*appsv1beta2.DaemonSet, error)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	DaemonSetNamespaceListerExpansion
 }
 
 // daemonSetNamespaceLister implements the DaemonSetNamespaceLister
 // interface.
 type daemonSetNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all DaemonSets in the indexer for a given namespace.
-func (s daemonSetNamespaceLister) List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta2.DaemonSet))
-	})
-	return ret, err
-}
-
-// Get retrieves the DaemonSet from the indexer for a given namespace and name.
-func (s daemonSetNamespaceLister) Get(name string) (*v1beta2.DaemonSet, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta2.Resource("daemonset"), name)
-	}
-	return obj.(*v1beta2.DaemonSet), nil
+	listers.ResourceIndexer[*appsv1beta2.DaemonSet]
 }

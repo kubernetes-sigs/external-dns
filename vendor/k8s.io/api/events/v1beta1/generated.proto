@@ -47,10 +47,10 @@ message Event {
   // Standard object's metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // eventTime is the time when this Event was first observed. It is required.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime eventTime = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime eventTime = 2;
 
   // series is data about the Event series this event represents or nil if it's a singleton Event.
   // +optional
@@ -80,12 +80,12 @@ message Event {
   // implements, e.g. ReplicaSetController implements ReplicaSets and this event is emitted because
   // it acts on some changes in a ReplicaSet object.
   // +optional
-  optional k8s.io.api.core.v1.ObjectReference regarding = 8;
+  optional .k8s.io.api.core.v1.ObjectReference regarding = 8;
 
   // related is the optional secondary object for more complex actions. E.g. when regarding object triggers
   // a creation or deletion of related object.
   // +optional
-  optional k8s.io.api.core.v1.ObjectReference related = 9;
+  optional .k8s.io.api.core.v1.ObjectReference related = 9;
 
   // note is a human-readable description of the status of this operation.
   // Maximal length of the note is 1kB, but libraries should be prepared to
@@ -100,15 +100,15 @@ message Event {
 
   // deprecatedSource is the deprecated field assuring backward compatibility with core.v1 Event type.
   // +optional
-  optional k8s.io.api.core.v1.EventSource deprecatedSource = 12;
+  optional .k8s.io.api.core.v1.EventSource deprecatedSource = 12;
 
   // deprecatedFirstTimestamp is the deprecated field assuring backward compatibility with core.v1 Event type.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time deprecatedFirstTimestamp = 13;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time deprecatedFirstTimestamp = 13;
 
   // deprecatedLastTimestamp is the deprecated field assuring backward compatibility with core.v1 Event type.
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time deprecatedLastTimestamp = 14;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time deprecatedLastTimestamp = 14;
 
   // deprecatedCount is the deprecated field assuring backward compatibility with core.v1 Event type.
   // +optional
@@ -120,7 +120,7 @@ message EventList {
   // Standard list metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of schema objects.
   repeated Event items = 2;
@@ -133,6 +133,7 @@ message EventSeries {
   optional int32 count = 1;
 
   // lastObservedTime is the time when last Event from the series was seen before last heartbeat.
+<<<<<<< HEAD
   optional k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime lastObservedTime = 2;
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -650,5 +651,10 @@ message EventSeries {
   optional string state = 3;
 =======
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime lastObservedTime = 2;
+=======
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime lastObservedTime = 2;
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 

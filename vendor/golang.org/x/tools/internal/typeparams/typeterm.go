@@ -10,11 +10,19 @@ import "go/types"
 
 // A term describes elementary type sets:
 //
+<<<<<<< HEAD
 //   ∅:  (*term)(nil)     == ∅                      // set of no types (empty set)
 //   𝓤:  &term{}          == 𝓤                      // set of all types (𝓤niverse)
 //   T:  &term{false, T}  == {T}                    // set of type T
 //  ~t:  &term{true, t}   == {t' | under(t') == t}  // set of types with underlying type t
 //
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+//	 ∅:  (*term)(nil)     == ∅                      // set of no types (empty set)
+//	 𝓤:  &term{}          == 𝓤                      // set of all types (𝓤niverse)
+//	 T:  &term{false, T}  == {T}                    // set of type T
+//	~t:  &term{true, t}   == {t' | under(t') == t}  // set of types with underlying type t
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 type term struct {
 	tilde bool // valid if typ != nil
 	typ   types.Type

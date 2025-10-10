@@ -98,6 +98,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 		&NetworkPolicy{},
 		&NetworkPolicyList{},
+		&IPAddress{},
+		&IPAddressList{},
+		&ServiceCIDR{},
+		&ServiceCIDRList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

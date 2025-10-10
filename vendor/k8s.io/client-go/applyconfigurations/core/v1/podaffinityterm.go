@@ -19,12 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// PodAffinityTermApplyConfiguration represents an declarative configuration of the PodAffinityTerm type for use
+// PodAffinityTermApplyConfiguration represents a declarative configuration of the PodAffinityTerm type for use
 // with apply.
 type PodAffinityTermApplyConfiguration struct {
+<<<<<<< HEAD
 	LabelSelector     *v1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
 	Namespaces        []string                            `json:"namespaces,omitempty"`
 	TopologyKey       *string                             `json:"topologyKey,omitempty"`
@@ -73,9 +74,24 @@ func (b *PodAffinityTermApplyConfiguration) WithNamespaceSelector(value *v1.Labe
 =======
 	MatchLabelKeys    []string                            `json:"matchLabelKeys,omitempty"`
 	MismatchLabelKeys []string                            `json:"mismatchLabelKeys,omitempty"`
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	LabelSelector     *v1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
+	Namespaces        []string                            `json:"namespaces,omitempty"`
+	TopologyKey       *string                             `json:"topologyKey,omitempty"`
+	NamespaceSelector *v1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
+	MatchLabelKeys    []string                            `json:"matchLabelKeys,omitempty"`
+	MismatchLabelKeys []string                            `json:"mismatchLabelKeys,omitempty"`
+=======
+	LabelSelector     *metav1.LabelSelectorApplyConfiguration `json:"labelSelector,omitempty"`
+	Namespaces        []string                                `json:"namespaces,omitempty"`
+	TopologyKey       *string                                 `json:"topologyKey,omitempty"`
+	NamespaceSelector *metav1.LabelSelectorApplyConfiguration `json:"namespaceSelector,omitempty"`
+	MatchLabelKeys    []string                                `json:"matchLabelKeys,omitempty"`
+	MismatchLabelKeys []string                                `json:"mismatchLabelKeys,omitempty"`
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
-// PodAffinityTermApplyConfiguration constructs an declarative configuration of the PodAffinityTerm type for use with
+// PodAffinityTermApplyConfiguration constructs a declarative configuration of the PodAffinityTerm type for use with
 // apply.
 func PodAffinityTerm() *PodAffinityTermApplyConfiguration {
 	return &PodAffinityTermApplyConfiguration{}
@@ -84,7 +100,7 @@ func PodAffinityTerm() *PodAffinityTermApplyConfiguration {
 // WithLabelSelector sets the LabelSelector field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LabelSelector field is set to the value of the last call.
-func (b *PodAffinityTermApplyConfiguration) WithLabelSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
+func (b *PodAffinityTermApplyConfiguration) WithLabelSelector(value *metav1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
 	b.LabelSelector = value
 	return b
 }
@@ -110,7 +126,7 @@ func (b *PodAffinityTermApplyConfiguration) WithTopologyKey(value string) *PodAf
 // WithNamespaceSelector sets the NamespaceSelector field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the NamespaceSelector field is set to the value of the last call.
-func (b *PodAffinityTermApplyConfiguration) WithNamespaceSelector(value *v1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
+func (b *PodAffinityTermApplyConfiguration) WithNamespaceSelector(value *metav1.LabelSelectorApplyConfiguration) *PodAffinityTermApplyConfiguration {
 	b.NamespaceSelector = value
 	return b
 }

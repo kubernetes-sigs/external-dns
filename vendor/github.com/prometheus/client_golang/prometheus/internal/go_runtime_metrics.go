@@ -73,7 +73,8 @@ func RuntimeMetricsToProm(d *metrics.Description) (string, string, string, bool)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	}
 
-	valid := model.IsValidMetricName(model.LabelValue(namespace + "_" + subsystem + "_" + name))
+	// Our current conversion moves to legacy naming, so use legacy validation.
+	valid := model.IsValidLegacyMetricName(namespace + "_" + subsystem + "_" + name)
 	switch d.Kind {
 	case metrics.KindUint64:
 	case metrics.KindFloat64:

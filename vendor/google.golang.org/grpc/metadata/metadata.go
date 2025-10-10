@@ -1056,11 +1056,6 @@ func FromIncomingContext(ctx context.Context) (MD, bool) {
 // ValueFromIncomingContext returns the metadata value corresponding to the metadata
 // key from the incoming metadata if it exists. Keys are matched in a case insensitive
 // manner.
-//
-// # Experimental
-//
-// Notice: This API is EXPERIMENTAL and may be changed or removed in a
-// later release.
 func ValueFromIncomingContext(ctx context.Context, key string) []string {
 	md, ok := ctx.Value(mdIncomingKey{}).(MD)
 	if !ok {
@@ -1071,7 +1066,7 @@ func ValueFromIncomingContext(ctx context.Context, key string) []string {
 		return copyOf(v)
 	}
 	for k, v := range md {
-		// Case insenitive comparison: MD is a map, and there's no guarantee
+		// Case insensitive comparison: MD is a map, and there's no guarantee
 		// that the MD attached to the context is created using our helper
 		// functions.
 		if strings.EqualFold(k, key) {

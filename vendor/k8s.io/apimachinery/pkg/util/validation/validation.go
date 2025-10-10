@@ -28,7 +28,12 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	netutils "k8s.io/utils/net"
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	netutils "k8s.io/utils/net"
+=======
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 )
 
 const qnameCharFmt string = "[A-Za-z0-9]"
@@ -1394,6 +1399,8 @@ func IsValidLabelValue(value string) []string {
 }
 
 const dns1123LabelFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+const dns1123LabelFmtWithUnderscore string = "_?[a-z0-9]([-_a-z0-9]*[a-z0-9])?"
+
 const dns1123LabelErrMsg string = "a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character"
 
 // DNS1123LabelMaxLength is a label's max length in DNS (RFC 1123)
@@ -1423,10 +1430,14 @@ func IsDNS1123Label(value string) []string {
 const dns1123SubdomainFmt string = dns1123LabelFmt + "(\\." + dns1123LabelFmt + ")*"
 const dns1123SubdomainErrorMsg string = "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
 
+const dns1123SubdomainFmtWithUnderscore string = dns1123LabelFmtWithUnderscore + "(\\." + dns1123LabelFmtWithUnderscore + ")*"
+const dns1123SubdomainErrorMsgFG string = "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '_', '-' or '.', and must start and end with an alphanumeric character"
+
 // DNS1123SubdomainMaxLength is a subdomain's max length in DNS (RFC 1123)
 const DNS1123SubdomainMaxLength int = 253
 
 var dns1123SubdomainRegexp = regexp.MustCompile("^" + dns1123SubdomainFmt + "$")
+var dns1123SubdomainRegexpWithUnderscore = regexp.MustCompile("^" + dns1123SubdomainFmtWithUnderscore + "$")
 
 // IsDNS1123Subdomain tests for a string that conforms to the definition of a
 // subdomain in DNS (RFC 1123).
@@ -1437,6 +1448,19 @@ func IsDNS1123Subdomain(value string) []string {
 	}
 	if !dns1123SubdomainRegexp.MatchString(value) {
 		errs = append(errs, RegexError(dns1123SubdomainErrorMsg, dns1123SubdomainFmt, "example.com"))
+	}
+	return errs
+}
+
+// IsDNS1123SubdomainWithUnderscore tests for a string that conforms to the definition of a
+// subdomain in DNS (RFC 1123), but allows the use of an underscore in the string
+func IsDNS1123SubdomainWithUnderscore(value string) []string {
+	var errs []string
+	if len(value) > DNS1123SubdomainMaxLength {
+		errs = append(errs, MaxLenError(DNS1123SubdomainMaxLength))
+	}
+	if !dns1123SubdomainRegexpWithUnderscore.MatchString(value) {
+		errs = append(errs, RegexError(dns1123SubdomainErrorMsgFG, dns1123SubdomainFmt, "example.com"))
 	}
 	return errs
 }
@@ -1569,6 +1593,7 @@ func IsValidPortName(port string) []string {
 	return errs
 }
 
+<<<<<<< HEAD
 // IsValidIP tests that the argument is a valid IP address.
 func IsValidIP(fldPath *field.Path, value string) field.ErrorList {
 	var allErrors field.ErrorList
@@ -1615,6 +1640,48 @@ func IsValidCIDR(fldPath *field.Path, value string) field.ErrorList {
 	return allErrors
 }
 
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+// IsValidIP tests that the argument is a valid IP address.
+func IsValidIP(fldPath *field.Path, value string) field.ErrorList {
+	var allErrors field.ErrorList
+	if netutils.ParseIPSloppy(value) == nil {
+		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IP address, (e.g. 10.9.8.7 or 2001:db8::ffff)"))
+	}
+	return allErrors
+}
+
+// IsValidIPv4Address tests that the argument is a valid IPv4 address.
+func IsValidIPv4Address(fldPath *field.Path, value string) field.ErrorList {
+	var allErrors field.ErrorList
+	ip := netutils.ParseIPSloppy(value)
+	if ip == nil || ip.To4() == nil {
+		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IPv4 address"))
+	}
+	return allErrors
+}
+
+// IsValidIPv6Address tests that the argument is a valid IPv6 address.
+func IsValidIPv6Address(fldPath *field.Path, value string) field.ErrorList {
+	var allErrors field.ErrorList
+	ip := netutils.ParseIPSloppy(value)
+	if ip == nil || ip.To4() != nil {
+		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IPv6 address"))
+	}
+	return allErrors
+}
+
+// IsValidCIDR tests that the argument is a valid CIDR value.
+func IsValidCIDR(fldPath *field.Path, value string) field.ErrorList {
+	var allErrors field.ErrorList
+	_, _, err := netutils.ParseCIDRSloppy(value)
+	if err != nil {
+		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid CIDR value, (e.g. 10.9.8.0/24 or 2001:db8::/64)"))
+	}
+	return allErrors
+}
+
+=======
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 const percentFmt string = "[0-9]+%"
 const percentErrMsg string = "a valid percent string must be a numeric string followed by an ending '%'"
 

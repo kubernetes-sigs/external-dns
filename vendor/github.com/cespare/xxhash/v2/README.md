@@ -72,6 +72,7 @@ benchstat <(go test -benchtime 500ms -count 15 -bench 'Sum64$')
 - [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics)
 - [FreeCache](https://github.com/coocood/freecache)
 - [FastCache](https://github.com/VictoriaMetrics/fastcache)
+<<<<<<< HEAD
 ||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![GoDoc](https://godoc.org/github.com/cespare/xxhash?status.svg)](https://godoc.org/github.com/cespare/xxhash)
@@ -156,3 +157,8 @@ benchstat <(go test -benchtime 500ms -count 15 -bench 'Sum64$')
 =======
 - [FastCache](https://github.com/VictoriaMetrics/fastcache)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+=======
+- [Ristretto](https://github.com/dgraph-io/ristretto)
+- [Badger](https://github.com/dgraph-io/badger)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)

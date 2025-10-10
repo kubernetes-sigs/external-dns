@@ -1030,12 +1030,21 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 // server can be found at https://cloud.google.com/compute/docs/authentication.
 func ComputeTokenSource(account string, scope ...string) oauth2.TokenSource {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return oauth2.ReuseTokenSource(nil, computeSource{account: account, scopes: scope})
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 	return oauth2.ReuseTokenSource(nil, computeSource{account: account, scopes: scope})
 =======
 	return computeTokenSource(account, 0, scope...)
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	return computeTokenSource(account, 0, scope...)
+=======
+	// refresh 3 minutes and 45 seconds early. The shortest MDS cache is currently 4 minutes, so any
+	// refreshes earlier are a waste of compute.
+	earlyExpirySecs := 225 * time.Second
+	return computeTokenSource(account, earlyExpirySecs, scope...)
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
 func computeTokenSource(account string, earlyExpiry time.Duration, scope ...string) oauth2.TokenSource {

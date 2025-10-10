@@ -22,9 +22,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// PodSecurityContextApplyConfiguration represents an declarative configuration of the PodSecurityContext type for use
+// PodSecurityContextApplyConfiguration represents a declarative configuration of the PodSecurityContext type for use
 // with apply.
 type PodSecurityContextApplyConfiguration struct {
+<<<<<<< HEAD
 	SELinuxOptions      *SELinuxOptionsApplyConfiguration                `json:"seLinuxOptions,omitempty"`
 	WindowsOptions      *WindowsSecurityContextOptionsApplyConfiguration `json:"windowsOptions,omitempty"`
 	RunAsUser           *int64                                           `json:"runAsUser,omitempty"`
@@ -131,9 +132,36 @@ func (b *PodSecurityContextApplyConfiguration) WithSeccompProfile(value *Seccomp
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 	AppArmorProfile     *AppArmorProfileApplyConfiguration               `json:"appArmorProfile,omitempty"`
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	SELinuxOptions      *SELinuxOptionsApplyConfiguration                `json:"seLinuxOptions,omitempty"`
+	WindowsOptions      *WindowsSecurityContextOptionsApplyConfiguration `json:"windowsOptions,omitempty"`
+	RunAsUser           *int64                                           `json:"runAsUser,omitempty"`
+	RunAsGroup          *int64                                           `json:"runAsGroup,omitempty"`
+	RunAsNonRoot        *bool                                            `json:"runAsNonRoot,omitempty"`
+	SupplementalGroups  []int64                                          `json:"supplementalGroups,omitempty"`
+	FSGroup             *int64                                           `json:"fsGroup,omitempty"`
+	Sysctls             []SysctlApplyConfiguration                       `json:"sysctls,omitempty"`
+	FSGroupChangePolicy *corev1.PodFSGroupChangePolicy                   `json:"fsGroupChangePolicy,omitempty"`
+	SeccompProfile      *SeccompProfileApplyConfiguration                `json:"seccompProfile,omitempty"`
+	AppArmorProfile     *AppArmorProfileApplyConfiguration               `json:"appArmorProfile,omitempty"`
+=======
+	SELinuxOptions           *SELinuxOptionsApplyConfiguration                `json:"seLinuxOptions,omitempty"`
+	WindowsOptions           *WindowsSecurityContextOptionsApplyConfiguration `json:"windowsOptions,omitempty"`
+	RunAsUser                *int64                                           `json:"runAsUser,omitempty"`
+	RunAsGroup               *int64                                           `json:"runAsGroup,omitempty"`
+	RunAsNonRoot             *bool                                            `json:"runAsNonRoot,omitempty"`
+	SupplementalGroups       []int64                                          `json:"supplementalGroups,omitempty"`
+	SupplementalGroupsPolicy *corev1.SupplementalGroupsPolicy                 `json:"supplementalGroupsPolicy,omitempty"`
+	FSGroup                  *int64                                           `json:"fsGroup,omitempty"`
+	Sysctls                  []SysctlApplyConfiguration                       `json:"sysctls,omitempty"`
+	FSGroupChangePolicy      *corev1.PodFSGroupChangePolicy                   `json:"fsGroupChangePolicy,omitempty"`
+	SeccompProfile           *SeccompProfileApplyConfiguration                `json:"seccompProfile,omitempty"`
+	AppArmorProfile          *AppArmorProfileApplyConfiguration               `json:"appArmorProfile,omitempty"`
+	SELinuxChangePolicy      *corev1.PodSELinuxChangePolicy                   `json:"seLinuxChangePolicy,omitempty"`
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 }
 
-// PodSecurityContextApplyConfiguration constructs an declarative configuration of the PodSecurityContext type for use with
+// PodSecurityContextApplyConfiguration constructs a declarative configuration of the PodSecurityContext type for use with
 // apply.
 func PodSecurityContext() *PodSecurityContextApplyConfiguration {
 	return &PodSecurityContextApplyConfiguration{}
@@ -189,6 +217,14 @@ func (b *PodSecurityContextApplyConfiguration) WithSupplementalGroups(values ...
 	return b
 }
 
+// WithSupplementalGroupsPolicy sets the SupplementalGroupsPolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SupplementalGroupsPolicy field is set to the value of the last call.
+func (b *PodSecurityContextApplyConfiguration) WithSupplementalGroupsPolicy(value corev1.SupplementalGroupsPolicy) *PodSecurityContextApplyConfiguration {
+	b.SupplementalGroupsPolicy = &value
+	return b
+}
+
 // WithFSGroup sets the FSGroup field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the FSGroup field is set to the value of the last call.
@@ -232,5 +268,13 @@ func (b *PodSecurityContextApplyConfiguration) WithSeccompProfile(value *Seccomp
 func (b *PodSecurityContextApplyConfiguration) WithAppArmorProfile(value *AppArmorProfileApplyConfiguration) *PodSecurityContextApplyConfiguration {
 	b.AppArmorProfile = value
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return b
+}
+
+// WithSELinuxChangePolicy sets the SELinuxChangePolicy field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the SELinuxChangePolicy field is set to the value of the last call.
+func (b *PodSecurityContextApplyConfiguration) WithSELinuxChangePolicy(value corev1.PodSELinuxChangePolicy) *PodSecurityContextApplyConfiguration {
+	b.SELinuxChangePolicy = &value
 	return b
 }

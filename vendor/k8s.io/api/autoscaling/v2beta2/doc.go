@@ -55,4 +55,4 @@ limitations under the License.
 // +k8s:prerelease-lifecycle-gen=true
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 
-package v2beta2 // import "k8s.io/api/autoscaling/v2beta2"
+package v2beta2

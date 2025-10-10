@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
@@ -42,12 +43,17 @@ func (b *IngressStatusApplyConfiguration) WithLoadBalancer(value *v1.LoadBalance
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
 // IngressStatusApplyConfiguration represents an declarative configuration of the IngressStatus type for use
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+// IngressStatusApplyConfiguration represents an declarative configuration of the IngressStatus type for use
+=======
+// IngressStatusApplyConfiguration represents a declarative configuration of the IngressStatus type for use
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 // with apply.
 type IngressStatusApplyConfiguration struct {
 	LoadBalancer *IngressLoadBalancerStatusApplyConfiguration `json:"loadBalancer,omitempty"`
 }
 
-// IngressStatusApplyConfiguration constructs an declarative configuration of the IngressStatus type for use with
+// IngressStatusApplyConfiguration constructs a declarative configuration of the IngressStatus type for use with
 // apply.
 func IngressStatus() *IngressStatusApplyConfiguration {
 	return &IngressStatusApplyConfiguration{}

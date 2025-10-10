@@ -15,6 +15,7 @@ package procfs
 
 import (
 	"bytes"
+	"math/bits"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,8 +85,9 @@ type ProcStatus struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
-	UIDs [4]string
+	UIDs [4]uint64
 	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
+<<<<<<< HEAD
 	GIDs [4]string
 }
 
@@ -334,6 +336,11 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 	UIDs [4]string
 	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
 	GIDs [4]string
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+	GIDs [4]string
+=======
+	GIDs [4]uint64
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 
 	// CpusAllowedList: List of cpu cores processes are allowed to run on.
 	CpusAllowedList []uint64
@@ -368,26 +375,47 @@ func (p Proc) NewStatus() (ProcStatus, error) {
 		// convert kB to B
 		vBytes := vKBytes * 1024
 
-		s.fillStatus(k, v, vKBytes, vBytes)
+		err = s.fillStatus(k, v, vKBytes, vBytes)
+		if err != nil {
+			return ProcStatus{}, err
+		}
 	}
 
 	return s, nil
 }
 
-func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) {
+func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) error {
 	switch k {
 	case "Tgid":
 		s.TGID = int(vUint)
 	case "Name":
 		s.Name = vString
 	case "Uid":
+<<<<<<< HEAD
 		copy(s.UIDs[:], strings.Split(vString, "\t"))
 <<<<<<< HEAD
 >>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
 =======
+||||||| parent of c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
+		copy(s.UIDs[:], strings.Split(vString, "\t"))
+=======
+		var err error
+		for i, v := range strings.Split(vString, "\t") {
+			s.UIDs[i], err = strconv.ParseUint(v, 10, bits.UintSize)
+			if err != nil {
+				return err
+			}
+		}
+>>>>>>> c5487e6d6 (NE-2142: UPSTREAM: 5739: Bump k8s and controller-runtime modules)
 	case "Gid":
-		copy(s.GIDs[:], strings.Split(vString, "\t"))
+		var err error
+		for i, v := range strings.Split(vString, "\t") {
+			s.GIDs[i], err = strconv.ParseUint(v, 10, bits.UintSize)
+			if err != nil {
+				return err
+			}
+		}
 	case "NSpid":
 		s.NSpids = calcNSPidsList(vString)
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
@@ -433,6 +461,7 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 		s.CpusAllowedList = calcCpusAllowedList(vString)
 	}
 
+	return nil
 }
 
 // TotalCtxtSwitches returns the total context switch.

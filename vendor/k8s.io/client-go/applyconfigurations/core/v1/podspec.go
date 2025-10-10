@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// PodSpecApplyConfiguration represents an declarative configuration of the PodSpec type for use
+// PodSpecApplyConfiguration represents a declarative configuration of the PodSpec type for use
 // with apply.
 type PodSpecApplyConfiguration struct {
 	Volumes                       []VolumeApplyConfiguration                   `json:"volumes,omitempty"`
@@ -1110,9 +1110,10 @@ func (b *PodSpecApplyConfiguration) WithHostUsers(value bool) *PodSpecApplyConfi
 	HostUsers                     *bool                                        `json:"hostUsers,omitempty"`
 	SchedulingGates               []PodSchedulingGateApplyConfiguration        `json:"schedulingGates,omitempty"`
 	ResourceClaims                []PodResourceClaimApplyConfiguration         `json:"resourceClaims,omitempty"`
+	Resources                     *ResourceRequirementsApplyConfiguration      `json:"resources,omitempty"`
 }
 
-// PodSpecApplyConfiguration constructs an declarative configuration of the PodSpec type for use with
+// PodSpecApplyConfiguration constructs a declarative configuration of the PodSpec type for use with
 // apply.
 func PodSpec() *PodSpecApplyConfiguration {
 	return &PodSpecApplyConfiguration{}
@@ -1489,5 +1490,13 @@ func (b *PodSpecApplyConfiguration) WithResourceClaims(values ...*PodResourceCla
 		b.ResourceClaims = append(b.ResourceClaims, *values[i])
 	}
 >>>>>>> d03b4fbe9 (UPSTREAM: <carry>: update vendored files after rebase to v0.14.2)
+	return b
+}
+
+// WithResources sets the Resources field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Resources field is set to the value of the last call.
+func (b *PodSpecApplyConfiguration) WithResources(value *ResourceRequirementsApplyConfiguration) *PodSpecApplyConfiguration {
+	b.Resources = value
 	return b
 }

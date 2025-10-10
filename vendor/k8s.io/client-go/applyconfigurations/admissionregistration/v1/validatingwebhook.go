@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// ValidatingWebhookApplyConfiguration represents an declarative configuration of the ValidatingWebhook type for use
+// ValidatingWebhookApplyConfiguration represents a declarative configuration of the ValidatingWebhook type for use
 // with apply.
 type ValidatingWebhookApplyConfiguration struct {
 	Name                    *string                                    `json:"name,omitempty"`
@@ -133,7 +133,7 @@ func (b *ValidatingWebhookApplyConfiguration) WithAdmissionReviewVersions(values
 	MatchConditions         []MatchConditionApplyConfiguration         `json:"matchConditions,omitempty"`
 }
 
-// ValidatingWebhookApplyConfiguration constructs an declarative configuration of the ValidatingWebhook type for use with
+// ValidatingWebhookApplyConfiguration constructs a declarative configuration of the ValidatingWebhook type for use with
 // apply.
 func ValidatingWebhook() *ValidatingWebhookApplyConfiguration {
 	return &ValidatingWebhookApplyConfiguration{}
