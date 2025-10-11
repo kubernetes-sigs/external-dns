@@ -192,14 +192,3 @@ func buildEndpointsWithoutProperties(nEndpoints int) []Endpoint {
 	}
 	return endpoints
 }
-
-func buildEndpointsWithProperties(nEndpoints int, properties map[string]string) []Endpoint {
-	endpoints := make([]Endpoint, nEndpoints)
-	for i := 0; i < nEndpoints; i++ {
-		endpoints[i] = *NewEndpoint(fmt.Sprintf("index-%d.example.com", i), RecordTypeA)
-		for k, v := range properties {
-			endpoints[i].SetProviderSpecificProperty(k, v)
-		}
-	}
-	return endpoints
-}

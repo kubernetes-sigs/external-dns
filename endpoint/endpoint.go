@@ -312,6 +312,11 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	return "", false
 }
 
+func (e *Endpoint) GetProviderSpecificPropertyHashMap(key string) (string, bool) {
+	value, ok := e.providerSpecificHashMap[key]
+	return value, ok
+}
+
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 	for i, providerSpecific := range e.ProviderSpecific {
