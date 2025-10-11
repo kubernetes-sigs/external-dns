@@ -33,7 +33,11 @@ These are the conventions that we will be using for releases following `0.7.6`:
 External-DNS follows semantic versioning principles:
 
 - `0.x` → pre-stable, APIs subject to change.
-- `1.x` → stable APIs and core functionality; breaking changes require a major bump.
+- `1.x` → not yet considered.
+
+> **Versioning & Releases**
+> External-DNS opts to stay within `0.x` versioning scheme.
+> We strive for stability, but reserve the right to introduce breaking changes in minor version bumps when necessary.
 
 ## How to release a new image
 
