@@ -243,7 +243,8 @@ type Endpoint struct {
 	Labels Labels `json:"labels,omitempty"`
 	// ProviderSpecific stores provider specific config
 	// +optional
-	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	ProviderSpecific        ProviderSpecific  `json:"providerSpecific,omitempty"`
+	providerSpecificHashMap map[string]string `json:"providerSpecificHashMap,omitempty"`
 	// refObject stores reference object
 	// +optional
 	refObject *ObjectRef `json:"-"`
@@ -276,11 +277,12 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	}
 
 	return &Endpoint{
-		DNSName:    strings.TrimSuffix(dnsName, "."),
-		Targets:    cleanTargets,
-		RecordType: recordType,
-		Labels:     NewLabels(),
-		RecordTTL:  ttl,
+		DNSName:                 strings.TrimSuffix(dnsName, "."),
+		Targets:                 cleanTargets,
+		RecordType:              recordType,
+		Labels:                  NewLabels(),
+		RecordTTL:               ttl,
+		providerSpecificHashMap: make(map[string]string),
 	}
 }
 
@@ -323,6 +325,10 @@ func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 	}
 
 	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+}
+
+func (e *Endpoint) SetProviderSpecificPropertyHashMap(key string, value string) {
+	e.providerSpecificHashMap[key] = value
 }
 
 // DeleteProviderSpecificProperty deletes any ProviderSpecificProperty of the specified name.
