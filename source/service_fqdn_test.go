@@ -735,7 +735,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			fqdnTemplate: `{{ if eq .Spec.Type "NodePort" }}{{ range .Spec.Ports }}{{ .Name }}.host.tld{{printf "," }}{{end}}{{ end }}`,
 			expected: []*endpoint.Endpoint{
 				// TODO: This test shows that there is a bug that needs to be fixed in the external-dns logic. Not a critical issue, as will be filtered out by the source.
-				{DNSName: "", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.96.41.132"}},
+				{DNSName: "", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.96.41.132", "203.0.113.10"}},
 				{DNSName: "_service-one._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 ", "0 50 30082 "}}, // TODO: wrong SRV target format
 				{DNSName: "_service-one._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 debug.host.tld", "0 50 30082 debug.host.tld"}},
 				{DNSName: "_service-one._tcp.http.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 http.host.tld", "0 50 30082 http.host.tld"}},
@@ -745,6 +745,9 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "_service-three._udp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 "}}, // TODO: wrong SRV target format
 				{DNSName: "_service-three._udp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 debug.host.tld"}},
 				{DNSName: "_service-three._udp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 minecraft.host.tld"}},
+				{DNSName: "debug.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "http.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "minecraft.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
 			},
 		},
 	} {
@@ -816,6 +819,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
+				fmt.Println(ep)
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
 		})
