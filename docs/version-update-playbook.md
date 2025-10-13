@@ -55,7 +55,7 @@ Run the new External-DNS version in a **staging cluster**.
 - Use `--dry-run` mode to preview intended changes:
   - Validate logs for any unexpected record changes.
   - Ensure `external-dns` correctly identifies and plans updates without actually applying them.
-  - **submit a feature request if `dry-run` is not supported for a specific case
+  - **submit a feature request** if `dry-run` is not supported for a specific case
 
   ```yaml
   args:
@@ -70,9 +70,9 @@ Before applying the upgrade, take a snapshot of your DNS zone(s).
 
 **Example (AWS Route53):**
 
-  ```sh
-  aws route53 list-resource-record-sets --hosted-zone-id ZONE_ID > backup.json
-  ```
+```sh
+aws route53 list-resource-record-sets --hosted-zone-id ZONE_ID > backup.json
+```
 
 Use equivalent tooling for your DNS provider (Cloudflare, Google Cloud DNS, etc.).
 
