@@ -446,24 +446,14 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 	if err != nil {
 		return nil, err
 	}
-	// Combine multiple sources into a single, deduplicated source.
-	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
-	cfg.AddSourceWrapper("dedup")
-	if len(cfg.NAT64Networks) > 0 {
-		combinedSource, err = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create NAT64 source wrapper: %w", err)
-		}
-		cfg.AddSourceWrapper("nat64")
-	}
-	// Filter targets
-	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-	if targetFilter.IsEnabled() {
-		combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
-		cfg.AddSourceWrapper("target-filter")
-	}
-	combinedSource = wrappers.NewPostProcessor(combinedSource, wrappers.WithTTL(cfg.MinTTL))
-	return combinedSource, nil
+	opts := wrappers.NewConfig(
+		wrappers.WithDefaultTargets(cfg.DefaultTargets),
+		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
+		wrappers.WithNAT64Networks(cfg.NAT64Networks),
+		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
+		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
+		wrappers.WithMinTTL(cfg.MinTTL))
+	return wrappers.WrapSources(sources, opts)
 }
 
 // RegexDomainFilter overrides DomainFilter
