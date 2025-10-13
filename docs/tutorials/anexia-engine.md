@@ -22,7 +22,11 @@ Make sure to familiarize yourself with Anexia CloudDNS and read the following do
 
 ## Creating an Anexia API Token
 
-To use ExternalDNS with CloudDNS, you need an API token to manage DNS zones and records. Follow these steps to create an API token:
+To use ExternalDNS with CloudDNS, you need an API token to manage DNS zones and records.
+For production usage it is advised to use a **service account** to manage DNS records.
+View the official [documentation how to create a service account and retrieve the respective API token](https://engine.anexia-it.com/docs/en/module/engine-core/getting-started/managing-users-and-teams/managing-users).
+
+Once the user is created the retrieval of the API token itself is very similar to retrieving it from your personal user:
 
 1. Log in to [Anexia Engine](https://engine.anexia-it.com/).
 2. Navigate to your profile in the top right corner and select **API**.
