@@ -1610,7 +1610,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 		ExpectPropertyValue   string
 	}{
 		{
-			Name: "No custom properties, ExpectUpdates: false",
+			Name:            "No custom properties, ExpectUpdates: false",
 			SetupProvider:   func(p *CloudFlareProvider) {},
 			SetupRecord:     func(r *dns.RecordResponse) {},
 			ShouldBeUpdated: false,
@@ -1984,7 +1984,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		{
 			name:     "For free Zone respecting comment length, expect no trimming",
 			provider: freeProvider,
-					endpoint: &endpoint.Endpoint{
+			endpoint: &endpoint.Endpoint{
 				DNSName:    "example.com",
 				RecordType: "A",
 				Targets:    []string{"192.0.2.1"},
@@ -4195,14 +4195,14 @@ func TestListAllCustomHostnames(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Len(t, hostnames, 1)
-	       var foundID string
-	       for _, h := range hostnames {
-		       if h.Hostname == "test.example.com" {
-			       foundID = h.ID
-			       break
-		       }
-	       }
-	       assert.Equal(t, "ch1", foundID)
+		var foundID string
+		for _, h := range hostnames {
+			if h.Hostname == "test.example.com" {
+				foundID = h.ID
+				break
+			}
+		}
+		assert.Equal(t, "ch1", foundID)
 		assert.Equal(t, "test.example.com", hostnames[0].Hostname)
 		assert.Equal(t, "origin.example.com", hostnames[0].CustomOriginServer)
 		assert.Equal(t, "sni.example.com", hostnames[0].CustomOriginSNI)
@@ -4297,34 +4297,34 @@ func TestListAllCustomHostnames(t *testing.T) {
 }
 
 func TestBuildCustomHostnameSSLParams(t *testing.T) {
-       ssl := &CustomHostnameSSL{
-               Type:                 "dv",
-               Method:               "http",
-               BundleMethod:         "ubiquitous",
-               CertificateAuthority: "lets_encrypt",
-               Settings:             CustomHostnameSSLSettings{MinTLSVersion: "1.2"},
-       }
+	ssl := &CustomHostnameSSL{
+		Type:                 "dv",
+		Method:               "http",
+		BundleMethod:         "ubiquitous",
+		CertificateAuthority: "lets_encrypt",
+		Settings:             CustomHostnameSSLSettings{MinTLSVersion: "1.2"},
+	}
 
-       params := custom_hostnames.CustomHostnameNewParamsSSL{}
-       if ssl.Method != "" {
-               params.Method = cloudflare.F(custom_hostnames.DCVMethod(ssl.Method))
-       }
-       if ssl.Type != "" {
-               params.Type = cloudflare.F(custom_hostnames.DomainValidationType(ssl.Type))
-       }
-       if ssl.BundleMethod != "" {
-               params.BundleMethod = cloudflare.F(custom_hostnames.BundleMethod(ssl.BundleMethod))
-       }
-       if ssl.CertificateAuthority != "" && ssl.CertificateAuthority != "none" {
-               params.CertificateAuthority = cloudflare.F(cloudflare.CertificateCA(ssl.CertificateAuthority))
-       }
-       if ssl.Settings.MinTLSVersion != "" {
-               params.Settings = cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettings{
-                       MinTLSVersion: cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettingsMinTLSVersion(ssl.Settings.MinTLSVersion)),
-               })
-       }
+	params := custom_hostnames.CustomHostnameNewParamsSSL{}
+	if ssl.Method != "" {
+		params.Method = cloudflare.F(custom_hostnames.DCVMethod(ssl.Method))
+	}
+	if ssl.Type != "" {
+		params.Type = cloudflare.F(custom_hostnames.DomainValidationType(ssl.Type))
+	}
+	if ssl.BundleMethod != "" {
+		params.BundleMethod = cloudflare.F(custom_hostnames.BundleMethod(ssl.BundleMethod))
+	}
+	if ssl.CertificateAuthority != "" && ssl.CertificateAuthority != "none" {
+		params.CertificateAuthority = cloudflare.F(cloudflare.CertificateCA(ssl.CertificateAuthority))
+	}
+	if ssl.Settings.MinTLSVersion != "" {
+		params.Settings = cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettings{
+			MinTLSVersion: cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettingsMinTLSVersion(ssl.Settings.MinTLSVersion)),
+		})
+	}
 
-       // Assert all fields are set as expected
+	// Assert all fields are set as expected
 	require.Equal(t, custom_hostnames.DCVMethod("http"), params.Method.Value)
 	require.Equal(t, custom_hostnames.DomainValidationType("dv"), params.Type.Value)
 	require.Equal(t, custom_hostnames.BundleMethod("ubiquitous"), params.BundleMethod.Value)
