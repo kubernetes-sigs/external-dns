@@ -24,7 +24,7 @@ RUN git config --global --add safe.directory /workspace
 # Build
 RUN make build
 
-FROM registry.access.redhat.com/ubi9/ubi:9.6-1758184894
+FROM registry.access.redhat.com/ubi9/ubi:9.6-1760340943
 ARG FULL_COMMIT
 LABEL maintainer="Red Hat, Inc."
 LABEL com.redhat.component="external-dns-container"
