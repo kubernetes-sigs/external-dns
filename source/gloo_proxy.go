@@ -25,12 +25,20 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/kubernetes"
+
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	netinformers "k8s.io/client-go/informers/networking/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 var (
@@ -43,6 +51,11 @@ var (
 		Group:    "gateway.solo.io",
 		Version:  "v1",
 		Resource: "virtualservices",
+	}
+	gatewayGVR = schema.GroupVersionResource{
+		Group:    "gateway.solo.io",
+		Version:  "v1",
+		Resource: "gateways",
 	}
 )
 
@@ -58,7 +71,22 @@ type proxySpec struct {
 }
 
 type proxySpecListener struct {
-	HTTPListener proxySpecHTTPListener `json:"httpListener,omitempty"`
+	HTTPListener   proxySpecHTTPListener `json:"httpListener,omitempty"`
+	MetadataStatic proxyMetadataStatic   `json:"metadataStatic,omitempty"`
+}
+
+type proxyMetadataStatic struct {
+	Source []proxyMetadataStaticSource `json:"sources,omitempty"`
+}
+
+type proxyMetadataStaticSource struct {
+	ResourceKind string                               `json:"resourceKind,omitempty"`
+	ResourceRef  proxyMetadataStaticSourceResourceRef `json:"resourceRef,omitempty"`
+}
+
+type proxyMetadataStaticSourceResourceRef struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 type proxySpecHTTPListener struct {
@@ -96,17 +124,49 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 }
 
 type glooSource struct {
-	dynamicKubeClient dynamic.Interface
-	kubeClient        kubernetes.Interface
-	glooNamespaces    []string
+	serviceInformer        coreinformers.ServiceInformer
+	ingressInformer        netinformers.IngressInformer
+	proxyInformer          kubeinformers.GenericInformer
+	virtualServiceInformer kubeinformers.GenericInformer
+	gatewayInformer        kubeinformers.GenericInformer
+	glooNamespaces         []string
 }
 
 // NewGlooSource creates a new glooSource with the given config
-func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
+func NewGlooSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
 	glooNamespaces []string) (Source, error) {
+	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+	serviceInformer := informerFactory.Core().V1().Services()
+	ingressInformer := informerFactory.Networking().V1().Ingresses()
+
+	_, _ = serviceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = ingressInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+	dynamicInformerFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicKubeClient, 0)
+
+	proxyInformer := dynamicInformerFactory.ForResource(proxyGVR)
+	virtualServiceInformer := dynamicInformerFactory.ForResource(virtualServiceGVR)
+	gatewayInformer := dynamicInformerFactory.ForResource(gatewayGVR)
+
+	_, _ = proxyInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = virtualServiceInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+	_, _ = gatewayInformer.Informer().AddEventHandler(informers.DefaultEventHandler())
+
+	informerFactory.Start(ctx.Done())
+	dynamicInformerFactory.Start(ctx.Done())
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+		return nil, err
+	}
+	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory); err != nil {
+		return nil, err
+	}
+
 	return &glooSource{
-		dynamicKubeClient,
-		kubeClient,
+		serviceInformer,
+		ingressInformer,
+		proxyInformer,
+		virtualServiceInformer,
+		gatewayInformer,
 		glooNamespaces,
 	}, nil
 }
@@ -119,32 +179,45 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ns := range gs.glooNamespaces {
-		proxies, err := gs.dynamicKubeClient.Resource(proxyGVR).Namespace(ns).List(ctx, metav1.ListOptions{})
+		proxyObjects, err := gs.proxyInformer.Lister().ByNamespace(ns).List(labels.Everything())
 		if err != nil {
 			return nil, err
 		}
-		for _, obj := range proxies.Items {
-			proxy := proxy{}
-			jsonString, err := obj.MarshalJSON()
+
+		for _, obj := range proxyObjects {
+			unstructuredObj, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				return nil, err
+			}
+
+			jsonData, err := json.Marshal(unstructuredObj.Object)
 			if err != nil {
 				return nil, err
 			}
-			err = json.Unmarshal(jsonString, &proxy)
-			if err != nil {
+
+			var proxy proxy
+			if err = json.Unmarshal(jsonData, &proxy); err != nil {
 				return nil, err
 			}
 			log.Debugf("Gloo: Find %s proxy", proxy.Metadata.Name)
 
 			proxyTargets := annotations.TargetsFromTargetAnnotation(proxy.Metadata.Annotations)
 			if len(proxyTargets) == 0 {
-				proxyTargets, err = gs.proxyTargets(ctx, proxy.Metadata.Name, ns)
+				proxyTargets, err = gs.targetsFromGatewayIngress(&proxy)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			if len(proxyTargets) == 0 {
+				proxyTargets, err = gs.proxyTargets(proxy.Metadata.Name, ns)
 				if err != nil {
 					return nil, err
 				}
 			}
 			log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Metadata.Name, len(proxyTargets), proxyTargets)
 
-			proxyEndpoints, err := gs.generateEndpointsFromProxy(ctx, &proxy, proxyTargets)
+			proxyEndpoints, err := gs.generateEndpointsFromProxy(&proxy, proxyTargets)
 			if err != nil {
 				return nil, err
 			}
@@ -155,14 +228,14 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 	return endpoints, nil
 }
 
-func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (gs *glooSource) generateEndpointsFromProxy(proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	resource := fmt.Sprintf("proxy/%s/%s", proxy.Metadata.Namespace, proxy.Metadata.Name)
 
 	for _, listener := range proxy.Spec.Listeners {
 		for _, virtualHost := range listener.HTTPListener.VirtualHosts {
-			ants, err := gs.annotationsFromProxySource(ctx, virtualHost)
+			ants, err := gs.annotationsFromProxySource(virtualHost)
 			if err != nil {
 				return nil, err
 			}
@@ -176,37 +249,53 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 	return endpoints, nil
 }
 
-func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHost proxyVirtualHost) (map[string]string, error) {
+func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (map[string]string, error) {
 	ants := map[string]string{}
 	for _, src := range virtualHost.Metadata.Source {
-		kind := sourceKind(src.Kind)
-		if kind != nil {
-			source, err := gs.dynamicKubeClient.Resource(*kind).Namespace(src.Namespace).Get(ctx, src.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-			for key, value := range source.GetAnnotations() {
-				ants[key] = value
-			}
+		if src.Kind != "*v1.VirtualService" {
+			log.Debugf("Unsupported listener source. Expecting '*v1.VirtualService', got (%s)", src.Kind)
+			continue
+		}
+
+		virtualServiceObj, err := gs.virtualServiceInformer.Lister().ByNamespace(src.Namespace).Get(src.Name)
+		if err != nil {
+			return nil, err
+		}
+		unstructuredVirtualService, ok := virtualServiceObj.(*unstructured.Unstructured)
+		if !ok {
+			log.Error("unexpected object: it is not *unstructured.Unstructured")
+			continue
+		}
+
+		for key, value := range unstructuredVirtualService.GetAnnotations() {
+			ants[key] = value
 		}
 	}
+
 	for _, src := range virtualHost.MetadataStatic.Source {
-		kind := sourceKind(src.ResourceKind)
-		if kind != nil {
-			source, err := gs.dynamicKubeClient.Resource(*kind).Namespace(src.ResourceRef.Namespace).Get(ctx, src.ResourceRef.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-			for key, value := range source.GetAnnotations() {
-				ants[key] = value
-			}
+		if src.ResourceKind != "*v1.VirtualService" {
+			log.Debugf("Unsupported listener source. Expecting '*v1.VirtualService', got (%s)", src.ResourceKind)
+			continue
+		}
+		virtualServiceObj, err := gs.virtualServiceInformer.Lister().ByNamespace(src.ResourceRef.Namespace).Get(src.ResourceRef.Name)
+		if err != nil {
+			return nil, err
+		}
+		unstructuredVirtualService, ok := virtualServiceObj.(*unstructured.Unstructured)
+		if !ok {
+			log.Error("unexpected object: it is not *unstructured.Unstructured")
+			continue
+		}
+
+		for key, value := range unstructuredVirtualService.GetAnnotations() {
+			ants[key] = value
 		}
 	}
 	return ants, nil
 }
 
-func (gs *glooSource) proxyTargets(ctx context.Context, name string, namespace string) (endpoint.Targets, error) {
-	svc, err := gs.kubeClient.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
+func (gs *glooSource) proxyTargets(name string, namespace string) (endpoint.Targets, error) {
+	svc, err := gs.serviceInformer.Lister().Services(namespace).Get(name)
 	if err != nil {
 		return nil, err
 	}
@@ -228,9 +317,48 @@ func (gs *glooSource) proxyTargets(ctx context.Context, name string, namespace s
 	return targets, nil
 }
 
-func sourceKind(kind string) *schema.GroupVersionResource {
-	if kind == "*v1.VirtualService" {
-		return &virtualServiceGVR
+func (gs *glooSource) targetsFromGatewayIngress(proxy *proxy) (endpoint.Targets, error) {
+	targets := make(endpoint.Targets, 0)
+
+	for _, listener := range proxy.Spec.Listeners {
+		for _, source := range listener.MetadataStatic.Source {
+			if source.ResourceKind != "*v1.Gateway" {
+				log.Debugf("Unsupported listener source. Expecting '*v1.Gateway', got (%s)", source.ResourceKind)
+				continue
+			}
+			gatewayObj, err := gs.gatewayInformer.Lister().ByNamespace(source.ResourceRef.Namespace).Get(source.ResourceRef.Name)
+			if err != nil {
+				return nil, err
+			}
+			unstructuredGateway, ok := gatewayObj.(*unstructured.Unstructured)
+			if !ok {
+				log.Error("unexpected object: it is not *unstructured.Unstructured")
+				continue
+			}
+
+			if ingressStr, ok := unstructuredGateway.GetAnnotations()[annotations.Ingress]; ok && ingressStr != "" {
+				namespace, name, err := ParseIngress(ingressStr)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", unstructuredGateway.GetNamespace(), unstructuredGateway.GetName(), err)
+				}
+				if namespace == "" {
+					namespace = unstructuredGateway.GetNamespace()
+				}
+
+				ingress, err := gs.ingressInformer.Lister().Ingresses(namespace).Get(name)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, lb := range ingress.Status.LoadBalancer.Ingress {
+					if lb.IP != "" {
+						targets = append(targets, lb.IP)
+					} else if lb.Hostname != "" {
+						targets = append(targets, lb.Hostname)
+					}
+				}
+			}
+		}
 	}
-	return nil
+	return targets, nil
 }
