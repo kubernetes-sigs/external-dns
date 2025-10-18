@@ -207,7 +207,7 @@ func (z zoneService) CustomHostnames(ctx context.Context, zoneID string) autoPag
 	return z.service.CustomHostnames.ListAutoPaging(ctx, params)
 }
 
-// listAllCustomHostnames extracts all custom hostnames from the iterator (for testability)
+// listAllCustomHostnames extracts all custom hostnames from the iterator
 func listAllCustomHostnames(iter autoPager[custom_hostnames.CustomHostnameListResponse]) ([]CustomHostname, error) {
 	var customHostnames []CustomHostname
 	for ch := range autoPagerIterator(iter) {
