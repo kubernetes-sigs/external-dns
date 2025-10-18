@@ -29,6 +29,7 @@ linters:
     - nonamedreturns # Checks that functions with named return values do not return named values. https://golangci-lint.run/usage/linters/#nonamedreturns
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
     - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
+    - gochecknoinits # Checks that there are no init() functions in the code. https://golangci-lint.run/usage/linters/#gochecknoinits
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint
@@ -83,6 +84,9 @@ linters:
       - linters:
           - nilnil
         path: istio_virtualservice.go|fqdn.go|cloudflare.go
+      - linters:
+          - gochecknoinits
+        path: ^(.*/controller\.go|internal/.*/init\.go|pkg/.*/metrics\.go|.*/webhook\.go|.*/http\.go|apis/.*\.go|.*/cached_provider\.go)$
     paths:
       - endpoint/zz_generated.deepcopy.go
       - third_party$
