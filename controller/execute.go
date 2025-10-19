@@ -83,10 +83,10 @@ func Execute() {
 		log.Fatalf("config validation failed: %v", err)
 	}
 
-	// Set custom annotation prefix if provided
+	// Set annotation prefix (required since init() was removed)
+	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
 	if cfg.AnnotationPrefix != "external-dns.alpha.kubernetes.io/" {
 		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
-		annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
 	}
 
 	configureLogger(cfg)

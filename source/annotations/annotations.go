@@ -96,8 +96,3 @@ func SetAnnotationPrefix(prefix string) {
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 }
-
-func init() {
-	// Initialize with default prefix
-	SetAnnotationPrefix(AnnotationKeyPrefix)
-}

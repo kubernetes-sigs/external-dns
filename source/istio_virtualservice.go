@@ -49,7 +49,7 @@ const IstioMeshGateway = "mesh"
 
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
-// Use targetAnnotationKey to explicitly set Endpoint.
+// Use annotations.TargetKey to explicitly set Endpoint.
 type virtualServiceSource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
@@ -150,10 +150,10 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	for _, vService := range virtualServices {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := vService.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := vService.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping VirtualService %s/%s.%s because controller value does not match, found: %s, required: %s",
-				vService.Namespace, vService.APIVersion, vService.Name, controller, controllerAnnotationValue)
+				vService.Namespace, vService.APIVersion, vService.Name, controller, annotations.ControllerValue)
 			continue
 		}
 
