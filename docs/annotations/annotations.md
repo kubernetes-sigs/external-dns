@@ -64,7 +64,7 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 
 ## external-dns.alpha.kubernetes.io/hostname
 
-Specifies the domain for the resource's DNS records.
+Specifies additional domains for the resource's DNS records.
 
 Multiple hostnames can be specified through a comma-separated list, e.g.
 `svc.mydomain1.com,svc.mydomain2.com`.
@@ -73,7 +73,8 @@ For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true`
 
 Notes:
 
-- This annotation `overrides` any automatically derived hostnames (e.g., from Ingress.spec.rules[].host).
+- This annotation adds extra hostnames alongside any automatically derived hostnames (e.g., from Ingress.spec.rules[].host).
+- The [`ingress-hostname-source`](#external-dnsalphakubernetesioingress-hostname-source) annotation may be used to control the behavior of the `hostname` annotation.
 - Hostnames must match the domain filter set in ExternalDNS (e.g., --domain-filter=example.com).
 - This is an alpha annotation — subject to change; newer versions may support alternatives or deprecate it.
 - This annotation is helpful for:
