@@ -2109,3 +2109,82 @@ func TestTXTRecordMigration(t *testing.T) {
 	assert.Equal(t, updatedTXTRecord[0].Targets, expectedFinalTXT[0].Targets)
 
 }
+
+// TestRecreateRecordAfterDeletion ensures that when A and TXT records are deleted,
+// both are correctly recreated in subsequent reconciliation loops.
+// This prevents regression of the issue where stale TXT record state
+// caused ExternalDNS to skip recreating TXT records after deletion.
+func TestRecreateRecordAfterDeletion(t *testing.T) {
+	ownerID := "foo"
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+
+	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+
+	createdRecords := newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ownerID, nil)
+	txtRecord := r.generateTXTRecord(createdRecords)
+
+	// 1. Create initial A and TXT records.
+	creates := append([]*endpoint.Endpoint{createdRecords}, txtRecord...)
+	err := p.ApplyChanges(ctx, &plan.Changes{
+		Create: creates,
+	})
+	assert.NoError(t, err)
+
+	// 2. Simulate a "no change" reconciliation (ApplyChanges won't be called).
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName: "bar.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1.2.3.4",
+			},
+			RecordType: endpoint.RecordTypeA,
+		},
+	}
+
+	records, err := r.Records(ctx)
+	assert.NoError(t, err)
+
+	calculated := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		ManagedRecords: []string{endpoint.RecordTypeA},
+		Current:        records,
+		Desired:        desired,
+		OwnerID:        ownerID,
+	}
+	calculated = calculated.Calculate()
+	// ApplyChanges is not called to simulate no changes.
+	assert.False(t, calculated.Changes.HasChanges(), "There should be no changes")
+
+	// 3. Delete both A and TXT records (simulate manual deletion)
+	deletes := append([]*endpoint.Endpoint{createdRecords}, txtRecord...)
+	err = p.ApplyChanges(ctx, &plan.Changes{
+		Delete: deletes,
+	})
+	assert.NoError(t, err)
+
+	// 4. Run reconciliation again — both A and TXT should be recreated.
+	records, err = r.Records(ctx)
+	assert.NoError(t, err)
+
+	calculated = &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		ManagedRecords: []string{endpoint.RecordTypeA},
+		Current:        records,
+		Desired:        desired,
+		OwnerID:        ownerID,
+	}
+	calculated = calculated.Calculate()
+	if !calculated.Changes.HasChanges() {
+		assert.Fail(t, "There should be changes")
+	}
+
+	err = r.ApplyChanges(ctx, calculated.Changes)
+	assert.NoError(t, err)
+
+	// 5. Verify that both A and TXT records are recreated successfully.
+	records, err = p.Records(ctx)
+	assert.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(records, append(desired, txtRecord...)), "Expected records after reconciliation: %v, but got: %v", append(desired, txtRecord...), records)
+}

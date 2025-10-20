@@ -173,6 +173,12 @@ func (im *TXTRegistry) OwnerID() string {
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
 func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	// existingTXTs must always hold the latest TXT records, so it needs to be reset every time.
+	// Previously, it was reset with a defer after ApplyChanges, but ApplyChanges is not called
+	// when plan.HasChanges() is false (i.e., when there are no changes to apply).
+	// In that case, stale TXT record information could remain, so we reset it here instead.
+	im.existingTXTs.reset()
+
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
@@ -321,8 +327,6 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	defer im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
-
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
