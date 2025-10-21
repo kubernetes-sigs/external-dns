@@ -73,8 +73,8 @@ For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true`
 
 Notes:
 
-- This annotation adds extra hostnames alongside any automatically derived hostnames (e.g., from Ingress.spec.rules[].host).
-- The [`ingress-hostname-source`](#external-dnsalphakubernetesioingress-hostname-source) annotation may be used to control the behavior of the `hostname` annotation.
+- This annotation can override or add extra hostnames alongside any automatically derived hostnames (e.g., from Ingress.spec.rules[].host).
+- The [`ingress-hostname-source`](#external-dnsalphakubernetesioingress-hostname-source) annotation may be used to specify where to get the domain for an `Ingress` resource.
 - Hostnames must match the domain filter set in ExternalDNS (e.g., --domain-filter=example.com).
 - This is an alpha annotation — subject to change; newer versions may support alternatives or deprecate it.
 - This annotation is helpful for:
