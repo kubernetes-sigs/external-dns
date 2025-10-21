@@ -215,6 +215,7 @@ spec:
 3. **All annotations use the same prefix** - When you set a custom prefix, ALL external-dns annotations (hostname, ttl, target, cloudflare-proxied, etc.) must use that prefix.
 4. **TXT ownership records** - Each instance should have a unique `--txt-owner-id` to avoid conflicts in ownership tracking.
 5. **Provider-specific annotations** - Provider-specific annotations (like `cloudflare-proxied`, `aws-alias`) also use the custom prefix:
+
 ```yaml
 custom.io/hostname: example.com
 custom.io/cloudflare-proxied: "true"  # NOT external-dns.alpha.kubernetes.io/cloudflare-proxied
