@@ -211,19 +211,14 @@ spec:
 ## Important Notes
 
 1. **Annotation prefix must end with `/`** - The validation will fail if the prefix doesn't end with a forward slash.
-
 2. **Backward compatibility** - If you don't specify `--annotation-prefix`, the default `external-dns.alpha.kubernetes.io/` is used, maintaining full backward compatibility.
-
 3. **All annotations use the same prefix** - When you set a custom prefix, ALL external-dns annotations (hostname, ttl, target, cloudflare-proxied, etc.) must use that prefix.
-
 4. **TXT ownership records** - Each instance should have a unique `--txt-owner-id` to avoid conflicts in ownership tracking.
-
 5. **Provider-specific annotations** - Provider-specific annotations (like `cloudflare-proxied`, `aws-alias`) also use the custom prefix:
-
-   ```yaml
-   custom.io/hostname: example.com
-   custom.io/cloudflare-proxied: "true"  # NOT external-dns.alpha.kubernetes.io/cloudflare-proxied
-   ```
+```yaml
+custom.io/hostname: example.com
+custom.io/cloudflare-proxied: "true"  # NOT external-dns.alpha.kubernetes.io/cloudflare-proxied
+```
 
 ## Troubleshooting
 

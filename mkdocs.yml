@@ -38,6 +38,7 @@ nav:
       - TTL: docs/advanced/ttl.md
       - Decisions: docs/proposal/0*.md
       - Configuration Precedence: docs/advanced/configuration-precedence.md
+      - Split Horizon DNS: docs/advanced/split-horizon.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: docs/release.md
