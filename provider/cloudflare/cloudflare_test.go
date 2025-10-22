@@ -949,7 +949,6 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
-
 func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 	// Create a mock client that returns a rate limit error
 	client := NewMockCloudFlareClient()
