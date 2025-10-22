@@ -425,9 +425,6 @@ func NewCloudFlareProvider(
 			option.WithAPIEmail(apiEmail),
 		)
 	}
-	if client == nil {
-		return nil, fmt.Errorf("failed to initialize cloudflare provider")
-	}
 
 	if regionalServicesConfig.RegionKey != "" {
 		regionalServicesConfig.Enabled = true
