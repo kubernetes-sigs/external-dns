@@ -1165,7 +1165,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
-	td.Cmp(t, client.Actions, []MockAction{
+	expected := []MockAction{
 		{
 			Name:     "Create",
 			ZoneId:   "001",
@@ -1190,7 +1190,21 @@ func TestCloudflareApplyChanges(t *testing.T) {
 				Proxied: false,
 			},
 		},
-	})
+	}
+
+	sortActions := func(actions []MockAction) []MockAction {
+		sorted := make([]MockAction, len(actions))
+		copy(sorted, actions)
+		slices.SortFunc(sorted, func(a, b MockAction) int {
+			if a.ZoneId != b.ZoneId {
+				return strings.Compare(a.ZoneId, b.ZoneId)
+			}
+			return strings.Compare(a.RecordId, b.RecordId)
+		})
+		return sorted
+	}
+
+	td.Cmp(t, sortActions(client.Actions), sortActions(expected))
 
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
