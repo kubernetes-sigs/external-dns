@@ -1161,24 +1161,24 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	td.Cmp(t, client.Actions, []MockAction{
 		{
 			Name:     "Create",
-			ZoneId:   "001",
-			RecordId: generateDNSRecordID("", "new.bar.com", "target"),
-			RecordData: dns.RecordResponse{
-				ID:      generateDNSRecordID("", "new.bar.com", "target"),
-				Name:    "new.bar.com",
-				Content: "target",
-				TTL:     1,
-				Proxied: false,
-			},
-		},
-		{
-			Name:     "Create",
 			ZoneId:   "002",
 			RecordId: generateDNSRecordID("", "foobar.bar.com", "target-new"),
 			RecordData: dns.RecordResponse{
 				ID:      generateDNSRecordID("", "foobar.bar.com", "target-new"),
 				Name:    "foobar.bar.com",
 				Content: "target-new",
+				TTL:     1,
+				Proxied: false,
+			},
+		},
+		{
+			Name:     "Create",
+			ZoneId:   "001",
+			RecordId: generateDNSRecordID("", "new.bar.com", "target"),
+			RecordData: dns.RecordResponse{
+				ID:      generateDNSRecordID("", "new.bar.com", "target"),
+				Name:    "new.bar.com",
+				Content: "target",
 				TTL:     1,
 				Proxied: false,
 			},
