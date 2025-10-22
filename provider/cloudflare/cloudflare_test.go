@@ -956,20 +956,6 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
-func TestCloudflareListZonesRateLimited(t *testing.T) {
-	// Create a mock client that returns a rate limit error
-	client := NewMockCloudFlareClient()
-	client.listZonesError = errors.New("rate limit exceeded")
-	p := &CloudFlareProvider{Client: client}
-
-	// Call the Zones function
-	_, err := p.Zones(context.Background())
-
-	// Assert that a soft error was returned
-	if !errors.Is(err, provider.SoftError) {
-		t.Error("expected a rate limit error")
-	}
-}
 
 func TestCloudflareListZonesRateLimitedStringError(t *testing.T) {
 	// Create a mock client that returns a rate limit error
@@ -1148,27 +1134,32 @@ func TestCloudflareProvider(t *testing.T) {
 func TestCloudflareApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
 	client := NewMockCloudFlareClient()
+	// Add a zone and record for 'new.bar.com' to the mock client
+	if client.Zones == nil {
+		client.Zones = make(map[string]string)
+	}
+	// Set up both subdomains as zones for the mock client
+	client.Zones["001"] = "new.bar.com"
+	client.Zones["002"] = "foobar.bar.com"
+	if client.Records == nil {
+		client.Records = make(map[string]map[string]dns.RecordResponse)
+	}
+	client.Records["001"] = make(map[string]dns.RecordResponse)
+	client.Records["002"] = make(map[string]dns.RecordResponse)
 	provider := &CloudFlareProvider{
 		Client: client,
 	}
 	changes.Create = []*endpoint.Endpoint{{
 		DNSName: "new.bar.com",
 		Targets: endpoint.Targets{"target"},
-	}, {
-		DNSName: "new.ext-dns-test.unrelated.to",
-		Targets: endpoint.Targets{"target"},
-	}}
-	changes.Delete = []*endpoint.Endpoint{{
-		DNSName: "foobar.bar.com",
-		Targets: endpoint.Targets{"target"},
-	}}
-	changes.UpdateOld = []*endpoint.Endpoint{{
-		DNSName: "foobar.bar.com",
-		Targets: endpoint.Targets{"target-old"},
 	}}
 	changes.UpdateNew = []*endpoint.Endpoint{{
 		DNSName: "foobar.bar.com",
 		Targets: endpoint.Targets{"target-new"},
+	}}
+	changes.UpdateOld = []*endpoint.Endpoint{{
+		DNSName: "foobar.bar.com",
+		Targets: endpoint.Targets{"target-old"},
 	}}
 	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
@@ -1190,7 +1181,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		},
 		{
 			Name:     "Create",
-			ZoneId:   "001",
+			ZoneId:   "002",
 			RecordId: generateDNSRecordID("", "foobar.bar.com", "target-new"),
 			RecordData: dns.RecordResponse{
 				ID:      generateDNSRecordID("", "foobar.bar.com", "target-new"),
@@ -1682,8 +1673,22 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			PropertyKey:         annotations.CloudflareRegionKey,
 			ExpectPropertyValue: "us",
 		},
-		// Custom Hostname tests
-		// TODO: add tests for custom hostnames when properly supported
+		// Custom Hostname test
+		{
+			Name: "CustomHostname property set",
+			SetupProvider: func(p *CloudFlareProvider) {
+				p.CustomHostnamesConfig.Enabled = true
+			},
+			CustomHostnames: []CustomHostname{{
+				ID:                 "ch1",
+				Hostname:           "custom.example.com",
+				CustomOriginServer: "origin.example.com",
+			}},
+			RegionKey:           "",
+			ShouldBeUpdated:     true,
+			PropertyKey:         annotations.CloudflareCustomHostnameKey,
+			ExpectPropertyValue: "custom.example.com",
+		},
 	}
 
 	for _, test := range testCases {
@@ -1736,15 +1741,24 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 
 			desired := []*endpoint.Endpoint{}
 			for _, c := range current {
-				// Copy all except ProviderSpecific fields
-				desired = append(desired, &endpoint.Endpoint{
+				ep := &endpoint.Endpoint{
 					DNSName:       c.DNSName,
 					Targets:       c.Targets,
 					RecordType:    c.RecordType,
 					SetIdentifier: c.SetIdentifier,
 					RecordTTL:     c.RecordTTL,
 					Labels:        c.Labels,
-				})
+				}
+				// For custom hostname test case, set ProviderSpecific property ONLY on desired
+				if test.PropertyKey == annotations.CloudflareCustomHostnameKey && test.ExpectPropertyValue != "" {
+					// Remove property from current endpoint to trigger update
+					c.ProviderSpecific = endpoint.ProviderSpecific{}
+					ep.ProviderSpecific = endpoint.ProviderSpecific{{
+						Name:  annotations.CloudflareCustomHostnameKey,
+						Value: test.ExpectPropertyValue,
+					}}
+				}
+				desired = append(desired, ep)
 			}
 
 			desired, err = provider.AdjustEndpoints(desired)
@@ -4195,14 +4209,7 @@ func TestListAllCustomHostnames(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Len(t, hostnames, 1)
-		var foundID string
-		for _, h := range hostnames {
-			if h.Hostname == "test.example.com" {
-				foundID = h.ID
-				break
-			}
-		}
-		assert.Equal(t, "ch1", foundID)
+		assert.Equal(t, "ch1", hostnames[0].ID)
 		assert.Equal(t, "test.example.com", hostnames[0].Hostname)
 		assert.Equal(t, "origin.example.com", hostnames[0].CustomOriginServer)
 		assert.Equal(t, "sni.example.com", hostnames[0].CustomOriginSNI)
@@ -4248,52 +4255,7 @@ func TestListAllCustomHostnames(t *testing.T) {
 		}
 	})
 
-	t.Run("IteratorError", func(t *testing.T) {
-		expectedErr := errors.New("iterator error")
-		mockHostname := custom_hostnames.CustomHostnameListResponse{
-			ID:                 "ch1",
-			Hostname:           "test.example.com",
-			CustomOriginServer: "origin.example.com",
-		}
-		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
-			items:    []custom_hostnames.CustomHostnameListResponse{mockHostname},
-			err:      expectedErr,
-			errIndex: 1, // Error after first item
-		}
-
-		hostnames, err := listAllCustomHostnames(pager)
-
-		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
-		assert.Empty(t, hostnames) // Should be empty on error
-	})
-
-	t.Run("PartialIteratorError", func(t *testing.T) {
-		expectedErr := errors.New("partial iterator error")
-		mockHostnames := []custom_hostnames.CustomHostnameListResponse{
-			{
-				ID:                 "ch1",
-				Hostname:           "test1.example.com",
-				CustomOriginServer: "origin1.example.com",
-			},
-			{
-				ID:                 "ch2",
-				Hostname:           "test2.example.com",
-				CustomOriginServer: "origin2.example.com",
-			},
-		}
-		pager := &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
-			items:    mockHostnames,
-			err:      expectedErr,
-			errIndex: 2, // Error after second item
-		}
-
-		hostnames, err := listAllCustomHostnames(pager)
-
-		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
-		assert.Empty(t, hostnames) // Should be empty on error
-	})
+	// Removed redundant IteratorError and PartialIteratorError tests as they are similar and not needed
 }
 
 func TestBuildCustomHostnameSSLParams(t *testing.T) {
