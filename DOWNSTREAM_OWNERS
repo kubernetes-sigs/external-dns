@@ -7,15 +7,16 @@ approvers:
   - gcs278
   - grzpiotrowski
   - Thealisyed
-  - rohara
+  - rikatz
+  - davidesalerno
+  - bentito
 reviewers:
-  - knobunc
-  - Miciah
-  - candita
   - rfredette
   - alebedev87
   - gcs278
   - grzpiotrowski
   - Thealisyed
-  - rohara
+  - rikatz
+  - davidesalerno
+  - bentito
 component: DNS
