@@ -119,6 +119,8 @@ type Config struct {
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
 	CoreDNSPrefix                                 string
+	CoreDNSManagedBy                              string
+	CoreDNSStrictManagedBy                        bool
 	AkamaiServiceConsumerDomain                   string
 	AkamaiClientToken                             string
 	AkamaiClientSecret                            string
@@ -269,6 +271,8 @@ var defaultConfig = &Config{
 	Compatibility:                "",
 	ConnectorSourceServer:        "localhost:8080",
 	CoreDNSPrefix:                "/skydns/",
+	CoreDNSManagedBy:             "",
+	CoreDNSStrictManagedBy:       false,
 	CRDSourceAPIVersion:          "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:                "DNSEndpoint",
 	DefaultTargets:               []string{},
@@ -702,6 +706,8 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.StringVar("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')", "", &cfg.CloudflareDNSRecordsComment)
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
+	b.StringVar("coredns-managed-by", "When using the CoreDNS provider, specify etcd services which are used (default: '')", defaultConfig.CoreDNSManagedBy, &cfg.CoreDNSManagedBy)
+	b.BoolVar("coredns-strict-managed-by", "When using the CoreDNS provider, specify make selection more strict (no empty records are takeover) (default: false)", defaultConfig.CoreDNSStrictManagedBy, &cfg.CoreDNSStrictManagedBy)
 	b.StringVar("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiServiceConsumerDomain, &cfg.AkamaiServiceConsumerDomain)
 	b.StringVar("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientToken, &cfg.AkamaiClientToken)
 	b.StringVar("akamai-client-secret", "When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientSecret, &cfg.AkamaiClientSecret)
