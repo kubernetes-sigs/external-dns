@@ -261,6 +261,12 @@ dnstools# dig @10.100.4.143 nginx.example.org +short
 dnstools#
 ```
 
+## Multi cluster support options
+
+The CoreDNS provider allows records from different CoreDNS providers to be separated in a single etcd
+by setting the `--coredns-managed-by` flag to a unique identifier. Setting the flag
+to `--coredns-strict-managed-by` prevents the inclusion of records that do not have an identifier.
+
 ## Specific service annotation options
 
 ### Groups
