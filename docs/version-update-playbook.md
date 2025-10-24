@@ -57,10 +57,10 @@ Run the new External-DNS version in a **staging cluster**.
   - Ensure `external-dns` correctly identifies and plans updates without actually applying them.
   - **submit a feature request** if `dry-run` is not supported for a specific case
 
-  ```yaml
-  args:
-    - --dry-run
-  ```
+```yaml
+args:
+  - --dry-run
+```
 
 ---
 
@@ -94,11 +94,11 @@ b. Read-Only Parallel Deployment
 
   1. Run a second External-DNS instance (e.g., external-dns-readonly) with:
 
-  ```yaml
-  args:
-    - --dry-run
-    - ...other flags
-  ```
+```yaml
+args:
+  - --dry-run
+  - ...other flags
+```
 
   1. Observe logs and planned record updates to confirm behavior.
   2. Observe logs and planned record updates to confirm behavior.
@@ -149,10 +149,10 @@ Ideally, you should have a set of automated tests
 
 Query key DNS records directly:
 
-  ```sh
-  dig +short myapp.example.com
-  nslookup api.staging.example.com
-  ```
+```sh
+dig +short myapp.example.com
+nslookup api.staging.example.com
+```
 
 Ensure that A, CNAME, and TXT records remain correct and point to expected endpoints.
 
