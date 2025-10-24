@@ -47,9 +47,9 @@ const (
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
-	GetServices(prefix string) ([]*Service, error)
-	SaveService(value *Service) error
-	DeleteService(key string) error
+	GetServices(ctx context.Context, prefix string) ([]*Service, error)
+	SaveService(ctx context.Context, value *Service) error
+	DeleteService(ctx context.Context, key string) error
 }
 
 type coreDNSProvider struct {
@@ -88,14 +88,13 @@ type Service struct {
 
 type etcdClient struct {
 	client *etcdcv3.Client
-	ctx    context.Context
 }
 
 var _ coreDNSClient = etcdClient{}
 
 // GetServices GetService return all Service records stored in etcd stored anywhere under the given key (recursively)
-func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
-	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
+func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service, error) {
+	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
 	path := prefix
@@ -129,8 +128,8 @@ func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
 }
 
 // SaveService persists service data into etcd
-func (c etcdClient) SaveService(service *Service) error {
-	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
+func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
+	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
 	value, err := json.Marshal(&service)
@@ -145,8 +144,8 @@ func (c etcdClient) SaveService(service *Service) error {
 }
 
 // DeleteService deletes service record from etcd
-func (c etcdClient) DeleteService(key string) error {
-	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
+func (c etcdClient) DeleteService(ctx context.Context, key string) error {
+	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
 	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
@@ -193,7 +192,7 @@ func newETCDClient() (coreDNSClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return etcdClient{c, context.Background()}, nil
+	return etcdClient{c}, nil
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
@@ -235,9 +234,9 @@ func findLabelInTargets(targets []string, label string) (string, bool) {
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
-func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
-	services, err := p.client.GetServices(p.coreDNSPrefix)
+	services, err := p.client.GetServices(ctx, p.coreDNSPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +284,7 @@ func (p coreDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return result, nil
 }
 
-func (p coreDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	grouped := p.groupEndpoints(changes)
 
 	for dnsName, group := range grouped {
@@ -293,12 +292,12 @@ func (p coreDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 			log.Debugf("Skipping record %q due to domain filter", dnsName)
 			continue
 		}
-		if err := p.applyGroup(dnsName, group); err != nil {
+		if err := p.applyGroup(ctx, dnsName, group); err != nil {
 			return err
 		}
 	}
 
-	return p.deleteEndpoints(changes.Delete)
+	return p.deleteEndpoints(ctx, changes.Delete)
 }
 
 func (p coreDNSProvider) groupEndpoints(changes *plan.Changes) map[string][]*endpoint.Endpoint {
@@ -314,12 +313,12 @@ func (p coreDNSProvider) groupEndpoints(changes *plan.Changes) map[string][]*end
 	return grouped
 }
 
-func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) error {
+func (p coreDNSProvider) applyGroup(ctx context.Context, dnsName string, group []*endpoint.Endpoint) error {
 	var services []*Service
 
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
-			srvs, err := p.createServicesForEndpoint(dnsName, ep)
+			srvs, err := p.createServicesForEndpoint(ctx, dnsName, ep)
 			if err != nil {
 				return err
 			}
@@ -334,7 +333,7 @@ func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) 
 		if p.dryRun {
 			continue
 		}
-		if err := p.client.SaveService(service); err != nil {
+		if err := p.client.SaveService(ctx, service); err != nil {
 			return err
 		}
 	}
@@ -342,7 +341,7 @@ func (p coreDNSProvider) applyGroup(dnsName string, group []*endpoint.Endpoint) 
 	return nil
 }
 
-func (p coreDNSProvider) createServicesForEndpoint(dnsName string, ep *endpoint.Endpoint) ([]*Service, error) {
+func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName string, ep *endpoint.Endpoint) ([]*Service, error) {
 	var services []*Service
 
 	for _, target := range ep.Targets {
@@ -378,7 +377,7 @@ func (p coreDNSProvider) createServicesForEndpoint(dnsName string, ep *endpoint.
 			if p.dryRun {
 				continue
 			}
-			if err := p.client.DeleteService(key); err != nil {
+			if err := p.client.DeleteService(ctx, key); err != nil {
 				return nil, err
 			}
 		}
@@ -420,7 +419,7 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 	return services
 }
 
-func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
+func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
@@ -431,7 +430,7 @@ func (p coreDNSProvider) deleteEndpoints(endpoints []*endpoint.Endpoint) error {
 		if p.dryRun {
 			continue
 		}
-		if err := p.client.DeleteService(key); err != nil {
+		if err := p.client.DeleteService(ctx, key); err != nil {
 			return err
 		}
 	}
