@@ -17,6 +17,7 @@ nav:
       - Code of Conduct: code-of-conduct.md
       - License: LICENSE.md
       - Providers: docs/providers.md
+      - Version Update: docs/version-update-playbook.md
   - Tutorials: docs/tutorials/*
   - Annotations:
       - About: docs/annotations/annotations.md

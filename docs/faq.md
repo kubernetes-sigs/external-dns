@@ -320,3 +320,18 @@ FATA[0060] failed to sync cache: timed out waiting for the condition
 
 You may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a `namespace` that you don't have these permissions in.
 By default, commands are run against the `default` namespace. Try changing this to your particular namespace to see if that fixes the issue.
+
+## When we plan to release a v1.0, our first `major` release?
+
+> We should really get away from 0.x only if we have APIs that we can declare stable.
+
+The jump to `1.0` isn’t just symbolic—it’s a promise. If the `External-DNS` maintainers can confidently say that config structures, CRDs, and flags won’t break unexpectedly, that’s the moment to move to `1.0`
+
+Before moving to `1.0`, review and lock down:
+
+- CRD schemas (especially DNSEndpoint if applicable)
+- Annotations support
+- Command-line flags and configuration behavior
+- Environment variables and metrics
+- Provider interface stability
+- Once these are considered stable and documented, then a `1.0` tag makes sense.
