@@ -513,7 +513,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Name:      "api",
 					Namespace: "default",
 					Annotations: map[string]string{
-						controllerAnnotationKey: "something-else",
+						annotations.ControllerKey: "something-else",
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
@@ -884,7 +884,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						Name:      "without-hostame",
 						Namespace: "default",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "annotation.without-hostname.internal",
+							annotations.HostnameKey: "annotation.without-hostname.internal",
 						},
 					},
 					Spec: v1.HTTPRouteSpec{
@@ -902,7 +902,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						Name:      "with-hostame",
 						Namespace: "default",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "annotation.with-hostname.internal",
+							annotations.HostnameKey: "annotation.with-hostname.internal",
 						},
 					},
 					Spec: v1.HTTPRouteSpec{
@@ -940,7 +940,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Name:      "with-hostame",
 					Namespace: "default",
 					Annotations: map[string]string{
-						hostnameAnnotationKey: "annotation.with-hostname.internal",
+						annotations.HostnameKey: "annotation.with-hostname.internal",
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
@@ -1050,7 +1050,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "valid-ttl",
 						Namespace:   "default",
-						Annotations: map[string]string{ttlAnnotationKey: "15s"},
+						Annotations: map[string]string{annotations.TtlKey: "15s"},
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("valid-ttl.internal"),
@@ -1066,7 +1066,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "invalid-ttl",
 						Namespace:   "default",
-						Annotations: map[string]string{ttlAnnotationKey: "abc"},
+						Annotations: map[string]string{annotations.TtlKey: "abc"},
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("invalid-ttl.internal"),
@@ -1101,7 +1101,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Annotations: map[string]string{
 						annotations.SetIdentifierKey: "test-set-identifier",
-						aliasAnnotationKey:           "true",
+						annotations.AliasKey:         "true",
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
@@ -1332,7 +1332,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						Name:      "overriden-gateway",
 						Namespace: "gateway-namespace",
 						Annotations: map[string]string{
-							targetAnnotationKey: "4.3.2.1",
+							annotations.TargetKey: "4.3.2.1",
 						},
 					},
 					Spec: v1.GatewaySpec{
@@ -1374,7 +1374,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 						Name:      "overriden-gateway",
 						Namespace: "gateway-namespace",
 						Annotations: map[string]string{
-							targetAnnotationKey: "4.3.2.1",
+							annotations.TargetKey: "4.3.2.1",
 						},
 					},
 					Spec: v1.GatewaySpec{

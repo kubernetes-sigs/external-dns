@@ -41,7 +41,7 @@ import (
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
 // The Route implementation will use the Route spec.host field for the hostname,
 // and the Route status' canonicalHostname field as the target.
-// The targetAnnotationKey can be used to explicitly set an alternative
+// The annotations.TargetKey can be used to explicitly set an alternative
 // endpoint, if desired.
 type ocpRouteSource struct {
 	client                   versioned.Interface
@@ -131,10 +131,10 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 
 	for _, ocpRoute := range ocpRoutes {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := ocpRoute.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := ocpRoute.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping OpenShift Route %s/%s because controller value does not match, found: %s, required: %s",
-				ocpRoute.Namespace, ocpRoute.Name, controller, controllerAnnotationValue)
+				ocpRoute.Namespace, ocpRoute.Name, controller, annotations.ControllerValue)
 			continue
 		}
 

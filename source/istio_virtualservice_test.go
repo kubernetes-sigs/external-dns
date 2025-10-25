@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
@@ -1247,7 +1248,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "vs1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					gateways: []string{"fake1"},
 					dnsnames: []string{"example.org"},
@@ -1281,7 +1282,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "vs1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "some-other-tool",
+						annotations.ControllerKey: "some-other-tool",
 					},
 					gateways: []string{"fake1"},
 					dnsnames: []string{"example.org"},
@@ -1371,7 +1372,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{{"*.org", "*.ext-dns.test.com"}},
 				},
@@ -1424,7 +1425,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						targetAnnotationKey: "virtualservice-target.com",
+						annotations.TargetKey: "virtualservice-target.com",
 					},
 					dnsnames: []string{"example.org"},
 				},
@@ -1433,7 +1434,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						targetAnnotationKey: "virtualservice-target.com",
+						annotations.TargetKey: "virtualservice-target.com",
 					},
 					dnsnames: []string{"example2.org"},
 				},
@@ -1465,7 +1466,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 				},
 			},
@@ -1517,7 +1518,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						targetAnnotationKey:       "gateway-target.com",
+						annotations.TargetKey:     "gateway-target.com",
 						IstioGatewayIngressSource: "ingress1",
 					},
 				},
@@ -1570,7 +1571,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames: []string{"example.org"},
 				},
@@ -1609,7 +1610,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						hostnameAnnotationKey: "foo.bar.com, another-dns-through-hostname.com",
+						annotations.HostnameKey: "foo.bar.com, another-dns-through-hostname.com",
 					},
 					dnsnames: []string{"baz.bar.org"},
 				},
@@ -1643,7 +1644,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						ttlAnnotationKey: "6",
+						annotations.TtlKey: "6",
 					},
 					dnsnames: []string{"example.org"},
 				},
@@ -1652,7 +1653,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						ttlAnnotationKey: "1",
+						annotations.TtlKey: "1",
 					},
 					dnsnames: []string{"example2.org"},
 				},
@@ -1679,7 +1680,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{{"*"}},
 				},
@@ -1687,7 +1688,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
+						annotations.TargetKey: "gateway-target.com",
 					},
 					dnsnames: [][]string{{"*"}},
 				},
@@ -1695,7 +1696,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames: [][]string{{"*"}},
 				},
@@ -1761,7 +1762,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me",
+						annotations.HostnameKey: "ignore.me",
 					},
 					dnsnames: []string{"example.org"},
 				},
@@ -1770,7 +1771,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me.too",
+						annotations.HostnameKey: "ignore.me.too",
 					},
 					dnsnames: []string{"new.org"},
 				},

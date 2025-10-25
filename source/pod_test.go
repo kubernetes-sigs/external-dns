@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -71,8 +72,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -88,8 +89,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -169,8 +170,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -186,8 +187,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -267,9 +268,9 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
-							targetAnnotationKey:           "208.1.2.1",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
+							annotations.TargetKey:           "208.1.2.1",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -285,9 +286,9 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
-							targetAnnotationKey:           "208.1.2.2",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
+							annotations.TargetKey:           "208.1.2.2",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -343,8 +344,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "a.foo.example.org",
-							ttlAnnotationKey:      "1h30m",
+							annotations.HostnameKey: "a.foo.example.org",
+							annotations.TtlKey:      "1h30m",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -360,7 +361,7 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "b.foo.example.org",
+							annotations.HostnameKey: "b.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -391,9 +392,9 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
-							ttlAnnotationKey:              "1s",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
+							annotations.TtlKey:              "1s",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -409,8 +410,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -441,8 +442,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -458,9 +459,9 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "default",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
-							ttlAnnotationKey:              "1s",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
+							annotations.TtlKey:              "1s",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -502,7 +503,7 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org,internal.b.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org,internal.b.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -533,7 +534,7 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							ttlAnnotationKey: "1m",
+							annotations.TtlKey: "1m",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -580,9 +581,9 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
-							targetAnnotationKey:           "208.1.2.1",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
+							annotations.TargetKey:           "208.1.2.1",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -598,9 +599,9 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
-							targetAnnotationKey:           "208.1.2.2",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
+							annotations.TargetKey:           "208.1.2.2",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -628,7 +629,7 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "a.foo.example.org",
+							annotations.HostnameKey: "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -707,8 +708,8 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("my-pod1-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -733,7 +734,7 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("missing-node-pod-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "a.foo.example.org",
+							annotations.HostnameKey: "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -760,7 +761,7 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("valid-pod-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "valid.foo.example.org",
+							annotations.HostnameKey: "valid.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -776,7 +777,7 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("non-hostnet-pod-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "nonhost.foo.example.org",
+							annotations.HostnameKey: "nonhost.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -792,7 +793,7 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("missing-node-pod-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "missing.foo.example.org",
+							annotations.HostnameKey: "missing.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -823,7 +824,7 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("valid-pod-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							hostnameAnnotationKey: "valid.foo.example.org",
+							annotations.HostnameKey: "valid.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -851,8 +852,8 @@ func TestPodSourceLogs(t *testing.T) {
 						Name:      fmt.Sprintf("my-pod1-%s", suffix),
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							annotations.InternalHostnameKey: "internal.a.foo.example.org",
+							annotations.HostnameKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{

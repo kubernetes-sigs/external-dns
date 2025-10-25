@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // Validates that ingressSource is a Source
@@ -276,7 +277,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -310,7 +311,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -330,7 +331,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "Ingress-hostname-source=defined-hosts-only, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "defined-hosts-only"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz", annotations.IngressHostnameSourceKey: "defined-hosts-only"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -345,7 +346,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 			title: "Ingress-hostname-source=annotation-only, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "annotation-only"},
+				annotations: map[string]string{annotations.HostnameKey: "foo.baz", annotations.IngressHostnameSourceKey: "annotation-only"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -641,7 +642,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"8.8.8.8"},
@@ -663,7 +664,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "some-other-tool",
+						annotations.ControllerKey: "some-other-tool",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"8.8.8.8"},
@@ -679,7 +680,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					dnsnames:  []string{},
 					ips:       []string{"8.8.8.8"},
@@ -708,7 +709,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "other-controller",
+						annotations.ControllerKey: "other-controller",
 					},
 					dnsnames: []string{},
 					ips:      []string{"8.8.8.8"},
@@ -758,7 +759,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -802,7 +803,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -811,7 +812,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
@@ -820,7 +821,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames: []string{"example3.org"},
 					ips:      []string{},
@@ -929,7 +930,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"1.2.3.4"},
@@ -956,7 +957,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{"1.2.3.4"},
@@ -988,8 +989,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "ingress-target.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "ingress-target.com",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1016,8 +1017,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey:    "6",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "6",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1026,8 +1027,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey:    "1",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "1",
 					},
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
@@ -1036,8 +1037,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey:    "10s",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.TtlKey:    "10s",
 					},
 					dnsnames: []string{"example3.org"},
 					ips:      []string{"8.8.4.4"},
@@ -1072,8 +1073,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						aliasAnnotationKey:  "true",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.AliasKey:  "true",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1098,8 +1099,8 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
-						aliasAnnotationKey:  "false",
+						annotations.TargetKey: "ingress-target.com",
+						annotations.AliasKey:  "false",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -1121,7 +1122,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames:  []string{},
 					ips:       []string{},
@@ -1131,7 +1132,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingress-target.com",
+						annotations.TargetKey: "ingress-target.com",
 					},
 					dnsnames: []string{},
 					ips:      []string{"8.8.8.8"},
@@ -1140,7 +1141,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames:  []string{},
 					ips:       []string{},
@@ -1174,7 +1175,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "",
+						annotations.TargetKey: "",
 					},
 					dnsnames:  []string{},
 					ips:       []string{},
@@ -1199,7 +1200,7 @@ func testIngressEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					dnsnames:  []string{"new.org"},
 					hostnames: []string{"lb.com"},

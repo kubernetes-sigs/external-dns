@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -70,7 +71,7 @@ func TestGatewayTCPRouteSourceEndpoints(t *testing.T) {
 			Name:      "api",
 			Namespace: "default",
 			Annotations: map[string]string{
-				hostnameAnnotationKey: "api-annotation.foobar.internal",
+				annotations.HostnameKey: "api-annotation.foobar.internal",
 			},
 		},
 		Spec: v1alpha2.TCPRouteSpec{
