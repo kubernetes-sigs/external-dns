@@ -22,6 +22,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -686,6 +687,69 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "service-two.org.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.1.20.40"}},
 			},
 		},
+		{
+			title: "templating resolve NodePort services with specific port names",
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-one",
+					},
+					Spec: v1.ServiceSpec{
+						Type:      v1.ServiceTypeNodePort,
+						ClusterIP: "10.96.41.131", Ports: []v1.ServicePort{
+							{Name: "http", Port: 80, TargetPort: intstr.FromInt32(8080), NodePort: 30080},
+							{Name: "debug", Port: 8082, TargetPort: intstr.FromInt32(8082), NodePort: 30082},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-two",
+					},
+					Spec: v1.ServiceSpec{
+						Type:      v1.ServiceTypeClusterIP,
+						ClusterIP: "10.96.41.132",
+						Ports: []v1.ServicePort{
+							{Name: "http", Port: 8080},
+							{Name: "http2", Port: 8086},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-three",
+					},
+					Spec: v1.ServiceSpec{
+						Type:      v1.ServiceTypeNodePort,
+						ClusterIP: "10.96.41.133",
+						Ports: []v1.ServicePort{
+							{Name: "debug", Port: 8082, TargetPort: intstr.FromInt32(8083), Protocol: v1.ProtocolUDP, NodePort: 30083},
+							{Name: "minecraft", Port: 2525, TargetPort: intstr.FromInt32(25256), NodePort: 25565},
+						},
+					},
+				},
+			},
+			fqdnTemplate: `{{ if eq .Spec.Type "NodePort" }}{{ range .Spec.Ports }}{{ .Name }}.host.tld{{printf "," }}{{end}}{{ end }}`,
+			expected: []*endpoint.Endpoint{
+				// TODO: This test shows that there is a bug that needs to be fixed in the external-dns logic. Not a critical issue, as will be filtered out by the source.
+				{DNSName: "", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.96.41.132", "203.0.113.10"}},
+				{DNSName: "_service-one._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 ", "0 50 30082 "}}, // TODO: wrong SRV target format
+				{DNSName: "_service-one._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 debug.host.tld", "0 50 30082 debug.host.tld"}},
+				{DNSName: "_service-one._tcp.http.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 http.host.tld", "0 50 30082 http.host.tld"}},
+				{DNSName: "_service-three._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 "}}, // TODO: wrong SRV target format
+				{DNSName: "_service-three._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 debug.host.tld"}},
+				{DNSName: "_service-three._tcp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 minecraft.host.tld"}},
+				{DNSName: "_service-three._udp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 "}}, // TODO: wrong SRV target format
+				{DNSName: "_service-three._udp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 debug.host.tld"}},
+				{DNSName: "_service-three._udp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 minecraft.host.tld"}},
+				{DNSName: "debug.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "http.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "minecraft.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -755,6 +819,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
+				fmt.Println(ep)
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
 		})
