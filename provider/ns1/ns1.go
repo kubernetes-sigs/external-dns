@@ -85,12 +85,13 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
-	DomainFilter  *endpoint.DomainFilter
-	ZoneIDFilter  provider.ZoneIDFilter
-	NS1Endpoint   string
-	NS1IgnoreSSL  bool
-	DryRun        bool
-	MinTTLSeconds int
+	DomainFilter        *endpoint.DomainFilter
+	ZoneIDFilter        provider.ZoneIDFilter
+	NS1Endpoint         string
+	NS1IgnoreSSL        bool
+	DryRun              bool
+	MinTTLSeconds       int
+	ZoneHandleOverrides map[string]string
 }
 
 // NS1Provider is the NS1 provider
@@ -101,6 +102,8 @@ type NS1Provider struct {
 	zoneIDFilter  provider.ZoneIDFilter
 	dryRun        bool
 	minTTLSeconds int
+	// normalized overrides: fqdn (no trailing dot, lowercased) -> handle/ID (lowercased)
+	zoneHandleOverrides map[string]string
 }
 
 // NewNS1Provider creates a new NS1 Provider
@@ -137,10 +140,11 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 	apiClient := api.NewClient(client, clientArgs...)
 
 	return &NS1Provider{
-		client:        NS1DomainService{apiClient},
-		domainFilter:  config.DomainFilter,
-		zoneIDFilter:  config.ZoneIDFilter,
-		minTTLSeconds: config.MinTTLSeconds,
+		client:              NS1DomainService{apiClient},
+		domainFilter:        config.DomainFilter,
+		zoneIDFilter:        config.ZoneIDFilter,
+		minTTLSeconds:       config.MinTTLSeconds,
+		zoneHandleOverrides: normalizeOverrides(config.ZoneHandleOverrides),
 	}, nil
 }
 
@@ -155,9 +159,19 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 
 	for _, zone := range zones {
 		// TODO handle Header Codes
-		zoneData, _, err := p.client.GetZone(zone.String())
+		// Prefer lookup via handle/ID if an override exists; fall back to FQDN.
+		lookup := p.longestMatch(zone.Zone)
+		zoneData, _, err := p.client.GetZone(lookup)
 		if err != nil {
-			return nil, err
+			if lookup != strings.TrimSuffix(zone.Zone, ".") {
+				// fallback to FQDN lookup if override missed
+				zoneData, _, err = p.client.GetZone(zone.Zone)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
 		}
 
 		for _, record := range zoneData.Records {
@@ -208,7 +222,7 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 	}
 
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := ns1ChangesByZone(zones, changes)
+	changesByZone := p.ns1ChangesByZone(zones, changes)
 	for zoneName, changes := range changesByZone {
 		for _, change := range changes {
 			record := p.ns1BuildRecord(zoneName, change)
@@ -302,15 +316,38 @@ func newNS1Changes(action string, endpoints []*endpoint.Endpoint) []*ns1Change {
 	return changes
 }
 
+// normalizeOverrides lowercases keys/values and strips any trailing dot on keys.
+func normalizeOverrides(m map[string]string) map[string]string {
+	if len(m) == 0 {
+		return map[string]string{}
+	}
+	out := make(map[string]string)
+	for k, v := range m {
+		kk := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(k)), ".")
+		vv := strings.ToLower(strings.TrimSpace(v))
+
+		if kk == "" || vv == "" {
+			log.Debugf("Encountered empty string for zone handle override: key=%s, value=%s", kk, vv)
+			continue
+		}
+
+		out[kk] = vv
+	}
+	return out
+}
+
 // ns1ChangesByZone separates a multi-zone change into a single change per zone.
-func ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*ns1Change {
+// The map key becomes the "write key": handle/ID if overridden, else FQDN.
+func (p *NS1Provider) ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*ns1Change {
 	changes := make(map[string][]*ns1Change)
 	zoneNameIDMapper := provider.ZoneIDName{}
+
 	for _, z := range zones {
 		zoneNameIDMapper.Add(z.Zone, z.Zone)
 		changes[z.Zone] = []*ns1Change{}
 	}
 
+	// group changes by zone FQDN
 	for _, c := range changeSets {
 		zone, _ := zoneNameIDMapper.FindZone(c.Endpoint.DNSName)
 		if zone == "" {
@@ -320,5 +357,34 @@ func ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*
 		changes[zone] = append(changes[zone], c)
 	}
 
+	// replace zone FQDN with zone handle if FQDN is overridden
+	for k, v := range changes {
+		writeKey := p.longestMatch(k)
+
+		if writeKey != k {
+			changes[writeKey] = v
+			delete(changes, k)
+		}
+	}
+
 	return changes
+}
+
+// longestMatch returns the preferred key to pass to GetZone:
+// if an override exists for fqdn (or a more specific suffix), return its mapped handle/ID;
+// otherwise return the normalized FQDN.
+func (p *NS1Provider) longestMatch(fqdn string) string {
+	name := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(fqdn)), ".")
+	bestKey := ""
+	for k := range p.zoneHandleOverrides {
+		if name == k || strings.HasSuffix(name, "."+k) {
+			if len(k) > len(bestKey) {
+				bestKey = k
+			}
+		}
+	}
+	if bestKey != "" {
+		return p.zoneHandleOverrides[bestKey]
+	}
+	return name
 }
