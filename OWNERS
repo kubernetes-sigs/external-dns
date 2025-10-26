@@ -15,10 +15,12 @@ approvers:
   - szuecs
 
 reviewers:
+  - AndrewCharlesHay
   - ivankatliarchuk
   - mloiseleur
   - raffo
   - szuecs
+  - vflaux
 
 emeritus_approvers:
   - hjacobs
