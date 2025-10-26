@@ -46,6 +46,7 @@ servers:
 replicaCount: 1
 
 # required to debug DNS resolution from within CoreDNS pods
+# kubectl logs deploy/coredns -n default -c resolv-check --tail=50
 initContainers:
   - name: resolv-check
     image: busybox:1.37
