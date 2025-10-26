@@ -8,7 +8,6 @@ metadata:
     external-dns.alpha.kubernetes.io/coredns-group: "g1"
 spec:
   type: LoadBalancer
-  ...
 status:
   loadBalancer:
     ingress:
@@ -23,7 +22,6 @@ metadata:
     external-dns.alpha.kubernetes.io/coredns-group: "g1"
 spec:
   type: LoadBalancer
-  ...
 status:
   loadBalancer:
     ingress:
@@ -38,7 +36,6 @@ metadata:
     external-dns.alpha.kubernetes.io/coredns-group: "g2"
 spec:
   type: LoadBalancer
-  ...
 status:
   loadBalancer:
     ingress:
@@ -53,7 +50,6 @@ metadata:
     external-dns.alpha.kubernetes.io/coredns-group: "g2"
 spec:
   type: LoadBalancer
-  ...
 status:
   loadBalancer:
     ingress:
