@@ -1,4 +1,4 @@
-# Tutorial: CoreDNS with etcd backend for ExternalDNS
+# CoreDNS with etcd backend
 
 ## Overview
 
