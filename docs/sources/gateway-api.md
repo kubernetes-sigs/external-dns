@@ -35,6 +35,112 @@ for HTTPRoutes and TLSRoutes by ExternalDNS, but it's _strongly_ recommended tha
 specs to provide all intended hostnames, since the Gateway that ultimately routes their
 requests/connections won't recognize additional hostnames from the annotation.
 
+## Annotations
+
+### Annotation Placement
+
+ExternalDNS reads different annotations from different Gateway API resources:
+
+- **Gateway annotations**: Only `external-dns.alpha.kubernetes.io/target` is read from Gateway resources
+- **Route annotations**: All other annotations (hostname, ttl, controller, provider-specific) are read from Route
+  resources (HTTPRoute, GRPCRoute, TLSRoute, TCPRoute, UDPRoute)
+
+This separation aligns with Gateway API architecture where Gateway defines infrastructure (IP addresses, listeners)
+and Routes define application-level DNS records.
+
+### Examples
+
+#### Example: Cloudflare Proxied Records
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  namespace: default
+  annotations:
+    # ✅ Correct: target annotation on Gateway
+    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      hostname: "*.example.com"
+      protocol: HTTPS
+      port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    # ✅ Correct: provider-specific annotations on HTTPRoute
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  parentRefs:
+    - name: my-gateway
+      namespace: default
+  hostnames:
+    - api.example.com
+  rules:
+    - backendRefs:
+        - name: api-service
+          port: 8080
+```
+
+#### Example: AWS Route53 with Routing Policies
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: aws-gateway
+  annotations:
+    # ✅ Correct: target annotation on Gateway
+    external-dns.alpha.kubernetes.io/target: "alb-123.us-east-1.elb.amazonaws.com"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-route
+  annotations:
+    # ✅ Correct: AWS-specific annotations on HTTPRoute
+    external-dns.alpha.kubernetes.io/aws-weight: "100"
+    external-dns.alpha.kubernetes.io/set-identifier: "backend-v1"
+spec:
+  parentRefs:
+    - name: aws-gateway
+  hostnames:
+    - app.example.com
+```
+
+### Common Mistakes
+
+❌ **Incorrect**: Placing provider-specific annotations on Gateway
+
+```yaml
+kind: Gateway
+metadata:
+  annotations:
+    # ❌ These annotations are ignored on Gateway
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    external-dns.alpha.kubernetes.io/ttl: "300"
+```
+
+❌ **Incorrect**: Placing target annotation on HTTPRoute
+
+```yaml
+kind: HTTPRoute
+metadata:
+  annotations:
+    # ❌ This annotation is ignored on Routes
+    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+```
+
+For a complete list of supported annotations, see the
+[annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
+
 ## Manifest with RBAC
 
 ```yaml
