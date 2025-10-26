@@ -1,6 +1,6 @@
 # kubectl apply -f docs/snippets/tutorials/coredns/fixtures.yaml
 # kubectl delete -f docs/snippets/tutorials/coredns/fixtures.yaml
-# kubectl get svc -l app=test-app
+# kubectl get svc -l svc=test-svc
 ---
 apiVersion: v1
 kind: Service
