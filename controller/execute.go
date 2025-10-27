@@ -85,7 +85,7 @@ func Execute() {
 
 	// Set annotation prefix (required since init() was removed)
 	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
-	if cfg.AnnotationPrefix != "external-dns.alpha.kubernetes.io/" {
+	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
 		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 

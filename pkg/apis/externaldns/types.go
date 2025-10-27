@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -230,7 +231,7 @@ var defaultConfig = &Config{
 	AkamaiServiceConsumerDomain: "",
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:            "",
-	AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
+	AnnotationPrefix:            annotations.DefaultAnnotationPrefix,
 	APIServerURL:                "",
 	AWSAPIRetries:               3,
 	AWSAssumeRole:               "",
@@ -451,7 +452,7 @@ var allowedSources = []string{
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
-		AnnotationPrefix: "external-dns.alpha.kubernetes.io/",
+		AnnotationPrefix: annotations.DefaultAnnotationPrefix,
 		AWSSDCreateTag:   map[string]string{},
 	}
 }

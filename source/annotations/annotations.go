@@ -18,6 +18,9 @@ import (
 )
 
 const (
+	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
+	DefaultAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
 )
@@ -25,7 +28,7 @@ const (
 var (
 	// AnnotationKeyPrefix is set on all annotations consumed by external-dns (outside of user templates)
 	// to provide easy filtering. Can be customized via SetAnnotationPrefix.
-	AnnotationKeyPrefix = "external-dns.alpha.kubernetes.io/"
+	AnnotationKeyPrefix = DefaultAnnotationPrefix
 
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey        string
