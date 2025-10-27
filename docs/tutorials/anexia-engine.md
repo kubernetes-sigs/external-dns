@@ -23,10 +23,10 @@ Make sure to familiarize yourself with Anexia CloudDNS and read the following do
 ## Creating an Anexia API Token
 
 To use ExternalDNS with CloudDNS, you need an API token to manage DNS zones and records.
-For production usage it is advised to use a **service account** to manage DNS records.
+For production usage, it is advised to use a **service account** to manage DNS records.
 View the official [documentation how to create a service account and retrieve the respective API token](https://engine.anexia-it.com/docs/en/module/engine-core/getting-started/managing-users-and-teams/managing-users).
 
-Once the user is created the retrieval of the API token itself is very similar to retrieving it from your personal user:
+Once the user is created, the retrieval of the API token itself is very similar to retrieving it from your personal user:
 
 1. Log in to [Anexia Engine](https://engine.anexia-it.com/).
 2. Navigate to your profile in the top right corner and select **API**.
@@ -141,7 +141,7 @@ To create the service apply it with the following command:
 kubectl apply -f web-demo-service.yaml
 ```
 
-The service is going to expose the application on port 80.
+The service will expose the application on port 80.
 
 ### Step 3: Create an Ingress
 
@@ -185,7 +185,7 @@ This ingress will expose the `hello-app` application at `http://web-demo.anexia-
 
 ### Verifying everything worked
 
-Verification if the DNS records were created can be done in multiple ways:
+Verification that the DNS records were created can be done in multiple ways:
 * Looking it up in the Anexia Engine web interface
 * Using the Anexia API
 * Querying the Anexia DNS server
@@ -249,7 +249,7 @@ Hostname: web-demo-cb7595bfd-82htv
 
 ## Cleanup
 
-> **Optional:** Only cleanup your changes if they are no longer needed.
+> **Optional:** Only clean up your changes if they are no longer needed.
 
 ```bash
 kubectl delete deployment/web-demo
