@@ -5,8 +5,11 @@
 ## Multi cluster support options
 
 The CoreDNS provider allows records from different CoreDNS providers to be separated in a single etcd
-by setting the `--coredns-managed-by` flag to a unique identifier. Setting the flag
-to `--coredns-strict-managed-by` prevents the inclusion of records that do not have an identifier.
+by activating the setting `--coredns-strictly-onwed` flag and set `txt-owner-id`.
+
+It will prevent any override (update/create/delete) of records by a different owner and prevent loading of records by a different owner.
+
+This features works directly without any change to CoreDNS. CoreDNS will ignore this field inside the etcd record.
 
 ## Specific service annotation options
 

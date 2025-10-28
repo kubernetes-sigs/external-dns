@@ -579,23 +579,23 @@ func TestGetServices_Multiple(t *testing.T) {
 	assert.Equal(t, priority, result[1].Priority)
 }
 
-func TestGetServices_FilterOutOtherServicesWithDifferentManager(t *testing.T) {
+func TestGetServices_FilterOutOtherServicesOwnerIDSetButNothingChanged(t *testing.T) {
 	mockKV := new(MockEtcdKV)
 	c := etcdClient{
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		managedBy:       "managed-by",
-		strictManagedBy: false,
+		ownerID:       "owner",
+		strictlyOwned: false,
 	}
 
-	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", ManagedBy: "managed-by"}
+	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", OwnedBy: "owner"}
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
-	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", ManagedBy: ""}
+	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: ""}
 	value2, err := json.Marshal(svc2)
 	require.NoError(t, err)
-	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", ManagedBy: "managed-by-someone-else"}
+	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: "managed-by-someone-else"}
 	value3, err := json.Marshal(svc3)
 	require.NoError(t, err)
 
@@ -618,28 +618,26 @@ func TestGetServices_FilterOutOtherServicesWithDifferentManager(t *testing.T) {
 
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-	assert.Equal(t, "managed-by", result[0].ManagedBy)
-	assert.Equal(t, "", result[1].ManagedBy)
+	assert.Len(t, result, 3)
 }
 
-func TestGetServices_FilterOutOtherServicesWithDifferentManagerAndIgnoreEmpty(t *testing.T) {
+func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 	mockKV := new(MockEtcdKV)
 	c := etcdClient{
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		managedBy:       "managed-by",
-		strictManagedBy: true,
+		ownerID:       "owned-by",
+		strictlyOwned: true,
 	}
 
-	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", ManagedBy: "managed-by"}
+	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", OwnedBy: "owned-by"}
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
-	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", ManagedBy: ""}
+	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: ""}
 	value2, err := json.Marshal(svc2)
 	require.NoError(t, err)
-	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", ManagedBy: "managed-by-someone-else"}
+	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: "owned-by-someone-else"}
 	value3, err := json.Marshal(svc3)
 	require.NoError(t, err)
 
@@ -663,7 +661,7 @@ func TestGetServices_FilterOutOtherServicesWithDifferentManagerAndIgnoreEmpty(t 
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
-	assert.Equal(t, "managed-by", result[0].ManagedBy)
+	assert.Equal(t, "owned-by", result[0].OwnedBy)
 }
 
 func TestGetServices_UnmarshalError(t *testing.T) {
@@ -710,7 +708,8 @@ func TestGetServices_GetError(t *testing.T) {
 func TestDeleteService(t *testing.T) {
 	tests := []struct {
 		name              string
-		managedBy         string
+		ownerID           string
+		strictlyOwned     bool
 		key               string
 		service           *Service
 		exists            bool
@@ -732,10 +731,10 @@ func TestDeleteService(t *testing.T) {
 			},
 		},
 		{
-			name:      "successful deletion with managed by (no one)",
-			key:       "/skydns/local/test",
-			managedBy: "managed-by",
-			exists:    true,
+			name:    "successful deletion with owned by (no one) without strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "owned-by",
+			exists:  true,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -746,36 +745,86 @@ func TestDeleteService(t *testing.T) {
 			},
 		},
 		{
-			name:      "successful deletion with managed by (same)",
-			key:       "/skydns/local/test",
-			managedBy: "managed-by",
-			exists:    true,
+			name:    "successful deletion with managed by (same) without strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "managed-by",
+			exists:  true,
 			service: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/skydns/local/test",
-				ManagedBy: "managed-by",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				OwnedBy:  "managed-by",
 			},
 		},
 		{
-			name:              "prevent deletion with managed by (other)",
+			name:    "sucessful deletion with managed by (other) without strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "managed-by",
+			exists:  true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				OwnedBy:  "managed-by-other",
+			},
+		},
+		{
+			name:          "successful deletion with owned by (same) with strictly owned",
+			key:           "/skydns/local/test",
+			ownerID:       "owned-by",
+			strictlyOwned: true,
+			exists:        true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				OwnedBy:  "owned-by",
+			},
+		},
+		{
+			name:              "prevent deletion with owned by (no one) with strictly owned",
 			key:               "/skydns/local/test",
-			managedBy:         "managed-by",
+			ownerID:           "owned-by",
+			strictlyOwned:     true,
 			exists:            true,
 			wantErr:           true,
 			preventDeleteCall: true,
 			mockErr:           errors.New("key \"/skydns/local/test\" is not owned by this service"),
 			service: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/skydns/local/test",
-				ManagedBy: "managed-by-other",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+			},
+		},
+		{
+			name:              "prevent deletion with owned by (other) with strictly owned",
+			key:               "/skydns/local/test",
+			ownerID:           "owned-by",
+			strictlyOwned:     true,
+			exists:            true,
+			wantErr:           true,
+			preventDeleteCall: true,
+			mockErr:           errors.New("key \"/skydns/local/test\" is not owned by this service"),
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				OwnedBy:  "owned-by-other",
 			},
 		},
 		{
@@ -795,7 +844,7 @@ func TestDeleteService(t *testing.T) {
 			}
 			actualValue, err := json.Marshal(&tt.service)
 			require.NoError(t, err)
-			if tt.managedBy != "" {
+			if tt.strictlyOwned {
 				if tt.exists {
 					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
 						Kvs: []*mvccpb.KeyValue{
@@ -816,7 +865,8 @@ func TestDeleteService(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				managedBy: tt.managedBy,
+				ownerID:       tt.ownerID,
+				strictlyOwned: tt.strictlyOwned,
 			}
 
 			err = c.DeleteService(context.Background(), tt.key)
@@ -835,7 +885,8 @@ func TestDeleteService(t *testing.T) {
 func TestSaveService(t *testing.T) {
 	type testCase struct {
 		name            string
-		managedBy       string
+		ownerID         string
+		strictlyOwned   bool
 		service         *Service
 		expectedService *Service
 		exists          bool
@@ -863,9 +914,9 @@ func TestSaveService(t *testing.T) {
 			},
 		},
 		{
-			name:      "success with managed by (take over ownership)",
-			managedBy: "managed-by",
-			exists:    true,
+			name:    "success with 'owned-by' without strictly owned",
+			ownerID: "owned-by",
+			exists:  true,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -875,19 +926,18 @@ func TestSaveService(t *testing.T) {
 				Key:      "/prefix/1",
 			},
 			expectedService: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/prefix/1",
-				ManagedBy: "managed-by",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
 			},
 		},
 		{
-			name:      "success with managed by (creation)",
-			managedBy: "managed-by",
-			exists:    false,
+			name:    "success with 'owned-by' (creation) without strictly owned",
+			ownerID: "owned-by",
+			exists:  false,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -897,50 +947,135 @@ func TestSaveService(t *testing.T) {
 				Key:      "/prefix/1",
 			},
 			expectedService: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/prefix/1",
-				ManagedBy: "managed-by",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
 			},
 		},
 		{
-			name:      "success with managed by (update)",
-			managedBy: "managed-by",
-			exists:    false,
+			name:    "success with 'owned-by' (update) without strictly owned (owner not changed)",
+			ownerID: "owned-by",
+			exists:  true,
 			service: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/prefix/1",
-				ManagedBy: "managed-by",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "owned-by",
 			},
 			expectedService: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/prefix/1",
-				ManagedBy: "managed-by",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "owned-by",
 			},
 		},
 		{
-			name:      "fail saving due to managed by someone else",
-			managedBy: "managed-by",
-			exists:    true,
+			name:    "success with different 'owned-by' without strictly owned",
+			ownerID: "owned-by",
+			exists:  true,
 			service: &Service{
-				Host:      "example.com",
-				Port:      80,
-				Priority:  1,
-				Weight:    10,
-				Text:      "hello",
-				Key:       "/prefix/1",
-				ManagedBy: "other-managed-by",
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "other-owned-by",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "other-owned-by",
+			},
+		},
+		{
+			name:          "failed with 'owned-by' is empty with strictly owned",
+			ownerID:       "owned-by",
+			strictlyOwned: true,
+			exists:        true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+			wantErr: true,
+		},
+		{
+			name:          "success with 'owned-by' (creation) with strictly owned",
+			ownerID:       "owned-by",
+			strictlyOwned: true,
+			exists:        false,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "owned-by",
+			},
+		},
+		{
+			name:          "success with 'owned-by' (update) with strictly owned (owner not changed)",
+			ownerID:       "owned-by",
+			strictlyOwned: true,
+			exists:        true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "owned-by",
+			},
+			expectedService: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "owned-by",
+			},
+		},
+		{
+			name:          "failed with different 'owned-by' with strictly owned",
+			ownerID:       "owned-by",
+			strictlyOwned: true,
+			exists:        true,
+			service: &Service{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/prefix/1",
+				OwnedBy:  "other-owned-by",
 			},
 			wantErr: true,
 		},
@@ -970,7 +1105,7 @@ func TestSaveService(t *testing.T) {
 			}
 			actualValue, err := json.Marshal(&tt.service)
 			require.NoError(t, err)
-			if tt.managedBy != "" {
+			if tt.strictlyOwned {
 				if tt.exists {
 					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
 						Kvs: []*mvccpb.KeyValue{
@@ -991,7 +1126,8 @@ func TestSaveService(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				managedBy: tt.managedBy,
+				ownerID:       tt.ownerID,
+				strictlyOwned: tt.strictlyOwned,
 			}
 
 			err = c.SaveService(context.Background(), tt.service)
