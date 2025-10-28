@@ -85,14 +85,14 @@ type Service struct {
 	// Etcd key where we found this service and ignored from json un-/marshaling
 	Key string `json:"-"`
 
-	// ManagedBy is used to prevent service to be added by different external-dns (only used by external-dns)
-	ManagedBy string `json:"managedby,omitempty"`
+	// OwnedBy is used to prevent service to be added by different external-dns (only used by external-dns)
+	OwnedBy string `json:"ownedby,omitempty"`
 }
 
 type etcdClient struct {
-	client          *etcdcv3.Client
-	managedBy       string
-	strictManagedBy bool
+	client        *etcdcv3.Client
+	ownerID       string
+	strictlyOwned bool
 }
 
 var _ coreDNSClient = etcdClient{}
@@ -116,25 +116,23 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 			return nil, fmt.Errorf("%s: %w", n.Key, err)
 		}
 		b := Service{
-			Host:      svc.Host,
-			Port:      svc.Port,
-			Priority:  svc.Priority,
-			Weight:    svc.Weight,
-			Text:      svc.Text,
-			Key:       string(n.Key),
-			ManagedBy: svc.ManagedBy,
+			Host:     svc.Host,
+			Port:     svc.Port,
+			Priority: svc.Priority,
+			Weight:   svc.Weight,
+			Text:     svc.Text,
+			Key:      string(n.Key),
+		}
+		if c.strictlyOwned {
+			b.OwnedBy = svc.OwnedBy
 		}
 		if _, ok := bx[b]; ok {
 			// skip the service if already added to service list.
 			// the same service might be found in multiple etcd nodes.
 			continue
 		}
-		if c.managedBy != "" {
-			if c.strictManagedBy && b.ManagedBy != c.managedBy {
-				continue
-			} else if !c.strictManagedBy && b.ManagedBy != "" && b.ManagedBy != c.managedBy {
-				continue
-			}
+		if c.strictlyOwned && b.OwnedBy != c.ownerID {
+			continue
 		}
 		bx[b] = true
 
@@ -152,14 +150,14 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
-	if ownedBy, err := c.IsOwnedBy(ctx, service.Key); err != nil {
+	if ownedBy, err := c.isOwnedBy(ctx, service.Key); err != nil {
 		return err
 	} else if !ownedBy {
 		return fmt.Errorf("key %q is not owned by this service", service.Key)
 	}
 
-	if c.managedBy != "" {
-		service.ManagedBy = c.managedBy
+	if c.strictlyOwned {
+		service.OwnedBy = c.ownerID
 	}
 
 	value, err := json.Marshal(&service)
@@ -178,7 +176,7 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
-	if owned, err := c.IsOwnedBy(ctx, key); err != nil {
+	if owned, err := c.isOwnedBy(ctx, key); err != nil {
 		return err
 	} else if !owned {
 		return fmt.Errorf("key %q is not owned by this service", key)
@@ -188,11 +186,8 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 	return err
 }
 
-func (c etcdClient) IsOwnedBy(ctx context.Context, key string) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
-	defer cancel()
-
-	if c.managedBy == "" {
+func (c etcdClient) isOwnedBy(ctx context.Context, key string) (bool, error) {
+	if !c.strictlyOwned {
 		return true, nil
 	}
 
@@ -213,10 +208,7 @@ func (c etcdClient) IsOwnedBy(ctx context.Context, key string) (bool, error) {
 			return false, fmt.Errorf("%s: %w", n.Key, err)
 		}
 
-		if !c.strictManagedBy && svc.ManagedBy == "" {
-			return true, nil
-		}
-		if svc.ManagedBy == c.managedBy {
+		if svc.OwnedBy == c.ownerID {
 			return true, nil
 		}
 	}
@@ -254,7 +246,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 }
 
 // the newETCDClient is an etcd client constructor
-func newETCDClient(managedBy string, strictManagedBy bool) (coreDNSClient, error) {
+func newETCDClient(ownerID string, strictlyOwned bool) (coreDNSClient, error) {
 	cfg, err := getETCDConfig()
 	if err != nil {
 		return nil, err
@@ -263,12 +255,12 @@ func newETCDClient(managedBy string, strictManagedBy bool) (coreDNSClient, error
 	if err != nil {
 		return nil, err
 	}
-	return etcdClient{c, managedBy, strictManagedBy}, nil
+	return etcdClient{c, ownerID, strictlyOwned}, nil
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, managedBy string, strictManagedBy, dryRun bool) (provider.Provider, error) {
-	client, err := newETCDClient(managedBy, strictManagedBy)
+func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, ownerID string, strictlyOwned, dryRun bool) (provider.Provider, error) {
+	client, err := newETCDClient(ownerID, strictlyOwned)
 	if err != nil {
 		return nil, err
 	}
