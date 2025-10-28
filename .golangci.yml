@@ -30,6 +30,7 @@ linters:
     - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
     - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
     - gochecknoinits # Checks that there are no init() functions in the code. https://golangci-lint.run/usage/linters/#gochecknoinits
+    - goconst # Finds repeated strings that could be replaced by a constant. https://golangci-lint.run/usage/linters/#goconst
 
     # tests
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint
@@ -44,6 +45,14 @@ linters:
           disabled: true
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 37 # Controller/execute.go:147:1: calculated cyclomatic complexity for function buildProvider is 37
+    goconst:
+      min-occurrences: 3
+      # Ignore well-known DNS record types, boolean strings, and common values
+      ignore-string-values:
+        - "^(A|AAAA|ALIAS|CNAME|MX|NS|PTR|SRV|TXT)$"  # DNS record types
+        - "^(true|false)$"  # Boolean strings
+        - "^none$"  # Common null/empty indicator
+        - "^(aws-sd|noop)$"  # Registry types - can be ignored for consistency
     testifylint:
       # Enable all checkers (https://github.com/Antonboom/testifylint#checkers).
       # Default: false
@@ -79,6 +88,7 @@ linters:
           - unused
           - varcheck
           - whitespace
+          - goconst
         path: _test\.go
       # TODO: skiip as will require design changes
       - linters:
