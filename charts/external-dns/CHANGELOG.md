@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add option to set `annotationPrefix` ([#5889](https://github.com/kubernetes-sigs/external-dns/pull/5889)) _@lexfrei_
 
+### Fixed
+
+- Fixed the missing schema for `.provider.webhook.serviceMonitor` configs ([#5932](https://github.com/kubernetes-sigs/external-dns/pull/5932)) _@chrisbsmith_
+
 ## [v1.19.0] - 2025-09-08
 
 ### Added
