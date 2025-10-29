@@ -192,14 +192,14 @@ func (c etcdClient) isOwnedBy(ctx context.Context, key string) (bool, error) {
 	}
 
 	r, err := c.client.Get(ctx, key)
-	if err != nil {
+	switch {
+	case err != nil:
 		return false, err
-	}
-	if r == nil {
+	case r == nil:
 		return true, nil
-	} else if len(r.Kvs) > 1 {
+	case len(r.Kvs) > 1:
 		return false, fmt.Errorf("found multiple keys with the same key this service")
-	} else if len(r.Kvs) == 0 {
+	case len(r.Kvs) == 0:
 		return true, nil
 	}
 	for _, n := range r.Kvs {
