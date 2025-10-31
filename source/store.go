@@ -522,7 +522,7 @@ func buildGlooProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (
 	if err != nil {
 		return nil, err
 	}
-	return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespaces)
+	return NewGlooSource(ctx, dynamicClient, kubernetesClient, cfg.GlooNamespaces)
 }
 
 func buildTraefikProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
