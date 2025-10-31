@@ -495,10 +495,16 @@
               "type": "object",
               "properties": {
                 "bearerTokenFile": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "interval": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "metricRelabelings": {
                   "type": "array"
@@ -507,10 +513,16 @@
                   "type": "array"
                 },
                 "scheme": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "scrapeTimeout": {
-                  "type": "null"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "tlsConfig": {
                   "type": "object"
