@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -230,18 +231,202 @@ func (p *GoogleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	return endpoints, nil
 }
 
+type typeSwap struct {
+	old *endpoint.Endpoint
+	new *endpoint.Endpoint
+}
+
+var typeSwapTypePriority = map[string]int{
+	endpoint.RecordTypeA:     0,
+	endpoint.RecordTypeAAAA:  1,
+	endpoint.RecordTypeCNAME: 2,
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	swaps, creates, deletes := p.extractTypeSwaps(changes.Create, changes.Delete)
+
 	change := &dns.Change{}
 
-	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
+	for _, swap := range swaps {
+		change.Deletions = append(change.Deletions, p.newFilteredRecords([]*endpoint.Endpoint{swap.old})...)
+		change.Additions = append(change.Additions, p.newFilteredRecords([]*endpoint.Endpoint{swap.new})...)
+	}
+
+	change.Additions = append(change.Additions, p.newFilteredRecords(creates)...)
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew)...)
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
 
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(deletes)...)
 
 	return p.submitChange(ctx, change)
+}
+
+// extractTypeSwaps pairs create/delete records of differing types so we can swap
+// them while preserving ownership labels, skipping TXT records and preferring
+// higher-priority, labeled deletions.
+func (p *GoogleProvider) extractTypeSwaps(
+	create, deleteEndpoints []*endpoint.Endpoint,
+) ([]typeSwap, []*endpoint.Endpoint, []*endpoint.Endpoint) {
+	swaps := make([]typeSwap, 0)
+	remainingCreates := make([]*endpoint.Endpoint, 0, len(create))
+	remainingDeletes := make([]*endpoint.Endpoint, 0, len(deleteEndpoints))
+
+	// Index deletions by name then by record type
+	typeBucketByName := make(map[string]map[string][]*endpoint.Endpoint)
+
+	for _, del := range deleteEndpoints {
+		if !eligibleForTypeSwap(del) {
+			remainingDeletes = append(remainingDeletes, del)
+			continue
+		}
+		nameKey := swapKey(del.DNSName)
+		buckets := typeBucketByName[nameKey]
+		if buckets == nil {
+			buckets = make(map[string][]*endpoint.Endpoint)
+			typeBucketByName[nameKey] = buckets
+		}
+		buckets[del.RecordType] = append(buckets[del.RecordType], del)
+	}
+
+	for _, createEP := range create {
+		if !eligibleForTypeSwap(createEP) {
+			remainingCreates = append(remainingCreates, createEP)
+			continue
+		}
+
+		nameKey := swapKey(createEP.DNSName)
+		buckets, ok := typeBucketByName[nameKey]
+		if !ok {
+			remainingCreates = append(remainingCreates, createEP)
+			continue
+		}
+
+		// Find any delete with a different type to form a swap.
+		var (
+			matched       *endpoint.Endpoint
+			matchedType   string
+			matchedIndex  int
+			bestTypeRank  int
+			bestOwnerRank int
+		)
+
+		bestTypeRank = len(typeSwapTypePriority) + 1
+		bestOwnerRank = 1
+
+		for delType, list := range buckets {
+			if delType == createEP.RecordType || len(list) == 0 {
+				continue
+			}
+
+			typeRank := swapTypePriority(delType)
+
+			for idx, candidate := range list {
+				ownerRank := 1
+				if candidate.Labels != nil {
+					if _, ok := candidate.Labels[endpoint.OwnerLabelKey]; ok {
+						ownerRank = 0
+					}
+				}
+
+				better := matched == nil
+				if !better && typeRank != bestTypeRank {
+					better = typeRank < bestTypeRank
+				}
+				if !better && ownerRank != bestOwnerRank {
+					better = ownerRank < bestOwnerRank
+				}
+				if !better && idx != matchedIndex {
+					better = idx < matchedIndex
+				}
+				if !better && delType != matchedType {
+					better = delType < matchedType
+				}
+
+				if better {
+					matched = candidate
+					matchedType = delType
+					matchedIndex = idx
+					bestTypeRank = typeRank
+					bestOwnerRank = ownerRank
+				}
+			}
+		}
+
+		if matched == nil {
+			remainingCreates = append(remainingCreates, createEP)
+			continue
+		}
+
+		// Consume the matched deletion from the bucket.
+		bucket := buckets[matchedType]
+		switch len(bucket) {
+		case 1:
+			delete(buckets, matchedType)
+		default:
+			buckets[matchedType] = append(bucket[:matchedIndex], bucket[matchedIndex+1:]...)
+		}
+
+		if len(buckets) == 0 {
+			delete(typeBucketByName, nameKey)
+		}
+
+		// Ensure create endpoint has owner label
+		if matched.Labels != nil {
+			if createEP.Labels == nil {
+				createEP.Labels = map[string]string{}
+			}
+			if owner, ok := matched.Labels[endpoint.OwnerLabelKey]; ok {
+				if _, exists := createEP.Labels[endpoint.OwnerLabelKey]; !exists {
+					createEP.Labels[endpoint.OwnerLabelKey] = owner
+				}
+			}
+		}
+
+		swaps = append(swaps, typeSwap{old: matched, new: createEP})
+	}
+
+	nameKeys := make([]string, 0, len(typeBucketByName))
+	for name := range typeBucketByName {
+		nameKeys = append(nameKeys, name)
+	}
+	sort.Strings(nameKeys)
+
+	for _, name := range nameKeys {
+		byType := typeBucketByName[name]
+		typeKeys := make([]string, 0, len(byType))
+		for recordType := range byType {
+			typeKeys = append(typeKeys, recordType)
+		}
+		sort.Strings(typeKeys)
+		for _, recordType := range typeKeys {
+			remainingDeletes = append(remainingDeletes, byType[recordType]...)
+		}
+	}
+
+	return swaps, remainingCreates, remainingDeletes
+}
+
+// Returns true only for non-TXT records
+func eligibleForTypeSwap(ep *endpoint.Endpoint) bool {
+	if ep == nil {
+		return false
+	}
+
+	return ep.RecordType != endpoint.RecordTypeTXT
+}
+
+func swapKey(name string) string {
+	return strings.ToLower(provider.EnsureTrailingDot(name))
+}
+
+func swapTypePriority(recordType string) int {
+	if priority, ok := typeSwapTypePriority[recordType]; ok {
+		return priority
+	}
+
+	return len(typeSwapTypePriority) + 1
 }
 
 // SupportedRecordType returns true if the record type is supported by the provider
