@@ -1,0 +1,19 @@
+name: end to end tets with local provider
+
+on:
+  push:
+    branches:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: e2e
+      run: |
+        ./scripts/e2e-test.sh
