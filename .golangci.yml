@@ -1,39 +1,39 @@
-# https://golangci-lint.run/usage/configuration/
+# https://golangci-lint.run/docs/configuration/
 version: "2"
 linters:
   default: none
   enable: # golangci-lint help linters
-    - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/usage/linters/#copyloopvar
-    - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/usage/linters/#dogsled
-    - dupword # Duplicate word. https://golangci-lint.run/usage/linters/#dupword
+    - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/docs/linters/configuration/#copyloopvar
+    - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/docs/linters/configuration/#dogsled
+    - dupword # Duplicate word. https://golangci-lint.run/docs/linters/configuration/#dupword
     - goprintffuncname
     - govet
     - ineffassign
     - misspell
     - revive
-    - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/usage/linters/#recvcheck
+    - recvcheck # Checks for receiver type consistency. https://golangci-lint.run/docs/linters/configuration/#recvcheck
     - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
-    - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/usage/linters/#errchkjson
-    - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/usage/linters/#errcheck
+    - errchkjson # Checks types passed to the json encoding functions. ref: https://golangci-lint.run/docs/linters/configuration/#errchkjson
+    - errorlint # Checking for unchecked errors in Go code https://golangci-lint.run/docs/linters/configuration/#errorlint
     - staticcheck
     - unconvert
     - unused
-    - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. https://golangci-lint.run/usage/linters/#usestdlibvars
+    - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. https://golangci-lint.run/docs/linters/configuration/#usestdlibvars
     - whitespace
-    - decorder # Check declaration order and count of types, constants, variables and functions. https://golangci-lint.run/usage/linters/#decorder
-    - tagalign # Check that struct tags are well aligned. https://golangci-lint.run/usage/linters/#tagalign
+    - decorder # Check declaration order and count of types, constants, variables and functions. https://golangci-lint.run/docs/linters/configuration/#decorder
+    - tagalign # Check that struct tags are well aligned. https://golangci-lint.run/docs/linters/configuration/#tagalign
     - predeclared # Find code that shadows one of Go's predeclared identifiers
     - sloglint # Ensure consistent code style when using log/slog
     - asciicheck  # Checks that all code identifiers does not have non-ASCII symbols in the name
-    - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/usage/linters/#nilnil
-    - nonamedreturns # Checks that functions with named return values do not return named values. https://golangci-lint.run/usage/linters/#nonamedreturns
-    - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/usage/linters/#cyclop
+    - nilnil # Checks that there is no simultaneous return of nil error and an nil value. ref: https://golangci-lint.run/docs/linters/configuration/#nilnil
+    - nonamedreturns # Checks that functions with named return values do not return named values. https://golangci-lint.run/docs/linters/configuration/#nonamedreturns
+    - cyclop # Checks function and package cyclomatic complexity. https://golangci-lint.run/docs/linters/configuration/#cyclop
     - gocritic # Analyze source code for various issues, including bugs, performance hiccups, and non-idiomatic coding practices. https://golangci-lint.run/docs/linters/configuration/#gocritic
-    - gochecknoinits # Checks that there are no init() functions in the code. https://golangci-lint.run/usage/linters/#gochecknoinits
-    - goconst # Finds repeated strings that could be replaced by a constant. https://golangci-lint.run/usage/linters/#goconst
+    - gochecknoinits # Checks that there are no init() functions in the code. https://golangci-lint.run/docs/linters/configuration/#gochecknoinits
+    - goconst # Finds repeated strings that could be replaced by a constant. https://golangci-lint.run/docs/linters/configuration/#goconst
 
     # tests
-    - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/usage/linters/#testifylint
+    - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/docs/linters/configuration/#testifylint
   settings:
     exhaustive:
       default-signifies-exhaustive: false
