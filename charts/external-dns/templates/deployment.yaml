@@ -126,6 +126,9 @@ spec:
             {{- if .Values.annotationFilter }}
             - --annotation-filter={{ .Values.annotationFilter }}
             {{- end }}
+            {{- if .Values.annotationPrefix }}
+            - --annotation-prefix={{ .Values.annotationPrefix }}
+            {{- end }}
             {{- range .Values.managedRecordTypes }}
             - --managed-record-types={{ . }}
             {{- end }}

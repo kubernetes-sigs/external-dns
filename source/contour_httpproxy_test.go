@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // This is a compile-time validation that httpProxySource is a Source.
@@ -553,7 +554,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					host: "example.org",
 				},
@@ -577,7 +578,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "some-other-tool",
+						annotations.ControllerKey: "some-other-tool",
 					},
 					host: "example.org",
 				},
@@ -596,7 +597,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
+						annotations.ControllerKey: annotations.ControllerValue,
 					},
 					host: "",
 				},
@@ -626,7 +627,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						controllerAnnotationKey: "other-controller",
+						annotations.ControllerKey: "other-controller",
 					},
 					host: "",
 				},
@@ -679,7 +680,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -725,7 +726,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -733,7 +734,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "example2.org",
 				},
@@ -741,7 +742,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					host: "example3.org",
 				},
@@ -775,7 +776,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
 					},
 					host: "example.org",
 				},
@@ -804,7 +805,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+						annotations.HostnameKey: "dns-through-hostname.com, another-dns-through-hostname.com",
 					},
 					host: "example.org",
 				},
@@ -838,8 +839,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "httpproxy-target.com",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -868,8 +869,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
-						ttlAnnotationKey:    "6",
+						annotations.TargetKey: "httpproxy-target.com",
+						annotations.TtlKey:    "6",
 					},
 					host: "example.org",
 				},
@@ -877,8 +878,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
-						ttlAnnotationKey:    "1",
+						annotations.TargetKey: "httpproxy-target.com",
+						annotations.TtlKey:    "1",
 					},
 					host: "example2.org",
 				},
@@ -886,8 +887,8 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
-						ttlAnnotationKey:    "10s",
+						annotations.TargetKey: "httpproxy-target.com",
+						annotations.TtlKey:    "10s",
 					},
 					host: "example3.org",
 				},
@@ -925,7 +926,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "",
 				},
@@ -933,7 +934,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "httpproxy-target.com",
+						annotations.TargetKey: "httpproxy-target.com",
 					},
 					host: "",
 				},
@@ -941,7 +942,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					host: "",
 				},
@@ -977,7 +978,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "",
+						annotations.TargetKey: "",
 					},
 					host: "",
 				},
@@ -997,7 +998,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me",
+						annotations.HostnameKey: "ignore.me",
 					},
 					host: "example.org",
 				},
@@ -1005,7 +1006,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						hostnameAnnotationKey: "ignore.me.too",
+						annotations.HostnameKey: "ignore.me.too",
 					},
 					host: "new.org",
 				},

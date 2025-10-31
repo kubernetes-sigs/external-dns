@@ -220,9 +220,9 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		}
 
 		// Check controller annotation to see if we are responsible.
-		if v, ok := annots[controllerAnnotationKey]; ok && v != controllerAnnotationValue {
+		if v, ok := annots[annotations.ControllerKey]; ok && v != annotations.ControllerValue {
 			log.Debugf("Skipping %s %s/%s because controller value does not match, found: %s, required: %s",
-				src.rtKind, meta.Namespace, meta.Name, v, controllerAnnotationValue)
+				src.rtKind, meta.Namespace, meta.Name, v, annotations.ControllerValue)
 			continue
 		}
 

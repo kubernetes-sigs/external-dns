@@ -40,7 +40,7 @@ import (
 
 // HTTPProxySource is an implementation of Source for ProjectContour HTTPProxy objects.
 // The HTTPProxy implementation uses the spec.virtualHost.fqdn value for the hostname.
-// Use targetAnnotationKey to explicitly set Endpoint.
+// Use annotations.TargetKey to explicitly set Endpoint.
 type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
@@ -136,10 +136,10 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 
 	for _, hp := range httpProxies {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := hp.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := hp.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping HTTPProxy %s/%s because controller value does not match, found: %s, required: %s",
-				hp.Namespace, hp.Name, controller, controllerAnnotationValue)
+				hp.Namespace, hp.Name, controller, annotations.ControllerValue)
 			continue
 		}
 

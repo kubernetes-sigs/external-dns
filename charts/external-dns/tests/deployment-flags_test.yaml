@@ -164,3 +164,41 @@ tests:
     asserts:
      - failedTemplate:
           errorMessage: "'txtPrefix' and 'txtSuffix' are mutually exclusive"
+
+  - it: should configure custom annotation prefix
+    set:
+      annotationPrefix: "custom.io/"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--annotation-prefix=custom.io/"
+
+  - it: should not include annotation-prefix flag when not set
+    set:
+      annotationPrefix: null
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--annotation-prefix"
+
+  - it: should configure annotation prefix with other flags
+    set:
+      annotationPrefix: "internal.company.io/"
+      provider:
+        name: cloudflare
+      sources:
+        - service
+        - ingress
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--annotation-prefix=internal.company.io/"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--provider=cloudflare"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--source=service"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--source=ingress"

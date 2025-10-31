@@ -187,7 +187,7 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 }
 
 func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
-	if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
+	if domainAnnotation, ok := pod.Annotations[annotations.InternalHostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		for _, domain := range domainList {
 			if len(targets) == 0 {
@@ -200,7 +200,7 @@ func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endp
 }
 
 func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *corev1.Pod, targets []string) {
-	if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
+	if domainAnnotation, ok := pod.Annotations[annotations.HostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		if len(targets) == 0 {
 			ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)

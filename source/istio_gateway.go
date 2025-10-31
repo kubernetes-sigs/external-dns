@@ -44,11 +44,12 @@ import (
 
 // IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
 // instead of a standard LoadBalancer service type
-const IstioGatewayIngressSource = annotations.Ingress
+// Using var instead of const because annotation keys can be customized
+var IstioGatewayIngressSource = annotations.Ingress
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
-// Use targetAnnotationKey to explicitly set Endpoint.
+// Use annotations.TargetKey to explicitly set Endpoint.
 type gatewaySource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
@@ -146,10 +147,10 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 	for _, gateway := range gateways {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := gateway.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := gateway.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping gateway %s/%s,%s because controller value does not match, found: %s, required: %s",
-				gateway.Namespace, gateway.APIVersion, gateway.Name, controller, controllerAnnotationValue)
+				gateway.Namespace, gateway.APIVersion, gateway.Name, controller, annotations.ControllerValue)
 			continue
 		}
 

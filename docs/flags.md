@@ -19,6 +19,7 @@
 | `--skipper-routegroup-groupversion="zalando.org/v1"` | The resource version for skipper routegroup |
 | `--[no-]always-publish-not-ready-addresses` | Always publish also not ready addresses for headless services (optional) |
 | `--annotation-filter=""` | Filter resources queried for endpoints by annotation, using label selector semantics |
+| `--annotation-prefix="external-dns.alpha.kubernetes.io/"` | Annotation prefix for external-dns annotations (default: external-dns.alpha.kubernetes.io/) |
 | `--[no-]combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting (default: false) |
 | `--compatibility=` | Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller) |
 | `--connector-source-server="localhost:8080"` | The server to connect for connector source, valid only when using connector source |
