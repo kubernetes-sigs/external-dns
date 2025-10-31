@@ -1,0 +1,43 @@
+# kubectl apply -f docs/snippets/tutorials/coredns/fixtures.yaml
+# kubectl delete -f docs/snippets/tutorials/coredns/fixtures.yaml
+# kubectl get svc -l svc=test-svc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a-g1-record
+  labels:
+    svc: test-svc
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: a.example.org
+    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+    cluster-name: "cluster1"
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  selector:
+    app: test-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aa-g1-record
+  labels:
+    svc: test-svc
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: aa.example.org
+    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+    cluster-name: "cluster1"
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  selector:
+    app: test-app

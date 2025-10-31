@@ -1,0 +1,53 @@
+# kubectl logs deploy/coredns -n default -c coredns
+# ref: https://github.com/coredns/helm/blob/master/charts/coredns/values.yaml
+isClusterService: false
+
+service:
+  name: coredns
+  port: 53
+  annotations: {}
+  clusterIP: ""
+
+# Main customization
+servers:
+  - zones:
+      - zone: .
+    port: 53
+    plugins:
+      - name: errors
+      - name: debug # <── enables debug mode
+      - name: health
+        configBlock: |-
+          lameduck 5s
+      - name: ready
+      # to query kubernetes API for data
+      - name: kubernetes
+        parameters: cluster.local 10.0.0.0/24
+        configBlock: |-
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+          ttl 30
+      - name: etcd
+        parameters: "example.org"
+        configBlock: |
+          stubzones
+          path /skydns
+          endpoint http://etcd.default.svc.cluster.local:2379
+          fallthrough
+      - name: log # <── log each DNS query
+      - name: forward
+        parameters: ". /etc/resolv.conf"
+      - name: cache
+        parameters: 30
+      - name: reload
+      - name: loop
+      - name: loadbalance
+
+replicaCount: 1
+
+# required to debug DNS resolution from within CoreDNS pods
+# kubectl logs deploy/coredns -n default -c resolv-check --tail=50
+initContainers:
+  - name: resolv-check
+    image: busybox:1.37
+    command: ["sh", "-c", "echo '--- /etc/resolv.conf ---'; cat /etc/resolv.conf; echo '---------------------------'; nslookup kubernetes.default.svc.cluster.local || true; sleep 5"]
