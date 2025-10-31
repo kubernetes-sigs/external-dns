@@ -191,6 +191,7 @@ type Config struct {
 	NS1Endpoint                                   string
 	NS1IgnoreSSL                                  bool
 	NS1MinTTLSeconds                              int
+	NS1ZoneHandleMap                              map[string]string
 	TransIPAccountName                            string
 	TransIPPrivateKeyFile                         string
 	DigitalOceanAPIPageSize                       int
@@ -312,6 +313,7 @@ var defaultConfig = &Config{
 	NAT64Networks:                []string{},
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
+	NS1ZoneHandleMap:             map[string]string{},
 	OCIConfigFile:                "/etc/kubernetes/oci.yaml",
 	OCIZoneCacheDuration:         0 * time.Second,
 	OCIZoneScope:                 "GLOBAL",
@@ -447,7 +449,8 @@ var allowedSources = []string{
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
-		AWSSDCreateTag: map[string]string{},
+		AWSSDCreateTag:   map[string]string{},
+		NS1ZoneHandleMap: map[string]string{},
 	}
 }
 
