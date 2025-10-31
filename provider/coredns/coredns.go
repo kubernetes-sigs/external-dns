@@ -28,6 +28,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
@@ -111,9 +112,9 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 	var svcs []*Service
 	bx := make(map[Service]bool)
 	for _, n := range r.Kvs {
-		svc := new(Service)
-		if err := json.Unmarshal(n.Value, svc); err != nil {
-			return nil, fmt.Errorf("%s: %w", n.Key, err)
+		svc, err := c.unmarshalService(n)
+		if err != nil {
+			return nil, err
 		}
 		b := Service{
 			Host:     svc.Host,
@@ -198,14 +199,14 @@ func (c etcdClient) isOwnedBy(ctx context.Context, key string) (bool, error) {
 	case r == nil:
 		return true, nil
 	case len(r.Kvs) > 1:
-		return false, fmt.Errorf("found multiple keys with the same key this service")
+		return false, fmt.Errorf("unexpected case, etcd should never return multiple results by a key")
 	case len(r.Kvs) == 0:
 		return true, nil
 	}
 	for _, n := range r.Kvs {
-		svc := new(Service)
-		if err := json.Unmarshal(n.Value, svc); err != nil {
-			return false, fmt.Errorf("%s: %w", n.Key, err)
+		svc, err := c.unmarshalService(n)
+		if err != nil {
+			return false, err
 		}
 
 		if svc.OwnedBy == c.ownerID {
@@ -213,6 +214,14 @@ func (c etcdClient) isOwnedBy(ctx context.Context, key string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (c etcdClient) unmarshalService(n *mvccpb.KeyValue) (*Service, error) {
+	svc := new(Service)
+	if err := json.Unmarshal(n.Value, svc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %q: %w", n.Key, err)
+	}
+	return svc, nil
 }
 
 // builds etcd client config depending on connection scheme and TLS parameters
