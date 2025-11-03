@@ -75,14 +75,24 @@ func (m *MockEtcdKV) Put(ctx context.Context, key, input string, _ ...etcdcv3.Op
 	return args.Get(0).(*etcdcv3.PutResponse), args.Error(1)
 }
 
-func (m *MockEtcdKV) Get(ctx context.Context, key string, _ ...etcdcv3.OpOption) (*etcdcv3.GetResponse, error) {
-	args := m.Called(ctx, key)
-	return args.Get(0).(*etcdcv3.GetResponse), args.Error(1)
+func (m *MockEtcdKV) Get(ctx context.Context, key string, opts ...etcdcv3.OpOption) (*etcdcv3.GetResponse, error) {
+	if len(opts) == 0 {
+		args := m.Called(ctx, key)
+		return args.Get(0).(*etcdcv3.GetResponse), args.Error(1)
+	} else {
+		args := m.Called(ctx, key, opts[0])
+		return args.Get(0).(*etcdcv3.GetResponse), args.Error(1)
+	}
 }
 
 func (m *MockEtcdKV) Delete(ctx context.Context, key string, opts ...etcdcv3.OpOption) (*etcdcv3.DeleteResponse, error) {
-	args := m.Called(ctx, key, opts[0])
-	return args.Get(0).(*etcdcv3.DeleteResponse), args.Error(1)
+	if len(opts) == 0 {
+		args := m.Called(ctx, key)
+		return args.Get(0).(*etcdcv3.DeleteResponse), args.Error(1)
+	} else {
+		args := m.Called(ctx, key, opts[0])
+		return args.Get(0).(*etcdcv3.DeleteResponse), args.Error(1)
+	}
 }
 
 func TestETCDConfig(t *testing.T) {
@@ -707,125 +717,14 @@ func TestGetServices_GetError(t *testing.T) {
 
 func TestDeleteService(t *testing.T) {
 	tests := []struct {
-		name              string
-		ownerID           string
-		strictlyOwned     bool
-		key               string
-		service           *Service
-		exists            bool
-		mockErr           error
-		wantErr           bool
-		preventDeleteCall bool
+		name    string
+		key     string
+		mockErr error
+		wantErr bool
 	}{
 		{
-			name:   "successful deletion",
-			key:    "/skydns/local/test",
-			exists: true,
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-			},
-		},
-		{
-			name:    "successful deletion with owned by (no one) without strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "owned-by",
-			exists:  true,
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-			},
-		},
-		{
-			name:    "successful deletion with managed by (same) without strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "managed-by",
-			exists:  true,
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-				OwnedBy:  "managed-by",
-			},
-		},
-		{
-			name:    "sucessful deletion with managed by (other) without strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "managed-by",
-			exists:  true,
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-				OwnedBy:  "managed-by-other",
-			},
-		},
-		{
-			name:          "successful deletion with owned by (same) with strictly owned",
-			key:           "/skydns/local/test",
-			ownerID:       "owned-by",
-			strictlyOwned: true,
-			exists:        true,
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-				OwnedBy:  "owned-by",
-			},
-		},
-		{
-			name:              "prevent deletion with owned by (no one) with strictly owned",
-			key:               "/skydns/local/test",
-			ownerID:           "owned-by",
-			strictlyOwned:     true,
-			exists:            true,
-			wantErr:           true,
-			preventDeleteCall: true,
-			mockErr:           errors.New("key \"/skydns/local/test\" is not owned by this service"),
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-			},
-		},
-		{
-			name:              "prevent deletion with owned by (other) with strictly owned",
-			key:               "/skydns/local/test",
-			ownerID:           "owned-by",
-			strictlyOwned:     true,
-			exists:            true,
-			wantErr:           true,
-			preventDeleteCall: true,
-			mockErr:           errors.New("key \"/skydns/local/test\" is not owned by this service"),
-			service: &Service{
-				Host:     "example.com",
-				Port:     80,
-				Priority: 1,
-				Weight:   10,
-				Text:     "hello",
-				Key:      "/skydns/local/test",
-				OwnedBy:  "owned-by-other",
-			},
+			name: "successful deletion",
+			key:  "/skydns/local/test",
 		},
 		{
 			name:    "etcd error",
@@ -838,38 +737,16 @@ func TestDeleteService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockKV := new(MockEtcdKV)
-			if !tt.preventDeleteCall {
-				mockKV.On("Delete", mock.Anything, mock.Anything, mock.AnythingOfType("clientv3.OpOption")).
-					Return(&etcdcv3.DeleteResponse{}, tt.mockErr)
-			}
-			actualValue, err := json.Marshal(&tt.service)
-			require.NoError(t, err)
-			if tt.strictlyOwned {
-				if tt.exists {
-					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
-						Kvs: []*mvccpb.KeyValue{
-							{
-								Key:   []byte(tt.service.Key),
-								Value: actualValue,
-							},
-						},
-					}, nil)
-				} else {
-					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
-						Kvs: []*mvccpb.KeyValue{},
-					}, nil)
-				}
-			}
+			mockKV.On("Delete", mock.Anything, mock.Anything, mock.AnythingOfType("clientv3.OpOption")).
+				Return(&etcdcv3.DeleteResponse{}, tt.mockErr)
 
 			c := etcdClient{
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ownerID:       tt.ownerID,
-				strictlyOwned: tt.strictlyOwned,
 			}
 
-			err = c.DeleteService(context.Background(), tt.key)
+			err := c.DeleteService(context.Background(), tt.key)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -877,6 +754,140 @@ func TestDeleteService(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+			mockKV.AssertExpectations(t)
+		})
+	}
+}
+
+func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
+	tests := []struct {
+		name             string
+		ownerID          string
+		key              string
+		existingServices []Service
+		deletedKeys      []string
+	}{
+		{
+			name:    "successful deletion with owned by (same) with strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "owned-by",
+			existingServices: []Service{{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				OwnedBy:  "owned-by",
+			}},
+			deletedKeys: []string{"/skydns/local/test"},
+		},
+		{
+			name:    "prevent deletion with owned by (no one) with strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "owned-by",
+			existingServices: []Service{{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+			}},
+			deletedKeys: []string{},
+		},
+		{
+			name:    "prevent deletion with owned by (other) with strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "owned-by",
+			existingServices: []Service{{
+				Host:     "example.com",
+				Port:     80,
+				Priority: 1,
+				Weight:   10,
+				Text:     "hello",
+				Key:      "/skydns/local/test",
+				OwnedBy:  "owned-by-other",
+			}},
+			deletedKeys: []string{},
+		},
+		{
+			name:    "successful partial deletion with owned by (same) with strictly owned",
+			key:     "/skydns/local/test",
+			ownerID: "owned-by",
+			existingServices: []Service{
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/1",
+					OwnedBy:  "owned-by",
+				},
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/2",
+				},
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/3",
+					OwnedBy:  "owned-by-other",
+				},
+				{
+					Host:     "example.com",
+					Port:     80,
+					Priority: 1,
+					Weight:   10,
+					Text:     "hello",
+					Key:      "/skydns/local/test/4",
+					OwnedBy:  "owned-by",
+				},
+			},
+			deletedKeys: []string{"/skydns/local/test/1", "/skydns/local/test/4"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockKV := new(MockEtcdKV)
+			for _, key := range tt.deletedKeys {
+				mockKV.On("Delete", mock.Anything, key).
+					Return(&etcdcv3.DeleteResponse{}, nil)
+			}
+			kvs := []*mvccpb.KeyValue{}
+			for _, service := range tt.existingServices {
+				actualValue, err := json.Marshal(&service)
+				require.NoError(t, err)
+				kvs = append(kvs, &mvccpb.KeyValue{
+					Key:   []byte(service.Key),
+					Value: actualValue,
+				})
+			}
+
+			mockKV.On("Get", mock.Anything, tt.key, mock.AnythingOfType("clientv3.OpOption")).Return(&etcdcv3.GetResponse{
+				Kvs: kvs,
+			}, nil)
+
+			c := etcdClient{
+				client: &etcdcv3.Client{
+					KV: mockKV,
+				},
+				ownerID:       tt.ownerID,
+				strictlyOwned: true,
+			}
+
+			err := c.DeleteService(context.Background(), tt.key)
+
+			require.NoError(t, err)
 			mockKV.AssertExpectations(t)
 		})
 	}
