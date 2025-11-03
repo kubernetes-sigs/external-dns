@@ -154,16 +154,15 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 		if err != nil {
 			return fmt.Errorf("etcd get %q: %w", service.Key, err)
 		}
-		if r == nil || len(r.Kvs) == 0 {
-			// Key missing -> treat as owned (safe to create)
-			return nil
-		}
-		svc, err := c.unmarshalService(r.Kvs[0])
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal value for key %q: %w", service.Key, err)
-		}
-		if svc.OwnedBy != c.ownerID {
-			return fmt.Errorf("key %q is not owned by this provider", service.Key)
+		// Key missing -> treat as owned (safe to create)
+		if r != nil && len(r.Kvs) != 0 {
+			svc, err := c.unmarshalService(r.Kvs[0])
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal value for key %q: %w", service.Key, err)
+			}
+			if svc.OwnedBy != c.ownerID {
+				return fmt.Errorf("key %q is not owned by this provider", service.Key)
+			}
 		}
 		service.OwnedBy = c.ownerID
 	}

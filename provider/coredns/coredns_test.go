@@ -504,14 +504,15 @@ func TestGetServices_Success(t *testing.T) {
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
 	mockKV := new(MockEtcdKV)
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
 			},
-		},
-	}, nil)
+		}, nil)
 
 	c := etcdClient{
 		client: &etcdcv3.Client{
@@ -537,18 +538,19 @@ func TestGetServices_Duplicate(t *testing.T) {
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
 			},
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
-			},
-		},
-	}, nil)
+		}, nil)
 
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
@@ -570,18 +572,19 @@ func TestGetServices_Multiple(t *testing.T) {
 	value2, err := json.Marshal(svc2)
 	require.NoError(t, err)
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/2"),
+					Value: value2,
+				},
 			},
-			{
-				Key:   []byte("/prefix/2"),
-				Value: value2,
-			},
-		},
-	}, nil)
+		}, nil)
 
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
@@ -609,22 +612,23 @@ func TestGetServices_FilterOutOtherServicesOwnerIDSetButNothingChanged(t *testin
 	value3, err := json.Marshal(svc3)
 	require.NoError(t, err)
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/2"),
+					Value: value2,
+				},
+				{
+					Key:   []byte("/prefix/3"),
+					Value: value3,
+				},
 			},
-			{
-				Key:   []byte("/prefix/2"),
-				Value: value2,
-			},
-			{
-				Key:   []byte("/prefix/3"),
-				Value: value3,
-			},
-		},
-	}, nil)
+		}, nil)
 
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
@@ -651,22 +655,23 @@ func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 	value3, err := json.Marshal(svc3)
 	require.NoError(t, err)
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: value,
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: value,
+				},
+				{
+					Key:   []byte("/prefix/2"),
+					Value: value2,
+				},
+				{
+					Key:   []byte("/prefix/3"),
+					Value: value3,
+				},
 			},
-			{
-				Key:   []byte("/prefix/2"),
-				Value: value2,
-			},
-			{
-				Key:   []byte("/prefix/3"),
-				Value: value3,
-			},
-		},
-	}, nil)
+		}, nil)
 
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
@@ -682,18 +687,19 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 		},
 	}
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
-		Kvs: []*mvccpb.KeyValue{
-			{
-				Key:   []byte("/prefix/1"),
-				Value: []byte("invalid-json"),
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{
+			Kvs: []*mvccpb.KeyValue{
+				{
+					Key:   []byte("/prefix/1"),
+					Value: []byte("invalid-json"),
+				},
+				{
+					Key:   []byte("/prefix/1"),
+					Value: []byte("invalid-json"),
+				},
 			},
-			{
-				Key:   []byte("/prefix/1"),
-				Value: []byte("invalid-json"),
-			},
-		},
-	}, nil)
+		}, nil)
 
 	_, err := c.GetServices(context.Background(), "/prefix")
 	assert.Error(t, err)
@@ -708,7 +714,8 @@ func TestGetServices_GetError(t *testing.T) {
 		},
 	}
 
-	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
+	mockKV.On("Get", mock.Anything, "/prefix", mock.AnythingOfType("clientv3.OpOption")).
+		Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
 
 	_, err := c.GetServices(context.Background(), "/prefix")
 	assert.Error(t, err)
