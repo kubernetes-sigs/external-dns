@@ -39,6 +39,7 @@ Warning: If you activate `strictly-owned` afterwards, these entries will be igno
 ### Ways to migrate to a multi cluster setup
 
 Ways:
+
 1. Add the correct owner to all services inside etcd by adding the field `ownedby` to the JSON.
 2. Remove all services and allow them to be required again after restarting the provider. (Possible downtime.)
 
