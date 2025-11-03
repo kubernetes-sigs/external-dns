@@ -890,6 +890,7 @@ func TestSaveService(t *testing.T) {
 		service         *Service
 		expectedService *Service
 		exists          bool
+		ignoreGetCall   bool
 		mockPutErr      error
 		wantErr         bool
 	}
@@ -1044,6 +1045,7 @@ func TestSaveService(t *testing.T) {
 			ownerID:       "owned-by",
 			strictlyOwned: true,
 			exists:        true,
+			ignoreGetCall: true,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -1105,7 +1107,7 @@ func TestSaveService(t *testing.T) {
 			}
 			actualValue, err := json.Marshal(&tt.service)
 			require.NoError(t, err)
-			if tt.strictlyOwned {
+			if tt.strictlyOwned && !tt.ignoreGetCall {
 				if tt.exists {
 					mockKV.On("Get", mock.Anything, tt.service.Key).Return(&etcdcv3.GetResponse{
 						Kvs: []*mvccpb.KeyValue{

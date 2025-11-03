@@ -116,6 +116,9 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 		if err != nil {
 			return nil, err
 		}
+		if c.strictlyOwned && svc.OwnedBy != c.ownerID {
+			continue
+		}
 		b := Service{
 			Host:     svc.Host,
 			Port:     svc.Port,
@@ -124,15 +127,9 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 			Text:     svc.Text,
 			Key:      string(n.Key),
 		}
-		if c.strictlyOwned {
-			b.OwnedBy = svc.OwnedBy
-		}
 		if _, ok := bx[b]; ok {
 			// skip the service if already added to service list.
 			// the same service might be found in multiple etcd nodes.
-			continue
-		}
-		if c.strictlyOwned && b.OwnedBy != c.ownerID {
 			continue
 		}
 		bx[b] = true
@@ -151,13 +148,13 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
-	if ownedBy, err := c.isOwnedBy(ctx, service.Key); err != nil {
-		return err
-	} else if !ownedBy {
-		return fmt.Errorf("key %q is not owned by this service", service.Key)
-	}
-
-	if c.strictlyOwned {
+	if c.strictlyOwned && service.OwnedBy != c.ownerID {
+		// check only for empty OwnedBy
+		if ownedBy, err := c.isOwnedBy(ctx, service.Key); err != nil {
+			return err
+		} else if !ownedBy {
+			return fmt.Errorf("key %q is not owned by this provider", service.Key)
+		}
 		service.OwnedBy = c.ownerID
 	}
 
@@ -177,10 +174,11 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
+	// todo possible unmatched cases.
 	if owned, err := c.isOwnedBy(ctx, key); err != nil {
 		return err
 	} else if !owned {
-		return fmt.Errorf("key %q is not owned by this service", key)
+		return fmt.Errorf("key %q is not owned by this provider", key)
 	}
 
 	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
@@ -193,27 +191,18 @@ func (c etcdClient) isOwnedBy(ctx context.Context, key string) (bool, error) {
 	}
 
 	r, err := c.client.Get(ctx, key)
-	switch {
-	case err != nil:
-		return false, err
-	case r == nil:
-		return true, nil
-	case len(r.Kvs) > 1:
-		return false, fmt.Errorf("unexpected case, etcd should never return multiple results by a key")
-	case len(r.Kvs) == 0:
+	if err != nil {
+		return false, fmt.Errorf("etcd get %q: %w", key, err)
+	}
+	if r == nil || len(r.Kvs) == 0 {
+		// Key missing -> treat as owned (safe to create)
 		return true, nil
 	}
-	for _, n := range r.Kvs {
-		svc, err := c.unmarshalService(n)
-		if err != nil {
-			return false, err
-		}
-
-		if svc.OwnedBy == c.ownerID {
-			return true, nil
-		}
+	svc, err := c.unmarshalService(r.Kvs[0])
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal value for key %q: %w", key, err)
 	}
-	return false, nil
+	return svc.OwnedBy == c.ownerID, nil
 }
 
 func (c etcdClient) unmarshalService(n *mvccpb.KeyValue) (*Service, error) {
