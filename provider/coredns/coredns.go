@@ -148,11 +148,21 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
+	// check only for empty OwnedBy
 	if c.strictlyOwned && service.OwnedBy != c.ownerID {
-		// check only for empty OwnedBy
-		if ownedBy, err := c.isOwnedBy(ctx, service.Key); err != nil {
-			return err
-		} else if !ownedBy {
+		r, err := c.client.Get(ctx, service.Key)
+		if err != nil {
+			return fmt.Errorf("etcd get %q: %w", service.Key, err)
+		}
+		if r == nil || len(r.Kvs) == 0 {
+			// Key missing -> treat as owned (safe to create)
+			return nil
+		}
+		svc, err := c.unmarshalService(r.Kvs[0])
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal value for key %q: %w", service.Key, err)
+		}
+		if svc.OwnedBy != c.ownerID {
 			return fmt.Errorf("key %q is not owned by this provider", service.Key)
 		}
 		service.OwnedBy = c.ownerID
@@ -174,35 +184,30 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
-	// todo possible unmatched cases.
-	if owned, err := c.isOwnedBy(ctx, key); err != nil {
+	if c.strictlyOwned {
+		rs, err := c.client.Get(ctx, key, etcdcv3.WithPrefix())
+		if err != nil {
+			return err
+		}
+		for _, r := range rs.Kvs {
+			svc, err := c.unmarshalService(r)
+			if err != nil {
+				return err
+			}
+			if svc.OwnedBy != c.ownerID {
+				continue
+			}
+
+			_, err = c.client.Delete(ctx, string(r.Key))
+			if err != nil {
+				return err
+			}
+		}
 		return err
-	} else if !owned {
-		return fmt.Errorf("key %q is not owned by this provider", key)
+	} else {
+		_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
+		return err
 	}
-
-	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
-	return err
-}
-
-func (c etcdClient) isOwnedBy(ctx context.Context, key string) (bool, error) {
-	if !c.strictlyOwned {
-		return true, nil
-	}
-
-	r, err := c.client.Get(ctx, key)
-	if err != nil {
-		return false, fmt.Errorf("etcd get %q: %w", key, err)
-	}
-	if r == nil || len(r.Kvs) == 0 {
-		// Key missing -> treat as owned (safe to create)
-		return true, nil
-	}
-	svc, err := c.unmarshalService(r.Kvs[0])
-	if err != nil {
-		return false, fmt.Errorf("failed to unmarshal value for key %q: %w", key, err)
-	}
-	return svc.OwnedBy == c.ownerID, nil
 }
 
 func (c etcdClient) unmarshalService(n *mvccpb.KeyValue) (*Service, error) {
