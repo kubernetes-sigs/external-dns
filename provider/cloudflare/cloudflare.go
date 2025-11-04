@@ -230,33 +230,7 @@ func (z zoneService) DeleteCustomHostname(ctx context.Context, customHostnameID 
 }
 
 func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch CustomHostname) error {
-	params := custom_hostnames.CustomHostnameNewParams{
-		ZoneID:   cloudflare.F(zoneID),
-		Hostname: cloudflare.F(ch.Hostname),
-	}
-
-	if ch.SSL != nil {
-		sslParams := custom_hostnames.CustomHostnameNewParamsSSL{}
-		if ch.SSL.Method != "" {
-			sslParams.Method = cloudflare.F(custom_hostnames.DCVMethod(ch.SSL.Method))
-		}
-		if ch.SSL.Type != "" {
-			sslParams.Type = cloudflare.F(custom_hostnames.DomainValidationType(ch.SSL.Type))
-		}
-		if ch.SSL.BundleMethod != "" {
-			sslParams.BundleMethod = cloudflare.F(custom_hostnames.BundleMethod(ch.SSL.BundleMethod))
-		}
-		if ch.SSL.CertificateAuthority != "" && ch.SSL.CertificateAuthority != "none" {
-			sslParams.CertificateAuthority = cloudflare.F(cloudflare.CertificateCA(ch.SSL.CertificateAuthority))
-		}
-		if ch.SSL.Settings.MinTLSVersion != "" {
-			sslParams.Settings = cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettings{
-				MinTLSVersion: cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettingsMinTLSVersion(ch.SSL.Settings.MinTLSVersion)),
-			})
-		}
-		params.SSL = cloudflare.F(sslParams)
-	}
-
+	params := buildCustomHostnameNewParams(zoneID, ch)
 	_, err := z.service.CustomHostnames.New(ctx, params)
 	return err
 }
@@ -377,13 +351,48 @@ func convertCloudflareError(err error) error {
 		}
 	}
 
-	// This is a workaround because Cloudflare library does not return a specific error type for rate limit exceeded.
-	// See https://github.com/cloudflare/cloudflare-go/issues/4155 and https://github.com/kubernetes-sigs/external-dns/pull/5524
-	errStr := err.Error()
-	if strings.Contains(errStr, "rate limit") {
+	// Also check for rate limit indicators in error message strings
+	// This handles cases where the SDK or retry logic wraps the error
+	errMsg := strings.ToLower(err.Error())
+	// Match common rate limit error patterns
+	if strings.Contains(errMsg, "rate limit") ||
+		strings.Contains(errMsg, "429") ||
+		strings.Contains(errMsg, "exceeded available rate limit retries") ||
+		strings.Contains(errMsg, "too many requests") {
 		return provider.NewSoftError(err)
 	}
+
 	return err
+}
+
+// buildCustomHostnameNewParams builds the params for creating a custom hostname
+func buildCustomHostnameNewParams(zoneID string, ch CustomHostname) custom_hostnames.CustomHostnameNewParams {
+	params := custom_hostnames.CustomHostnameNewParams{
+		ZoneID:   cloudflare.F(zoneID),
+		Hostname: cloudflare.F(ch.Hostname),
+	}
+	if ch.SSL != nil {
+		sslParams := custom_hostnames.CustomHostnameNewParamsSSL{}
+		if ch.SSL.Method != "" {
+			sslParams.Method = cloudflare.F(custom_hostnames.DCVMethod(ch.SSL.Method))
+		}
+		if ch.SSL.Type != "" {
+			sslParams.Type = cloudflare.F(custom_hostnames.DomainValidationType(ch.SSL.Type))
+		}
+		if ch.SSL.BundleMethod != "" {
+			sslParams.BundleMethod = cloudflare.F(custom_hostnames.BundleMethod(ch.SSL.BundleMethod))
+		}
+		if ch.SSL.CertificateAuthority != "" && ch.SSL.CertificateAuthority != "none" {
+			sslParams.CertificateAuthority = cloudflare.F(cloudflare.CertificateCA(ch.SSL.CertificateAuthority))
+		}
+		if ch.SSL.Settings.MinTLSVersion != "" {
+			sslParams.Settings = cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettings{
+				MinTLSVersion: cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettingsMinTLSVersion(ch.SSL.Settings.MinTLSVersion)),
+			})
+		}
+		params.SSL = cloudflare.F(sslParams)
+	}
+	return params
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
