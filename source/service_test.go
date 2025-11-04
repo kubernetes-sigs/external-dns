@@ -22,6 +22,7 @@ import (
 	"maps"
 	"math/rand"
 	"net"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -38,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -91,6 +93,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		false,
 		false,
+		nil,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -174,6 +177,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				false,
 				false,
+				nil,
 			)
 
 			if ti.expectError {
@@ -1158,6 +1162,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.resolveLoadBalancerHostname,
 				false,
 				false,
+				nil,
 			)
 
 			require.NoError(t, err)
@@ -1374,6 +1379,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				false,
 				false,
 				false,
+				nil,
 			)
 			require.NoError(t, err)
 
@@ -1679,6 +1685,7 @@ func TestClusterIpServices(t *testing.T) {
 				false,
 				false,
 				false,
+				nil,
 			)
 			require.NoError(t, err)
 
@@ -2456,6 +2463,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				false,
 				false,
 				tc.exposeInternalIPv6,
+				nil,
 			)
 			require.NoError(t, err)
 
@@ -3364,6 +3372,7 @@ func TestHeadlessServices(t *testing.T) {
 				false,
 				false,
 				tc.exposeInternalIPv6,
+				nil,
 			)
 			require.NoError(t, err)
 
@@ -3500,6 +3509,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		false,
 		false,
 		false,
+		nil,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -3866,6 +3876,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		false,
 		false,
 		false,
+		nil,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -4324,6 +4335,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				false,
 				false,
 				false,
+				nil,
 			)
 			require.NoError(t, err)
 
@@ -4534,6 +4546,7 @@ func TestExternalServices(t *testing.T) {
 				false,
 				false,
 				false,
+				nil,
 			)
 			require.NoError(t, err)
 
@@ -4596,6 +4609,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		false,
 		false,
 		false,
+		nil,
 	)
 	require.NoError(b, err)
 
@@ -4695,6 +4709,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				false,
 				false,
 				false,
+				nil,
 			)
 			require.NoError(t, err)
 			svcSrc, ok := svc.(*serviceSource)
@@ -4726,6 +4741,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 		false,
 		false,
 		false,
+		nil,
 	)
 	require.Errorf(t, err, "unsupported service type filter: \"UnknownType\". Supported types are: [\"ClusterIP\" \"NodePort\" \"LoadBalancer\" \"ExternalName\"]")
 	require.Nil(t, svc, "ServiceSource should be nil when an unsupported service type is provided")
@@ -4905,6 +4921,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		false,
 		false,
 		false,
+		nil,
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -4992,6 +5009,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		false,
 		false,
 		false,
+		nil,
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -5354,6 +5372,96 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 		svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Not ready endpoints should be processed when publishNotReadyAddresses is true")
+}
+
+func TestProcessEndpointSlices_PerPodFQDN(t *testing.T) {
+	for _, test := range []struct {
+		title              string
+		servicePerPodFqdn  *bool
+		podName            string
+		hostName           string
+		expectedFqdnPrefix string
+	}{
+		{
+			title:              "pod's FQDN should be created if hostname is specified",
+			servicePerPodFqdn:  nil,
+			podName:            "test-pod-name",
+			hostName:           "test-pod-host-name",
+			expectedFqdnPrefix: "test-pod-host-name",
+		},
+		{
+			title:              "pod's FQDN should be created if enabled",
+			servicePerPodFqdn:  ptr.To(true),
+			podName:            "test-pod-name",
+			hostName:           "",
+			expectedFqdnPrefix: "test-pod-name",
+		},
+		{
+			title:              "pod's FQDN should not be created if hostname is specified and disabled",
+			servicePerPodFqdn:  ptr.To(false),
+			podName:            "test-pod-name",
+			hostName:           "test-pod-host-name",
+			expectedFqdnPrefix: "",
+		},
+		{
+			title:              "pod's FQDN should not be created if disabled",
+			servicePerPodFqdn:  ptr.To(false),
+			podName:            "test-pod-name",
+			hostName:           "",
+			expectedFqdnPrefix: "",
+		},
+		{
+			title:              "hostname should be used for pod's FQDN",
+			servicePerPodFqdn:  ptr.To(true),
+			podName:            "test-pod-name",
+			hostName:           "test-pod-host-name",
+			expectedFqdnPrefix: "test-pod-host-name",
+		},
+	} {
+		t.Run(test.title, func(t *testing.T) {
+			sc := &serviceSource{servicePerPodFqdn: test.servicePerPodFqdn}
+			svc := &v1.Service{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-service", Namespace: "default"},
+			}
+
+			endpointSlice := &discoveryv1.EndpointSlice{
+				ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+				AddressType: discoveryv1.AddressTypeIPv4,
+				Endpoints: []discoveryv1.Endpoint{
+					{
+						TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: test.podName},
+						Conditions: discoveryv1.EndpointConditions{Ready: testutils.ToPtr(false)}, // Not ready
+						Addresses:  []string{"10.0.0.1"},
+					},
+				},
+			}
+			pods := []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{Name: test.podName},
+				Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+				Spec:       v1.PodSpec{Hostname: test.hostName},
+			}}
+			const serviceHostname = "test-service.example.com"
+			const endpointsType = "IPv4"
+			const publishPodIPs = false
+			const publishNotReadyAddresses = true // This should allow not-ready endpoints
+
+			result := sc.processHeadlessEndpointsFromSlices(
+				svc, pods, []*discoveryv1.EndpointSlice{endpointSlice},
+				serviceHostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
+			if len(test.expectedFqdnPrefix) > 0 {
+				expectedPodFqdn := test.expectedFqdnPrefix + "." + serviceHostname
+				hasPodFqdn := slices.ContainsFunc(slices.Collect(maps.Keys(result)), func(record endpoint.EndpointKey) bool {
+					return record.DNSName == expectedPodFqdn
+				})
+				assert.True(t, hasPodFqdn, "Endpoint with pod's hostname (%s) should be generated but got: %v", expectedPodFqdn, result)
+			} else {
+				hasServiceFqdn := slices.ContainsFunc(slices.Collect(maps.Keys(result)), func(record endpoint.EndpointKey) bool {
+					return record.DNSName == serviceHostname
+				})
+				assert.True(t, hasServiceFqdn && len(result) == 1, "Result should include only service endpoint (%s): %v", serviceHostname, result)
+			}
+		})
+	}
 }
 
 // Test getTargetsForDomain with empty ep.Addresses

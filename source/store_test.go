@@ -23,6 +23,7 @@ import (
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -34,6 +35,7 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/external-dns/source/types"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
@@ -278,4 +280,10 @@ func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	if !errors.Is(err, ErrSourceNotFound) {
 		t.Errorf("expected ErrSourceNotFound, got: %v", err)
 	}
+}
+
+func TestToBoolPtr(t *testing.T) {
+	assert.Equal(t, ptr.To(true), toBoolPtr("true"))
+	assert.Equal(t, ptr.To(false), toBoolPtr("false"))
+	assert.Nil(t, toBoolPtr(""))
 }
