@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install YQ
-        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
         with:
           github_token: ${{ github.token }}
           owner: mikefarah
@@ -41,7 +41,7 @@ jobs:
           version: latest
 
       - name: Install MDQ
-        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
         with:
           github_token: ${{ github.token }}
           owner: yshavit
@@ -127,7 +127,7 @@ jobs:
           echo "release_notes_file=${release_notes_file}" >> "${GITHUB_OUTPUT}"
 
       - name: Install Artifact Hub CLI
-        uses: action-stars/install-tool-from-github-release@f2e83e089fa618aa7e9fd3452fbcf4fe1598ede2 # v0.2.5
+        uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
         with:
           github_token: ${{ github.token }}
           owner: artifacthub
