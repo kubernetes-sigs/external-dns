@@ -314,7 +314,118 @@ func TestNewNS1ChangesByZone(t *testing.T) {
 		},
 	}
 
-	changes := ns1ChangesByZone(zones, changeSets)
+	changes := provider.ns1ChangesByZone(zones, changeSets)
 	assert.Len(t, changes["bar.com"], 1)
 	assert.Len(t, changes["foo.com"], 3)
+}
+
+func change(action, name, rtype string) *ns1Change {
+	return &ns1Change{
+		Action: action,
+		Endpoint: &endpoint.Endpoint{
+			DNSName:    name,
+			Targets:    endpoint.Targets{"target"},
+			RecordType: rtype,
+		},
+	}
+}
+
+func TestNS1ChangesByZone_WithZoneOverrideForOneZone(t *testing.T) {
+	provider := &NS1Provider{
+		client:              &MockNS1DomainClient{},
+		zoneHandleOverrides: normalizeOverrides(map[string]string{"foo.com": "foo-handle"}),
+	}
+
+	zones, _ := provider.zonesFiltered()
+	changeSets := []*ns1Change{
+		change(ns1Create, "new.foo.com", "A"),
+		change(ns1Create, "unrelated.bar.com", "A"),
+		change(ns1Delete, "test.foo.com", "A"),
+		change(ns1Update, "test.foo.com", "A"),
+	}
+
+	changes := provider.ns1ChangesByZone(zones, changeSets)
+
+	// bar.com unchanged; foo.com should be bucketed under the handle
+	assert.Len(t, changes["bar.com"], 1, "bar.com should still use its FQDN key")
+	_, hasFooFQDN := changes["foo.com"]
+	assert.False(t, hasFooFQDN, "foo.com key should not exist when overridden")
+
+	assert.Len(t, changes["foo-handle"], 3, "foo records should bucket under handle when overridden")
+}
+
+func TestNS1ChangesByZone_WithOverridesForBothZones(t *testing.T) {
+	provider := &NS1Provider{
+		client: &MockNS1DomainClient{},
+		zoneHandleOverrides: normalizeOverrides(map[string]string{
+			"foo.com": "corp-prod-zone",
+			"bar.com": "bar-view-handle",
+		}),
+	}
+
+	zones, _ := provider.zonesFiltered()
+	changeSets := []*ns1Change{
+		change(ns1Create, "new.foo.com", "A"),
+		change(ns1Create, "unrelated.bar.com", "A"),
+		change(ns1Delete, "test.foo.com", "A"),
+		change(ns1Update, "test.foo.com", "A"),
+	}
+
+	changes := provider.ns1ChangesByZone(zones, changeSets)
+
+	// Both zones should use their mapped handles; no FQDN keys present
+	_, hasFooFQDN := changes["foo.com"]
+	_, hasBarFQDN := changes["bar.com"]
+	assert.False(t, hasFooFQDN, "foo.com key should not exist when overridden")
+	assert.False(t, hasBarFQDN, "bar.com key should not exist when overridden")
+
+	assert.Len(t, changes["corp-prod-zone"], 3)
+	assert.Len(t, changes["bar-view-handle"], 1)
+}
+
+func TestNS1ChangesByZone_OverrideNormalizationAndSuffix(t *testing.T) {
+	// Uppercase + trailing dot should normalize; override should still take effect.
+	provider := &NS1Provider{
+		client:              &MockNS1DomainClient{},
+		zoneHandleOverrides: normalizeOverrides(map[string]string{"Foo.COM.": "FOO-HANDLE"}),
+	}
+
+	zones, _ := provider.zonesFiltered()
+	changeSets := []*ns1Change{
+		change(ns1Create, "new.foo.com", "A"),
+		change(ns1Delete, "test.foo.com", "A"),
+		change(ns1Update, "test.foo.com", "A"),
+	}
+
+	changes := provider.ns1ChangesByZone(zones, changeSets)
+
+	_, hasFooFQDN := changes["foo.com"]
+	assert.False(t, hasFooFQDN, "normalized override should suppress FQDN key")
+	if _, ok := changes["foo-handle"]; ok {
+		assert.Len(t, changes["foo-handle"], 3)
+	} else {
+		assert.Len(t, changes["FOO-HANDLE"], 3)
+	}
+}
+
+func TestNS1ChangesByZone_IgnoresUnmatchedRecords(t *testing.T) {
+	provider := &NS1Provider{
+		client:              &MockNS1DomainClient{},
+		zoneHandleOverrides: normalizeOverrides(map[string]string{"foo.com": "foo-handle"}),
+	}
+
+	zones, _ := provider.zonesFiltered()
+	changeSets := []*ns1Change{
+		change(ns1Create, "unknown.baz.com", "A"), // does not match foo.com or bar.com
+	}
+
+	changes := provider.ns1ChangesByZone(zones, changeSets)
+
+	// Should still have exactly the zone keys for the provided zones, but no entries inside.
+	if gs, ok := changes["foo-handle"]; ok {
+		assert.Empty(t, gs)
+	}
+	if gs, ok := changes["bar.com"]; ok {
+		assert.Empty(t, gs)
+	}
 }

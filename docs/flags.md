@@ -118,6 +118,7 @@
 | `--ns1-endpoint=""` | When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/) |
 | `--[no-]ns1-ignoressl` | When using the NS1 provider, specify whether to verify the SSL certificate (default: false) |
 | `--ns1-min-ttl=0` | Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this. |
+| `--ns1-zone-handle-map=fqdn=handle` | Map FQDN (or suffix) to an NS1 zone handle/ID. Repeatable; k=v form. . |
 | `--digitalocean-api-page-size=50` | Configure the page size used when querying the DigitalOcean API. |
 | `--godaddy-api-key=""` | When using the GoDaddy provider, specify the API Key (required when --provider=godaddy) |
 | `--godaddy-api-secret=""` | When using the GoDaddy provider, specify the API secret (required when --provider=godaddy) |

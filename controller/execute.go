@@ -301,12 +301,13 @@ func buildProvider(
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				NS1Endpoint:   cfg.NS1Endpoint,
-				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
-				DryRun:        cfg.DryRun,
-				MinTTLSeconds: cfg.NS1MinTTLSeconds,
+				DomainFilter:        domainFilter,
+				ZoneIDFilter:        zoneIDFilter,
+				NS1Endpoint:         cfg.NS1Endpoint,
+				NS1IgnoreSSL:        cfg.NS1IgnoreSSL,
+				DryRun:              cfg.DryRun,
+				MinTTLSeconds:       cfg.NS1MinTTLSeconds,
+				ZoneHandleOverrides: cfg.NS1ZoneHandleMap,
 			},
 		)
 	case "transip":
