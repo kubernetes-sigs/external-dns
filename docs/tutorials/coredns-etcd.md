@@ -58,15 +58,12 @@ There are multiple options to configure etcd
 2. ETCD [manifest](https://etcd.io/docs/v3.6/op-guide/kubernetes/)
 3. ETCD [operator](https://github.com/etcd-io/etcd-operator)
 
-Apply manifest:
+In this tutorial, we'll use the first option.
 
 ```sh
+# apply custom manifest from external-dns repository
 kubectl apply -f docs/snippets/tutorials/coredns/etcd.yaml
-```
-
-Wait until it's ready:
-
-```sh
+# wait until it's ready
 kubectl rollout status statefulset etcd
 
 ❯❯ partitioned roll out complete: 1 new pods have been updated...
@@ -107,7 +104,7 @@ etcdctl --endpoints=http://127.0.0.1:32379 member list
 
 ### 3. Deploy CoreDNS using Helm
 
-- [coredns](https://github.com/coredns/coredns)
+- [CoreDNS](https://github.com/coredns/coredns)
 - [CoreDNS helm](https://github.com/coredns/helm)
 
 ```sh
