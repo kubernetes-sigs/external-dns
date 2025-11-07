@@ -79,6 +79,7 @@ type serviceSource struct {
 	endpointSlicesInformer         discoveryinformers.EndpointSliceInformer
 	podInformer                    coreinformers.PodInformer
 	nodeInformer                   coreinformers.NodeInformer
+	nodeEventHandler               func()
 	serviceTypeFilter              *serviceTypes
 	exposeInternalIPv6             bool
 
@@ -896,9 +897,111 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
-	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
-		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	sc.nodeEventHandler = handler
+	// Register node handler eagerly if node data may influence endpoints.
+	if sc.nodeInformer != nil && sc.nodeEventHandler != nil {
+		explicitNodePort := sc.serviceTypeFilter != nil && sc.serviceTypeFilter.enabled && sc.serviceTypeFilter.types[v1.ServiceTypeNodePort]
+		if sc.publishHostIP || explicitNodePort || sc.anyServiceRequiresNodeData() {
+			_, _ = sc.nodeInformer.Informer().AddEventHandler(&nodeAddressChangeHandler{source: sc, handler: sc.nodeEventHandler})
+		}
 	}
+}
+
+// anyServiceRequiresNodeData checks current services for node-related endpoint needs
+func (sc *serviceSource) anyServiceRequiresNodeData() bool {
+	if sc.serviceInformer == nil {
+		return false
+	}
+	var services []*v1.Service
+	var err error
+
+	func() {
+		defer func() { _ = recover() }()
+		services, err = sc.serviceInformer.Lister().Services(sc.namespace).List(sc.labelSelector)
+	}()
+	if err != nil {
+		return false
+	}
+	services = sc.filterByServiceType(services)
+	services, err = sc.filterByAnnotations(services)
+	if err != nil {
+		return true
+	}
+	if len(services) == 0 {
+		return false
+	}
+	for _, svc := range services {
+		if svc.Spec.Type == v1.ServiceTypeNodePort {
+			return true
+		}
+		if svc.Spec.ClusterIP == v1.ClusterIPNone {
+			endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
+			if endpointsType == EndpointsTypeNodeExternalIP || sc.publishHostIP {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+type nodeAddressChangeHandler struct {
+	source  *serviceSource
+	handler func()
+}
+
+func (h *nodeAddressChangeHandler) OnAdd(obj interface{}, isInInitialList bool) {
+	if isInInitialList {
+		return
+	}
+	h.handler()
+}
+
+func (h *nodeAddressChangeHandler) OnUpdate(oldObj, newObj interface{}) {
+	oldNode, okOld := oldObj.(*v1.Node)
+	newNode, okNew := newObj.(*v1.Node)
+	if !okOld || !okNew {
+		h.handler()
+		return
+	}
+	if nodeAddressSetsEqual(oldNode, newNode) {
+		return
+	}
+	h.handler()
+}
+
+func (h *nodeAddressChangeHandler) OnDelete(obj interface{}) {
+	h.handler()
+}
+
+func nodeAddressSetsEqual(a, b *v1.Node) bool {
+	return addressSetEquals(nodeAddressSet(a), nodeAddressSet(b))
+}
+
+func nodeAddressSet(node *v1.Node) map[string]struct{} {
+	if node == nil {
+		return nil
+	}
+	result := make(map[string]struct{})
+	for _, address := range node.Status.Addresses {
+		switch address.Type {
+		case v1.NodeExternalIP, v1.NodeInternalIP:
+			key := string(address.Type) + "|" + address.Address
+			result[key] = struct{}{}
+		}
+	}
+	return result
+}
+
+func addressSetEquals(a, b map[string]struct{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key := range a {
+		if _, ok := b[key]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 type serviceTypes struct {
