@@ -896,9 +896,6 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		_, _ = sc.endpointSlicesInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 	}
-	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
-		_, _ = sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	}
 }
 
 type serviceTypes struct {

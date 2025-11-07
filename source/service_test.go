@@ -5119,11 +5119,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
-			times:  3,
+			times:  2,
 			asserts: func(t *testing.T, s *serviceSource) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
-				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
 			},
 		},
 		{
@@ -5149,11 +5149,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		{
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
-			times:  3,
+			times:  2,
 			asserts: func(t *testing.T, s *serviceSource) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
-				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
 			},
 		},
 	}
