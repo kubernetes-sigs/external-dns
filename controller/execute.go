@@ -69,6 +69,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -80,6 +81,12 @@ func Execute() {
 	log.Infof("config: %s", cfg)
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
+	}
+
+	// Set annotation prefix (required since init() was removed)
+	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
+	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
+		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 
 	configureLogger(cfg)

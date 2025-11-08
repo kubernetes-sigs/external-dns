@@ -30,6 +30,7 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -57,7 +58,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5TransportServerNamespace,
 					Annotations: map[string]string{
-						targetAnnotationKey: "192.168.1.150",
+						annotations.TargetKey: "192.168.1.150",
 					},
 				},
 				Spec: f5.TransportServerSpec{

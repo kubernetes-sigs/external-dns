@@ -43,6 +43,13 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
+// TestMain initializes annotation keys before running tests.
+// This is needed because init() was removed from annotations package.
+func TestMain(m *testing.M) {
+	annotations.SetAnnotationPrefix("external-dns.alpha.kubernetes.io/")
+	m.Run()
+}
+
 type MockAction struct {
 	Name             string
 	ZoneId           string

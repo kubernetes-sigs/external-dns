@@ -49,7 +49,7 @@ const (
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
-// Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
+// Use annotations.TargetKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
 	client                   kubernetes.Interface
@@ -145,9 +145,9 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 
 	for _, ing := range ingresses {
 		// Check the controller annotation to see if we are responsible.
-		if controller, ok := ing.Annotations[controllerAnnotationKey]; ok && controller != controllerAnnotationValue {
+		if controller, ok := ing.Annotations[annotations.ControllerKey]; ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping ingress %s/%s because controller value does not match, found: %s, required: %s",
-				ing.Namespace, ing.Name, controller, controllerAnnotationValue)
+				ing.Namespace, ing.Name, controller, annotations.ControllerValue)
 			continue
 		}
 
@@ -318,7 +318,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	}
 
 	// Determine which hostnames to consider in our final list
-	hostnameSourceAnnotation, hostnameSourceAnnotationExists := ing.Annotations[ingressHostnameSourceKey]
+	hostnameSourceAnnotation, hostnameSourceAnnotationExists := ing.Annotations[annotations.IngressHostnameSourceKey]
 	if !hostnameSourceAnnotationExists {
 		return append(definedHostsEndpoints, annotationEndpoints...)
 	}

@@ -13,6 +13,13 @@
         "null"
       ]
     },
+    "annotationPrefix": {
+      "description": "Annotation prefix for external-dns annotations (useful for split horizon DNS with multiple instances).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "automountServiceAccountToken": {
       "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.",
       "type": "boolean"

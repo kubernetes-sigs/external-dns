@@ -254,10 +254,10 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 	endpoints := []*endpoint.Endpoint{}
 	for _, rg := range rgList.Items {
 		// Check controller annotation to see if we are responsible.
-		controller, ok := rg.Metadata.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
+		controller, ok := rg.Metadata.Annotations[annotations.ControllerKey]
+		if ok && controller != annotations.ControllerValue {
 			log.Debugf("Skipping routegroup %s/%s because controller value does not match, found: %s, required: %s",
-				rg.Metadata.Namespace, rg.Metadata.Name, controller, controllerAnnotationValue)
+				rg.Metadata.Namespace, rg.Metadata.Name, controller, annotations.ControllerValue)
 			continue
 		}
 
