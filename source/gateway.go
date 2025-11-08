@@ -377,7 +377,44 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
+				// Determine target selection strategy.
+				strategy := meta.Annotations[targetStrategyAnnotationKey]
+				// Normalize unexpected values to "" which defaults to current semantics but here
+				// we intentionally treat empty (or unknown) as "merge" for explicit behavior.
+				switch strategy {
+				case "route-preferred", "route-only", "gateway-only", "merge":
+					// valid, keep as is
+				default:
+					strategy = "route-preferred"
+				}
+				var override endpoint.Targets
+
+				routeTargets := annotations.TargetsFromTargetAnnotation(meta.Annotations)
+				gatewayTargets := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
+
+				switch strategy {
+				case "route-preferred":
+					if len(routeTargets) > 0 {
+						override = append(override, routeTargets...)
+					} else if len(gatewayTargets) > 0 {
+						override = append(override, gatewayTargets...)
+					}
+				case "route-only":
+					if len(routeTargets) > 0 {
+						override = append(override, routeTargets...)
+					}
+				case "gateway-only":
+					if len(gatewayTargets) > 0 {
+						override = append(override, gatewayTargets...)
+					}
+				case "merge":
+					if len(routeTargets) > 0 {
+						override = append(override, routeTargets...)
+					}
+					if len(gatewayTargets) > 0 {
+						override = append(override, gatewayTargets...)
+					}
+				}
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {

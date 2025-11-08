@@ -35,6 +35,7 @@ const (
 	targetAnnotationKey           = annotations.TargetKey
 	ttlAnnotationKey              = annotations.TtlKey
 	aliasAnnotationKey            = annotations.AliasKey
+	targetStrategyAnnotationKey   = annotations.TargetStrategyKey
 	ingressHostnameSourceKey      = annotations.IngressHostnameSourceKey
 	controllerAnnotationValue     = annotations.ControllerValue
 	internalHostnameAnnotationKey = annotations.InternalHostnameKey
