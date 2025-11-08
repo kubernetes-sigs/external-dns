@@ -15,5 +15,5 @@ spec:
         app: demo-app
     spec:
       containers:
-      - image: ghcr.io/raffo/http-server-demo-app:latest # minimal demo app
+      - image: traefik/whoami:latest # minimal demo app
         name: demo-app
