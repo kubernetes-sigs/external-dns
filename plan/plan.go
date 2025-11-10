@@ -29,6 +29,13 @@ import (
 	"sigs.k8s.io/external-dns/internal/idna"
 )
 
+const (
+	// ProviderSpecificIgnorePrefix is a prefix for ProviderSpecific property names
+	// that should be ignored when comparing desired vs current state.
+	// This allows providers to add metadata without triggering update loops.
+	ProviderSpecificIgnorePrefix = "external-dns-ignore/"
+)
+
 // PropertyComparator is used in Plan for comparing the previous and current custom annotations.
 type PropertyComparator func(name string, previous string, current string) bool
 
@@ -229,6 +236,7 @@ func (p *Plan) Calculate() *Plan {
 					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) ||
 						p.isOldOwnerIdSetAndDifferent(records.current) {
 						inheritOwner(records.current, update)
+						inheritProviderSpecific(records.current, update)
 						changes.UpdateNew = append(changes.UpdateNew, update)
 						changes.UpdateOld = append(changes.UpdateOld, records.current)
 					}
@@ -293,6 +301,22 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
 }
 
+// inheritProviderSpecific copies ProviderSpecific properties with the ignore prefix
+// from 'from' to 'to'. This preserves provider-managed metadata when updates occur.
+func inheritProviderSpecific(from, to *endpoint.Endpoint) {
+	existingProps := make(map[string]bool)
+	for _, prop := range to.ProviderSpecific {
+		existingProps[prop.Name] = true
+	}
+
+	// Only inherit properties with the ignore prefix
+	for _, prop := range from.ProviderSpecific {
+		if strings.HasPrefix(prop.Name, ProviderSpecificIgnorePrefix) && !existingProps[prop.Name] {
+			to.ProviderSpecific = append(to.ProviderSpecific, prop)
+		}
+	}
+}
+
 func targetChanged(desired, current *endpoint.Endpoint) bool {
 	return !desired.Targets.Same(current.Targets)
 }
@@ -305,12 +329,14 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	desiredNonIgnored := filterIgnoredProperties(desired.ProviderSpecific)
+	currentNonIgnored := filterIgnoredProperties(current.ProviderSpecific)
 	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
 
-	for _, d := range desired.ProviderSpecific {
+	for _, d := range desiredNonIgnored {
 		desiredProperties[d.Name] = d
 	}
-	for _, c := range current.ProviderSpecific {
+	for _, c := range currentNonIgnored {
 		if d, ok := desiredProperties[c.Name]; ok {
 			if c.Value != d.Value {
 				return true
@@ -322,6 +348,17 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 	}
 
 	return len(desiredProperties) > 0
+}
+
+func filterIgnoredProperties(props endpoint.ProviderSpecific) endpoint.ProviderSpecific {
+	filtered := endpoint.ProviderSpecific{}
+	for _, prop := range props {
+		hasPrefix := strings.HasPrefix(prop.Name, ProviderSpecificIgnorePrefix)
+		if !hasPrefix {
+			filtered = append(filtered, prop)
+		}
+	}
+	return filtered
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
