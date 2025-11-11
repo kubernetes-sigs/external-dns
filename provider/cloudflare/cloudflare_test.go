@@ -374,9 +374,6 @@ func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID strin
 				CustomOriginServer: ch.CustomOriginServer,
 			})
 		}
-		return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
-			items: result,
-		}
 	}
 	return &mockAutoPager[custom_hostnames.CustomHostnameListResponse]{
 		items: result,
