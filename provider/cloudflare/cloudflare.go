@@ -346,15 +346,16 @@ func convertCloudflareError(err error) error {
 	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
 	var apierr *cloudflare.Error
 	if errors.As(err, &apierr) {
-		if apierr.StatusCode == http.StatusTooManyRequests {
+		// Rate limit errors (429) and server errors (5xx) should be treated as soft errors
+		// so that external-dns will retry them later
+		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {
 			return provider.NewSoftError(err)
 		}
 	}
 
-	// Also check for rate limit indicators in error message strings
+	// Also check for rate limit indicators in error message strings as a fallback
 	// This handles cases where the SDK or retry logic wraps the error
 	errMsg := strings.ToLower(err.Error())
-	// Match common rate limit error patterns
 	if strings.Contains(errMsg, "rate limit") ||
 		strings.Contains(errMsg, "429") ||
 		strings.Contains(errMsg, "exceeded available rate limit retries") ||
