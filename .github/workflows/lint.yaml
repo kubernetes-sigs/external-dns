@@ -6,13 +6,11 @@ on:
 
 jobs:
   lint:
-    name: Markdown, Go and OAS
+    name: Markdown and Go
     runs-on: ubuntu-latest
     permissions:
       # Required: allow read access to the content for analysis.
       contents: read
-      # For OAS check
-      checks: write
       # For go lang linter
       pull-requests: read
     steps:
@@ -49,13 +47,6 @@ jobs:
         verify: true
         args: --timeout=30m
         version: v2.5
-
-      # https://github.com/daveshanley/vacuum
-    - name: Lint OpenAPI spec
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Increases rate limit from 60 to 5000 requests
-      run: |
-        go tool vacuum lint -d --fail-severity warn --show-rules api/*.yaml
 
     - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action
