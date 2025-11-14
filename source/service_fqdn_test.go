@@ -412,7 +412,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 			},
-			fqdnTemplate: `{{ $name := .Name }}{{ range .Spec.Ports -}}{{ $name }}{{ if eq .Name "http2" }}.http2{{ else if eq .Name "debug" }}.debug{{ end }}.example.tld{{printf "," }}{{ end }}`,
+			fqdnTemplate: `{{ $name := .Name }}{{ range .Spec.Ports -}}{{ $name }}{{ if eq .Name "http2" }}.http2{{ else if eq .Name "debug" }}.debug{{ end }}.example.tld.{{printf "," }}{{ end }}`,
 			expected: []*endpoint.Endpoint{
 				// TODO: This test shows that there is a bug that needs to be fixed in the external-dns logic.
 				{DNSName: "", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.51.100.22", "192.51.100.5"}},
@@ -736,15 +736,15 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				// TODO: This test shows that there is a bug that needs to be fixed in the external-dns logic. Not a critical issue, as will be filtered out by the source.
 				{DNSName: "", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.96.41.132", "203.0.113.10"}},
-				{DNSName: "_service-one._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 ", "0 50 30082 "}}, // TODO: wrong SRV target format
-				{DNSName: "_service-one._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 debug.host.tld", "0 50 30082 debug.host.tld"}},
-				{DNSName: "_service-one._tcp.http.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 http.host.tld", "0 50 30082 http.host.tld"}},
-				{DNSName: "_service-three._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 "}}, // TODO: wrong SRV target format
-				{DNSName: "_service-three._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 debug.host.tld"}},
-				{DNSName: "_service-three._tcp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 minecraft.host.tld"}},
-				{DNSName: "_service-three._udp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 "}}, // TODO: wrong SRV target format
-				{DNSName: "_service-three._udp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 debug.host.tld"}},
-				{DNSName: "_service-three._udp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 minecraft.host.tld"}},
+				{DNSName: "_service-one._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 .", "0 50 30082 ."}}, // TODO: wrong SRV target format
+				{DNSName: "_service-one._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 debug.host.tld.", "0 50 30082 debug.host.tld."}},
+				{DNSName: "_service-one._tcp.http.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 http.host.tld.", "0 50 30082 http.host.tld."}},
+				{DNSName: "_service-three._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 ."}}, // TODO: wrong SRV target format
+				{DNSName: "_service-three._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 debug.host.tld."}},
+				{DNSName: "_service-three._tcp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 minecraft.host.tld."}},
+				{DNSName: "_service-three._udp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 ."}}, // TODO: wrong SRV target format
+				{DNSName: "_service-three._udp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 debug.host.tld."}},
+				{DNSName: "_service-three._udp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 minecraft.host.tld."}},
 				{DNSName: "debug.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
 				{DNSName: "http.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
 				{DNSName: "minecraft.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
