@@ -1563,7 +1563,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "route-test",
 						Namespace:   "test",
-						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "defined-hosts-only", hostnameAnnotationKey: "test.org.internal"},
+						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "defined-hosts-only", annotations.HostnameKey: "test.org.internal"},
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("test.example.internal"),
@@ -1603,7 +1603,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "route-test",
 						Namespace:   "test",
-						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", hostnameAnnotationKey: "test.org.internal"},
+						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", annotations.HostnameKey: "test.org.internal"},
 					},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("test.example.internal"),
