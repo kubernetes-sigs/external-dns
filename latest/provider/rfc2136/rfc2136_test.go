@@ -116,7 +116,7 @@ func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 			break
 		}
 
-		line = strings.Replace(line, "\t", " ", -1)
+		line = strings.ReplaceAll(line, "\t", " ")
 		log.Info(line)
 		record := strings.Split(line, " ")[0]
 		if !strings.HasSuffix(record, zone) {

@@ -60,6 +60,9 @@ type TXTRegistry struct {
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 
+	// Handle Owner ID migration
+	oldOwnerID string
+
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
 	existingTXTs *existingTXTs
@@ -114,7 +117,8 @@ func (im *existingTXTs) reset() {
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
-	txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+	txtEncryptEnabled bool, txtEncryptAESKey []byte,
+	oldOwnerID string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -148,6 +152,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
 	}, nil
 }
@@ -168,6 +173,12 @@ func (im *TXTRegistry) OwnerID() string {
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
 func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	// existingTXTs must always hold the latest TXT records, so it needs to be reset every time.
+	// Previously, it was reset with a defer after ApplyChanges, but ApplyChanges is not called
+	// when plan.HasChanges() is false (i.e., when there are no changes to apply).
+	// In that case, stale TXT record information could remain, so we reset it here instead.
+	im.existingTXTs.reset()
+
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
@@ -252,6 +263,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
+		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		}
+
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
@@ -292,6 +307,11 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
 		recordType = endpoint.RecordTypeCNAME
 	}
+
+	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+	}
+
 	txtNew := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
@@ -307,14 +327,13 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	defer im.existingTXTs.reset() // reset existing TXTs for the next reconciliation loop
-
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
+
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)

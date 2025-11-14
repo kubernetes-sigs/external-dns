@@ -195,11 +195,12 @@ func isEmpty(xs interface{}) bool {
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs. It also ignores ordering when comparing unlike cmp.Equal.
 func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) bool {
-	if listA == nil && listB == nil {
+	switch {
+	case listA == nil && listB == nil:
 		return true
-	} else if listA == nil {
+	case listA == nil:
 		return isEmpty(listB)
-	} else if listB == nil {
+	case listB == nil:
 		return isEmpty(listA)
 	}
 

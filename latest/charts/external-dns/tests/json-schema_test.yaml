@@ -30,7 +30,7 @@ tests:
       enabled: "abrakadabra"
     asserts:
       - failedTemplate:
-          errorPattern: "Invalid type. Expected: [boolean,null], given: string"
+          errorPattern: "got string, want null or boolean"
 
   - it: should fail if provider is null
     set:

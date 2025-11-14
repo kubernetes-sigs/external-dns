@@ -39,7 +39,7 @@ func CidrToInAddr(cidr string) (string, error) {
 			// address for all IPv4 addresses no matter how they are
 			// expressed internally.
 		} else {
-			cidr = cidr + "/128"
+			cidr += "/128"
 		}
 	}
 

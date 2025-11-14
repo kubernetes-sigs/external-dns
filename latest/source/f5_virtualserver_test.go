@@ -30,6 +30,7 @@ import (
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 )
@@ -57,7 +58,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					Name:      "test-vs",
 					Namespace: defaultF5VirtualServerNamespace,
 					Annotations: map[string]string{
-						targetAnnotationKey: "192.168.1.150",
+						annotations.TargetKey: "192.168.1.150",
 					},
 				},
 				Spec: f5.VirtualServerSpec{
@@ -324,6 +325,249 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				},
 			},
 			expected: nil,
+		},
+		{
+			name: "F5 VirtualServer with hostAliases",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with hostAliases and target annotation",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						annotations.TargetKey: "192.168.1.150",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.150"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.150"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.150"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with hostAliases and TTL annotation",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/ttl": "300",
+					},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  300,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  300,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  300,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with empty hostAliases",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
+		},
+		{
+			name: "F5 VirtualServer with hostAliases containing empty strings",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+					HostAliases:          []string{"alias1.example.com", "", "alias2.example.com"},
+				},
+				Status: f5.CustomResourceStatus{
+					VSAddress: "192.168.1.100",
+					Status:    "OK",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias1.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+				{
+					DNSName:    "alias2.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "f5-virtualserver/virtualserver/test-vs",
+					},
+				},
+			},
 		},
 	}
 

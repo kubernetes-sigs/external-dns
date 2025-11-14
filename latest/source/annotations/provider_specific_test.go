@@ -65,6 +65,16 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			setIdentifier: "",
 		},
 		{
+			name: "CoreDNS annotation",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/coredns-group": "g1",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "coredns/group", Value: "g1"},
+			},
+			setIdentifier: "",
+		},
+		{
 			name: "Set identifier annotation",
 			annotations: map[string]string{
 				SetIdentifierKey: "identifier",
@@ -84,6 +94,41 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 }
 
 func TestGetProviderSpecificCloudflareAnnotations(t *testing.T) {
+
+	for _, tc := range []struct {
+		title         string
+		annotations   map[string]string
+		expectedKey   string
+		expectedValue string
+	}{
+		{
+			title:         "Cloudflare tags annotation is set correctly",
+			annotations:   map[string]string{CloudflareTagsKey: "env:test,owner:team-a"},
+			expectedKey:   CloudflareTagsKey,
+			expectedValue: "env:test,owner:team-a",
+		},
+		{
+			title: "Cloudflare tags annotation among another annotations is set correctly",
+			annotations: map[string]string{
+				"random annotation 1": "random value 1",
+				CloudflareTagsKey:     "env:test,owner:team-b",
+				"random annotation 2": "random value 2"},
+			expectedKey:   CloudflareTagsKey,
+			expectedValue: "env:test,owner:team-b",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
+			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
+				if providerSpecificAnnotation.Name == tc.expectedKey {
+					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
+					return
+				}
+			}
+			t.Errorf("Cloudflare provider specific annotation %s is not set correctly to %s", tc.expectedKey, tc.expectedValue)
+		})
+	}
+
 	for _, tc := range []struct {
 		title         string
 		annotations   map[string]string

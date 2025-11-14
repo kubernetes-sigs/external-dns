@@ -22,6 +22,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -31,13 +32,14 @@ import (
 func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 	for _, tt := range []struct {
-		title          string
-		services       []*v1.Service
-		endpointSlices []*discoveryv1.EndpointSlice
-		fqdnTemplate   string
-		combineFQDN    bool
-		publishHostIp  bool
-		expected       []*endpoint.Endpoint
+		title              string
+		services           []*v1.Service
+		endpointSlices     []*discoveryv1.EndpointSlice
+		fqdnTemplate       string
+		combineFQDN        bool
+		publishHostIp      bool
+		serviceTypesFilter []string
+		expected           []*endpoint.Endpoint
 	}{
 		{
 			title:       "templating with multiple services",
@@ -181,6 +183,129 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"api.example.tld"}},
 				{DNSName: "www.service-two.website.example.tld", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"www.bucket-name.amazonaws.com"}},
 			},
+		},
+		{
+			title:              "fqdn with endpoint-type annotation and loose service type filtering",
+			serviceTypesFilter: []string{},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "svc-ns",
+						Name:      "svc-one",
+						Annotations: map[string]string{
+							annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP,
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type:       v1.ServiceTypeClusterIP,
+						ClusterIP:  v1.ClusterIPNone,
+						ClusterIPs: []string{v1.ClusterIPNone},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{},
+					},
+				},
+			},
+			endpointSlices: []*discoveryv1.EndpointSlice{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-one-xxxxx",
+						Namespace: "svc-ns",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "svc-one",
+							v1.IsHeadlessService:         "",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"100.66.2.246"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "svc-ns",
+							},
+						},
+						{
+							Addresses: []string{"100.66.2.247"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "svc-ns",
+							},
+						},
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.{{.Namespace}}.cluster.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "ip-10-1-164-158.internal.svc-one.svc-ns.cluster.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "svc-one.svc-ns.cluster.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+			},
+		},
+		{
+			title:              "fqdn with endpoint-type annotation and service type filtering does not include required type",
+			serviceTypesFilter: []string{string(v1.ServiceTypeClusterIP)},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "svc-ns",
+						Name:      "svc-one",
+						Annotations: map[string]string{
+							annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP,
+						},
+					},
+					Spec: v1.ServiceSpec{
+						Type:       v1.ServiceTypeClusterIP,
+						ClusterIP:  v1.ClusterIPNone,
+						ClusterIPs: []string{v1.ClusterIPNone},
+					},
+					Status: v1.ServiceStatus{
+						LoadBalancer: v1.LoadBalancerStatus{},
+					},
+				},
+			},
+			endpointSlices: []*discoveryv1.EndpointSlice{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-one-xxxxx",
+						Namespace: "svc-ns",
+						Labels: map[string]string{
+							discoveryv1.LabelServiceName: "svc-one",
+							v1.IsHeadlessService:         "",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"100.66.2.246"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-1",
+								Namespace: "svc-ns",
+							},
+						},
+						{
+							Addresses: []string{"100.66.2.247"},
+							Hostname:  testutils.ToPtr("ip-10-1-164-158.internal"),
+							NodeName:  testutils.ToPtr("test-node"),
+							TargetRef: &v1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod-2",
+								Namespace: "svc-ns",
+							},
+						},
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.{{.Namespace}}.cluster.com",
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "templating resolve service with zone PreferSameTrafficDistribution and topology.kubernetes.io/zone annotation",
@@ -562,6 +687,69 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				{DNSName: "service-two.org.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.1.20.40"}},
 			},
 		},
+		{
+			title: "templating resolve NodePort services with specific port names",
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-one",
+					},
+					Spec: v1.ServiceSpec{
+						Type:      v1.ServiceTypeNodePort,
+						ClusterIP: "10.96.41.131", Ports: []v1.ServicePort{
+							{Name: "http", Port: 80, TargetPort: intstr.FromInt32(8080), NodePort: 30080},
+							{Name: "debug", Port: 8082, TargetPort: intstr.FromInt32(8082), NodePort: 30082},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-two",
+					},
+					Spec: v1.ServiceSpec{
+						Type:      v1.ServiceTypeClusterIP,
+						ClusterIP: "10.96.41.132",
+						Ports: []v1.ServicePort{
+							{Name: "http", Port: 8080},
+							{Name: "http2", Port: 8086},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+						Name:      "service-three",
+					},
+					Spec: v1.ServiceSpec{
+						Type:      v1.ServiceTypeNodePort,
+						ClusterIP: "10.96.41.133",
+						Ports: []v1.ServicePort{
+							{Name: "debug", Port: 8082, TargetPort: intstr.FromInt32(8083), Protocol: v1.ProtocolUDP, NodePort: 30083},
+							{Name: "minecraft", Port: 2525, TargetPort: intstr.FromInt32(25256), NodePort: 25565},
+						},
+					},
+				},
+			},
+			fqdnTemplate: `{{ if eq .Spec.Type "NodePort" }}{{ range .Spec.Ports }}{{ .Name }}.host.tld{{printf "," }}{{end}}{{ end }}`,
+			expected: []*endpoint.Endpoint{
+				// TODO: This test shows that there is a bug that needs to be fixed in the external-dns logic. Not a critical issue, as will be filtered out by the source.
+				{DNSName: "", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.96.41.132", "203.0.113.10"}},
+				{DNSName: "_service-one._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 ", "0 50 30082 "}}, // TODO: wrong SRV target format
+				{DNSName: "_service-one._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 debug.host.tld", "0 50 30082 debug.host.tld"}},
+				{DNSName: "_service-one._tcp.http.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30080 http.host.tld", "0 50 30082 http.host.tld"}},
+				{DNSName: "_service-three._tcp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 "}}, // TODO: wrong SRV target format
+				{DNSName: "_service-three._tcp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 debug.host.tld"}},
+				{DNSName: "_service-three._tcp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 25565 minecraft.host.tld"}},
+				{DNSName: "_service-three._udp", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 "}}, // TODO: wrong SRV target format
+				{DNSName: "_service-three._udp.debug.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 debug.host.tld"}},
+				{DNSName: "_service-three._udp.minecraft.host.tld", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 50 30083 minecraft.host.tld"}},
+				{DNSName: "debug.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "http.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+				{DNSName: "minecraft.host.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.0.113.10"}},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -570,6 +758,17 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				_, err := kubeClient.CoreV1().Services(el.Namespace).Create(t.Context(), el, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
+
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "203.0.113.10"},
+						{Type: v1.NodeInternalIP, Address: "10.0.0.10"},
+					},
+				},
+			}, metav1.CreateOptions{})
+			require.NoError(t, err)
 
 			// Create endpoints and pods for the services
 			for _, el := range tt.endpointSlices {
@@ -583,6 +782,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 						},
 						Spec: v1.PodSpec{
 							Hostname: *ep.Hostname,
+							NodeName: "test-node",
 						},
 						Status: v1.PodStatus{
 							HostIP: fmt.Sprintf("10.1.20.4%d", i),
@@ -603,7 +803,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				true,
 				tt.publishHostIp,
 				true,
-				[]string{},
+				tt.serviceTypesFilter,
 				false,
 				labels.Everything(),
 				false,
@@ -619,6 +819,7 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
+				fmt.Println(ep)
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
 		})

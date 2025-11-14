@@ -122,13 +122,12 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 			continue
 		}
 
-		if strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter) {
+		switch {
+		case strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter):
 			return true
-		} else if strings.Count(strippedDomain, ".") == strings.Count(filter, ".") {
-			if strippedDomain == filter {
-				return true
-			}
-		} else if strings.HasSuffix(strippedDomain, "."+filter) {
+		case strings.Count(strippedDomain, ".") == strings.Count(filter, ".") && strippedDomain == filter:
+			return true
+		case strings.HasSuffix(strippedDomain, "."+filter):
 			return true
 		}
 	}

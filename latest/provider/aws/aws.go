@@ -96,6 +96,7 @@ var canonicalHostedZones = map[string]string{
 	"ap-southeast-3.elb.amazonaws.com":    "Z08888821HLRG5A9ZRTER",
 	"ap-southeast-4.elb.amazonaws.com":    "Z09517862IB2WZLPXG76F",
 	"ap-southeast-5.elb.amazonaws.com":    "Z06010284QMVVW7WO5J",
+	"ap-southeast-6.elb.amazonaws.com":    "Z023301818UFJ50CIO0MV",
 	"ap-southeast-7.elb.amazonaws.com":    "Z0390008CMBRTHFGWBCB",
 	"ap-northeast-1.elb.amazonaws.com":    "Z14GRHDCWA56QT",
 	"eu-central-1.elb.amazonaws.com":      "Z215JYRZR1TBD5",
@@ -134,6 +135,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ap-southeast-3.amazonaws.com":    "Z01971771FYVNCOVWJU1G",
 	"elb.ap-southeast-4.amazonaws.com":    "Z01156963G8MIIL7X90IV",
 	"elb.ap-southeast-5.amazonaws.com":    "Z026317210H9ACVTRO6FB",
+	"elb.ap-southeast-6.amazonaws.com":    "Z01392953RKV2Q3RBP0KU",
 	"elb.ap-southeast-7.amazonaws.com":    "Z054363131YWATEMWRG5L",
 	"elb.ap-northeast-1.amazonaws.com":    "Z31USIVHYNEOWT",
 	"elb.eu-central-1.amazonaws.com":      "Z3F0SRJ5LGBH90",
@@ -770,7 +772,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 							log.Errorf("Failed submitting change (error: %v), it will be retried in a separate change batch in the next iteration", err)
 							p.failedChangesQueue[z] = append(p.failedChangesQueue[z], changes...)
 						} else {
-							successfulChanges = successfulChanges + len(changes)
+							successfulChanges += len(changes)
 						}
 					}
 				} else {

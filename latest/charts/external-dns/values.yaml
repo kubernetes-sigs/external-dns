@@ -240,6 +240,9 @@ labelFilter:  # @schema type: [string,null]; default: null
 # -- Filter resources queried for endpoints by annotation selector.
 annotationFilter:  # @schema type: [string,null]; default: null
 
+# -- Annotation prefix for external-dns annotations (useful for split horizon DNS with multiple instances).
+annotationPrefix:  # @schema type: [string,null]; default: null
+
 # -- Record types to manage (default: A, AAAA, CNAME)
 managedRecordTypes: []  # @schema type: [array, null]; item: string; uniqueItems: true
 

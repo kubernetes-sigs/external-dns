@@ -19,12 +19,12 @@ package endpoint
 import (
 	"fmt"
 	"net/netip"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/pkg/events"
 )
@@ -80,11 +80,10 @@ type MXTarget struct {
 	host     string
 }
 
-// NewTargets is a convenience method to create a new Targets object from a vararg of strings
+// NewTargets is a convenience method to create a new Targets object from a vararg of strings.
+// Returns a new Targets slice with duplicates removed and elements sorted in order.
 func NewTargets(target ...string) Targets {
-	t := make(Targets, 0, len(target))
-	t = append(t, target...)
-	return t
+	return set.New(target...).SortedList()
 }
 
 func (t Targets) String() string {
@@ -224,6 +223,8 @@ type EndpointKey struct {
 	RecordTTL     TTL
 }
 
+type ObjectRef = events.ObjectReference
+
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
 type Endpoint struct {
@@ -245,7 +246,7 @@ type Endpoint struct {
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
 	// refObject stores reference object
 	// +optional
-	refObject *events.ObjectReference
+	refObject *ObjectRef `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -257,7 +258,14 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
 	for idx, target := range targets {
-		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
+		// TXT records can contain arbitrary text including multiple dots
+		switch recordType {
+		case RecordTypeTXT, RecordTypeNAPTR:
+			cleanTargets[idx] = target
+		default:
+			cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		}
 	}
 
 	for label := range strings.SplitSeq(dnsName, ".") {
@@ -374,28 +382,18 @@ func (e *Endpoint) Describe() string {
 	return fmt.Sprintf("record:%s, owner:%s, type:%s, targets:%s", e.DNSName, e.SetIdentifier, e.RecordType, strings.Join(e.Targets, ", "))
 }
 
-// UniqueOrderedTargets removes duplicate targets from the Endpoint and sorts them in lexicographical order.
-func (e *Endpoint) UniqueOrderedTargets() {
-	result := make([]string, 0, len(e.Targets))
-	existing := make(map[string]bool)
-	for _, target := range e.Targets {
-		if _, ok := existing[target]; !ok {
-			result = append(result, target)
-			existing[target] = true
-		}
-	}
-	slices.Sort(result)
-	e.Targets = result
-}
-
 // FilterEndpointsByOwnerID Apply filter to slice of endpoints and return new filtered slice that includes
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
 	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
-		} else {
+		endpointOwner, ok := ep.Labels[OwnerLabelKey]
+		switch {
+		case !ok:
+			log.Debugf(`Skipping endpoint %v because of missing owner label (required: "%s")`, ep, ownerID)
+		case endpointOwner != ownerID:
+			log.Debugf(`Skipping endpoint %v because owner id does not match (found: "%s", required: "%s")`, ep, endpointOwner, ownerID)
+		default:
 			filtered = append(filtered, ep)
 		}
 	}
@@ -433,6 +431,14 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateSRVRecord()
 	}
 	return true
+}
+
+// WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
+func (e *Endpoint) WithMinTTL(ttl int64) {
+	if !e.RecordTTL.IsConfigured() && ttl > 0 {
+		log.Debugf("Overriding existing TTL %d with new value %d for endpoint %s", e.RecordTTL, ttl, e.DNSName)
+		e.RecordTTL = TTL(ttl)
+	}
 }
 
 // NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")

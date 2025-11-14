@@ -49,20 +49,20 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "", "", time.Hour, "", []string{}, []string{}, false, nil)
+	_, err := NewTXTRegistry(p, "txt", "", "", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	_, err = NewTXTRegistry(p, "", "txt", "", time.Hour, "", []string{}, []string{}, false, nil)
+	_, err = NewTXTRegistry(p, "", "txt", "", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	r, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
 
-	r, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
 	_, ok := r.mapper.(affixNameMapper)
@@ -71,16 +71,16 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, p, r.provider)
 
 	aesKey := []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^")
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, aesKey)
+	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, aesKey, "")
 	require.NoError(t, err)
 
-	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, nil)
+	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, nil, "")
 	require.Error(t, err)
 
-	r, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey)
+	r, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, "")
 	require.NoError(t, err)
 
 	_, ok = r.mapper.(affixNameMapper)
@@ -228,13 +228,13 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
-	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -363,13 +363,13 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
-	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
@@ -490,7 +490,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -527,12 +527,12 @@ func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -569,12 +569,12 @@ func testTXTRegistryRecordsSuffixedTemplated(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "txt%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
-	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "", "TxT%{record_type}", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -617,7 +617,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.cname-multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -698,7 +698,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{},
 	})
-	r, _ := NewTXTRegistry(p, "prefix%{record_type}.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "prefix%{record_type}.", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress"),
@@ -741,7 +741,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
 		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
 	}
-	r, _ := NewTXTRegistry(p, "", "-%{record_type}suffix", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "-%{record_type}suffix", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress"),
@@ -806,7 +806,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			newEndpointWithOwner("cname-multiple-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "wildcard", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "wildcard", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -900,7 +900,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newEndpointWithOwner("cname-foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1058,7 +1058,7 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -1168,7 +1168,7 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS, endpoint.RecordTypeTXT}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS, endpoint.RecordTypeTXT}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -1463,7 +1463,7 @@ func TestNewTXTScheme(t *testing.T) {
 			newEndpointWithOwner("cname-foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1528,9 +1528,44 @@ func TestGenerateTXT(t *testing.T) {
 	}
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXT := r.generateTXTRecord(record)
 	assert.Equal(t, expectedTXT, gotTXT)
+}
+
+func TestGenerateTXTWithMigration(t *testing.T) {
+	record := newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner")
+	expectedTXTBeforeMigration := []*endpoint.Endpoint{
+		{
+			DNSName:    "a-foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
+	}
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	gotTXTBeforeMigration := r.generateTXTRecord(record)
+	assert.Equal(t, expectedTXTBeforeMigration, gotTXTBeforeMigration)
+
+	expectedTXTAfterMigration := []*endpoint.Endpoint{
+		{
+			DNSName:    "a-foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foobar\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
+	}
+
+	rMigrated, _ := NewTXTRegistry(p, "", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "owner")
+	gotTXTAfterMigration := rMigrated.generateTXTRecord(record)
+	assert.Equal(t, expectedTXTAfterMigration, gotTXTAfterMigration)
+
 }
 
 func TestGenerateTXTForAAAA(t *testing.T) {
@@ -1547,7 +1582,7 @@ func TestGenerateTXTForAAAA(t *testing.T) {
 	}
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXT := r.generateTXTRecord(record)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
@@ -1564,7 +1599,7 @@ func TestFailGenerateTXT(t *testing.T) {
 	expectedTXT := []*endpoint.Endpoint{}
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	gotTXT := r.generateTXTRecord(cnameRecord)
 	assert.Equal(t, expectedTXT, gotTXT)
 }
@@ -1582,7 +1617,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"))
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"), "")
 	records, _ := r.Records(ctx)
 	changes := &plan.Changes{
 		Delete: records,
@@ -1628,7 +1663,7 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, []string{}, false, nil, "")
 	records, _ := r.Records(ctx)
 
 	// new cluster has same ingress host as other cluster and uses CNAME ingress address
@@ -1713,7 +1748,7 @@ func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+			r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 			records := r.generateTXTRecord(tc.endpoint)
 
 			assert.Len(t, records, tc.expectedRecords, tc.description)
@@ -1742,7 +1777,7 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 	p.CreateZone(testZone)
 	ctx := context.Background()
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1790,7 +1825,7 @@ func TestTXTRegistryRecordsWithEmptyTargets(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
@@ -1994,10 +2029,10 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 
 					// When: Apply changes to recreate missing A records
 					managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
-					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil)
+					registry, err := NewTXTRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, "")
 					assert.NoError(t, err)
 
-					expectedRecords := append(existing, expectedCreate...)
+					expectedRecords := append(existing, expectedCreate...) // nolint:gocritic
 
 					// Simulate the reconciliation loop by executing multiple times
 					reconciliationLoops := 3
@@ -2027,4 +2062,129 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestTXTRecordMigration(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+
+	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", time.Hour, "", []string{}, []string{}, false, nil, "")
+
+	r.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			// records on cluster using A record for ingress address
+			newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "foo", endpoint.Labels{endpoint.OwnerLabelKey: "owner"}),
+		},
+	})
+
+	createdRecords, _ := r.Records(ctx)
+
+	newTXTRecord := r.generateTXTRecord(createdRecords[0])
+
+	expectedTXTRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "a-bar.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foo\""},
+			RecordType: endpoint.RecordTypeTXT,
+		},
+	}
+
+	assert.Equal(t, expectedTXTRecords[0].Targets, newTXTRecord[0].Targets)
+
+	r, _ = NewTXTRegistry(p, "%{record_type}-", "", "foobar", time.Hour, "", []string{}, []string{}, false, nil, "foo")
+
+	updatedRecords, _ := r.Records(ctx)
+
+	updatedTXTRecord := r.generateTXTRecord(updatedRecords[0])
+
+	expectedFinalTXT := []*endpoint.Endpoint{
+		{
+			DNSName:    "a-bar.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=foobar\""},
+			RecordType: endpoint.RecordTypeTXT,
+		},
+	}
+
+	assert.Equal(t, updatedTXTRecord[0].Targets, expectedFinalTXT[0].Targets)
+
+}
+
+// TestRecreateRecordAfterDeletion ensures that when A and TXT records are deleted,
+// both are correctly recreated in subsequent reconciliation loops.
+// This prevents regression of the issue where stale TXT record state
+// caused ExternalDNS to skip recreating TXT records after deletion.
+func TestRecreateRecordAfterDeletion(t *testing.T) {
+	ownerID := "foo"
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+
+	r, _ := NewTXTRegistry(p, "%{record_type}-", "", "foo", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+
+	createdRecords := newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ownerID, nil)
+	txtRecord := r.generateTXTRecord(createdRecords)
+
+	// 1. Create initial A and TXT records.
+	creates := append([]*endpoint.Endpoint{createdRecords}, txtRecord...)
+	err := p.ApplyChanges(ctx, &plan.Changes{
+		Create: creates,
+	})
+	assert.NoError(t, err)
+
+	// 2. Simulate a "no change" reconciliation (ApplyChanges won't be called).
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName: "bar.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1.2.3.4",
+			},
+			RecordType: endpoint.RecordTypeA,
+		},
+	}
+
+	records, err := r.Records(ctx)
+	assert.NoError(t, err)
+
+	calculated := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		ManagedRecords: []string{endpoint.RecordTypeA},
+		Current:        records,
+		Desired:        desired,
+		OwnerID:        ownerID,
+	}
+	calculated = calculated.Calculate()
+	// ApplyChanges is not called to simulate no changes.
+	assert.False(t, calculated.Changes.HasChanges(), "There should be no changes")
+
+	// 3. Delete both A and TXT records (simulate manual deletion)
+	deletes := append([]*endpoint.Endpoint{createdRecords}, txtRecord...)
+	err = p.ApplyChanges(ctx, &plan.Changes{
+		Delete: deletes,
+	})
+	assert.NoError(t, err)
+
+	// 4. Run reconciliation again — both A and TXT should be recreated.
+	records, err = r.Records(ctx)
+	assert.NoError(t, err)
+
+	calculated = &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		ManagedRecords: []string{endpoint.RecordTypeA},
+		Current:        records,
+		Desired:        desired,
+		OwnerID:        ownerID,
+	}
+	calculated = calculated.Calculate()
+	if !calculated.Changes.HasChanges() {
+		assert.Fail(t, "There should be changes")
+	}
+
+	err = r.ApplyChanges(ctx, calculated.Changes)
+	assert.NoError(t, err)
+
+	// 5. Verify that both A and TXT records are recreated successfully.
+	records, err = p.Records(ctx)
+	assert.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(records, append(desired, txtRecord...)), "Expected records after reconciliation: %v, but got: %v", append(desired, txtRecord...), records)
 }

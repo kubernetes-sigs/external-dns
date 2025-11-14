@@ -33,44 +33,52 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
 			setIdentifier = v
-		} else if strings.HasPrefix(k, AWSPrefix) {
-			attr := strings.TrimPrefix(k, AWSPrefix)
+		} else if attr, ok := strings.CutPrefix(k, AWSPrefix); ok {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, SCWPrefix) {
-			attr := strings.TrimPrefix(k, SCWPrefix)
+		} else if attr, ok := strings.CutPrefix(k, SCWPrefix); ok {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, WebhookPrefix) {
+		} else if attr, ok := strings.CutPrefix(k, WebhookPrefix); ok {
 			// Support for wildcard annotations for webhook providers
-			attr := strings.TrimPrefix(k, WebhookPrefix)
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("webhook/%s", attr),
 				Value: v,
 			})
+		} else if attr, ok := strings.CutPrefix(k, CoreDNSPrefix); ok {
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("coredns/%s", attr),
+				Value: v,
+			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
-			if strings.Contains(k, CloudflareCustomHostnameKey) {
+			switch {
+			case strings.Contains(k, CloudflareCustomHostnameKey):
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 					Name:  CloudflareCustomHostnameKey,
 					Value: v,
 				})
-			} else if strings.Contains(k, CloudflareProxiedKey) {
+			case strings.Contains(k, CloudflareProxiedKey):
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 					Name:  CloudflareProxiedKey,
 					Value: v,
 				})
-			} else if strings.Contains(k, CloudflareRegionKey) {
+			case strings.Contains(k, CloudflareRegionKey):
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 					Name:  CloudflareRegionKey,
 					Value: v,
 				})
-			} else if strings.Contains(k, CloudflareRecordCommentKey) {
+			case strings.Contains(k, CloudflareRecordCommentKey):
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 					Name:  CloudflareRecordCommentKey,
+					Value: v,
+				})
+			case strings.Contains(k, CloudflareTagsKey):
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  CloudflareTagsKey,
 					Value: v,
 				})
 			}

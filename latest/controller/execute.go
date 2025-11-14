@@ -69,6 +69,7 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -80,6 +81,12 @@ func Execute() {
 	log.Infof("config: %s", cfg)
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
+	}
+
+	// Set annotation prefix (required since init() was removed)
+	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
+	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
+		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 
 	configureLogger(cfg)
@@ -104,7 +111,7 @@ func Execute() {
 
 	endpointsSource, err := buildSource(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
 	domainFilter := createDomainFilter(cfg)
@@ -278,17 +285,17 @@ func buildProvider(
 		if cfg.OCIAuthInstancePrincipal {
 			if len(cfg.OCICompartmentOCID) == 0 {
 				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
-			} else {
-				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
-				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+				break
 			}
+			authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
+			config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
 		} else {
-			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+			if config, err = oci.LoadOCIConfig(cfg.OCIConfigFile); err != nil {
+				break
+			}
 		}
 		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
-		if err == nil {
-			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
-		}
+		p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
 	case "rfc2136":
 		tlsConfig := rfc2136.TLSConfig{
 			UseTLS:                cfg.RFC2136UseTLS,
@@ -382,6 +389,7 @@ func buildController(
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
 	}, nil
 }
@@ -418,7 +426,7 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
@@ -445,18 +453,14 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 	if err != nil {
 		return nil, err
 	}
-	// Combine multiple sources into a single, deduplicated source.
-	combinedSource := wrappers.NewDedupSource(wrappers.NewMultiSource(sources, sourceCfg.DefaultTargets, sourceCfg.ForceDefaultTargets))
-	cfg.AddSourceWrapper("dedup")
-	combinedSource = wrappers.NewNAT64Source(combinedSource, cfg.NAT64Networks)
-	cfg.AddSourceWrapper("nat64")
-	// Filter targets
-	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
-	if targetFilter.IsEnabled() {
-		combinedSource = wrappers.NewTargetFilterSource(combinedSource, targetFilter)
-		cfg.AddSourceWrapper("target-filter")
-	}
-	return combinedSource, nil
+	opts := wrappers.NewConfig(
+		wrappers.WithDefaultTargets(cfg.DefaultTargets),
+		wrappers.WithForceDefaultTargets(cfg.ForceDefaultTargets),
+		wrappers.WithNAT64Networks(cfg.NAT64Networks),
+		wrappers.WithTargetNetFilter(cfg.TargetNetFilter),
+		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
+		wrappers.WithMinTTL(cfg.MinTTL))
+	return wrappers.WrapSources(sources, opts)
 }
 
 // RegexDomainFilter overrides DomainFilter

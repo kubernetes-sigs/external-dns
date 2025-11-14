@@ -43,7 +43,7 @@ type fakeETCDClient struct {
 	services map[string]Service
 }
 
-func (c fakeETCDClient) GetServices(prefix string) ([]*Service, error) {
+func (c fakeETCDClient) GetServices(_ context.Context, prefix string) ([]*Service, error) {
 	var result []*Service
 	for key, value := range c.services {
 		if strings.HasPrefix(key, prefix) {
@@ -55,12 +55,12 @@ func (c fakeETCDClient) GetServices(prefix string) ([]*Service, error) {
 	return result, nil
 }
 
-func (c fakeETCDClient) SaveService(service *Service) error {
+func (c fakeETCDClient) SaveService(_ context.Context, service *Service) error {
 	c.services[service.Key] = *service
 	return nil
 }
 
-func (c fakeETCDClient) DeleteService(key string) error {
+func (c fakeETCDClient) DeleteService(_ context.Context, key string) error {
 	delete(c.services, key)
 	return nil
 }
@@ -460,7 +460,7 @@ func validateServices(services map[string]Service, expectedServices map[string][
 		}
 		found := false
 		for i, expectedServiceEntry := range expectedServiceEntries {
-			if value.Host == expectedServiceEntry.Host && value.Text == expectedServiceEntry.Text {
+			if value.Host == expectedServiceEntry.Host && value.Text == expectedServiceEntry.Text && value.Group == expectedServiceEntry.Group {
 				expectedServiceEntries = append(expectedServiceEntries[:i], expectedServiceEntries[i+1:]...)
 				found = true
 				break
@@ -507,10 +507,9 @@ func TestGetServices_Success(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
-	result, err := c.GetServices("/prefix")
+	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "example.com", result[0].Host)
@@ -522,7 +521,6 @@ func TestGetServices_Duplicate(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
 	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello"}
@@ -542,7 +540,7 @@ func TestGetServices_Duplicate(t *testing.T) {
 		},
 	}, nil)
 
-	result, err := c.GetServices("/prefix")
+	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
 }
@@ -553,7 +551,6 @@ func TestGetServices_Multiple(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
 	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello"}
@@ -576,7 +573,7 @@ func TestGetServices_Multiple(t *testing.T) {
 		},
 	}, nil)
 
-	result, err := c.GetServices("/prefix")
+	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, priority, result[1].Priority)
@@ -588,7 +585,6 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
 	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{
@@ -604,7 +600,7 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 		},
 	}, nil)
 
-	_, err := c.GetServices("/prefix")
+	_, err := c.GetServices(context.Background(), "/prefix")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "/prefix/1")
 }
@@ -615,12 +611,11 @@ func TestGetServices_GetError(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ctx: context.TODO(),
 	}
 
 	mockKV.On("Get", mock.Anything, "/prefix").Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
 
-	_, err := c.GetServices("/prefix")
+	_, err := c.GetServices(context.Background(), "/prefix")
 	assert.Error(t, err)
 	assert.EqualError(t, err, "etcd failure")
 }
@@ -654,10 +649,9 @@ func TestDeleteService(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ctx: context.Background(),
 			}
 
-			err := c.DeleteService(tt.key)
+			err := c.DeleteService(context.Background(), tt.key)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -712,10 +706,9 @@ func TestSaveService(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ctx: context.TODO(),
 			}
 
-			err = c.SaveService(tt.service)
+			err = c.SaveService(context.Background(), tt.service)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -862,4 +855,49 @@ func TestCoreDNSProvider_updateTXTRecords_ClearsExtraText(t *testing.T) {
 
 	assert.Equal(t, "txt-value", services[0].Text)
 	assert.Empty(t, services[1].Text)
+}
+
+func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	changes1 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "5.5.5.6").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7").WithProviderSpecific(providerSpecificGroup, "test2"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes1)
+
+	expectedServices1 := map[string][]*Service{
+		"/skydns/local/domain1": {{Host: "5.5.5.5", Group: "test1"}},
+		"/skydns/local/domain2": {{Host: "5.5.5.6", Group: "test1"}},
+		"/skydns/local/domain3": {{Host: "5.5.5.7", Group: "test2"}},
+	}
+	validateServices(client.services, expectedServices1, t, 1)
+}
+
+func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+	endpoints, err := coredns.Records(context.Background())
+	require.NoError(t, err)
+	if prop, ok := endpoints[0].GetProviderSpecificProperty(providerSpecificGroup); !ok {
+		t.Error("go no Group name")
+	} else if prop != "test1" {
+		t.Errorf("got unexpected Group name: %s != %s", prop, "test1")
+	}
 }
