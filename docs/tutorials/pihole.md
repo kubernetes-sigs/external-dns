@@ -87,7 +87,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         # If authentication is disabled and/or you didn't create
         # a secret, you can remove this block.
         envFrom:

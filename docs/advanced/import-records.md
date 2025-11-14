@@ -84,7 +84,7 @@ spec:
         env:
         - name: AWS_DEFAULT_REGION
           value: us-west-2
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         imagePullPolicy: IfNotPresent
         name: external-dns
       securityContext:
