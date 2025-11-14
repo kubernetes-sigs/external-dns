@@ -185,6 +185,16 @@ It must be between `1` and `2,147,483,647` seconds.
 
 > Note; setting the value to `0` means, that TTL is not configured and thus use default.
 
+## external-dns.alpha.kubernetes.io/gateway-hostname-source
+
+Specifies where to get the domain for `Route` resource. This annotation should be present on the actual `Route` resource, not the `Gateway` resource itself.
+
+If the value is `defined-hosts-only`, use only the domains from the `Route` spec.
+
+If the value is `annotation-only`, use only the domains from the `Route` annotations.
+
+If the annotation is not present, use the domains from both the spec and annotations.
+
 ## Provider-specific annotations
 
 Some providers define their own annotations. Cloud-specific annotations have keys prefixed as follows:

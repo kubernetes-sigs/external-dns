@@ -46,8 +46,10 @@ import (
 )
 
 const (
-	gatewayGroup = "gateway.networking.k8s.io"
-	gatewayKind  = "Gateway"
+	gatewayGroup                               = "gateway.networking.k8s.io"
+	gatewayKind                                = "Gateway"
+	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
+	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
 )
 
 type gatewayRoute interface {
@@ -401,13 +403,14 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 
 func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	var hostnames []string
+	var annotationHostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
 	}
 	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
 	// but other sources don't check if fqdn-template is set. Which should it be?
 	if !c.src.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		annotationHostnames = append(annotationHostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
@@ -417,12 +420,23 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		}
 		hostnames = append(hostnames, hosts...)
 	}
-	// This means that the route doesn't specify a hostname and should use any provided by
-	// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
-	// break {TCP,UDP}Routes.
-	if len(rt.Hostnames()) == 0 {
-		hostnames = append(hostnames, "")
+
+	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
+	if !hostNameAnnotationExists {
+		// This means that the route doesn't specify a hostname and should use any provided by
+		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
+		// break {TCP,UDP}Routes.
+		if len(rt.Hostnames()) == 0 {
+			hostnames = append(hostnames, "")
+		}
+
+		hostnames = append(hostnames, annotationHostnames...)
 	}
+
+	if strings.ToLower(hostNameAnnotation) == gatewayHostnameSourceAnnotationOnlyValue {
+		return annotationHostnames, nil
+	}
+
 	return hostnames, nil
 }
 
