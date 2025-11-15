@@ -4,7 +4,6 @@ set -e
 
 KO_VERSION="0.18.0"
 KIND_VERSION="0.30.0"
-GO_VERSION="1.25"
 ALPINE_VERSION="3.18"
 
 echo "Starting end-to-end tests for external-dns with local provider..."
@@ -34,18 +33,19 @@ sudo mv ko /usr/local/bin/ko
 
 # Build external-dns
 echo "Building external-dns..."
-make build.image
+# Use ko with --local to save the image to Docker daemon
+EXTERNAL_DNS_IMAGE_FULL=$(KO_DOCKER_REPO=ko.local VERSION=$(git describe --tags --always --dirty) \
+    ko build --tags "$(git describe --tags --always --dirty)" --bare --sbom none \
+    --platform=linux/amd64 --local .)
+echo "Built image: $EXTERNAL_DNS_IMAGE_FULL"
 
-# Build a webhook image with the local provider
-docker build -t webhook:v1 -f - . <<EOF
-FROM golang:${GO_VERSION} AS builder
-WORKDIR /app
-COPY . .
-RUN pwd && CGO_ENABLED=0 go build -o /app/localprovider /app/provider/local
-FROM scratch
-COPY --from=builder /app/localprovider /localprovider
-ENTRYPOINT ["/localprovider"]
-EOF
+# Extract image name and tag (strip the @sha256 digest for kind load and kustomize)
+EXTERNAL_DNS_IMAGE="${EXTERNAL_DNS_IMAGE_FULL%%@*}"
+echo "Using image reference: $EXTERNAL_DNS_IMAGE"
+
+# apply etcd deployment as provider
+echo "Applying etcd"
+kubectl apply -f e2e/provider/etcd.yaml
 
 # Build a DNS testing image with dig
 echo "Building DNS test image with dig..."
@@ -57,7 +57,7 @@ EOF
 
 # Load all images into kind cluster
 echo "Loading Docker images into kind cluster..."
-kind load docker-image webhook:v1
+kind load docker-image "$EXTERNAL_DNS_IMAGE"
 kind load docker-image dns-test:v1
 
 # Deploy ExternalDNS to the cluster
@@ -81,27 +81,13 @@ spec:
         - name: external-dns
           args:
             - --source=service
-            - --provider=webhook
+            - --provider=coredns
             - --txt-owner-id=external.dns
             - --policy=sync
             - --log-level=debug
-        - name: webhook
-          image: webhook:v1
-          ports:
-            - containerPort: 8888
-              name: http
-            - containerPort: 5353
-              name: dns-udp
-              protocol: UDP
-            - containerPort: 5353
-              name: dns-tcp
-              protocol: TCP
-          args:
-            - --listen-address=0.0.0.0
-            - --port=8888
-            - --dns-address=0.0.0.0
-            - --dns-port=5353
-            - --dns-ttl=300
+          env:
+            - name: ETCD_URLS
+              value: http://etcd-0.etcd:2379
 EOF
 
 # Update kustomization.yaml to include the patch
@@ -111,7 +97,8 @@ kind: Kustomization
 
 images:
   - name: registry.k8s.io/external-dns/external-dns
-    newTag: v0.18.0 # needs to be the real version
+    newName: ${EXTERNAL_DNS_IMAGE%%:*}
+    newTag: ${EXTERNAL_DNS_IMAGE##*:}
 
 resources:
   - ./external-dns-deployment.yaml
