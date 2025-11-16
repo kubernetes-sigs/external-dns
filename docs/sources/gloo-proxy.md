@@ -104,3 +104,52 @@ spec:
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
+
+## Gateway Annotation
+
+To support setups where an Ingress resource is used to provision an external LB you can add the following annotation to your Gateway
+
+**Note:** The Ingress namespace can be omitted if its in the same namespace as the gateway
+
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: gloo.solo.io/v1
+kind: Proxy
+metadata:
+  labels:
+    created_by: gloo-gateway
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  listeners:
+  - bindAddress: '::'
+    metadataStatic:
+      sources:
+      - resourceKind: '*v1.Gateway'
+        resourceRef:
+          name: gateway-proxy
+          namespace: gloo-system
+---
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    gateway-proxy-id: gateway-proxy
+    gloo: gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  ingressClassName: alb
+EOF
+```
