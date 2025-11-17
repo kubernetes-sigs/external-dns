@@ -1,4 +1,4 @@
-name: end to end test with local provider
+name: end to end test
 
 on:
   push:
