@@ -4,7 +4,7 @@ set -e
 
 KO_VERSION="0.18.0"
 KIND_VERSION="0.30.0"
-ALPINE_VERSION="3.18"
+ALPINE_VERSION="3.22"
 
 echo "Starting end-to-end tests for external-dns with local provider..."
 
