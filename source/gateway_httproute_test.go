@@ -1621,8 +1621,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title: "InvalidSourceAnnotation",
-			config: Config{},
+			title:      "InvalidSourceAnnotation",
+			config:     Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -1637,7 +1637,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Annotations: map[string]string{
 						annotations.GatewayHostnameSourceKey: "invalid-value",
-						annotations.HostnameKey:             "annotation.invalid.internal",
+						annotations.HostnameKey:              "annotation.invalid.internal",
 					},
 				},
 				Spec: v1.HTTPRouteSpec{
