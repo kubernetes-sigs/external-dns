@@ -403,14 +403,8 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 
 func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	var hostnames []string
-	var annotationHostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
-	}
-	// TODO: The ignore-hostname-annotation flag help says "valid only when using fqdn-template"
-	// but other sources don't check if fqdn-template is set. Which should it be?
-	if !c.src.ignoreHostnameAnnotation {
-		annotationHostnames = append(annotationHostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.fqdnTemplate != nil && (len(hostnames) == 0 || c.src.combineFQDNAnnotation) {
@@ -429,15 +423,33 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		if len(rt.Hostnames()) == 0 {
 			hostnames = append(hostnames, "")
 		}
-
-		hostnames = append(hostnames, annotationHostnames...)
+		if !c.src.ignoreHostnameAnnotation {
+			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		return hostnames, nil
 	}
 
-	if strings.ToLower(hostNameAnnotation) == gatewayHostnameSourceAnnotationOnlyValue {
-		return annotationHostnames, nil
+	switch strings.ToLower(hostNameAnnotation) {
+	case gatewayHostnameSourceAnnotationOnlyValue:
+		if c.src.ignoreHostnameAnnotation {
+			return []string{}, nil
+		}
+		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+	case gatewayHostnameSourceDefinedHostsOnlyValue:
+		// Explicitly use only defined hostnames (route spec and optional template result)
+		return hostnames, nil
+	default:
+		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
+		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
+			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
+		if len(rt.Hostnames()) == 0 {
+			hostnames = append(hostnames, "")
+		}
+		if !c.src.ignoreHostnameAnnotation {
+			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		return hostnames, nil
 	}
-
-	return hostnames, nil
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {

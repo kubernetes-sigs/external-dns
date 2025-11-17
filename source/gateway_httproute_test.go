@@ -1620,6 +1620,44 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("test.org.internal", "A", "1.2.3.4"),
 			},
 		},
+		{
+			title: "InvalidSourceAnnotation",
+			config: Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid-annotation",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.GatewayHostnameSourceKey: "invalid-value",
+						annotations.HostnameKey:             "annotation.invalid.internal",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("route.invalid.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("route.invalid.internal", "A", "1.2.3.4"),
+				newTestEndpoint("annotation.invalid.internal", "A", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				"Invalid value for \"external-dns.alpha.kubernetes.io/gateway-hostname-source\" on default/invalid-annotation: \"invalid-value\". Falling back to default behavior.",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {
