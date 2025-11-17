@@ -187,7 +187,7 @@ It must be between `1` and `2,147,483,647` seconds.
 
 ## external-dns.alpha.kubernetes.io/gateway-hostname-source
 
-Specifies where to get the domain for `Route` resource. This annotation should be present on the actual `Route` resource, not the `Gateway` resource itself.
+Specifies where to get the domain for a `Route` resource. This annotation should be present on the actual `Route` resource, not the `Gateway` resource itself.
 
 If the value is `defined-hosts-only`, use only the domains from the `Route` spec.
 
