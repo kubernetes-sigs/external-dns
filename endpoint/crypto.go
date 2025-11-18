@@ -66,7 +66,7 @@ func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error
 	return base64.StdEncoding.EncodeToString(cipherData), nil
 }
 
-// DecryptText decrypt gziped data using a supplied AES encryption key ang ungzip it
+// DecryptText decrypt gzipped data using a supplied AES encryption key ang ungzip it
 // in case of decryption failed, will return original input and decryption error
 func DecryptText(text string, aesKey []byte) (string, string, error) {
 	block, err := aes.NewCipher(aesKey)
