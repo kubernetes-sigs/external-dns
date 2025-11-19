@@ -1,0 +1,98 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: default
+data:
+  Corefile: |
+    external.dns:5353 {
+        errors
+        log
+        etcd {
+            stubzones
+            path /skydns
+            endpoint http://etcd-0.etcd:2379
+        }
+        cache 30
+        forward . /etc/resolv.conf
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns
+  namespace: default
+  labels:
+    app: coredns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coredns
+  template:
+    metadata:
+      labels:
+        app: coredns
+    spec:
+      hostNetwork: true
+      dnsPolicy: Default
+      containers:
+      - name: coredns
+        image: coredns/coredns:1.13.1
+        args: [ "-conf", "/etc/coredns/Corefile" ]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/coredns
+        ports:
+        - containerPort: 5353
+          name: dns
+          protocol: UDP
+        - containerPort: 5353
+          name: dns-tcp
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8181
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: coredns
+          items:
+          - key: Corefile
+            path: Corefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns
+  namespace: default
+  labels:
+    app: coredns
+spec:
+  selector:
+    app: coredns
+  ports:
+  - name: dns
+    port: 5353
+    targetPort: 5353
+    protocol: UDP
+  - name: dns-tcp
+    port: 5353
+    targetPort: 5353
+    protocol: TCP
