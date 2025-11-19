@@ -44,14 +44,14 @@ require (
 	github.com/miekg/dns v1.1.68
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
-	github.com/oracle/oci-go-sdk/v65 v65.104.1
+	github.com/oracle/oci-go-sdk/v65 v65.105.0
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
 	github.com/projectcontour/contour v1.33.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.67.2
+	github.com/prometheus/common v0.67.3
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.1
