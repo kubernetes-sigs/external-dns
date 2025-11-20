@@ -114,6 +114,9 @@ spec:
             {{- if .Values.gatewayNamespace }}
             - --gateway-namespace={{ .Values.gatewayNamespace }}
             {{- end }}
+            {{- if .Values.gatewayEnableExperimental }}
+            - --gateway-enable-experimental
+            {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
