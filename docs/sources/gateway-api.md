@@ -202,6 +202,8 @@ spec:
         - --source=gateway-tlsroute
         - --source=gateway-tcproute
         - --source=gateway-udproute
+        # Optionally, enable Gateway API Experimental resource support (XListenerSet)
+        - --gateway-enable-experimental
         # Optionally, limit Routes to those in the given namespace.
         - --namespace=my-route-namespace
         # Optionally, limit Routes to those matching the given label selector.
