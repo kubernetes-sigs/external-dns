@@ -260,8 +260,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	for idx, target := range targets {
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
 		// TXT records can contain arbitrary text including multiple dots
+		// SRV can contain dots in their target part (RFC2782)
 		switch recordType {
-		case RecordTypeTXT, RecordTypeNAPTR:
+		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV:
 			cleanTargets[idx] = target
 		default:
 			cleanTargets[idx] = strings.TrimSuffix(target, ".")
@@ -484,11 +485,15 @@ func (t Targets) ValidateMXRecord() bool {
 
 func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
-		// SRV records must have a priority, weight, and port value, e.g. "10 5 5060 example.com"
-		// as per https://www.rfc-editor.org/rfc/rfc2782.txt
+		// SRV records must have a priority, weight, a port value and a target e.g. "10 5 5060 example.com."
+		// as per https://www.rfc-editor.org/rfc/rfc2782.txt the target host has to end with a dot.
 		targetParts := strings.Fields(strings.TrimSpace(target))
 		if len(targetParts) != 4 {
-			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, and port value, e.g. '10 5 5060 example.com'", target)
+			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, a port value and a target host, e.g. '10 5 5060 example.com.'", target)
+			return false
+		}
+		if !strings.HasSuffix(targetParts[3], ".") {
+			log.Debugf("Invalid SRV record target: %s. Target host does not end with a dot.'", target)
 			return false
 		}
 
