@@ -787,7 +787,7 @@ func TestPDNScheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tls.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 20 5060 service.example.com"},
+				Targets:    Targets{"10 20 5060 service.example.com."},
 			},
 			expected: true,
 		},
@@ -805,7 +805,16 @@ func TestPDNScheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tls.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 20 abc service.example.com"},
+				Targets:    Targets{"10 20 abc service.example.com."},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid SRV record with missing dot for target host",
+			endpoint: Endpoint{
+				DNSName:    "_service._tls.example.com",
+				RecordType: RecordTypeSRV,
+				Targets:    Targets{"10 20 5060 service.example.com"},
 			},
 			expected: false,
 		},
@@ -895,7 +904,7 @@ func TestCheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tcp.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 5 5060 example.com"},
+				Targets:    Targets{"10 5 5060 example.com."},
 			},
 			expected: true,
 		},
@@ -904,7 +913,7 @@ func TestCheckEndpoint(t *testing.T) {
 			endpoint: Endpoint{
 				DNSName:    "_service._tcp.example.com",
 				RecordType: RecordTypeSRV,
-				Targets:    Targets{"10 5 example.com"},
+				Targets:    Targets{"10 5 example.com."},
 			},
 			expected: false,
 		},
