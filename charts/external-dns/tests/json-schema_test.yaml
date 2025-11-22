@@ -62,3 +62,12 @@ tests:
       readinessProbe: null
     asserts:
       - notFailedTemplate: {}
+
+  - it: should not fail when provider webhook serviceMonitor interval is not null
+    set:
+      provider:
+        webhook:
+          serviceMonitor:
+            interval: 30s
+    asserts:
+      - notFailedTemplate: {}
