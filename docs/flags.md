@@ -97,6 +97,7 @@
 | `--cloudflare-region-key=""` | When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional) |
 | `--cloudflare-record-comment=""` | When using the Cloudflare provider, specify the comment for the DNS records (default: '') |
 | `--coredns-prefix="/skydns/"` | When using the CoreDNS provider, specify the prefix name |
+| `--[no-]coredns-strictly-owned` | When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false) |
 | `--akamai-serviceconsumerdomain=""` | When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-token=""` | When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified) |
 | `--akamai-client-secret=""` | When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified) |

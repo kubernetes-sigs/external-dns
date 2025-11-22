@@ -583,7 +583,7 @@ func TestIsOwnedBy(t *testing.T) {
 				Labels: tt.fields.Labels,
 			}
 			if got := e.IsOwnedBy(tt.args.ownerID); got != tt.want {
-				t.Errorf("Endpoint.IsOwnedBy() = %v, want %v", got, tt.want)
+				t.Errorf("Endpoint.isOwnedBy() = %v, want %v", got, tt.want)
 			}
 		})
 	}

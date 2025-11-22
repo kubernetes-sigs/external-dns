@@ -28,6 +28,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	etcdcv3 "go.etcd.io/etcd/client/v3"
 
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
@@ -84,10 +85,15 @@ type Service struct {
 
 	// Etcd key where we found this service and ignored from json un-/marshaling
 	Key string `json:"-"`
+
+	// OwnedBy is used to prevent service to be added by different external-dns (only used by external-dns)
+	OwnedBy string `json:"ownedby,omitempty"`
 }
 
 type etcdClient struct {
-	client *etcdcv3.Client
+	client        *etcdcv3.Client
+	ownerID       string
+	strictlyOwned bool
 }
 
 var _ coreDNSClient = etcdClient{}
@@ -106,11 +112,21 @@ func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service,
 	var svcs []*Service
 	bx := make(map[Service]bool)
 	for _, n := range r.Kvs {
-		svc := new(Service)
-		if err := json.Unmarshal(n.Value, svc); err != nil {
-			return nil, fmt.Errorf("%s: %w", n.Key, err)
+		svc, err := c.unmarshalService(n)
+		if err != nil {
+			return nil, err
 		}
-		b := Service{Host: svc.Host, Port: svc.Port, Priority: svc.Priority, Weight: svc.Weight, Text: svc.Text, Key: string(n.Key)}
+		if c.strictlyOwned && svc.OwnedBy != c.ownerID {
+			continue
+		}
+		b := Service{
+			Host:     svc.Host,
+			Port:     svc.Port,
+			Priority: svc.Priority,
+			Weight:   svc.Weight,
+			Text:     svc.Text,
+			Key:      string(n.Key),
+		}
 		if _, ok := bx[b]; ok {
 			// skip the service if already added to service list.
 			// the same service might be found in multiple etcd nodes.
@@ -132,6 +148,25 @@ func (c etcdClient) SaveService(ctx context.Context, service *Service) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
+	// check only for empty OwnedBy
+	if c.strictlyOwned && service.OwnedBy != c.ownerID {
+		r, err := c.client.Get(ctx, service.Key)
+		if err != nil {
+			return fmt.Errorf("etcd get %q: %w", service.Key, err)
+		}
+		// Key missing -> treat as owned (safe to create)
+		if r != nil && len(r.Kvs) != 0 {
+			svc, err := c.unmarshalService(r.Kvs[0])
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal value for key %q: %w", service.Key, err)
+			}
+			if svc.OwnedBy != c.ownerID {
+				return fmt.Errorf("key %q is not owned by this provider", service.Key)
+			}
+		}
+		service.OwnedBy = c.ownerID
+	}
+
 	value, err := json.Marshal(&service)
 	if err != nil {
 		return err
@@ -148,8 +183,38 @@ func (c etcdClient) DeleteService(ctx context.Context, key string) error {
 	ctx, cancel := context.WithTimeout(ctx, etcdTimeout)
 	defer cancel()
 
-	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
-	return err
+	if c.strictlyOwned {
+		rs, err := c.client.Get(ctx, key, etcdcv3.WithPrefix())
+		if err != nil {
+			return err
+		}
+		for _, r := range rs.Kvs {
+			svc, err := c.unmarshalService(r)
+			if err != nil {
+				return err
+			}
+			if svc.OwnedBy != c.ownerID {
+				continue
+			}
+
+			_, err = c.client.Delete(ctx, string(r.Key))
+			if err != nil {
+				return err
+			}
+		}
+		return err
+	} else {
+		_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
+		return err
+	}
+}
+
+func (c etcdClient) unmarshalService(n *mvccpb.KeyValue) (*Service, error) {
+	svc := new(Service)
+	if err := json.Unmarshal(n.Value, svc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %q: %w", n.Key, err)
+	}
+	return svc, nil
 }
 
 // builds etcd client config depending on connection scheme and TLS parameters
@@ -183,7 +248,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 }
 
 // the newETCDClient is an etcd client constructor
-func newETCDClient() (coreDNSClient, error) {
+func newETCDClient(ownerID string, strictlyOwned bool) (coreDNSClient, error) {
 	cfg, err := getETCDConfig()
 	if err != nil {
 		return nil, err
@@ -192,12 +257,12 @@ func newETCDClient() (coreDNSClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return etcdClient{c}, nil
+	return etcdClient{c, ownerID, strictlyOwned}, nil
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix string, dryRun bool) (provider.Provider, error) {
-	client, err := newETCDClient()
+func NewCoreDNSProvider(domainFilter *endpoint.DomainFilter, prefix, ownerID string, strictlyOwned, dryRun bool) (provider.Provider, error) {
+	client, err := newETCDClient(ownerID, strictlyOwned)
 	if err != nil {
 		return nil, err
 	}
