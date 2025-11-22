@@ -115,6 +115,7 @@ from the usage of any externally developed webhook.
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
 | Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
+| UniFi                 | https://github.com/lexfrei/external-dns-unifios-webhook              |
 | Volcengine Cloud      | https://github.com/volcengine/external-dns-volcengine-webhook        |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |
 | Yandex Cloud          | https://github.com/ismailbaskin/external-dns-yandex-webhook/         |
