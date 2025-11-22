@@ -76,6 +76,7 @@ type serviceSource struct {
 	alwaysPublishNotReadyAddresses bool
 	resolveLoadBalancerHostname    bool
 	listenEndpointEvents           bool
+	servicePerPodFqdn              *bool
 	serviceInformer                coreinformers.ServiceInformer
 	endpointSlicesInformer         discoveryinformers.EndpointSliceInformer
 	podInformer                    coreinformers.PodInformer
@@ -98,7 +99,7 @@ func NewServiceSource(
 	ignoreHostnameAnnotation bool,
 	labelSelector labels.Selector,
 	resolveLoadBalancerHostname,
-	listenEndpointEvents, exposeInternalIPv6 bool,
+	listenEndpointEvents, exposeInternalIPv6 bool, servicePerPodFqdn *bool,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -224,6 +225,7 @@ func NewServiceSource(
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
 		exposeInternalIPv6:             exposeInternalIPv6,
+		servicePerPodFqdn:              servicePerPodFqdn,
 	}, nil
 }
 
@@ -411,8 +413,10 @@ func (sc *serviceSource) processHeadlessEndpointsFromSlices(
 				continue
 			}
 			headlessDomains := []string{hostname}
-			if pod.Spec.Hostname != "" {
+			if pod.Spec.Hostname != "" && (sc.servicePerPodFqdn == nil || *sc.servicePerPodFqdn) {
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
+			} else if sc.servicePerPodFqdn != nil && *sc.servicePerPodFqdn {
+				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Name, hostname))
 			}
 			for _, headlessDomain := range headlessDomains {
 				targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
