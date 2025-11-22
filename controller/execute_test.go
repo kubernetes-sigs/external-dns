@@ -24,8 +24,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"os/signal"
 	"reflect"
 	"regexp"
+	"syscall"
 	"testing"
 	"time"
 
@@ -34,6 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/provider"
 	fakeprovider "sigs.k8s.io/external-dns/provider/fakes"
@@ -216,6 +219,40 @@ func TestSelectRegistry(t *testing.T) {
 				assert.Contains(t, reflect.TypeOf(reg).String(), tt.wantType)
 			}
 		})
+	}
+}
+
+func TestSetupSigtermHandler(t *testing.T) {
+	cancelCalled := make(chan bool, 1)
+	cancel := func() {
+		cancelCalled <- true
+	}
+
+	hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+
+	defer signal.Reset(syscall.SIGTERM)
+	setupSigtermHandler(cancel)
+
+	// Simulate sending a SIGTERM signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+	err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	assert.NoError(t, err)
+
+	// Wait for the signal to be received
+	select {
+	case sig := <-sigChan:
+		assert.Equal(t, syscall.SIGTERM, sig)
+	case <-time.After(1 * time.Second):
+		t.Fatal("signal was not recieved")
+	}
+
+	// Wait for the cancel function to be called
+	select {
+	case <-cancelCalled:
+		testutils.TestHelperLogContainsWithLogLevel("Received SIGTERM. Terminating...", log.InfoLevel, hook, t)
+	case <-time.After(1 * time.Second):
+		t.Fatal("cancel function was not called")
 	}
 }
 
