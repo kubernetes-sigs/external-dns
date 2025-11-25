@@ -16,12 +16,10 @@
       ],
       "matchDatasources": ["docker"],
       "matchPackageNames": [
-        "registry.access.redhat.com/ubi9/ubi-minimal",
-        "registry.access.redhat.com/ubi9/ubi"
+        "registry.access.redhat.com/ubi9/ubi-minimal"
       ],
       "enabled": true,
       "versioning": "redhat",
-      "allowedVersions": "/^9(\\.|$)/",
       "schedule": [
         "after 5am on tuesday"
       ]
