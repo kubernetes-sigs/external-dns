@@ -42,6 +42,7 @@ var (
 	SCWPrefix        string
 	WebhookPrefix    string
 	CloudflarePrefix string
+	AzurePrefix      string
 
 	TtlKey           string
 	SetIdentifierKey string
@@ -85,6 +86,7 @@ func SetAnnotationPrefix(prefix string) {
 	SCWPrefix = AnnotationKeyPrefix + "scw-"
 	WebhookPrefix = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
+	AzurePrefix = AnnotationKeyPrefix + "azure-"
 
 	// Core annotations
 	TtlKey = AnnotationKeyPrefix + "ttl"

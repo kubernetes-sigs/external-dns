@@ -511,6 +511,62 @@ Ensure that your nginx-ingress deployment has the following arg: added to it:
 
 For more details see here: [nginx-ingress external-dns](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/docs/faq.md#why-is-externaldns-only-adding-a-single-ip-address-in-route-53-on-aws-when-using-the-nginx-ingress-controller-how-do-i-get-it-to-use-the-fqdn-of-the-elb-assigned-to-my-nginx-ingress-controller-service-instead)
 
+## DNS Record Metadata (Tags)
+
+External-DNS supports setting Azure resource metadata (tags) on DNS records using annotations on Kubernetes resources.
+
+### Usage with Ingress
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/azure-metadata-cost-center: "12345"
+    external-dns.alpha.kubernetes.io/azure-metadata-owner: backend-team
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
+```
+
+### Usage with Gateway API (HTTPRoute)
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-route
+  annotations:
+    external-dns.alpha.kubernetes.io/azure-metadata-environment: production
+    external-dns.alpha.kubernetes.io/azure-metadata-app: myapp
+spec:
+  parentRefs:
+    - name: my-gateway
+  hostnames:
+    - "api.example.com"
+  rules:
+    - backendRefs:
+        - name: my-service
+          port: 8080
+```
+
+**Note:** Metadata annotations must be placed directly on each route resource (HTTPRoute, TLSRoute, GRPCRoute, etc.). Gateway annotations are not automatically inherited by routes.
+
+### Annotation Format
+
+Metadata annotations must follow the format:
+`external-dns.alpha.kubernetes.io/azure-metadata-<key>: <value>`
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with. Then apply one of the following manifests file to deploy ExternalDNS.
