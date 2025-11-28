@@ -38,6 +38,8 @@ import (
 
 const (
 	defaultTTL = 300
+	// Azure-specific provider properties
+	providerSpecificMetadataPrefix = "azure-metadata-"
 )
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -147,6 +149,14 @@ func (p *AzureProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
 				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				// Extract metadata from Azure RecordSet
+				if recordSet.Properties != nil && recordSet.Properties.Metadata != nil {
+					for key, value := range recordSet.Properties.Metadata {
+						if value != nil {
+							ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, *value)
+						}
+					}
+				}
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",
 					ep.RecordType,
@@ -348,6 +358,8 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int64(endpoint.RecordTTL)
 	}
+	// Extract metadata from ProviderSpecific properties
+	metadata := extractMetadataFromEndpoint(endpoint)
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.RecordTypeA:
 		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
@@ -360,6 +372,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			Properties: &dns.RecordSetProperties{
 				TTL:      to.Ptr(ttl),
 				ARecords: aRecords,
+				Metadata: metadata,
 			},
 		}, nil
 	case dns.RecordTypeAAAA:
@@ -373,6 +386,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			Properties: &dns.RecordSetProperties{
 				TTL:         to.Ptr(ttl),
 				AaaaRecords: aaaaRecords,
+				Metadata:    metadata,
 			},
 		}, nil
 	case dns.RecordTypeCNAME:
@@ -382,6 +396,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				CnameRecord: &dns.CnameRecord{
 					Cname: to.Ptr(endpoint.Targets[0]),
 				},
+				Metadata: metadata,
 			},
 		}, nil
 	case dns.RecordTypeMX:
@@ -397,6 +412,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			Properties: &dns.RecordSetProperties{
 				TTL:       to.Ptr(ttl),
 				MxRecords: mxRecords,
+				Metadata:  metadata,
 			},
 		}, nil
 	case dns.RecordTypeNS:
@@ -410,6 +426,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			Properties: &dns.RecordSetProperties{
 				TTL:       to.Ptr(ttl),
 				NsRecords: nsRecords,
+				Metadata:  metadata,
 			},
 		}, nil
 	case dns.RecordTypeTXT:
@@ -423,6 +440,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 						},
 					},
 				},
+				Metadata: metadata,
 			},
 		}, nil
 	}
@@ -499,4 +517,21 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 		}
 	}
 	return []string{}
+}
+
+// extractMetadataFromEndpoint extracts Azure metadata from endpoint ProviderSpecific properties.
+// Properties with prefix "azure-metadata-" are converted to Azure RecordSet metadata.
+func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
+	metadata := make(map[string]*string)
+	for _, ps := range ep.ProviderSpecific {
+		if key, ok := strings.CutPrefix(ps.Name, providerSpecificMetadataPrefix); ok {
+			if key != "" && ps.Value != "" {
+				metadata[key] = to.Ptr(ps.Value)
+			}
+		}
+	}
+	if len(metadata) == 0 {
+		return nil
+	}
+	return metadata
 }
