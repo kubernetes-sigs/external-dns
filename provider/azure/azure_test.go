@@ -613,3 +613,120 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 		t.Fatal(err)
 	}
 }
+
+func TestRecordsWithMetadata(t *testing.T) {
+	// Create a record set with metadata
+	recordSetWithMetadata := &dns.RecordSet{
+		Name: to.Ptr("example"),
+		Type: to.Ptr("Microsoft.Network/dnszones/A"),
+		Properties: &dns.RecordSetProperties{
+			TTL: to.Ptr[int64](300),
+			ARecords: []*dns.ARecord{
+				{IPv4Address: to.Ptr("1.2.3.4")},
+			},
+			Metadata: map[string]*string{
+				"environment": to.Ptr("production"),
+				"team":        to.Ptr("platform"),
+			},
+		},
+	}
+
+	provider, err := newMockedAzureProvider(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		endpoint.NewDomainFilter([]string{}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		"k8s",
+		"",
+		"",
+		[]*dns.Zone{createMockZone("example.com", "/dnszones/example.com")},
+		[]*dns.RecordSet{recordSetWithMetadata},
+		3,
+	)
+	assert.NoError(t, err)
+
+	endpoints, err := provider.Records(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, endpoints, 1)
+
+	ep := endpoints[0]
+	assert.Equal(t, "example.example.com", ep.DNSName)
+	assert.Equal(t, endpoint.RecordTypeA, ep.RecordType)
+
+	// Check metadata was extracted
+	hasEnv := false
+	hasTeam := false
+	for _, ps := range ep.ProviderSpecific {
+		if ps.Name == "azure-metadata-environment" && ps.Value == "production" {
+			hasEnv = true
+		}
+		if ps.Name == "azure-metadata-team" && ps.Value == "platform" {
+			hasTeam = true
+		}
+	}
+	assert.True(t, hasEnv, "Expected environment metadata to be present")
+	assert.True(t, hasTeam, "Expected team metadata to be present")
+}
+
+func TestNewRecordSetWithMetadata(t *testing.T) {
+	provider, err := newMockedAzureProvider(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		endpoint.NewDomainFilter([]string{}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		"k8s",
+		"",
+		"",
+		[]*dns.Zone{createMockZone("example.com", "/dnszones/example.com")},
+		[]*dns.RecordSet{},
+		3,
+	)
+	assert.NoError(t, err)
+
+	t.Run("A record with metadata", func(t *testing.T) {
+		ep := endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4")
+		ep.WithProviderSpecific("azure-metadata-environment", "production")
+		ep.WithProviderSpecific("azure-metadata-cost-center", "12345")
+
+		recordSet, err := provider.newRecordSet(ep)
+		assert.NoError(t, err)
+		assert.NotNil(t, recordSet.Properties)
+		assert.NotNil(t, recordSet.Properties.Metadata)
+		assert.Len(t, recordSet.Properties.Metadata, 2)
+		assert.Equal(t, "production", *recordSet.Properties.Metadata["environment"])
+		assert.Equal(t, "12345", *recordSet.Properties.Metadata["cost-center"])
+	})
+
+	t.Run("CNAME record with metadata", func(t *testing.T) {
+		ep := endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "target.com")
+		ep.WithProviderSpecific("azure-metadata-owner", "team-backend")
+
+		recordSet, err := provider.newRecordSet(ep)
+		assert.NoError(t, err)
+		assert.NotNil(t, recordSet.Properties)
+		assert.NotNil(t, recordSet.Properties.Metadata)
+		assert.Len(t, recordSet.Properties.Metadata, 1)
+		assert.Equal(t, "team-backend", *recordSet.Properties.Metadata["owner"])
+	})
+
+	t.Run("TXT record with metadata", func(t *testing.T) {
+		ep := endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns")
+		ep.WithProviderSpecific("azure-metadata-managed-by", "kubernetes")
+
+		recordSet, err := provider.newRecordSet(ep)
+		assert.NoError(t, err)
+		assert.NotNil(t, recordSet.Properties)
+		assert.NotNil(t, recordSet.Properties.Metadata)
+		assert.Len(t, recordSet.Properties.Metadata, 1)
+		assert.Equal(t, "kubernetes", *recordSet.Properties.Metadata["managed-by"])
+	})
+
+	t.Run("A record without metadata", func(t *testing.T) {
+		ep := endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4")
+
+		recordSet, err := provider.newRecordSet(ep)
+		assert.NoError(t, err)
+		assert.NotNil(t, recordSet.Properties)
+		assert.Nil(t, recordSet.Properties.Metadata)
+	})
+}

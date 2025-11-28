@@ -54,6 +54,11 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Name:  fmt.Sprintf("coredns/%s", attr),
 				Value: v,
 			})
+		} else if attr, ok := strings.CutPrefix(k, AzurePrefix); ok {
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("azure-%s", attr),
+				Value: v,
+			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
 			switch {
 			case strings.Contains(k, CloudflareCustomHostnameKey):
