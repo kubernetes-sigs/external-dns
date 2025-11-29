@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aws/aws-sdk-go-v2 v1.40.0
-	github.com/aws/aws-sdk-go-v2/config v1.32.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.0
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.25
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.53.1
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.60.1
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.17
-	github.com/aws/aws-sdk-go-v2/service/sts v1.41.1
+	github.com/aws/aws-sdk-go-v2/config v1.32.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.2
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.26
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.53.2
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.61.0
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.18
+	github.com/aws/aws-sdk-go-v2/service/sts v1.41.2
 	github.com/aws/smithy-go v1.23.2
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.3
@@ -51,7 +51,7 @@ require (
 	github.com/projectcontour/contour v1.33.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.67.3
+	github.com/prometheus/common v0.67.4
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.1
@@ -66,7 +66,7 @@ require (
 	golang.org/x/text v0.31.0
 	golang.org/x/time v0.14.0
 	google.golang.org/api v0.256.0
-	gopkg.in/ns1/ns1-go.v2 v2.15.1
+	gopkg.in/ns1/ns1-go.v2 v2.15.2
 	istio.io/api v1.28.0
 	istio.io/client-go v1.28.0
 	k8s.io/api v0.34.2
@@ -92,13 +92,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.14 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.14 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.32.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.32.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.14 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.0.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.30.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.0.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.30.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.10 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
