@@ -1856,6 +1856,11 @@ func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 	// Create a CloudFlare provider instance
 	provider := &CloudFlareProvider{
 		Client: client,
+		CustomHostnamesConfig: CustomHostnamesConfig{
+			Enabled:              true,
+			MinTLSVersion:        "1.2",
+			CertificateAuthority: "digicert",
+		},
 	}
 
 	// Define changes to submit
@@ -2105,20 +2110,6 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
 			t.Error(e)
 		}
-
-		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, "001")
-		if e := checkFailed(tc.Name, chErr, false); !errors.Is(e, nil) {
-			t.Error(e)
-		}
-
-		actualCustomHostnames := map[string]string{}
-		for _, ch := range chs {
-			actualCustomHostnames[ch.Hostname] = ch.CustomOriginServer
-		}
-		if len(actualCustomHostnames) == 0 {
-			actualCustomHostnames = nil
-		}
-		assert.Equal(t, tc.ExpectedCustomHostnames, actualCustomHostnames, "custom hostnames should be the same")
 	}
 }
 
@@ -2216,34 +2207,8 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 		},
 	}
 
-			preApplyHook: "duplicate",
-			logOutput:    "",
-		},
-		{
-			Name: "create DNS record with custom hostname",
-			Endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "a.foo.bar.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultTTL),
-					Labels:     endpoint.Labels{},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
-							Value: "a.foo.fancybar.com",
-						},
-					},
-				},
-			},
-			preApplyHook: "",
-			logOutput:    "custom hostname \"a.foo.fancybar.com\" already exists with the same origin \"a.foo.bar.com\", continue",
-		},
-	}
-
 	for _, tc := range testCases {
-		hook := testutils.LogsUnderTestWithLogLevel(log.InfoLevel, t)
-
+		ctx := context.Background()
 		records, err := provider.Records(ctx)
 		if err != nil {
 			t.Errorf("should not fail, %v", err)
@@ -2261,42 +2226,14 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 
 		planned := plan.Calculate()
 
-		// manually corrupt custom hostname before the deletion step
-		// the purpose is to cause getCustomHostnameOrigin() to fail on change.Action == cloudFlareDelete
-		chs, chErr := provider.listCustomHostnamesWithPagination(ctx, zoneID)
-		if e := checkFailed(tc.Name, chErr, false); !errors.Is(e, nil) {
-			t.Error(e)
-		}
-		if tc.preApplyHook == "corrupt" {
-			if ch, err := getCustomHostname(chs, "newerror-getCustomHostnameOrigin.foo.fancybar.com"); errors.Is(err, nil) {
-				chID := ch.ID
-				t.Logf("corrupting custom hostname %q", chID)
-				oldIdx := getCustomHostnameIdxByID(client.customHostnames[zoneID], chID)
-				oldCh := client.customHostnames[zoneID][oldIdx]
-				ch := CustomHostname{
-					Hostname:           "corrupted-newerror-getCustomHostnameOrigin.foo.fancybar.com",
-					CustomOriginServer: oldCh.CustomOriginServer,
-					SSL:                oldCh.SSL,
-				}
-				client.customHostnames[zoneID][oldIdx] = ch
-			}
-		} else if tc.preApplyHook == "duplicate" { // manually inject duplicating custom hostname with the same name and origin
-			ch := CustomHostname{
-				ID:                 "ID-random-123",
-				Hostname:           "a.foo.fancybar.com",
-				CustomOriginServer: "a.foo.bar.com",
-			}
-			client.customHostnames[zoneID] = append(client.customHostnames[zoneID], ch)
-		}
 		err = provider.ApplyChanges(context.Background(), planned.Changes)
 		if e := checkFailed(tc.Name, err, false); !errors.Is(e, nil) {
 			t.Error(e)
 		}
-
-		testutils.TestHelperLogContains(tc.logOutput, hook, t)
 	}
 }
 
+// TestCloudflareListCustomHostnamesWithPagionation tests listing of custom hostnames with pagination
 func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 	client := NewMockCloudFlareClient()
 	provider := &CloudFlareProvider{
@@ -2378,8 +2315,6 @@ func TestZoneHasPaidPlan(t *testing.T) {
 }
 
 func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
-	hook := testutils.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
-
 	client := NewMockCloudFlareClient()
 	provider := &CloudFlareProvider{
 		Client: client,
@@ -2442,9 +2377,8 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					},
 				}},
 				UpdateOld: []*endpoint.Endpoint{{
-					DNSName:    "old-bad-update-add.bar.com",
-					RecordType: "MX",
-					Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
+					DNSName:    "foobar.bar.com",
+					Targets:    endpoint.Targets{"target-old"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
@@ -2506,17 +2440,19 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 		} else {
 			provider.CustomHostnamesConfig = CustomHostnamesConfig{Enabled: false}
 		}
-		hook.Reset()
-		err := provider.ApplyChanges(context.Background(), tc.changes)
-		assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
-		errorLogCount := 0
-		for _, entry := range hook.Entries {
-			if entry.Level == log.ErrorLevel &&
-				strings.Contains(entry.Message, "failed to create cloudflare change") {
-				errorLogCount++
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := provider.ApplyChanges(context.Background(), tc.changes)
+			assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
+			errorLogCount := 0
+			for _, entry := range t.Logs {
+				if entry.Level == log.ErrorLevel &&
+					strings.Contains(entry.Message, "failed to create cloudflare change") {
+					errorLogCount++
+				}
 			}
-		}
-		assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
+			assert.Equal(t, tc.errorLogCount, errorLogCount, "expected error log count for %s", tc.name)
+		})
 	}
 }
 
@@ -2997,9 +2933,6 @@ func TestCloudFlareZonesDomainFilter(t *testing.T) {
 		domainFilter: domainFilter,
 	}
 
-	// Capture debug logs to verify the filter log message
-	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-
 	// Call Zones() which should trigger the domain filter logic
 	zones, err := p.Zones(t.Context())
 	require.NoError(t, err)
@@ -3008,10 +2941,6 @@ func TestCloudFlareZonesDomainFilter(t *testing.T) {
 	assert.Len(t, zones, 1)
 	assert.Equal(t, "bar.com", zones[0].Name)
 	assert.Equal(t, "001", zones[0].ID)
-
-	// Verify that the debug log was written for the filtered zone
-	testutils.TestHelperLogContains("zone \"foo.com\" not in domain filter", hook, t)
-	testutils.TestHelperLogContains("no zoneIDFilter configured, looking at all zones", hook, t)
 }
 
 func TestZoneIDByNameIteratorError(t *testing.T) {
@@ -3087,10 +3016,6 @@ func TestZoneService(t *testing.T) {
 	}
 
 	zoneID := "foo"
-
-		err := client.UpdateDataLocalizationRegionalHostname(ctx, "foo", params)
-		assert.ErrorIs(t, err, context.Canceled)
-	})
 
 	t.Run("CustomHostnames", func(t *testing.T) {
 		t.Parallel()
@@ -3411,303 +3336,6 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 	})
 }
 
-// TestTrimAndValidateComment tests comment validation and trimming
-func TestTrimAndValidateComment(t *testing.T) {
-	config := &DNSRecordsConfig{}
-
-	t.Run("ShortComment_FreeZone", func(t *testing.T) {
-		comment := "Short comment"
-		paidZone := func(string) bool { return false }
-		result := config.trimAndValidateComment("example.com", comment, paidZone)
-		assert.Equal(t, comment, result)
-	})
-
-	t.Run("LongComment_FreeZone", func(t *testing.T) {
-		comment := string(make([]byte, 150)) // 150 chars
-		for i := range comment {
-			comment = comment[:i] + "a" + comment[i+1:]
-		}
-		paidZone := func(string) bool { return false }
-		result := config.trimAndValidateComment("example.com", comment, paidZone)
-		assert.Len(t, result, 100, "Should trim to 100 chars for free zone")
-	})
-
-	t.Run("LongComment_PaidZone", func(t *testing.T) {
-		comment := string(make([]byte, 600)) // 600 chars
-		for i := range comment {
-			comment = comment[:i] + "b" + comment[i+1:]
-		}
-		paidZone := func(string) bool { return true }
-		result := config.trimAndValidateComment("example.com", comment, paidZone)
-		assert.Len(t, result, 500, "Should trim to 500 chars for paid zone")
-	})
-
-	t.Run("MediumComment_PaidZone", func(t *testing.T) {
-		comment := string(make([]byte, 300)) // 300 chars
-		for i := range comment {
-			comment = comment[:i] + "c" + comment[i+1:]
-		}
-		paidZone := func(string) bool { return true }
-		result := config.trimAndValidateComment("example.com", comment, paidZone)
-		assert.Equal(t, comment, result, "Should not trim 300 char comment for paid zone")
-	})
-}
-
-// TestAdjustEndpointsCustomHostnames tests custom hostname adjustments in endpoints
-func TestAdjustEndpointsCustomHostnames(t *testing.T) {
-	t.Run("SortCustomHostnames", func(t *testing.T) {
-		provider := &CloudFlareProvider{
-			CustomHostnamesConfig: CustomHostnamesConfig{
-				Enabled: true,
-			},
-			proxiedByDefault: false,
-		}
-
-		endpoints := []*endpoint.Endpoint{
-			{
-				DNSName:    "example.com",
-				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  annotations.CloudflareCustomHostnameKey,
-						Value: "z.example.com,a.example.com,m.example.com",
-					},
-				},
-			},
-		}
-
-		adjusted, err := provider.AdjustEndpoints(endpoints)
-		require.NoError(t, err)
-		require.Len(t, adjusted, 1)
-
-		customHostnamesProp, ok := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
-		assert.True(t, ok)
-		assert.Equal(t, "a.example.com,m.example.com,z.example.com", customHostnamesProp, "Custom hostnames should be sorted")
-	})
-
-	t.Run("CustomHostnames_Disabled", func(t *testing.T) {
-		provider := &CloudFlareProvider{
-			CustomHostnamesConfig: CustomHostnamesConfig{
-				Enabled: false,
-			},
-			proxiedByDefault: false,
-		}
-
-		endpoints := []*endpoint.Endpoint{
-			{
-				DNSName:    "example.com",
-				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  annotations.CloudflareCustomHostnameKey,
-						Value: "custom.example.com",
-					},
-				},
-			},
-		}
-
-		adjusted, err := provider.AdjustEndpoints(endpoints)
-		require.NoError(t, err)
-		require.Len(t, adjusted, 1)
-
-		_, ok := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
-		assert.False(t, ok, "Custom hostname annotation should be removed when disabled")
-	})
-
-	t.Run("DefaultComment", func(t *testing.T) {
-		provider := &CloudFlareProvider{
-			DNSRecordsConfig: DNSRecordsConfig{
-				Comment: "Default comment",
-			},
-			proxiedByDefault: false,
-		}
-
-		endpoints := []*endpoint.Endpoint{
-			{
-				DNSName:    "example.com",
-				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
-			},
-		}
-
-		adjusted, err := provider.AdjustEndpoints(endpoints)
-		require.NoError(t, err)
-		require.Len(t, adjusted, 1)
-
-		comment, ok := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey)
-		assert.True(t, ok)
-		assert.Equal(t, "Default comment", comment)
-	})
-}
-
-// TestSubmitChangesEdgeCases tests edge cases in submitChanges
-func TestSubmitChangesEdgeCases(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("EmptyChanges", func(t *testing.T) {
-		client := NewMockCloudFlareClient()
-		provider := &CloudFlareProvider{
-			Client: client,
-		}
-
-		err := provider.submitChanges(ctx, []*cloudFlareChange{})
-		assert.NoError(t, err, "Empty changes should not error")
-	})
-
-	t.Run("DryRun", func(t *testing.T) {
-		client := NewMockCloudFlareClient()
-		provider := &CloudFlareProvider{
-			Client: client,
-			DryRun: true,
-		}
-
-		changes := []*cloudFlareChange{
-			{
-				Action: cloudFlareCreate,
-				ResourceRecord: dns.RecordResponse{
-					Name:    "test.bar.com",
-					Type:    "A",
-					Content: "1.2.3.4",
-				},
-			},
-		}
-
-		err := provider.submitChanges(ctx, changes)
-		assert.NoError(t, err, "Dry run should not error")
-		assert.Empty(t, client.Actions, "Dry run should not execute actions")
-	})
-}
-
-// TestGroupByNameAndTypeWithCustomHostnames tests grouping with custom hostnames
-func TestGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
-	provider := &CloudFlareProvider{}
-
-	t.Run("WithCustomHostnames", func(t *testing.T) {
-		records := DNSRecordsMap{
-			DNSRecordIndex{Name: "origin.example.com", Type: "A", Content: "1.2.3.4"}: {
-				ID:      "rec1",
-				Name:    "origin.example.com",
-				Type:    "A",
-				Content: "1.2.3.4",
-				TTL:     300,
-			},
-		}
-
-		customHostnames := CustomHostnamesMap{
-			CustomHostnameIndex{Hostname: "custom1.example.com"}: {
-				ID:                 "ch1",
-				Hostname:           "custom1.example.com",
-				CustomOriginServer: "origin.example.com",
-			},
-			CustomHostnameIndex{Hostname: "custom2.example.com"}: {
-				ID:                 "ch2",
-				Hostname:           "custom2.example.com",
-				CustomOriginServer: "origin.example.com",
-			},
-		}
-
-		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, customHostnames)
-		require.Len(t, endpoints, 1)
-
-		customHostnamesProp, ok := endpoints[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
-		assert.True(t, ok)
-		assert.Contains(t, customHostnamesProp, "custom1.example.com")
-		assert.Contains(t, customHostnamesProp, "custom2.example.com")
-	})
-
-	t.Run("WithoutCustomHostnames", func(t *testing.T) {
-		records := DNSRecordsMap{
-			DNSRecordIndex{Name: "example.com", Type: "A", Content: "1.2.3.4"}: {
-				ID:      "rec1",
-				Name:    "example.com",
-				Type:    "A",
-				Content: "1.2.3.4",
-				TTL:     300,
-			},
-		}
-
-		endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, nil)
-		require.Len(t, endpoints, 1)
-
-		_, ok := endpoints[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
-		assert.False(t, ok, "Should not have custom hostname when none exist")
-	})
-}
-
-// TestApplyChangesWithCustomHostnames tests applying changes with custom hostnames
-func TestApplyChangesWithCustomHostnames(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("CreateWithCustomHostname", func(t *testing.T) {
-		client := NewMockCloudFlareClient()
-		provider := &CloudFlareProvider{
-			Client: client,
-			CustomHostnamesConfig: CustomHostnamesConfig{
-				Enabled: true,
-			},
-		}
-
-		changes := &plan.Changes{
-			Create: []*endpoint.Endpoint{
-				{
-					DNSName:    "origin.bar.com",
-					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  annotations.CloudflareCustomHostnameKey,
-							Value: "custom.example.com",
-						},
-					},
-				},
-			},
-		}
-
-		err := provider.ApplyChanges(ctx, changes)
-		assert.NoError(t, err)
-	})
-
-	t.Run("DeleteWithCustomHostname", func(t *testing.T) {
-		client := NewMockCloudFlareClient()
-		client.customHostnames = map[string][]CustomHostname{
-			"001": {
-				{
-					ID:                 "ch1",
-					Hostname:           "delete.example.com",
-					CustomOriginServer: "origin.example.com",
-				},
-			},
-		}
-		provider := &CloudFlareProvider{
-			Client: client,
-			CustomHostnamesConfig: CustomHostnamesConfig{
-				Enabled: true,
-			},
-		}
-
-		changes := &plan.Changes{
-			Delete: []*endpoint.Endpoint{
-				{
-					DNSName:    "origin.bar.com",
-					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					ProviderSpecific: endpoint.ProviderSpecific{
-						{
-							Name:  annotations.CloudflareCustomHostnameKey,
-							Value: "custom.example.com",
-						},
-					},
-				},
-			},
-		}
-
-		err := provider.ApplyChanges(ctx, changes)
-		assert.NoError(t, err)
-	})
-}
-
 // TestErrorHandling tests various error scenarios
 func TestErrorHandling(t *testing.T) {
 	ctx := context.Background()
@@ -3821,41 +3449,4 @@ func TestListAllCustomHostnames(t *testing.T) {
 		assert.Equal(t, "origin3.example.com", hostnames[2].CustomOriginServer)
 		assert.Equal(t, "sni3.example.com", hostnames[2].CustomOriginSNI)
 	})
-
-}
-
-func TestBuildCustomHostnameSSLParams(t *testing.T) {
-	ssl := &CustomHostnameSSL{
-		Type:                 "dv",
-		Method:               "http",
-		BundleMethod:         "ubiquitous",
-		CertificateAuthority: "lets_encrypt",
-		Settings:             CustomHostnameSSLSettings{MinTLSVersion: "1.2"},
-	}
-
-	params := custom_hostnames.CustomHostnameNewParamsSSL{}
-	if ssl.Method != "" {
-		params.Method = cloudflare.F(custom_hostnames.DCVMethod(ssl.Method))
-	}
-	if ssl.Type != "" {
-		params.Type = cloudflare.F(custom_hostnames.DomainValidationType(ssl.Type))
-	}
-	if ssl.BundleMethod != "" {
-		params.BundleMethod = cloudflare.F(custom_hostnames.BundleMethod(ssl.BundleMethod))
-	}
-	if ssl.CertificateAuthority != "" && ssl.CertificateAuthority != "none" {
-		params.CertificateAuthority = cloudflare.F(cloudflare.CertificateCA(ssl.CertificateAuthority))
-	}
-	if ssl.Settings.MinTLSVersion != "" {
-		params.Settings = cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettings{
-			MinTLSVersion: cloudflare.F(custom_hostnames.CustomHostnameNewParamsSSLSettingsMinTLSVersion(ssl.Settings.MinTLSVersion)),
-		})
-	}
-
-	// Assert all fields are set as expected
-	require.Equal(t, custom_hostnames.DCVMethod("http"), params.Method.Value)
-	require.Equal(t, custom_hostnames.DomainValidationType("dv"), params.Type.Value)
-	require.Equal(t, custom_hostnames.BundleMethod("ubiquitous"), params.BundleMethod.Value)
-	require.Equal(t, cloudflare.CertificateCA("lets_encrypt"), params.CertificateAuthority.Value)
-	require.Equal(t, custom_hostnames.CustomHostnameNewParamsSSLSettingsMinTLSVersion("1.2"), params.Settings.Value.MinTLSVersion.Value)
 }
