@@ -230,9 +230,10 @@ func (z zoneService) DeleteCustomHostname(ctx context.Context, customHostnameID 
 }
 
 func (z zoneService) CreateCustomHostname(ctx context.Context, zoneID string, ch CustomHostname) error {
-	params := buildCustomHostnameNewParams(zoneID, ch)
-	_, err := z.service.CustomHostnames.New(ctx, params)
-	return err
+	       params := buildCustomHostnameNewParams(zoneID, ch)
+	       _, err := z.service.CustomHostnames.New(ctx, params,
+		       option.WithJSONSet("custom_origin_server", ch.CustomOriginServer))
+	       return err
 }
 
 // listZonesV4Params returns the appropriate Zone List Params for v4 API
