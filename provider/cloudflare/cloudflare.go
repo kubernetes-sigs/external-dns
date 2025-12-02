@@ -353,8 +353,10 @@ func convertCloudflareError(err error) error {
 		}
 	}
 
-	// Also check for rate limit indicators in error message strings as a fallback
-	// This handles cases where the SDK or retry logic wraps the error
+	// Also check for rate limit indicators in error message strings as a fallback.
+	// The v5 SDK's retry logic and error wrapping can hide the structured error type,
+	// so we need string matching to catch rate limits in wrapped errors like:
+	// "exceeded available rate limit retries" from the SDK's auto-retry mechanism.
 	errMsg := strings.ToLower(err.Error())
 	if strings.Contains(errMsg, "rate limit") ||
 		strings.Contains(errMsg, "429") ||

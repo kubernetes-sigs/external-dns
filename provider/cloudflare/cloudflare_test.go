@@ -3004,6 +3004,128 @@ func TestGetUpdateDNSRecordParam(t *testing.T) {
 	assert.Equal(t, "test-comment", body.Comment.Value)
 }
 
+func TestBuildCustomHostnameNewParams(t *testing.T) {
+	t.Run("Minimal custom hostname without SSL", func(t *testing.T) {
+		ch := CustomHostname{
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+		}
+
+		params := buildCustomHostnameNewParams("zone-123", ch)
+
+		assert.Equal(t, "zone-123", params.ZoneID.Value)
+		assert.Equal(t, "test.example.com", params.Hostname.Value)
+		assert.False(t, params.SSL.Present)
+	})
+
+	t.Run("Custom hostname with full SSL configuration", func(t *testing.T) {
+		ch := CustomHostname{
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+			SSL: &CustomHostnameSSL{
+				Type:                 "dv",
+				Method:               "http",
+				BundleMethod:         "ubiquitous",
+				CertificateAuthority: "digicert",
+				Settings: CustomHostnameSSLSettings{
+					MinTLSVersion: "1.2",
+				},
+			},
+		}
+
+		params := buildCustomHostnameNewParams("zone-123", ch)
+
+		assert.Equal(t, "zone-123", params.ZoneID.Value)
+		assert.Equal(t, "test.example.com", params.Hostname.Value)
+		assert.True(t, params.SSL.Present)
+
+		ssl := params.SSL.Value
+		assert.Equal(t, "dv", string(ssl.Type.Value))
+		assert.Equal(t, "http", string(ssl.Method.Value))
+		assert.Equal(t, "ubiquitous", string(ssl.BundleMethod.Value))
+		assert.Equal(t, "digicert", string(ssl.CertificateAuthority.Value))
+		assert.Equal(t, "1.2", string(ssl.Settings.Value.MinTLSVersion.Value))
+	})
+
+	t.Run("Custom hostname with partial SSL configuration", func(t *testing.T) {
+		ch := CustomHostname{
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+			SSL: &CustomHostnameSSL{
+				Type:   "dv",
+				Method: "http",
+			},
+		}
+
+		params := buildCustomHostnameNewParams("zone-123", ch)
+
+		assert.True(t, params.SSL.Present)
+		ssl := params.SSL.Value
+		assert.Equal(t, "dv", string(ssl.Type.Value))
+		assert.Equal(t, "http", string(ssl.Method.Value))
+		assert.False(t, ssl.BundleMethod.Present)
+		assert.False(t, ssl.CertificateAuthority.Present)
+		assert.False(t, ssl.Settings.Present)
+	})
+
+	t.Run("Custom hostname with 'none' certificate authority", func(t *testing.T) {
+		ch := CustomHostname{
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+			SSL: &CustomHostnameSSL{
+				Type:                 "dv",
+				Method:               "http",
+				CertificateAuthority: "none",
+			},
+		}
+
+		params := buildCustomHostnameNewParams("zone-123", ch)
+
+		assert.True(t, params.SSL.Present)
+		ssl := params.SSL.Value
+		// "none" should not be set as certificate authority
+		assert.False(t, ssl.CertificateAuthority.Present)
+	})
+
+	t.Run("Custom hostname with empty certificate authority", func(t *testing.T) {
+		ch := CustomHostname{
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+			SSL: &CustomHostnameSSL{
+				Type:                 "dv",
+				Method:               "http",
+				CertificateAuthority: "",
+			},
+		}
+
+		params := buildCustomHostnameNewParams("zone-123", ch)
+
+		assert.True(t, params.SSL.Present)
+		ssl := params.SSL.Value
+		// Empty string should not be set
+		assert.False(t, ssl.CertificateAuthority.Present)
+	})
+
+	t.Run("Custom hostname with only MinTLSVersion", func(t *testing.T) {
+		ch := CustomHostname{
+			Hostname:           "test.example.com",
+			CustomOriginServer: "origin.example.com",
+			SSL: &CustomHostnameSSL{
+				Settings: CustomHostnameSSLSettings{
+					MinTLSVersion: "1.3",
+				},
+			},
+		}
+
+		params := buildCustomHostnameNewParams("zone-123", ch)
+
+		assert.True(t, params.SSL.Present)
+		ssl := params.SSL.Value
+		assert.True(t, ssl.Settings.Present)
+		assert.Equal(t, "1.3", string(ssl.Settings.Value.MinTLSVersion.Value))
+	})
+}
+
 func TestZoneService(t *testing.T) {
 	t.Parallel()
 
