@@ -14,12 +14,19 @@ limitations under the License.
 package annotations
 
 import (
+	"os"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 )
+
+func TestMain(m *testing.M) {
+	// Initialize annotation prefixes before running tests
+	SetAnnotationPrefix(DefaultAnnotationPrefix)
+	os.Exit(m.Run())
+}
 
 func TestProviderSpecificAnnotations(t *testing.T) {
 	tests := []struct {
@@ -71,6 +78,16 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			},
 			expected: endpoint.ProviderSpecific{
 				{Name: "coredns/group", Value: "g1"},
+			},
+			setIdentifier: "",
+		},
+		{
+			name: "Azure metadata annotation",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/azure-metadata-environment": "production",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-environment", Value: "production"},
 			},
 			setIdentifier: "",
 		},
@@ -355,6 +372,19 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 			expectedResult: map[string]string{
 				"webhook/annotation-1": "value 1",
 				"webhook/annotation-2": "value 2",
+			},
+			expectedIdentifier: "id1",
+		},
+		{
+			title: "azure- provider specific annotations are set correctly",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/azure-metadata-foo": "bar",
+				SetIdentifierKey: "id1",
+				"external-dns.alpha.kubernetes.io/azure-metadata-baz": "qux",
+			},
+			expectedResult: map[string]string{
+				"azure/metadata-foo": "bar",
+				"azure/metadata-baz": "qux",
 			},
 			expectedIdentifier: "id1",
 		},
