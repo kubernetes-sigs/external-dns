@@ -183,75 +183,41 @@ func (p *Plan) Calculate() *Plan {
 		t.addCandidate(desired)
 	}
 
+	changes := p.calculateChanges(t)
+
+	plan := &Plan{
+		Current: p.Current,
+		Desired: p.Desired,
+		Changes: changes,
+		// The default for ExternalDNS is to always only consider A/AAAA and CNAMEs.
+		// Everything else is an add on or something to be considered.
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+	}
+
+	return plan
+}
+
+func (p *Plan) calculateChanges(t planTable) *Changes {
 	changes := &Changes{}
 
 	for key, row := range t.rows {
+		switch {
 		// dns name not taken
-		if len(row.current) == 0 {
+		case len(row.current) == 0:
 			recordsByType := t.resolver.ResolveRecordTypes(key, row)
 			for _, records := range recordsByType {
 				if len(records.candidates) > 0 {
 					changes.Create = append(changes.Create, t.resolver.ResolveCreate(records.candidates))
 				}
 			}
-		}
 
 		// dns name released or possibly owned by a different external dns
-		if len(row.current) > 0 && len(row.candidates) == 0 {
+		case len(row.candidates) == 0:
 			changes.Delete = append(changes.Delete, row.current...)
-		}
 
 		// dns name is taken
-		if len(row.current) > 0 && len(row.candidates) > 0 {
-			creates := []*endpoint.Endpoint{}
-
-			// apply changes for each record type
-			recordsByType := t.resolver.ResolveRecordTypes(key, row)
-			for _, records := range recordsByType {
-				// record type not desired
-				if records.current != nil && len(records.candidates) == 0 {
-					changes.Delete = append(changes.Delete, records.current)
-				}
-
-				// new record type desired
-				if records.current == nil && len(records.candidates) > 0 {
-					update := t.resolver.ResolveCreate(records.candidates)
-					// creates are evaluated after all domain records have been processed to
-					// validate that this external dns has ownership claim on the domain before
-					// adding the records to planned changes.
-					creates = append(creates, update)
-				}
-
-				// update existing record
-				if records.current != nil && len(records.candidates) > 0 {
-					update := t.resolver.ResolveUpdate(records.current, records.candidates)
-
-					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) ||
-						p.isOldOwnerIdSetAndDifferent(records.current) {
-						inheritOwner(records.current, update)
-						changes.UpdateNew = append(changes.UpdateNew, update)
-						changes.UpdateOld = append(changes.UpdateOld, records.current)
-					}
-				}
-			}
-
-			if len(creates) > 0 {
-				// only add creates if the external dns has ownership claim on the domain
-				ownersMatch := true
-				for _, current := range row.current {
-					if p.OwnerID != "" && !current.IsOwnedBy(p.OwnerID) {
-						ownersMatch = false
-					}
-				}
-
-				if ownersMatch {
-					changes.Create = append(changes.Create, creates...)
-				} else if log.GetLevel() == log.DebugLevel {
-					for _, current := range row.current {
-						log.Debugf(`Skipping endpoint %v because owner id does not match for one or more items to create, found: "%s", required: "%s"`, current, current.Labels[endpoint.OwnerLabelKey], p.OwnerID)
-					}
-				}
-			}
+		case len(row.candidates) > 0:
+			p.appendTakenDNSNameChanges(t, changes, key, row)
 		}
 	}
 
@@ -267,16 +233,75 @@ func (p *Plan) Calculate() *Plan {
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
-	plan := &Plan{
-		Current: p.Current,
-		Desired: p.Desired,
-		Changes: changes,
-		// The default for ExternalDNS is to always only consider A/AAAA and CNAMEs.
-		// Everything else is an add on or something to be considered.
-		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+	return changes
+}
+
+func (p *Plan) appendTakenDNSNameChanges(t planTable, changes *Changes, key planKey, row *planTableRow) {
+	// apply changes for each record type
+	rowChanges := p.calculatePlanTableRowChanges(t, key, row)
+	changes.Delete = append(changes.Delete, rowChanges.Delete...)
+	changes.UpdateNew = append(changes.UpdateNew, rowChanges.UpdateNew...)
+	changes.UpdateOld = append(changes.UpdateOld, rowChanges.UpdateOld...)
+	if len(rowChanges.Create) == 0 {
+		return
 	}
 
-	return plan
+	// only add creates if the external dns has ownership claim on the domain
+	ownersMatch := true
+	if p.OwnerID != "" {
+		for _, current := range row.current {
+			if !current.IsOwnedBy(p.OwnerID) {
+				ownersMatch = false
+				break
+			}
+		}
+	}
+
+	if ownersMatch {
+		changes.Create = append(changes.Create, rowChanges.Create...)
+	} else if log.GetLevel() == log.DebugLevel {
+		for _, current := range row.current {
+			log.Debugf(`Skipping endpoint %v because owner id does not match for one or more items to create, found: "%s", required: "%s"`, current, current.Labels[endpoint.OwnerLabelKey], p.OwnerID)
+		}
+	}
+}
+
+func (p *Plan) calculatePlanTableRowChanges(t planTable, key planKey, row *planTableRow) *Changes {
+	changes := &Changes{}
+
+	recordsByType := t.resolver.ResolveRecordTypes(key, row)
+	for _, records := range recordsByType {
+		switch {
+		// record type not desired
+		case records.current != nil && len(records.candidates) == 0:
+			changes.Delete = append(changes.Delete, records.current)
+
+		// new record type desired
+		case records.current == nil && len(records.candidates) > 0:
+			update := t.resolver.ResolveCreate(records.candidates)
+			// creates are evaluated after all domain records have been processed to
+			// validate that this external dns has ownership claim on the domain before
+			// adding the records to planned changes.
+			changes.Create = append(changes.Create, update)
+
+		// update existing record
+		case records.current != nil && len(records.candidates) > 0:
+			p.appendEndpointUpdates(t, changes, records.current, records.candidates)
+		}
+	}
+
+	return changes
+}
+
+func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *endpoint.Endpoint, candidates []*endpoint.Endpoint) {
+	update := t.resolver.ResolveUpdate(current, candidates)
+
+	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
+		p.shouldUpdateProviderSpecific(update, current) || p.isOldOwnerIdSetAndDifferent(current) {
+		inheritOwner(current, update)
+		changes.UpdateNew = append(changes.UpdateNew, update)
+		changes.UpdateOld = append(changes.UpdateOld, current)
+	}
 }
 
 func (p *Plan) isOldOwnerIdSetAndDifferent(current *endpoint.Endpoint) bool {
