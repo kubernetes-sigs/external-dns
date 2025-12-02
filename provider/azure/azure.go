@@ -39,7 +39,7 @@ import (
 const (
 	defaultTTL = 300
 	// Azure-specific provider properties
-	providerSpecificMetadataPrefix = "azure-metadata-"
+	providerSpecificMetadataPrefix = "azure/metadata-"
 )
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -149,14 +149,7 @@ func (p *AzureProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
 				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
-				// Extract metadata from Azure RecordSet
-				if recordSet.Properties != nil && recordSet.Properties.Metadata != nil {
-					for key, value := range recordSet.Properties.Metadata {
-						if value != nil {
-							ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, *value)
-						}
-					}
-				}
+				extractMetadataFromRecordSet(ep, recordSet)
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",
 					ep.RecordType,
@@ -519,9 +512,24 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 	return []string{}
 }
 
+// extractMetadataFromRecordSet extracts Azure RecordSet metadata into endpoint ProviderSpecific properties.
+func extractMetadataFromRecordSet(ep *endpoint.Endpoint, recordSet *dns.RecordSet) {
+	if recordSet.Properties == nil || recordSet.Properties.Metadata == nil {
+		return
+	}
+	for key, value := range recordSet.Properties.Metadata {
+		if value != nil {
+			ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, *value)
+		}
+	}
+}
+
 // extractMetadataFromEndpoint extracts Azure metadata from endpoint ProviderSpecific properties.
-// Properties with prefix "azure-metadata-" are converted to Azure RecordSet metadata.
+// Properties with prefix "azure/metadata-" are converted to Azure RecordSet metadata.
 func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
+	if len(ep.ProviderSpecific) == 0 {
+		return nil
+	}
 	metadata := make(map[string]*string)
 	for _, ps := range ep.ProviderSpecific {
 		if key, ok := strings.CutPrefix(ps.Name, providerSpecificMetadataPrefix); ok {
