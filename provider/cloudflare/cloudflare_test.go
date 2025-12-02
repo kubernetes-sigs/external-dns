@@ -1557,7 +1557,6 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	}
 }
 
-
 func TestCloudflareComplexUpdate(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 		"001": ExampleDomain,
@@ -1829,7 +1828,6 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		})
 	}
 }
-
 
 func TestCloudFlareProvider_submitChangesApex(t *testing.T) {
 	// Create a mock CloudFlare client with APEX records
@@ -2377,8 +2375,8 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					},
 				}},
 				UpdateOld: []*endpoint.Endpoint{{
-					DNSName:    "foobar.bar.com",
-					Targets:    endpoint.Targets{"target-old"},
+					DNSName: "foobar.bar.com",
+					Targets: endpoint.Targets{"target-old"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-custom-hostname",
