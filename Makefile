@@ -57,14 +57,9 @@ licensecheck:
 			exit 1; \
 		fi
 
-#? oas-lint: Execute OpenAPI Specification (OAS) linting https://quobix.com/vacuum/
-.PHONY: go-lint
-oas-lint:
-	go tool -modfile=go.tool.mod vacuum lint -d --fail-severity warn api/*.yaml
-
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint oas-lint
+lint: licensecheck go-lint
 
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd

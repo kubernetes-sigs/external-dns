@@ -9,7 +9,7 @@ function generate_changelog {
   echo
   echo "## :warning: Breaking Changes"
   echo
-  cat "${MERGED_PRS}" | grep "\!"
+  cat "${MERGED_PRS}" | grep "\!" || true # no breaking change, section should be removed.
 
   echo
   echo "## :rocket: Features"
@@ -35,7 +35,7 @@ function generate_changelog {
   echo "## :package: Docker Image"
   echo
   echo "\`\`\`sh"
-  echo "# This pull command only works when it's released
+  echo "# This pull command only works when it's released"
   echo "docker pull registry.k8s.io/external-dns/external-dns:${VERSION}"
   echo "\`\`\`"
 

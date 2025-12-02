@@ -238,7 +238,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         imagePullPolicy: Always
         args:
         - "--txt-prefix=%{record_type}-"
@@ -276,7 +276,7 @@ spec:
       containers:
       - name: external-dns
         imagePullPolicy: Always
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         args:
         - "--txt-prefix=%{record_type}-"
         - "--txt-cache-interval=2m"

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: demo-app
+  name: demo-app
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: externaldns-e2e.external.dns
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: demo-app
+  clusterIP: None

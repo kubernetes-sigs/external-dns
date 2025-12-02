@@ -504,7 +504,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.19.0
+          image: registry.k8s.io/external-dns/external-dns:v0.20.0
           args:
             - --source=service
             - --source=ingress
@@ -1055,7 +1055,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         command:
         - /bin/sh
         - -c

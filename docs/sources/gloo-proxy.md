@@ -24,7 +24,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         args:
         - --source=gloo-proxy
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
@@ -96,11 +96,60 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.19.0
+        image: registry.k8s.io/external-dns/external-dns:v0.20.0
         args:
         - --source=gloo-proxy
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
+```
+
+## Gateway Annotation
+
+To support setups where an Ingress resource is used to provision an external LB you can add the following annotation to your Gateway
+
+**Note:** The Ingress namespace can be omitted if its in the same namespace as the gateway
+
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: gloo.solo.io/v1
+kind: Proxy
+metadata:
+  labels:
+    created_by: gloo-gateway
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  listeners:
+  - bindAddress: '::'
+    metadataStatic:
+      sources:
+      - resourceKind: '*v1.Gateway'
+        resourceRef:
+          name: gateway-proxy
+          namespace: gloo-system
+---
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    gateway-proxy-id: gateway-proxy
+    gloo: gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  ingressClassName: alb
+EOF
 ```
