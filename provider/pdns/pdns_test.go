@@ -185,6 +185,7 @@ var (
 		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
+		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com")
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -955,27 +956,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	suite.NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToLongPatch}, zlist)
 
-	// Check endpoints of type CNAME always have their target records end with a dot.
+	// Check endpoints of type CNAME, ALIAS, MX, SRV, and NS always have their values end with a trailing dot.
 	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
 	suite.NoError(err)
 
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
-			if rs.Type_ == "CNAME" {
-				for _, r := range rs.Records {
-					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
-				}
-			}
-		}
-	}
-
-	// Check endpoints of type MX and SRV always have their values end with a trailing dot.
-	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
-	suite.NoError(err)
-
-	for _, z := range zlist {
-		for _, rs := range z.Rrsets {
-			if rs.Type_ == "MX" || rs.Type_ == "SRV" {
+			if rs.Type_ == "CNAME" || rs.Type_ == "ALIAS" || rs.Type_ == "MX" || rs.Type_ == "SRV" || rs.Type_ == "NS"
 				for _, r := range rs.Records {
 					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
 				}
