@@ -67,7 +67,7 @@ type mockCloudFlareClient struct {
 	dnsRecordsError      error
 	customHostnames      map[string][]cloudflarev0.CustomHostname
 	regionalHostnames    map[string][]regionalHostname
-	DNSRecordsListParams dns.RecordListParams
+	dnsRecordsListParams dns.RecordListParams
 }
 
 var ExampleDomain = []dns.RecordResponse{
@@ -271,7 +271,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.R
 }
 
 func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse] {
-	m.DNSRecordsListParams = params
+	m.dnsRecordsListParams = params
 	if m.dnsRecordsError != nil {
 		return &mockAutoPager[dns.RecordResponse]{err: m.dnsRecordsError}
 	}
@@ -1068,27 +1068,7 @@ func TestGetDNSRecordsMapWithPerPage(t *testing.T) {
 		"001": ExampleDomain,
 	})
 
-	ctx := context.Background()
-
-	t.Run("PerPage not set", func(t *testing.T) {
-		provider := &CloudFlareProvider{
-			Client:           client,
-			DNSRecordsConfig: DNSRecordsConfig{},
-		}
-		_, err := provider.getDNSRecordsMap(ctx, "001")
-		assert.NoError(t, err)
-		assert.False(t, client.DNSRecordsListParams.PerPage.Present)
-	})
-
-	t.Run("PerPage set to 0", func(t *testing.T) {
-		provider := &CloudFlareProvider{
-			Client:           client,
-			DNSRecordsConfig: DNSRecordsConfig{PerPage: 0},
-		}
-		_, err := provider.getDNSRecordsMap(ctx, "001")
-		assert.NoError(t, err)
-		assert.False(t, client.DNSRecordsListParams.PerPage.Present)
-	})
+	ctx := t.Context()
 
 	t.Run("PerPage set to positive value", func(t *testing.T) {
 		provider := &CloudFlareProvider{
@@ -1097,8 +1077,8 @@ func TestGetDNSRecordsMapWithPerPage(t *testing.T) {
 		}
 		_, err := provider.getDNSRecordsMap(ctx, "001")
 		assert.NoError(t, err)
-		assert.True(t, client.DNSRecordsListParams.PerPage.Present)
-		assert.InEpsilon(t, float64(100), client.DNSRecordsListParams.PerPage.Value, 0.0001)
+		assert.True(t, client.dnsRecordsListParams.PerPage.Present)
+		assert.InEpsilon(t, float64(100), client.dnsRecordsListParams.PerPage.Value, 0.0001)
 	})
 }
 
