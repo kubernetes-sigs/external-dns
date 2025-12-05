@@ -29,7 +29,7 @@ ARG FULL_COMMIT
 LABEL maintainer="Red Hat, Inc."
 LABEL com.redhat.component="external-dns-container"
 LABEL name="external-dns"
-LABEL version="1.3.1"
+LABEL version="1.3.3"
 LABEL commit=${FULL_COMMIT}
 WORKDIR /
 COPY --from=builder /workspace/build/external-dns /
