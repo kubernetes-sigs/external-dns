@@ -547,7 +547,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 }
 
 // Make sure the test version of SendMessage raises an error
-// if a zone update ever contains records outside of it's zone
+// if a zone update ever contains records outside of its zone
 // as the TestRfc2136ApplyChanges tests all assume this
 func TestRfc2136SendMessage(t *testing.T) {
 	stub := newStub()

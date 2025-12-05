@@ -168,7 +168,7 @@ Under certain circumstances you want to force ExternalDNS to create CNAME record
 Why should I want to force ExternalDNS to create CNAME records for ELB/ALB? Some motivations of users were:
 
 > "Our hosted zones records are synchronized with our enterprise DNS. The record type ALIAS is an AWS proprietary record type and AWS allows you to set a DNS record directly on AWS resources.
-> Since this is not a DNS RfC standard and therefore can not be transferred and created in our enterprise DNS. So we need to force CNAME creation instead."
+> Since this is not a DNS RFC standard and therefore can not be transferred and created in our enterprise DNS. So we need to force CNAME creation instead."
 
 or
 
@@ -251,14 +251,14 @@ If you need to search for multiple ingress classes, you can specify the flag mul
 `--ingress-class=internal --ingress-class=external`.
 
 The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
-The `spec.ingressClassName` tasks precedence over the annotation if both are supplied.
+The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
 
 **Backward compatibility**
 
 The previous `--annotation-filter` flag can still be used to restrict which objects ExternalDNS considers; for example, `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`.
 
 However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source object.
-If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source` and `--annotation-filter`.
 
 Note: the `--ingress-class` flag cannot be used at the same time as the `--annotation-filter=kubernetes.io/ingress.class in (...)` flag; if you do this an error will be raised.
 

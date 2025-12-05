@@ -304,7 +304,7 @@ By setting the TTL annotation on the service, you have to pass a valid TTL, whic
 This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
 For Cloudflare proxied entries, set the TTL annotation to 1 (automatic), or do not set it.
 
-ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
+ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation
 will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
@@ -339,7 +339,7 @@ kubectl delete -f externaldns.yaml
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
 
-## Setting cloudlfare regional services
+## Setting cloudflare regional services
 
 With Cloudflare regional services you can restrict which data centers can decrypt and serve HTTPS traffic.
 

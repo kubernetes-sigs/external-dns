@@ -425,7 +425,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 		},
 		{
-			title: "one gateway, ingress in seperate namespace",
+			title: "one gateway, ingress in separate namespace",
 			ingresses: []fakeIngress{
 				{
 					hostnames: []string{"lb.com"},

@@ -325,7 +325,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	return endpoints, nil
 }
 
-// annotation logic ported from source/ingress.go without Spec.TLS part, because it'S not supported in RouteGroup
+// annotation logic ported from source/ingress.go without Spec.TLS part, because it's not supported in RouteGroup
 func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
