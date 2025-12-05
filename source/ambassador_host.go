@@ -148,7 +148,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	for _, host := range ambassadorHosts {
 		fullname := fmt.Sprintf("%s/%s", host.Namespace, host.Name)
 
-		// look for the "exernal-dns.ambassador-service" annotation. If it is not there then just ignore this `Host`
+		// look for the "external-dns.ambassador-service" annotation. If it is not there then just ignore this `Host`
 		service, found := host.Annotations[ambHostAnnotation]
 		if !found {
 			log.Debugf("Host %s ignored: no annotation %q found", fullname, ambHostAnnotation)

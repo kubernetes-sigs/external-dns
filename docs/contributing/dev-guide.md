@@ -18,7 +18,7 @@ Building and/or testing `external-dns` requires additional tooling.
 
 ## First Steps
 
-***Configure Development Environment**
+***Configure Development Environment***
 
 You must have a working [Go environment](https://go.dev/doc/install), compile the build, and set up testing.
 
@@ -154,7 +154,7 @@ When building local images with ko you can't specify the registry used to create
 ❯❯ export KO_DOCKER_REPO=ko.local
 ❯❯ export VERSION=v1
 ❯❯ docker context use rancher-desktop ## (optional) this command is only required when using rancher-desktop
-❯❯ ls -al /var/run/docker.sock ## (optional) validate tha docker runtime is configured correctly and symlink exist
+❯❯ ls -al /var/run/docker.sock ## (optional) validate that docker runtime is configured correctly and symlink exists
 
 ❯❯ ko build --tags ${VERSION}
 ❯❯ docker images
@@ -275,7 +275,7 @@ This helm chart comes with a JSON schema generated from values with [helm schema
 ❯❯ scripts/helm-tools.sh --docs
 ```
 
-6. Run helm unittets.
+6. Run helm unittests.
 
 ```sh
 ❯❯ make helm-test

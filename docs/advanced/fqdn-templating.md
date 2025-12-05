@@ -241,7 +241,7 @@ This is helpful in scenarios such as:
 - You must still ensure the resulting FQDN is valid and unique.
 - Since Go templates can be error-prone, test your template with simple examples before deploying. Mismatched field names or nil values (e.g., missing labels) will result in errors or skipped entries.
 
-## FaQ
+## FAQ
 
 ### Can I specify multiple global FQDN templates?
 

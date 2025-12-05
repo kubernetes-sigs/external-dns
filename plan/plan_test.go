@@ -711,7 +711,7 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 }
 
 // TestNoCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
-// This could be the result of multiple sources generating conflicting records types. In this case there the
+// This could be the result of multiple sources generating conflicting records types. In this case, the
 // conflict resolver should prefer the A and AAAA record and drop the other candidate record types.
 func (suite *PlanTestSuite) TestNoCurrentWithConflictingDesired() {
 	current := []*endpoint.Endpoint{}
