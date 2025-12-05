@@ -26,6 +26,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -329,11 +330,8 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				records := []pgo.Record{}
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
-					for _, v := range trailingTypes {
-						if v == ep.RecordType {
-							t = provider.EnsureTrailingDot(t)
-							break
-						}
+					if slices.Contains(trailingTypes, ep.RecordType) {
+						t = provider.EnsureTrailingDot(t)
 					}
 					records = append(records, pgo.Record{Content: t})
 				}
