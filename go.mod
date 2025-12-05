@@ -54,7 +54,7 @@ require (
 	github.com/prometheus/common v0.67.4
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/transip/gotransip/v6 v6.26.1
 	go.etcd.io/etcd/api/v3 v3.6.6
@@ -67,15 +67,15 @@ require (
 	golang.org/x/time v0.14.0
 	google.golang.org/api v0.257.0
 	gopkg.in/ns1/ns1-go.v2 v2.16.0
-	istio.io/api v1.28.0
-	istio.io/client-go v1.28.0
+	istio.io/api v1.28.1
+	istio.io/client-go v1.28.1
 	k8s.io/api v0.34.2
 	k8s.io/apimachinery v0.34.2
 	k8s.io/client-go v0.34.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.22.4
-	sigs.k8s.io/gateway-api v1.4.0
+	sigs.k8s.io/gateway-api v1.4.1
 )
 
 require (
