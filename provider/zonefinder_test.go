@@ -35,6 +35,8 @@ func TestZoneIDName(t *testing.T) {
 	z.Add("1231231", "_foo._metadata.example.com")
 	z.Add("456456", "_metadata.エイミー.みんな")
 	z.Add("123412", "*.example.com")
+	// adding a zone as punycode, see that it is injected as unicode/international format
+	z.Add("234567", "xn--testcass-e1ae.fr")
 
 	assert.Equal(t, ZoneIDName{
 		"123456":  "qux.baz",
@@ -44,6 +46,7 @@ func TestZoneIDName(t *testing.T) {
 		"1231231": "_foo._metadata.example.com",
 		"456456":  "_metadata.エイミー.みんな",
 		"123412":  "*.example.com",
+		"234567":  "testécassé.fr",
 	}, z)
 
 	// simple entry in a domain
@@ -88,6 +91,15 @@ func TestZoneIDName(t *testing.T) {
 	zoneID, zoneName = z.FindZone("*.example.com")
 	assert.Equal(t, "*.example.com", zoneName)
 	assert.Equal(t, "123412", zoneID)
+
+	// looking for a zone that has been inserted as punycode
+	zoneID, zoneName = z.FindZone("example.testécassé.fr")
+	assert.Equal(t, "testécassé.fr", zoneName)
+	assert.Equal(t, "234567", zoneID)
+
+	zoneID, zoneName = z.FindZone("example.xn--testcass-e1ae.fr")
+	assert.Equal(t, "testécassé.fr", zoneName)
+	assert.Equal(t, "234567", zoneID)
 
 	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 	_, _ = z.FindZone("xn--not-a-valid-punycode")
