@@ -110,7 +110,6 @@ from the usage of any externally developed webhook.
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
-| RouterOS              | https://github.com/benfiola/external-dns-routeros-provider           |
 | SAKURA Cloud          | https://github.com/sacloud/external-dns-sacloud-webhook              |
 | Simply                | https://github.com/uozalp/external-dns-simply-webhook                |
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
