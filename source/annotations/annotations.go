@@ -64,6 +64,8 @@ var (
 	ControllerValue = "dns-controller"
 	// InternalHostnameKey The annotation used for defining the desired hostname
 	InternalHostnameKey string
+	// The annotation used for defining the desired hostname source for gateways
+	GatewayHostnameSourceKey string
 )
 
 // SetAnnotationPrefix sets a custom annotation prefix and rebuilds all annotation keys.
@@ -98,4 +100,5 @@ func SetAnnotationPrefix(prefix string) {
 	Ingress = AnnotationKeyPrefix + "ingress"
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
+	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
 }
