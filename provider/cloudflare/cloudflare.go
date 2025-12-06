@@ -901,6 +901,9 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	// for faster getRecordID lookup
 	recordsMap := make(DNSRecordsMap)
 	params := dns.RecordListParams{ZoneID: cloudflare.F(zoneID)}
+	if p.DNSRecordsConfig.PerPage > 0 {
+		params.PerPage = cloudflare.F(float64(p.DNSRecordsConfig.PerPage))
+	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
 		recordsMap[newDNSRecordIndex(record)] = record
