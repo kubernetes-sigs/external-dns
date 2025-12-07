@@ -451,7 +451,7 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 }
 
 func shouldSkipLabel(label string) bool {
-	skip := []string{"originalText", "prefix", "resource"}
+	skip := []string{"originalText", "prefix", "resource", endpoint.OwnerLabelKey}
 	_, ok := findLabelInTargets(skip, label)
 	return ok
 }

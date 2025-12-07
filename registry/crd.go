@@ -235,17 +235,16 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	for _, r := range filteredChanges.Create {
 		dnsname := strings.ReplaceAll(r.DNSName, ".", "-")
-		name := strings.ToLower(fmt.Sprintf("%s-%s", dnsname, r.RecordType))
 		r.Labels[endpoint.OwnerLabelKey] = cr.ownerID
 		record := apiv1alpha1.DNSRecord{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
+				Name:      strings.ToLower(fmt.Sprintf("%s-%s", dnsname, r.RecordType)),
 				Namespace: cr.namespace,
 				Labels: map[string]string{
-					apiv1alpha1.RecordOwnerLabel:      cr.OwnerID(),
-					apiv1alpha1.RecordNameLabel:       r.DNSName,
-					apiv1alpha1.RecordTypeLabel:       r.RecordType,
-					apiv1alpha1.RecordIdentifierLabel: r.SetIdentifier,
+					apiv1alpha1.RecordOwnerLabel: cr.OwnerID(),
+					apiv1alpha1.RecordNameLabel:  r.DNSName,
+					apiv1alpha1.RecordTypeLabel:  r.RecordType,
+					apiv1alpha1.RecordKeyLabel:   r.Key().String(),
 				},
 			},
 			Spec: apiv1alpha1.DNSRecordSpec{
@@ -271,7 +270,7 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.Delete {
 		var records apiv1alpha1.DNSRecordList
 		opts := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", apiv1alpha1.RecordIdentifierLabel, r.SetIdentifier, apiv1alpha1.RecordOwnerLabel, cr.ownerID),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", apiv1alpha1.RecordKeyLabel, r.Key().String(), apiv1alpha1.RecordOwnerLabel, cr.ownerID),
 		}
 
 		err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)
@@ -302,7 +301,7 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 		var records apiv1alpha1.DNSRecordList
 		opts := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", apiv1alpha1.RecordIdentifierLabel, old.SetIdentifier, apiv1alpha1.RecordOwnerLabel, cr.ownerID),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", apiv1alpha1.RecordKeyLabel, old.Key().String(), apiv1alpha1.RecordOwnerLabel, cr.ownerID),
 		}
 
 		err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)

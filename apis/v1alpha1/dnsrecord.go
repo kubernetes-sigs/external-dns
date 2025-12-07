@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	RecordOwnerLabel      string = "externaldns.k8s.io/owner"
-	RecordNameLabel       string = "externaldns.k8s.io/record-name"
-	RecordTypeLabel       string = "externaldns.k8s.io/record-type"
-	RecordIdentifierLabel string = "externaldns.k8s.io/identifier"
-	RecordResourceLabel   string = "externaldns.k8s.io/resource"
+	RecordOwnerLabel    string = "externaldns.k8s.io/owner"
+	RecordNameLabel     string = "externaldns.k8s.io/record-name"
+	RecordTypeLabel     string = "externaldns.k8s.io/record-type"
+	RecordKeyLabel      string = "externaldns.k8s.io/key"
+	RecordResourceLabel string = "externaldns.k8s.io/resource"
 )
 
 // DNSRecordSpec defines the desired state of DNSEndpoint
