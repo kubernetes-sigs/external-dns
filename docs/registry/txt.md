@@ -298,7 +298,8 @@ If you didn't set the owner ID, the value set by external-dns is `default`. You 
 
 > Warning: The `--migrate-from-txt-owner` flag combined with `policy=sync` can be unsafe in shared hosted zones when multiple clusters previously used the same TXT owner value (for example `default`).
 
-In a shared hosted zone, if one cluster runs ExternalDNS with `policy=sync` and `--migrate-from-txt-owner=default`, it may attempt to delete DNS records that belong to other clusters which still use `owner=default`. To avoid this, do not share the same TXT owner value across clusters in any zone where `policy=sync` or migration flags will be used.
+In a shared hosted zone, if one cluster runs ExternalDNS with `policy=sync` and `--migrate-from-txt-owner=default`, it may attempt to delete DNS records that belong to other clusters which still use `owner=default`.
+To avoid this, do not share the same TXT owner value across clusters in any zone where `policy=sync` or migration flags will be used.
 
 #### Per-cluster owner IDs
 
