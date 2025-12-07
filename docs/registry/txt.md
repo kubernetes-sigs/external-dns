@@ -208,6 +208,8 @@ Caching is enabled by specifying a cache duration with the `--txt-cache-interval
 
 ## OwnerID migration
 
+> Automating DNS migrations with third-party tools can be risky. DNS is often business-critical, and without deep understanding of the environment, 3rd party automation tools can do more harm than good.
+
 The owner ID of the TXT records managed by external-dns instance can be updated.
 
 When `--migrate-from-txt-owner` is set, it will enable the migration checks
