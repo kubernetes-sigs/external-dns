@@ -293,3 +293,32 @@ spec:
 
 If you didn't set the owner ID, the value set by external-dns is `default`. You can set the
 `--migrate-from-txt-owner` flag to `default` to migrate the associated records.
+
+### OwnerID migration: multi-cluster considerations
+
+> Warning: The `--migrate-from-txt-owner` flag combined with `policy=sync` can be unsafe in shared hosted zones when multiple clusters previously used the same TXT owner value (for example `default`).
+
+In a shared hosted zone, if one cluster runs ExternalDNS with `policy=sync` and `--migrate-from-txt-owner=default`, it may attempt to delete DNS records that belong to other clusters which still use `owner=default`. To avoid this, do not share the same TXT owner value across clusters in any zone where `policy=sync` or migration flags will be used.
+
+#### Per-cluster owner IDs
+
+For multi-cluster setups sharing a hosted zone:
+
+- Assign a **unique** `--txt-owner-id` to each cluster (for example `cluster1`, `cluster2`) and document this convention clearly in your platform configuration.
+- Avoid using a common owner such as `default` across clusters in a shared zone if any cluster will run with `policy=sync` or use `--migrate-from-txt-owner`.
+
+##### Safe migration sequence for shared zones
+
+When migrating from a shared owner (such as `default`) in a shared hosted zone:
+
+1. While still using `policy=upsert-only` (or equivalent), roll out cluster-specific `--txt-owner-id` values and ensure *new* records are created with the cluster’s own owner ID.
+2. Avoid `--migrate-from-txt-owner=<old-owner>` unless you can guarantee that only a single cluster has records with `<old-owner>` in that hosted zone, or perform the migration in an isolated zone where only that cluster writes records.
+
+#### Patterns to avoid
+
+The following pattern is **not recommended** and may cause record deletion for other clusters:
+
+- Multiple clusters share a Route53 hosted zone and all existing records use `owner=default`.
+- Only one cluster is upgraded to use `policy=sync`, `--txt-owner-id=<cluster-name>`, and `--migrate-from-txt-owner=default`, while other clusters still use `owner=default`.
+
+In this situation, the upgraded cluster can treat other clusters’ records as orphans and schedule them for deletion during synchronization. Prefer per-cluster zones, manual TXT record adjustment, or fully coordinated migration of all clusters if the migration flag must be used.
