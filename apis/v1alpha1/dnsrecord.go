@@ -56,6 +56,7 @@ type DNSRecordStatus struct {
 // +kubebuilder:resource:path=dnsrecords
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/5372"
 // +versionName=v1alpha1
 
 type DNSRecord struct {

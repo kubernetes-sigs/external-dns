@@ -416,7 +416,7 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "aws-sd":
 		reg, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	case "crd":
-		reg, err = registry.NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout, cfg.TXTCacheInterval)
+		reg, err = registry.NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDAPIVersion, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout, cfg.TXTCacheInterval)
 	case "dynamodb":
 		var dynamodbOpts []func(*dynamodb.Options)
 		if cfg.AWSDynamoDBRegion != "" {
@@ -430,7 +430,7 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "noop":
 		reg, err = registry.NewNoopRegistry(p)
 	case "txt":
-		reg, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTNewFormatOnly)
+		reg, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}
