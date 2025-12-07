@@ -4,7 +4,7 @@ title: "Gateway API Annotation Placement Clarity"
 version: v1alpha1
 authors: "@lexfrei"
 creation-date: 2025-10-23
-status: draft
+status: provisional
 ---
 ```
 
@@ -269,11 +269,13 @@ metadata:
 
 #### Solution 2: Annotation Inheritance and Merging (Long-term - Feature Enhancement)
 
+**Reference Implementation**: [PR #5998](https://github.com/kubernetes-sigs/external-dns/pull/5998)
+
 Implement annotation merging logic where:
 
 1. Gateway annotations serve as **defaults** for all Routes attached to that Gateway
 2. Route annotations **override** Gateway annotations for specific Routes
-3. Explicit validation to prevent silent failures
+3. **All annotations are inheritable**, including `target` — enabling per-Route target overrides
 
 **Proposed implementation** (pseudocode):
 
@@ -299,14 +301,10 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 
 // Helper function
 func mergeAnnotations(gateway, route map[string]string) map[string]string {
-    merged := make(map[string]string)
+    merged := make(map[string]string, len(gateway)+len(route))
 
     // Copy Gateway annotations (defaults)
     for k, v := range gateway {
-        // Skip 'target' annotation - it's Gateway-specific and shouldn't be inherited
-        if k == "external-dns.alpha.kubernetes.io/target" {
-            continue
-        }
         merged[k] = v
     }
 
@@ -325,9 +323,10 @@ func mergeAnnotations(gateway, route map[string]string) map[string]string {
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: cloudflare-gateway
+  name: intranet-gateway
   annotations:
-    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    # Default target for internal services
+    external-dns.alpha.kubernetes.io/target: "172.16.6.6"
     # Set default for all Routes using this Gateway
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
     external-dns.alpha.kubernetes.io/ttl: "300"
@@ -335,28 +334,46 @@ metadata:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: api-route
-  # Inherits: cloudflare-proxied=true, ttl=300 from Gateway
+  name: internal-api
+  # Inherits: target=172.16.6.6, cloudflare-proxied=true, ttl=300 from Gateway
 spec:
   parentRefs:
-    - name: cloudflare-gateway
+    - name: intranet-gateway
+  hostnames:
+    - api.internal.example.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: public-api
+  annotations:
+    # Override: expose this route to the public internet
+    external-dns.alpha.kubernetes.io/target: "203.0.113.1"
+    # Inherits: cloudflare-proxied=true, ttl=300 from Gateway
+spec:
+  parentRefs:
+    - name: intranet-gateway
   hostnames:
     - api.example.com
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: static-route
+  name: static-assets
   annotations:
-    # Override: disable proxying for this specific route
+    # Override: disable proxying for static content
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
-    # Inherits: ttl=300 from Gateway
+    # Inherits: target=172.16.6.6, ttl=300 from Gateway
 spec:
   parentRefs:
-    - name: cloudflare-gateway
+    - name: intranet-gateway
   hostnames:
-    - static.example.com
+    - static.internal.example.com
 ```
+
+This example demonstrates a common use case: an intranet Gateway where most services are internal
+(`172.16.6.6`), but specific Routes can be exposed publicly (`203.0.113.1`) by overriding the
+`target` annotation.
 
 **Benefits:**
 
@@ -364,6 +381,7 @@ spec:
 - Enables centralized defaults at Gateway level
 - Maintains flexibility with Route-level overrides
 - Better matches user mental model (infrastructure defaults + application overrides)
+- **Solves User Story 2**: Enables per-Route target overrides without creating separate Gateways
 
 **Risks:**
 
@@ -531,9 +549,14 @@ annotation merging after standardization is resolved
    - Can be merged quickly
    - Addresses immediate pain points
 
-2. **Future (post-PR #5080 resolution)**: Re-evaluate Solution 2 (Annotation Merging)
-   - Gather user feedback on whether documentation alone is sufficient
+2. **Near-term**: Review and merge Solution 2 (Annotation Merging)
+   - Reference implementation available: [PR #5998](https://github.com/kubernetes-sigs/external-dns/pull/5998)
+   - Includes comprehensive test coverage
+   - Backward compatible (no breaking changes for existing configurations)
+   - Solves User Story 2 (per-Route target overrides)
+
+3. **Future (post-PR #5080 resolution)**: Re-evaluate if additional changes are needed
    - Assess compatibility with annotation standardization outcomes
-   - Consider feature flag approach for gradual rollout if proceeding
+   - Gather user feedback on the annotation inheritance behavior
 
 This approach provides immediate relief while keeping options open for more comprehensive solutions in the future.
