@@ -259,7 +259,7 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.Create {
 		record := apiv1alpha1.DNSRecord{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%s", cr.OwnerID(), r.SetIdentifier),
+				Name:      fmt.Sprintf("%s", cr.OwnerID()),
 				Namespace: cr.namespace,
 				Labels: map[string]string{
 					apiv1alpha1.RecordOwnerLabel:      cr.OwnerID(),
