@@ -59,9 +59,9 @@ const (
 	retryLimit = 3
 	// time in milliseconds
 	retryAfterTime = 250 * time.Millisecond
-	// record types which require to have trailing dot
 )
 
+// record types which require to have trailing dot
 var trailingTypes = []string{
 	endpoint.RecordTypeCNAME,
 	endpoint.RecordTypeMX,
