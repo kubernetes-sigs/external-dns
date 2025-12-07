@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -197,44 +198,21 @@ func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		return cr.recordsCache, nil
 	}
 
-	records, err := cr.provider.Records(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	endpoints := []*endpoint.Endpoint{}
 
-	for _, record := range records {
-		// AWS Alias records have "new" format encoded as type "cname"
-		if isAlias, found := record.GetProviderSpecificProperty("alias"); found && isAlias == "true" && record.RecordType == endpoint.RecordTypeA {
-			record.RecordType = endpoint.RecordTypeCNAME
-		}
-
-		endpoints = append(endpoints, record)
-	}
-
-	var list apiv1alpha1.DNSRecordList
-	for more := true; more; more = list.Continue != "" {
+	var records apiv1alpha1.DNSRecordList
+	for more := true; more; more = records.Continue != "" {
 		opts := metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", apiv1alpha1.RecordOwnerLabel, cr.ownerID),
 		}
 
-		if list.Continue != "" {
-			opts.Continue = list.Continue
-		}
-
-		// Populate the labels for each record with the DNSRecord matching.
-		err = cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&list)
+		err := cr.client.Get().Namespace(cr.namespace).Params(&opts).Do(ctx).Into(&records)
 		if err != nil {
-			return nil, err
+			return []*endpoint.Endpoint{}, err
 		}
 
-		for _, record := range list.Items {
-			for _, endpoint := range endpoints {
-				if record.IsEndpoint(endpoint) {
-					endpoint.Labels = record.EndpointLabels()
-				}
-			}
+		for _, record := range records.Items {
+			endpoints = append(endpoints, &record.Spec.Endpoint)
 		}
 	}
 
@@ -243,7 +221,6 @@ func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		cr.recordsCache = endpoints
 		cr.recordsCacheRefreshTime = time.Now()
 	}
-
 	return endpoints, nil
 }
 
@@ -257,9 +234,12 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Create {
+		dnsname := strings.ReplaceAll(r.DNSName, ".", "-")
+		name := strings.ToLower(fmt.Sprintf("%s-%s", dnsname, r.RecordType))
+		r.Labels[endpoint.OwnerLabelKey] = cr.ownerID
 		record := apiv1alpha1.DNSRecord{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s", cr.OwnerID()),
+				Name:      name,
 				Namespace: cr.namespace,
 				Labels: map[string]string{
 					apiv1alpha1.RecordOwnerLabel:      cr.OwnerID(),
