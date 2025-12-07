@@ -310,14 +310,14 @@ For multi-cluster setups sharing a hosted zone:
 - Assign a **unique** `--txt-owner-id` to each cluster (for example `cluster1`, `cluster2`) and document this convention clearly in your platform configuration.
 - Avoid using a common owner such as `default` across clusters in a shared zone if any cluster will run with `policy=sync` or use `--migrate-from-txt-owner`.
 
-##### Safe migration sequence for shared zones
+#### Example migration sequence for shared zones
 
 When migrating from a shared owner (such as `default`) in a shared hosted zone:
 
 1. While still using `policy=upsert-only` (or equivalent), roll out cluster-specific `--txt-owner-id` values and ensure *new* records are created with the cluster’s own owner ID.
 2. Avoid `--migrate-from-txt-owner=<old-owner>` unless you can guarantee that only a single cluster has records with `<old-owner>` in that hosted zone, or perform the migration in an isolated zone where only that cluster writes records.
 
-#### Patterns to avoid
+### When to avoid owner migration
 
 The following pattern is **not recommended** and may cause record deletion for other clusters:
 
