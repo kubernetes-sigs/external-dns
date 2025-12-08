@@ -1,7 +1,8 @@
-FROM golang:1.24 as builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.24 as builder
 WORKDIR /sigs.k8s.io/external-dns
 COPY . .
-RUN make build
+RUN git config --global --add safe.directory /sigs.k8s.io/external-dns
+RUN make build.fips
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /usr/bin/
