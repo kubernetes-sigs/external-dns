@@ -1080,6 +1080,16 @@ func TestGetDNSRecordsMapWithPerPage(t *testing.T) {
 		assert.True(t, client.dnsRecordsListParams.PerPage.Present)
 		assert.InEpsilon(t, float64(100), client.dnsRecordsListParams.PerPage.Value, 0.0001)
 	})
+
+	t.Run("PerPage not set", func(t *testing.T) {
+		provider := &CloudFlareProvider{
+			Client:           client,
+			DNSRecordsConfig: DNSRecordsConfig{},
+		}
+		_, err := provider.getDNSRecordsMap(ctx, "001")
+		assert.NoError(t, err)
+		assert.False(t, client.dnsRecordsListParams.PerPage.Present)
+	})
 }
 
 func TestCloudflareProvider(t *testing.T) {
