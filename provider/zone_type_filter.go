@@ -16,56 +16,38 @@ limitations under the License.
 
 package provider
 
-import (
-	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
-)
-
 const (
-	zoneTypePublic  = "public"
-	zoneTypePrivate = "private"
+	ZoneTypePublic  = "public"
+	ZoneTypePrivate = "private"
 )
 
 // ZoneTypeFilter holds a zone type to filter for.
 type ZoneTypeFilter struct {
-	zoneType string
+	ZoneType string
 }
 
 // NewZoneTypeFilter returns a new ZoneTypeFilter given a zone type to filter for.
 func NewZoneTypeFilter(zoneType string) ZoneTypeFilter {
-	return ZoneTypeFilter{zoneType: zoneType}
+	return ZoneTypeFilter{ZoneType: zoneType}
 }
 
 // Match checks whether a zone matches the zone type that's filtered for.
 func (f ZoneTypeFilter) Match(rawZoneType interface{}) bool {
 	// An empty zone filter includes all hosted zones.
-	if f.zoneType == "" {
+	if f.ZoneType == "" {
 		return true
 	}
 
 	switch zoneType := rawZoneType.(type) {
 	// Given a zone type we return true if the given zone matches this type.
 	case string:
-		switch f.zoneType {
-		case zoneTypePublic:
-			return zoneType == zoneTypePublic
-		case zoneTypePrivate:
-			return zoneType == zoneTypePrivate
-		}
-	case route53types.HostedZone:
-		// If the zone has no config we assume it's a public zone since the config's field
-		// `PrivateZone` is false by default in go.
-		if zoneType.Config == nil {
-			return f.zoneType == zoneTypePublic
-		}
-
-		switch f.zoneType {
-		case zoneTypePublic:
-			return !zoneType.Config.PrivateZone
-		case zoneTypePrivate:
-			return zoneType.Config.PrivateZone
+		switch f.ZoneType {
+		case ZoneTypePublic:
+			return zoneType == ZoneTypePublic
+		case ZoneTypePrivate:
+			return zoneType == ZoneTypePrivate
 		}
 	}
-
 	// We return false on any other path, e.g. unknown zone type filter value.
 	return false
 }
