@@ -26,6 +26,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -59,6 +60,15 @@ const (
 	// time in milliseconds
 	retryAfterTime = 250 * time.Millisecond
 )
+
+// record types which require to have trailing dot
+var trailingTypes = []string{
+	endpoint.RecordTypeCNAME,
+	endpoint.RecordTypeMX,
+	endpoint.RecordTypeSRV,
+	endpoint.RecordTypeNS,
+	"ALIAS",
+}
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
@@ -271,7 +281,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) ([]*endpoint.Endpoi
 		}
 	}
 	if rr.Type_ == "ALIAS" {
-		rrType_ = "CNAME"
+		rrType_ = endpoint.RecordTypeCNAME
 	}
 	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
 	return endpoints, nil
@@ -320,13 +330,13 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				records := []pgo.Record{}
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
-					if ep.RecordType == "CNAME" || ep.RecordType == "ALIAS" || ep.RecordType == "MX" || ep.RecordType == "SRV" {
+					if slices.Contains(trailingTypes, ep.RecordType) {
 						t = provider.EnsureTrailingDot(t)
 					}
 					records = append(records, pgo.Record{Content: t})
 				}
 
-				if dnsname == zone.Name && ep.RecordType == "CNAME" {
+				if dnsname == zone.Name && ep.RecordType == endpoint.RecordTypeCNAME {
 					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
 					RecordType_ = "ALIAS"
 				}
