@@ -82,6 +82,7 @@ type serviceSource struct {
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              *serviceTypes
 	exposeInternalIPv6             bool
+	excludeUnschedulable           bool
 
 	// process Services with legacy annotations
 	compatibility string
@@ -98,7 +99,7 @@ func NewServiceSource(
 	ignoreHostnameAnnotation bool,
 	labelSelector labels.Selector,
 	resolveLoadBalancerHostname,
-	listenEndpointEvents, exposeInternalIPv6 bool,
+	listenEndpointEvents, exposeInternalIPv6, excludeUnschedulable bool,
 ) (Source, error) {
 	tmpl, err := fqdn.ParseTemplate(fqdnTemplate)
 	if err != nil {
@@ -224,6 +225,7 @@ func NewServiceSource(
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 		listenEndpointEvents:           listenEndpointEvents,
 		exposeInternalIPv6:             exposeInternalIPv6,
+		excludeUnschedulable:           excludeUnschedulable,
 	}, nil
 }
 
@@ -812,6 +814,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	for _, node := range nodes {
+		if node.Spec.Unschedulable && sc.excludeUnschedulable {
+			log.Debugf("Skipping node %s - unschedulable", node.Name)
+			continue
+		}
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:

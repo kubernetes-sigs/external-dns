@@ -98,6 +98,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		false,
 		false,
+		false,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -178,6 +179,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				ti.serviceTypesFilter,
 				false,
 				labels.Everything(),
+				false,
 				false,
 				false,
 				false,
@@ -1165,6 +1167,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.resolveLoadBalancerHostname,
 				false,
 				false,
+				false,
 			)
 
 			require.NoError(t, err)
@@ -1378,6 +1381,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 				false,
 				false,
 				false,
@@ -1686,6 +1690,7 @@ func TestClusterIpServices(t *testing.T) {
 				false,
 				false,
 				false,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1718,6 +1723,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 		fqdnTemplate             string
 		ignoreHostnameAnnotation bool
 		exposeInternalIPv6       bool
+		ignoreUnscheduledNodes   bool
 		labels                   map[string]string
 		annotations              map[string]string
 		lbs                      []string
@@ -2383,6 +2389,55 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				},
 			}},
 		},
+		{
+			title:                  "NodePort services ignore unschedulable node",
+			ignoreUnscheduledNodes: true,
+			svcNamespace:           "testing",
+			svcName:                "foo",
+			svcType:                v1.ServiceTypeNodePort,
+			svcTrafficPolicy:       v1.ServiceExternalTrafficPolicyTypeCluster,
+			labels:                 map[string]string{},
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+				annotations.AccessKey:   "public",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: true,
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Spec: v1.NodeSpec{
+					Unschedulable: false,
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::3"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::4"},
+					},
+				},
+			}},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
@@ -2463,6 +2518,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				false,
 				false,
 				tc.exposeInternalIPv6,
+				tc.ignoreUnscheduledNodes,
 			)
 			require.NoError(t, err)
 
@@ -3371,6 +3427,7 @@ func TestHeadlessServices(t *testing.T) {
 				false,
 				false,
 				tc.exposeInternalIPv6,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -3507,6 +3564,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -3873,6 +3931,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, src)
@@ -4331,6 +4390,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -4541,6 +4601,7 @@ func TestExternalServices(t *testing.T) {
 				false,
 				false,
 				false,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -4603,6 +4664,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(b, err)
 
@@ -4702,6 +4764,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				false,
 				false,
 				false,
+				false,
 			)
 			require.NoError(t, err)
 			svcSrc, ok := svc.(*serviceSource)
@@ -4730,6 +4793,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 		serviceTypeFilter,
 		false,
 		labels.Everything(),
+		false,
 		false,
 		false,
 		false,
@@ -4912,6 +4976,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 		false,
 		false,
 		false,
+		true,
 	)
 	require.NoError(t, err)
 	ss, ok := src.(*serviceSource)
@@ -4996,6 +5061,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 		[]string{},
 		false,
 		labels.Everything(),
+		false,
 		false,
 		false,
 		false,
