@@ -742,7 +742,7 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 
-// Env vars are accpeted by Kingpin backend but ignored by Cobra
+// Env vars are accepted by Kingpin backend but ignored by Cobra
 func TestEnvVarsIgnoredByCobraBackend(t *testing.T) {
 	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
 	t.Setenv("EXTERNAL_DNS_NAMESPACE", "ns-from-env")
