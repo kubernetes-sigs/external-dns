@@ -1329,7 +1329,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			gateways: []*v1beta1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "overriden-gateway",
+						Name:      "overridden-gateway",
 						Namespace: "gateway-namespace",
 						Annotations: map[string]string{
 							annotations.TargetKey: "4.3.2.1",
@@ -1350,12 +1350,12 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Hostnames: hostnames("test.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
 						ParentRefs: []v1.ParentReference{
-							gwParentRef("gateway-namespace", "overriden-gateway"),
+							gwParentRef("gateway-namespace", "overridden-gateway"),
 						},
 					},
 				},
 				Status: httpRouteStatus( // The route is attached to both gateways.
-					gwParentRef("gateway-namespace", "overriden-gateway"),
+					gwParentRef("gateway-namespace", "overridden-gateway"),
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
@@ -1371,7 +1371,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			gateways: []*v1beta1.Gateway{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "overriden-gateway",
+						Name:      "overridden-gateway",
 						Namespace: "gateway-namespace",
 						Annotations: map[string]string{
 							annotations.TargetKey: "4.3.2.1",
@@ -1402,13 +1402,13 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					Hostnames: hostnames("test.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
 						ParentRefs: []v1.ParentReference{
-							gwParentRef("gateway-namespace", "overriden-gateway"),
+							gwParentRef("gateway-namespace", "overridden-gateway"),
 							gwParentRef("gateway-namespace", "test"),
 						},
 					},
 				},
 				Status: httpRouteStatus(
-					gwParentRef("gateway-namespace", "overriden-gateway"),
+					gwParentRef("gateway-namespace", "overridden-gateway"),
 					gwParentRef("gateway-namespace", "test"),
 				),
 			}},
