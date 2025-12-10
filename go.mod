@@ -14,13 +14,13 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aws/aws-sdk-go-v2 v1.41.0
-	github.com/aws/aws-sdk-go-v2/config v1.32.4
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.4
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.28
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.53.4
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.61.2
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.20
-	github.com/aws/aws-sdk-go-v2/service/sts v1.41.4
+	github.com/aws/aws-sdk-go-v2/config v1.32.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.5
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.29
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.53.5
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.62.0
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.39.21
+	github.com/aws/aws-sdk-go-v2/service/sts v1.41.5
 	github.com/aws/smithy-go v1.24.0
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v5 v5.0.3
@@ -30,7 +30,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.169.0
+	github.com/digitalocean/godo v1.170.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -39,12 +39,12 @@ require (
 	github.com/goccy/go-yaml v1.19.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/linode/linodego v1.61.0
+	github.com/linode/linodego v1.62.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.68
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
-	github.com/oracle/oci-go-sdk/v65 v65.105.0
+	github.com/oracle/oci-go-sdk/v65 v65.105.1
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pluralsh/gqlclient v1.12.2
@@ -92,7 +92,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.32.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.32.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.16 // indirect
@@ -114,7 +114,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.2 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-	github.com/go-resty/resty/v2 v2.16.5 // indirect
+	github.com/go-resty/resty/v2 v2.17.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gofrs/flock v0.10.0 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
