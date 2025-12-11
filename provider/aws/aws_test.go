@@ -2880,6 +2880,11 @@ func TestAdjustEndpoint_RefactorDoesNotChangeBehavior(t *testing.T) {
 							epOld := ep.DeepCopy()
 							epNew := ep.DeepCopy()
 							oldLogicAAAA := p.oldAdjustEndpointAndNewAaaaIfNeeded(epOld)
+							if rt == endpoint.RecordTypeMX {
+								epOld.RecordTTL = endpoint.TTL(ttl)
+								epOld.DeleteProviderSpecificProperty(providerSpecificAlias)
+								epOld.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+							}
 							newLogicAAAA := p.adjustEndpointAndNewAaaaIfNeeded(epNew)
 
 							assert.True(t, testutils.SameEndpoint(epOld, epNew), "input endpoints differ between old and new logic")

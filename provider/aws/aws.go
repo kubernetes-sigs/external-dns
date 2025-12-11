@@ -898,16 +898,8 @@ func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *e
 			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
 	default:
-		// TODO fix
-		aliasString, _ := ep.GetProviderSpecificProperty(providerSpecificAlias)
-		switch aliasString {
-		case "true":
-			ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-			setAliasConf(ep)
-		default:
-			ep.DeleteProviderSpecificProperty(providerSpecificAlias)
-			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
-		}
+		ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 	}
 
 	adjustGeoProximityLocationEndpoint(ep)
