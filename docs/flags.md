@@ -32,6 +32,7 @@
 | `--[no-]exclude-unschedulable` | Exclude nodes that are considered unschedulable (default: true) |
 | `--[no-]expose-internal-ipv6` | When using the node source, expose internal IPv6 addresses (optional, default: false) |
 | `--fqdn-template=""` | A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN. |
+| `--[no-]gateway-enable-experimental` | Enable Gateway API experimental (gateway.networking.x-k8s.io) resources (currently only XListenerSet support for routes) |
 | `--gateway-label-filter=""` | Filter Gateways of Route endpoints via label selector (default: all gateways) |
 | `--gateway-name=""` | Limit Gateways of Route endpoints to a specific name (default: all names) |
 | `--gateway-namespace=""` | Limit Gateways of Route endpoints to a specific namespace (default: all namespaces) |
