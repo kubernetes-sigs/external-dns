@@ -41,7 +41,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/linode/linodego v1.62.0
 	github.com/maxatome/go-testdeep v1.14.0
-	github.com/miekg/dns v1.1.68
+	github.com/miekg/dns v1.1.69
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
 	github.com/oracle/oci-go-sdk/v65 v65.105.1
@@ -69,9 +69,9 @@ require (
 	gopkg.in/ns1/ns1-go.v2 v2.16.0
 	istio.io/api v1.28.1
 	istio.io/client-go v1.28.1
-	k8s.io/api v0.34.2
-	k8s.io/apimachinery v0.34.2
-	k8s.io/client-go v0.34.2
+	k8s.io/api v0.34.3
+	k8s.io/apimachinery v0.34.3
+	k8s.io/client-go v0.34.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.22.4
