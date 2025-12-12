@@ -59,14 +59,15 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	Zones             map[string]string
-	Records           map[string]map[string]dns.RecordResponse
-	Actions           []MockAction
-	listZonesError    error // For v4 ListZones
-	getZoneError      error // For v4 GetZone
-	dnsRecordsError   error
-	customHostnames   map[string][]cloudflarev0.CustomHostname
-	regionalHostnames map[string][]regionalHostname
+	Zones                map[string]string
+	Records              map[string]map[string]dns.RecordResponse
+	Actions              []MockAction
+	listZonesError       error // For v4 ListZones
+	getZoneError         error // For v4 GetZone
+	dnsRecordsError      error
+	customHostnames      map[string][]cloudflarev0.CustomHostname
+	regionalHostnames    map[string][]regionalHostname
+	dnsRecordsListParams dns.RecordListParams
 }
 
 var ExampleDomain = []dns.RecordResponse{
@@ -270,6 +271,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, params dns.R
 }
 
 func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.RecordListParams) autoPager[dns.RecordResponse] {
+	m.dnsRecordsListParams = params
 	if m.dnsRecordsError != nil {
 		return &mockAutoPager[dns.RecordResponse]{err: m.dnsRecordsError}
 	}
@@ -1059,6 +1061,35 @@ func TestCloudflareRecords(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
+}
+
+func TestGetDNSRecordsMapWithPerPage(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": ExampleDomain,
+	})
+
+	ctx := t.Context()
+
+	t.Run("PerPage set to positive value", func(t *testing.T) {
+		provider := &CloudFlareProvider{
+			Client:           client,
+			DNSRecordsConfig: DNSRecordsConfig{PerPage: 100},
+		}
+		_, err := provider.getDNSRecordsMap(ctx, "001")
+		assert.NoError(t, err)
+		assert.True(t, client.dnsRecordsListParams.PerPage.Present)
+		assert.InEpsilon(t, float64(100), client.dnsRecordsListParams.PerPage.Value, 0.0001)
+	})
+
+	t.Run("PerPage not set", func(t *testing.T) {
+		provider := &CloudFlareProvider{
+			Client:           client,
+			DNSRecordsConfig: DNSRecordsConfig{},
+		}
+		_, err := provider.getDNSRecordsMap(ctx, "001")
+		assert.NoError(t, err)
+		assert.False(t, client.dnsRecordsListParams.PerPage.Present)
+	})
 }
 
 func TestCloudflareProvider(t *testing.T) {
