@@ -2852,42 +2852,495 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 	require.Equal(t, 0, deletes, "should not delete anything")
 }
 
-func TestAdjustEndpoint_RefactorDoesNotChangeBehavior(t *testing.T) {
-	for _, aliasProp := range []string{"", "true", "false", "invalid"} {
-		for _, rt := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeMX} {
-			for _, preferCNAME := range []bool{true, false} {
-				for _, evalTH := range []bool{true, false} {
-					for _, ttl := range []int{300, 600} {
-						name := fmt.Sprintf("alias=%v,rt=%s,prefer=%v,eval=%v,ttl=%v", aliasProp, rt, preferCNAME, evalTH, ttl)
-						t.Run(name, func(t *testing.T) {
-							t.Parallel()
-							p, _ := newAWSProvider(t, nil, provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), evalTH, preferCNAME, false, nil)
+func TestAWSProvider_adjustEndpointAndNewAaaaIfNeeded(t *testing.T) {
+	tests := []struct {
+		name         string
+		preferCNAME  bool
+		ep           *endpoint.Endpoint
+		expected     *endpoint.Endpoint
+		expectedAaaa *endpoint.Endpoint
+	}{
+		// --- A / AAAA ---
+		{
+			name: "A record without provider specific should not change and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "A record with alias=true should set default ttl, add evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false", // p.evaluateTargetHealth=false in this test
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "A record with alias!=true value should remove alias and evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:          "test.foo.bar.",
+				RecordType:       endpoint.RecordTypeA,
+				Targets:          endpoint.Targets{"1.1.1.1"},
+				RecordTTL:        600,
+				ProviderSpecific: endpoint.ProviderSpecific{},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "A record with alias=true and invalid evaluateTargetHealth should normalize it to false and set default ttl",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "invalid",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "AAAA record with alias=true should behave like A record",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"2001:db8::1"},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"2001:db8::1"},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
 
-							ep := &endpoint.Endpoint{
-								DNSName:    "test.example.com",
-								Targets:    endpoint.Targets{"target.example.com"},
-								RecordType: rt,
-								RecordTTL:  endpoint.TTL(ttl),
-							}
-							if aliasProp != "" {
-								ep.ProviderSpecific = endpoint.ProviderSpecific{
-									endpoint.ProviderSpecificProperty{
-										Name:  providerSpecificAlias,
-										Value: aliasProp,
-									},
-								}
-							}
-							epOld := ep.DeepCopy()
-							epNew := ep.DeepCopy()
-							oldLogicAAAA := p.oldAdjustEndpointAndNewAaaaIfNeeded(epOld)
-							newLogicAAAA := p.adjustEndpointAndNewAaaaIfNeeded(epNew)
+		// --- CNAME ---
+		{
+			name: "CNAME record with alias=false should keep alias=false, remove evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "CNAME record with invalid alias value should normalize to alias=false and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "invalid",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+		{
+			name: "CNAME record with alias=true should set default ttl, add evaluateTargetHealth and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false", // p.evaluateTargetHealth=false in this test
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false", // p.evaluateTargetHealth=false in this test
+					},
+				},
+			},
+		},
+		{
+			name: "CNAME record with alias=true and evaluateTargetHealth=true should keep evaluateTargetHealth and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "true",
+					},
+				},
+			},
+		},
+		{
+			name: "CNAME record with alias=true and invalid evaluateTargetHealth should normalize it to false and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  600,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "invalid",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				RecordTTL:  defaultTTL,
+				Targets:    endpoint.Targets{"target.foo.bar."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+		},
+		{
+			name: "CNAME without alias to ELB target should enable alias and create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com"},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+		},
+		{
+			name:        "CNAME with preferCNAME=true should set alias=false and not create AAAA even for ELB target",
+			preferCNAME: true,
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com."},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeCNAME,
+				Targets:    endpoint.Targets{"test-123.us-east-1.elb.amazonaws.com."},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
 
-							assert.True(t, testutils.SameEndpoint(epOld, epNew), "input endpoints differ between old and new logic")
-							assert.True(t, testutils.SameEndpoint(oldLogicAAAA, newLogicAAAA), "adjusted endpoints differ between old and new logic")
-						})
-					}
-				}
-			}
-		}
+		// --- MX / other records ---
+		{
+			name: "MX record without provider specific should not change and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+			},
+			expectedAaaa: nil,
+		},
+		// TODO: fix For records other than A, AAAA, and CNAME, if an alias record is set, the alias record processing is not performed. This will be fixed in another PR.
+		{
+			name: "MX record with alias=true should remove alias and set default ttl, add evaluateTargetHealth and not create AAAA",
+			ep: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+				RecordTTL:  600,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificAlias,
+						Value: "true",
+					},
+				},
+			},
+			expected: &endpoint.Endpoint{
+				DNSName:    "test.foo.bar.",
+				RecordType: endpoint.RecordTypeMX,
+				Targets:    endpoint.Targets{"10 mail.example.com."},
+				RecordTTL:  defaultTTL,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: "false",
+					},
+				},
+			},
+			expectedAaaa: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			p, _ := newAWSProvider(
+				t,
+				endpoint.NewDomainFilter([]string{"foo.bar."}),
+				provider.NewZoneIDFilter([]string{}),
+				provider.NewZoneTypeFilter(""),
+				false,
+				tt.preferCNAME,
+				false,
+				nil,
+			)
+
+			aaaa := p.adjustEndpointAndNewAaaaIfNeeded(tt.ep)
+
+			assert.True(t, testutils.SameEndpoint(tt.ep, tt.expected),
+				"actual and expected endpoints don't match. %+v:%+v", tt.ep, tt.expected)
+
+			assert.True(t, testutils.SameEndpoint(aaaa, tt.expectedAaaa),
+				"actual and expected AAAA endpoints don't match. %+v:%+v", aaaa, tt.expectedAaaa)
+		})
 	}
 }
