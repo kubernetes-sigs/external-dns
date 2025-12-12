@@ -122,6 +122,15 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			newEndpointWithOwner("txt.aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("txt.mx-mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newMultiTargetEndpointWithOwner(
+				"_sip._udp.sip1.test-zone.example.org",
+				[]string{"1 50 5060 sip1-n1.test-zone.example.org", "1 50 5060 sip1-n2.test-zone.example.org"},
+				endpoint.RecordTypeSRV,
+				"",
+			),
+			newEndpointWithOwner("txt._sip._udp.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", `10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`, endpoint.RecordTypeNAPTR, ""),
+			newEndpointWithOwner("txt.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -226,6 +235,25 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
+		{
+			DNSName: "_sip._udp.sip1.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1 50 5060 sip1-n1.test-zone.example.org",
+				"1 50 5060 sip1-n2.test-zone.example.org",
+			},
+			RecordType: endpoint.RecordTypeSRV,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "sip1.test-zone.example.org",
+			Targets:    endpoint.Targets{`10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`},
+			RecordType: endpoint.RecordTypeNAPTR,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, []string{}, false, nil, "")
@@ -265,6 +293,15 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			newEndpointWithOwner("aaaa-dualstack-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mx-mail-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newMultiTargetEndpointWithOwner(
+				"_sip._udp.sip1.test-zone.example.org",
+				[]string{"1 50 5060 sip1-n1.test-zone.example.org", "1 50 5060 sip1-n2.test-zone.example.org"},
+				endpoint.RecordTypeSRV,
+				"",
+			),
+			newEndpointWithOwner("_sip-txt._udp.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", `10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`, endpoint.RecordTypeNAPTR, ""),
+			newEndpointWithOwner("sip1-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -361,6 +398,25 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
+		{
+			DNSName: "_sip._udp.sip1.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1 50 5060 sip1-n1.test-zone.example.org",
+				"1 50 5060 sip1-n2.test-zone.example.org",
+			},
+			RecordType: endpoint.RecordTypeSRV,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "sip1.test-zone.example.org",
+			Targets:    endpoint.Targets{`10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`},
+			RecordType: endpoint.RecordTypeNAPTR,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
@@ -398,6 +454,15 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("mail.test-zone.example.org", "10 onemail.example.com", endpoint.RecordTypeMX, ""),
 			newEndpointWithOwner("mx-mail.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newMultiTargetEndpointWithOwner(
+				"_sip._udp.sip1.test-zone.example.org",
+				[]string{"1 50 5060 sip1-n1.test-zone.example.org", "1 50 5060 sip1-n2.test-zone.example.org"},
+				endpoint.RecordTypeSRV,
+				"",
+			),
+			newEndpointWithOwner("_sip._udp.sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", `10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`, endpoint.RecordTypeNAPTR, ""),
+			newEndpointWithOwner("sip1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -484,6 +549,25 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			DNSName:    "mail.test-zone.example.org",
 			Targets:    endpoint.Targets{"10 onemail.example.com"},
 			RecordType: endpoint.RecordTypeMX,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName: "_sip._udp.sip1.test-zone.example.org",
+			Targets: endpoint.Targets{
+				"1 50 5060 sip1-n1.test-zone.example.org",
+				"1 50 5060 sip1-n2.test-zone.example.org",
+			},
+			RecordType: endpoint.RecordTypeSRV,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "sip1.test-zone.example.org",
+			Targets:    endpoint.Targets{`10 "U" "SIP+DTU" "" _sip._udp.sip1.test-zone.example.org.`},
+			RecordType: endpoint.RecordTypeNAPTR,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
