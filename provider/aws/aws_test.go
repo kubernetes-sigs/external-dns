@@ -2850,3 +2850,45 @@ func TestAWSProvider_createUpdateChanges_NewMoreThanOld(t *testing.T) {
 	require.Equal(t, 1, upserts, "should upsert the matching endpoint")
 	require.Equal(t, 0, deletes, "should not delete anything")
 }
+
+func TestDeduplicateResourceRecords_RemovesDuplicateIPs(t *testing.T) {
+	// Simulate external-dns generating duplicate IP records for the same hostname
+	rrs := &route53types.ResourceRecordSet{
+		Name: aws.String("foo.example.com."),
+		Type: route53types.RRTypeA,
+		ResourceRecords: []route53types.ResourceRecord{
+			{Value: aws.String("1.2.3.4")},
+			{Value: aws.String("1.2.3.4")},
+			{Value: aws.String("1.2.3.4")},
+		},
+		TTL: aws.Int64(300),
+	}
+
+	deduplicateResourceRecords(rrs)
+
+	if len(rrs.ResourceRecords) != 1 {
+		t.Fatalf("expected 1 resource record, got %d", len(rrs.ResourceRecords))
+	}
+
+	if aws.ToString(rrs.ResourceRecords[0].Value) != "1.2.3.4" {
+		t.Fatalf("unexpected value: %s", aws.ToString(rrs.ResourceRecords[0].Value))
+	}
+}
+
+func TestDeduplicateResourceRecords_SkipsAliasRecords(t *testing.T) {
+	rrs := &route53types.ResourceRecordSet{
+		Name: aws.String("foo.example.com."),
+		Type: route53types.RRTypeA,
+		AliasTarget: &route53types.AliasTarget{
+			DNSName:              aws.String("internal-xxxx.elb.amazonaws.com."),
+			HostedZoneId:         aws.String("Z35SXDOTRQ7X7K"),
+			EvaluateTargetHealth: true,
+		},
+	}
+
+	deduplicateResourceRecords(rrs)
+
+	if rrs.AliasTarget == nil {
+		t.Fatalf("alias target should not be modified")
+	}
+}

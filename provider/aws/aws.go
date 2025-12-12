@@ -733,6 +733,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			}
 
 			for _, c := range b {
+				deduplicateResourceRecords(c.ResourceRecordSet)
 				log.Infof("Desired change: %s %s %s", c.Action, *c.ResourceRecordSet.Name, c.ResourceRecordSet.Type)
 			}
 
@@ -1404,4 +1405,35 @@ func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	default:
 		return provider.SupportedRecordType(string(recordType))
 	}
+}
+
+// deduplicateResourceRecords removes duplicate ResourceRecords (same Value)
+// from a given ResourceRecordSet in-place.
+func deduplicateResourceRecords(rrs *route53types.ResourceRecordSet) {
+	// Alias records use AliasTarget, no ResourceRecords, so skip
+	if rrs == nil || rrs.AliasTarget != nil {
+		return
+	}
+
+	if len(rrs.ResourceRecords) <= 1 {
+		return
+	}
+
+	seen := make(map[string]struct{}, len(rrs.ResourceRecords))
+	deduped := make([]route53types.ResourceRecord, 0, len(rrs.ResourceRecords))
+
+	for _, rr := range rrs.ResourceRecords {
+		if rr.Value == nil {
+			continue
+		}
+		v := aws.ToString(rr.Value)
+		if _, exists := seen[v]; exists {
+			// duplicate record, skip
+			continue
+		}
+		seen[v] = struct{}{}
+		deduped = append(deduped, rr)
+	}
+
+	rrs.ResourceRecords = deduped
 }
