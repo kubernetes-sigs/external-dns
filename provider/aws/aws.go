@@ -397,8 +397,22 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 				if !p.zoneIDFilter.Match(*zone.Id) {
 					continue
 				}
+				var IsPublicZone = false
 
-				if !p.zoneTypeFilter.Match(zone) {
+				// If the zone has no config we assume it's a public zone since the config's field
+				// `PrivateZone` is false by default in go.
+				if zone.Config == nil {
+					IsPublicZone = p.zoneTypeFilter.ZoneType == provider.ZoneTypePublic
+				}
+
+				switch p.zoneTypeFilter.ZoneType {
+				case provider.ZoneTypePublic:
+					IsPublicZone = !zone.Config.PrivateZone
+				case provider.ZoneTypePrivate:
+					IsPublicZone = zone.Config.PrivateZone
+				}
+
+				if !IsPublicZone && !p.zoneTypeFilter.Match(zone) {
 					continue
 				}
 

@@ -161,8 +161,6 @@ func buildProvider(
 
 	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	switch cfg.Provider {
 	case "akamai":
@@ -181,6 +179,10 @@ func buildProvider(
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
+
+		zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
+		zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
+
 		configs := aws.CreateV2Configs(cfg)
 		clients := make(map[string]aws.Route53API, len(configs))
 		for profile, config := range configs {
