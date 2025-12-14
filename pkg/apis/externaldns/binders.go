@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns/flags"
 )
 
 // FlagBinder abstracts flag registration for different CLI backends.
@@ -40,6 +42,7 @@ type FlagBinder interface {
 	StringMapVar(name, help string, target *map[string]string)
 	// RegexpVar binds a regular expression value.
 	RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp)
+	Flags() *flag.FlagSet
 }
 
 type regexpValue struct {
@@ -91,7 +94,7 @@ func (b *CobraBinder) StringVar(name, help, def string, target *string) {
 }
 
 func (b *CobraBinder) BoolVar(name, help string, def bool, target *bool) {
-	b.Cmd.Flags().BoolVar(target, name, def, help)
+	flags.AddNegationToBoolFlags(b.Cmd.Flags(), target, name, "", def, help)
 }
 
 func (b *CobraBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
@@ -130,4 +133,8 @@ func (b *CobraBinder) RegexpVar(name, help string, def *regexp.Regexp, target **
 	// set default value to mirror kingpin's Default(def.String()) behavior
 	setRegexpDefault(rv, def, name)
 	b.Cmd.Flags().Var(rv, name, help)
+}
+
+func (b *CobraBinder) Flags() *flag.FlagSet {
+	return b.Cmd.Flags()
 }

@@ -272,6 +272,33 @@ func TestParseFlags(t *testing.T) {
 			},
 		},
 		{
+			title: "validate bool flags work as expected",
+			args: []string{
+				"--source=service",
+				"--provider=google",
+				"--aws-evaluate-target-health",
+				"--exclude-unschedulable",
+			},
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, true, cfg.AWSEvaluateTargetHealth)
+				assert.Equal(t, true, cfg.ExcludeUnschedulable)
+			},
+		},
+		{
+			title: "validate negation flags work as expected",
+			args: []string{
+				"--source=service",
+				"--provider=google",
+				"--openshift-router-name=default",
+			},
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, []string{"service"}, cfg.Sources)
+				assert.Equal(t, "google", cfg.Provider)
+			},
+		},
+		{
 			title: "override everything via flags",
 			args: []string{
 				"--server=http://127.0.0.1:8080",
@@ -359,7 +386,6 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-service-cleanup",
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
-				// "--no-aws-evaluate-target-health",
 				"--pihole-api-version=6",
 				"--policy=upsert-only",
 				"--registry=noop",
@@ -393,7 +419,6 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
-				// "--no-exclude-unschedulable",
 				"--rfc2136-batch-change-size=100",
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",

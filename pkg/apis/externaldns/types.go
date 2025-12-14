@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns/flags"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/sirupsen/logrus"
@@ -551,6 +551,14 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 	b := NewCobraBinder(cmd)
 	bindFlags(b, cfg)
 
+	err := flags.ReconcileBoolFlags(b.Flags())
+	if err != nil {
+		fmt.Println("ERROR error errror:", err)
+		return nil
+	}
+
+	fmt.Println("flags:", b.Flags())
+
 	return cmd
 }
 
@@ -777,20 +785,3 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.DurationVar("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)", defaultConfig.WebhookProviderWriteTimeout, &cfg.WebhookProviderWriteTimeout)
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
 }
-
-// func App(cfg *Config) *kingpin.Application {
-// 	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.\n\nNote that all flags may be replaced with env vars - `--flag` -> `EXTERNAL_DNS_FLAG=1` or `--flag value` -> `EXTERNAL_DNS_FLAG=value`")
-// 	app.Version(Version)
-// 	app.DefaultEnvars()
-//
-// 	bindFlags(NewKingpinBinder(app), cfg)
-//
-// 	// Kingpin-only semantics: preserve Required/PlaceHolder and enum validation
-// 	// that Kingpin provided before the flags were migrated into the binder.
-// 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: akamai, alibabacloud, aws, aws-sd, azure, azure-dns, azure-private-dns, civo, cloudflare, coredns, digitalocean, dnsimple, exoscale, gandi, godaddy, google, inmemory, linode, ns1, oci, ovh, pdns, pihole, plural, rfc2136, scaleway, skydns, transip, webhook)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providerNames...)
-//
-// 	// Reintroduce source enum/required validation in Kingpin to match previous behavior.
-// 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, pod, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, f5-transportserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "f5-transportserver", "traefik-proxy")
-//
-// 	return app
-// }
