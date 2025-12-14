@@ -34,16 +34,11 @@ func AddNegationToBoolFlags(f *pflag.FlagSet, p *bool, name string, value bool, 
 	f.BoolVarP(p, name, "", value, usage)
 	f.Bool(negativeName, !value, "(negative) "+usage)
 
-	if value {
-		err := f.MarkHidden(name)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		err := f.MarkHidden(negativeName)
-		if err != nil {
-			panic(err)
-		}
+	if !value {
+		name = negativeName
+	}
+	if err := f.MarkHidden(name); err != nil {
+		panic(err)
 	}
 }
 
