@@ -49,6 +49,6 @@ func TestBooleanPair(t *testing.T) {
 		AddNegationToBoolFlags(f, &result, c.name, c.defaultVal, "set "+c.name)
 		_ = f.Parse(c.flags)
 		_ = ReconcileAndLinkBoolFlags(f)
-		require.Equal(t, result, c.expectedResult, c.flags)
+		require.Equal(t, c.expectedResult, result, c.flags)
 	}
 }

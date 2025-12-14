@@ -25,6 +25,7 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+
 	"sigs.k8s.io/external-dns/internal/flags"
 )
 

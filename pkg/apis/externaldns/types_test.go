@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
+
 	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -285,8 +286,8 @@ func TestParseFlags(t *testing.T) {
 			},
 			envVars: map[string]string{},
 			expected: func(cfg *Config) {
-				assert.Equal(t, true, cfg.AWSEvaluateTargetHealth)
-				assert.Equal(t, true, cfg.ExcludeUnschedulable)
+				assert.True(t, cfg.AWSEvaluateTargetHealth)
+				assert.True(t, cfg.ExcludeUnschedulable)
 			},
 		},
 		{
@@ -299,8 +300,8 @@ func TestParseFlags(t *testing.T) {
 			},
 			envVars: map[string]string{},
 			expected: func(cfg *Config) {
-				assert.Equal(t, false, cfg.AWSEvaluateTargetHealth)
-				assert.Equal(t, false, cfg.ExcludeUnschedulable)
+				assert.False(t, cfg.AWSEvaluateTargetHealth)
+				assert.False(t, cfg.ExcludeUnschedulable)
 			},
 		},
 		{
