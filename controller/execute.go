@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -426,7 +427,11 @@ func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Regi
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld, nil)
+		overrides, err := parseTXTPrefixOverrides(cfg.TXTPrefixOverrides)
+		if err != nil {
+			return nil, err
+		}
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld, overrides)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
@@ -461,6 +466,38 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
 		wrappers.WithMinTTL(cfg.MinTTL))
 	return wrappers.WrapSources(sources, opts)
+}
+
+// parseTXTPrefixOverrides parses TXT prefix overrides from CLI flags
+// Expects format "domain=prefix" and converts to map[string]string
+// Returns error for invalid format entries
+func parseTXTPrefixOverrides(overrides []string) (map[string]string, error) {
+	result := make(map[string]string, len(overrides))
+	var errors []string
+
+	for _, override := range overrides {
+		parts := strings.SplitN(override, "=", 2)
+		if len(parts) != 2 {
+			errors = append(errors, fmt.Sprintf("invalid format '%s': expected 'domain=prefix'", override))
+			continue
+		}
+
+		domain := strings.TrimSpace(parts[0])
+		prefix := strings.TrimSpace(parts[1])
+
+		if domain == "" {
+			errors = append(errors, fmt.Sprintf("invalid format '%s': domain cannot be empty", override))
+			continue
+		}
+
+		result[domain] = prefix
+	}
+
+	if len(errors) > 0 {
+		return nil, fmt.Errorf("invalid txt-prefix-override entries: %s", strings.Join(errors, ", "))
+	}
+
+	return result, nil
 }
 
 // RegexDomainFilter overrides DomainFilter

@@ -163,6 +163,7 @@
 | `--txt-owner-id="default"` | When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default) |
 | `--txt-prefix=""` | When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix! |
 | `--txt-suffix=""` | When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix! |
+| `--txt-prefix-override=TXT-PREFIX-OVERRIDE` | When using the TXT registry, specify domain-specific prefix overrides in the format 'domain=prefix' (optional). Useful for apex records that are difficult to create, e.g., 'example.com=%{record_type}.' for apex domains. Can be specified multiple times for different domains. |
 | `--txt-wildcard-replacement=""` | When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional) |
 | `--[no-]txt-encrypt-enabled` | When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled) |
 | `--txt-encrypt-aes-key=""` | When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true) |

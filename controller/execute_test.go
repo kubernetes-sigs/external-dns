@@ -679,3 +679,92 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		t.Fatal("controller did not stop after context cancellation")
 	}
 }
+
+func TestParseTXTPrefixOverrides(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []string
+		expected    map[string]string
+		expectError bool
+	}{
+		{
+			name:     "empty input should return empty map",
+			input:    []string{},
+			expected: map[string]string{},
+		},
+		{
+			name:     "single override should parse correctly",
+			input:    []string{"example.com=custom-prefix"},
+			expected: map[string]string{"example.com": "custom-prefix"},
+		},
+		{
+			name:     "multiple overrides should parse correctly",
+			input:    []string{"example.com=custom-prefix", "test.com=another-prefix"},
+			expected: map[string]string{"example.com": "custom-prefix", "test.com": "another-prefix"},
+		},
+		{
+			name:     "override with template should parse correctly",
+			input:    []string{"api.example.com=%{record_type}-api"},
+			expected: map[string]string{"api.example.com": "%{record_type}-api"},
+		},
+		{
+			name:     "multiple domains with different prefixes should parse correctly",
+			input:    []string{"prod.example.com=prod", "staging.example.com=stg", "dev.example.com=dev"},
+			expected: map[string]string{"prod.example.com": "prod", "staging.example.com": "stg", "dev.example.com": "dev"},
+		},
+		{
+			name:     "domain with trailing dot should be handled correctly",
+			input:    []string{"example.com.=prefix-with-dot"},
+			expected: map[string]string{"example.com.": "prefix-with-dot"},
+		},
+		{
+			name:     "prefix with special characters should be handled correctly",
+			input:    []string{"api.example.com=api-%{record_type}-v2"},
+			expected: map[string]string{"api.example.com": "api-%{record_type}-v2"},
+		},
+		{
+			name:        "invalid format without equals should return error",
+			input:       []string{"example.com"},
+			expectError: true,
+		},
+		{
+			name:        "empty domain should return error",
+			input:       []string{"=prefix"},
+			expectError: true,
+		},
+		{
+			name:     "empty prefix should be accepted",
+			input:    []string{"example.com="},
+			expected: map[string]string{"example.com": ""},
+		},
+		{
+			name:        "mixed valid and invalid entries should return error",
+			input:       []string{"example.com=valid", "invalid-entry", "test.com=another-valid"},
+			expectError: true,
+		},
+		{
+			name:     "whitespace should be trimmed correctly",
+			input:    []string{" example.com = prefix-with-spaces "},
+			expected: map[string]string{"example.com": "prefix-with-spaces"},
+		},
+		{
+			name:     "duplicate domains should use last value",
+			input:    []string{"example.com=first", "example.com=second"},
+			expected: map[string]string{"example.com": "second"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := parseTXTPrefixOverrides(test.input)
+
+			if test.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, result)
+			}
+		})
+	}
+}

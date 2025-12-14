@@ -1494,3 +1494,41 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	cfgC := runWithCobra(t, appArgs)
 	assert.Equal(t, "bogus", cfgC.GoogleZoneVisibility)
 }
+
+func TestTXTPrefixOverridesFlagParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		expected []string
+	}{
+		{
+			name:     "no overrides should be handled correctly",
+			args:     []string{"--source", "fake", "--provider", "inmemory"},
+			expected: nil,
+		},
+		{
+			name:     "single override flag should parse correctly",
+			args:     []string{"--source", "fake", "--provider", "inmemory", "--txt-prefix-override", "example.com=custom"},
+			expected: []string{"example.com=custom"},
+		},
+		{
+			name:     "multiple override flags should parse correctly",
+			args:     []string{"--source", "fake", "--provider", "inmemory", "--txt-prefix-override", "example.com=custom", "--txt-prefix-override", "test.com=another"},
+			expected: []string{"example.com=custom", "test.com=another"},
+		},
+		{
+			name:     "override with template should parse correctly",
+			args:     []string{"--source", "fake", "--provider", "inmemory", "--txt-prefix-override", "api.example.com=%{record_type}-api"},
+			expected: []string{"api.example.com=%{record_type}-api"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := NewConfig()
+			err := cfg.ParseFlags(test.args)
+			require.NoError(t, err)
+			assert.Equal(t, test.expected, cfg.TXTPrefixOverrides)
+		})
+	}
+}
