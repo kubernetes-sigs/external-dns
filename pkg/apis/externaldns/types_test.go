@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/pflag"
 	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -260,7 +261,7 @@ func TestParseFlags(t *testing.T) {
 		title    string
 		args     []string
 		envVars  map[string]string
-		expected *Config
+		expected func(*Config)
 	}{
 		{
 			title: "default config with minimal flags defined",
@@ -269,8 +270,38 @@ func TestParseFlags(t *testing.T) {
 				"--provider=google",
 				"--openshift-router-name=default",
 			},
-			envVars:  map[string]string{},
-			expected: minimalConfig,
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, minimalConfig, cfg)
+			},
+		},
+		{
+			title: "validate bool flags work as expected",
+			args: []string{
+				"--source=service",
+				"--provider=google",
+				"--aws-evaluate-target-health",
+				"--exclude-unschedulable",
+			},
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, true, cfg.AWSEvaluateTargetHealth)
+				assert.Equal(t, true, cfg.ExcludeUnschedulable)
+			},
+		},
+		{
+			title: "validate negation flags work as expected",
+			args: []string{
+				"--source=service",
+				"--provider=aws",
+				"--no-aws-evaluate-target-health",
+				"--no-exclude-unschedulable",
+			},
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, false, cfg.AWSEvaluateTargetHealth)
+				assert.Equal(t, false, cfg.ExcludeUnschedulable)
+			},
 		},
 		{
 			title: "override everything via flags",
@@ -400,8 +431,10 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
 			},
-			envVars:  map[string]string{},
-			expected: overriddenConfig,
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, overriddenConfig, cfg)
+			},
 		},
 		{
 			title: "override everything via environment variables",
@@ -519,7 +552,9 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
 			},
-			expected: overriddenConfig,
+			expected: func(cfg *Config) {
+				assert.Equal(t, overriddenConfig, cfg)
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -528,7 +563,7 @@ func TestParseFlags(t *testing.T) {
 
 			cfg := NewConfig()
 			require.NoError(t, cfg.ParseFlags(ti.args))
-			assert.Equal(t, ti.expected, cfg)
+			ti.expected(cfg)
 		})
 	}
 }
@@ -1159,9 +1194,14 @@ func (r *recordingBinder) StringMapVar(name, help string, target *map[string]str
 	r.record(name, fkStringMap)
 	r.inner.StringMapVar(name, help, target)
 }
+
 func (r *recordingBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
 	r.record(name, fkRegexp)
 	r.inner.RegexpVar(name, help, def, target)
+}
+
+func (r *recordingBinder) Flags() *pflag.FlagSet {
+	return nil
 }
 
 // collectAllFlags binds flags to a Cobra binder (which includes provider/source)

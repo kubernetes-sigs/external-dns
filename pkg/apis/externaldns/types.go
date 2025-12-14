@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/external-dns/internal/flags"
 )
 
 const (
@@ -522,6 +524,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	if strings.EqualFold(backend, "cobra") {
 		cmd := newCobraCommand(cfg)
 		cmd.SetArgs(pruned)
+		if err := flags.ReconcileBoolFlags(cmd.Flags()); err != nil {
+			return err
+		}
 		if err := cmd.Execute(); err != nil {
 			return err
 		}
@@ -555,13 +560,7 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 		if cfg.Provider == "" {
 			return fmt.Errorf("--provider is required when using cobra backend")
 		}
-		validProvider := false
-		for _, p := range providerNames {
-			if p == cfg.Provider {
-				validProvider = true
-				break
-			}
-		}
+		validProvider := slices.Contains(providerNames, cfg.Provider)
 		if !validProvider {
 			return fmt.Errorf("invalid provider %q; valid values: %s", cfg.Provider, strings.Join(providerNames, ", "))
 		}
