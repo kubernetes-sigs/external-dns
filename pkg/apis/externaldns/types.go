@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/external-dns/internal/flags"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -33,7 +34,6 @@ import (
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/external-dns/internal/flags"
 )
 
 const (
@@ -524,9 +524,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	if strings.EqualFold(backend, "cobra") {
 		cmd := newCobraCommand(cfg)
 		cmd.SetArgs(pruned)
-		if err := flags.ReconcileBoolFlags(cmd.Flags()); err != nil {
-			return err
-		}
 		if err := cmd.Execute(); err != nil {
 			return err
 		}
@@ -548,6 +545,9 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 		Short:         "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRunE: func(c *cobra.Command, args []string) error {
+			return flags.ReconcileAndLinkBoolFlags(c.Flags())
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},
@@ -556,7 +556,9 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 	// Recreate a minimal post-parse validation for Cobra so it behaves like
 	// Kingpin's Required/Enum validations.
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		// Enforce required provider (must be present) like Kingpin.
+		// Enforce required provider (must be present)
+		// TODO: review in follow up and use native cobra constructs
+		// ref: https://cobra.dev/docs/how-to-guides/working-with-flags/
 		if cfg.Provider == "" {
 			return fmt.Errorf("--provider is required when using cobra backend")
 		}
