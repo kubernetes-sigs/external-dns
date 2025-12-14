@@ -1427,28 +1427,218 @@ func TestToEndpointNameNewTXT(t *testing.T) {
 			txtDomain:  "bar.cname.foo.example.com",
 		},
 		{
-			name:       "override for specific domain and prefix",
-			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"apex.com": "%{record_type}-foo."}),
+			name:       "override for specific A record with template prefix",
+			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"apex.com": "%{record_type}-"}),
 			domain:     "apex.com.",
 			recordType: "A",
-			txtDomain:  "a-foo.apex.com.",
+			txtDomain:  "a-apex.com.",
 		},
 		{
-			name:       "override key matches even with trailing dot and mixed case",
-			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"APeX.com.": "%{record_type}-foo."}),
+			name:       "override for specific AAAA record with template prefix",
+			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"apex.com": "%{record_type}-"}),
+			domain:     "apex.com.",
+			recordType: "AAAA",
+			txtDomain:  "aaaa-apex.com.",
+		},
+		{
+			name:       "override for multiple domains selects correct domain-specific prefix",
+			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"apex.com": "%{record_type}-foo.", "example.com": "bar"}),
+			domain:     "example.com.",
+			recordType: "A",
+			txtDomain:  "bara-example.com.",
+		},
+		{
+			name:       "override with empty prefix uses only record type",
+			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"apex.com": "%{record_type}-foo.", "example.com": ""}),
+			domain:     "example.com.",
+			recordType: "A",
+			txtDomain:  "a-example.com.",
+		},
+		{
+			name:       "override key matches with trailing dot and mixed case",
+			mapper:     newaffixNameMapper("foo", "", "", map[string]string{"APeX.com.": "%{record_type}-"}),
 			domain:     "apex.com.",
 			recordType: "A",
-			txtDomain:  "a-foo.apex.com.",
+			txtDomain:  "a-apex.com.",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			txtDomain := tc.mapper.toTXTName(tc.domain, tc.recordType)
 			assert.Equal(t, tc.txtDomain, txtDomain)
 
 			domain, _ := tc.mapper.toEndpointName(txtDomain)
 			assert.Equal(t, tc.domain, domain)
+		})
+	}
+}
+
+func TestOverridePrefixNameMapper_toTXTName(t *testing.T) {
+	tests := []struct {
+		name                string
+		overrides           map[string]string
+		wildcardReplacement string
+		endpointName        string
+		recordType          string
+		expected            string
+		found               bool
+	}{
+		{
+			name:                "should return not found when overrides is empty",
+			overrides:           map[string]string{},
+			wildcardReplacement: "",
+			endpointName:        "apex.com.",
+			recordType:          "A",
+			expected:            "",
+			found:               false,
+		},
+		{
+			name:                "should return overridden TXT name for template prefix",
+			overrides:           map[string]string{"apex.com": "%{record_type}-foo."},
+			wildcardReplacement: "",
+			endpointName:        "apex.com.",
+			recordType:          "A",
+			expected:            "a-foo.apex.com.",
+			found:               true,
+		},
+		{
+			name:                "should return overridden TXT name for AAAA record with template prefix",
+			overrides:           map[string]string{"apex.com": "%{record_type}-"},
+			wildcardReplacement: "",
+			endpointName:        "apex.com.",
+			recordType:          "AAAA",
+			expected:            "aaaa-apex.com.",
+			found:               true,
+		},
+		{
+			name:                "should return overridden TXT name when multiple overrides exist",
+			overrides:           map[string]string{"apex.com": "%{record_type}-foo.", "example.com": "bar"},
+			wildcardReplacement: "",
+			endpointName:        "example.com.",
+			recordType:          "A",
+			expected:            "bara-example.com.",
+			found:               true,
+		},
+		{
+			name:                "should return overridden TXT name when override prefix is empty",
+			overrides:           map[string]string{"apex.com": "%{record_type}-foo.", "example.com": ""},
+			wildcardReplacement: "",
+			endpointName:        "example.com.",
+			recordType:          "A",
+			expected:            "a-example.com.",
+			found:               true,
+		},
+		{
+			name:                "should return not found for non-overridden endpoint",
+			overrides:           map[string]string{"apex.com": "%{record_type}-foo."},
+			wildcardReplacement: "",
+			endpointName:        "not-apex.com.",
+			recordType:          "A",
+			expected:            "",
+			found:               false,
+		},
+		{
+			name:                "should return overridden TXT name for wildcard endpoint after wildcard replacement",
+			overrides:           map[string]string{"*.apex.com": "%{record_type}-"},
+			wildcardReplacement: "wild",
+			endpointName:        "wild.apex.com.", // "*" is replaced with "wild" by provider
+			recordType:          "A",
+			expected:            "a-wild.apex.com.",
+			found:               true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mapper := newOverridePrefixNameMapper(tt.wildcardReplacement, tt.overrides)
+			actual, found := mapper.toTXTName(tt.endpointName, tt.recordType)
+
+			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.found, found)
+		})
+	}
+}
+
+func TestOverridePrefixNameMapper_toEndpointName(t *testing.T) {
+	tests := []struct {
+		name                 string
+		overrides            map[string]string
+		wildcardReplacement  string
+		txtDNSName           string
+		expectedEndpointName string
+		expectedRecordType   string
+		found                bool
+	}{
+		{
+			name:                 "should return not found when overrides is empty",
+			overrides:            map[string]string{},
+			wildcardReplacement:  "",
+			txtDNSName:           "a-foo.apex.com.",
+			expectedEndpointName: "",
+			expectedRecordType:   "",
+			found:                false,
+		},
+		{
+			name:                 "should return endpoint name and record type for overridden TXT name with template prefix",
+			overrides:            map[string]string{"apex.com": "%{record_type}-foo."},
+			wildcardReplacement:  "",
+			txtDNSName:           "a-foo.apex.com.",
+			expectedEndpointName: "apex.com.",
+			expectedRecordType:   "A",
+			found:                true,
+		},
+		{
+			name:                 "should return endpoint name and record type for overridden AAAA TXT name with template prefix",
+			overrides:            map[string]string{"apex.com": "%{record_type}-"},
+			wildcardReplacement:  "",
+			txtDNSName:           "aaaa-apex.com.",
+			expectedEndpointName: "apex.com.",
+			expectedRecordType:   "AAAA",
+			found:                true,
+		},
+		{
+			name:                 "should return endpoint name and record type for overridden TXT name regardless of casing and trailing dot",
+			overrides:            map[string]string{"apex.com": "%{record_type}-foo."},
+			wildcardReplacement:  "",
+			txtDNSName:           "A-FOO.APEX.COM",
+			expectedEndpointName: "apex.com.",
+			expectedRecordType:   "A",
+			found:                true,
+		},
+		{
+			name:                 "should return endpoint name and record type for wildcard TXT name after wildcard replacement",
+			overrides:            map[string]string{"*.apex.com": "%{record_type}-"},
+			wildcardReplacement:  "wild",
+			txtDNSName:           "a-wild.apex.com.",
+			expectedEndpointName: "wild.apex.com.",
+			expectedRecordType:   "A",
+			found:                true,
+		},
+		{
+			name:                 "should return not found for TXT name that does not match any override mapping",
+			overrides:            map[string]string{"apex.com": "%{record_type}-foo."},
+			wildcardReplacement:  "",
+			txtDNSName:           "a-foo.example.com.",
+			expectedEndpointName: "",
+			expectedRecordType:   "",
+			found:                false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mapper := newOverridePrefixNameMapper(tt.wildcardReplacement, tt.overrides)
+			actualEndpointName, actualRecordType, found := mapper.toEndpointName(tt.txtDNSName)
+
+			assert.Equal(t, tt.expectedEndpointName, actualEndpointName)
+			assert.Equal(t, tt.expectedRecordType, actualRecordType)
+			assert.Equal(t, tt.found, found)
 		})
 	}
 }
