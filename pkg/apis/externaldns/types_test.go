@@ -121,8 +121,8 @@ var (
 		ExoscaleAPIZone:                               "ch-gva-2",
 		ExoscaleAPIKey:                                "",
 		ExoscaleAPISecret:                             "",
-		CRDSourceAPIVersion:                           "externaldns.k8s.io/v1alpha1",
-		CRDSourceKind:                                 "DNSEndpoint",
+		CRDAPIVersion:                                 "externaldns.k8s.io/v1alpha1",
+		CRDKind:                                       "DNSEndpoint",
 		TransIPAccountName:                            "",
 		TransIPPrivateKeyFile:                         "",
 		DigitalOceanAPIPageSize:                       50,
@@ -160,8 +160,8 @@ var (
 		GoogleZoneVisibility:                   "private",
 		DomainFilter:                           []string{"example.org", "company.com"},
 		ExcludeDomains:                         []string{"xapi.example.org", "xapi.company.com"},
-		RegexDomainFilter:                      regexp.MustCompile("(example\\.org|company\\.com)$"),
-		RegexDomainExclusion:                   regexp.MustCompile("xapi\\.(example\\.org|company\\.com)$"),
+		RegexDomainFilter:                      regexp.MustCompile(`(example\.org|company\.com)$`),
+		RegexDomainExclusion:                   regexp.MustCompile(`xapi\.(example\.org|company\.com)$`),
 		ZoneNameFilter:                         []string{"yapi.example.org", "yapi.company.com"},
 		ZoneIDFilter:                           []string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 		TargetNetFilter:                        []string{"10.0.0.0/9", "10.1.0.0/9"},
@@ -236,8 +236,8 @@ var (
 		ExoscaleAPIZone:                               "zone1",
 		ExoscaleAPIKey:                                "1",
 		ExoscaleAPISecret:                             "2",
-		CRDSourceAPIVersion:                           "test.k8s.io/v1alpha1",
-		CRDSourceKind:                                 "Endpoint",
+		CRDAPIVersion:                                 "test.k8s.io/v1alpha1",
+		CRDKind:                                       "Endpoint",
 		NS1Endpoint:                                   "https://api.example.com/v1",
 		NS1IgnoreSSL:                                  true,
 		TransIPAccountName:                            "transip",
@@ -1126,39 +1126,48 @@ func (r *recordingBinder) StringVar(name, help, def string, target *string) {
 	r.record(name, fkString)
 	r.inner.StringVar(name, help, def, target)
 }
+
 func (r *recordingBinder) BoolVar(name, help string, def bool, target *bool) {
 	r.record(name, fkBool)
 	r.inner.BoolVar(name, help, def, target)
 }
+
 func (r *recordingBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
 	r.record(name, fkDuration)
 	r.inner.DurationVar(name, help, def, target)
 }
+
 func (r *recordingBinder) IntVar(name, help string, def int, target *int) {
 	r.record(name, fkInt)
 	r.inner.IntVar(name, help, def, target)
 }
+
 func (r *recordingBinder) Int64Var(name, help string, def int64, target *int64) {
 	r.record(name, fkInt64)
 	r.inner.Int64Var(name, help, def, target)
 }
+
 func (r *recordingBinder) StringsVar(name, help string, def []string, target *[]string) {
 	r.record(name, fkStrings)
 	r.inner.StringsVar(name, help, def, target)
 }
+
 func (r *recordingBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
 	r.record(name, fkEnum, allowed...)
 	r.inner.EnumVar(name, help, def, target, allowed...)
 }
+
 func (r *recordingBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
 	// Not used by bindFlags currently; keep for completeness.
 	r.record(name, fkStrings)
 	r.inner.StringsEnumVar(name, help, def, target, allowed...)
 }
+
 func (r *recordingBinder) StringMapVar(name, help string, target *map[string]string) {
 	r.record(name, fkStringMap)
 	r.inner.StringMapVar(name, help, target)
 }
+
 func (r *recordingBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
 	r.record(name, fkRegexp)
 	r.inner.RegexpVar(name, help, def, target)
@@ -1445,7 +1454,6 @@ func TestBinderParityScalars(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cfgK := runWithKingpin(t, tc.args)
