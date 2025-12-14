@@ -72,7 +72,6 @@ func ReconcileAndLinkBoolFlags(f *pflag.FlagSet) error {
 				err = checkExplicitFalse(positive, flag.Name)
 			}
 		}
-
 	})
 	return err
 }
