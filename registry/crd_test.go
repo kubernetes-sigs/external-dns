@@ -427,7 +427,7 @@ func NewMockCRDClient(namespace string, responses ...mockResult) *mockClient {
 	}
 }
 
-func (mc mockClient) RequestWasExecuted(key mockRequestKey) bool {
+func (mc *mockClient) RequestWasExecuted(key mockRequestKey) bool {
 	_, found := mc.requestHit[key]
 	return found
 }

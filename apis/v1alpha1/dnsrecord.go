@@ -75,7 +75,7 @@ type DNSRecordList struct {
 	Items           []DNSRecord `json:"items"`
 }
 
-func (dr DNSRecord) IsEndpoint(e *endpoint.Endpoint) bool {
+func (dr *DNSRecord) IsEndpoint(e *endpoint.Endpoint) bool {
 	spec := dr.Spec.Endpoint
 
 	return spec.DNSName == strings.ToLower(e.DNSName) &&
@@ -83,7 +83,7 @@ func (dr DNSRecord) IsEndpoint(e *endpoint.Endpoint) bool {
 		spec.SetIdentifier == e.SetIdentifier
 }
 
-func (dr DNSRecord) EndpointLabels() endpoint.Labels {
+func (dr *DNSRecord) EndpointLabels() endpoint.Labels {
 	labels := endpoint.Labels{}
 
 	labels[endpoint.OwnerLabelKey] = dr.Labels[RecordOwnerLabel]

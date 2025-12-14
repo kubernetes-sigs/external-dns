@@ -370,7 +370,7 @@ func (e *Endpoint) Key() EndpointKey {
 }
 
 func (ek EndpointKey) String() string {
-  return fmt.Sprintf("%s-%s-%s", ek.DNSName, ek.SetIdentifier, ek.RecordType)
+	return fmt.Sprintf("%s-%s-%s", ek.DNSName, ek.SetIdentifier, ek.RecordType)
 }
 
 // IsOwnedBy returns true if the endpoint owner label matches the given ownerID, false otherwise
