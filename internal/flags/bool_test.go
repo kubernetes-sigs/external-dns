@@ -33,7 +33,7 @@ func TestBooleanPair(t *testing.T) {
 		{"foo", true, []string{}, true},
 		{"foo", true, []string{"--foo"}, true},
 		{"foo", true, []string{"--no-foo"}, false},
-		{"foo", false, []string{"--no-foo"}, true},
+		{"foo", false, []string{"--no-foo"}, false},
 		{"foo", false, []string{"--foo"}, true},
 		{"foo", false, []string{}, false},
 		{"zoo", true, []string{}, true},
