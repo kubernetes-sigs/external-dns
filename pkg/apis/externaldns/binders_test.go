@@ -148,7 +148,7 @@ func TestCobraBinderEnumNotValidatedHere(t *testing.T) {
 }
 
 // Cobra requires --<flag>=false
-func TestCobraBinderNoBooleanNegationFormSupported(t *testing.T) {
+func TestCobraBooleanNegationFormSupported(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	b := NewCobraBinder(cmd)
 
