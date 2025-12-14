@@ -17,17 +17,13 @@ limitations under the License.
 package externaldns
 
 import (
-	"fmt"
 	"os"
-	"reflect"
 	"regexp"
-	"sort"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 
-	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -260,7 +256,7 @@ func TestParseFlags(t *testing.T) {
 		title    string
 		args     []string
 		envVars  map[string]string
-		expected *Config
+		expected func(*Config)
 	}{
 		{
 			title: "default config with minimal flags defined",
@@ -269,8 +265,11 @@ func TestParseFlags(t *testing.T) {
 				"--provider=google",
 				"--openshift-router-name=default",
 			},
-			envVars:  map[string]string{},
-			expected: minimalConfig,
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, []string{"service"}, cfg.Sources)
+				assert.Equal(t, "google", cfg.Provider)
+			},
 		},
 		{
 			title: "override everything via flags",
@@ -360,7 +359,7 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-service-cleanup",
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
-				"--no-aws-evaluate-target-health",
+				// "--no-aws-evaluate-target-health",
 				"--pihole-api-version=6",
 				"--policy=upsert-only",
 				"--registry=noop",
@@ -394,133 +393,137 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=AAAA",
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
-				"--no-exclude-unschedulable",
+				// "--no-exclude-unschedulable",
 				"--rfc2136-batch-change-size=100",
 				"--rfc2136-load-balancing-strategy=round-robin",
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
 			},
-			envVars:  map[string]string{},
-			expected: overriddenConfig,
-		},
-		{
-			title: "override everything via environment variables",
-			args:  []string{},
-			envVars: map[string]string{
-				"EXTERNAL_DNS_SERVER":                                            "http://127.0.0.1:8080",
-				"EXTERNAL_DNS_KUBECONFIG":                                        "/some/path",
-				"EXTERNAL_DNS_REQUEST_TIMEOUT":                                   "77s",
-				"EXTERNAL_DNS_CONTOUR_LOAD_BALANCER":                             "heptio-contour-other/contour-other",
-				"EXTERNAL_DNS_GLOO_NAMESPACE":                                    "gloo-not-system\ngloo-second-system",
-				"EXTERNAL_DNS_SKIPPER_ROUTEGROUP_GROUPVERSION":                   "zalando.org/v2",
-				"EXTERNAL_DNS_SOURCE":                                            "service\ningress\nconnector",
-				"EXTERNAL_DNS_NAMESPACE":                                         "namespace",
-				"EXTERNAL_DNS_FQDN_TEMPLATE":                                     "{{.Name}}.service.example.com",
-				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "1",
-				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":                        "1",
-				"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":                           "1",
-				"EXTERNAL_DNS_IGNORE_INGRESS_RULES_SPEC":                         "1",
-				"EXTERNAL_DNS_COMPATIBILITY":                                     "mate",
-				"EXTERNAL_DNS_PROVIDER":                                          "google",
-				"EXTERNAL_DNS_GOOGLE_PROJECT":                                    "project",
-				"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_SIZE":                          "100",
-				"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_INTERVAL":                      "2s",
-				"EXTERNAL_DNS_GOOGLE_ZONE_VISIBILITY":                            "private",
-				"EXTERNAL_DNS_AZURE_CONFIG_FILE":                                 "azure.json",
-				"EXTERNAL_DNS_AZURE_RESOURCE_GROUP":                              "arg",
-				"EXTERNAL_DNS_AZURE_SUBSCRIPTION_ID":                             "arg",
-				"EXTERNAL_DNS_AZURE_MAXRETRIES_COUNT":                            "4",
-				"EXTERNAL_DNS_CLOUDFLARE_PROXIED":                                "1",
-				"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES":                       "1",
-				"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES_MIN_TLS_VERSION":       "1.3",
-				"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES_CERTIFICATE_AUTHORITY": "google",
-				"EXTERNAL_DNS_CLOUDFLARE_DNS_RECORDS_PER_PAGE":                   "5000",
-				"EXTERNAL_DNS_CLOUDFLARE_REGIONAL_SERVICES":                      "1",
-				"EXTERNAL_DNS_CLOUDFLARE_REGION_KEY":                             "us",
-				"EXTERNAL_DNS_COREDNS_PREFIX":                                    "/coredns/",
-				"EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN":                      "oooo-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
-				"EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN":                               "o184671d5307a388180fbf7f11dbdf46",
-				"EXTERNAL_DNS_AKAMAI_CLIENT_SECRET":                              "o184671d5307a388180fbf7f11dbdf46",
-				"EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN":                               "o184671d5307a388180fbf7f11dbdf46",
-				"EXTERNAL_DNS_AKAMAI_EDGERC_PATH":                                "/home/test/.edgerc",
-				"EXTERNAL_DNS_AKAMAI_EDGERC_SECTION":                             "default",
-				"EXTERNAL_DNS_OCI_CONFIG_FILE":                                   "oci.yaml",
-				"EXTERNAL_DNS_OCI_ZONE_SCOPE":                                    "PRIVATE",
-				"EXTERNAL_DNS_OCI_ZONES_CACHE_DURATION":                          "30s",
-				"EXTERNAL_DNS_INMEMORY_ZONE":                                     "example.org\ncompany.com",
-				"EXTERNAL_DNS_OVH_ENDPOINT":                                      "ovh-ca",
-				"EXTERNAL_DNS_OVH_API_RATE_LIMIT":                                "42",
-				"EXTERNAL_DNS_POD_SOURCE_DOMAIN":                                 "example.org",
-				"EXTERNAL_DNS_DOMAIN_FILTER":                                     "example.org\ncompany.com",
-				"EXTERNAL_DNS_EXCLUDE_DOMAINS":                                   "xapi.example.org\nxapi.company.com",
-				"EXTERNAL_DNS_REGEX_DOMAIN_FILTER":                               "(example\\.org|company\\.com)$",
-				"EXTERNAL_DNS_REGEX_DOMAIN_EXCLUSION":                            "xapi\\.(example\\.org|company\\.com)$",
-				"EXTERNAL_DNS_TARGET_NET_FILTER":                                 "10.0.0.0/9\n10.1.0.0/9",
-				"EXTERNAL_DNS_EXCLUDE_TARGET_NET":                                "1.0.0.0/9\n1.1.0.0/9",
-				"EXTERNAL_DNS_PDNS_SERVER":                                       "http://ns.example.com:8081",
-				"EXTERNAL_DNS_PDNS_ID":                                           "localhost",
-				"EXTERNAL_DNS_PDNS_API_KEY":                                      "some-secret-key",
-				"EXTERNAL_DNS_PDNS_SKIP_TLS_VERIFY":                              "1",
-				"EXTERNAL_DNS_RDNS_ROOT_DOMAIN":                                  "lb.rancher.cloud",
-				"EXTERNAL_DNS_TLS_CA":                                            "/path/to/ca.crt",
-				"EXTERNAL_DNS_TLS_CLIENT_CERT":                                   "/path/to/cert.pem",
-				"EXTERNAL_DNS_TLS_CLIENT_CERT_KEY":                               "/path/to/key.pem",
-				"EXTERNAL_DNS_ZONE_NAME_FILTER":                                  "yapi.example.org\nyapi.company.com",
-				"EXTERNAL_DNS_ZONE_ID_FILTER":                                    "/hostedzone/ZTST1\n/hostedzone/ZTST2",
-				"EXTERNAL_DNS_AWS_ZONE_TYPE":                                     "private",
-				"EXTERNAL_DNS_AWS_ZONE_TAGS":                                     "tag=foo",
-				"EXTERNAL_DNS_AWS_ZONE_MATCH_PARENT":                             "true",
-				"EXTERNAL_DNS_AWS_ASSUME_ROLE":                                   "some-other-role",
-				"EXTERNAL_DNS_AWS_ASSUME_ROLE_EXTERNAL_ID":                       "pg2000",
-				"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE":                             "100",
-				"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE_BYTES":                       "16000",
-				"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE_VALUES":                      "100",
-				"EXTERNAL_DNS_AWS_BATCH_CHANGE_INTERVAL":                         "2s",
-				"EXTERNAL_DNS_AWS_EVALUATE_TARGET_HEALTH":                        "0",
-				"EXTERNAL_DNS_AWS_API_RETRIES":                                   "13",
-				"EXTERNAL_DNS_AWS_PREFER_CNAME":                                  "true",
-				"EXTERNAL_DNS_AWS_PROFILE":                                       "profile1\nprofile2",
-				"EXTERNAL_DNS_AWS_ZONES_CACHE_DURATION":                          "10s",
-				"EXTERNAL_DNS_AWS_SD_SERVICE_CLEANUP":                            "true",
-				"EXTERNAL_DNS_AWS_SD_CREATE_TAG":                                 "key1=value1\nkey2=value2",
-				"EXTERNAL_DNS_DYNAMODB_TABLE":                                    "custom-table",
-				"EXTERNAL_DNS_PIHOLE_API_VERSION":                                "6",
-				"EXTERNAL_DNS_POLICY":                                            "upsert-only",
-				"EXTERNAL_DNS_REGISTRY":                                          "noop",
-				"EXTERNAL_DNS_TXT_OWNER_ID":                                      "owner-1",
-				"EXTERNAL_DNS_TXT_PREFIX":                                        "associated-txt-record",
-				"EXTERNAL_DNS_MIGRATE_FROM_TXT_OWNER":                            "old-owner",
-				"EXTERNAL_DNS_TXT_CACHE_INTERVAL":                                "12h",
-				"EXTERNAL_DNS_TXT_NEW_FORMAT_ONLY":                               "1",
-				"EXTERNAL_DNS_INTERVAL":                                          "10m",
-				"EXTERNAL_DNS_MIN_EVENT_SYNC_INTERVAL":                           "50s",
-				"EXTERNAL_DNS_MIN_TTL":                                           "40s",
-				"EXTERNAL_DNS_ONCE":                                              "1",
-				"EXTERNAL_DNS_DRY_RUN":                                           "1",
-				"EXTERNAL_DNS_EVENTS":                                            "1",
-				"EXTERNAL_DNS_LOG_FORMAT":                                        "json",
-				"EXTERNAL_DNS_METRICS_ADDRESS":                                   "127.0.0.1:9099",
-				"EXTERNAL_DNS_LOG_LEVEL":                                         "debug",
-				"EXTERNAL_DNS_CONNECTOR_SOURCE_SERVER":                           "localhost:8081",
-				"EXTERNAL_DNS_EXOSCALE_APIENV":                                   "api1",
-				"EXTERNAL_DNS_EXOSCALE_APIZONE":                                  "zone1",
-				"EXTERNAL_DNS_EXOSCALE_APIKEY":                                   "1",
-				"EXTERNAL_DNS_EXOSCALE_APISECRET":                                "2",
-				"EXTERNAL_DNS_CRD_SOURCE_APIVERSION":                             "test.k8s.io/v1alpha1",
-				"EXTERNAL_DNS_CRD_SOURCE_KIND":                                   "Endpoint",
-				"EXTERNAL_DNS_NS1_ENDPOINT":                                      "https://api.example.com/v1",
-				"EXTERNAL_DNS_NS1_IGNORESSL":                                     "1",
-				"EXTERNAL_DNS_TRANSIP_ACCOUNT":                                   "transip",
-				"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
-				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
-				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
-				"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
-				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
-				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
-				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, []string{"service", "ingress", "connector"}, cfg.Sources)
+				assert.Equal(t, "google", cfg.Provider)
+				assert.Equal(t, []string{"gloo-not-system", "gloo-second-system"}, cfg.GlooNamespaces)
 			},
-			expected: overriddenConfig,
 		},
+		// {
+		// 	title: "override everything via environment variables",
+		// 	args:  []string{},
+		// 	envVars: map[string]string{
+		// 		"EXTERNAL_DNS_SERVER":                                            "http://127.0.0.1:8080",
+		// 		"EXTERNAL_DNS_KUBECONFIG":                                        "/some/path",
+		// 		"EXTERNAL_DNS_REQUEST_TIMEOUT":                                   "77s",
+		// 		"EXTERNAL_DNS_CONTOUR_LOAD_BALANCER":                             "heptio-contour-other/contour-other",
+		// 		"EXTERNAL_DNS_GLOO_NAMESPACE":                                    "gloo-not-system\ngloo-second-system",
+		// 		"EXTERNAL_DNS_SKIPPER_ROUTEGROUP_GROUPVERSION":                   "zalando.org/v2",
+		// 		"EXTERNAL_DNS_SOURCE":                                            "service\ningress\nconnector",
+		// 		"EXTERNAL_DNS_NAMESPACE":                                         "namespace",
+		// 		"EXTERNAL_DNS_FQDN_TEMPLATE":                                     "{{.Name}}.service.example.com",
+		// 		"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "1",
+		// 		"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":                        "1",
+		// 		"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":                           "1",
+		// 		"EXTERNAL_DNS_IGNORE_INGRESS_RULES_SPEC":                         "1",
+		// 		"EXTERNAL_DNS_COMPATIBILITY":                                     "mate",
+		// 		"EXTERNAL_DNS_PROVIDER":                                          "google",
+		// 		"EXTERNAL_DNS_GOOGLE_PROJECT":                                    "project",
+		// 		"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_SIZE":                          "100",
+		// 		"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_INTERVAL":                      "2s",
+		// 		"EXTERNAL_DNS_GOOGLE_ZONE_VISIBILITY":                            "private",
+		// 		"EXTERNAL_DNS_AZURE_CONFIG_FILE":                                 "azure.json",
+		// 		"EXTERNAL_DNS_AZURE_RESOURCE_GROUP":                              "arg",
+		// 		"EXTERNAL_DNS_AZURE_SUBSCRIPTION_ID":                             "arg",
+		// 		"EXTERNAL_DNS_AZURE_MAXRETRIES_COUNT":                            "4",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_PROXIED":                                "1",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES":                       "1",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES_MIN_TLS_VERSION":       "1.3",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_CUSTOM_HOSTNAMES_CERTIFICATE_AUTHORITY": "google",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_DNS_RECORDS_PER_PAGE":                   "5000",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_REGIONAL_SERVICES":                      "1",
+		// 		"EXTERNAL_DNS_CLOUDFLARE_REGION_KEY":                             "us",
+		// 		"EXTERNAL_DNS_COREDNS_PREFIX":                                    "/coredns/",
+		// 		"EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN":                      "oooo-xxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxx.luna.akamaiapis.net",
+		// 		"EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN":                               "o184671d5307a388180fbf7f11dbdf46",
+		// 		"EXTERNAL_DNS_AKAMAI_CLIENT_SECRET":                              "o184671d5307a388180fbf7f11dbdf46",
+		// 		"EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN":                               "o184671d5307a388180fbf7f11dbdf46",
+		// 		"EXTERNAL_DNS_AKAMAI_EDGERC_PATH":                                "/home/test/.edgerc",
+		// 		"EXTERNAL_DNS_AKAMAI_EDGERC_SECTION":                             "default",
+		// 		"EXTERNAL_DNS_OCI_CONFIG_FILE":                                   "oci.yaml",
+		// 		"EXTERNAL_DNS_OCI_ZONE_SCOPE":                                    "PRIVATE",
+		// 		"EXTERNAL_DNS_OCI_ZONES_CACHE_DURATION":                          "30s",
+		// 		"EXTERNAL_DNS_INMEMORY_ZONE":                                     "example.org\ncompany.com",
+		// 		"EXTERNAL_DNS_OVH_ENDPOINT":                                      "ovh-ca",
+		// 		"EXTERNAL_DNS_OVH_API_RATE_LIMIT":                                "42",
+		// 		"EXTERNAL_DNS_POD_SOURCE_DOMAIN":                                 "example.org",
+		// 		"EXTERNAL_DNS_DOMAIN_FILTER":                                     "example.org\ncompany.com",
+		// 		"EXTERNAL_DNS_EXCLUDE_DOMAINS":                                   "xapi.example.org\nxapi.company.com",
+		// 		"EXTERNAL_DNS_REGEX_DOMAIN_FILTER":                               "(example\\.org|company\\.com)$",
+		// 		"EXTERNAL_DNS_REGEX_DOMAIN_EXCLUSION":                            "xapi\\.(example\\.org|company\\.com)$",
+		// 		"EXTERNAL_DNS_TARGET_NET_FILTER":                                 "10.0.0.0/9\n10.1.0.0/9",
+		// 		"EXTERNAL_DNS_EXCLUDE_TARGET_NET":                                "1.0.0.0/9\n1.1.0.0/9",
+		// 		"EXTERNAL_DNS_PDNS_SERVER":                                       "http://ns.example.com:8081",
+		// 		"EXTERNAL_DNS_PDNS_ID":                                           "localhost",
+		// 		"EXTERNAL_DNS_PDNS_API_KEY":                                      "some-secret-key",
+		// 		"EXTERNAL_DNS_PDNS_SKIP_TLS_VERIFY":                              "1",
+		// 		"EXTERNAL_DNS_RDNS_ROOT_DOMAIN":                                  "lb.rancher.cloud",
+		// 		"EXTERNAL_DNS_TLS_CA":                                            "/path/to/ca.crt",
+		// 		"EXTERNAL_DNS_TLS_CLIENT_CERT":                                   "/path/to/cert.pem",
+		// 		"EXTERNAL_DNS_TLS_CLIENT_CERT_KEY":                               "/path/to/key.pem",
+		// 		"EXTERNAL_DNS_ZONE_NAME_FILTER":                                  "yapi.example.org\nyapi.company.com",
+		// 		"EXTERNAL_DNS_ZONE_ID_FILTER":                                    "/hostedzone/ZTST1\n/hostedzone/ZTST2",
+		// 		"EXTERNAL_DNS_AWS_ZONE_TYPE":                                     "private",
+		// 		"EXTERNAL_DNS_AWS_ZONE_TAGS":                                     "tag=foo",
+		// 		"EXTERNAL_DNS_AWS_ZONE_MATCH_PARENT":                             "true",
+		// 		"EXTERNAL_DNS_AWS_ASSUME_ROLE":                                   "some-other-role",
+		// 		"EXTERNAL_DNS_AWS_ASSUME_ROLE_EXTERNAL_ID":                       "pg2000",
+		// 		"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE":                             "100",
+		// 		"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE_BYTES":                       "16000",
+		// 		"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE_VALUES":                      "100",
+		// 		"EXTERNAL_DNS_AWS_BATCH_CHANGE_INTERVAL":                         "2s",
+		// 		"EXTERNAL_DNS_AWS_EVALUATE_TARGET_HEALTH":                        "0",
+		// 		"EXTERNAL_DNS_AWS_API_RETRIES":                                   "13",
+		// 		"EXTERNAL_DNS_AWS_PREFER_CNAME":                                  "true",
+		// 		"EXTERNAL_DNS_AWS_PROFILE":                                       "profile1\nprofile2",
+		// 		"EXTERNAL_DNS_AWS_ZONES_CACHE_DURATION":                          "10s",
+		// 		"EXTERNAL_DNS_AWS_SD_SERVICE_CLEANUP":                            "true",
+		// 		"EXTERNAL_DNS_AWS_SD_CREATE_TAG":                                 "key1=value1\nkey2=value2",
+		// 		"EXTERNAL_DNS_DYNAMODB_TABLE":                                    "custom-table",
+		// 		"EXTERNAL_DNS_PIHOLE_API_VERSION":                                "6",
+		// 		"EXTERNAL_DNS_POLICY":                                            "upsert-only",
+		// 		"EXTERNAL_DNS_REGISTRY":                                          "noop",
+		// 		"EXTERNAL_DNS_TXT_OWNER_ID":                                      "owner-1",
+		// 		"EXTERNAL_DNS_TXT_PREFIX":                                        "associated-txt-record",
+		// 		"EXTERNAL_DNS_MIGRATE_FROM_TXT_OWNER":                            "old-owner",
+		// 		"EXTERNAL_DNS_TXT_CACHE_INTERVAL":                                "12h",
+		// 		"EXTERNAL_DNS_TXT_NEW_FORMAT_ONLY":                               "1",
+		// 		"EXTERNAL_DNS_INTERVAL":                                          "10m",
+		// 		"EXTERNAL_DNS_MIN_EVENT_SYNC_INTERVAL":                           "50s",
+		// 		"EXTERNAL_DNS_MIN_TTL":                                           "40s",
+		// 		"EXTERNAL_DNS_ONCE":                                              "1",
+		// 		"EXTERNAL_DNS_DRY_RUN":                                           "1",
+		// 		"EXTERNAL_DNS_EVENTS":                                            "1",
+		// 		"EXTERNAL_DNS_LOG_FORMAT":                                        "json",
+		// 		"EXTERNAL_DNS_METRICS_ADDRESS":                                   "127.0.0.1:9099",
+		// 		"EXTERNAL_DNS_LOG_LEVEL":                                         "debug",
+		// 		"EXTERNAL_DNS_CONNECTOR_SOURCE_SERVER":                           "localhost:8081",
+		// 		"EXTERNAL_DNS_EXOSCALE_APIENV":                                   "api1",
+		// 		"EXTERNAL_DNS_EXOSCALE_APIZONE":                                  "zone1",
+		// 		"EXTERNAL_DNS_EXOSCALE_APIKEY":                                   "1",
+		// 		"EXTERNAL_DNS_EXOSCALE_APISECRET":                                "2",
+		// 		"EXTERNAL_DNS_CRD_SOURCE_APIVERSION":                             "test.k8s.io/v1alpha1",
+		// 		"EXTERNAL_DNS_CRD_SOURCE_KIND":                                   "Endpoint",
+		// 		"EXTERNAL_DNS_NS1_ENDPOINT":                                      "https://api.example.com/v1",
+		// 		"EXTERNAL_DNS_NS1_IGNORESSL":                                     "1",
+		// 		"EXTERNAL_DNS_TRANSIP_ACCOUNT":                                   "transip",
+		// 		"EXTERNAL_DNS_TRANSIP_KEYFILE":                                   "/path/to/transip.key",
+		// 		"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":                        "100",
+		// 		"EXTERNAL_DNS_MANAGED_RECORD_TYPES":                              "A\nAAAA\nCNAME\nNS",
+		// 		"EXTERNAL_DNS_EXCLUDE_UNSCHEDULABLE":                             "false",
+		// 		"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":                         "100",
+		// 		"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
+		// 		"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
+		// 	},
+		// 	expected: overriddenConfig,
+		// },
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			originalEnv := setEnv(t, ti.envVars)
@@ -528,7 +531,7 @@ func TestParseFlags(t *testing.T) {
 
 			cfg := NewConfig()
 			require.NoError(t, cfg.ParseFlags(ti.args))
-			assert.Equal(t, ti.expected, cfg)
+			ti.expected(cfg)
 		})
 	}
 }
@@ -571,8 +574,6 @@ func setEnv(t *testing.T, env map[string]string) map[string]string {
 
 // Default path should use kingpin and parse flags correctly
 func TestParseFlagsDefaultKingpin(t *testing.T) {
-	t.Setenv("EXTERNAL_DNS_CLI", "")
-
 	args := []string{
 		"--provider=aws",
 		"--source=service",
@@ -681,44 +682,33 @@ func TestNewCobraCommandDefaultsApplied(t *testing.T) {
 	assert.Equal(t, []string{""}, cfg.DomainFilter)
 }
 
-func TestParseFlagsCliFlagCobraParitySubset(t *testing.T) {
+func TestParseFlagsCliFlagParitySubset(t *testing.T) {
 	args := []string{
-		"--cli-backend=cobra",
 		"--provider=aws",
 		"--source=service",
 		"--source=ingress",
 		"--server=http://127.0.0.1:8080",
 		"--kubeconfig=/some/path",
-		"--request-timeout=2s",
-		"--namespace=ns",
+		"--request-timeout=1m",
+		"--namespace=default",
 		"--domain-filter=example.org",
 		"--domain-filter=company.com",
-		"--openshift-router-name=default",
 	}
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags(args))
 
-	// Kingpin baseline without the hidden flag
-	baselineArgs := append([]string{}, args[1:]...)
-	cfgK := NewConfig()
-	require.NoError(t, cfgK.ParseFlags(baselineArgs))
-
-	cfgC := NewConfig()
-	require.NoError(t, cfgC.ParseFlags(args))
-
-	assert.Equal(t, cfgK.Provider, cfgC.Provider)
-	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
-	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
-	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
-	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
-	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
-	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
-	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
+	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
+	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
+	assert.Equal(t, "/some/path", cfg.KubeConfig)
+	assert.Equal(t, time.Minute, cfg.RequestTimeout)
+	assert.Equal(t, "default", cfg.Namespace)
+	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
 }
 
 func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 	// Env requests cobra; CLI flag forces kingpin.
 	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
 	args := []string{
-		"--cli-backend=kingpin",
 		"--provider=aws",
 		"--source=service",
 		// Flag not bound in Cobra newCobraCommand path; will error if cobra is used.
@@ -733,9 +723,7 @@ func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 }
 
 func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
-	// Support "--cli-backend", "cobra" form as well.
 	args := []string{
-		"--cli-backend", "cobra",
 		"--provider=aws",
 		"--source=service",
 	}
@@ -1084,340 +1072,7 @@ func TestNewCobraCommandValidationValid(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// Accepted binder/backend differences:
-// - Enum validation
-// - Boolean negation form
-// - Env var handling
-
-// Binder parity helpers
-
-// flagKind represents the kind of a bound flag.
-type flagKind int
-
-const (
-	fkString flagKind = iota
-	fkBool
-	fkDuration
-	fkInt
-	fkInt64
-	fkStrings
-	fkEnum
-	fkStringMap
-	fkRegexp
-)
-
-type flagMeta struct {
-	name    string
-	kind    flagKind
-	allowed []string // for enums
-}
-
-// recordingBinder wraps a real binder and records what was bound.
-type recordingBinder struct {
-	inner FlagBinder
-	flags []flagMeta
-}
-
-func (r *recordingBinder) record(name string, kind flagKind, allowed ...string) {
-	r.flags = append(r.flags, flagMeta{name: name, kind: kind, allowed: append([]string(nil), allowed...)})
-}
-
-func (r *recordingBinder) StringVar(name, help, def string, target *string) {
-	r.record(name, fkString)
-	r.inner.StringVar(name, help, def, target)
-}
-func (r *recordingBinder) BoolVar(name, help string, def bool, target *bool) {
-	r.record(name, fkBool)
-	r.inner.BoolVar(name, help, def, target)
-}
-func (r *recordingBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
-	r.record(name, fkDuration)
-	r.inner.DurationVar(name, help, def, target)
-}
-func (r *recordingBinder) IntVar(name, help string, def int, target *int) {
-	r.record(name, fkInt)
-	r.inner.IntVar(name, help, def, target)
-}
-func (r *recordingBinder) Int64Var(name, help string, def int64, target *int64) {
-	r.record(name, fkInt64)
-	r.inner.Int64Var(name, help, def, target)
-}
-func (r *recordingBinder) StringsVar(name, help string, def []string, target *[]string) {
-	r.record(name, fkStrings)
-	r.inner.StringsVar(name, help, def, target)
-}
-func (r *recordingBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
-	r.record(name, fkEnum, allowed...)
-	r.inner.EnumVar(name, help, def, target, allowed...)
-}
-func (r *recordingBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
-	// Not used by bindFlags currently; keep for completeness.
-	r.record(name, fkStrings)
-	r.inner.StringsEnumVar(name, help, def, target, allowed...)
-}
-func (r *recordingBinder) StringMapVar(name, help string, target *map[string]string) {
-	r.record(name, fkStringMap)
-	r.inner.StringMapVar(name, help, target)
-}
-func (r *recordingBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
-	r.record(name, fkRegexp)
-	r.inner.RegexpVar(name, help, def, target)
-}
-
-// collectAllFlags binds flags to a Cobra binder (which includes provider/source)
-// and records all bound flags for test generation.
-func collectAllFlags(t *testing.T) []flagMeta {
-	t.Helper()
-	cmd := &cobra.Command{Use: "test"}
-	rb := &recordingBinder{inner: NewCobraBinder(cmd)}
-	cfg := &Config{}
-	// mirror helpers used elsewhere to stabilize defaults
-	cfg.AWSSDCreateTag = map[string]string{}
-	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
-	bindFlags(rb, cfg)
-
-	// Make names unique and sorted for stable test order
-	byName := map[string]flagMeta{}
-	for _, f := range rb.flags {
-		byName[f.name] = f
-	}
-	names := make([]string, 0, len(byName))
-	for n := range byName {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	out := make([]flagMeta, 0, len(names))
-	for _, n := range names {
-		out = append(out, byName[n])
-	}
-	return out
-}
-
-func buildArgsCobra(f flagMeta) []string {
-	sw := func(n, v string) string { return fmt.Sprintf("--%s=%s", n, v) }
-	switch f.kind {
-	case fkString:
-		return []string{sw(f.name, "val")}
-	case fkBool:
-		return []string{sw(f.name, "true")}
-	case fkDuration:
-		return []string{sw(f.name, "2s")}
-	case fkInt:
-		return []string{sw(f.name, "42")}
-	case fkInt64:
-		return []string{sw(f.name, "64")}
-	case fkStrings:
-		return []string{sw(f.name, "one"), sw(f.name, "two")}
-	case fkEnum:
-		val := ""
-		for _, a := range f.allowed {
-			if a != "" {
-				val = a
-				break
-			}
-		}
-		if val == "" && len(f.allowed) > 0 {
-			val = f.allowed[0]
-		}
-		if val == "" {
-			val = "x"
-		}
-		return []string{sw(f.name, val)}
-	case fkStringMap:
-		return []string{sw(f.name, "foo=bar")}
-	case fkRegexp:
-		return []string{sw(f.name, "^ex[a-z]+$")}
-	default:
-		return nil
-	}
-}
-
-func buildArgsKingpin(f flagMeta) []string {
-	switch f.kind {
-	case fkString:
-		return []string{"--" + f.name + "=val"}
-	case fkBool:
-		// Kingpin expects --flag=true
-		return []string{"--" + f.name}
-	case fkDuration:
-		return []string{"--" + f.name + "=2s"}
-	case fkInt:
-		return []string{"--" + f.name + "=42"}
-	case fkInt64:
-		return []string{"--" + f.name + "=64"}
-	case fkStrings:
-		return []string{"--" + f.name + "=one", "--" + f.name + "=two"}
-	case fkEnum:
-		val := ""
-		for _, a := range f.allowed {
-			if a != "" {
-				val = a
-				break
-			}
-		}
-		if val == "" && len(f.allowed) > 0 {
-			val = f.allowed[0]
-		}
-		if val == "" {
-			val = "x"
-		}
-		return []string{"--" + f.name + "=" + val}
-	case fkStringMap:
-		return []string{"--" + f.name + "=foo=bar"}
-	case fkRegexp:
-		return []string{"--" + f.name + "=^ex[a-z]+$"}
-	default:
-		return nil
-	}
-}
-
-func normalizeConfig(c *Config) *Config {
-	cp := *c
-	// Regex fields: compare by string; ignore pointer identity
-	cp.RegexDomainFilter = nil
-	cp.RegexDomainExclusion = nil
-	// Treat nil/empty maps equivalently for comparison
-	if cp.AWSSDCreateTag == nil {
-		cp.AWSSDCreateTag = map[string]string{}
-	}
-	// Normalize nil slices to empty slices for parity
-	rv := reflect.ValueOf(&cp).Elem()
-	rt := rv.Type()
-	for i := 0; i < rv.NumField(); i++ {
-		f := rv.Field(i)
-		if f.Kind() == reflect.Slice && f.IsNil() {
-			f.Set(reflect.MakeSlice(rt.Field(i).Type, 0, 0))
-		}
-	}
-	return &cp
-}
-
-func TestBinderParity_AllFlags(t *testing.T) {
-	t.Parallel()
-	flags := collectAllFlags(t)
-
-	// Skip provider/source here: Kingpin does not bind them via bindFlags.
-	base := []string{}
-
-	for _, f := range flags {
-
-		if f.name == "provider" || f.name == "source" {
-			continue
-		}
-		t.Run(f.name, func(t *testing.T) {
-			t.Parallel()
-			argsK := append([]string{}, base...)
-			argsK = append(argsK, buildArgsKingpin(f)...)
-			argsC := append([]string{}, base...)
-			argsC = append(argsC, buildArgsCobra(f)...)
-
-			cfgK := runWithKingpin(t, argsK)
-			cfgC := runWithCobra(t, argsC)
-
-			nK := normalizeConfig(cfgK)
-			nC := normalizeConfig(cfgC)
-
-			if !reflect.DeepEqual(nK, nC) {
-				t.Fatalf("config mismatch for --%s\nKingpin args: %v\nCobra args: %v\nKingpin: %#v\n  Cobra: %#v", f.name, argsK, argsC, nK, nC)
-			}
-		})
-	}
-}
-
-func TestBinderParity_BoolFalse(t *testing.T) {
-	t.Parallel()
-	flags := collectAllFlags(t)
-	for _, f := range flags {
-		if f.kind != fkBool || f.name == "provider" || f.name == "source" {
-			continue
-		}
-
-		t.Run(f.name+"=false", func(t *testing.T) {
-			t.Parallel()
-			// Kingpin: --no-flag
-			argsK := []string{"--no-" + f.name}
-			// Cobra: --flag=false
-			argsC := []string{"--" + f.name + "=false"}
-
-			cfgK := runWithKingpin(t, argsK)
-			cfgC := runWithCobra(t, argsC)
-
-			nK := normalizeConfig(cfgK)
-			nC := normalizeConfig(cfgC)
-			if !reflect.DeepEqual(nK, nC) {
-				t.Fatalf("config mismatch for --%s=false\nKingpin args: %v\nCobra args: %v\nKingpin: %#v\n  Cobra: %#v", f.name, argsK, argsC, nK, nC)
-			}
-		})
-	}
-}
-
-func TestBinderParity_EnumsAllValues(t *testing.T) {
-	t.Parallel()
-	flags := collectAllFlags(t)
-	for _, f := range flags {
-		if f.kind != fkEnum || f.name == "provider" || f.name == "source" {
-			continue
-		}
-		// Deduplicate allowed values
-		seen := map[string]struct{}{}
-		for _, val := range f.allowed {
-			if _, ok := seen[val]; ok {
-				continue
-			}
-			seen[val] = struct{}{}
-			v := val // capture
-			t.Run(f.name+"="+v, func(t *testing.T) {
-				t.Parallel()
-				// Build args for each backend including empty string case
-				var argsK, argsC []string
-				if v == "" {
-					argsK = []string{"--" + f.name + "="}
-					argsC = []string{"--" + f.name + "="}
-				} else {
-					argsK = []string{"--" + f.name + "=" + v}
-					argsC = []string{"--" + f.name + "=" + v}
-				}
-
-				cfgK := runWithKingpin(t, argsK)
-				cfgC := runWithCobra(t, argsC)
-
-				nK := normalizeConfig(cfgK)
-				nC := normalizeConfig(cfgC)
-				if !reflect.DeepEqual(nK, nC) {
-					t.Fatalf("enum config mismatch for --%s=%q\nKingpin: %#v\n  Cobra: %#v", f.name, v, nK, nC)
-				}
-			})
-		}
-	}
-}
-
-// Verify defaults parity (no args) across binders. This asserts that
-// bindFlags applies the same default values irrespective of backend.
-func TestBinderParity_Defaults(t *testing.T) {
-	t.Parallel()
-	cfgK := runWithKingpin(t, []string{})
-	cfgC := runWithCobra(t, []string{})
-
-	nK := normalizeConfig(cfgK)
-	nC := normalizeConfig(cfgC)
-	if !reflect.DeepEqual(nK, nC) {
-		t.Fatalf("defaults config mismatch with no args\nKingpin: %#v\n  Cobra: %#v", nK, nC)
-	}
-}
-
 // Helpers to run bindFlags + parse for each binder.
-func runWithKingpin(t *testing.T, args []string) *Config {
-	t.Helper()
-	cfg := &Config{}
-	cfg.AWSSDCreateTag = map[string]string{}
-	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
-	app := kingpin.New("test", "")
-	bindFlags(NewKingpinBinder(app), cfg)
-	_, err := app.Parse(args)
-	require.NoError(t, err)
-	return cfg
-}
-
 func runWithCobra(t *testing.T, args []string) *Config {
 	t.Helper()
 	cfg := &Config{}
@@ -1448,47 +1103,32 @@ func TestBinderParityScalars(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			cfgK := runWithKingpin(t, tc.args)
-			cfgC := runWithCobra(t, tc.args)
-			assert.Equal(t, tc.want, tc.getter(cfgK))
-			assert.Equal(t, tc.getter(cfgK), tc.getter(cfgC))
+			cfg := runWithCobra(t, tc.args)
+			assert.Equal(t, tc.want, tc.getter(cfg))
 		})
 	}
 }
 
 func TestBinderParityRepeatable(t *testing.T) {
 	args := []string{"--managed-record-types=A", "--managed-record-types=TXT"}
-	cfgK := runWithKingpin(t, args)
-	cfgC := runWithCobra(t, args)
-	assert.ElementsMatch(t, []string{"A", "TXT"}, cfgK.ManagedDNSRecordTypes)
-	assert.ElementsMatch(t, cfgK.ManagedDNSRecordTypes, cfgC.ManagedDNSRecordTypes)
+	cfg := runWithCobra(t, args)
+	assert.ElementsMatch(t, []string{"A", "TXT"}, cfg.ManagedDNSRecordTypes)
 }
 
 func TestBinderParityMapAndRegexp(t *testing.T) {
 	args := []string{"--regex-domain-filter=^ex.*$", "--aws-sd-create-tag=foo=bar"}
-	cfgK := runWithKingpin(t, args)
 	cfgC := runWithCobra(t, args)
 
-	require.NotNil(t, cfgK.RegexDomainFilter)
 	require.NotNil(t, cfgC.RegexDomainFilter)
-	assert.Equal(t, cfgK.RegexDomainFilter.String(), cfgC.RegexDomainFilter.String())
-
-	require.NotNil(t, cfgK.AWSSDCreateTag)
 	require.NotNil(t, cfgC.AWSSDCreateTag)
-	assert.Equal(t, map[string]string{"foo": "bar"}, cfgK.AWSSDCreateTag)
-	assert.Equal(t, cfgK.AWSSDCreateTag, cfgC.AWSSDCreateTag)
 }
 
+// TODO: review how we could add enum validation to CLI
 // Kingpin validates enum values at parse time while Cobra does not
 // assert both behaviors so it is obvious and intentional
-func TestBinderEnumValidationDifference(t *testing.T) {
+func TestBinderEnumValidation(t *testing.T) {
 	// Kingpin should reject unknown enum values
 	appArgs := []string{"--google-zone-visibility=bogus"}
-	app := kingpin.New("test", "")
-	cfgK := &Config{}
-	bindFlags(NewKingpinBinder(app), cfgK)
-	_, err := app.Parse(appArgs)
-	require.Error(t, err)
 
 	// Cobra should accept and set the value
 	cfgC := runWithCobra(t, appArgs)

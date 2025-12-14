@@ -19,10 +19,8 @@ package externaldns
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"time"
 
-	"github.com/alecthomas/kingpin/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -42,72 +40,6 @@ type FlagBinder interface {
 	StringMapVar(name, help string, target *map[string]string)
 	// RegexpVar binds a regular expression value.
 	RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp)
-}
-
-// KingpinBinder implements FlagBinder using github.com/alecthomas/kingpin/v2.
-type KingpinBinder struct {
-	App *kingpin.Application
-}
-
-// NewKingpinBinder creates a FlagBinder backed by a kingpin Application.
-func NewKingpinBinder(app *kingpin.Application) *KingpinBinder {
-	return &KingpinBinder{App: app}
-}
-
-func (b *KingpinBinder) StringVar(name, help, def string, target *string) {
-	b.App.Flag(name, help).Default(def).StringVar(target)
-}
-
-func (b *KingpinBinder) BoolVar(name, help string, def bool, target *bool) {
-	if def {
-		b.App.Flag(name, help).Default("true").BoolVar(target)
-	} else {
-		b.App.Flag(name, help).Default("false").BoolVar(target)
-	}
-}
-
-func (b *KingpinBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
-	b.App.Flag(name, help).Default(def.String()).DurationVar(target)
-}
-
-func (b *KingpinBinder) IntVar(name, help string, def int, target *int) {
-	b.App.Flag(name, help).Default(strconv.Itoa(def)).IntVar(target)
-}
-
-func (b *KingpinBinder) Int64Var(name, help string, def int64, target *int64) {
-	b.App.Flag(name, help).Default(strconv.FormatInt(def, 10)).Int64Var(target)
-}
-
-func (b *KingpinBinder) StringsVar(name, help string, def []string, target *[]string) {
-	if len(def) > 0 {
-		b.App.Flag(name, help).Default(def...).StringsVar(target)
-		return
-	}
-	b.App.Flag(name, help).StringsVar(target)
-}
-
-func (b *KingpinBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
-	b.App.Flag(name, help).Default(def).EnumVar(target, allowed...)
-}
-
-func (b *KingpinBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
-	if len(def) > 0 {
-		b.App.Flag(name, help).Default(def...).EnumsVar(target, allowed...)
-		return
-	}
-	b.App.Flag(name, help).EnumsVar(target, allowed...)
-}
-
-func (b *KingpinBinder) StringMapVar(name, help string, target *map[string]string) {
-	b.App.Flag(name, help).StringMapVar(target)
-}
-
-func (b *KingpinBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
-	defStr := ""
-	if def != nil {
-		defStr = def.String()
-	}
-	b.App.Flag(name, help).Default(defStr).RegexpVar(target)
 }
 
 type regexpValue struct {

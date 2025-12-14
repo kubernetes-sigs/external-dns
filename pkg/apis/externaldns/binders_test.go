@@ -18,11 +18,11 @@ package externaldns
 
 import (
 	"errors"
+	"io"
 	"regexp"
 	"testing"
 	"time"
 
-	"github.com/alecthomas/kingpin/v2"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,70 +31,6 @@ import (
 type badSetter struct{}
 
 func (b *badSetter) Set(s string) error { return errors.New("bad default") }
-
-func TestKingpinBinderParsesAllTypes(t *testing.T) {
-	app := kingpin.New("test", "")
-	b := NewKingpinBinder(app)
-
-	var (
-		s    string
-		bval bool
-		d    time.Duration
-		i    int
-		i64  int64
-		ss   []string
-		e    string
-	)
-
-	b.StringVar("s", "string flag", "def", &s)
-	b.BoolVar("b", "bool flag", true, &bval)
-	b.DurationVar("d", "duration flag", 5*time.Second, &d)
-	b.IntVar("i", "int flag", 7, &i)
-	b.Int64Var("i64", "int64 flag", 9, &i64)
-	b.StringsVar("ss", "strings flag", []string{"x"}, &ss)
-	b.EnumVar("e", "enum flag", "a", &e, "a", "b")
-
-	_, err := app.Parse([]string{"--s=abc", "--no-b", "--d=2s", "--i=42", "--i64=64", "--ss=one", "--ss=two", "--e=b"})
-	require.NoError(t, err)
-
-	assert.Equal(t, "abc", s)
-	assert.False(t, bval)
-	assert.Equal(t, 2*time.Second, d)
-	assert.Equal(t, 42, i)
-	assert.Equal(t, int64(64), i64)
-	assert.ElementsMatch(t, []string{"one", "two"}, ss)
-	assert.Equal(t, "b", e)
-}
-
-func TestKingpinBinderEnumValidation(t *testing.T) {
-	app := kingpin.New("test", "")
-	b := NewKingpinBinder(app)
-
-	var e string
-	b.EnumVar("e", "enum flag", "a", &e, "a", "b")
-
-	_, err := app.Parse([]string{"--e=c"})
-	require.Error(t, err)
-}
-
-func TestKingpinBinderStringsVarNoDefaultAndBoolDefaultFalse(t *testing.T) {
-	app := kingpin.New("test", "")
-	b := NewKingpinBinder(app)
-
-	var (
-		ss []string
-		b2 bool
-	)
-
-	b.StringsVar("ss", "strings flag", nil, &ss)
-	b.BoolVar("b2", "bool2 flag", false, &b2)
-
-	_, err := app.Parse([]string{})
-	require.NoError(t, err)
-
-	assert.Empty(t, ss)
-	assert.False(t, b2)
-}
 
 func TestCobraBinderParsesAllTypes(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
@@ -147,6 +83,8 @@ func TestCobraBinderEnumNotValidatedHere(t *testing.T) {
 // Cobra requires --<flag>=false
 func TestCobraBinderNoBooleanNegationFormUnsupported(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
+	cmd.SetErr(io.Discard)
+	cmd.SetOut(io.Discard)
 	b := NewCobraBinder(cmd)
 
 	var v bool
@@ -179,6 +117,8 @@ func TestCobraRegexValueSetStringType(t *testing.T) {
 
 func TestCobraRegexpVarDefaultAndInvalidValue(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
+	cmd.SetErr(io.Discard)
+	cmd.SetOut(io.Discard)
 	b := NewCobraBinder(cmd)
 
 	var r *regexp.Regexp
@@ -189,6 +129,8 @@ func TestCobraRegexpVarDefaultAndInvalidValue(t *testing.T) {
 
 	// Executing with an invalid value should produce an error
 	cmd2 := &cobra.Command{Use: "test2"}
+	cmd2.SetErr(io.Discard)
+	cmd2.SetOut(io.Discard)
 	b2 := NewCobraBinder(cmd2)
 	var r2 *regexp.Regexp
 	b2.RegexpVar("re", "help", nil, &r2)
@@ -209,49 +151,6 @@ func TestCobraStringMapVarDefaultEmpty(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 	assert.Empty(t, m)
-}
-
-func TestKingpinRegexpVarDefaultAndParse(t *testing.T) {
-	app := kingpin.New("test", "")
-	b := NewKingpinBinder(app)
-
-	var r *regexp.Regexp
-	b.RegexpVar("re", "help", regexp.MustCompile("^a+$"), &r)
-
-	_, err := app.Parse([]string{})
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	assert.Equal(t, "^a+$", r.String())
-
-	// user-provided value should override default
-	var r2 *regexp.Regexp
-	app2 := kingpin.New("test2", "")
-	b2 := NewKingpinBinder(app2)
-	b2.RegexpVar("re", "help", nil, &r2)
-	_, err = app2.Parse([]string{"--re=^b+$"})
-	require.NoError(t, err)
-	require.NotNil(t, r2)
-	assert.Equal(t, "^b+$", r2.String())
-}
-
-func TestKingpinStringsEnumVarWithAndWithoutDefault(t *testing.T) {
-	app := kingpin.New("test", "")
-	b := NewKingpinBinder(app)
-
-	var vals []string
-	b.StringsEnumVar("se", "help", []string{"a", "b"}, &vals, "a", "b", "c")
-	_, err := app.Parse([]string{})
-	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"a", "b"}, vals)
-
-	// without default
-	app2 := kingpin.New("test2", "")
-	b2 := NewKingpinBinder(app2)
-	var vals2 []string
-	b2.StringsEnumVar("se", "help", nil, &vals2, "a", "b", "c")
-	_, err = app2.Parse([]string{"--se=a", "--se=c"})
-	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"a", "c"}, vals2)
 }
 
 func TestCobraStringsEnumVarWithAndWithoutDefault(t *testing.T) {
