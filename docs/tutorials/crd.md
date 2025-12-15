@@ -69,3 +69,45 @@ spec:
 - **With `--force-default-targets` (Legacy Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
 
 `--force-default-targets` allows migration path to clean CRD resources.
+
+### DNSEndpoint with an SRV record
+
+Here's an example of a `DNSEndpoint` with an SRV record:
+
+```yaml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: test-srv
+  namespace: default
+spec:
+  endpoints:
+  - dnsName: _sip._udp.test.example.com
+    recordTTL: 180
+    recordType: SRV
+    targets:
+    - 1 50 5060 sip1-n1.test.example.com
+    - 1 50 5060 sip1-n2.test.example.com
+```
+
+### DNSEndpoint with an NAPTR record
+
+Here's an example of a `DNSEndpoint` with an NAPTR record:
+
+```yaml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: test-naptr
+  namespace: default
+spec:
+  endpoints:
+  - dnsName: test.example.com
+    recordTTL: 180
+    recordType: NAPTR
+    targets:
+    - 50 50 "S" "SIPS+D2T" "" _sips._tcp.test.example.com.
+    - 100 50 "S" "SIP+D2U" "" _sip._udp.test.example.com.
+```
