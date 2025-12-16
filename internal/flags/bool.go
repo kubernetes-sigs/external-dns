@@ -31,7 +31,7 @@ const negPrefix = "no-"
 func AddNegationToBoolFlags(f *pflag.FlagSet, p *bool, name string, value bool, usage string) {
 	negativeName := negPrefix + name
 
-	f.BoolVarP(p, name, "", value, usage)
+	f.BoolVar(p, name, value, usage)
 	f.Bool(negativeName, !value, "(negative) "+usage)
 
 	if !value {
@@ -52,8 +52,7 @@ func ReconcileAndLinkBoolFlags(f *pflag.FlagSet) error {
 		// Walk the "no-" versions of the flags. Make sure we didn't set
 		// both, and set the positive value to the opposite of the "no-"
 		// value if it exists.
-		if strings.HasPrefix(flag.Name, negPrefix) {
-			positiveName := flag.Name[len(negPrefix):]
+		if positiveName, found := strings.CutPrefix(flag.Name, negPrefix); found {
 			positive := f.Lookup(positiveName)
 			// Non-paired flag, or wrong types
 			if positive == nil || positive.Value.Type() != "bool" || flag.Value.Type() != "bool" {
