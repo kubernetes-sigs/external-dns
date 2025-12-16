@@ -45,7 +45,6 @@ type FlagBinder interface {
 	StringMapVar(name, help string, target *map[string]string)
 	// RegexpVar binds a regular expression value.
 	RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp)
-	Flags() *flag.FlagSet
 }
 
 // KingpinBinder implements FlagBinder using github.com/alecthomas/kingpin/v2.
@@ -112,10 +111,6 @@ func (b *KingpinBinder) RegexpVar(name, help string, def *regexp.Regexp, target 
 		defStr = def.String()
 	}
 	b.App.Flag(name, help).Default(defStr).RegexpVar(target)
-}
-
-func (b *KingpinBinder) Flags() *flag.FlagSet {
-	return nil
 }
 
 type regexpValue struct {
@@ -208,6 +203,3 @@ func (b *CobraBinder) RegexpVar(name, help string, def *regexp.Regexp, target **
 	b.Cmd.Flags().Var(rv, name, help)
 }
 
-func (b *CobraBinder) Flags() *flag.FlagSet {
-	return b.Cmd.Flags()
-}

@@ -134,8 +134,6 @@ func TestCobraBinderParsesAllTypes(t *testing.T) {
 
 func TestCobraBinderEnumNotValidatedHere(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
-	cmd.SetErr(io.Discard)
-	cmd.SetOut(io.Discard)
 	b := NewCobraBinder(cmd)
 
 	var e string
@@ -181,9 +179,7 @@ func TestCobraRegexValueSetStringType(t *testing.T) {
 }
 
 func TestCobraRegexpVarDefaultAndInvalidValue(t *testing.T) {
-	cmd := &cobra.Command{Use: "test"}
-	cmd.SetErr(io.Discard)
-	cmd.SetOut(io.Discard)
+	cmd := &cobra.Command{Use: "test", SilenceErrors: true, SilenceUsage: true}
 	b := NewCobraBinder(cmd)
 
 	var r *regexp.Regexp
@@ -193,9 +189,7 @@ func TestCobraRegexpVarDefaultAndInvalidValue(t *testing.T) {
 	assert.Equal(t, "^x+$", r.String())
 
 	// Executing with an invalid value should produce an error
-	cmd2 := &cobra.Command{Use: "test2"}
-	cmd2.SetErr(io.Discard)
-	cmd2.SetOut(io.Discard)
+	cmd2 := &cobra.Command{Use: "test2", SilenceErrors: true, SilenceUsage: true}
 	b2 := NewCobraBinder(cmd2)
 	var r2 *regexp.Regexp
 	b2.RegexpVar("re", "help", nil, &r2)
