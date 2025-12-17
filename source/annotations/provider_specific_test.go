@@ -82,12 +82,24 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			setIdentifier: "",
 		},
 		{
-			name: "Azure metadata annotation",
+			name: "Azure tags annotation",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/azure-metadata-environment": "production",
+				AzureTagsKey: "cost-center=12345,owner=backend-team",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "azure/metadata-cost-center", Value: "12345"},
+				{Name: "azure/metadata-owner", Value: "backend-team"},
+			},
+			setIdentifier: "",
+		},
+		{
+			name: "Azure tags annotation with spaces",
+			annotations: map[string]string{
+				AzureTagsKey: "environment=production, app=myapp ",
 			},
 			expected: endpoint.ProviderSpecific{
 				{Name: "azure/metadata-environment", Value: "production"},
+				{Name: "azure/metadata-app", Value: "myapp"},
 			},
 			setIdentifier: "",
 		},
@@ -372,19 +384,6 @@ func TestGetProviderSpecificIdentifierAnnotations(t *testing.T) {
 			expectedResult: map[string]string{
 				"webhook/annotation-1": "value 1",
 				"webhook/annotation-2": "value 2",
-			},
-			expectedIdentifier: "id1",
-		},
-		{
-			title: "azure- provider specific annotations are set correctly",
-			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/azure-metadata-foo": "bar",
-				SetIdentifierKey: "id1",
-				"external-dns.alpha.kubernetes.io/azure-metadata-baz": "qux",
-			},
-			expectedResult: map[string]string{
-				"azure/metadata-foo": "bar",
-				"azure/metadata-baz": "qux",
 			},
 			expectedIdentifier: "id1",
 		},
