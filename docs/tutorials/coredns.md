@@ -33,14 +33,14 @@ This features works directly without any change to CoreDNS. CoreDNS will ignore 
 
 ### Other entries inside etcd
 
-Service entries in etcd without an `ownedby` field will be filtered out by the provider if `strictly-owned` is activated.
-Warning: If you activate `strictly-owned` afterwards, these entries will be ignored as the `ownedby` field is empty.
+Service entries in etcd without an `owner` field will be filtered out by the provider if `strictly-owned` is activated.
+Warning: If you activate `strictly-owned` afterwards, these entries will be ignored as the `owner` field is empty.
 
 ### Ways to migrate to a multi cluster setup
 
 Ways:
 
-1. Add the correct owner to all services inside etcd by adding the field `ownedby` to the JSON.
+1. Add the correct owner to all services inside etcd by adding the field `owner` to the JSON.
 2. Remove all services and allow them to be required again after restarting the provider. (Possible downtime.)
 
 ## Specific service annotation options
