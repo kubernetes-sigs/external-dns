@@ -488,16 +488,9 @@ func allLogLevelsAsStrings() []string {
 
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags(args []string) error {
-	pruned := make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		pruned = append(pruned, args[i])
-	}
-	app := App(cfg)
-	_, err := app.Parse(pruned)
-	if err != nil {
+	if _, err := App(cfg).Parse(args); err != nil {
 		return err
 	}
-
 	return nil
 }
 
