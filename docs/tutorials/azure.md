@@ -523,8 +523,7 @@ kind: Ingress
 metadata:
   name: my-ingress
   annotations:
-    external-dns.alpha.kubernetes.io/azure-metadata-cost-center: "12345"
-    external-dns.alpha.kubernetes.io/azure-metadata-owner: backend-team
+    external-dns.alpha.kubernetes.io/azure-tags: "cost-center=12345,owner=backend-team"
 spec:
   rules:
     - host: app.example.com
@@ -547,8 +546,7 @@ kind: HTTPRoute
 metadata:
   name: my-route
   annotations:
-    external-dns.alpha.kubernetes.io/azure-metadata-environment: production
-    external-dns.alpha.kubernetes.io/azure-metadata-app: myapp
+    external-dns.alpha.kubernetes.io/azure-tags: "environment=production,app=myapp"
 spec:
   parentRefs:
     - name: my-gateway
@@ -565,7 +563,7 @@ spec:
 ### Annotation Format
 
 Metadata annotations must follow the format:
-`external-dns.alpha.kubernetes.io/azure-metadata-<key>: <value>`
+`external-dns.alpha.kubernetes.io/azure-tags: "key1=value1,key2=value2"`
 
 ## Deploy ExternalDNS
 
