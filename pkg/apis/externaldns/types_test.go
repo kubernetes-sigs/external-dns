@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/flags"
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -1000,7 +1001,7 @@ func runWithKingpin(t *testing.T, args []string) *Config {
 	cfg.AWSSDCreateTag = map[string]string{}
 	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
 	app := kingpin.New("test", "")
-	bindFlags(NewKingpinBinder(app), cfg)
+	bindFlags(flags.NewKingpinBinder(app), cfg)
 	_, err := app.Parse(args)
 	require.NoError(t, err)
 	return cfg
@@ -1027,7 +1028,7 @@ func TestBinderEnumValidationDifference(t *testing.T) {
 	appArgs := []string{"--google-zone-visibility=bogus"}
 	app := kingpin.New("test", "")
 	cfgK := &Config{}
-	bindFlags(NewKingpinBinder(app), cfgK)
+	bindFlags(flags.NewKingpinBinder(app), cfgK)
 	_, err := app.Parse(appArgs)
 	require.Error(t, err)
 }
