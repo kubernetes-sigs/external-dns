@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+
 	"sigs.k8s.io/external-dns/internal/flags"
 
 	"sigs.k8s.io/external-dns/endpoint"
