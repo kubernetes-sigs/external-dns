@@ -45,7 +45,7 @@ jobs:
       with:
         verify: true
         args: --timeout=30m
-        version: v2.6
+        version: v2.7
 
     - uses: actions/setup-python@v6
     # https://github.com/pre-commit/action
