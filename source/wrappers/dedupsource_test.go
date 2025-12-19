@@ -306,5 +306,5 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 	_, err := src.Endpoints(context.Background())
 	require.NoError(t, err)
 
-	testutils.TestHelperLogContains("Skipping endpoint [default/svc/my-service:example.org] due to invalid targets [SRV:10 mail.example.org]", hook, t)
+	testutils.TestHelperLogContains("Skipping endpoint [default/svc/my-service:example.org] due to invalid configuration [SRV:10 mail.example.org]", hook, t)
 }
