@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANG_CI_LINTER_VERSION=v2.5.0
+GOLANG_CI_LINTER_VERSION=v2.7.2
 
 # Execute
 # scripts/install-tools.sh
@@ -47,7 +47,7 @@ install_golangci() {
       install=true
   fi
   if [[ "$install" == true ]]; then
-      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/cc3567e3127d8530afb69be1b7bd20ba9ebcc7c1/install.sh \
+      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/9f61b0f53f80672872fced07b6874397c3ed197b/install.sh \
         | sh -s -- -b $(go env GOPATH)/bin "${GOLANG_CI_LINTER_VERSION}"
   fi
 }
