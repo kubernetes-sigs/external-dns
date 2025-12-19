@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -286,4 +287,24 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			mockSource.AssertExpectations(t)
 		})
 	}
+}
+
+func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
+	hook := testutils.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	invalidEndpoint := &endpoint.Endpoint{
+		DNSName:       "example.org",
+		RecordType:    endpoint.RecordTypeSRV,
+		SetIdentifier: "default/svc/my-service",
+		Targets:       endpoint.Targets{"10 mail.example.org"},
+	}
+
+	mockSource := new(testutils.MockSource)
+	mockSource.On("Endpoints").Return([]*endpoint.Endpoint{invalidEndpoint}, nil)
+
+	src := NewDedupSource(mockSource)
+	_, err := src.Endpoints(context.Background())
+	require.NoError(t, err)
+
+	testutils.TestHelperLogContains("Skipping endpoint [default/svc/my-service:example.org] due to invalid targets [SRV:10 mail.example.org]", hook, t)
 }
