@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
@@ -94,32 +95,32 @@ func testDedupEndpoints(t *testing.T) {
 		{
 			"two endpoints with same dnsname, same type, and same target return one endpoint",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
 			"two endpoints with same dnsname, different record type, and same target return two endpoints",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: "AAAA", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", RecordType: "AAAA", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
 			"two endpoints with same dnsname, one with record type, one without, and same target return two endpoints",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
@@ -131,10 +132,10 @@ func testDedupEndpoints(t *testing.T) {
 		{
 			"one endpoint with multiple targets returns one endpoint and targets without duplicates",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4", "34.66.66.77", "34.66.66.77"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4", "34.66.66.77", "34.66.66.77"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: "A", Targets: endpoint.Targets{"1.2.3.4", "34.66.66.77"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4", "34.66.66.77"}},
 			},
 		},
 	} {
@@ -179,6 +180,110 @@ func TestDedupSource_AddEventHandler(t *testing.T) {
 			src.AddEventHandler(t.Context(), func() {})
 
 			mockSource.AssertNumberOfCalls(t, "AddEventHandler", tt.times)
+		})
+	}
+}
+
+func TestDedupEndpointsValidation(t *testing.T) {
+	tests := []struct {
+		name      string
+		endpoints []*endpoint.Endpoint
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			name: "mix of SRV records",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "_service._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 443 target.example.org."}}, // valid
+				{DNSName: "_service._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"11 5 target.example.org"}},      // invalid
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_service._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 443 target.example.org."}},
+			},
+		},
+		{
+			name: "invalid SRV record - missing priority",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "_service._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"5 443 target.example.org"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "valid MX record",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}},
+			},
+		},
+		{
+			name: "invalid MX record - missing priority",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"mail.example.org"}},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			name: "valid NAPTR record",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeNAPTR, Targets: endpoint.Targets{"100 10 \"u\" \"E2U+sip\" \"!^.*$!sip:info@example.org!\" ."}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeNAPTR, Targets: endpoint.Targets{"100 10 \"u\" \"E2U+sip\" \"!^.*$!sip:info@example.org!\" ."}},
+			},
+		},
+		{
+			name: "invalid NAPTR record - incomplete format",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeNAPTR, Targets: endpoint.Targets{"100 10 \"u\""}}, // invalid
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeNAPTR, Targets: endpoint.Targets{"100 10 \"u\""}},
+			},
+		},
+		{
+			name: "mixed valid and invalid records",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "_service._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 5 443"}}, // invalid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"mail.example.org"}},        // invalid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			name: "mixed valid and invalid TXT, A, AAAA records",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}}, // valid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},                                // invalid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}},                       // valid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},                         // invalid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},                    // valid
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},                   // invalid
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1 include:example.com ~all"}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{""}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.168.1.1"}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"not-an-ip"}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"invalid-ipv6"}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSource := new(testutils.MockSource)
+			mockSource.On("Endpoints").Return(tt.endpoints, nil)
+
+			sr := NewDedupSource(mockSource)
+			endpoints, err := sr.Endpoints(context.Background())
+			require.NoError(t, err)
+
+			validateEndpoints(t, endpoints, tt.expected)
+			mockSource.AssertExpectations(t)
 		})
 	}
 }

@@ -52,6 +52,12 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
+		// validate endpoint before normalization
+		if ok := ep.CheckEndpoint(); !ok {
+			log.Warnf("Skipping endpoint [%s:%s] due to invalid targets [%s:%s]", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","))
+			continue
+		}
+
 		if len(ep.Targets) > 1 {
 			ep.Targets = endpoint.NewTargets(ep.Targets...)
 		}
