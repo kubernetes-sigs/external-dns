@@ -127,7 +127,7 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 	for _, tc := range basicZoneTags {
 		zoneTagFilter := NewZoneTagFilter(tc.tagsFilter)
-		for range b.N {
+		for b.Loop() {
 			zoneTagFilter.Match(tc.zoneTags)
 		}
 	}
@@ -148,7 +148,7 @@ var benchFixtures = []struct {
 
 func BenchmarkZoneTagFilterComplex(b *testing.B) {
 	for _, tc := range benchFixtures {
-		for range b.N {
+		for b.Loop() {
 			tc.source.ZoneTagFilter.Match(tc.source.inputTags)
 		}
 	}
@@ -176,7 +176,7 @@ func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
 	toFilterTags := make([]string, 0, filter)
 	inputTags := make(map[string]string, zone)
 
-	for i := 0; i < filter; i++ {
+	for i := range filter {
 		tagIndex := i
 		if !match {
 			tagIndex += 50
@@ -184,7 +184,7 @@ func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
 		toFilterTags = append(toFilterTags, fmt.Sprintf("tag-%d=value-%d", tagIndex, i))
 	}
 
-	for i := 0; i < zone; i++ {
+	for i := range zone {
 		tagIndex := i
 		if !match {
 			// Make sure the input tags are different from the filter tags

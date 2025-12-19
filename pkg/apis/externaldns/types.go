@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -462,7 +463,7 @@ func (cfg *Config) String() string {
 	// prevent logging of sensitive information
 	temp := *cfg
 
-	t := reflect.TypeOf(temp)
+	t := reflect.TypeFor[Config]()
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {
@@ -493,7 +494,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	backend := ""
 	pruned := make([]string, 0, len(args))
 	skipNext := false
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		if skipNext {
 			skipNext = false
 			continue
@@ -506,8 +507,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 					val = args[i+1]
 					skipNext = true
 				}
-			} else if strings.HasPrefix(a, "--cli-backend=") {
-				val = strings.TrimPrefix(a, "--cli-backend=")
+			} else if after, ok := strings.CutPrefix(a, "--cli-backend="); ok {
+				val = after
 			}
 			if val != "" {
 				backend = val
@@ -555,13 +556,7 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 		if cfg.Provider == "" {
 			return fmt.Errorf("--provider is required when using cobra backend")
 		}
-		validProvider := false
-		for _, p := range providerNames {
-			if p == cfg.Provider {
-				validProvider = true
-				break
-			}
-		}
+		validProvider := slices.Contains(providerNames, cfg.Provider)
 		if !validProvider {
 			return fmt.Errorf("invalid provider %q; valid values: %s", cfg.Provider, strings.Join(providerNames, ", "))
 		}
@@ -571,13 +566,7 @@ func newCobraCommand(cfg *Config) *cobra.Command {
 			return fmt.Errorf("--source is required when using cobra backend")
 		}
 		for _, src := range cfg.Sources {
-			valid := false
-			for _, as := range allowedSources {
-				if src == as {
-					valid = true
-					break
-				}
-			}
+			valid := slices.Contains(allowedSources, src)
 			if !valid {
 				return fmt.Errorf("invalid source %q; valid values: %s", src, strings.Join(allowedSources, ", "))
 			}

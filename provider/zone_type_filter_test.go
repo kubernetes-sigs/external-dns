@@ -33,25 +33,25 @@ func TestZoneTypeFilterMatch(t *testing.T) {
 	for _, tc := range []struct {
 		zoneTypeFilter string
 		matches        bool
-		zones          []interface{}
+		zones          []any
 	}{
 		{
-			"", true, []interface{}{publicZoneStr, privateZoneStr, route53types.HostedZone{}},
+			"", true, []any{publicZoneStr, privateZoneStr, route53types.HostedZone{}},
 		},
 		{
-			"public", true, []interface{}{publicZoneStr, publicZoneAWS, route53types.HostedZone{}},
+			"public", true, []any{publicZoneStr, publicZoneAWS, route53types.HostedZone{}},
 		},
 		{
-			"public", false, []interface{}{privateZoneStr, privateZoneAWS},
+			"public", false, []any{privateZoneStr, privateZoneAWS},
 		},
 		{
-			"private", true, []interface{}{privateZoneStr, privateZoneAWS},
+			"private", true, []any{privateZoneStr, privateZoneAWS},
 		},
 		{
-			"private", false, []interface{}{publicZoneStr, publicZoneAWS, route53types.HostedZone{}},
+			"private", false, []any{publicZoneStr, publicZoneAWS, route53types.HostedZone{}},
 		},
 		{
-			"unknown", false, []interface{}{publicZoneStr},
+			"unknown", false, []any{publicZoneStr},
 		},
 	} {
 		t.Run(tc.zoneTypeFilter, func(t *testing.T) {

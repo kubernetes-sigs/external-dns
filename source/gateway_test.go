@@ -93,7 +93,7 @@ func TestGatewayMatchingHost(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			for i := 0; i < 2; i++ {
+			for range 2 {
 				if host, ok := gwMatchingHost(tt.a, tt.b); host != tt.host || ok != tt.ok {
 					t.Errorf(
 						"gwMatchingHost(%q, %q); got: %q, %v; want: %q, %v",
@@ -147,7 +147,7 @@ func TestGatewayMatchingProtocol(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			for i := 0; i < 2; i++ {
+			for range 2 {
 				if ok := gwProtocolMatches(v1.ProtocolType(tt.route), v1.ProtocolType(tt.lis)); ok != tt.ok {
 					t.Errorf(
 						"gwProtocolMatches(%q, %q); got: %v; want: %v",

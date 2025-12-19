@@ -85,7 +85,7 @@ func NewAmbassadorHostSource(
 	// Add default resource event handlers to properly initialize informer.
 	ambassadorHostInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)

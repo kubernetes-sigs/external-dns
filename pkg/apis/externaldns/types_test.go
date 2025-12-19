@@ -1435,13 +1435,13 @@ func TestBinderParityScalars(t *testing.T) {
 	cases := []struct {
 		name   string
 		args   []string
-		getter func(*Config) interface{}
-		want   interface{}
+		getter func(*Config) any
+		want   any
 	}{
-		{"fqdn-template", []string{"--fqdn-template=tpl"}, func(c *Config) interface{} { return c.FQDNTemplate }, "tpl"},
-		{"dry-run", []string{"--dry-run"}, func(c *Config) interface{} { return c.DryRun }, true},
-		{"interval", []string{"--interval=2s"}, func(c *Config) interface{} { return c.Interval }, 2 * time.Second},
-		{"google-batch-change-size", []string{"--google-batch-change-size=123"}, func(c *Config) interface{} { return c.GoogleBatchChangeSize }, 123},
+		{"fqdn-template", []string{"--fqdn-template=tpl"}, func(c *Config) any { return c.FQDNTemplate }, "tpl"},
+		{"dry-run", []string{"--dry-run"}, func(c *Config) any { return c.DryRun }, true},
+		{"interval", []string{"--interval=2s"}, func(c *Config) any { return c.Interval }, 2 * time.Second},
+		{"google-batch-change-size", []string{"--google-batch-change-size=123"}, func(c *Config) any { return c.GoogleBatchChangeSize }, 123},
 	}
 
 	for _, tc := range cases {

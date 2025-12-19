@@ -632,11 +632,7 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	var chunks [][]*endpoint.Endpoint
 
 	for i := 0; i < len(slice); i += chunkSize {
-		end := i + chunkSize
-
-		if end > len(slice) {
-			end = len(slice)
-		}
+		end := min(i+chunkSize, len(slice))
 
 		chunks = append(chunks, slice[i:end])
 	}

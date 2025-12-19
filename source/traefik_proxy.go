@@ -115,17 +115,17 @@ func NewTraefikSource(
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressRouteUDPGVR)
 		_, _ = ingressRouteInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
+				AddFunc: func(obj any) {},
 			},
 		)
 		_, _ = ingressRouteTcpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
+				AddFunc: func(obj any) {},
 			},
 		)
 		_, _ = ingressRouteUdpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
+				AddFunc: func(obj any) {},
 			},
 		)
 	}
@@ -135,17 +135,17 @@ func NewTraefikSource(
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressRouteUDPGVR)
 		_, _ = oldIngressRouteInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
+				AddFunc: func(obj any) {},
 			},
 		)
 		_, _ = oldIngressRouteTcpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
+				AddFunc: func(obj any) {},
 			},
 		)
 		_, _ = oldIngressRouteUdpInformer.Informer().AddEventHandler(
 			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {},
+				AddFunc: func(obj any) {},
 			},
 		)
 	}
@@ -927,7 +927,7 @@ func filterResourcesByAnnotations[T any](resources []*T, annotationFilter string
 	return filteredList, nil
 }
 
-func getAnnotations(obj interface{}) map[string]string {
+func getAnnotations(obj any) map[string]string {
 	switch o := obj.(type) {
 	case *IngressRouteUDP:
 		return o.Annotations
@@ -940,7 +940,7 @@ func getAnnotations(obj interface{}) map[string]string {
 	}
 }
 
-func getObjectFullName(obj interface{}) string {
+func getObjectFullName(obj any) string {
 	switch o := obj.(type) {
 	case *IngressRouteUDP:
 		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
