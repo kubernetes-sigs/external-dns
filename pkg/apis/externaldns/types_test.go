@@ -555,10 +555,7 @@ func TestParseFlags(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			originalEnv := setEnv(t, ti.envVars)
-			defer func() {
-				testutils.TestHelperEnvSetter(t, originalEnv)
-			}()
+			testutils.TestHelperEnvSetter(t, ti.envVars)
 
 			cfg := NewConfig()
 			require.NoError(t, cfg.ParseFlags(ti.args))
@@ -659,38 +656,6 @@ func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
 	require.NoError(t, cfgC.ParseFlags(args))
 
 	// Compare selected fields bound in cobra
-	assert.Equal(t, cfgK.Provider, cfgC.Provider)
-	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
-	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
-	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
-	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
-	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
-	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
-	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
-}
-
-func TestParseFlagsCliFlagCobraParitySubset(t *testing.T) {
-	args := []string{
-		"--provider=aws",
-		"--source=service",
-		"--source=ingress",
-		"--server=http://127.0.0.1:8080",
-		"--kubeconfig=/some/path",
-		"--request-timeout=2s",
-		"--namespace=ns",
-		"--domain-filter=example.org",
-		"--domain-filter=company.com",
-		"--openshift-router-name=default",
-	}
-
-	// Kingpin baseline without the hidden flag
-	baselineArgs := append([]string{}, args...)
-	cfgK := NewConfig()
-	require.NoError(t, cfgK.ParseFlags(baselineArgs))
-
-	cfgC := NewConfig()
-	require.NoError(t, cfgC.ParseFlags(args))
-
 	assert.Equal(t, cfgK.Provider, cfgC.Provider)
 	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
 	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
