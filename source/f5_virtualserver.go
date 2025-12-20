@@ -68,7 +68,7 @@ func NewF5VirtualServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
-	virtualServerInformer.Informer().AddEventHandler(
+	_, _ = virtualServerInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -78,7 +78,7 @@ func NewF5VirtualServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 

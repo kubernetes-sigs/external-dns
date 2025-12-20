@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -39,10 +38,11 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
+	"sigs.k8s.io/external-dns/source/informers"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/fqdn"
-	"sigs.k8s.io/external-dns/source/informers"
 )
 
 const (
@@ -78,9 +78,8 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 		opts = append(opts, gwinformers.WithNamespace(namespace))
 	}
 	if labelSelector != nil && !labelSelector.Empty() {
-		lbls := labelSelector.String()
 		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
-			o.LabelSelector = lbls
+			o.LabelSelector = labelSelector.String()
 		}))
 	}
 	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
@@ -105,9 +104,13 @@ type gatewayRouteSource struct {
 	ignoreHostnameAnnotation bool
 }
 
-func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string, newInformerFn newGatewayRouteInformerFunc) (Source, error) {
-	ctx := context.TODO()
-
+func newGatewayRouteSource(
+	ctx context.Context,
+	clients ClientGenerator,
+	config *Config,
+	kind string,
+	newInformerFn newGatewayRouteInformerFunc,
+) (Source, error) {
 	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
 	if err != nil {
 		return nil, err
@@ -150,18 +153,20 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
 	nsInformer.Informer()                                      // Register with factory before starting.
 
-	informerFactory.Start(wait.NeverStop)
-	kubeInformerFactory.Start(wait.NeverStop)
-	if rtInformerFactory != informerFactory {
-		rtInformerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
+	kubeInformerFactory.Start(ctx.Done())
 
+	if rtInformerFactory != informerFactory {
+		rtInformerFactory.Start(ctx.Done())
 		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
 			return nil, err
 		}
 	}
+
 	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
+
 	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
 		return nil, err
 	}
@@ -187,12 +192,12 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	return src, nil
 }
 
-func (src *gatewayRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debugf("Adding event handlers for %s", src.rtKind)
 	eventHandler := eventHandlerFunc(handler)
-	src.gwInformer.Informer().AddEventHandler(eventHandler)
-	src.rtInformer.Informer().AddEventHandler(eventHandler)
-	src.nsInformer.Informer().AddEventHandler(eventHandler)
+	_, _ = src.gwInformer.Informer().AddEventHandler(eventHandler)
+	_, _ = src.rtInformer.Informer().AddEventHandler(eventHandler)
+	_, _ = src.nsInformer.Informer().AddEventHandler(eventHandler)
 }
 
 func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {

@@ -36,11 +36,11 @@ func NewCloudFoundrySource(cfClient *cfclient.Client) (Source, error) {
 	}, nil
 }
 
-func (rs *cloudfoundrySource) AddEventHandler(ctx context.Context, handler func()) {
+func (rs *cloudfoundrySource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects
-func (rs *cloudfoundrySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (rs *cloudfoundrySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	u, err := url.Parse(rs.client.Config.ApiAddress)

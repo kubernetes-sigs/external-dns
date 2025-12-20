@@ -78,7 +78,7 @@ func NewOcpRouteSource(
 	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.
-	informer.Informer().AddEventHandler(
+	_, _ = informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -88,7 +88,7 @@ func NewOcpRouteSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 

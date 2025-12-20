@@ -83,7 +83,7 @@ func NewAmbassadorHostSource(
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	ambassadorHostInformer.Informer().AddEventHandler(
+	_, _ = ambassadorHostInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -93,7 +93,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 

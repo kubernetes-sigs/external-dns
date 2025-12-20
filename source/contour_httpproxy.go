@@ -73,7 +73,7 @@ func NewContourHTTPProxySource(
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	httpProxyInformer.Informer().AddEventHandler(
+	_, _ = httpProxyInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -83,7 +83,7 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -106,7 +106,7 @@ func NewContourHTTPProxySource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all HTTPProxy resources in the source's namespace(s).
-func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	hps, err := sc.httpProxyInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
