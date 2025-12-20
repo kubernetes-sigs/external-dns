@@ -198,6 +198,26 @@ func TestExecTemplate(t *testing.T) {
 			},
 			want: []string{"abrakadabra.google.com"},
 		},
+		{
+			name: "ignore empty template output",
+			tmpl: "{{ if eq .Name \"other\" }}{{ .Name }}.example.com{{ end }}",
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			want: []string{},
+		},
+		{
+			name: "ignore trailing comma output",
+			tmpl: "{{ .Name }}.example.com,",
+			obj: &testObject{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			want: []string{"test.example.com"},
+		},
 	}
 
 	for _, tt := range tests {
