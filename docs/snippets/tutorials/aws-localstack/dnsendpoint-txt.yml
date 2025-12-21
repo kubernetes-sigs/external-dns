@@ -1,0 +1,19 @@
+# ref: docs/snippets/tutorials/aws-localstack/dnsendpoint-txt.yml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: txt-example
+  namespace: default
+spec:
+  endpoints:
+    - dnsName: _acme-challenge.example.com
+      recordTTL: 300
+      recordType: TXT
+      targets:
+        - "validation-token-12345"
+    - dnsName: example.com
+      recordTTL: 3600
+      recordType: TXT
+      targets:
+        - "v=spf1 include:_spf.google.com ~all"

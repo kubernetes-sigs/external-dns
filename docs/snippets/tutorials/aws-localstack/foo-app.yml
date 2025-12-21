@@ -1,0 +1,47 @@
+# ref: docs/snippets/tutorials/aws-localstack/foo-app.yml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foo-app
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: foo-app.example.com
+    dns.why/type: aws-localstack-tutorial
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: foo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foo-app
+  annotations:
+    dns.why/type: aws-localstack-tutorial
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: foo
+  template:
+    metadata:
+      labels:
+        app: foo
+    spec:
+      containers:
+        - name: foo
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "5Mi"
+              cpu: "25m"
+            limits:
+              memory: "5Mi"
+              cpu: "25m"
