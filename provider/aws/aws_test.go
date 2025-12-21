@@ -640,6 +640,12 @@ func TestAWSRecords(t *testing.T) {
 			TTL:             aws.Int64(defaultTTL),
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("10 mailhost1.example.com")}, {Value: aws.String("20 mailhost2.example.com")}},
 		},
+		{
+			Name:            aws.String("naptr.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeNaptr,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com`)}, {Value: aws.String(`10 "U" "SIPS+D2T" "" _sips._tcp.sip1.example.com`)}},
+		},
 	})
 
 	records, err := provider.Records(context.Background())
@@ -675,6 +681,7 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(defaultTTL), "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(defaultTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
+		endpoint.NewEndpointWithTTL("naptr.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, endpoint.TTL(defaultTTL), `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com`, `10 "U" "SIPS+D2T" "" _sips._tcp.sip1.example.com`),
 	})
 }
 
@@ -962,6 +969,20 @@ func TestAWSApplyChanges(t *testing.T) {
 				SetIdentifier:   aws.String("no-change"),
 				Weight:          aws.Int64(10),
 			},
+			{
+				Name: aws.String("delete-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type: route53types.RRTypeNaptr,
+				TTL:  aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{
+					{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`)},
+				},
+			},
+			{
+				Name:            aws.String("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeNaptr,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`)}},
+			},
 		})
 
 		createRecords := []*endpoint.Endpoint{
@@ -974,6 +995,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("create-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8", "8.8.4.4"),
 			endpoint.NewEndpoint("create-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
 			endpoint.NewEndpoint("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost1.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("create-test-naptr.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`),
 			endpoint.NewEndpoint("create-test-geoproximity-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8").
 				WithSetIdentifier("geoproximity-region").
 				WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").
@@ -1005,6 +1027,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("before").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost2.bar.elb.amazonaws.com"),
+			endpoint.NewEndpoint("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`),
 			endpoint.NewEndpoint("escape-%!s(<nil>)-codes.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("policy-change").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "10"),
 		}
 		updatedRecords := []*endpoint.Endpoint{
@@ -1029,6 +1052,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("after").WithProviderSpecific(providerSpecificWeight, "10"),
 			endpoint.NewEndpoint("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "20"),
 			endpoint.NewEndpoint("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "20 mailhost3.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `20 "U" "SIP+DTU" "" _sip._udp.sip2.example.com.`),
 		}
 
 		deleteRecords := []*endpoint.Endpoint{
@@ -1043,6 +1067,7 @@ func TestAWSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("delete-test-multiple-aaaa.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "2606:4700:4700::1111", "2606:4700:4700::1001"),
 			endpoint.NewEndpoint("delete-test-geoproximity.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "1.2.3.4").WithSetIdentifier("geoproximity-delete").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 			endpoint.NewEndpoint("delete-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "30 mailhost1.foo.elb.amazonaws.com"),
+			endpoint.NewEndpoint("delete-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`),
 		}
 
 		changes := &plan.Changes{
@@ -1192,6 +1217,12 @@ func TestAWSApplyChanges(t *testing.T) {
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}},
 			},
 			{
+				Name:            aws.String("create-test-naptr.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeNaptr,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com.`)}},
+			},
+			{
 				Name:            aws.String("create-test-geoproximity-region.zone-1.ext-dns-test-2.teapot.zalan.do."),
 				Type:            route53types.RRTypeA,
 				TTL:             aws.Int64(defaultTTL),
@@ -1288,6 +1319,12 @@ func TestAWSApplyChanges(t *testing.T) {
 				Type:            route53types.RRTypeMx,
 				TTL:             aws.Int64(defaultTTL),
 				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("20 mailhost3.foo.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("update-test-naptr.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            route53types.RRTypeNaptr,
+				TTL:             aws.Int64(defaultTTL),
+				ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`20 "U" "SIP+DTU" "" _sip._udp.sip2.example.com.`)}},
 			},
 		})
 	}
