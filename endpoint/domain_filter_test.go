@@ -489,6 +489,41 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 	}
 }
 
+func TestNewDomainFilterWithExclusionsHandlesEmptyInputs(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []string
+		exclude []string
+	}{
+		{
+			name:    "NilSlices",
+			filters: nil,
+			exclude: nil,
+		},
+		{
+			name:    "EmptySlices",
+			filters: []string{},
+			exclude: []string{},
+		},
+		{
+			name:    "WhitespaceOnly",
+			filters: []string{" ", ""},
+			exclude: []string{"", " "},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			domainFilter := NewDomainFilterWithExclusions(tt.filters, tt.exclude)
+
+			assert.False(t, domainFilter.IsConfigured())
+			assert.Empty(t, domainFilter.Filters)
+			assert.Empty(t, domainFilter.exclude)
+			assert.True(t, domainFilter.Match("example.com"))
+		})
+	}
+}
+
 func TestRegexDomainFilter(t *testing.T) {
 	for i, tt := range regexDomainFilterTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {

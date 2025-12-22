@@ -331,12 +331,15 @@ func TestBuildProvider(t *testing.T) {
 	}
 }
 
+// TODO: this test should live in endpoint package
 func TestCreateDomainFilter(t *testing.T) {
 	tests := []struct {
 		name                 string
 		cfg                  *externaldns.Config
 		expectedDomainFilter *endpoint.DomainFilter
 		isConfigured         bool
+		matchDomain          string
+		expectMatch          bool
 	}{
 		{
 			name: "RegexDomainFilter",
@@ -381,6 +384,77 @@ func TestCreateDomainFilter(t *testing.T) {
 			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{}),
 			isConfigured:         false,
 		},
+		{
+			name: "RegexDomainExclusionWithoutRegexFilter",
+			cfg: &externaldns.Config{
+				RegexDomainExclusion: regexp.MustCompile(`test-v1\.3\.example-test\.in`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`test-v1\.3\.example-test\.in`)),
+			isConfigured:         true,
+			matchDomain:          "test-v1.3.example-test.in",
+			expectMatch:          false,
+		},
+		{
+			name: "RegexDomainFilterWithMultipleDomains",
+			cfg: &externaldns.Config{
+				RegexDomainFilter: regexp.MustCompile(`(example\.com|test\.org)`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`(example\.com|test\.org)`), nil),
+			isConfigured:         true,
+			matchDomain:          "api.example.com",
+			expectMatch:          true,
+		},
+		{
+			name: "RegexDomainFilterWithWildcardPattern",
+			cfg: &externaldns.Config{
+				RegexDomainFilter: regexp.MustCompile(`.*\.staging\..*`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`.*\.staging\..*`), nil),
+			isConfigured:         true,
+			matchDomain:          "app.staging.example.com",
+			expectMatch:          true,
+		},
+		{
+			name: "RegexDomainExclusionWithComplexPattern",
+			cfg: &externaldns.Config{
+				RegexDomainExclusion: regexp.MustCompile(`^(internal|private)-.*\.example\.com$`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`^(internal|private)-.*\.example\.com$`)),
+			isConfigured:         true,
+			matchDomain:          "internal-service.example.com",
+			expectMatch:          false,
+		},
+		{
+			name: "RegexFilterAndExclusionBothPresent",
+			cfg: &externaldns.Config{
+				RegexDomainFilter:    regexp.MustCompile(`.*\.prod\..*`),
+				RegexDomainExclusion: regexp.MustCompile(`temp-.*\.prod\..*`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`.*\.prod\..*`), regexp.MustCompile(`temp-.*\.prod\..*`)),
+			isConfigured:         true,
+			matchDomain:          "temp-api.prod.example.com",
+			expectMatch:          false,
+		},
+		{
+			name: "RegexWithEscapedSpecialChars",
+			cfg: &externaldns.Config{
+				RegexDomainFilter: regexp.MustCompile(`test\-api\.v\d+\.example\.com`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`test\-api\.v\d+\.example\.com`), nil),
+			isConfigured:         true,
+			matchDomain:          "test-api.v2.example.com",
+			expectMatch:          true,
+		},
+		{
+			name: "RegexExclusionWithNumericPattern",
+			cfg: &externaldns.Config{
+				RegexDomainExclusion: regexp.MustCompile(`\d{3,}-temp\..*`),
+			},
+			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`\d{3,}-temp\..*`)),
+			isConfigured:         true,
+			matchDomain:          "123-temp.example.com",
+			expectMatch:          false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -388,6 +462,9 @@ func TestCreateDomainFilter(t *testing.T) {
 			filter := createDomainFilter(tt.cfg)
 			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
 			assert.Equal(t, tt.expectedDomainFilter, filter)
+			if tt.matchDomain != "" {
+				assert.Equal(t, tt.expectMatch, filter.Match(tt.matchDomain))
+			}
 		})
 	}
 }
