@@ -663,7 +663,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
 	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.ExcludeDomains)
 	b.RegexpVar("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)", defaultConfig.RegexDomainFilter, &cfg.RegexDomainFilter)
-	b.RegexpVar("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional); ", defaultConfig.RegexDomainExclusion, &cfg.RegexDomainExclusion)
+	b.RegexpVar("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)", defaultConfig.RegexDomainExclusion, &cfg.RegexDomainExclusion)
 	b.StringsVar("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneNameFilter)
 	b.StringsVar("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneIDFilter)
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)
