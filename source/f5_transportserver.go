@@ -68,7 +68,7 @@ func NewF5TransportServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
-	transportServerInformer.Informer().AddEventHandler(
+	_, _ = transportServerInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -78,7 +78,7 @@ func NewF5TransportServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func NewF5TransportServerSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TransportServers in the source's namespace(s).
-func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	transportServerObjects, err := ts.transportServerInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -133,10 +133,10 @@ func (ts *f5TransportServerSource) Endpoints(ctx context.Context) ([]*endpoint.E
 	return endpoints, nil
 }
 
-func (ts *f5TransportServerSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TransportServer")
 
-	ts.transportServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = ts.transportServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers

@@ -83,7 +83,7 @@ func NewPodSource(
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
 		// When fqdnTemplate is used the entire pod needs to be provided to the rendering call, but the informer itself becomes unneeded.
-		podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		_ = podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
 			pod, ok := i.(*corev1.Pod)
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
@@ -116,7 +116,7 @@ func NewPodSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 

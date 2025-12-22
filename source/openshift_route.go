@@ -74,11 +74,11 @@ func NewOcpRouteSource(
 
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewFilteredSharedInformerFactory(ocpClient, 0*time.Second, namespace, nil)
+	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(namespace))
 	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.
-	informer.Informer().AddEventHandler(
+	_, _ = informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -105,18 +105,18 @@ func NewOcpRouteSource(
 	}, nil
 }
 
-func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+func (ors *ocpRouteSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for openshift route")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all OpenShift Route resources on all namespaces, unless an explicit namespace
 // is specified in ocpRouteSource.
-func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	ocpRoutes, err := ors.routeInformer.Lister().Routes(ors.namespace).List(ors.labelSelector)
 	if err != nil {
 		return nil, err

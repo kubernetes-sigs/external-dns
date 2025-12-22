@@ -105,9 +105,12 @@ type gatewayRouteSource struct {
 	ignoreHostnameAnnotation bool
 }
 
-func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string, newInformerFn newGatewayRouteInformerFunc) (Source, error) {
-	ctx := context.TODO()
-
+func newGatewayRouteSource(
+	ctx context.Context,
+	clients ClientGenerator,
+	config *Config,
+	kind string,
+	newInformerFn newGatewayRouteInformerFunc) (Source, error) {
 	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
 	if err != nil {
 		return nil, err
@@ -187,15 +190,15 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	return src, nil
 }
 
-func (src *gatewayRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debugf("Adding event handlers for %s", src.rtKind)
 	eventHandler := eventHandlerFunc(handler)
-	src.gwInformer.Informer().AddEventHandler(eventHandler)
-	src.rtInformer.Informer().AddEventHandler(eventHandler)
-	src.nsInformer.Informer().AddEventHandler(eventHandler)
+	_, _ = src.gwInformer.Informer().AddEventHandler(eventHandler)
+	_, _ = src.rtInformer.Informer().AddEventHandler(eventHandler)
+	_, _ = src.nsInformer.Informer().AddEventHandler(eventHandler)
 }
 
-func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	routes, err := src.rtInformer.List(src.rtNamespace, src.rtLabels)
 	if err != nil {

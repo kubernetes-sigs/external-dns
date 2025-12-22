@@ -49,9 +49,10 @@ const (
 	groupName = "getambassador.io"
 )
 
-var schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
-
-var ambHostGVR = schemeGroupVersion.WithResource("hosts")
+var (
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
+	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
+)
 
 // ambassadorHostSource is an implementation of Source for Ambassador Host objects.
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
@@ -75,15 +76,13 @@ func NewAmbassadorHostSource(
 	annotationFilter string,
 	labelSelector labels.Selector,
 ) (Source, error) {
-	var err error
-
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	// Add default resource event handlers to properly initialize informer.
-	ambassadorHostInformer.Informer().AddEventHandler(
+	_, _ = ambassadorHostInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -93,7 +92,7 @@ func NewAmbassadorHostSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 

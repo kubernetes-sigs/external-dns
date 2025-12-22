@@ -59,16 +59,18 @@ type kongTCPIngressSource struct {
 }
 
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.
-func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
-	var err error
-
+func NewKongTCPIngressSource(
+	ctx context.Context,
+	dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
+	namespace, annotationFilter string, ignoreHostnameAnnotation bool,
+) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
 
 	// Add default resource event handlers to properly initialize informer.
-	kongTCPIngressInformer.Informer().AddEventHandler(
+	_, _ = kongTCPIngressInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -78,7 +80,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -100,7 +102,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TCPIngresses in the source's namespace(s).
-func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	tis, err := sc.kongTCPIngressInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -214,12 +216,12 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 	return endpoints, nil
 }
 
-func (sc *kongTCPIngressSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TCPIngress")
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

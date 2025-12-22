@@ -68,7 +68,7 @@ func NewF5VirtualServerSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
-	virtualServerInformer.Informer().AddEventHandler(
+	_, _ = virtualServerInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -78,7 +78,7 @@ func NewF5VirtualServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func NewF5VirtualServerSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualServers in the source's namespace(s).
-func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	virtualServerObjects, err := vs.virtualServerInformer.Lister().ByNamespace(vs.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -138,10 +138,10 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 	return endpoints, nil
 }
 
-func (vs *f5VirtualServerSource) AddEventHandler(ctx context.Context, handler func()) {
+func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for VirtualServer")
 
-	vs.virtualServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	_, _ = vs.virtualServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers
