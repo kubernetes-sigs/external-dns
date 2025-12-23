@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 
@@ -331,67 +330,6 @@ func TestBuildProvider(t *testing.T) {
 	}
 }
 
-func TestCreateDomainFilter(t *testing.T) {
-	tests := []struct {
-		name                 string
-		cfg                  *externaldns.Config
-		expectedDomainFilter *endpoint.DomainFilter
-		isConfigured         bool
-	}{
-		{
-			name: "RegexDomainFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`example\.com`),
-				RegexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
-			isConfigured:         true,
-		},
-		{
-			name: "RegexDomainWithoutExclusionFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusions",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{"example.com"},
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusionsOnly",
-			cfg: &externaldns.Config{
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "EmptyDomainFilter",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{},
-				ExcludeDomains: []string{},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{}),
-			isConfigured:         false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			filter := createDomainFilter(tt.cfg)
-			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
-			assert.Equal(t, tt.expectedDomainFilter, filter)
-		})
-	}
-}
-
 func TestBuildSource(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
@@ -661,7 +599,12 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	defer cancel()
 	src, err := buildSource(ctx, cfg)
 	require.NoError(t, err)
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
 	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)

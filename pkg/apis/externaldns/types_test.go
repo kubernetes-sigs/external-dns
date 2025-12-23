@@ -52,9 +52,9 @@ var (
 		GoogleBatchChangeInterval:              time.Second,
 		GoogleZoneVisibility:                   "",
 		DomainFilter:                           []string{""},
-		ExcludeDomains:                         []string{""},
+		DomainExclude:                          []string{""},
 		RegexDomainFilter:                      regexp.MustCompile(""),
-		RegexDomainExclusion:                   regexp.MustCompile(""),
+		RegexDomainExclude:                     regexp.MustCompile(""),
 		ZoneNameFilter:                         []string{""},
 		ZoneIDFilter:                           []string{""},
 		AlibabaCloudConfigFile:                 "/etc/kubernetes/alibaba-cloud.json",
@@ -159,9 +159,9 @@ var (
 		GoogleBatchChangeInterval:              time.Second * 2,
 		GoogleZoneVisibility:                   "private",
 		DomainFilter:                           []string{"example.org", "company.com"},
-		ExcludeDomains:                         []string{"xapi.example.org", "xapi.company.com"},
+		DomainExclude:                          []string{"xapi.example.org", "xapi.company.com"},
 		RegexDomainFilter:                      regexp.MustCompile("(example\\.org|company\\.com)$"),
-		RegexDomainExclusion:                   regexp.MustCompile("xapi\\.(example\\.org|company\\.com)$"),
+		RegexDomainExclude:                     regexp.MustCompile("xapi\\.(example\\.org|company\\.com)$"),
 		ZoneNameFilter:                         []string{"yapi.example.org", "yapi.company.com"},
 		ZoneIDFilter:                           []string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 		TargetNetFilter:                        []string{"10.0.0.0/9", "10.1.0.0/9"},
@@ -1275,7 +1275,7 @@ func normalizeConfig(c *Config) *Config {
 	cp := *c
 	// Regex fields: compare by string; ignore pointer identity
 	cp.RegexDomainFilter = nil
-	cp.RegexDomainExclusion = nil
+	cp.RegexDomainExclude = nil
 	// Treat nil/empty maps equivalently for comparison
 	if cp.AWSSDCreateTag == nil {
 		cp.AWSSDCreateTag = map[string]string{}

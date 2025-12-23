@@ -114,7 +114,12 @@ func Execute() {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 
 	prvdr, err := buildProvider(ctx, cfg, domainFilter)
 	if err != nil {
@@ -461,15 +466,6 @@ func buildSource(ctx context.Context, cfg *externaldns.Config) (source.Source, e
 		wrappers.WithExcludeTargetNets(cfg.ExcludeTargetNets),
 		wrappers.WithMinTTL(cfg.MinTTL))
 	return wrappers.WrapSources(sources, opts)
-}
-
-// RegexDomainFilter overrides DomainFilter
-func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
-	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
-		return endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
-	} else {
-		return endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
-	}
 }
 
 // handleSigterm listens for a SIGTERM signal and triggers the provided cancel function

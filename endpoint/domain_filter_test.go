@@ -427,6 +427,54 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 			"regexExclude": "^example\\.(?:foo|bar)\\.org$",
 		},
 	},
+	{
+		// Test case: domain doesn't match include filter, also doesn't match exclusion
+		// Should be REJECTED because it doesn't match the include filter
+		regexp.MustCompile(`foo\.org$`),
+		regexp.MustCompile(`^temp\.`),
+		[]string{"bar.org", "example.com", "test.net"},
+		false,
+		map[string]string{
+			"regexInclude": `foo\.org$`,
+			"regexExclude": `^temp\.`,
+		},
+	},
+	{
+		// Test case: domain matches include filter, doesn't match exclusion
+		// Should be ACCEPTED
+		regexp.MustCompile(`\.prod\.example\.com$`),
+		regexp.MustCompile(`^temp-`),
+		[]string{"api.prod.example.com", "web.prod.example.com"},
+		true,
+		map[string]string{
+			"regexInclude": `\.prod\.example\.com$`,
+			"regexExclude": `^temp-`,
+		},
+	},
+	{
+		// Test case: domain matches both include and exclusion
+		// Exclusion should take precedence - REJECTED
+		regexp.MustCompile(`\.prod\.example\.com$`),
+		regexp.MustCompile(`^temp-`),
+		[]string{"temp-api.prod.example.com", "temp-web.prod.example.com"},
+		false,
+		map[string]string{
+			"regexInclude": `\.prod\.example\.com$`,
+			"regexExclude": `^temp-`,
+		},
+	},
+	{
+		// Test case: domain doesn't match include filter
+		// Should be REJECTED even if exclusion doesn't match
+		regexp.MustCompile(`\.staging\.example\.com$`),
+		regexp.MustCompile(`^internal-`),
+		[]string{"api.prod.example.com", "web.dev.example.com", "service.test.org"},
+		false,
+		map[string]string{
+			"regexInclude": `\.staging\.example\.com$`,
+			"regexExclude": `^internal-`,
+		},
+	},
 }
 
 func TestDomainFilterMatch(t *testing.T) {
@@ -486,6 +534,41 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 			assert.True(t, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
 			assert.True(t, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
 		}
+	}
+}
+
+func TestNewDomainFilterWithExclusionsHandlesEmptyInputs(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []string
+		exclude []string
+	}{
+		{
+			name:    "NilSlices",
+			filters: nil,
+			exclude: nil,
+		},
+		{
+			name:    "EmptySlices",
+			filters: []string{},
+			exclude: []string{},
+		},
+		{
+			name:    "WhitespaceOnly",
+			filters: []string{" ", ""},
+			exclude: []string{"", " "},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			domainFilter := NewDomainFilterWithExclusions(tt.filters, tt.exclude)
+
+			assert.False(t, domainFilter.IsConfigured())
+			assert.Empty(t, domainFilter.Filters)
+			assert.Empty(t, domainFilter.exclude)
+			assert.True(t, domainFilter.Match("example.com"))
+		})
 	}
 }
 
@@ -954,4 +1037,124 @@ func TestMatchTargetFilterReturnsProperEmptyVal(t *testing.T) {
 	var emptyFilters []string
 	assert.True(t, matchFilter(emptyFilters, "sometarget.com", true))
 	assert.False(t, matchFilter(emptyFilters, "sometarget.com", false))
+}
+
+func TestNewDomainFilterFromConfig(t *testing.T) {
+	tests := []struct {
+		name                 string
+		domainFilter         []string
+		domainExclude        []string
+		regexDomainFilter    *regexp.Regexp
+		regexDomainExclusion *regexp.Regexp
+		expectedDomainFilter *DomainFilter
+		isConfigured         bool
+		matchDomain          string
+		expectMatch          bool
+	}{
+		{
+			name:                 "RegexDomainFilter",
+			regexDomainFilter:    regexp.MustCompile(`example\.com`),
+			regexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
+			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
+			isConfigured:         true,
+		},
+		{
+			name:                 "RegexDomainWithoutExclusionFilter",
+			regexDomainFilter:    regexp.MustCompile(`example\.com`),
+			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
+			isConfigured:         true,
+		},
+		{
+			name:                 "DomainFilterWithExclusions",
+			domainFilter:         []string{"example.com"},
+			domainExclude:        []string{"excluded.example.com"},
+			expectedDomainFilter: NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
+			isConfigured:         true,
+		},
+		{
+			name:                 "DomainFilterWithExclusionsOnly",
+			domainExclude:        []string{"excluded.example.com"},
+			expectedDomainFilter: NewDomainFilterWithExclusions([]string{}, []string{"excluded.example.com"}),
+			isConfigured:         true,
+		},
+		{
+			name:                 "EmptyDomainFilter",
+			domainFilter:         []string{},
+			domainExclude:        []string{},
+			expectedDomainFilter: NewDomainFilterWithExclusions([]string{}, []string{}),
+			isConfigured:         false,
+		},
+		{
+			name:                 "RegexDomainExclusionWithoutRegexFilter",
+			regexDomainExclusion: regexp.MustCompile(`test-v1\.3\.example-test\.in`),
+			expectedDomainFilter: NewRegexDomainFilter(nil, regexp.MustCompile(`test-v1\.3\.example-test\.in`)),
+			isConfigured:         true,
+			matchDomain:          "test-v1.3.example-test.in",
+			expectMatch:          false,
+		},
+		{
+			name:                 "RegexDomainFilterWithMultipleDomains",
+			regexDomainFilter:    regexp.MustCompile(`(example\.com|test\.org)`),
+			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`(example\.com|test\.org)`), nil),
+			isConfigured:         true,
+			matchDomain:          "api.example.com",
+			expectMatch:          true,
+		},
+		{
+			name:                 "RegexDomainFilterWithWildcardPattern",
+			regexDomainFilter:    regexp.MustCompile(`.*\.staging\..*`),
+			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`.*\.staging\..*`), nil),
+			isConfigured:         true,
+			matchDomain:          "app.staging.example.com",
+			expectMatch:          true,
+		},
+		{
+			name:                 "RegexDomainExclusionWithComplexPattern",
+			regexDomainExclusion: regexp.MustCompile(`^(internal|private)-.*\.example\.com$`),
+			expectedDomainFilter: NewRegexDomainFilter(nil, regexp.MustCompile(`^(internal|private)-.*\.example\.com$`)),
+			isConfigured:         true,
+			matchDomain:          "internal-service.example.com",
+			expectMatch:          false,
+		},
+		{
+			name:                 "RegexFilterAndExclusionBothPresent",
+			regexDomainFilter:    regexp.MustCompile(`.*\.prod\..*`),
+			regexDomainExclusion: regexp.MustCompile(`temp-.*\.prod\..*`),
+			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`.*\.prod\..*`), regexp.MustCompile(`temp-.*\.prod\..*`)),
+			isConfigured:         true,
+			matchDomain:          "temp-api.prod.example.com",
+			expectMatch:          false,
+		},
+		{
+			name:                 "RegexWithEscapedSpecialChars",
+			regexDomainFilter:    regexp.MustCompile(`test\-api\.v\d+\.example\.com`),
+			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`test\-api\.v\d+\.example\.com`), nil),
+			isConfigured:         true,
+			matchDomain:          "test-api.v2.example.com",
+			expectMatch:          true,
+		},
+		{
+			name:                 "RegexExclusionWithNumericPattern",
+			regexDomainExclusion: regexp.MustCompile(`\d{3,}-temp\..*`),
+			expectedDomainFilter: NewRegexDomainFilter(nil, regexp.MustCompile(`\d{3,}-temp\..*`)),
+			isConfigured:         true,
+			matchDomain:          "123-temp.example.com",
+			expectMatch:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filter := NewDomainFilterWithOptions(
+				WithDomainFilter(tt.domainFilter),
+				WithDomainExclude(tt.domainExclude),
+				WithRegexDomainFilter(tt.regexDomainFilter),
+				WithRegexDomainExclude(tt.regexDomainExclusion))
+			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
+			assert.Equal(t, tt.expectedDomainFilter, filter)
+			if tt.matchDomain != "" {
+				assert.Equal(t, tt.expectMatch, filter.Match(tt.matchDomain))
+			}
+		})
+	}
 }
