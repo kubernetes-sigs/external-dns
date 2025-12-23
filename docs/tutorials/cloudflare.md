@@ -6,34 +6,28 @@ Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
 
 ## CloudFlare SDK Migration Status
 
-ExternalDNS is currently migrating from the legacy CloudFlare Go SDK v0 to the modern v4 SDK to improve performance, reliability, and access to newer CloudFlare features. The migration status is:
+Since v0.20.0, ExternalDNS has been fully migrated from the legacy CloudFlare Go SDK v0 to the modern v5 SDK to improve performance, reliability, and access to newer CloudFlare features.
 
-**✅ Fully migrated to v4 SDK:**
+**✅ Fully migrated to v5 SDK:**
 
 - Zone management (listing, filtering, pagination)
 - Zone details retrieval (`GetZone`)
 - Zone ID lookup by name (`ZoneIDByName`)
-- Zone plan detection (fully v4 implementation)
+- Zone plan detection
 - Regional services (data localization)
-
-**🔄 Still using legacy v0 SDK:**
-
 - DNS record management (create, update, delete records)
 - Custom hostnames
 - Proxied records
 
-This mixed approach ensures continued functionality while gradually modernizing the codebase. Users should not experience any breaking changes during this transition.
+The migration to v5 provides improved performance, better error handling, and simplified authentication patterns.
 
 ### SDK Dependencies
 
 ExternalDNS currently uses:
 
-- **cloudflare-go v0.115.0+**: Legacy SDK for DNS records, custom hostnames, and proxied record features
-- **cloudflare-go/v4 v4.6.0+**: Modern SDK for all zone management and regional services operations
+- **cloudflare-go v5.1.0+**: Modern SDK for all Cloudflare API operations
 
-Zone management has been fully migrated to the v4 SDK, providing improved performance and reliability.
-
-Both SDKs are automatically managed as Go module dependencies and require no special configuration from users.
+The SDK is automatically managed as a Go module dependency and requires no special configuration from users.
 
 ## Creating a Cloudflare DNS zone
 
@@ -304,7 +298,7 @@ By setting the TTL annotation on the service, you have to pass a valid TTL, whic
 This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
 For Cloudflare proxied entries, set the TTL annotation to 1 (automatic), or do not set it.
 
-ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation
+ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
 will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
@@ -339,7 +333,7 @@ kubectl delete -f externaldns.yaml
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
 
-## Setting cloudflare regional services
+## Setting cloudlfare regional services
 
 With Cloudflare regional services you can restrict which data centers can decrypt and serve HTTPS traffic.
 
@@ -383,8 +377,6 @@ This feature is disabled by default and supports the `--cloudflare-custom-hostna
 The custom hostname DNS must resolve to the Cloudflare DNS record (`external-dns.alpha.kubernetes.io/hostname`) for automatic certificate validation via the HTTP method. It's important to note that the TXT method does not allow automatic validation and is not supported.
 
 Requires [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) product and "SSL and Certificates" API permission.
-
-**Note:** Due to using the legacy cloudflare-go v0 API for custom hostname management, the custom hostname page size is fixed at 50. This limitation will be addressed in a future migration to the v4 SDK.
 
 ## Setting Cloudflare DNS Record Tags
 
