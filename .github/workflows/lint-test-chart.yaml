@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          helm unittest -f 'tests/*_test.yaml' --color charts/external-dns
+          helm unittest -f 'tests/*_test.yaml' charts/external-dns
 
       - name: Install YQ
         uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
