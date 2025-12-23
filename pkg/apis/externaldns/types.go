@@ -76,9 +76,9 @@ type Config struct {
 	GoogleBatchChangeInterval                     time.Duration
 	GoogleZoneVisibility                          string
 	DomainFilter                                  []string
-	ExcludeDomains                                []string
+	DomainExclude                                 []string
 	RegexDomainFilter                             *regexp.Regexp
-	RegexDomainExclusion                          *regexp.Regexp
+	RegexDomainExclude                            *regexp.Regexp
 	ZoneNameFilter                                []string
 	ZoneIDFilter                                  []string
 	TargetNetFilter                               []string
@@ -278,7 +278,7 @@ var defaultConfig = &Config{
 	DomainFilter:                 []string{},
 	DryRun:                       false,
 	ExcludeDNSRecordTypes:        []string{},
-	ExcludeDomains:               []string{},
+	DomainExclude:                []string{},
 	ExcludeTargetNets:            []string{},
 	EmitEvents:                   []string{},
 	ExcludeUnschedulable:         true,
@@ -341,7 +341,7 @@ var defaultConfig = &Config{
 	ProviderCacheTime:            0,
 	PublishHostIP:                false,
 	PublishInternal:              false,
-	RegexDomainExclusion:         regexp.MustCompile(""),
+	RegexDomainExclude:           regexp.MustCompile(""),
 	RegexDomainFilter:            regexp.MustCompile(""),
 	Registry:                     "txt",
 	RequestTimeout:               time.Second * 30,
@@ -661,9 +661,9 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	}
 	b.DurationVar("provider-cache-time", "The time to cache the DNS provider record list requests.", defaultConfig.ProviderCacheTime, &cfg.ProviderCacheTime)
 	b.StringsVar("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)", []string{""}, &cfg.DomainFilter)
-	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.ExcludeDomains)
+	b.StringsVar("exclude-domains", "Exclude subdomains (optional)", []string{""}, &cfg.DomainExclude)
 	b.RegexpVar("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)", defaultConfig.RegexDomainFilter, &cfg.RegexDomainFilter)
-	b.RegexpVar("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)", defaultConfig.RegexDomainExclusion, &cfg.RegexDomainExclusion)
+	b.RegexpVar("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)", defaultConfig.RegexDomainExclude, &cfg.RegexDomainExclude)
 	b.StringsVar("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneNameFilter)
 	b.StringsVar("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneIDFilter)
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)

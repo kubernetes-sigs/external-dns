@@ -81,18 +81,41 @@ func prepareFilters(filters []string) []string {
 }
 
 // NewDomainFilterWithExclusions returns a new DomainFilter, given a list of matches and exclusions
+// DEPRECATED: NewDomainFilterFromConfig should be used instead
 func NewDomainFilterWithExclusions(domainFilters []string, excludeDomains []string) *DomainFilter {
 	return &DomainFilter{Filters: prepareFilters(domainFilters), exclude: prepareFilters(excludeDomains)}
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
+// DEPRECATED: NewDomainFilterFromConfig should be used instead
 func NewDomainFilter(domainFilters []string) *DomainFilter {
 	return &DomainFilter{Filters: prepareFilters(domainFilters)}
 }
 
 // NewRegexDomainFilter returns a new DomainFilter given a regular expression
+// DEPRECATED: NewDomainFilterFromConfig should be used instead
 func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion *regexp.Regexp) *DomainFilter {
 	return &DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
+}
+
+// NewDomainFilterWithOptions creates a DomainFilter based on the provided parameters.
+//
+// Example usage:
+// df := NewDomainFilterWithOptions(
+//
+//	WithDomainFilter([]string{"example.com"}),
+//	WithDomainExclude([]string{"test.com"}),
+//
+// )
+func NewDomainFilterWithOptions(opts ...DomainFilterOption) *DomainFilter {
+	cfg := &domainFilterConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	if cfg.isRegexFilter {
+		return NewRegexDomainFilter(cfg.Regex, cfg.RegexExclusion)
+	}
+	return NewDomainFilterWithExclusions(cfg.Filters, cfg.Exclude)
 }
 
 // Match checks whether a domain can be found in the DomainFilter.
@@ -267,4 +290,43 @@ func normalizeDomain(domain string) string {
 		log.Warnf(`Got error while parsing domain %s: %v`, domain, err)
 	}
 	return s
+}
+
+type DomainFilterOption func(*domainFilterConfig)
+type domainFilterConfig struct {
+	Filters        []string
+	Exclude        []string
+	Regex          *regexp.Regexp
+	RegexExclusion *regexp.Regexp
+	isRegexFilter  bool
+}
+
+func WithDomainFilter(filters []string) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.Filters = prepareFilters(filters)
+	}
+}
+
+func WithDomainExclude(exclude []string) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.Exclude = prepareFilters(exclude)
+	}
+}
+
+func WithRegexDomainFilter(regex *regexp.Regexp) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.Regex = regex
+		if regex != nil && regex.String() != "" {
+			cfg.isRegexFilter = true
+		}
+	}
+}
+
+func WithRegexDomainExclude(regex *regexp.Regexp) DomainFilterOption {
+	return func(cfg *domainFilterConfig) {
+		cfg.RegexExclusion = regex
+		if regex != nil && regex.String() != "" {
+			cfg.isRegexFilter = true
+		}
+	}
 }
