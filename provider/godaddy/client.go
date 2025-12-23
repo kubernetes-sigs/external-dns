@@ -113,7 +113,7 @@ func (r GDErrorResponse) String() string {
 }
 
 // NewClient represents a new client to call the API
-func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
+func NewClient(useOTE bool, apiKey, apiSecret string, disableValidate bool) (*Client, error) {
 	var endpoint string
 
 	if useOTE {
@@ -132,14 +132,16 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 		Timeout:     DefaultTimeout,
 	}
 
-	// Get and check the configuration
-	if err := client.validate(); err != nil {
-		var apiErr *APIError
-		// Quota Exceeded errors are limited to the endpoint being called. Other endpoints are not affected when we hit
-		// the quota limit on the endpoint used for validation. We can safely ignore this error.
-		// Quota limits on other endpoints will be logged by their respective calls.
-		if ok := errors.As(err, &apiErr); ok && apiErr.Code != ErrCodeQuotaExceeded {
-			return nil, err
+	if !disableValidate {
+		// Get and check the configuration
+		if err := client.validate(); err != nil {
+			var apiErr *APIError
+			// Quota Exceeded errors are limited to the endpoint being called. Other endpoints are not affected when we hit
+			// the quota limit on the endpoint used for validation. We can safely ignore this error.
+			// Quota limits on other endpoints will be logged by their respective calls.
+			if ok := errors.As(err, &apiErr); ok && apiErr.Code != ErrCodeQuotaExceeded {
+				return nil, err
+			}
 		}
 	}
 	return &client, nil

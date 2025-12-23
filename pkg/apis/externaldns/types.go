@@ -203,6 +203,7 @@ type Config struct {
 	GoDaddySecretKey                              string `secure:"yes"`
 	GoDaddyTTL                                    int64
 	GoDaddyOTE                                    bool
+	GoDaddyDisableValidateOnStartup               bool
 	OCPRouterName                                 string
 	PiholeServer                                  string
 	PiholePassword                                string `secure:"yes"`
@@ -266,36 +267,39 @@ var defaultConfig = &Config{
 	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
 
-	CombineFQDNAndAnnotation:     false,
-	Compatibility:                "",
-	ConnectorSourceServer:        "localhost:8080",
-	CoreDNSPrefix:                "/skydns/",
-	CoreDNSStrictlyOwned:         false,
-	CRDSourceAPIVersion:          "externaldns.k8s.io/v1alpha1",
-	CRDSourceKind:                "DNSEndpoint",
-	DefaultTargets:               []string{},
-	DigitalOceanAPIPageSize:      50,
-	DomainFilter:                 []string{},
-	DryRun:                       false,
-	ExcludeDNSRecordTypes:        []string{},
-	ExcludeDomains:               []string{},
-	ExcludeTargetNets:            []string{},
-	EmitEvents:                   []string{},
-	ExcludeUnschedulable:         true,
-	ExoscaleAPIEnvironment:       "api",
-	ExoscaleAPIKey:               "",
-	ExoscaleAPISecret:            "",
-	ExoscaleAPIZone:              "ch-gva-2",
-	ExposeInternalIPV6:           false,
-	FQDNTemplate:                 "",
-	GatewayLabelFilter:           "",
-	GatewayName:                  "",
-	GatewayNamespace:             "",
-	GlooNamespaces:               []string{"gloo-system"},
-	GoDaddyAPIKey:                "",
-	GoDaddyOTE:                   false,
-	GoDaddySecretKey:             "",
-	GoDaddyTTL:                   600,
+	CombineFQDNAndAnnotation: false,
+	Compatibility:            "",
+	ConnectorSourceServer:    "localhost:8080",
+	CoreDNSPrefix:            "/skydns/",
+	CoreDNSStrictlyOwned:     false,
+	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha1",
+	CRDSourceKind:            "DNSEndpoint",
+	DefaultTargets:           []string{},
+	DigitalOceanAPIPageSize:  50,
+	DomainFilter:             []string{},
+	DryRun:                   false,
+	ExcludeDNSRecordTypes:    []string{},
+	ExcludeDomains:           []string{},
+	ExcludeTargetNets:        []string{},
+	EmitEvents:               []string{},
+	ExcludeUnschedulable:     true,
+	ExoscaleAPIEnvironment:   "api",
+	ExoscaleAPIKey:           "",
+	ExoscaleAPISecret:        "",
+	ExoscaleAPIZone:          "ch-gva-2",
+	ExposeInternalIPV6:       false,
+	FQDNTemplate:             "",
+	GatewayLabelFilter:       "",
+	GatewayName:              "",
+	GatewayNamespace:         "",
+	GlooNamespaces:           []string{"gloo-system"},
+
+	GoDaddyAPIKey:                   "",
+	GoDaddyOTE:                      false,
+	GoDaddySecretKey:                "",
+	GoDaddyTTL:                      600,
+	GoDaddyDisableValidateOnStartup: false,
+
 	GoogleBatchChangeInterval:    time.Second,
 	GoogleBatchChangeSize:        1000,
 	GoogleProject:                "",
@@ -734,6 +738,7 @@ func bindFlags(b FlagBinder, cfg *Config) {
 	b.StringVar("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)", defaultConfig.GoDaddySecretKey, &cfg.GoDaddySecretKey)
 	b.Int64Var("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.", cfg.GoDaddyTTL, &cfg.GoDaddyTTL)
 	b.BoolVar("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)", defaultConfig.GoDaddyOTE, &cfg.GoDaddyOTE)
+	b.BoolVar("godaddy-disalbe-validate-on-startup", "When using the GoDaddy provider, don't validate the API key & secret on startup", defaultConfig.GoDaddyDisableValidateOnStartup, &cfg.GoDaddyDisableValidateOnStartup)
 
 	// Flags related to TLS communication
 	b.StringVar("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)", defaultConfig.TLSCA, &cfg.TLSCA)
