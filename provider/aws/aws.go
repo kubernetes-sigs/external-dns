@@ -906,6 +906,21 @@ func adjustGeoProximityLocationEndpoint(ep *endpoint.Endpoint) {
 	}
 }
 
+var providerSpecificRequiringSetIdentifier = map[string]struct{}{
+	providerSpecificEvaluateTargetHealth:               {},
+	providerSpecificWeight:                             {},
+	providerSpecificRegion:                             {},
+	providerSpecificFailover:                           {},
+	providerSpecificGeolocationContinentCode:           {},
+	providerSpecificGeolocationCountryCode:             {},
+	providerSpecificGeolocationSubdivisionCode:         {},
+	providerSpecificGeoProximityLocationAWSRegion:      {},
+	providerSpecificGeoProximityLocationBias:           {},
+	providerSpecificGeoProximityLocationCoordinates:    {},
+	providerSpecificGeoProximityLocationLocalZoneGroup: {},
+	providerSpecificMultiValueAnswer:                   {},
+}
+
 // newChange returns a route53 Change
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
@@ -956,6 +971,24 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	}
 
 	setIdentifier := ep.SetIdentifier
+
+	// Check if provider-specific values requiring setIdentifier are present but setIdentifier is empty
+	// AWS Route53 requires setIdentifier for routing policies:
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_ResourceRecordSet.html
+	if setIdentifier == "" {
+		ignoredProperties := make([]string, 0, len(ep.ProviderSpecific))
+		for _, prop := range ep.ProviderSpecific {
+			if _, ok := providerSpecificRequiringSetIdentifier[prop.Name]; ok {
+				ignoredProperties = append(ignoredProperties, prop.Name)
+			}
+		}
+		if len(ignoredProperties) > 0 {
+			slices.Sort(ignoredProperties)
+			log.Warnf("Endpoint %s has provider-specific properties %v that require a setIdentifier, but none was set; ignoring these properties",
+				ep.DNSName, ignoredProperties)
+		}
+	}
+
 	if setIdentifier != "" {
 		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
