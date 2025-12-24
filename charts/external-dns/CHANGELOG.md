@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed the missing schema for `.provider.webhook.serviceMonitor` configs ([#5932](https://github.com/kubernetes-sigs/external-dns/pull/5932)) _@chrisbsmith_
-- Fixed the incorrect indentation of selector labels under `spec.template.spec.topologySpreadConstraints` when `topologySpreadConstraints` is set. ([#6054](https://github.com/kubernetes-sigs/external-dns/pull/6054)) _@andylim0221_
+- Fixed incorrect indentation of selector labels under `spec.template.spec.topologySpreadConstraints` when `topologySpreadConstraints` is set. ([#6054](https://github.com/kubernetes-sigs/external-dns/pull/6054)) _@andylim0221_
 
 ## [v1.19.0] - 2025-09-08
 
