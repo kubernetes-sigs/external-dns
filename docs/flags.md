@@ -125,7 +125,7 @@
 | `--godaddy-api-secret=""` | When using the GoDaddy provider, specify the API secret (required when --provider=godaddy) |
 | `--godaddy-api-ttl=0` | TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided. |
 | `--[no-]godaddy-api-ote` | When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy) |
-| `--[no-]godaddy-disalbe-validate-on-startup` | When using the GoDaddy provider, don't validate the API key & secret on startup |
+| `--[no-]godaddy-validate-on-startup` | When using the GoDaddy provider, don't validate the API key & secret on startup |
 | `--tls-ca=""` | When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS) |
 | `--tls-client-cert=""` | When using TLS communication, the path to the certificate to present as a client (not required for TLS) |
 | `--tls-client-cert-key=""` | When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS) |

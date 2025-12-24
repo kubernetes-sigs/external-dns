@@ -113,7 +113,7 @@ func (r GDErrorResponse) String() string {
 }
 
 // NewClient represents a new client to call the API
-func NewClient(useOTE bool, apiKey, apiSecret string, disableValidate bool) (*Client, error) {
+func NewClient(useOTE bool, apiKey, apiSecret string, validate bool) (*Client, error) {
 	var endpoint string
 
 	if useOTE {
@@ -132,7 +132,7 @@ func NewClient(useOTE bool, apiKey, apiSecret string, disableValidate bool) (*Cl
 		Timeout:     DefaultTimeout,
 	}
 
-	if !disableValidate {
+	if validate {
 		// Get and check the configuration
 		if err := client.validate(); err != nil {
 			var apiErr *APIError
