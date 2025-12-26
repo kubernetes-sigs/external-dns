@@ -22,7 +22,6 @@ import (
 	"net/netip"
 	"strings"
 	"text/template"
-	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -59,11 +58,14 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		kind := obj.GetObjectKind().GroupVersionKind().Kind
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
-	var hostnames []string
-	for _, name := range strings.Split(buf.String(), ",") {
-		name = strings.TrimFunc(name, unicode.IsSpace)
+	hosts := strings.Split(buf.String(), ",")
+	hostnames := make([]string, 0, len(hosts))
+	for _, name := range hosts {
+		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
-		hostnames = append(hostnames, name)
+		if name != "" {
+			hostnames = append(hostnames, name)
+		}
 	}
 	return hostnames, nil
 }
