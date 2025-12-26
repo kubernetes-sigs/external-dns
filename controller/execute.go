@@ -107,7 +107,8 @@ func Execute() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(cancel)
+
+	setupSigtermHandler(cancel)
 
 	endpointsSource, err := buildSource(ctx, cfg)
 	if err != nil {
@@ -472,14 +473,16 @@ func createDomainFilter(cfg *externaldns.Config) *endpoint.DomainFilter {
 	}
 }
 
-// handleSigterm listens for a SIGTERM signal and triggers the provided cancel function
+// setupSigtermHandler start a routine that listens for a SIGTERM signal and triggers the provided cancel function
 // to gracefully terminate the application. It logs a message when the signal is received.
-func handleSigterm(cancel func()) {
+func setupSigtermHandler(cancel func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
-	<-signals
-	log.Info("Received SIGTERM. Terminating...")
-	cancel()
+	go func() {
+		<-signals
+		log.Info("Received SIGTERM. Terminating...")
+		cancel()
+	}()
 }
 
 // serveMetrics starts an HTTP server that serves health and metrics endpoints.
