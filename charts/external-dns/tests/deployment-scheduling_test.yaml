@@ -2,6 +2,7 @@ suite: Deployment scheduling configuration
 templates:
   - deployment.yaml
 release:
+  name: external-dns
   namespace: default
 tests:
   - it: should not provide defaults for affinities or tolerations
@@ -116,3 +117,23 @@ tests:
               key: iam/scope
               operator: Equal
               value: namespace
+
+  - it: should include selector labels when setting topologySpreadConstraints
+    set:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+    asserts:
+      - exists:
+          path: spec.template.spec.topologySpreadConstraints
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints
+          value:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: external-dns
+                  app.kubernetes.io/instance: external-dns
