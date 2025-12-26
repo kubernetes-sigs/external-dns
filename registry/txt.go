@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -118,7 +119,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
 	txtEncryptEnabled bool, txtEncryptAESKey []byte,
-	oldOwnerID string) (*TXTRegistry, error) {
+	oldOwnerID string, overrides map[string]string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -140,7 +141,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, overrides)
 
 	return &TXTRegistry{
 		provider:            provider,
@@ -398,23 +399,99 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 type nameMapper interface {
 	toEndpointName(string) (endpointName string, recordType string)
 	toTXTName(string, string) string
-	recordTypeInAffix() bool
 }
 
 type affixNameMapper struct {
 	prefix              string
 	suffix              string
 	wildcardReplacement string
+	overrideNameMapper  overridePrefixNameMapper
+}
+
+// overridePrefixNameMapper provides fast bidirectional lookups for TXT record
+// name overrides.
+//
+// It is used only when explicit domain -> prefix overrides are configured.
+// All mappings are precomputed at initialization time so that conversions
+// between endpoint names and TXT record names can be performed using simple
+// O(1) map lookups during reconciliation.
+//
+// When nop is true, this mapper is disabled and all lookups fall back to the
+// default name mapping logic.
+type overridePrefixNameMapper struct {
+	nop                  bool
+	txtDNSNameToEndpoint map[string]endpointRecord
+	endpointToTXTDNSName map[endpointRecord]string
+}
+
+func newOverridePrefixNameMapper(wildcardReplacement string, overrides map[string]string) overridePrefixNameMapper {
+	if len(overrides) == 0 {
+		return overridePrefixNameMapper{nop: true}
+	}
+	supportedTypes := getSupportedTypes()
+	txtDNSNameToEndpoint := make(map[string]endpointRecord, len(overrides)*len(supportedTypes))
+	endpointToTXTDNSName := make(map[endpointRecord]string, len(overrides)*len(supportedTypes))
+
+	for domain, ovPrefix := range overrides {
+		ovPrefix = strings.ToLower(ovPrefix)
+		normalized := idna.NormalizeDNSName(domain)
+		for _, t := range supportedTypes {
+			txtName := toTXTName(ovPrefix, "", normalized, t, wildcardReplacement)
+			epName, epRecordType := toEndpointName(ovPrefix, "", txtName)
+			epRecord := newEndpointRecord(epName, epRecordType)
+			txtKey := idna.NormalizeDNSName(txtName)
+			txtDNSNameToEndpoint[txtKey] = epRecord
+			endpointToTXTDNSName[epRecord] = txtName
+		}
+	}
+
+	return overridePrefixNameMapper{
+		txtDNSNameToEndpoint: txtDNSNameToEndpoint,
+		endpointToTXTDNSName: endpointToTXTDNSName,
+	}
+}
+
+type endpointRecord struct {
+	name       string
+	recordType string
+}
+
+func newEndpointRecord(name, recordType string) endpointRecord {
+	return endpointRecord{name: idna.NormalizeDNSName(name), recordType: recordType}
+}
+
+func (o overridePrefixNameMapper) toEndpointName(txtDNSName string) (string, string, bool) {
+	if o.nop {
+		return "", "", false
+	}
+	if v, found := o.txtDNSNameToEndpoint[idna.NormalizeDNSName(txtDNSName)]; found {
+		return v.name, v.recordType, true
+	}
+	return "", "", false
+}
+
+func (o overridePrefixNameMapper) toTXTName(endpointDNSName, recordType string) (string, bool) {
+	if o.nop {
+		return "", false
+	}
+	if v, found := o.endpointToTXTDNSName[newEndpointRecord(endpointDNSName, recordType)]; found {
+		return v, true
+	}
+	return "", false
 }
 
 var _ nameMapper = affixNameMapper{}
 
-func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMapper {
-	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}
+func newaffixNameMapper(prefix, suffix, wildcardReplacement string, overrides map[string]string) affixNameMapper {
+	wr := strings.ToLower(wildcardReplacement)
+	return affixNameMapper{
+		prefix:              strings.ToLower(prefix),
+		suffix:              strings.ToLower(suffix),
+		wildcardReplacement: wr,
+		overrideNameMapper:  newOverridePrefixNameMapper(wr, overrides),
+	}
 }
 
-// extractRecordTypeDefaultPosition extracts record type from the default position
-// when not using '%{record_type}' in the prefix/suffix
 func extractRecordTypeDefaultPosition(name string) (string, string) {
 	nameS := strings.Split(name, "-")
 	for _, t := range getSupportedTypes() {
@@ -425,70 +502,79 @@ func extractRecordTypeDefaultPosition(name string) (string, string) {
 	return name, ""
 }
 
-// dropAffixExtractType strips TXT record to find an endpoint name it manages
+// dropPrefixExtractType strips TXT record to find an endpoint name it manages
 // it also returns the record type
-func (pr affixNameMapper) dropAffixExtractType(name string) (string, string) {
-	prefix := pr.prefix
-	suffix := pr.suffix
-
-	if pr.recordTypeInAffix() {
+func dropPrefixExtractType(prefix, name string) (string, string) {
+	if strings.Contains(prefix, recordTemplate) {
 		for _, t := range getSupportedTypes() {
 			tLower := strings.ToLower(t)
 			iPrefix := strings.ReplaceAll(prefix, recordTemplate, tLower)
+
+			if after, found := strings.CutPrefix(name, iPrefix); found {
+				return after, t
+			}
+		}
+
+		// handle old TXT records
+		prefix = dropAffixTemplate(prefix)
+	}
+
+	if after, found := strings.CutPrefix(name, prefix); found {
+		return extractRecordTypeDefaultPosition(after)
+	}
+	return "", ""
+}
+
+// dropSuffixExtractType strips TXT record to find an endpoint name it manages
+// it also returns the record type
+func dropSuffixExtractType(suffix, name string) (string, string) {
+	if strings.Contains(suffix, recordTemplate) {
+		for _, t := range getSupportedTypes() {
+			tLower := strings.ToLower(t)
 			iSuffix := strings.ReplaceAll(suffix, recordTemplate, tLower)
 
-			if pr.isPrefix() && strings.HasPrefix(name, iPrefix) {
-				return strings.TrimPrefix(name, iPrefix), t
-			}
-
-			if pr.isSuffix() && strings.HasSuffix(name, iSuffix) {
+			if strings.HasSuffix(name, iSuffix) {
 				return strings.TrimSuffix(name, iSuffix), t
 			}
 		}
 
 		// handle old TXT records
-		prefix = pr.dropAffixTemplate(prefix)
-		suffix = pr.dropAffixTemplate(suffix)
+		suffix = dropAffixTemplate(suffix)
 	}
 
-	if pr.isPrefix() && strings.HasPrefix(name, prefix) {
-		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, prefix))
-	}
-
-	if pr.isSuffix() && strings.HasSuffix(name, suffix) {
+	if strings.HasSuffix(name, suffix) {
 		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, suffix))
 	}
 
 	return "", ""
 }
 
-func (pr affixNameMapper) dropAffixTemplate(name string) string {
+func dropAffixTemplate(name string) string {
 	return strings.ReplaceAll(name, recordTemplate, "")
 }
 
-func (pr affixNameMapper) isPrefix() bool {
-	return len(pr.suffix) == 0
-}
-
-func (pr affixNameMapper) isSuffix() bool {
-	return len(pr.prefix) == 0 && len(pr.suffix) > 0
-}
-
 func (pr affixNameMapper) toEndpointName(txtDNSName string) (string, string) {
-	lowerDNSName := strings.ToLower(txtDNSName)
+	if endpointName, recordType, override := pr.overrideNameMapper.toEndpointName(txtDNSName); override {
+		return endpointName, recordType
+	}
 
+	return toEndpointName(pr.prefix, pr.suffix, txtDNSName)
+}
+
+func toEndpointName(prefix, suffix, txtDNSName string) (string, string) {
+	lowerDNSName := strings.ToLower(txtDNSName)
 	// drop prefix
-	if pr.isPrefix() {
-		return pr.dropAffixExtractType(lowerDNSName)
+	if len(suffix) == 0 {
+		return dropPrefixExtractType(prefix, lowerDNSName)
 	}
 
 	// drop suffix
-	if pr.isSuffix() {
-		dc := strings.Count(pr.suffix, ".")
+	if len(prefix) == 0 {
+		dc := strings.Count(suffix, ".")
 		DNSName := strings.SplitN(lowerDNSName, ".", 2+dc)
 		domainWithSuffix := strings.Join(DNSName[:1+dc], ".")
 
-		r, rType := pr.dropAffixExtractType(domainWithSuffix)
+		r, rType := dropSuffixExtractType(suffix, domainWithSuffix)
 		if !strings.Contains(lowerDNSName, ".") {
 			return r, rType
 		}
@@ -497,17 +583,17 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) (string, string) {
 	return "", ""
 }
 
-func (pr affixNameMapper) recordTypeInAffix() bool {
-	if strings.Contains(pr.prefix, recordTemplate) {
+func recordTypeInAffix(prefix, suffix string) bool {
+	if strings.Contains(prefix, recordTemplate) {
 		return true
 	}
-	if strings.Contains(pr.suffix, recordTemplate) {
+	if strings.Contains(suffix, recordTemplate) {
 		return true
 	}
 	return false
 }
 
-func (pr affixNameMapper) normalizeAffixTemplate(afix, recordType string) string {
+func normalizeAffixTemplate(afix, recordType string) string {
 	if strings.Contains(afix, recordTemplate) {
 		return strings.ReplaceAll(afix, recordTemplate, recordType)
 	}
@@ -515,19 +601,27 @@ func (pr affixNameMapper) normalizeAffixTemplate(afix, recordType string) string
 }
 
 func (pr affixNameMapper) toTXTName(endpointDNSName, recordType string) string {
-	DNSName := strings.SplitN(endpointDNSName, ".", 2)
+	if txtDNSName, override := pr.overrideNameMapper.toTXTName(endpointDNSName, recordType); override {
+		return txtDNSName
+	}
+	return toTXTName(pr.prefix, pr.suffix, endpointDNSName, recordType, pr.wildcardReplacement)
+}
+
+func toTXTName(prefix, suffix, endpointDNSName, recordType, wildcardReplacement string) string {
 	recordType = strings.ToLower(recordType)
+	DNSName := strings.SplitN(endpointDNSName, ".", 2)
 	recordT := recordType + "-"
 
-	prefix := pr.normalizeAffixTemplate(pr.prefix, recordType)
-	suffix := pr.normalizeAffixTemplate(pr.suffix, recordType)
+	recordTypeInfAffix := recordTypeInAffix(prefix, suffix)
+	prefix = normalizeAffixTemplate(prefix, recordType)
+	suffix = normalizeAffixTemplate(suffix, recordType)
 
 	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if pr.wildcardReplacement != "" && DNSName[0] == "*" {
-		DNSName[0] = pr.wildcardReplacement
+	if wildcardReplacement != "" && DNSName[0] == "*" {
+		DNSName[0] = wildcardReplacement
 	}
 
-	if !pr.recordTypeInAffix() {
+	if !recordTypeInfAffix {
 		DNSName[0] = recordT + DNSName[0]
 	}
 

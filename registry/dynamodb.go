@@ -94,7 +94,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, nil)
 
 	return &DynamoDBRegistry{
 		provider:            provider,
