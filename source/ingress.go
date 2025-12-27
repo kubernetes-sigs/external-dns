@@ -104,7 +104,7 @@ func NewIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -349,7 +349,7 @@ func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 	return targets
 }
 
-func (sc *ingressSource) AddEventHandler(ctx context.Context, handler func()) {
+func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for ingress")
 
 	// Right now there is no way to remove event handler from informer, see:
