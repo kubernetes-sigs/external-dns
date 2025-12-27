@@ -592,23 +592,23 @@ func TestGetServices_Multiple(t *testing.T) {
 	assert.Equal(t, priority, result[1].Priority)
 }
 
-func TestGetServices_FilterOutOtherServicesOwnerIDSetButNothingChanged(t *testing.T) {
+func TestGetServices_FilterOutOtherServicesOwnerSetButNothingChanged(t *testing.T) {
 	mockKV := new(MockEtcdKV)
 	c := etcdClient{
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ownerID:       "owner",
+		owner:         "owner",
 		strictlyOwned: false,
 	}
 
-	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", OwnedBy: "owner"}
+	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", Owner: "owner"}
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
-	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: ""}
+	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: ""}
 	value2, err := json.Marshal(svc2)
 	require.NoError(t, err)
-	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: "managed-by-someone-else"}
+	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: "different-owner"}
 	value3, err := json.Marshal(svc3)
 	require.NoError(t, err)
 
@@ -641,17 +641,17 @@ func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 		client: &etcdcv3.Client{
 			KV: mockKV,
 		},
-		ownerID:       "owned-by",
+		owner:         "owner",
 		strictlyOwned: true,
 	}
 
-	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", OwnedBy: "owned-by"}
+	svc := Service{Host: "example.com", Port: 80, Priority: 1, Weight: 10, Text: "hello", Owner: "owner"}
 	value, err := json.Marshal(svc)
 	require.NoError(t, err)
-	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: ""}
+	svc2 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: ""}
 	value2, err := json.Marshal(svc2)
 	require.NoError(t, err)
-	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", OwnedBy: "owned-by-someone-else"}
+	svc3 := Service{Host: "example.com", Port: 80, Priority: 0, Weight: 10, Text: "hello", Owner: "different-owner"}
 	value3, err := json.Marshal(svc3)
 	require.NoError(t, err)
 
@@ -676,7 +676,7 @@ func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 	result, err := c.GetServices(context.Background(), "/prefix")
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
-	assert.Equal(t, "owned-by", result[0].OwnedBy)
+	assert.Equal(t, "owner", result[0].Owner)
 }
 
 func TestGetServices_UnmarshalError(t *testing.T) {
@@ -769,15 +769,15 @@ func TestDeleteService(t *testing.T) {
 func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 	tests := []struct {
 		name             string
-		ownerID          string
+		owner            string
 		key              string
 		existingServices []Service
 		deletedKeys      []string
 	}{
 		{
-			name:    "successful deletion with owned by (same) with strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "owned-by",
+			name:  "successful deletion with the same owner with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
 			existingServices: []Service{{
 				Host:     "example.com",
 				Port:     80,
@@ -785,14 +785,14 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/skydns/local/test",
-				OwnedBy:  "owned-by",
+				Owner:    "owner",
 			}},
 			deletedKeys: []string{"/skydns/local/test"},
 		},
 		{
-			name:    "prevent deletion with owned by (no one) with strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "owned-by",
+			name:  "prevent deletion of a service without an owner with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
 			existingServices: []Service{{
 				Host:     "example.com",
 				Port:     80,
@@ -804,9 +804,9 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 			deletedKeys: []string{},
 		},
 		{
-			name:    "prevent deletion with owned by (other) with strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "owned-by",
+			name:  "prevent deletion with different owner with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
 			existingServices: []Service{{
 				Host:     "example.com",
 				Port:     80,
@@ -814,14 +814,14 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/skydns/local/test",
-				OwnedBy:  "owned-by-other",
+				Owner:    "other-owner",
 			}},
 			deletedKeys: []string{},
 		},
 		{
-			name:    "successful partial deletion with owned by (same) with strictly owned",
-			key:     "/skydns/local/test",
-			ownerID: "owned-by",
+			name:  "successful partial deletion for same owners with strictly owned",
+			key:   "/skydns/local/test",
+			owner: "owner",
 			existingServices: []Service{
 				{
 					Host:     "example.com",
@@ -830,7 +830,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 					Weight:   10,
 					Text:     "hello",
 					Key:      "/skydns/local/test/1",
-					OwnedBy:  "owned-by",
+					Owner:    "owner",
 				},
 				{
 					Host:     "example.com",
@@ -847,7 +847,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 					Weight:   10,
 					Text:     "hello",
 					Key:      "/skydns/local/test/3",
-					OwnedBy:  "owned-by-other",
+					Owner:    "different-owner",
 				},
 				{
 					Host:     "example.com",
@@ -856,7 +856,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 					Weight:   10,
 					Text:     "hello",
 					Key:      "/skydns/local/test/4",
-					OwnedBy:  "owned-by",
+					Owner:    "owner",
 				},
 			},
 			deletedKeys: []string{"/skydns/local/test/1", "/skydns/local/test/4"},
@@ -888,7 +888,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ownerID:       tt.ownerID,
+				owner:         tt.owner,
 				strictlyOwned: true,
 			}
 
@@ -903,7 +903,7 @@ func TestDeleteServiceWithStrictlyOwned(t *testing.T) {
 func TestSaveService(t *testing.T) {
 	type testCase struct {
 		name            string
-		ownerID         string
+		owner           string
 		strictlyOwned   bool
 		service         *Service
 		expectedService *Service
@@ -933,9 +933,9 @@ func TestSaveService(t *testing.T) {
 			},
 		},
 		{
-			name:    "success with 'owned-by' without strictly owned",
-			ownerID: "owned-by",
-			exists:  true,
+			name:   "success with 'owner' without strictly owned",
+			owner:  "owner",
+			exists: true,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -954,9 +954,9 @@ func TestSaveService(t *testing.T) {
 			},
 		},
 		{
-			name:    "success with 'owned-by' (creation) without strictly owned",
-			ownerID: "owned-by",
-			exists:  false,
+			name:   "success with 'owner' (creation) without strictly owned",
+			owner:  "owner",
+			exists: false,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -975,9 +975,9 @@ func TestSaveService(t *testing.T) {
 			},
 		},
 		{
-			name:    "success with 'owned-by' (update) without strictly owned (owner not changed)",
-			ownerID: "owned-by",
-			exists:  true,
+			name:   "success with 'owner' (update) without strictly owned (owner not changed)",
+			owner:  "owner",
+			exists: true,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -985,7 +985,7 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "owned-by",
+				Owner:    "owner",
 			},
 			expectedService: &Service{
 				Host:     "example.com",
@@ -994,13 +994,13 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "owned-by",
+				Owner:    "owner",
 			},
 		},
 		{
-			name:    "success with different 'owned-by' without strictly owned",
-			ownerID: "owned-by",
-			exists:  true,
+			name:   "success with different 'owner' without strictly owned",
+			owner:  "owner",
+			exists: true,
 			service: &Service{
 				Host:     "example.com",
 				Port:     80,
@@ -1008,7 +1008,7 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "other-owned-by",
+				Owner:    "other-owner",
 			},
 			expectedService: &Service{
 				Host:     "example.com",
@@ -1017,12 +1017,12 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "other-owned-by",
+				Owner:    "other-owner",
 			},
 		},
 		{
-			name:          "failed with 'owned-by' is empty with strictly owned",
-			ownerID:       "owned-by",
+			name:          "failed with 'owner' is empty with strictly owned",
+			owner:         "owner",
 			strictlyOwned: true,
 			exists:        true,
 			service: &Service{
@@ -1036,8 +1036,8 @@ func TestSaveService(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "success with 'owned-by' (creation) with strictly owned",
-			ownerID:       "owned-by",
+			name:          "success with 'owner' (creation) with strictly owned",
+			owner:         "owner",
 			strictlyOwned: true,
 			exists:        false,
 			service: &Service{
@@ -1055,12 +1055,12 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "owned-by",
+				Owner:    "owner",
 			},
 		},
 		{
-			name:          "success with 'owned-by' (update) with strictly owned (owner not changed)",
-			ownerID:       "owned-by",
+			name:          "success with 'owner' (update) with strictly owned (owner not changed)",
+			owner:         "owner",
 			strictlyOwned: true,
 			exists:        true,
 			ignoreGetCall: true,
@@ -1071,7 +1071,7 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "owned-by",
+				Owner:    "owner",
 			},
 			expectedService: &Service{
 				Host:     "example.com",
@@ -1080,12 +1080,12 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "owned-by",
+				Owner:    "owner",
 			},
 		},
 		{
-			name:          "failed with different 'owned-by' with strictly owned",
-			ownerID:       "owned-by",
+			name:          "failed with different 'owner' with strictly owned",
+			owner:         "owner",
 			strictlyOwned: true,
 			exists:        true,
 			service: &Service{
@@ -1095,7 +1095,7 @@ func TestSaveService(t *testing.T) {
 				Weight:   10,
 				Text:     "hello",
 				Key:      "/prefix/1",
-				OwnedBy:  "other-owned-by",
+				Owner:    "other-owner",
 			},
 			wantErr: true,
 		},
@@ -1146,7 +1146,7 @@ func TestSaveService(t *testing.T) {
 				client: &etcdcv3.Client{
 					KV: mockKV,
 				},
-				ownerID:       tt.ownerID,
+				owner:         tt.owner,
 				strictlyOwned: tt.strictlyOwned,
 			}
 
@@ -1341,5 +1341,43 @@ func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
 		t.Error("go no Group name")
 	} else if prop != "test1" {
 		t.Errorf("got unexpected Group name: %s != %s", prop, "test1")
+	}
+}
+
+func TestRecordsIncludeLabelOwnerWithStrictlyOwned(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
+			"/skydns/com/example":   {Text: "bla", Owner: "owner"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+		strictlyOwned: true,
+	}
+	endpoints, err := coredns.Records(context.Background())
+	require.NoError(t, err)
+	for _, ep := range endpoints {
+		assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
+	}
+}
+
+func TestRecordsIncludeOwnerASLabelWithoutStrictlyOwned(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1", Owner: "owner"},
+			"/skydns/com/example":   {Text: "bla", Owner: "owner"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+		strictlyOwned: false,
+	}
+	endpoints, err := coredns.Records(context.Background())
+	require.NoError(t, err)
+	for _, ep := range endpoints {
+		assert.Empty(t, ep.Labels[endpoint.OwnerLabelKey])
 	}
 }
