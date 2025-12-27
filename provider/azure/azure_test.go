@@ -386,6 +386,7 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 	})
 }
 
@@ -439,6 +440,9 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").
+			WithProviderSpecific("azure/metadata-foo", "bar").
+			WithProviderSpecific("azure/metadata-baz", "qux"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{

@@ -37,11 +37,15 @@ var (
 	CloudflareRecordCommentKey  string
 	CloudflareTagsKey           string
 
+	// AzureTagsKey The annotation used for Azure DNS record tags
+	AzureTagsKey string
+
 	AWSPrefix        string
 	CoreDNSPrefix    string
 	SCWPrefix        string
 	WebhookPrefix    string
 	CloudflarePrefix string
+	AzurePrefix      string
 
 	TtlKey           string
 	SetIdentifierKey string
@@ -79,12 +83,16 @@ func SetAnnotationPrefix(prefix string) {
 	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
 	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
 
+	// Azure annotations
+	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
+
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix = AnnotationKeyPrefix + "coredns-"
 	SCWPrefix = AnnotationKeyPrefix + "scw-"
 	WebhookPrefix = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
+	AzurePrefix = AnnotationKeyPrefix + "azure-"
 
 	// Core annotations
 	TtlKey = AnnotationKeyPrefix + "ttl"
