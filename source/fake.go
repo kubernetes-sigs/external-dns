@@ -62,7 +62,7 @@ func (sc *fakeSource) AddEventHandler(_ context.Context, handler func()) {
 func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 10)
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		endpoints[i] = sc.generateEndpoint()
 	}
 

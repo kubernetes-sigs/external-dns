@@ -114,3 +114,14 @@ func TestHelperLogContainsWithLogLevel(msg string, level log.Level, hook *test.H
 	}
 	assert.True(t, isContains, "Expected log message not found: %s with level %s", msg, level)
 }
+
+// TestHelperWithLogExitFunc overrides the logrus ExitFunc for the duration of a test.
+// It returns a restore function that resets the ExitFunc back to the previous value.
+func TestHelperWithLogExitFunc(exitFunc func(int)) func() {
+	logger := log.StandardLogger()
+	previousExitFunc := logger.ExitFunc
+	logger.ExitFunc = exitFunc
+	return func() {
+		logger.ExitFunc = previousExitFunc
+	}
+}

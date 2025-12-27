@@ -17,6 +17,8 @@ limitations under the License.
 package registry
 
 import (
+	"maps"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -35,18 +37,14 @@ func newEndpointWithOwnerAndOwnedRecord(dnsName, target, recordType, ownerID, ow
 func newMultiTargetEndpointWithOwnerAndLabels(dnsName string, targets endpoint.Targets, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, recordType, targets...)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
-	for k, v := range labels {
-		e.Labels[k] = v
-	}
+	maps.Copy(e.Labels, labels)
 	return e
 }
 
 func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
-	for k, v := range labels {
-		e.Labels[k] = v
-	}
+	maps.Copy(e.Labels, labels)
 	return e
 }
 
@@ -75,9 +73,7 @@ func cloneEndpointWithOpts(e *endpoint.Endpoint, opt ...func(*endpoint.Endpoint)
 	var labels endpoint.Labels
 	if e.Labels != nil {
 		labels = make(endpoint.Labels, len(e.Labels))
-		for k, v := range e.Labels {
-			labels[k] = v
-		}
+		maps.Copy(labels, e.Labels)
 	}
 
 	var providerSpecific endpoint.ProviderSpecific

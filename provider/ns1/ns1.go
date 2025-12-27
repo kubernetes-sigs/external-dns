@@ -183,10 +183,7 @@ func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Re
 		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
 	}
 	// set default ttl, but respect minTTLSeconds
-	ttl := defaultTTL
-	if p.minTTLSeconds > ttl {
-		ttl = p.minTTLSeconds
-	}
+	ttl := max(p.minTTLSeconds, defaultTTL)
 	if change.Endpoint.RecordTTL.IsConfigured() {
 		ttl = int(change.Endpoint.RecordTTL)
 	}

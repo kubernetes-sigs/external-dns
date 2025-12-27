@@ -50,17 +50,17 @@ func TestWriteToFile(t *testing.T) {
 func TestFuncs(t *testing.T) {
 	tests := []struct {
 		tpl, expect string
-		vars        interface{}
+		vars        any
 	}{
 		{
 			tpl:    `{{ backtick 3 }}`,
 			expect: "```",
-			vars:   map[string]interface{}{},
+			vars:   map[string]any{},
 		},
 		{
 			tpl:    `{{ capitalize .name }}`,
 			expect: "Capital",
-			vars:   map[string]interface{}{"name": "capital"},
+			vars:   map[string]any{"name": "capital"},
 		},
 	}
 

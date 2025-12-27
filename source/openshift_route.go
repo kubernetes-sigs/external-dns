@@ -80,7 +80,7 @@ func NewOcpRouteSource(
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)

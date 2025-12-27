@@ -38,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -4668,7 +4669,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	)
 	require.NoError(b, err)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := client.Endpoints(context.Background())
 		require.NoError(b, err)
 	}
@@ -5112,7 +5113,7 @@ func createTestServicesByType(namespace string, typeCounts map[v1.ServiceType]in
 	var services []*v1.Service
 	idx := 0
 	for svcType, count := range typeCounts {
-		for i := 0; i < count; i++ {
+		for range count {
 			svc := &v1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("svc-%s-%d", svcType, idx),
@@ -5271,7 +5272,7 @@ func TestConvertToEndpointSlices(t *testing.T) {
 			AddressType: discoveryv1.AddressTypeIPv4,
 		}
 
-		rawObjects := []interface{}{validSlice}
+		rawObjects := []any{validSlice}
 		result := convertToEndpointSlices(rawObjects)
 
 		assert.Len(t, result, 1)
@@ -5285,7 +5286,7 @@ func TestConvertToEndpointSlices(t *testing.T) {
 			AddressType: discoveryv1.AddressTypeIPv4,
 		}
 
-		rawObjects := []interface{}{invalidObject, validSlice}
+		rawObjects := []any{invalidObject, validSlice}
 		result := convertToEndpointSlices(rawObjects)
 
 		assert.Len(t, result, 1)
@@ -5293,12 +5294,12 @@ func TestConvertToEndpointSlices(t *testing.T) {
 	})
 
 	t.Run("handles empty input", func(t *testing.T) {
-		result := convertToEndpointSlices([]interface{}{})
+		result := convertToEndpointSlices([]any{})
 		assert.Empty(t, result)
 	})
 
 	t.Run("handles all invalid objects", func(t *testing.T) {
-		rawObjects := []interface{}{"invalid1", 123, map[string]string{"key": "value"}}
+		rawObjects := []any{"invalid1", 123, map[string]string{"key": "value"}}
 		result := convertToEndpointSlices(rawObjects)
 		assert.Empty(t, result)
 	})

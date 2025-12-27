@@ -152,7 +152,7 @@ func NewServiceSource(
 		// Transformer is used to reduce the memory usage of the informer.
 		// The pod informer will otherwise store a full in-memory, go-typed copy of all pod schemas in the cluster.
 		// If watchList is not used it will not prevent memory bursts on the initial informer sync.
-		_ = podInformer.Informer().SetTransform(func(i interface{}) (interface{}, error) {
+		_ = podInformer.Informer().SetTransform(func(i any) (any, error) {
 			pod, ok := i.(*v1.Pod)
 			if !ok {
 				return nil, fmt.Errorf("object is not a pod")
@@ -368,7 +368,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 }
 
 // Helper to convert raw objects to EndpointSlice
-func convertToEndpointSlices(rawEndpointSlices []interface{}) []*discoveryv1.EndpointSlice {
+func convertToEndpointSlices(rawEndpointSlices []any) []*discoveryv1.EndpointSlice {
 	endpointSlices := make([]*discoveryv1.EndpointSlice, 0, len(rawEndpointSlices))
 	for _, obj := range rawEndpointSlices {
 		endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)

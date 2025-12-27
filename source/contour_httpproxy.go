@@ -75,7 +75,7 @@ func NewContourHTTPProxySource(
 	// Add default resource event handlers to properly initialize informer.
 	_, _ = httpProxyInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)

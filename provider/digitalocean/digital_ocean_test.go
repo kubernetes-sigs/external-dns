@@ -183,7 +183,7 @@ func (m *mockDigitalOceanRecordsFail) Records(ctx context.Context, domain string
 	return []godo.DomainRecord{}, nil, fmt.Errorf("Failed to get records")
 }
 
-func isEmpty(xs interface{}) bool {
+func isEmpty(xs any) bool {
 	if xs != nil {
 		objValue := reflect.ValueOf(xs)
 		return objValue.Len() == 0
@@ -194,7 +194,7 @@ func isEmpty(xs interface{}) bool {
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs. It also ignores ordering when comparing unlike cmp.Equal.
-func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) bool {
+func elementsMatch(t *testing.T, listA, listB any, msgAndArgs ...any) bool {
 	switch {
 	case listA == nil && listB == nil:
 		return true
@@ -227,10 +227,10 @@ func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interfa
 
 	// Mark indexes in bValue that we already used
 	visited := make([]bool, bLen)
-	for i := 0; i < aLen; i++ {
+	for i := range aLen {
 		element := aValue.Index(i).Interface()
 		found := false
-		for j := 0; j < bLen; j++ {
+		for j := range bLen {
 			if visited[j] {
 				continue
 			}
@@ -254,8 +254,8 @@ func TestElementsMatch(t *testing.T) {
 	mockT := new(testing.T)
 
 	cases := []struct {
-		expected interface{}
-		actual   interface{}
+		expected any
+		actual   any
 		result   bool
 	}{
 		// matching

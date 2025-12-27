@@ -70,7 +70,7 @@ func NewF5TransportServerSource(
 
 	_, _ = transportServerInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)

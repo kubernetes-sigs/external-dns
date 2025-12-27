@@ -17,7 +17,6 @@ limitations under the License.
 package events
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -68,7 +67,7 @@ users:
   user:
     token: fake-token
 `
-	err = os.WriteFile(mockKubeCfgPath, []byte(fmt.Sprintf(kubeCfgTemplate, svr.URL)), os.FileMode(0755))
+	err = os.WriteFile(mockKubeCfgPath, fmt.Appendf(nil, kubeCfgTemplate, svr.URL), os.FileMode(0755))
 	require.NoError(t, err)
 
 	cfg := NewConfig(
@@ -95,8 +94,7 @@ func TestController_Run_NoEmitEvents(t *testing.T) {
 
 func TestController_Run_EmitEvents(t *testing.T) {
 	log.SetLevel(log.ErrorLevel)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	eventCreated := make(chan struct{})
 	kubeClient := fake.NewClientset()

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"math"
 	"net"
 	"sort"
@@ -68,7 +69,7 @@ type Route53APIStub struct {
 // being called.
 //
 //	Route53APIStub.MockMethod("MyMethod", arg1, arg2)
-func (r *Route53APIStub) MockMethod(method string, args ...interface{}) *mock.Call {
+func (r *Route53APIStub) MockMethod(method string, args ...any) *mock.Call {
 	return r.m.On(method, args...)
 }
 
@@ -284,7 +285,7 @@ func (m *dynamicMock) ChangeResourceRecordSets(input *route53.ChangeResourceReco
 	return nil, args.Error(1)
 }
 
-func (m *dynamicMock) isMocked(method string, arguments ...interface{}) bool {
+func (m *dynamicMock) isMocked(method string, arguments ...any) bool {
 	for _, call := range m.ExpectedCalls {
 		if call.Method == method && call.Repeatability > -1 {
 			_, diffCount := call.Arguments.Diff(arguments)
@@ -316,12 +317,8 @@ func TestAWSZones(t *testing.T) {
 	}
 
 	allZones := map[string]*route53types.HostedZone{}
-	for k, v := range publicZones {
-		allZones[k] = v
-	}
-	for k, v := range privateZones {
-		allZones[k] = v
-	}
+	maps.Copy(allZones, publicZones)
+	maps.Copy(allZones, privateZones)
 
 	noZones := map[string]*route53types.HostedZone{}
 
@@ -1607,7 +1604,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 	const hosts = defaultBatchChangeSize / subnets
 
 	endpoints := make([]*endpoint.Endpoint, 0)
-	for i := 0; i < subnets; i++ {
+	for i := range subnets {
 		for j := 1; j < (hosts + 1); j++ {
 			hostname := fmt.Sprintf("subnet%dhost%d.zone-1.ext-dns-test-2.teapot.zalan.do", i, j)
 			ip := fmt.Sprintf("1.1.%d.%d", i, j)
@@ -2245,7 +2242,7 @@ func TestAWSCanonicalHostedZoneNotExist(t *testing.T) {
 }
 
 func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for suffix := range canonicalHostedZones {
 			_ = canonicalHostedZone(fmt.Sprintf("foo.%s", suffix))
 		}
@@ -2253,7 +2250,7 @@ func BenchmarkTestAWSCanonicalHostedZone(b *testing.B) {
 }
 
 func BenchmarkTestAWSNonCanonicalHostedZone(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for range canonicalHostedZones {
 			_ = canonicalHostedZone("extremely.long.zone-2.ext.dns.test.zone.non.canonical.example.com")
 		}
