@@ -60,6 +60,7 @@ type Config struct {
 	IgnoreIngressRulesSpec                        bool
 	ListenEndpointEvents                          bool
 	ExposeInternalIPV6                            bool
+	GatewayEnableExperimental                     bool
 	GatewayName                                   string
 	GatewayNamespace                              string
 	GatewayLabelFilter                            string
@@ -288,6 +289,7 @@ var defaultConfig = &Config{
 	ExoscaleAPIZone:              "ch-gva-2",
 	ExposeInternalIPV6:           false,
 	FQDNTemplate:                 "",
+	GatewayEnableExperimental:    false,
 	GatewayLabelFilter:           "",
 	GatewayName:                  "",
 	GatewayNamespace:             "",
@@ -531,6 +533,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
 	b.BoolVar("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)", false, &cfg.ExposeInternalIPV6)
 	b.StringVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
+	b.BoolVar("gateway-enable-experimental", "Enable Gateway API experimental (gateway.networking.x-k8s.io) resources (currently only XListenerSet support for routes)", defaultConfig.GatewayEnableExperimental, &cfg.GatewayEnableExperimental)
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
 	b.StringVar("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)", defaultConfig.GatewayName, &cfg.GatewayName)
 	b.StringVar("gateway-namespace", "Limit Gateways of Route endpoints to a specific namespace (default: all namespaces)", defaultConfig.GatewayNamespace, &cfg.GatewayNamespace)
