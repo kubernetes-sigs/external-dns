@@ -586,6 +586,27 @@ func TestOvhApplyChanges(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
+func TestOvhApplyChangesPunyCode(t *testing.T) {
+	client := new(mockOvhClient)
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{DNSName: "example.testécassé.fr", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+		},
+	}
+
+	client.On("GetWithContext", "/domain/zone").Return([]string{"xn--testcass-e1ae.fr"}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/xn--testcass-e1ae.fr/record").Return([]uint64{}, nil).Once()
+	client.On("PostWithContext", "/domain/zone/xn--testcass-e1ae.fr/record", ovhRecordFields{FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "example", TTL: 10, Target: "203.0.113.42"}}).Return(nil, nil).Once()
+	client.On("PostWithContext", "/domain/zone/xn--testcass-e1ae.fr/refresh", nil).Return(nil, nil).Once()
+
+	_, err := provider.Records(t.Context())
+	td.CmpNoError(t, err)
+	// Basic changes
+	td.CmpNoError(t, provider.ApplyChanges(t.Context(), &changes))
+	client.AssertExpectations(t)
+}
+
 func TestOvhChange(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
