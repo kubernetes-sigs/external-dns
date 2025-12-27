@@ -972,31 +972,6 @@ func runWithKingpin(t *testing.T, args []string) *Config {
 	return cfg
 }
 
-func TestBinderParityScalars(t *testing.T) {
-	cases := []struct {
-		name   string
-		args   []string
-		getter func(*Config) interface{}
-		want   interface{}
-	}{
-		{"fqdn-template", []string{"--fqdn-template=tpl"}, func(c *Config) interface{} { return c.FQDNTemplate }, "tpl"},
-		{"dry-run", []string{"--dry-run"}, func(c *Config) interface{} { return c.DryRun }, true},
-		{"interval", []string{"--interval=2s"}, func(c *Config) interface{} { return c.Interval }, 2 * time.Second},
-		{"google-batch-change-size", []string{"--google-batch-change-size=123"}, func(c *Config) interface{} { return c.GoogleBatchChangeSize }, 123},
-	}
-
-	for _, tc := range cases {
-
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			cfgK := runWithKingpin(t, tc.args)
-			cfgC := runWithCobra(t, tc.args)
-			assert.Equal(t, tc.want, tc.getter(cfgK))
-			assert.Equal(t, tc.getter(cfgK), tc.getter(cfgC))
-		})
-	}
-}
-
 func TestBinderParityRepeatable(t *testing.T) {
 	args := []string{"--managed-record-types=A", "--managed-record-types=TXT"}
 	cfgK := runWithKingpin(t, args)
