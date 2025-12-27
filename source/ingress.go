@@ -104,7 +104,7 @@ func NewIngressSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
