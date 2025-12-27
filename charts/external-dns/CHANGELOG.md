@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.20.0] - 2025-12-11
+
 ### Added
 
 - Add option to set `annotationPrefix` ([#5889](https://github.com/kubernetes-sigs/external-dns/pull/5889)) _@lexfrei_
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Grant `networking.k8s.io/ingresses` and `gateway.solo.io/gateways` permissions when using `gloo-proxy` source. ([#5909](https://github.com/kubernetes-sigs/external-dns/pull/5909)) _@cucxabong_
+- Update _ExternalDNS_ OCI image version to [v0.20.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.20.0). ([#6005](https://github.com/kubernetes-sigs/external-dns/pull/6005)) _@vflaux_
 
 ### Fixed
 
@@ -303,6 +306,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.20.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.20.0
 [v1.19.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.19.0
 [v1.18.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.18.0
 [v1.17.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.17.0
