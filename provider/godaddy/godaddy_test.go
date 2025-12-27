@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -47,7 +48,7 @@ var (
 	zoneNameExampleNet string = "example.net"
 )
 
-func (c *mockGoDaddyClient) Post(endpoint string, input interface{}, output interface{}) error {
+func (c *mockGoDaddyClient) Post(endpoint string, input any, output any) error {
 	log.Infof("POST: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
@@ -57,7 +58,7 @@ func (c *mockGoDaddyClient) Post(endpoint string, input interface{}, output inte
 	return stub.Error(1)
 }
 
-func (c *mockGoDaddyClient) Patch(endpoint string, input interface{}, output interface{}) error {
+func (c *mockGoDaddyClient) Patch(endpoint string, input any, output any) error {
 	log.Infof("PATCH: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
@@ -67,7 +68,7 @@ func (c *mockGoDaddyClient) Patch(endpoint string, input interface{}, output int
 	return stub.Error(1)
 }
 
-func (c *mockGoDaddyClient) Put(endpoint string, input interface{}, output interface{}) error {
+func (c *mockGoDaddyClient) Put(endpoint string, input any, output any) error {
 	log.Infof("PUT: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
@@ -77,7 +78,7 @@ func (c *mockGoDaddyClient) Put(endpoint string, input interface{}, output inter
 	return stub.Error(1)
 }
 
-func (c *mockGoDaddyClient) Get(endpoint string, output interface{}) error {
+func (c *mockGoDaddyClient) Get(endpoint string, output any) error {
 	log.Infof("GET: %s", endpoint)
 	stub := c.Called(endpoint)
 	data, err := json.Marshal(stub.Get(0))
@@ -87,7 +88,7 @@ func (c *mockGoDaddyClient) Get(endpoint string, output interface{}) error {
 	return stub.Error(1)
 }
 
-func (c *mockGoDaddyClient) Delete(endpoint string, output interface{}) error {
+func (c *mockGoDaddyClient) Delete(endpoint string, output any) error {
 	log.Infof("DELETE: %s", endpoint)
 	stub := c.Called(endpoint)
 	data, err := json.Marshal(stub.Get(0))

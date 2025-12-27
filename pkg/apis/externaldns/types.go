@@ -462,7 +462,7 @@ func (cfg *Config) String() string {
 	// prevent logging of sensitive information
 	temp := *cfg
 
-	t := reflect.TypeOf(temp)
+	t := reflect.TypeFor[Config]()
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {

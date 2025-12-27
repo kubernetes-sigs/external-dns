@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/rest/fake"
 	"k8s.io/client-go/tools/cache"
 	cachetesting "k8s.io/client-go/tools/cache/testing"
+
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -789,7 +790,7 @@ func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[stri
 	var result []apiv1alpha1.DNSEndpoint
 	idx := 0
 	for rt, count := range typeCounts {
-		for i := 0; i < count; i++ {
+		for range count {
 			result = append(result, apiv1alpha1.DNSEndpoint{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("dnsendpoint-%s-%d", rt, idx),
