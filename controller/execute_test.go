@@ -32,11 +32,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/provider"
-	fakeprovider "sigs.k8s.io/external-dns/provider/fakes"
 )
 
 // Logger
@@ -116,104 +113,6 @@ func TestConfigureLogger(t *testing.T) {
 				} else {
 					assert.IsType(t, &log.TextFormatter{}, log.StandardLogger().Formatter)
 				}
-			}
-		})
-	}
-}
-
-func TestSelectRegistry(t *testing.T) {
-	tests := []struct {
-		name     string
-		cfg      *externaldns.Config
-		provider provider.Provider
-		wantErr  bool
-		wantType string
-	}{
-		{
-			name: "DynamoDB registry",
-			cfg: &externaldns.Config{
-				Registry:               "dynamodb",
-				AWSDynamoDBRegion:      "us-west-2",
-				AWSDynamoDBTable:       "test-table",
-				TXTOwnerID:             "owner-id",
-				TXTWildcardReplacement: "wildcard",
-				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
-				ExcludeDNSRecordTypes:  []string{"TXT"},
-				TXTCacheInterval:       60,
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "DynamoDBRegistry",
-		},
-		{
-			name: "Noop registry",
-			cfg: &externaldns.Config{
-				Registry: "noop",
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "NoopRegistry",
-		},
-		{
-			name: "TXT registry",
-			cfg: &externaldns.Config{
-				Registry:               "txt",
-				TXTPrefix:              "prefix",
-				TXTOwnerID:             "owner-id",
-				TXTCacheInterval:       60,
-				TXTWildcardReplacement: "wildcard",
-				ManagedDNSRecordTypes:  []string{"A", "CNAME"},
-				ExcludeDNSRecordTypes:  []string{"TXT"},
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "TXTRegistry",
-		},
-		{
-			name: "AWS-SD registry",
-			cfg: &externaldns.Config{
-				Registry:   "aws-sd",
-				TXTOwnerID: "owner-id",
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  false,
-			wantType: "AWSSDRegistry",
-		},
-		{
-			name: "Unknown registry",
-			cfg: &externaldns.Config{
-				Registry: "unknown",
-			},
-			provider: &fakeprovider.MockProvider{},
-			wantErr:  true,
-			wantType: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				// Capture fatal without exiting; avoid brittle output assertions
-				logger := log.StandardLogger()
-				prevOut := logger.Out
-				prevExit := logger.ExitFunc
-				var fatalCalled bool
-				logger.ExitFunc = func(int) { fatalCalled = true }
-				// Capture log output
-				b := new(bytes.Buffer)
-				logger.SetOutput(b)
-				t.Cleanup(func() {
-					logger.SetOutput(prevOut)
-					logger.ExitFunc = prevExit
-				})
-
-				_, err := selectRegistry(tt.cfg, tt.provider)
-				assert.NoError(t, err)
-				assert.True(t, fatalCalled)
-			} else {
-				reg, err := selectRegistry(tt.cfg, tt.provider)
-				assert.NoError(t, err)
-				assert.Contains(t, reflect.TypeOf(reg).String(), tt.wantType)
 			}
 		})
 	}

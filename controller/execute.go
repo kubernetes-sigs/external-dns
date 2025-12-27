@@ -25,7 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/go-logr/logr"
@@ -362,7 +361,7 @@ func buildController(
 	if !ok {
 		return nil, fmt.Errorf("unknown policy: %s", cfg.Policy)
 	}
-	reg, err := selectRegistry(cfg, p)
+	reg, err := registry.SelectRegistry(cfg, p)
 	if err != nil {
 		return nil, err
 	}
@@ -404,35 +403,6 @@ func configureLogger(cfg *externaldns.Config) {
 		log.Fatalf("failed to parse log level: %v", err)
 	}
 	log.SetLevel(ll)
-}
-
-// selectRegistry selects the appropriate registry implementation based on the configuration in cfg.
-// It initializes and returns a registry along with any error encountered during setup.
-// Supported registry types include: dynamodb, noop, txt, and aws-sd.
-func selectRegistry(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	var r registry.Registry
-	var err error
-	switch cfg.Registry {
-	case "dynamodb":
-		var dynamodbOpts []func(*dynamodb.Options)
-		if cfg.AWSDynamoDBRegion != "" {
-			dynamodbOpts = []func(*dynamodb.Options){
-				func(opts *dynamodb.Options) {
-					opts.Region = cfg.AWSDynamoDBRegion
-				},
-			}
-		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
-	case "noop":
-		r, err = registry.NewNoopRegistry(p)
-	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
-	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
-	default:
-		log.Fatalf("unknown registry: %s", cfg.Registry)
-	}
-	return r, err
 }
 
 // buildSource creates and configures the source(s) for endpoint discovery based on the provided configuration.
