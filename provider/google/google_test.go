@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -192,10 +193,8 @@ func isValidRecordSet(recordSet *dns.ResourceRecordSet) bool {
 			}
 		}
 	case endpoint.RecordTypeA, endpoint.RecordTypeTXT:
-		for _, rrd := range recordSet.Rrdatas {
-			if hasTrailingDot(rrd) {
-				return false
-			}
+		if slices.ContainsFunc(recordSet.Rrdatas, hasTrailingDot) {
+			return false
 		}
 	default:
 		panic("unhandled record type")

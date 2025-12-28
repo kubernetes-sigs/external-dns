@@ -158,7 +158,7 @@ func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, *http.Response, error) {
 	var zones []pgo.Zone
 	var resp *http.Response
 	var err error
-	for i := 0; i < retryLimit; i++ {
+	for i := range retryLimit {
 		zones, resp, err = c.client.ZonesApi.ListZones(c.authCtx, c.serverID)
 		if err != nil {
 			log.Debugf("Unable to fetch zones %v", err)
@@ -194,7 +194,7 @@ func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone
 // ListZone : Method returns the details of a specific zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones-zone_id
 func (c *PDNSAPIClient) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	for i := 0; i < retryLimit; i++ {
+	for i := range retryLimit {
 		zone, resp, err := c.client.ZonesApi.ListZone(c.authCtx, c.serverID, zoneID)
 		if err != nil {
 			log.Debugf("Unable to fetch zone %v", err)
@@ -213,7 +213,7 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (pgo.Zone, *http.Response, error
 func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
 	var resp *http.Response
 	var err error
-	for i := 0; i < retryLimit; i++ {
+	for i := range retryLimit {
 		resp, err = c.client.ZonesApi.PatchZone(c.authCtx, c.serverID, zoneID, zoneStruct)
 		if err != nil {
 			log.Debugf("Unable to patch zone %v", err)
@@ -455,7 +455,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 // AdjustEndpoints performs checks on the provided endpoints and will skip any potentially failing changes.
 func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var validEndpoints []*endpoint.Endpoint
-	for i := 0; i < len(endpoints); i++ {
+	for i := range endpoints {
 		if !endpoints[i].CheckEndpoint() {
 			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
 			continue

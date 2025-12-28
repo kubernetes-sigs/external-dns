@@ -19,6 +19,7 @@ package registry
 import (
 	"context"
 	"errors"
+	"maps"
 
 	"strings"
 	"time"
@@ -258,9 +259,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			labels, labelsExist = labelMap[key]
 		}
 		if labelsExist {
-			for k, v := range labels {
-				ep.Labels[k] = v
-			}
+			maps.Copy(ep.Labels, labels)
 		}
 
 		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {

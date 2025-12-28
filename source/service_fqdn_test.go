@@ -820,7 +820,6 @@ func TestServiceSourceFqdnTemplatingExamples(t *testing.T) {
 
 			// TODO; when all resources have the resource label, we could add this check to the validateEndpoints function.
 			for _, ep := range endpoints {
-				fmt.Println(ep)
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
 		})

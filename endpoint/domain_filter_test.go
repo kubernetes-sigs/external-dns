@@ -427,6 +427,54 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 			"regexExclude": "^example\\.(?:foo|bar)\\.org$",
 		},
 	},
+	{
+		// Test case: domain doesn't match include filter, also doesn't match exclusion
+		// Should be REJECTED because it doesn't match the include filter
+		regexp.MustCompile(`foo\.org$`),
+		regexp.MustCompile(`^temp\.`),
+		[]string{"bar.org", "example.com", "test.net"},
+		false,
+		map[string]string{
+			"regexInclude": `foo\.org$`,
+			"regexExclude": `^temp\.`,
+		},
+	},
+	{
+		// Test case: domain matches include filter, doesn't match exclusion
+		// Should be ACCEPTED
+		regexp.MustCompile(`\.prod\.example\.com$`),
+		regexp.MustCompile(`^temp-`),
+		[]string{"api.prod.example.com", "web.prod.example.com"},
+		true,
+		map[string]string{
+			"regexInclude": `\.prod\.example\.com$`,
+			"regexExclude": `^temp-`,
+		},
+	},
+	{
+		// Test case: domain matches both include and exclusion
+		// Exclusion should take precedence - REJECTED
+		regexp.MustCompile(`\.prod\.example\.com$`),
+		regexp.MustCompile(`^temp-`),
+		[]string{"temp-api.prod.example.com", "temp-web.prod.example.com"},
+		false,
+		map[string]string{
+			"regexInclude": `\.prod\.example\.com$`,
+			"regexExclude": `^temp-`,
+		},
+	},
+	{
+		// Test case: domain doesn't match include filter
+		// Should be REJECTED even if exclusion doesn't match
+		regexp.MustCompile(`\.staging\.example\.com$`),
+		regexp.MustCompile(`^internal-`),
+		[]string{"api.prod.example.com", "web.dev.example.com", "service.test.org"},
+		false,
+		map[string]string{
+			"regexInclude": `\.staging\.example\.com$`,
+			"regexExclude": `^internal-`,
+		},
+	},
 }
 
 func TestDomainFilterMatch(t *testing.T) {
@@ -486,6 +534,41 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 			assert.True(t, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
 			assert.True(t, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
 		}
+	}
+}
+
+func TestNewDomainFilterWithExclusionsHandlesEmptyInputs(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []string
+		exclude []string
+	}{
+		{
+			name:    "NilSlices",
+			filters: nil,
+			exclude: nil,
+		},
+		{
+			name:    "EmptySlices",
+			filters: []string{},
+			exclude: []string{},
+		},
+		{
+			name:    "WhitespaceOnly",
+			filters: []string{" ", ""},
+			exclude: []string{"", " "},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			domainFilter := NewDomainFilterWithExclusions(tt.filters, tt.exclude)
+
+			assert.False(t, domainFilter.IsConfigured())
+			assert.Empty(t, domainFilter.Filters)
+			assert.Empty(t, domainFilter.exclude)
+			assert.True(t, domainFilter.Match("example.com"))
+		})
 	}
 }
 
@@ -635,19 +718,19 @@ func TestRegexDomainFilterIsConfigured(t *testing.T) {
 func TestDomainFilterDeserializeError(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
-		serialized    map[string]interface{}
+		serialized    map[string]any
 		expectedError string
 	}{
 		{
 			name: "invalid json",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"include": 3,
 			},
 			expectedError: "json: cannot unmarshal number into Go struct field domainFilterSerde.include of type []string",
 		},
 		{
 			name: "include and regex",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"include":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
@@ -655,7 +738,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "exclude and regex",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"exclude":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
@@ -663,7 +746,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "include and regexExclude",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"include":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
@@ -671,7 +754,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "exclude and regexExclude",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"exclude":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
@@ -679,14 +762,14 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "invalid regex",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"regexInclude": "*",
 			},
 			expectedError: "invalid regexInclude: error parsing regexp: missing argument to repetition operator: `*`",
 		},
 		{
 			name: "invalid regexExclude",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"regexExclude": "*",
 			},
 			expectedError: "invalid regexExclude: error parsing regexp: missing argument to repetition operator: `*`",

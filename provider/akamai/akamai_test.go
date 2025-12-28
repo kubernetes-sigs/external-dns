@@ -34,9 +34,9 @@ import (
 
 type edgednsStubData struct {
 	objType       string // zone, record, recordsets
-	output        []interface{}
-	updateRecords []interface{}
-	createRecords []interface{}
+	output        []any
+	updateRecords []any
+	createRecords []any
 }
 
 type edgednsStub struct {
@@ -73,7 +73,7 @@ func (r *edgednsStub) createStubDataEntry(objtype string) {
 	return
 }
 
-func (r *edgednsStub) setOutput(objtype string, output []interface{}) {
+func (r *edgednsStub) setOutput(objtype string, output []any) {
 	log.Debugf("Setting output to %v", output)
 	r.createStubDataEntry(objtype)
 	stubdata := r.stubData[objtype]
@@ -83,7 +83,7 @@ func (r *edgednsStub) setOutput(objtype string, output []interface{}) {
 	return
 }
 
-func (r *edgednsStub) setUpdateRecords(objtype string, records []interface{}) {
+func (r *edgednsStub) setUpdateRecords(objtype string, records []any) {
 	log.Debugf("Setting updaterecords to %v", records)
 	r.createStubDataEntry(objtype)
 	stubdata := r.stubData[objtype]
@@ -93,7 +93,7 @@ func (r *edgednsStub) setUpdateRecords(objtype string, records []interface{}) {
 	return
 }
 
-func (r *edgednsStub) setCreateRecords(objtype string, records []interface{}) {
+func (r *edgednsStub) setCreateRecords(objtype string, records []any) {
 	log.Debugf("Setting createrecords to %v", records)
 	r.createStubDataEntry(objtype)
 	stubdata := r.stubData[objtype]
@@ -157,7 +157,7 @@ func TestFetchZonesZoneIDFilter(t *testing.T) {
 	idfilter := provider.NewZoneIDFilter([]string{"Test"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
 	assert.NoError(t, err)
-	stub.setOutput("zone", []interface{}{"test1.testzone.com", "test2.testzone.com"})
+	stub.setOutput("zone", []any{"test1.testzone.com", "test2.testzone.com"})
 
 	x, _ := c.fetchZones()
 	y, err := json.Marshal(x)
@@ -173,7 +173,7 @@ func TestFetchZonesEmpty(t *testing.T) {
 	idfilter := provider.NewZoneIDFilter([]string{"Nonexistent"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
 	require.NoError(t, err)
-	stub.setOutput("zone", []interface{}{})
+	stub.setOutput("zone", []any{})
 
 	x, _ := c.fetchZones()
 	y, err := json.Marshal(x)
@@ -190,8 +190,8 @@ func TestAkamaiRecords(t *testing.T) {
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
 	require.NoError(t, err)
-	stub.setOutput("zone", []interface{}{"test1.testzone.com"})
-	recordsets := make([]interface{}, 0)
+	stub.setOutput("zone", []any{"test1.testzone.com"})
+	recordsets := make([]any, 0)
 	recordsets = append(recordsets, dns.Recordset{
 		Name:  "www.example.com",
 		Type:  endpoint.RecordTypeA,
@@ -225,8 +225,8 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 	idfilter := provider.NewZoneIDFilter([]string{"Nonexistent"})
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
 	require.NoError(t, err)
-	stub.setOutput("zone", []interface{}{"test1.testzone.com"})
-	recordsets := make([]interface{}, 0)
+	stub.setOutput("zone", []any{"test1.testzone.com"})
+	recordsets := make([]any, 0)
 	stub.setOutput("recordset", recordsets)
 
 	x, _ := c.Records(context.Background())
@@ -239,8 +239,8 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	idfilter := provider.ZoneIDFilter{}
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
 	assert.NoError(t, err)
-	stub.setOutput("zone", []interface{}{"www.exclude.me"})
-	recordsets := make([]interface{}, 0)
+	stub.setOutput("zone", []any{"www.exclude.me"})
+	recordsets := make([]any, 0)
 	recordsets = append(recordsets, dns.Recordset{
 		Name:  "www.example.com",
 		Type:  endpoint.RecordTypeA,
@@ -374,7 +374,7 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	c, err := createAkamaiStubProvider(stub, domfilter, idfilter)
 	assert.NoError(t, err)
 
-	stub.setOutput("zone", []interface{}{"example.com"})
+	stub.setOutput("zone", []any{"example.com"})
 	changes := &plan.Changes{}
 	changes.Create = []*endpoint.Endpoint{
 		{DNSName: "www.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300},
