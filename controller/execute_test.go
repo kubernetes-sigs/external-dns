@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 
