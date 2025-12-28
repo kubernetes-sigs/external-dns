@@ -70,7 +70,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 	// Add default resource event handlers to properly initialize informer.
 	kongTCPIngressInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 			},
 		},
 	)
@@ -243,15 +243,15 @@ func newKongUnstructuredConverter() (*unstructuredConverter, error) {
 // If that is dealt with at some point the below can be removed and replaced with an actual import
 type TCPIngress struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   tcpIngressSpec   `json:"spec,omitempty"`
-	Status tcpIngressStatus `json:"status,omitempty"`
+	Spec   tcpIngressSpec   `json:"spec"`
+	Status tcpIngressStatus `json:"status"`
 }
 
 type TCPIngressList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []TCPIngress `json:"items"`
 }
 
@@ -266,7 +266,7 @@ type tcpIngressTLS struct {
 }
 
 type tcpIngressStatus struct {
-	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer,omitempty"`
+	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer"`
 }
 
 type tcpIngressRule struct {

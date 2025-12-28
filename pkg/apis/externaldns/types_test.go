@@ -17,19 +17,17 @@ limitations under the License.
 package externaldns
 
 import (
-	"fmt"
 	"os"
-	"reflect"
 	"regexp"
-	"sort"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/flags"
+	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -260,7 +258,7 @@ func TestParseFlags(t *testing.T) {
 		title    string
 		args     []string
 		envVars  map[string]string
-		expected *Config
+		expected func(*Config)
 	}{
 		{
 			title: "default config with minimal flags defined",
@@ -269,8 +267,38 @@ func TestParseFlags(t *testing.T) {
 				"--provider=google",
 				"--openshift-router-name=default",
 			},
-			envVars:  map[string]string{},
-			expected: minimalConfig,
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, minimalConfig, cfg)
+			},
+		},
+		{
+			title: "validate bool flags work as expected",
+			args: []string{
+				"--source=service",
+				"--provider=google",
+				"--aws-evaluate-target-health",
+				"--exclude-unschedulable",
+			},
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.True(t, cfg.AWSEvaluateTargetHealth)
+				assert.True(t, cfg.ExcludeUnschedulable)
+			},
+		},
+		{
+			title: "validate negation flags work as expected",
+			args: []string{
+				"--source=service",
+				"--provider=aws",
+				"--no-aws-evaluate-target-health",
+				"--no-exclude-unschedulable",
+			},
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.False(t, cfg.AWSEvaluateTargetHealth)
+				assert.False(t, cfg.ExcludeUnschedulable)
+			},
 		},
 		{
 			title: "override everything via flags",
@@ -400,8 +428,10 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-host=rfc2136-host1",
 				"--rfc2136-host=rfc2136-host2",
 			},
-			envVars:  map[string]string{},
-			expected: overriddenConfig,
+			envVars: map[string]string{},
+			expected: func(cfg *Config) {
+				assert.Equal(t, overriddenConfig, cfg)
+			},
 		},
 		{
 			title: "override everything via environment variables",
@@ -519,16 +549,17 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_LOAD_BALANCING_STRATEGY":                   "round-robin",
 				"EXTERNAL_DNS_RFC2136_HOST":                                      "rfc2136-host1\nrfc2136-host2",
 			},
-			expected: overriddenConfig,
+			expected: func(cfg *Config) {
+				assert.Equal(t, overriddenConfig, cfg)
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			originalEnv := setEnv(t, ti.envVars)
-			defer func() { restoreEnv(t, originalEnv) }()
+			testutils.TestHelperEnvSetter(t, ti.envVars)
 
 			cfg := NewConfig()
 			require.NoError(t, cfg.ParseFlags(ti.args))
-			assert.Equal(t, ti.expected, cfg)
+			ti.expected(cfg)
 		})
 	}
 }
@@ -635,90 +666,10 @@ func TestParseFlagsCobraSwitchParitySubset(t *testing.T) {
 	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
 }
 
-func TestNewCobraCommandBindsAndParsesSubset(t *testing.T) {
-	cfg := NewConfig()
-	cmd := newCobraCommand(cfg)
-
-	args := []string{
-		"--provider=aws",
-		"--source=service",
-		"--source=ingress",
-		"--server=http://127.0.0.1:8080",
-		"--kubeconfig=/some/path",
-		"--request-timeout=2s",
-		"--namespace=ns",
-		"--domain-filter=example.org",
-		"--domain-filter=company.com",
-		"--openshift-router-name=default",
-	}
-
-	cmd.SetArgs(args)
-	require.NoError(t, cmd.Execute())
-
-	assert.Equal(t, "aws", cfg.Provider)
-	assert.ElementsMatch(t, []string{"service", "ingress"}, cfg.Sources)
-	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
-	assert.Equal(t, "/some/path", cfg.KubeConfig)
-	assert.Equal(t, 2*time.Second, cfg.RequestTimeout)
-	assert.Equal(t, "ns", cfg.Namespace)
-	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
-	assert.Equal(t, "default", cfg.OCPRouterName)
-}
-
-func TestNewCobraCommandDefaultsApplied(t *testing.T) {
-	cfg := NewConfig()
-	// Pre-populate some defaults to confirm they persist without args.
-	cfg.Sources = []string{"service"}
-	// provider to preserve the original test intent.
-	cfg.Provider = "aws"
-
-	cmd := newCobraCommand(cfg)
-	cmd.SetArgs([]string{})
-	require.NoError(t, cmd.Execute())
-
-	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
-	// DomainFilter defaults to a single empty entry for historical parity.
-	assert.Equal(t, []string{""}, cfg.DomainFilter)
-}
-
-func TestParseFlagsCliFlagCobraParitySubset(t *testing.T) {
-	args := []string{
-		"--cli-backend=cobra",
-		"--provider=aws",
-		"--source=service",
-		"--source=ingress",
-		"--server=http://127.0.0.1:8080",
-		"--kubeconfig=/some/path",
-		"--request-timeout=2s",
-		"--namespace=ns",
-		"--domain-filter=example.org",
-		"--domain-filter=company.com",
-		"--openshift-router-name=default",
-	}
-
-	// Kingpin baseline without the hidden flag
-	baselineArgs := append([]string{}, args[1:]...)
-	cfgK := NewConfig()
-	require.NoError(t, cfgK.ParseFlags(baselineArgs))
-
-	cfgC := NewConfig()
-	require.NoError(t, cfgC.ParseFlags(args))
-
-	assert.Equal(t, cfgK.Provider, cfgC.Provider)
-	assert.ElementsMatch(t, cfgK.Sources, cfgC.Sources)
-	assert.Equal(t, cfgK.APIServerURL, cfgC.APIServerURL)
-	assert.Equal(t, cfgK.KubeConfig, cfgC.KubeConfig)
-	assert.Equal(t, cfgK.RequestTimeout, cfgC.RequestTimeout)
-	assert.Equal(t, cfgK.Namespace, cfgC.Namespace)
-	assert.ElementsMatch(t, cfgK.DomainFilter, cfgC.DomainFilter)
-	assert.Equal(t, cfgK.OCPRouterName, cfgC.OCPRouterName)
-}
-
 func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 	// Env requests cobra; CLI flag forces kingpin.
 	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
 	args := []string{
-		"--cli-backend=kingpin",
 		"--provider=aws",
 		"--source=service",
 		// Flag not bound in Cobra newCobraCommand path; will error if cobra is used.
@@ -735,7 +686,6 @@ func TestParseFlagsCliFlagOverridesEnv(t *testing.T) {
 func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	// Support "--cli-backend", "cobra" form as well.
 	args := []string{
-		"--cli-backend", "cobra",
 		"--provider=aws",
 		"--source=service",
 	}
@@ -743,28 +693,6 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	require.NoError(t, cfg.ParseFlags(args))
 	assert.Equal(t, "aws", cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
-}
-
-// Env vars are accepted by Kingpin backend but ignored by Cobra
-func TestEnvVarsIgnoredByCobraBackend(t *testing.T) {
-	t.Setenv("EXTERNAL_DNS_CLI", "cobra")
-	t.Setenv("EXTERNAL_DNS_NAMESPACE", "ns-from-env")
-	t.Setenv("EXTERNAL_DNS_DRY_RUN", "1")
-
-	cfg := NewConfig()
-	// Only required args for Cobra validation
-	args := []string{"--provider=aws", "--source=service"}
-	require.NoError(t, cfg.ParseFlags(args))
-
-	// Ignore env vars and keep defaults
-	assert.Empty(t, cfg.Namespace)
-	assert.False(t, cfg.DryRun)
-}
-
-func restoreEnv(t *testing.T, originalEnv map[string]string) {
-	for k, v := range originalEnv {
-		require.NoError(t, os.Setenv(k, v))
-	}
 }
 
 func TestPasswordsNotLogged(t *testing.T) {
@@ -1031,380 +959,6 @@ func TestParseFlagsMiscListeners(t *testing.T) {
 	assert.True(t, cfg.ListenEndpointEvents)
 }
 
-func TestNewCobraCommandValidationMissingProvider(t *testing.T) {
-	cfg := NewConfig()
-	cfg.Provider = ""
-	cfg.Sources = nil
-
-	cmd := newCobraCommand(cfg)
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--provider is required")
-}
-
-func TestNewCobraCommandValidationInvalidProvider(t *testing.T) {
-	cfg := NewConfig()
-	cfg.Provider = "not-a-provider"
-	cfg.Sources = []string{"service"}
-
-	cmd := newCobraCommand(cfg)
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid provider")
-}
-
-func TestNewCobraCommandValidationMissingSource(t *testing.T) {
-	cfg := NewConfig()
-	cfg.Provider = "aws"
-	cfg.Sources = nil
-
-	cmd := newCobraCommand(cfg)
-	cmd.SetArgs([]string{"--provider=aws"})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--source is required")
-}
-
-func TestNewCobraCommandValidationInvalidSource(t *testing.T) {
-	cfg := NewConfig()
-	cmd := newCobraCommand(cfg)
-	cmd.SetArgs([]string{"--provider=aws", "--source=bogus"})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid source")
-}
-
-func TestNewCobraCommandValidationValid(t *testing.T) {
-	cfg := NewConfig()
-	cmd := newCobraCommand(cfg)
-	cmd.SetArgs([]string{"--provider=aws", "--source=service"})
-	err := cmd.Execute()
-	require.NoError(t, err)
-}
-
-// Accepted binder/backend differences:
-// - Enum validation
-// - Boolean negation form
-// - Env var handling
-
-// Binder parity helpers
-
-// flagKind represents the kind of a bound flag.
-type flagKind int
-
-const (
-	fkString flagKind = iota
-	fkBool
-	fkDuration
-	fkInt
-	fkInt64
-	fkStrings
-	fkEnum
-	fkStringMap
-	fkRegexp
-)
-
-type flagMeta struct {
-	name    string
-	kind    flagKind
-	allowed []string // for enums
-}
-
-// recordingBinder wraps a real binder and records what was bound.
-type recordingBinder struct {
-	inner FlagBinder
-	flags []flagMeta
-}
-
-func (r *recordingBinder) record(name string, kind flagKind, allowed ...string) {
-	r.flags = append(r.flags, flagMeta{name: name, kind: kind, allowed: append([]string(nil), allowed...)})
-}
-
-func (r *recordingBinder) StringVar(name, help, def string, target *string) {
-	r.record(name, fkString)
-	r.inner.StringVar(name, help, def, target)
-}
-func (r *recordingBinder) BoolVar(name, help string, def bool, target *bool) {
-	r.record(name, fkBool)
-	r.inner.BoolVar(name, help, def, target)
-}
-func (r *recordingBinder) DurationVar(name, help string, def time.Duration, target *time.Duration) {
-	r.record(name, fkDuration)
-	r.inner.DurationVar(name, help, def, target)
-}
-func (r *recordingBinder) IntVar(name, help string, def int, target *int) {
-	r.record(name, fkInt)
-	r.inner.IntVar(name, help, def, target)
-}
-func (r *recordingBinder) Int64Var(name, help string, def int64, target *int64) {
-	r.record(name, fkInt64)
-	r.inner.Int64Var(name, help, def, target)
-}
-func (r *recordingBinder) StringsVar(name, help string, def []string, target *[]string) {
-	r.record(name, fkStrings)
-	r.inner.StringsVar(name, help, def, target)
-}
-func (r *recordingBinder) EnumVar(name, help, def string, target *string, allowed ...string) {
-	r.record(name, fkEnum, allowed...)
-	r.inner.EnumVar(name, help, def, target, allowed...)
-}
-func (r *recordingBinder) StringsEnumVar(name, help string, def []string, target *[]string, allowed ...string) {
-	// Not used by bindFlags currently; keep for completeness.
-	r.record(name, fkStrings)
-	r.inner.StringsEnumVar(name, help, def, target, allowed...)
-}
-func (r *recordingBinder) StringMapVar(name, help string, target *map[string]string) {
-	r.record(name, fkStringMap)
-	r.inner.StringMapVar(name, help, target)
-}
-func (r *recordingBinder) RegexpVar(name, help string, def *regexp.Regexp, target **regexp.Regexp) {
-	r.record(name, fkRegexp)
-	r.inner.RegexpVar(name, help, def, target)
-}
-
-// collectAllFlags binds flags to a Cobra binder (which includes provider/source)
-// and records all bound flags for test generation.
-func collectAllFlags(t *testing.T) []flagMeta {
-	t.Helper()
-	cmd := &cobra.Command{Use: "test"}
-	rb := &recordingBinder{inner: NewCobraBinder(cmd)}
-	cfg := &Config{}
-	// mirror helpers used elsewhere to stabilize defaults
-	cfg.AWSSDCreateTag = map[string]string{}
-	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
-	bindFlags(rb, cfg)
-
-	// Make names unique and sorted for stable test order
-	byName := map[string]flagMeta{}
-	for _, f := range rb.flags {
-		byName[f.name] = f
-	}
-	names := make([]string, 0, len(byName))
-	for n := range byName {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	out := make([]flagMeta, 0, len(names))
-	for _, n := range names {
-		out = append(out, byName[n])
-	}
-	return out
-}
-
-func buildArgsCobra(f flagMeta) []string {
-	sw := func(n, v string) string { return fmt.Sprintf("--%s=%s", n, v) }
-	switch f.kind {
-	case fkString:
-		return []string{sw(f.name, "val")}
-	case fkBool:
-		return []string{sw(f.name, "true")}
-	case fkDuration:
-		return []string{sw(f.name, "2s")}
-	case fkInt:
-		return []string{sw(f.name, "42")}
-	case fkInt64:
-		return []string{sw(f.name, "64")}
-	case fkStrings:
-		return []string{sw(f.name, "one"), sw(f.name, "two")}
-	case fkEnum:
-		val := ""
-		for _, a := range f.allowed {
-			if a != "" {
-				val = a
-				break
-			}
-		}
-		if val == "" && len(f.allowed) > 0 {
-			val = f.allowed[0]
-		}
-		if val == "" {
-			val = "x"
-		}
-		return []string{sw(f.name, val)}
-	case fkStringMap:
-		return []string{sw(f.name, "foo=bar")}
-	case fkRegexp:
-		return []string{sw(f.name, "^ex[a-z]+$")}
-	default:
-		return nil
-	}
-}
-
-func buildArgsKingpin(f flagMeta) []string {
-	switch f.kind {
-	case fkString:
-		return []string{"--" + f.name + "=val"}
-	case fkBool:
-		// Kingpin expects --flag=true
-		return []string{"--" + f.name}
-	case fkDuration:
-		return []string{"--" + f.name + "=2s"}
-	case fkInt:
-		return []string{"--" + f.name + "=42"}
-	case fkInt64:
-		return []string{"--" + f.name + "=64"}
-	case fkStrings:
-		return []string{"--" + f.name + "=one", "--" + f.name + "=two"}
-	case fkEnum:
-		val := ""
-		for _, a := range f.allowed {
-			if a != "" {
-				val = a
-				break
-			}
-		}
-		if val == "" && len(f.allowed) > 0 {
-			val = f.allowed[0]
-		}
-		if val == "" {
-			val = "x"
-		}
-		return []string{"--" + f.name + "=" + val}
-	case fkStringMap:
-		return []string{"--" + f.name + "=foo=bar"}
-	case fkRegexp:
-		return []string{"--" + f.name + "=^ex[a-z]+$"}
-	default:
-		return nil
-	}
-}
-
-func normalizeConfig(c *Config) *Config {
-	cp := *c
-	// Regex fields: compare by string; ignore pointer identity
-	cp.RegexDomainFilter = nil
-	cp.RegexDomainExclude = nil
-	// Treat nil/empty maps equivalently for comparison
-	if cp.AWSSDCreateTag == nil {
-		cp.AWSSDCreateTag = map[string]string{}
-	}
-	// Normalize nil slices to empty slices for parity
-	rv := reflect.ValueOf(&cp).Elem()
-	rt := rv.Type()
-	for i := 0; i < rv.NumField(); i++ {
-		f := rv.Field(i)
-		if f.Kind() == reflect.Slice && f.IsNil() {
-			f.Set(reflect.MakeSlice(rt.Field(i).Type, 0, 0))
-		}
-	}
-	return &cp
-}
-
-func TestBinderParity_AllFlags(t *testing.T) {
-	t.Parallel()
-	flags := collectAllFlags(t)
-
-	// Skip provider/source here: Kingpin does not bind them via bindFlags.
-	base := []string{}
-
-	for _, f := range flags {
-
-		if f.name == "provider" || f.name == "source" {
-			continue
-		}
-		t.Run(f.name, func(t *testing.T) {
-			t.Parallel()
-			argsK := append([]string{}, base...)
-			argsK = append(argsK, buildArgsKingpin(f)...)
-			argsC := append([]string{}, base...)
-			argsC = append(argsC, buildArgsCobra(f)...)
-
-			cfgK := runWithKingpin(t, argsK)
-			cfgC := runWithCobra(t, argsC)
-
-			nK := normalizeConfig(cfgK)
-			nC := normalizeConfig(cfgC)
-
-			if !reflect.DeepEqual(nK, nC) {
-				t.Fatalf("config mismatch for --%s\nKingpin args: %v\nCobra args: %v\nKingpin: %#v\n  Cobra: %#v", f.name, argsK, argsC, nK, nC)
-			}
-		})
-	}
-}
-
-func TestBinderParity_BoolFalse(t *testing.T) {
-	t.Parallel()
-	flags := collectAllFlags(t)
-	for _, f := range flags {
-		if f.kind != fkBool || f.name == "provider" || f.name == "source" {
-			continue
-		}
-
-		t.Run(f.name+"=false", func(t *testing.T) {
-			t.Parallel()
-			// Kingpin: --no-flag
-			argsK := []string{"--no-" + f.name}
-			// Cobra: --flag=false
-			argsC := []string{"--" + f.name + "=false"}
-
-			cfgK := runWithKingpin(t, argsK)
-			cfgC := runWithCobra(t, argsC)
-
-			nK := normalizeConfig(cfgK)
-			nC := normalizeConfig(cfgC)
-			if !reflect.DeepEqual(nK, nC) {
-				t.Fatalf("config mismatch for --%s=false\nKingpin args: %v\nCobra args: %v\nKingpin: %#v\n  Cobra: %#v", f.name, argsK, argsC, nK, nC)
-			}
-		})
-	}
-}
-
-func TestBinderParity_EnumsAllValues(t *testing.T) {
-	t.Parallel()
-	flags := collectAllFlags(t)
-	for _, f := range flags {
-		if f.kind != fkEnum || f.name == "provider" || f.name == "source" {
-			continue
-		}
-		// Deduplicate allowed values
-		seen := map[string]struct{}{}
-		for _, val := range f.allowed {
-			if _, ok := seen[val]; ok {
-				continue
-			}
-			seen[val] = struct{}{}
-			v := val // capture
-			t.Run(f.name+"="+v, func(t *testing.T) {
-				t.Parallel()
-				// Build args for each backend including empty string case
-				var argsK, argsC []string
-				if v == "" {
-					argsK = []string{"--" + f.name + "="}
-					argsC = []string{"--" + f.name + "="}
-				} else {
-					argsK = []string{"--" + f.name + "=" + v}
-					argsC = []string{"--" + f.name + "=" + v}
-				}
-
-				cfgK := runWithKingpin(t, argsK)
-				cfgC := runWithCobra(t, argsC)
-
-				nK := normalizeConfig(cfgK)
-				nC := normalizeConfig(cfgC)
-				if !reflect.DeepEqual(nK, nC) {
-					t.Fatalf("enum config mismatch for --%s=%q\nKingpin: %#v\n  Cobra: %#v", f.name, v, nK, nC)
-				}
-			})
-		}
-	}
-}
-
-// Verify defaults parity (no args) across binders. This asserts that
-// bindFlags applies the same default values irrespective of backend.
-func TestBinderParity_Defaults(t *testing.T) {
-	t.Parallel()
-	cfgK := runWithKingpin(t, []string{})
-	cfgC := runWithCobra(t, []string{})
-
-	nK := normalizeConfig(cfgK)
-	nC := normalizeConfig(cfgC)
-	if !reflect.DeepEqual(nK, nC) {
-		t.Fatalf("defaults config mismatch with no args\nKingpin: %#v\n  Cobra: %#v", nK, nC)
-	}
-}
-
 // Helpers to run bindFlags + parse for each binder.
 func runWithKingpin(t *testing.T, args []string) *Config {
 	t.Helper()
@@ -1412,85 +966,34 @@ func runWithKingpin(t *testing.T, args []string) *Config {
 	cfg.AWSSDCreateTag = map[string]string{}
 	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
 	app := kingpin.New("test", "")
-	bindFlags(NewKingpinBinder(app), cfg)
+	bindFlags(flags.NewKingpinBinder(app), cfg)
 	_, err := app.Parse(args)
 	require.NoError(t, err)
 	return cfg
 }
 
-func runWithCobra(t *testing.T, args []string) *Config {
-	t.Helper()
-	cfg := &Config{}
-	cfg.AWSSDCreateTag = map[string]string{}
-	cfg.RegexDomainFilter = defaultConfig.RegexDomainFilter
-	cmd := &cobra.Command{Use: "test"}
-	bindFlags(NewCobraBinder(cmd), cfg)
-	cmd.SetArgs(args)
-	err := cmd.Execute()
-	require.NoError(t, err)
-	return cfg
-}
-
-func TestBinderParityScalars(t *testing.T) {
-	cases := []struct {
-		name   string
-		args   []string
-		getter func(*Config) interface{}
-		want   interface{}
-	}{
-		{"fqdn-template", []string{"--fqdn-template=tpl"}, func(c *Config) interface{} { return c.FQDNTemplate }, "tpl"},
-		{"dry-run", []string{"--dry-run"}, func(c *Config) interface{} { return c.DryRun }, true},
-		{"interval", []string{"--interval=2s"}, func(c *Config) interface{} { return c.Interval }, 2 * time.Second},
-		{"google-batch-change-size", []string{"--google-batch-change-size=123"}, func(c *Config) interface{} { return c.GoogleBatchChangeSize }, 123},
-	}
-
-	for _, tc := range cases {
-
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			cfgK := runWithKingpin(t, tc.args)
-			cfgC := runWithCobra(t, tc.args)
-			assert.Equal(t, tc.want, tc.getter(cfgK))
-			assert.Equal(t, tc.getter(cfgK), tc.getter(cfgC))
-		})
-	}
-}
-
 func TestBinderParityRepeatable(t *testing.T) {
 	args := []string{"--managed-record-types=A", "--managed-record-types=TXT"}
 	cfgK := runWithKingpin(t, args)
-	cfgC := runWithCobra(t, args)
 	assert.ElementsMatch(t, []string{"A", "TXT"}, cfgK.ManagedDNSRecordTypes)
-	assert.ElementsMatch(t, cfgK.ManagedDNSRecordTypes, cfgC.ManagedDNSRecordTypes)
 }
 
 func TestBinderParityMapAndRegexp(t *testing.T) {
 	args := []string{"--regex-domain-filter=^ex.*$", "--aws-sd-create-tag=foo=bar"}
 	cfgK := runWithKingpin(t, args)
-	cfgC := runWithCobra(t, args)
 
 	require.NotNil(t, cfgK.RegexDomainFilter)
-	require.NotNil(t, cfgC.RegexDomainFilter)
-	assert.Equal(t, cfgK.RegexDomainFilter.String(), cfgC.RegexDomainFilter.String())
-
 	require.NotNil(t, cfgK.AWSSDCreateTag)
-	require.NotNil(t, cfgC.AWSSDCreateTag)
 	assert.Equal(t, map[string]string{"foo": "bar"}, cfgK.AWSSDCreateTag)
-	assert.Equal(t, cfgK.AWSSDCreateTag, cfgC.AWSSDCreateTag)
 }
 
-// Kingpin validates enum values at parse time while Cobra does not
-// assert both behaviors so it is obvious and intentional
+// Kingpin validates enum values at parse time
 func TestBinderEnumValidationDifference(t *testing.T) {
 	// Kingpin should reject unknown enum values
 	appArgs := []string{"--google-zone-visibility=bogus"}
 	app := kingpin.New("test", "")
 	cfgK := &Config{}
-	bindFlags(NewKingpinBinder(app), cfgK)
+	bindFlags(flags.NewKingpinBinder(app), cfgK)
 	_, err := app.Parse(appArgs)
 	require.Error(t, err)
-
-	// Cobra should accept and set the value
-	cfgC := runWithCobra(t, appArgs)
-	assert.Equal(t, "bogus", cfgC.GoogleZoneVisibility)
 }

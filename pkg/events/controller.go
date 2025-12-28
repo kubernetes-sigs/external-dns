@@ -93,7 +93,7 @@ func (ec *Controller) run(ctx context.Context) {
 	defer log.Info("event Controller terminated")
 	defer utilruntime.HandleCrash()
 	var waitGroup wait.Group
-	for i := 0; i < workers; i++ {
+	for range workers {
 		waitGroup.StartWithContext(ctx, func(ctx context.Context) {
 			for ec.processNextWorkItem(ctx) {
 			}

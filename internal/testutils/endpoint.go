@@ -145,7 +145,7 @@ func GenerateTestEndpointsByType(typeCounts map[string]int) []*endpoint.Endpoint
 	var result []*endpoint.Endpoint
 	idx := 0
 	for rt, count := range typeCounts {
-		for i := 0; i < count; i++ {
+		for range count {
 			result = append(result, &endpoint.Endpoint{
 				DNSName:    fmt.Sprintf("%s-%d.example.com", strings.ToLower(rt), idx),
 				Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},

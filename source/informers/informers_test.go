@@ -50,17 +50,17 @@ func TestWaitForCacheSync(t *testing.T) {
 	}{
 		{
 			name:        "all caches synced",
-			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): true},
+			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): true},
 		},
 		{
 			name:        "some caches not synced",
-			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): false},
+			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
 			expectError: true,
 			errorMsg:    "failed to sync string with timeout 1m0s",
 		},
 		{
 			name:        "context timeout",
-			syncResults: map[reflect.Type]bool{reflect.TypeOf(""): false},
+			syncResults: map[reflect.Type]bool{reflect.TypeFor[string](): false},
 			expectError: true,
 			errorMsg:    "failed to sync string with timeout 1m0s",
 		},

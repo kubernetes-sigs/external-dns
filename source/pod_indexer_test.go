@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
@@ -77,12 +78,12 @@ func fixtureCreatePodsWithNodes(input []podSpec) []*corev1.Pod {
 
 	for _, el := range input {
 		totalPods := el.totalTarget + el.totalRandom
-		for i := 0; i < totalPods; i++ {
+		for i := range totalPods {
 			pods = append(pods, createPod(i, el))
 		}
 	}
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		rand.Shuffle(len(pods), func(i, j int) {
 			pods[i], pods[j] = pods[j], pods[i]
 		})

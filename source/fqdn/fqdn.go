@@ -60,7 +60,7 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 	}
 	var hostnames []string
-	for _, name := range strings.Split(buf.String(), ",") {
+	for name := range strings.SplitSeq(buf.String(), ",") {
 		name = strings.TrimFunc(name, unicode.IsSpace)
 		name = strings.TrimSuffix(name, ".")
 		hostnames = append(hostnames, name)

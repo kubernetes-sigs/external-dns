@@ -718,19 +718,19 @@ func TestRegexDomainFilterIsConfigured(t *testing.T) {
 func TestDomainFilterDeserializeError(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
-		serialized    map[string]interface{}
+		serialized    map[string]any
 		expectedError string
 	}{
 		{
 			name: "invalid json",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"include": 3,
 			},
 			expectedError: "json: cannot unmarshal number into Go struct field domainFilterSerde.include of type []string",
 		},
 		{
 			name: "include and regex",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"include":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
@@ -738,7 +738,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "exclude and regex",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"exclude":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
@@ -746,7 +746,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "include and regexExclude",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"include":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
@@ -754,7 +754,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "exclude and regexExclude",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"exclude":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
@@ -762,14 +762,14 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 		},
 		{
 			name: "invalid regex",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"regexInclude": "*",
 			},
 			expectedError: "invalid regexInclude: error parsing regexp: missing argument to repetition operator: `*`",
 		},
 		{
 			name: "invalid regexExclude",
-			serialized: map[string]interface{}{
+			serialized: map[string]any{
 				"regexExclude": "*",
 			},
 			expectedError: "invalid regexExclude: error parsing regexp: missing argument to repetition operator: `*`",

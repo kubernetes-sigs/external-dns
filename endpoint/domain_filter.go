@@ -81,19 +81,19 @@ func prepareFilters(filters []string) []string {
 }
 
 // NewDomainFilterWithExclusions returns a new DomainFilter, given a list of matches and exclusions
-// DEPRECATED: NewDomainFilterFromConfig should be used instead
+// deprecated: NewDomainFilterFromConfig should be used instead
 func NewDomainFilterWithExclusions(domainFilters []string, excludeDomains []string) *DomainFilter {
 	return &DomainFilter{Filters: prepareFilters(domainFilters), exclude: prepareFilters(excludeDomains)}
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
-// DEPRECATED: NewDomainFilterFromConfig should be used instead
+// deprecated: NewDomainFilterFromConfig should be used instead
 func NewDomainFilter(domainFilters []string) *DomainFilter {
 	return &DomainFilter{Filters: prepareFilters(domainFilters)}
 }
 
 // NewRegexDomainFilter returns a new DomainFilter given a regular expression
-// DEPRECATED: NewDomainFilterFromConfig should be used instead
+// deprecated: NewDomainFilterFromConfig should be used instead
 func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion *regexp.Regexp) *DomainFilter {
 	return &DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
 }
