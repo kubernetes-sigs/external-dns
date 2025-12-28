@@ -49,18 +49,18 @@ func TestCloudFoundrySourceEndpoints(t *testing.T) {
 		switch r.URL.Path {
 		case "/v2/private_domains":
 			w.Header().Set("Content-Type", "application/json")
-			if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			if err := json.NewEncoder(w).Encode(map[string]any{
 				"total_results": 1,
 				"total_pages":   1,
 				"next_url":      "",
-				"resources": []map[string]interface{}{
+				"resources": []map[string]any{
 					{
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"guid":       "domain-guid",
 							"created_at": "now",
 							"updated_at": "now",
 						},
-						"entity": map[string]interface{}{
+						"entity": map[string]any{
 							"name": "example.com",
 						},
 					},
@@ -73,29 +73,29 @@ func TestCloudFoundrySourceEndpoints(t *testing.T) {
 				t.Errorf("expected domain query to be %q, got %q", "domain_guid:domain-guid", got)
 			}
 			w.Header().Set("Content-Type", "application/json")
-			if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			if err := json.NewEncoder(w).Encode(map[string]any{
 				"total_results": 2,
 				"total_pages":   1,
 				"next_url":      "",
-				"resources": []map[string]interface{}{
+				"resources": []map[string]any{
 					{
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"guid":       "route-guid",
 							"created_at": "now",
 							"updated_at": "now",
 						},
-						"entity": map[string]interface{}{
+						"entity": map[string]any{
 							"host":        "app",
 							"domain_guid": "domain-guid",
 						},
 					},
 					{
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"guid":       "route-guid-2",
 							"created_at": "now",
 							"updated_at": "now",
 						},
-						"entity": map[string]interface{}{
+						"entity": map[string]any{
 							"host":        "api",
 							"domain_guid": "domain-guid",
 						},
