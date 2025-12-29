@@ -52,10 +52,6 @@ type filteredMockProvider struct {
 	ApplyChangesCalls []*plan.Changes
 }
 
-type errorMockProvider struct {
-	mockProvider
-}
-
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
@@ -75,10 +71,6 @@ func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.C
 // Records returns the desired mock endpoints.
 func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
-}
-
-func (p *errorMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return nil, errors.New("error for testing")
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumptions.
@@ -161,6 +153,7 @@ func getTestSource() *testutils.MockSource {
 
 func getTestConfig() *externaldns.Config {
 	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 	return cfg
 }
@@ -219,7 +212,7 @@ func TestRunOnce(t *testing.T) {
 
 	emitter := fake.NewFakeEventEmitter()
 
-	r, err := registry.NewNoopRegistry(provider)
+	r, err := registry.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -249,7 +242,7 @@ func TestRun(t *testing.T) {
 	cfg := getTestConfig()
 	provider := getTestProvider()
 
-	r, err := registry.NewNoopRegistry(provider)
+	r, err := registry.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
@@ -337,6 +330,7 @@ func TestShouldRunOnce(t *testing.T) {
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter *endpoint.DomainFilter, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
 	cfg := externaldns.NewConfig()
+	cfg.Registry = registry.NOOP
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 
 	source := new(testutils.MockSource)
@@ -346,8 +340,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	provider := &filteredMockProvider{
 		RecordsStore: providerEndpoints,
 	}
-	r, err := registry.NewNoopRegistry(provider)
-
+	r, err := registry.SelectRegistry(cfg, provider)
 	require.NoError(t, err)
 
 	ctrl := &Controller{
@@ -393,7 +386,7 @@ func TestControllerSkipsEmptyChanges(t *testing.T) {
 	)
 }
 
-func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
+func TestWhenNoFilterControllerConsidersAllDomains(t *testing.T) {
 	testControllerFiltersDomains(
 		t,
 		[]*endpoint.Endpoint{

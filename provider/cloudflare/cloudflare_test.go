@@ -481,7 +481,7 @@ func getCustomHostnameIdxByID(chs []cloudflarev0.CustomHostname, customHostnameI
 	return -1
 }
 
-func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...interface{}) {
+func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...any) {
 	t.Helper()
 
 	var client *mockCloudFlareClient
@@ -2709,7 +2709,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 
 	const CustomHostnamesNumber = 342
 	var generatedEndpoints []*endpoint.Endpoint
-	for i := 0; i < CustomHostnamesNumber; i++ {
+	for i := range CustomHostnamesNumber {
 		ep := []*endpoint.Endpoint{
 			{
 				DNSName:    fmt.Sprintf("host-%d.foo.bar.com", i),

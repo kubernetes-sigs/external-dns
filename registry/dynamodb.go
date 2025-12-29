@@ -21,6 +21,7 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -194,9 +195,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				key.RecordType = ep.RecordType
 			}
 			if labels, ok := labelMap[key]; ok {
-				for k, v := range labels {
-					ep.Labels[k] = v
-				}
+				maps.Copy(ep.Labels, labels)
 				ep.SetProviderSpecificProperty(dynamodbAttributeMigrate, "true")
 				delete(txtRecordsMap, key)
 			}

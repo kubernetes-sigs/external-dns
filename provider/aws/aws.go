@@ -1112,12 +1112,9 @@ func findChangesInQueue(changes Route53Changes, queue Route53Changes) (Route53Ch
 
 	for _, c := range changes {
 		found := false
-		for _, qc := range queue {
-			if c == qc {
-				foundChanges = append(foundChanges, c)
-				found = true
-				break
-			}
+		if slices.Contains(queue, c) {
+			foundChanges = append(foundChanges, c)
+			found = true
 		}
 		if !found {
 			notFoundChanges = append(notFoundChanges, c)
@@ -1399,7 +1396,7 @@ func cleanZoneID(id string) string {
 
 func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	switch recordType {
-	case route53types.RRTypeMx:
+	case route53types.RRTypeMx, route53types.RRTypeNaptr:
 		return true
 	default:
 		return provider.SupportedRecordType(string(recordType))
