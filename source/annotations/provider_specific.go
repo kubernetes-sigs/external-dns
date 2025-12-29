@@ -55,24 +55,10 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Value: v,
 			})
 		} else if k == AzureTagsKey {
-			// Parse azure-tags annotation (key1=value1,key2=value2)
-			for _, tag := range strings.Split(v, ",") {
-				tag = strings.TrimSpace(tag)
-				if tag == "" {
-					continue
-				}
-				parts := strings.SplitN(tag, "=", 2)
-				if len(parts) == 2 {
-					key := strings.TrimSpace(parts[0])
-					value := strings.TrimSpace(parts[1])
-					if key != "" && value != "" {
-						providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-							Name:  fmt.Sprintf("azure/metadata-%s", key),
-							Value: value,
-						})
-					}
-				}
-			}
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  AzureTagsKey,
+				Value: v,
+			})
 		} else if strings.HasPrefix(k, CloudflarePrefix) {
 			switch {
 			case strings.Contains(k, CloudflareCustomHostnameKey):
