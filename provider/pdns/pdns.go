@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -351,7 +350,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// DELETEs explicitly forbid a TTL, therefore only PATCHes need the TTL
 				if changetype == PdnsReplace {
 					if int64(ep.RecordTTL) > int64(math.MaxInt32) {
-						return nil, provider.NewSoftError(fmt.Errorf("value of record TTL overflows, limited to int32"))
+						return nil, provider.NewSoftErrorf("value of record TTL overflows, limited to int32")
 					}
 					if ep.RecordTTL == 0 {
 						// No TTL was specified for the record, we use the default
