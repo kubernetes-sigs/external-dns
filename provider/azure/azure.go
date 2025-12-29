@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -542,4 +543,36 @@ func extractMetadataFromEndpoint(ep *endpoint.Endpoint) map[string]*string {
 		return nil
 	}
 	return metadata
+}
+
+// parseAzureTagsAnnotation parses the azure-tags annotation value (key1=value1,key2=value2)
+// and adds individual metadata properties to the endpoint.
+func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) {
+	for tag := range strings.SplitSeq(tagString, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		parts := strings.SplitN(tag, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			if key != "" && value != "" {
+				ep.WithProviderSpecific(providerSpecificMetadataPrefix+key, value)
+			}
+		}
+	}
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the Azure provider.
+// It parses the azure-tags annotation and converts it to individual metadata properties.
+func (p *AzureProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if val, ok := ep.GetProviderSpecificProperty(annotations.AzureTagsKey); ok {
+			parseAzureTagsAnnotation(ep, val)
+			// Remove the original azure-tags property as it's now expanded
+			ep.DeleteProviderSpecificProperty(annotations.AzureTagsKey)
+		}
+	}
+	return endpoints, nil
 }
