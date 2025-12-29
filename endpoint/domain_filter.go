@@ -110,9 +110,9 @@ func NewDomainFilterWithOptions(opts ...DomainFilterOption) *DomainFilter {
 		opt(cfg)
 	}
 	if cfg.isRegexFilter {
-		return NewRegexDomainFilter(cfg.regex, cfg.regexExclusion)
+		return NewRegexDomainFilter(cfg.regexInclude, cfg.regexExclude)
 	}
-	return NewDomainFilterWithExclusions(cfg.filters, cfg.exclude)
+	return NewDomainFilterWithExclusions(cfg.include, cfg.exclude)
 }
 
 // Match checks whether a domain can be found in the DomainFilter.
@@ -291,16 +291,16 @@ func normalizeDomain(domain string) string {
 
 type DomainFilterOption func(*domainFilterConfig)
 type domainFilterConfig struct {
-	filters        []string
-	exclude        []string
-	regex          *regexp.Regexp
-	regexExclusion *regexp.Regexp
-	isRegexFilter  bool
+	include       []string
+	exclude       []string
+	regexInclude  *regexp.Regexp
+	regexExclude  *regexp.Regexp
+	isRegexFilter bool
 }
 
 func WithDomainFilter(filters []string) DomainFilterOption {
 	return func(cfg *domainFilterConfig) {
-		cfg.filters = prepareFilters(filters)
+		cfg.include = prepareFilters(filters)
 	}
 }
 
@@ -312,7 +312,7 @@ func WithDomainExclude(exclude []string) DomainFilterOption {
 
 func WithRegexDomainFilter(regex *regexp.Regexp) DomainFilterOption {
 	return func(cfg *domainFilterConfig) {
-		cfg.regex = regex
+		cfg.regexInclude = regex
 		if regex != nil && regex.String() != "" {
 			cfg.isRegexFilter = true
 		}
@@ -321,7 +321,7 @@ func WithRegexDomainFilter(regex *regexp.Regexp) DomainFilterOption {
 
 func WithRegexDomainExclude(regex *regexp.Regexp) DomainFilterOption {
 	return func(cfg *domainFilterConfig) {
-		cfg.regexExclusion = regex
+		cfg.regexExclude = regex
 		if regex != nil && regex.String() != "" {
 			cfg.isRegexFilter = true
 		}
