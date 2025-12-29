@@ -87,8 +87,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 				AzureTagsKey: "cost-center=12345,owner=backend-team",
 			},
 			expected: endpoint.ProviderSpecific{
-				{Name: "azure/metadata-cost-center", Value: "12345"},
-				{Name: "azure/metadata-owner", Value: "backend-team"},
+				{Name: AzureTagsKey, Value: "cost-center=12345,owner=backend-team"},
 			},
 			setIdentifier: "",
 		},
@@ -98,8 +97,7 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 				AzureTagsKey: "environment=production, app=myapp ",
 			},
 			expected: endpoint.ProviderSpecific{
-				{Name: "azure/metadata-environment", Value: "production"},
-				{Name: "azure/metadata-app", Value: "myapp"},
+				{Name: AzureTagsKey, Value: "environment=production, app=myapp "},
 			},
 			setIdentifier: "",
 		},
