@@ -508,7 +508,9 @@ func TestDomainFilterWithExclusions(t *testing.T) {
 			if len(tt.exclusions) == 0 {
 				tt.exclusions = append(tt.exclusions, "")
 			}
-			domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusions)
+			domainFilter := NewDomainFilterWithOptions(
+				WithDomainFilter(tt.domainFilter),
+				WithDomainExclude(tt.exclusions))
 
 			assertSerializes(t, domainFilter, tt.expectedSerialization)
 			deserialized := deserialize(t, map[string][]string{
@@ -562,7 +564,7 @@ func TestNewDomainFilterWithExclusionsHandlesEmptyInputs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			domainFilter := NewDomainFilterWithExclusions(tt.filters, tt.exclude)
+			domainFilter := NewDomainFilterWithOptions(WithDomainFilter(tt.filters), WithDomainExclude(tt.exclude))
 
 			assert.False(t, domainFilter.IsConfigured())
 			assert.Empty(t, domainFilter.Filters)
@@ -575,7 +577,8 @@ func TestNewDomainFilterWithExclusionsHandlesEmptyInputs(t *testing.T) {
 func TestRegexDomainFilter(t *testing.T) {
 	for i, tt := range regexDomainFilterTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			domainFilter := NewRegexDomainFilter(tt.regex, tt.regexExclusion)
+			domainFilter := NewDomainFilterWithOptions(
+				WithRegexDomainFilter(tt.regex), WithRegexDomainExclude(tt.regexExclusion))
 
 			assertSerializes(t, domainFilter, tt.expectedSerialization)
 			deserialized := deserialize(t, map[string]string{
@@ -709,7 +712,9 @@ func TestRegexDomainFilterIsConfigured(t *testing.T) {
 		},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			df := NewRegexDomainFilter(regexp.MustCompile(tt.regex), regexp.MustCompile(tt.regexExclude))
+			df := NewDomainFilterWithOptions(
+				WithRegexDomainFilter(regexp.MustCompile(tt.regex)),
+				WithRegexDomainExclude(regexp.MustCompile(tt.regexExclude)))
 			assert.Equal(t, tt.expected, df.IsConfigured())
 		})
 	}
@@ -729,20 +734,20 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 			expectedError: "json: cannot unmarshal number into Go struct field domainFilterSerde.include of type []string",
 		},
 		{
-			name: "include and regex",
+			name: "include and regexInclude",
 			serialized: map[string]any{
 				"include":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regex",
+			expectedError: "cannot have both domain list and regexInclude",
 		},
 		{
-			name: "exclude and regex",
+			name: "exclude and regexInclude",
 			serialized: map[string]any{
 				"exclude":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regex",
+			expectedError: "cannot have both domain list and regexInclude",
 		},
 		{
 			name: "include and regexExclude",
@@ -750,7 +755,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 				"include":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regex",
+			expectedError: "cannot have both domain list and regexInclude",
 		},
 		{
 			name: "exclude and regexExclude",
@@ -758,10 +763,10 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 				"exclude":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regex",
+			expectedError: "cannot have both domain list and regexInclude",
 		},
 		{
-			name: "invalid regex",
+			name: "invalid regexInclude",
 			serialized: map[string]any{
 				"regexInclude": "*",
 			},
@@ -902,7 +907,8 @@ func TestDomainFilterMatchParent(t *testing.T) {
 	}
 	for i, tt := range parentMatchTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusions)
+			domainFilter := NewDomainFilterWithOptions(
+				WithDomainFilter(tt.domainFilter), WithDomainExclude(tt.exclusions))
 
 			assertSerializes(t, domainFilter, tt.expectedSerialization)
 			deserialized := deserialize(t, map[string][]string{
@@ -956,7 +962,8 @@ func TestSimpleDomainFilterWithExclusion(t *testing.T) {
 
 	for _, tt := range test {
 		t.Run(fmt.Sprintf("include:%s-exclude:%s", strings.Join(tt.domainFilter, "_"), strings.Join(tt.exclusionFilter, "_")), func(t *testing.T) {
-			domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusionFilter)
+			domainFilter := NewDomainFilterWithOptions(
+				WithDomainFilter(tt.domainFilter), WithDomainExclude(tt.exclusionFilter))
 			var got []string
 			for _, domain := range tt.domains {
 				if domainFilter.Match(domain) {
@@ -1052,20 +1059,24 @@ func TestNewDomainFilterFromConfig(t *testing.T) {
 		expectMatch          bool
 	}{
 		{
-			name:                 "RegexDomainFilter",
+			name:                 "RegexDomainFilter with non regex filters ignored",
 			regexDomainFilter:    regexp.MustCompile(`example\.com`),
 			regexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
+			domainFilter:         []string{"example.com"},
+			domainExclude:        []string{"excluded.example.com"},
 			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
 			isConfigured:         true,
 		},
 		{
-			name:                 "RegexDomainWithoutExclusionFilter",
+			name:                 "RegexDomainWithoutExclusionFilter and domainExclude is ignored",
 			regexDomainFilter:    regexp.MustCompile(`example\.com`),
+			domainExclude:        []string{"excluded.example.com"},
 			expectedDomainFilter: NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
 			isConfigured:         true,
 		},
 		{
 			name:                 "DomainFilterWithExclusions",
+			regexDomainFilter:    regexp.MustCompile(``),
 			domainFilter:         []string{"example.com"},
 			domainExclude:        []string{"excluded.example.com"},
 			expectedDomainFilter: NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
@@ -1150,6 +1161,7 @@ func TestNewDomainFilterFromConfig(t *testing.T) {
 				WithDomainExclude(tt.domainExclude),
 				WithRegexDomainFilter(tt.regexDomainFilter),
 				WithRegexDomainExclude(tt.regexDomainExclusion))
+
 			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
 			assert.Equal(t, tt.expectedDomainFilter, filter)
 			if tt.matchDomain != "" {
