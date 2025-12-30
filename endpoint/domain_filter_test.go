@@ -739,7 +739,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 				"include":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regexInclude",
+			expectedError: "cannot have both domain list and regex",
 		},
 		{
 			name: "exclude and regexInclude",
@@ -747,7 +747,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 				"exclude":      []string{"example.com"},
 				"regexInclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regexInclude",
+			expectedError: "cannot have both domain list and regex",
 		},
 		{
 			name: "include and regexExclude",
@@ -755,7 +755,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 				"include":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regexInclude",
+			expectedError: "cannot have both domain list and regex",
 		},
 		{
 			name: "exclude and regexExclude",
@@ -763,7 +763,7 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 				"exclude":      []string{"example.com"},
 				"regexExclude": "example.com",
 			},
-			expectedError: "cannot have both domain list and regexInclude",
+			expectedError: "cannot have both domain list and regex",
 		},
 		{
 			name: "invalid regexInclude",
