@@ -17,6 +17,7 @@ limitations under the License.
 package mapper
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -358,6 +359,169 @@ func TestAffixNameMapper_RecordTypeInAffix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.mapper.RecordTypeInAffix()
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestToEndpointNameNewTXT(t *testing.T) {
+	tests := []struct {
+		name       string
+		mapper     NameMapper
+		domain     string
+		txtDomain  string
+		recordType string
+	}{
+		{
+			name:       "prefix",
+			mapper:     NewAffixNameMapper("foo", "", ""),
+			domain:     "example.com",
+			recordType: "A",
+			txtDomain:  "fooa-example.com",
+		},
+		{
+			name:       "suffix",
+			mapper:     NewAffixNameMapper("", "foo", ""),
+			domain:     "example",
+			recordType: "AAAA",
+			txtDomain:  "aaaa-examplefoo",
+		},
+		{
+			name:       "suffix",
+			mapper:     NewAffixNameMapper("", "foo", ""),
+			domain:     "example.com",
+			recordType: "AAAA",
+			txtDomain:  "aaaa-examplefoo.com",
+		},
+		{
+			name:       "prefix with dash",
+			mapper:     NewAffixNameMapper("foo-", "", ""),
+			domain:     "example.com",
+			recordType: "A",
+			txtDomain:  "foo-a-example.com",
+		},
+		{
+			name:       "suffix with dash",
+			mapper:     NewAffixNameMapper("", "-foo", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "cname-example-foo.com",
+		},
+		{
+			name:       "prefix with dot",
+			mapper:     NewAffixNameMapper("foo.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "foo.cname-example.com",
+		},
+		{
+			name:       "suffix with dot",
+			mapper:     NewAffixNameMapper("", ".foo", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "cname-example.foo.com",
+		},
+		{
+			name:       "prefix with multiple dots",
+			mapper:     NewAffixNameMapper("foo.bar.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "foo.bar.cname-example.com",
+		},
+		{
+			name:       "suffix with multiple dots",
+			mapper:     NewAffixNameMapper("", ".foo.bar.test", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "cname-example.foo.bar.test.com",
+		},
+		{
+			name:       "templated prefix",
+			mapper:     NewAffixNameMapper("%{record_type}-foo", "", ""),
+			domain:     "example.com",
+			recordType: "A",
+			txtDomain:  "a-fooexample.com",
+		},
+		{
+			name:       "templated suffix",
+			mapper:     NewAffixNameMapper("", "foo-%{record_type}", ""),
+			domain:     "example.com",
+			recordType: "A",
+			txtDomain:  "examplefoo-a.com",
+		},
+		{
+			name:       "templated prefix with dot",
+			mapper:     NewAffixNameMapper("%{record_type}foo.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "cnamefoo.example.com",
+		},
+		{
+			name:       "templated suffix with dot",
+			mapper:     NewAffixNameMapper("", ".foo%{record_type}", ""),
+			domain:     "example.com",
+			recordType: "A",
+			txtDomain:  "example.fooa.com",
+		},
+		{
+			name:       "templated prefix with multiple dots",
+			mapper:     NewAffixNameMapper("bar.%{record_type}.foo.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+			txtDomain:  "bar.cname.foo.example.com",
+		},
+		{
+			name:       "templated suffix with multiple dots",
+			mapper:     NewAffixNameMapper("", ".foo%{record_type}.bar", ""),
+			domain:     "example.com",
+			recordType: "A",
+			txtDomain:  "example.fooa.bar.com",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			txtDomain := tc.mapper.ToTXTName(tc.domain, tc.recordType)
+			assert.Equal(t, tc.txtDomain, txtDomain)
+
+			domain, _ := tc.mapper.ToEndpointName(txtDomain)
+			assert.Equal(t, tc.domain, domain)
+		})
+	}
+}
+
+func TestDropPrefix(t *testing.T) {
+	mapper := NewAffixNameMapper("foo-%{record_type}-", "", "")
+	expectedOutput := "test.example.com"
+
+	tests := []string{
+		"foo-cname-test.example.com",
+		"foo-a-test.example.com",
+		"foo--test.example.com",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			actualOutput, _ := mapper.dropAffixExtractType(tc)
+			assert.Equal(t, expectedOutput, actualOutput)
+		})
+	}
+}
+
+func TestDropSuffix(t *testing.T) {
+	mapper := NewAffixNameMapper("", "-%{record_type}-foo", "")
+	expectedOutput := "test.example.com"
+
+	tests := []string{
+		"test-a-foo.example.com",
+		"test--foo.example.com",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			r := strings.SplitN(tc, ".", 2)
+			rClean, _ := mapper.dropAffixExtractType(r[0])
+			actualOutput := rClean + "." + r[1]
+			assert.Equal(t, expectedOutput, actualOutput)
 		})
 	}
 }
