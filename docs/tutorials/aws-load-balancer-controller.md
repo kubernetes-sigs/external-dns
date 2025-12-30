@@ -183,3 +183,120 @@ spec:
 
 The above Ingress object will result in the creation of an ALB with a dualstack
 interface.
+
+## Frontend Network Load Balancer (NLB)
+
+The AWS Load Balancer Controller supports [fronting ALBs with an NLB][6] for improved performance
+and static IP addresses. When this feature is enabled, the controller creates both an ALB and an
+NLB, resulting in two hostnames in the Ingress status.
+
+[6]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#enable-frontend-nlb
+
+### Known Issue with Internal ALBs
+
+When using an internal ALB (`alb.ingress.kubernetes.io/scheme: internal`) with frontend NLB,
+ExternalDNS may create DNS records pointing to the ALB instead of the NLB due to alphabetical
+ordering:
+
+- Internal ALB hostname: `internal-k8s-myapp-alb.us-east-1.elb.amazonaws.com`
+- NLB hostname: `k8s-myapp-nlb-123456789.elb.us-east-1.amazonaws.com`
+
+When multiple targets exist, Route53 selects the first one alphabetically, which incorrectly
+selects the internal ALB. See [issue #5661][7] for details.
+
+[7]: https://github.com/kubernetes-sigs/external-dns/issues/5661
+
+### Workarounds
+
+There are several approaches to ensure DNS records point to the correct (NLB) target:
+
+#### Option 1: Combine load balancer naming with target annotation (Recommended)
+
+Use `alb.ingress.kubernetes.io/load-balancer-name` to create predictable hostnames, then
+explicitly reference the NLB using `external-dns.alpha.kubernetes.io/target`:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/enable-frontend-nlb: "true"
+    alb.ingress.kubernetes.io/frontend-nlb-scheme: internal
+    alb.ingress.kubernetes.io/load-balancer-name: myapp-alb
+    external-dns.alpha.kubernetes.io/target: k8s-myapp-nlb.elb.us-east-1.amazonaws.com
+  name: echoserver
+spec:
+  ingressClassName: alb
+  rules:
+  - host: echoserver.example.org
+    http:
+      paths:
+      - path: /
+        backend:
+          service:
+            name: echoserver
+            port:
+              number: 80
+        pathType: Prefix
+```
+
+**Benefits**:
+
+- Predictable, consistent load balancer naming across environments
+- Explicit control over which target ExternalDNS uses
+- Works reliably with internal ALBs
+- No need to lookup auto-generated NLB names
+
+**NLB hostname pattern**: When you set `load-balancer-name: myapp-alb`, the NLB hostname
+becomes `k8s-myapp-nlb.elb.<region>.amazonaws.com` (note the `-nlb` suffix).
+
+#### Option 2: Use the target annotation only
+
+If you cannot control the load balancer name, explicitly specify the NLB hostname:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/enable-frontend-nlb: "true"
+    alb.ingress.kubernetes.io/frontend-nlb-scheme: internal
+    external-dns.alpha.kubernetes.io/target: k8s-myapp-nlb-123456789.elb.us-east-1.amazonaws.com
+  name: echoserver
+spec:
+  ingressClassName: alb
+  rules:
+  - host: echoserver.example.org
+    http:
+      paths:
+      - path: /
+        backend:
+          service:
+            name: echoserver
+            port:
+              number: 80
+        pathType: Prefix
+```
+
+**Note**: You'll need to lookup the auto-generated NLB hostname after the controller creates it.
+
+#### Option 3: Use a DNSEndpoint resource
+
+Create a `DNSEndpoint` custom resource to explicitly define the DNS record:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: echoserver-dns
+spec:
+  endpoints:
+  - dnsName: echoserver.example.org
+    recordType: CNAME
+    targets:
+    - k8s-myapp-nlb-123456789.elb.us-east-1.amazonaws.com
+```
+
+This approach is useful when you want to manage DNS records independently of the Ingress resource.
