@@ -291,7 +291,7 @@ spec:
 
 #### Option 3: Use a DNSEndpoint resource
 
-Create a `DNSEndpoint` custom resource to explicitly define the DNS record:
+Create a [`DNSEndpoint`][10] custom resource to explicitly define the DNS record:
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -307,3 +307,5 @@ spec:
 ```
 
 This approach is useful when you want to manage DNS records independently of the Ingress resource.
+
+[10]:https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/crd/
