@@ -216,7 +216,7 @@ Use [`alb.ingress.kubernetes.io/load-balancer-name`][8] to create predictable ho
 explicitly reference the NLB using [`external-dns.alpha.kubernetes.io/target`][9]:
 
 [8]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#load-balancer-name
-[9]: https://github.com/gofogo/k8s-sigs-external-dns-fork/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiotarget
+[9]: https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalphakubernetesiotarget
 
 ```yaml
 apiVersion: networking.k8s.io/v1
