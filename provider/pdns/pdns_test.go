@@ -18,7 +18,6 @@ package pdns
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -725,7 +724,7 @@ type PDNSAPIClientStubPatchZoneFailure struct {
 
 // Just overwrite the PatchZone method to introduce a failure
 func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
-	return nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
+	return nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -737,7 +736,7 @@ type PDNSAPIClientStubListZoneFailure struct {
 
 // Just overwrite the ListZone method to introduce a failure
 func (c *PDNSAPIClientStubListZoneFailure) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-	return pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
+	return pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -749,7 +748,7 @@ type PDNSAPIClientStubListZonesFailure struct {
 
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{}, nil, provider.NewSoftError(fmt.Errorf("Generic PDNS Error"))
+	return []pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/

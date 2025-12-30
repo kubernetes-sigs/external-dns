@@ -390,7 +390,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					continue
 				}
 				// nothing to do here. Falling through to general error handling
-				return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+				return nil, provider.NewSoftErrorf("failed to list hosted zones: %w", err)
 			}
 			var zonesToTagFilter []string
 			for _, zone := range resp.HostedZones {
