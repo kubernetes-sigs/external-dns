@@ -123,7 +123,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 		tcpIngresses = append(tcpIngresses, tcpIngress)
 	}
 
-	tcpIngresses, err = sc.filterByAnnotations(tcpIngresses)
+	tcpIngresses, err = annotations.Filter(tcpIngresses, sc.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter TCPIngresses: %w", err)
 	}
@@ -162,30 +162,6 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 	}
 
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of TCPIngresses by a given annotation selector.
-func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) ([]*TCPIngress, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return tcpIngresses, nil
-	}
-
-	var filteredList []*TCPIngress
-
-	for _, tcpIngress := range tcpIngresses {
-		// include TCPIngress if its annotations match the selector
-		if selector.Matches(labels.Set(tcpIngress.Annotations)) {
-			filteredList = append(filteredList, tcpIngress)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object

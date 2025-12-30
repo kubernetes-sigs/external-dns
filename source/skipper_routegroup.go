@@ -246,13 +246,14 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		log.Errorf("Failed to get RouteGroup list: %v", err)
 		return nil, err
 	}
-	rgList, err = sc.filterByAnnotations(rgList)
+
+	filtered, err := annotations.Filter(rgList.Items, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	for _, rg := range rgList.Items {
+	for _, rg := range filtered {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := rg.Metadata.Annotations[annotations.ControllerKey]
 		if ok && controller != annotations.ControllerValue {
@@ -364,30 +365,6 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 	return endpoints
 }
 
-// filterByAnnotations filters a list of routeGroupList by a given annotation selector.
-func (sc *routeGroupSource) filterByAnnotations(rgs *routeGroupList) (*routeGroupList, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return rgs, nil
-	}
-
-	var filteredList []*routeGroup
-	for _, rg := range rgs.Items {
-		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, rg.Metadata.Annotations) {
-			filteredList = append(filteredList, rg)
-		}
-	}
-	rgs.Items = filteredList
-
-	return rgs, nil
-}
-
 func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {
 	var targets endpoint.Targets
 
@@ -442,4 +419,8 @@ type routeGroupLoadBalancerStatus struct {
 type routeGroupLoadBalancer struct {
 	IP       string `json:"ip,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
+}
+
+func (rg *routeGroup) GetAnnotations() map[string]string {
+	return rg.Metadata.Annotations
 }

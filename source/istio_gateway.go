@@ -30,7 +30,6 @@ import (
 	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -136,7 +135,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	}
 
 	gateways := gwList.Items
-	gateways, err = sc.filterByAnnotations(gateways)
+	gateways, err = annotations.Filter(gateways, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -207,30 +206,6 @@ func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
 	_, _ = sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-}
-
-// filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1beta1.Gateway) ([]*networkingv1beta1.Gateway, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return gateways, nil
-	}
-
-	var filteredList []*networkingv1beta1.Gateway
-
-	for _, gw := range gateways {
-		// include if the annotations match the selector
-		if selector.Matches(labels.Set(gw.Annotations)) {
-			filteredList = append(filteredList, gw)
-		}
-	}
-
-	return filteredList, nil
 }
 
 func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1beta1.Gateway) (endpoint.Targets, error) {

@@ -139,7 +139,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	if err != nil {
 		return nil, err
 	}
-	virtualServices, err = sc.filterByAnnotations(virtualServices)
+	virtualServices, err = annotations.Filter(virtualServices, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -249,30 +249,6 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *virtualServiceSource) filterByAnnotations(vServices []*v1beta1.VirtualService) ([]*v1beta1.VirtualService, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return vServices, nil
-	}
-
-	var filteredList []*v1beta1.VirtualService
-
-	for _, vs := range vServices {
-		// include if the annotations match the selector
-		if selector.Matches(labels.Set(vs.Annotations)) {
-			filteredList = append(filteredList, vs)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // append a target to the list of targets unless it's already in the list

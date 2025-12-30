@@ -127,7 +127,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
-	httpProxies, err = sc.filterByAnnotations(httpProxies)
+	httpProxies, err = annotations.Filter(httpProxies, sc.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter HTTPProxies: %w", err)
 	}
@@ -207,30 +207,6 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *httpProxySource) filterByAnnotations(httpProxies []*projectcontour.HTTPProxy) ([]*projectcontour.HTTPProxy, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return httpProxies, nil
-	}
-
-	var filteredList []*projectcontour.HTTPProxy
-
-	for _, httpProxy := range httpProxies {
-		// include HTTPProxy if its annotations match the selector
-		if selector.Matches(labels.Set(httpProxy.Annotations)) {
-			filteredList = append(filteredList, httpProxy)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object

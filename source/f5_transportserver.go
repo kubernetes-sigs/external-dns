@@ -120,7 +120,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		transportServers = append(transportServers, transportServer)
 	}
 
-	transportServers, err = ts.filterByAnnotations(transportServers)
+	transportServers, err = annotations.Filter(transportServers, ts.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
@@ -181,30 +181,6 @@ func newTSUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// filterByAnnotations filters a list of TransportServers by a given annotation selector.
-func (ts *f5TransportServerSource) filterByAnnotations(transportServers []*f5.TransportServer) ([]*f5.TransportServer, error) {
-	selector, err := annotations.ParseFilter(ts.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return transportServers, nil
-	}
-
-	filteredList := []*f5.TransportServer{}
-
-	for _, ts := range transportServers {
-		// include TransportServer if its annotations match the selector
-		if selector.Matches(labels.Set(ts.Annotations)) {
-			filteredList = append(filteredList, ts)
-		}
-	}
-
-	return filteredList, nil
 }
 
 func hasValidTransportServerIP(vs *f5.TransportServer) bool {

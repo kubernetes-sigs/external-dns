@@ -137,7 +137,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	// Filter Ambassador Hosts
-	ambassadorHosts, err = sc.filterByAnnotations(ambassadorHosts)
+	ambassadorHosts, err = annotations.Filter(ambassadorHosts, sc.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter Ambassador Hosts by annotation: %w", err)
 	}
@@ -288,29 +288,4 @@ func newUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// Filter a list of Ambassador Host Resources to only return the ones that
-// contain the required External-DNS annotation filter
-func (sc *ambassadorHostSource) filterByAnnotations(ambassadorHosts []*ambassador.Host) ([]*ambassador.Host, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list of Ambassador Hosts
-	if selector.Empty() {
-		return ambassadorHosts, nil
-	}
-
-	// Return a filtered list of Ambassador Hosts
-	filteredList := []*ambassador.Host{}
-	for _, host := range ambassadorHosts {
-		// include Ambassador Host if its annotations match the annotation filter
-		if selector.Matches(labels.Set(host.Annotations)) {
-			filteredList = append(filteredList, host)
-		}
-	}
-
-	return filteredList, nil
 }

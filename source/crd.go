@@ -111,7 +111,12 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 }
 
 // NewCRDSource creates a new crdSource with the given config.
-func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFilter string, labelSelector labels.Selector, scheme *runtime.Scheme, startInformer bool) (Source, error) {
+func NewCRDSource(
+	crdClient rest.Interface,
+	namespace, kind, annotationFilter string,
+	labelSelector labels.Selector,
+	scheme *runtime.Scheme,
+	startInformer bool) (Source, error) {
 	sourceCrd := crdSource{
 		crdResource:      strings.ToLower(kind) + "s",
 		namespace:        namespace,
@@ -174,12 +179,17 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	result, err = cs.filterByAnnotations(result)
+	itemPtrs := make([]*apiv1alpha1.DNSEndpoint, len(result.Items))
+	for i := range result.Items {
+		itemPtrs[i] = &result.Items[i]
+	}
+
+	filtered, err := annotations.Filter(itemPtrs, cs.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, dnsEndpoint := range result.Items {
+	for _, dnsEndpoint := range filtered {
 		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
@@ -214,7 +224,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
 		// Update the ObservedGeneration
-		_, err = cs.UpdateStatus(ctx, &dnsEndpoint)
+		_, err = cs.UpdateStatus(ctx, dnsEndpoint)
 		if err != nil {
 			log.Warnf("Could not update ObservedGeneration of the CRD: %v", err)
 		}
@@ -252,27 +262,4 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 		Body(dnsEndpoint).
 		Do(ctx).
 		Into(result)
-}
-
-// filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
-func (cs *crdSource) filterByAnnotations(dnsendpoints *apiv1alpha1.DNSEndpointList) (*apiv1alpha1.DNSEndpointList, error) {
-	selector, err := annotations.ParseFilter(cs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	// empty filter returns original list
-	if selector.Empty() {
-		return dnsendpoints, nil
-	}
-
-	filteredList := apiv1alpha1.DNSEndpointList{}
-
-	for _, dnsendpoint := range dnsendpoints.Items {
-		// include dnsendpoint if its annotations match the selector
-		if selector.Matches(labels.Set(dnsendpoint.Annotations)) {
-			filteredList.Items = append(filteredList.Items, dnsendpoint)
-		}
-	}
-
-	return &filteredList, nil
 }
