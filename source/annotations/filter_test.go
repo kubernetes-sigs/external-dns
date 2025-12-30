@@ -16,8 +16,10 @@ package annotations
 import (
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 // Mock object implementing AnnotatedObject
@@ -118,4 +120,17 @@ func TestFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFilter_LogOutput(t *testing.T) {
+	hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+	items := []mockObj{
+		{annotations: map[string]string{"foo": "bar"}},
+		{annotations: map[string]string{"foo": "baz"}},
+	}
+	filter := "foo=bar"
+	_, _ = Filter(items, filter)
+
+	testutils.TestHelperLogContains("filtered '1' services out of '2' with annotation filter 'foo=bar'", hook, t)
 }
