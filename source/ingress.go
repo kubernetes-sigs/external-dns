@@ -131,7 +131,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	if err != nil {
 		return nil, err
 	}
-	ingresses, err = sc.filterByAnnotations(ingresses)
+	ingresses, err = annotations.Filter(ingresses, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -201,30 +201,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-// filterByAnnotations filters a list of ingresses by a given annotation selector.
-func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ingresses, nil
-	}
-
-	filteredList := []*networkv1.Ingress{}
-
-	for _, ingress := range ingresses {
-		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, ingress.Annotations) {
-			filteredList = append(filteredList, ingress)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // filterByIngressClass filters a list of ingresses based on a required ingress

@@ -239,7 +239,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	// filter on service types if at least one has been provided
 	services = sc.filterByServiceType(services)
 
-	services, err = sc.filterByAnnotations(services)
+	services, err = annotations.Filter(services, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -570,30 +570,6 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
-}
-
-// filterByAnnotations filters a list of services by a given annotation selector.
-func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Service, error) {
-	selector, err := annotations.ParseFilter(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return services, nil
-	}
-
-	var filteredList []*v1.Service
-
-	for _, service := range services {
-		// include service if its annotations match the selector
-		if selector.Matches(labels.Set(service.Annotations)) {
-			filteredList = append(filteredList, service)
-		}
-	}
-	log.Debugf("filtered %d services out of %d with annotation filter", len(filteredList), len(services))
-	return filteredList, nil
 }
 
 // filterByServiceType filters services according to their types

@@ -254,6 +254,7 @@ func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 		Into(result)
 }
 
+// TODO: use common function for annotation filtering
 // filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
 func (cs *crdSource) filterByAnnotations(dnsendpoints *apiv1alpha1.DNSEndpointList) (*apiv1alpha1.DNSEndpointList, error) {
 	selector, err := annotations.ParseFilter(cs.annotationFilter)

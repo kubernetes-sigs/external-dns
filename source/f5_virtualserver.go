@@ -120,7 +120,7 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 		virtualServers = append(virtualServers, virtualServer)
 	}
 
-	virtualServers, err = vs.filterByAnnotations(virtualServers)
+	virtualServers, err = annotations.Filter(virtualServers, vs.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
@@ -193,30 +193,6 @@ func newVSUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// filterByAnnotations filters a list of VirtualServers by a given annotation selector.
-func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.VirtualServer) ([]*f5.VirtualServer, error) {
-	selector, err := annotations.ParseFilter(vs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return virtualServers, nil
-	}
-
-	filteredList := []*f5.VirtualServer{}
-
-	for _, vs := range virtualServers {
-		// include VirtualServer if its annotations match the selector
-		if selector.Matches(labels.Set(vs.Annotations)) {
-			filteredList = append(filteredList, vs)
-		}
-	}
-
-	return filteredList, nil
 }
 
 func hasValidVirtualServerIP(vs *f5.VirtualServer) bool {

@@ -246,7 +246,7 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		log.Errorf("Failed to get RouteGroup list: %v", err)
 		return nil, err
 	}
-	rgList, err = sc.filterByAnnotations(rgList)
+	rgList, err = annotations.Filter(rgList, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -362,30 +362,6 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		}
 	}
 	return endpoints
-}
-
-// filterByAnnotations filters a list of routeGroupList by a given annotation selector.
-func (sc *routeGroupSource) filterByAnnotations(rgs *routeGroupList) (*routeGroupList, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return rgs, nil
-	}
-
-	var filteredList []*routeGroup
-	for _, rg := range rgs.Items {
-		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, rg.Metadata.Annotations) {
-			filteredList = append(filteredList, rg)
-		}
-	}
-	rgs.Items = filteredList
-
-	return rgs, nil
 }
 
 func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {

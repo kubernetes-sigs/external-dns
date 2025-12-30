@@ -122,7 +122,7 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
-	ocpRoutes, err = ors.filterByAnnotations(ocpRoutes)
+	ocpRoutes, err = annotations.Filter(ocpRoutes, ors.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -193,29 +193,6 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 		endpoints = append(endpoints, EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*routev1.Route, error) {
-	selector, err := annotations.ParseFilter(ors.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return ocpRoutes, nil
-	}
-
-	var filteredList []*routev1.Route
-
-	for _, ocpRoute := range ocpRoutes {
-		// include ocpRoute if its annotations match the selector
-		if selector.Matches(labels.Set(ocpRoute.Annotations)) {
-			filteredList = append(filteredList, ocpRoute)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object

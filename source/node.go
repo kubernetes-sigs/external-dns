@@ -96,7 +96,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		return nil, err
 	}
 
-	nodes, err = ns.filterByAnnotations(nodes)
+	nodes, err = annotations.Filter(nodes, ns.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -200,30 +200,6 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	}
 
 	return nil, fmt.Errorf("could not find node address for %s", node.Name)
-}
-
-// filterByAnnotations filters a list of nodes by a given annotation selector.
-func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) {
-	selector, err := annotations.ParseFilter(ns.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return nodes, nil
-	}
-
-	var filteredList []*v1.Node
-
-	for _, node := range nodes {
-		// include a node if its annotations match the selector
-		if selector.Matches(labels.Set(node.Annotations)) {
-			filteredList = append(filteredList, node)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // collectDNSNames returns a set of DNS names associated with the given Kubernetes Node.

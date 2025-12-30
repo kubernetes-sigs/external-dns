@@ -900,6 +900,7 @@ func extractEndpoints[T any](
 	return endpoints, nil
 }
 
+// TODO: review if we can move this to a common package
 // filterResourcesByAnnotations filters a list of resources based on a given annotation selector.
 // It performs the following steps:
 // 1. Parses the annotation filter into a label selector.
