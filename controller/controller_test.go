@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/noop"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -484,7 +485,7 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 }
 
 type toggleRegistry struct {
-	registry.NoopRegistry
+	noop.NoopRegistry
 	failCount   int
 	failCountMu sync.Mutex // protects failCount
 }

@@ -27,6 +27,7 @@ import (
 	b64 "encoding/base64"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/registry/mapper"
 
 	"sigs.k8s.io/external-dns/endpoint"

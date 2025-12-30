@@ -41,7 +41,7 @@ var (
 // NameMapper is the interface for mapping between the endpoint for the source
 // and the endpoint for the TXT record.
 type NameMapper interface {
-	ToEndpointName(string) (endpointName string, recordType string)
+	ToEndpointName(string) (string, string)
 	ToTXTName(string, string) string
 	RecordTypeInAffix() bool
 }
@@ -62,7 +62,7 @@ func NewAffixNameMapper(prefix, suffix, wildcardReplacement string) AffixNameMap
 	}
 }
 
-func (a AffixNameMapper) ToEndpointName(dns string) (endpointName string, recordType string) {
+func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 	lowerDNSName := strings.ToLower(dns)
 
 	// drop prefix
