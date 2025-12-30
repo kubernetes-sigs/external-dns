@@ -158,10 +158,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	}, nil
 }
 
-func getSupportedTypes() []string {
-	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeMX, endpoint.RecordTypeSRV, endpoint.RecordTypeNAPTR}
-}
-
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
 	return im.provider.GetDomainFilter()
 }
@@ -387,18 +383,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
-}
-
-// extractRecordTypeDefaultPosition extracts record type from the default position
-// when not using '%{record_type}' in the prefix/suffix
-func extractRecordTypeDefaultPosition(name string) (string, string) {
-	nameS := strings.Split(name, "-")
-	for _, t := range getSupportedTypes() {
-		if nameS[0] == strings.ToLower(t) {
-			return strings.TrimPrefix(name, nameS[0]+"-"), t
-		}
-	}
-	return name, ""
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {

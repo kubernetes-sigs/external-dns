@@ -525,3 +525,40 @@ func TestDropSuffix(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractRecordTypeDefaultPosition(t *testing.T) {
+	tests := []struct {
+		input        string
+		expectedName string
+		expectedType string
+	}{
+		{
+			input:        "ns-zone.example.com",
+			expectedName: "zone.example.com",
+			expectedType: "NS",
+		},
+		{
+			input:        "aaaa-zone.example.com",
+			expectedName: "zone.example.com",
+			expectedType: "AAAA",
+		},
+		{
+			input:        "ptr-zone.example.com",
+			expectedName: "ptr-zone.example.com",
+			expectedType: "",
+		},
+		{
+			input:        "zone.example.com",
+			expectedName: "zone.example.com",
+			expectedType: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			actualName, actualType := extractRecordTypeDefaultPosition(tc.input)
+			assert.Equal(t, tc.expectedName, actualName)
+			assert.Equal(t, tc.expectedType, actualType)
+		})
+	}
+}
