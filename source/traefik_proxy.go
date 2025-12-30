@@ -822,18 +822,18 @@ func (in *IngressRouteUDPList) DeepCopyObject() runtime.Object {
 }
 
 // GetAnnotations returns the annotations of the IngressRoute.
-func (ir *IngressRoute) GetAnnotations() map[string]string {
-	return ir.Annotations
+func (in *IngressRoute) GetAnnotations() map[string]string {
+	return in.Annotations
 }
 
 // GetAnnotations returns the annotations of the IngressRouteTCP.
-func (ir *IngressRouteTCP) GetAnnotations() map[string]string {
-	return ir.Annotations
+func (in *IngressRouteTCP) GetAnnotations() map[string]string {
+	return in.Annotations
 }
 
 // GetAnnotations returns the annotations of the IngressRouteUDP.
-func (ir *IngressRouteUDP) GetAnnotations() map[string]string {
-	return ir.Annotations
+func (in *IngressRouteUDP) GetAnnotations() map[string]string {
+	return in.Annotations
 }
 
 // extractEndpoints is a generic function that extracts endpoints from Kubernetes resources.
@@ -877,7 +877,7 @@ func extractEndpoints[T annotations.AnnotatedObject](
 	}
 
 	for _, item := range typedObjs {
-		targets := annotations.TargetsFromTargetAnnotation(getAnnotations(item))
+		targets := annotations.TargetsFromTargetAnnotation(item.GetAnnotations())
 
 		name := getObjectFullName(item)
 		ingressEndpoints := generateEndpoints(item, targets)
@@ -892,19 +892,6 @@ func extractEndpoints[T annotations.AnnotatedObject](
 	}
 
 	return endpoints, nil
-}
-
-func getAnnotations(obj any) map[string]string {
-	switch o := obj.(type) {
-	case *IngressRouteUDP:
-		return o.Annotations
-	case *IngressRoute:
-		return o.Annotations
-	case *IngressRouteTCP:
-		return o.Annotations
-	default:
-		return nil
-	}
 }
 
 func getObjectFullName(obj any) string {
