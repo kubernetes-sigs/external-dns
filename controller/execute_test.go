@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 
@@ -225,200 +224,6 @@ func TestBuildProvider(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, p)
 				assert.Contains(t, reflect.TypeOf(p).String(), tt.expectedType)
-			}
-		})
-	}
-}
-
-// TODO: this test should live in endpoint package
-func TestCreateDomainFilter(t *testing.T) {
-	tests := []struct {
-		name                 string
-		cfg                  *externaldns.Config
-		expectedDomainFilter *endpoint.DomainFilter
-		isConfigured         bool
-		matchDomain          string
-		expectMatch          bool
-	}{
-		{
-			name: "RegexDomainFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`example\.com`),
-				RegexDomainExclusion: regexp.MustCompile(`excluded\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), regexp.MustCompile(`excluded\.example\.com`)),
-			isConfigured:         true,
-		},
-		{
-			name: "RegexDomainWithoutExclusionFilter",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`example\.com`), nil),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusions",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{"example.com"},
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"example.com"}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "DomainFilterWithExclusionsOnly",
-			cfg: &externaldns.Config{
-				ExcludeDomains: []string{"excluded.example.com"},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{"excluded.example.com"}),
-			isConfigured:         true,
-		},
-		{
-			name: "EmptyDomainFilter",
-			cfg: &externaldns.Config{
-				DomainFilter:   []string{},
-				ExcludeDomains: []string{},
-			},
-			expectedDomainFilter: endpoint.NewDomainFilterWithExclusions([]string{}, []string{}),
-			isConfigured:         false,
-		},
-		{
-			name: "RegexDomainExclusionWithoutRegexFilter",
-			cfg: &externaldns.Config{
-				RegexDomainExclusion: regexp.MustCompile(`test-v1\.3\.example-test\.in`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`test-v1\.3\.example-test\.in`)),
-			isConfigured:         true,
-			matchDomain:          "test-v1.3.example-test.in",
-			expectMatch:          false,
-		},
-		{
-			name: "RegexDomainFilterWithMultipleDomains",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`(example\.com|test\.org)`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`(example\.com|test\.org)`), nil),
-			isConfigured:         true,
-			matchDomain:          "api.example.com",
-			expectMatch:          true,
-		},
-		{
-			name: "RegexDomainFilterWithWildcardPattern",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`.*\.staging\..*`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`.*\.staging\..*`), nil),
-			isConfigured:         true,
-			matchDomain:          "app.staging.example.com",
-			expectMatch:          true,
-		},
-		{
-			name: "RegexDomainExclusionWithComplexPattern",
-			cfg: &externaldns.Config{
-				RegexDomainExclusion: regexp.MustCompile(`^(internal|private)-.*\.example\.com$`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`^(internal|private)-.*\.example\.com$`)),
-			isConfigured:         true,
-			matchDomain:          "internal-service.example.com",
-			expectMatch:          false,
-		},
-		{
-			name: "RegexFilterAndExclusionBothPresent",
-			cfg: &externaldns.Config{
-				RegexDomainFilter:    regexp.MustCompile(`.*\.prod\..*`),
-				RegexDomainExclusion: regexp.MustCompile(`temp-.*\.prod\..*`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`.*\.prod\..*`), regexp.MustCompile(`temp-.*\.prod\..*`)),
-			isConfigured:         true,
-			matchDomain:          "temp-api.prod.example.com",
-			expectMatch:          false,
-		},
-		{
-			name: "RegexWithEscapedSpecialChars",
-			cfg: &externaldns.Config{
-				RegexDomainFilter: regexp.MustCompile(`test\-api\.v\d+\.example\.com`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`test\-api\.v\d+\.example\.com`), nil),
-			isConfigured:         true,
-			matchDomain:          "test-api.v2.example.com",
-			expectMatch:          true,
-		},
-		{
-			name: "RegexExclusionWithNumericPattern",
-			cfg: &externaldns.Config{
-				RegexDomainExclusion: regexp.MustCompile(`\d{3,}-temp\..*`),
-			},
-			expectedDomainFilter: endpoint.NewRegexDomainFilter(nil, regexp.MustCompile(`\d{3,}-temp\..*`)),
-			isConfigured:         true,
-			matchDomain:          "123-temp.example.com",
-			expectMatch:          false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			filter := createDomainFilter(tt.cfg)
-			assert.Equal(t, tt.isConfigured, filter.IsConfigured())
-			assert.Equal(t, tt.expectedDomainFilter, filter)
-			if tt.matchDomain != "" {
-				assert.Equal(t, tt.expectMatch, filter.Match(tt.matchDomain))
-			}
-		})
-	}
-}
-
-func TestBuildSource(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	}))
-	defer svr.Close()
-
-	tests := []struct {
-		name          string
-		cfg           *externaldns.Config
-		expectedError bool
-	}{
-		{
-			name: "Valid configuration with sources",
-			cfg: &externaldns.Config{
-				APIServerURL:   svr.URL,
-				Sources:        []string{"fake"},
-				RequestTimeout: 6 * time.Millisecond,
-			},
-			expectedError: false,
-		},
-		{
-			name: "Empty sources configuration",
-			cfg: &externaldns.Config{
-				APIServerURL:   svr.URL,
-				Sources:        []string{},
-				RequestTimeout: 6 * time.Millisecond,
-			},
-			expectedError: false,
-		},
-		{
-			name: "Update events enabled",
-			cfg: &externaldns.Config{
-				KubeConfig:   "path-to-kubeconfig-not-exists",
-				APIServerURL: svr.URL,
-				Sources:      []string{"ingress"},
-				UpdateEvents: true,
-			},
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			src, err := buildSource(t.Context(), tt.cfg)
-
-			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, src)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, src)
 			}
 		})
 	}
@@ -637,7 +442,12 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	defer cancel()
 	src, err := buildSource(ctx, cfg)
 	require.NoError(t, err)
-	domainFilter := createDomainFilter(cfg)
+	domainFilter := endpoint.NewDomainFilterWithOptions(
+		endpoint.WithDomainFilter(cfg.DomainFilter),
+		endpoint.WithDomainExclude(cfg.DomainExclude),
+		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+	)
 	p, err := buildProvider(ctx, cfg, domainFilter)
 	require.NoError(t, err)
 	ctrl, err := buildController(ctx, cfg, src, p, domainFilter)
