@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package noop
 
 import (
 	"context"
@@ -29,7 +29,17 @@ import (
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
-var _ Registry = &NoopRegistry{}
+type mockRegistry interface {
+	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
+	ApplyChanges(ctx context.Context, changes *plan.Changes) error
+	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
+	GetDomainFilter() endpoint.DomainFilterInterface
+	OwnerID() string
+}
+
+var (
+	_ mockRegistry = &NoopRegistry{}
+)
 
 func TestNoopRegistry(t *testing.T) {
 	t.Run("NewNoopRegistry", testNoopInit)

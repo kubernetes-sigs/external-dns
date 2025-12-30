@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package awssd
 
 import (
 	"context"
@@ -29,17 +29,29 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+type mockRegistry interface {
+	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
+	ApplyChanges(ctx context.Context, changes *plan.Changes) error
+	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
+	GetDomainFilter() endpoint.DomainFilterInterface
+	OwnerID() string
+}
+
+var (
+	_ mockRegistry = &AWSSDRegistry{}
+)
+
 type inMemoryProvider struct {
 	provider.BaseProvider
 	endpoints      []*endpoint.Endpoint
 	onApplyChanges func(changes *plan.Changes)
 }
 
-func (p *inMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *inMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return p.endpoints, nil
 }
 
-func (p *inMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *inMemoryProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	p.onApplyChanges(changes)
 	return nil
 }
@@ -163,5 +175,11 @@ func newEndpointWithOwnerAndDescription(dnsName, target, recordType, ownerID str
 	e := endpoint.NewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	e.Labels[endpoint.AWSSDDescriptionLabel] = description
+	return e
+}
+
+func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
+	e := endpoint.NewEndpoint(dnsName, recordType, target)
+	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	return e
 }

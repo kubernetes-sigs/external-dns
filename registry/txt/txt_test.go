@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package txt
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/external-dns/registry/mapper"
 
 	log "github.com/sirupsen/logrus"
 
@@ -65,7 +66,7 @@ func testTXTRegistryNew(t *testing.T) {
 	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.Error(t, err)
 
-	_, ok := r.mapper.(affixNameMapper)
+	_, ok := r.mapper.(mapper.AffixNameMapper)
 	require.True(t, ok)
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
@@ -83,7 +84,7 @@ func testTXTRegistryNew(t *testing.T) {
 	r, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, "")
 	require.NoError(t, err)
 
-	_, ok = r.mapper.(affixNameMapper)
+	_, ok = r.mapper.(mapper.AffixNameMapper)
 	assert.True(t, ok)
 }
 
