@@ -213,9 +213,10 @@ There are several approaches to ensure DNS records point to the correct (NLB) ta
 #### Option 1: Combine load balancer naming with target annotation (Recommended)
 
 Use [`alb.ingress.kubernetes.io/load-balancer-name`][8] to create predictable hostnames, then
-explicitly reference the NLB using `external-dns.alpha.kubernetes.io/target`:
+explicitly reference the NLB using [`external-dns.alpha.kubernetes.io/target`][9]:
 
 [8]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#load-balancer-name
+[9]: https://github.com/gofogo/k8s-sigs-external-dns-fork/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiotarget
 
 ```yaml
 apiVersion: networking.k8s.io/v1
