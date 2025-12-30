@@ -271,7 +271,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
 
-	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
+	ingressRouteTCPs, err = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
 	}
@@ -356,23 +356,17 @@ func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, er
 
 // filterIngressRouteByAnnotation filters a list of IngressRoute by a given annotation selector.
 func (ts *traefikSource) filterIngressRouteByAnnotation(input []*IngressRoute) ([]*IngressRoute, error) {
-	return filterResourcesByAnnotations(input, ts.annotationFilter, func(ir *IngressRoute) map[string]string {
-		return ir.Annotations
-	})
+	return annotations.Filter(input, ts.annotationFilter)
 }
 
 // filterIngressRouteTcpByAnnotations filters a list of IngressRouteTCP by a given annotation selector.
 func (ts *traefikSource) filterIngressRouteTcpByAnnotations(input []*IngressRouteTCP) ([]*IngressRouteTCP, error) {
-	return filterResourcesByAnnotations(input, ts.annotationFilter, func(ir *IngressRouteTCP) map[string]string {
-		return ir.Annotations
-	})
+	return annotations.Filter(input, ts.annotationFilter)
 }
 
 // filterIngressRouteUdpByAnnotations filters a list of IngressRoute by a given annotation selector.
 func (ts *traefikSource) filterIngressRouteUdpByAnnotations(input []*IngressRouteUDP) ([]*IngressRouteUDP, error) {
-	return filterResourcesByAnnotations(input, ts.annotationFilter, func(ir *IngressRouteUDP) map[string]string {
-		return ir.Annotations
-	})
+	return annotations.Filter(input, ts.annotationFilter)
 }
 
 // endpointsFromIngressRoute extracts the endpoints from a IngressRoute object
@@ -898,34 +892,6 @@ func extractEndpoints[T any](
 	}
 
 	return endpoints, nil
-}
-
-// TODO: review if we can move this to a common package
-// filterResourcesByAnnotations filters a list of resources based on a given annotation selector.
-// It performs the following steps:
-// 1. Parses the annotation filter into a label selector.
-// 2. Converts the label selector into a Kubernetes selector.
-// 3. If the selector is empty, returns the original list of resources.
-// 4. Iterates through the resources and matches their annotations against the selector.
-// 5. Returns the filtered list of resources or an error if any step fails.
-func filterResourcesByAnnotations[T any](resources []*T, annotationFilter string, getAnnotations func(*T) map[string]string) ([]*T, error) {
-	selector, err := annotations.ParseFilter(annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	if selector.Empty() {
-		return resources, nil
-	}
-
-	var filteredList []*T
-	for _, resource := range resources {
-		if selector.Matches(labels.Set(getAnnotations(resource))) {
-			filteredList = append(filteredList, resource)
-		}
-	}
-
-	return filteredList, nil
 }
 
 func getAnnotations(obj any) map[string]string {
