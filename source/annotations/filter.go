@@ -45,7 +45,6 @@ func Filter[T AnnotatedObject](items []T, filter string) ([]T, error) {
 			filtered = append(filtered, item)
 		}
 	}
-	// TODO: add tests
 	log.Debugf("filtered '%d' services out of '%d' with annotation filter '%s'", len(filtered), len(items), filter)
 	return filtered, nil
 }
