@@ -341,15 +341,15 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 	case types.Pod:
 		return buildPodSource(ctx, p, cfg)
 	case types.GatewayHttpRoute:
-		return NewGatewayHTTPRouteSource(p, cfg)
+		return NewGatewayHTTPRouteSource(ctx, p, cfg)
 	case types.GatewayGrpcRoute:
-		return NewGatewayGRPCRouteSource(p, cfg)
+		return NewGatewayGRPCRouteSource(ctx, p, cfg)
 	case types.GatewayTlsRoute:
-		return NewGatewayTLSRouteSource(p, cfg)
+		return NewGatewayTLSRouteSource(ctx, p, cfg)
 	case types.GatewayTcpRoute:
-		return NewGatewayTCPRouteSource(p, cfg)
+		return NewGatewayTCPRouteSource(ctx, p, cfg)
 	case types.GatewayUdpRoute:
-		return NewGatewayUDPRouteSource(p, cfg)
+		return NewGatewayUDPRouteSource(ctx, p, cfg)
 	case types.IstioGateway:
 		return buildIstioGatewaySource(ctx, p, cfg)
 	case types.IstioVirtualService:

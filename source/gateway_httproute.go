@@ -17,6 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -26,8 +28,8 @@ import (
 )
 
 // NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given config.
-func NewGatewayHTTPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(clients, config, "HTTPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
+func NewGatewayHTTPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, config, "HTTPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayHTTPRouteInformer{factory.Gateway().V1beta1().HTTPRoutes()}
 	})
 }

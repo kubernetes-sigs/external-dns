@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -1547,7 +1548,9 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				t.Parallel()
 			}
 
-			ctx := context.Background()
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
 			gwClient := gatewayfake.NewSimpleClientset()
 			for _, gw := range tt.gateways {
 				_, err := gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
@@ -1558,7 +1561,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				_, err := gwClient.GatewayV1beta1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 				require.NoError(t, err, "failed to create HTTPRoute")
 			}
-			kubeClient := kubefake.NewSimpleClientset()
+			kubeClient := kubefake.NewClientset()
 			for _, ns := range tt.namespaces {
 				_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 				require.NoError(t, err, "failed to create Namespace")
@@ -1568,7 +1571,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			clients.On("GatewayClient").Return(gwClient, nil)
 			clients.On("KubeClient").Return(kubeClient, nil)
 
-			src, err := NewGatewayHTTPRouteSource(clients, &tt.config)
+			src, err := NewGatewayHTTPRouteSource(ctx, clients, &tt.config)
 			require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
 
 			hook := testutils.LogsUnderTestWithLogLevel(log.DebugLevel, t)
