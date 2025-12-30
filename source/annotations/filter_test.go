@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock object implementing AnnotatedObject
@@ -28,32 +29,93 @@ func (m mockObj) GetAnnotations() map[string]string {
 	return m.annotations
 }
 
-func TestFilter_EmptyFilterReturnsAll(t *testing.T) {
-	items := []mockObj{
-		{annotations: map[string]string{"foo": "bar"}},
-		{annotations: map[string]string{"baz": "qux"}},
+func TestFilter(t *testing.T) {
+	tests := []struct {
+		name        string
+		items       []mockObj
+		filter      string
+		expected    []mockObj
+		expectError bool
+	}{
+		{
+			name: "Empty filter returns all",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+			filter: "",
+			expected: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+		},
+		{
+			name: "Matching items",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"foo": "baz"}},
+			},
+			filter: "foo=bar",
+			expected: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+			},
+		},
+		{
+			name: "No matching items",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "baz"}},
+			},
+			filter:   "foo=bar",
+			expected: []mockObj{},
+		},
+		{
+			name: "Whitespace filter returns all",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+			filter: "   ",
+			expected: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+		},
+		{
+			name: "empty filter returns all",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+			filter: "",
+			expected: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+		},
+		{
+			name: "invalid filter returns error",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+			filter: "=invalid",
+			expected: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+			expectError: true,
+		},
 	}
-	result, err := Filter(items, "")
-	assert.NoError(t, err)
-	assert.Equal(t, items, result)
-}
 
-func TestFilter_MatchingItems(t *testing.T) {
-	items := []mockObj{
-		{annotations: map[string]string{"foo": "bar"}},
-		{annotations: map[string]string{"foo": "baz"}},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Filter(tt.items, tt.filter)
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
 	}
-	result, err := Filter(items, "foo=bar")
-	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "bar", result[0].annotations["foo"])
-}
-
-func TestFilter_NoMatchingItems(t *testing.T) {
-	items := []mockObj{
-		{annotations: map[string]string{"foo": "baz"}},
-	}
-	result, err := Filter(items, "foo=bar")
-	assert.NoError(t, err)
-	assert.Empty(t, result)
 }

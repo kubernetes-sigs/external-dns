@@ -14,6 +14,8 @@ limitations under the License.
 package annotations
 
 import (
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -26,6 +28,9 @@ type AnnotatedObject interface {
 // Filter filters a slice of objects by annotation selector.
 // Returns all items if annotationFilter is empty.
 func Filter[T AnnotatedObject](items []T, filter string) ([]T, error) {
+	if filter == "" || strings.TrimSpace(filter) == "" {
+		return items, nil
+	}
 	selector, err := ParseFilter(filter)
 	if err != nil {
 		return nil, err
