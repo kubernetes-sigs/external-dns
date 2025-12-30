@@ -246,13 +246,14 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		log.Errorf("Failed to get RouteGroup list: %v", err)
 		return nil, err
 	}
-	rgList, err = annotations.Filter(rgList, sc.annotationFilter)
+
+	filtered, err := annotations.Filter(rgList.Items, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	for _, rg := range rgList.Items {
+	for _, rg := range filtered {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := rg.Metadata.Annotations[annotations.ControllerKey]
 		if ok && controller != annotations.ControllerValue {
@@ -418,4 +419,8 @@ type routeGroupLoadBalancerStatus struct {
 type routeGroupLoadBalancer struct {
 	IP       string `json:"ip,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
+}
+
+func (rg *routeGroup) GetAnnotations() map[string]string {
+	return rg.Metadata.Annotations
 }
