@@ -137,8 +137,8 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (string, *gdRecords) {
 }
 
 // NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(_ context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
-	client, err := NewClient(useOTE, apiKey, apiSecret)
+func NewGoDaddyProvider(_ context.Context, domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, disableValidate, dryRun bool) (*GDProvider, error) {
+	client, err := NewClient(useOTE, apiKey, apiSecret, disableValidate)
 	if err != nil {
 		return nil, err
 	}
