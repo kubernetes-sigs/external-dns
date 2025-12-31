@@ -29,18 +29,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
-type mockRegistry interface {
-	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
-	ApplyChanges(ctx context.Context, changes *plan.Changes) error
-	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
-	GetDomainFilter() endpoint.DomainFilterInterface
-	OwnerID() string
-}
-
-var (
-	_ mockRegistry = &NoopRegistry{}
-)
-
 func TestNoopRegistry(t *testing.T) {
 	t.Run("NewNoopRegistry", testNoopInit)
 	t.Run("Records", testNoopRecords)
