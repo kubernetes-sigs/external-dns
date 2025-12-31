@@ -1,9 +1,23 @@
+```yaml
+---
+title: "FQDN Package Enhancement"
+version: v1alpha1
+authors: @ivankatliarchuk
+creation-date: 2025-12-31
+status: draft
+---
+```
+
+# FQDN Package Enhancement
+
+## Table of Contents
+
+<!--TOC-->
 
 ______________________________________________________________________
 
 **Table of Contents**
 
-<!--TOC-->
 - [FQDN Package Enhancement](#fqdn-package-enhancement)
   - [Table of Contents](#table-of-contents)
   - [Summary](#summary)
@@ -139,53 +153,16 @@ ______________________________________________________________________
     - [Testing](#testing)
 - [Implementation Examples](#implementation-examples)
   - [Enhancement 1: Template Interface and Registry](#enhancement-1-template-interface-and-registry)
-    - [Core Interfaces](#core-interfaces-1)
-    - [Template Creation](#template-creation-1)
-    - [Registry API](#registry-api-1)
-    - [Registry Implementation](#registry-implementation)
-    - [Template Implementation](#template-implementation)
-    - [Alternative Implementations](#alternative-implementations)
-    - [Backward Compatibility](#backward-compatibility)
   - [Enhancement 2: Multi-Template Support with Selectors](#enhancement-2-multi-template-support-with-selectors)
   - [Enhancement 3: DNS Validation and Sanitization](#enhancement-3-dns-validation-and-sanitization)
   - [Enhancement 4: Auto-Generated Documentation](#enhancement-4-auto-generated-documentation)
   - [Enhancement 5: Advanced Template Functions](#enhancement-5-advanced-template-functions)
   - [Enhancement 6: FQDN Template Execution in Informer SetTransform](#enhancement-6-fqdn-template-execution-in-informer-settransform)
   - [Enhancement 7: Target FQDN Template Support](#enhancement-7-target-fqdn-template-support)
+
+______________________________________________________________________
+
 <!--TOC-->
-```yaml
----
-title: "FQDN Package Enhancement"
-version: v1alpha1
-authors: @ivankatliarchuk
-creation-date: 2025-12-31
-status: draft
----
-```
-
-# FQDN Package Enhancement
-
-## Table of Contents
-
-<!-- toc -->
-- [Summary](#summary)
-- [Motivation](#motivation)
-  - [Goals](#goals)
-  - [Non-Goals](#non-goals)
-- [Proposal](#proposal)
-  - [Current Limitations](#current-limitations)
-  - [Enhancement 1: Template Interface & Registry](#enhancement-1-template-interface--registry) (High Priority)
-  - [Enhancement 2: Multi-Template Support](#enhancement-2-multi-template-support) (High Priority)
-  - [Enhancement 3: DNS Validation](#enhancement-3-dns-validation) (Medium Priority)
-  - [Enhancement 4: Auto-Generated Documentation](#enhancement-4-auto-generated-documentation) (Medium Priority)
-  - [Enhancement 5: Advanced Template Functions](#enhancement-5-advanced-template-functions) (Low Priority)
-  - [Enhancement 6: Template Testing Framework](#enhancement-6-template-testing-framework) (Low Priority)
-  - [Package Structure](#package-structure)
-  - [Migration Strategy](#migration-strategy)
-  - [Behavior](#behavior)
-  - [Drawbacks](#drawbacks)
-- [Alternatives](#alternatives)
-<!-- /toc -->
 
 ## Summary
 
