@@ -2056,7 +2056,7 @@ const (
 
 ```go
 func storeGeneratedFQDNs(annotations map[string]string, fqdns []string) {
-    const maxChunkSize = 200 // Leave room for overhead
+    const maxChunkSize = 200 // Leave room for overhead KB
 
     // Clear existing generated FQDN annotations
     for key := range annotations {
