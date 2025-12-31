@@ -357,7 +357,7 @@ func TestAffixNameMapper_RecordTypeInAffix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.mapper.RecordTypeInAffix()
+			got := tt.mapper.recordTypeInAffix()
 			assert.Equal(t, tt.want, got)
 		})
 	}

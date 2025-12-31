@@ -61,7 +61,7 @@ func SelectRegistry(cfg *externaldns.Config, p provider.Provider) (Registry, err
 	switch cfg.Registry {
 	case DYNAMODB:
 		r, err = dynamodb.NewDynamoDBRegistry(
-			p, cfg.TXTOwnerID, aws_dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodb.WithRegion(cfg.AWSDynamoDBRegion)...),
+			p, cfg.TXTOwnerID, aws_dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodb.WithRegion(cfg.AWSDynamoDBRegion)),
 			cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes,
 			cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
 	case NOOP:

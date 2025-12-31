@@ -43,7 +43,6 @@ var (
 type NameMapper interface {
 	ToEndpointName(string) (string, string)
 	ToTXTName(string, string) string
-	RecordTypeInAffix() bool
 }
 
 // AffixNameMapper is a name mapper based on prefix/suffix affixes.
@@ -107,16 +106,6 @@ func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 	}
 
 	return prefix + DNSName[0] + suffix + "." + DNSName[1]
-}
-
-func (a AffixNameMapper) RecordTypeInAffix() bool {
-	if strings.Contains(a.prefix, recordTemplate) {
-		return true
-	}
-	if strings.Contains(a.suffix, recordTemplate) {
-		return true
-	}
-	return false
 }
 
 func (a AffixNameMapper) recordTypeInAffix() bool {
