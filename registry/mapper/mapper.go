@@ -148,8 +148,8 @@ func (a AffixNameMapper) dropAffixTemplate(name string) string {
 	return strings.ReplaceAll(name, recordTemplate, "")
 }
 
-// dropAffixExtractType strips TXT record to find an endpoint name it manages
-// it also returns the record type
+// dropAffixExtractType strips TXT record to find an endpoint name it manages.
+// It also returns the record type.
 func (a AffixNameMapper) dropAffixExtractType(name string) (string, string) {
 	prefix := a.prefix
 	suffix := a.suffix

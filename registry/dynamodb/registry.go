@@ -579,13 +579,11 @@ func (im *DynamoDBRegistry) removeFromCache(ep *endpoint.Endpoint) {
 	}
 }
 
-func WithRegion(region string) []func(*dynamodb.Options) {
+func WithRegion(region string) func(*dynamodb.Options) {
 	if region == "" {
 		return nil
 	}
-	return []func(*dynamodb.Options){
-		func(opts *dynamodb.Options) {
-			opts.Region = region
-		},
+	return func(opts *dynamodb.Options) {
+		opts.Region = region
 	}
 }
