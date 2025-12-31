@@ -2072,8 +2072,7 @@ func storeGeneratedFQDNs(annotations map[string]string, fqdns []string) {
         if end > len(joined) {
             end = len(joined)
         }
-        key := fmt.Sprintf("%s%d", GeneratedFQDNPrefix, i/maxChunkSize)
-        annotations[key] = joined[i:end]
+        annotations[GeneratedFQDNPrefix] = joined[i:end]
     }
 }
 ```
