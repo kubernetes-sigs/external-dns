@@ -41,18 +41,6 @@ const (
 	testZone = "test-zone.example.org"
 )
 
-type mockRegistry interface {
-	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
-	ApplyChanges(ctx context.Context, changes *plan.Changes) error
-	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
-	GetDomainFilter() endpoint.DomainFilterInterface
-	OwnerID() string
-}
-
-var (
-	_ mockRegistry = &DynamoDBRegistry{}
-)
-
 func TestDynamoDBRegistryNew(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)
 

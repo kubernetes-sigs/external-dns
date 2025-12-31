@@ -29,18 +29,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-type mockRegistry interface {
-	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
-	ApplyChanges(ctx context.Context, changes *plan.Changes) error
-	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
-	GetDomainFilter() endpoint.DomainFilterInterface
-	OwnerID() string
-}
-
-var (
-	_ mockRegistry = &AWSSDRegistry{}
-)
-
 type inMemoryProvider struct {
 	provider.BaseProvider
 	endpoints      []*endpoint.Endpoint
