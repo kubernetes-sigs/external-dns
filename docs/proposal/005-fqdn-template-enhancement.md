@@ -1857,11 +1857,10 @@ The existing template function library is minimal and insufficient for complex h
 - Only 8 basic functions (contains, trimPrefix, trimSuffix, trim, toLower, replace, isIPv4, isIPv6)
 - No conditional logic (default, ternary, coalesce)
 - No string manipulation beyond trim operations (truncate, split, join)
-- No DNS-specific utilities (reverseDNS, extractZone, ensureSuffix)
-- No encoding/hashing functions for generating consistent short names (base64, sha256)
+- No DNS-specific utilities (reverseDNS, )
 - Functions not documented with godoc-style comments
 - No benchmarking or performance visibility
-- Function naming doesn't follow Sprig conventions
+- Function naming doesn't follow Helm/Sprig conventions
 
 This enhancement provides an extended library of vetted template functions for real-world use cases while maintaining security and following established conventions.
 
@@ -1874,10 +1873,6 @@ Functions are organized by category in separate files:
 ```bash
 source/fqdn/
 ├── functions.go           # Core/existing functions, FuncMap registration
-├── functions_string.go    # String manipulation
-├── functions_conditional.go # Conditional logic
-├── functions_dns.go       # DNS-specific utilities
-├── functions_encoding.go  # Encoding/hashing
 └── functions_bench_test.go # Benchmarks for all functions
 ```
 
@@ -1895,11 +1890,7 @@ Provides `default`, `ternary`, and `coalesce` functions for conditional logic in
 
 #### DNS Functions
 
-Provides DNS-specific utilities like `reverseDNS`, `extractZone`, and `ensureSuffix` for DNS-related template operations.
-
-#### Encoding Functions
-
-Provides encoding and hashing functions (`toBase64`, `fromBase64`, `base32`, `sha256`) with security considerations documented.
+Provides DNS-specific utilities like `reverseDNS` for DNS-related template operations.
 
 See Implementation Examples section for detailed function code.
 
@@ -1974,17 +1965,6 @@ fqdnTemplates:
 
 # Input: Service with env="prod"
 # Output: "production.example.com"
-```
-
-**Generate consistent short names**:
-
-```yaml
-fqdnTemplates:
-  default:
-    - "{{truncate 8 (sha256 .Name)}}.example.com"
-
-# Input: Service "my-very-long-service-name"
-# Output: "a3c5b2d1.example.com" (consistent hash)
 ```
 
 **Reverse DNS**:
