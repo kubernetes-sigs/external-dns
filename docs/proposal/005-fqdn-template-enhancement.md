@@ -5,6 +5,8 @@ version: v1alpha1
 authors: @ivankatliarchuk
 creation-date: 2025-12-31
 status: draft
+tags: ["proposal", "fqdn", "templating"]
+cmd: ["markdown-toc-creator docs/proposal/005-fqdn-template-enhancement.md --add-horizontal-rules=false"]
 ---
 ```
 
@@ -13,8 +15,6 @@ status: draft
 ## Table of Contents
 
 <!--TOC-->
-
-______________________________________________________________________
 
 **Table of Contents**
 
@@ -160,15 +160,16 @@ ______________________________________________________________________
   - [Enhancement 6: FQDN Template Execution in Informer SetTransform](#enhancement-6-fqdn-template-execution-in-informer-settransform)
   - [Enhancement 7: Target FQDN Template Support](#enhancement-7-target-fqdn-template-support)
 
-______________________________________________________________________
-
 <!--TOC-->
 
 ## Summary
 
-This proposal introduces comprehensive enhancements to the `fqdn` package in external-dns to address current limitations and provide powerful new capabilities for FQDN template management. The enhancements are organized by priority and build upon each other to create a robust, flexible, and maintainable template system.
+This proposal introduces comprehensive enhancements to the `fqdn` package in external-dns to address current limitations and provide powerful new capabilities for FQDN template management.
+The enhancements are organized by priority and build upon each other to create a robust, flexible, and maintainable template system.
 
 ### Enhancement Overview
+
+<!-- TODO: update this as well -->
 
 | # | Enhancement | Priority | Description |
 |---|-------------|----------|-------------|
@@ -434,7 +435,7 @@ This enhancement addresses Limitations 1-3 by introducing a centralized template
 
 #### Architecture Overview
 
-```
+```yml
 ┌─────────────────────────────────────────────────────────┐
 │                   Startup / Config                       │
 │                                                         │
@@ -463,7 +464,7 @@ This enhancement addresses Limitations 1-3 by introducing a centralized template
 
 #### Package Structure
 
-```
+```bash
 source/fqdn/
 ├── fqdn.go              # Backward compatible API (ParseTemplate, ExecTemplate)
 ├── template.go          # NEW: Template interface & implementation
@@ -479,7 +480,7 @@ source/fqdn/
 
 All enhancements will be implemented within the `source/fqdn/` package:
 
-```
+```bash
 source/fqdn/
 ├── fqdn.go                      # Backward compatible API
 ├── template.go                  # Template interface & implementation (Enhancement 1)
@@ -712,7 +713,8 @@ func NewServiceSource(..., templateName string) (Source, error) {
 
 #### Core Interfaces
 
-The Template interface provides a domain-specific abstraction for generating DNS hostnames from Kubernetes objects. It includes an Execute method that takes a context and Kubernetes object, returning a slice of hostname strings, and a String method for debugging. Options are provided through a functional options pattern.
+The Template interface provides a domain-specific abstraction for generating DNS hostnames from Kubernetes objects.
+It includes an Execute method that takes a context and Kubernetes object, returning a slice of hostname strings, and a String method for debugging. Options are provided through a functional options pattern.
 
 **Rationale for Context**:
 
@@ -769,7 +771,7 @@ This enhancement addresses Limitation 4 by enabling different templates for diff
 
 1. Solves Real Pain Point: Addresses the ugly workaround of complex conditionals in templates
 
-```
+```bash
 // Current ugly approach
 {{if eq .Kind "Service"}}...{{else if eq .Kind "Ingress"}}...{{end}}
 ```
@@ -788,7 +790,8 @@ This enhancement addresses Limitation 4 by enabling different templates for diff
 
 ### Design
 
-The TemplateSet manages multiple templates for different sources or conditions. It implements the Template interface and uses a TemplateSelector to choose which template group to apply based on object properties. The Execute method handles template selection, execution of multiple templates, and automatic deduplication of generated hostnames.
+The TemplateSet manages multiple templates for different sources or conditions. It implements the Template interface and uses a TemplateSelector to choose which template group to apply based on object properties.
+The Execute method handles template selection, execution of multiple templates, and automatic deduplication of generated hostnames.
 
 See Implementation Examples section for detailed code.
 
@@ -1339,7 +1342,7 @@ This enhancement addresses Limitation 6 by automatically generating documentatio
 
 #### Package Structure
 
-```
+```bash
 internal/gen/docs/fqdn/
 ├── main.go              # Doc generator CLI
 ├── templates.go         # Extract from tests and @example tags
@@ -1736,7 +1739,7 @@ go test ./source/fqdn/... -run TestDocsUpToDate
 
 **Generated files** (DO NOT EDIT):
 
-```
+```bash
 docs/advanced/fqdn/
 ├── templates.md         # Examples from tests
 ├── sources.md           # Source support matrix
@@ -1765,7 +1768,7 @@ Basic hostname generation.
 
 {{.Name}}.example.com
 
-```
+```bash
 
 **Input**: Service "test" in namespace "default"
 
@@ -1790,7 +1793,7 @@ default:
 
 **Output**: `["api.example.com", "api.example.org"]`
 
-```
+```bash
 
 **docs/advanced/fqdn/sources.md**:
 ```markdown
@@ -1829,7 +1832,7 @@ Limits a string to maxLen characters.
 Input: "very-long-service-name"
 Output: "very-long-"
 
-```
+```bash
 ```
 
 ### Benefits
@@ -1868,7 +1871,7 @@ This enhancement provides an extended library of vetted template functions for r
 
 Functions are organized by category in separate files:
 
-```
+```bash
 source/fqdn/
 ├── functions.go           # Core/existing functions, FuncMap registration
 ├── functions_string.go    # String manipulation
@@ -2038,7 +2041,7 @@ Execute FQDN template in `SetTransform()` and cache results in object annotation
 
 **Current flow**:
 
-```
+```bash
 Object → Informer → Cache (full object) → Endpoints() → Execute Template → FQDNs
                                               ↑
                                      Called repeatedly
@@ -2046,7 +2049,7 @@ Object → Informer → Cache (full object) → Endpoints() → Execute Template
 
 **Proposed flow**:
 
-```
+```bash
 Object → Informer → SetTransform → Execute Template → Cache (with FQDNs in annotations)
                          ↑
                     Called once
@@ -2058,18 +2061,15 @@ Cache → Endpoints() → Read FQDNs from annotations
 
 #### Annotation Storage
 
-Store generated FQDNs in annotations with index-based naming to handle the 256-character annotation limit:
-
 ```go
 const (
-    GeneratedFQDNPrefix = "external-dns.alpha.kubernetes.io/generated-fqdns-"
-    // Max annotation size: 256 chars
-    // Total annotations limit: 16KB per object
+    GeneratedFQDNPrefix = "external-dns.alpha.kubernetes.io/generated-fqdns"
+    // Kubernetes has 63 characters limitation on the annotation name
+    // and 256KB on the total name+value.
 )
 
 // Example annotations after transform:
-// external-dns.alpha.kubernetes.io/generated-fqdns-0: "api.prod.example.com,api.prod.example.org"
-// external-dns.alpha.kubernetes.io/generated-fqdns-1: "api-v2.prod.example.com"
+// external-dns.alpha.kubernetes.io/generated-fqdns: "api.prod.example.com,api.prod.example.org,api-v2.prod.example.com"
 ```
 
 **Annotation chunking**:
@@ -2844,6 +2844,11 @@ func validateTargetFQDNTemplate(templateStr string) error {
 
 ### Usage Examples
 
+TODO:
+
+- fetch IP from fqdn if cname
+- if contains https://github.com/kubernetes-sigs/external-dns/issues/5661
+
 **Example 1: Namespace-based load balancer CNAME**
 
 ```yaml
@@ -2992,23 +2997,16 @@ metadata:
 
 ### Error Handling
 
-**Mutual exclusivity violation**:
-
-```
-ERROR: Service prod/api has both "external-dns.alpha.kubernetes.io/target" and
-"external-dns.alpha.kubernetes.io/target-fqdn" annotations (mutually exclusive)
-```
-
 **Invalid template syntax**:
 
-```
+```bash
 ERROR: Service prod/api has invalid target-fqdn template "{{.InvalidField}}":
 template execution failed: can't evaluate field InvalidField
 ```
 
 **Template execution failure**:
 
-```
+```bash
 ERROR: Failed to execute target-fqdn template for service prod/api:
 template execution failed: missing required label "region"
 ```
@@ -3118,7 +3116,7 @@ This section contains detailed Go code implementations for each enhancement. The
 
 ## Enhancement 1: Template Interface and Registry
 
-### Core Interfaces
+**Core Interfaces**
 
 ```go
 // template.go
@@ -3155,7 +3153,7 @@ type templateOptions struct {
 }
 ```
 
-### Template Creation
+**Template Creation**
 
 ```go
 // New creates a new Template from a template string.
@@ -3163,7 +3161,7 @@ type templateOptions struct {
 func New(templateStr string, opts ...Option) (Template, error)
 ```
 
-### Registry API
+**Registry API**
 
 ```go
 // registry.go
@@ -3190,7 +3188,7 @@ func List() []string
 func Clear()
 ```
 
-### Registry Implementation
+**Registry Implementation**
 
 ```go
 // registry.go
@@ -3249,7 +3247,7 @@ func (r *TemplateRegistry) Get(name string) (Template, error) {
 }
 ```
 
-### Template Implementation
+**Template Implementation**
 
 ```go
 // template.go
@@ -3295,9 +3293,7 @@ func (t *textTemplate) String() string {
 }
 ```
 
-### Migration Examples
-
-#### Store Configuration
+**Store Configuration**
 
 ```go
 // store.go
@@ -3326,7 +3322,7 @@ func NewSourceConfig(cfg *externaldns.Config) (*Config, error) {
 }
 ```
 
-#### Gateway Source Migration
+**Gateway Source Migration**
 
 ```go
 // gateway.go - BEFORE
@@ -3353,7 +3349,7 @@ func NewGatewayRouteSource(..., config *Config) (Source, error) {
 }
 ```
 
-#### Source Struct Field Type Update
+**Source Struct Field Type Update**
 
 ```go
 // BEFORE
@@ -3367,7 +3363,7 @@ type gatewayRouteSource struct {
 }
 ```
 
-#### Service Source Migration
+**Service Source Migration**
 
 ```go
 // service.go - BEFORE
@@ -3389,7 +3385,7 @@ func NewServiceSource(
 }
 ```
 
-#### Template Execution Update
+**Template Execution Update**
 
 ```go
 // BEFORE
@@ -3399,7 +3395,7 @@ hostnames, err := fqdn.ExecTemplate(sc.fqdnTemplate, service)
 hostnames, err := sc.fqdnTemplate.Execute(ctx, service)
 ```
 
-#### Integration Test
+**Integration Test**
 
 ```go
 func TestTemplateParsedOnce(t *testing.T) {
@@ -3418,9 +3414,9 @@ func TestTemplateParsedOnce(t *testing.T) {
 }
 ```
 
-### Alternative Implementations
+***Alternative Implementations***
 
-#### Lazy Initialization Alternative
+**Lazy Initialization Alternative**
 
 ```go
 type serviceSource struct {
@@ -3438,7 +3434,7 @@ func (s *serviceSource) getTemplate() (*template.Template, error) {
 }
 ```
 
-#### Config-Level Caching Alternative
+**Config-Level Caching Alternative**
 
 ```go
 type Config struct {
@@ -3455,7 +3451,7 @@ func NewSourceConfig(cfg *externaldns.Config) (*Config, error) {
 }
 ```
 
-#### Registry + Dependency Injection Alternative
+**Registry + Dependency Injection Alternative**
 
 ```go
 // main.go
@@ -3467,7 +3463,7 @@ func NewServiceSource(..., templateName string) (Source, error) {
 }
 ```
 
-### Backward Compatibility
+**Backward Compatibility**
 
 ```go
 // fqdn.go - Keep existing functions
@@ -3489,7 +3485,7 @@ func ExecTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 
 ## Enhancement 2: Multi-Template Support with Selectors
 
-### TemplateSet Design
+**TemplateSet Design**
 
 ```go
 // TemplateSet manages multiple templates for different sources/conditions.
@@ -3534,7 +3530,7 @@ const (
 )
 ```
 
-### TemplateSet Execute Implementation
+**TemplateSet Execute Implementation**
 
 ```go
 func (ts *TemplateSet) Execute(ctx context.Context, obj kubeObject) ([]string, error) {
@@ -3584,7 +3580,7 @@ func (ts *TemplateSet) String() string {
 }
 ```
 
-### Config Loading with Normalization
+**Config Loading with Normalization**
 
 ```go
 func parseTemplateSetConfig(data map[interface{}]interface{}) TemplateSetConfig {
@@ -3616,7 +3612,7 @@ func parseTemplateSetConfig(data map[interface{}]interface{}) TemplateSetConfig 
 }
 ```
 
-### Duplicate Detection and Deduplication
+**Duplicate Detection and Deduplication**
 
 ```go
 func deduplicateHostnames(hostnames []string, context string) []string {
@@ -3638,7 +3634,7 @@ func deduplicateHostnames(hostnames []string, context string) []string {
 
 ## Enhancement 3: DNS Validation and Sanitization
 
-### Validator and Sanitizer Interfaces
+**Validator and Sanitizer Interfaces**
 
 ```go
 // Validator checks if hostnames are DNS-compliant.
@@ -3695,7 +3691,7 @@ var DefaultSanitizer = &defaultSanitizer{
 }
 ```
 
-### ValidateAndSanitize Function
+**ValidateAndSanitize Function**
 
 ```go
 // ValidateAndSanitize processes hostnames after template execution.
@@ -3763,7 +3759,7 @@ func applyPrefixSuffix(hostname string) string {
 }
 ```
 
-### RFC 1123 Validator
+**RFC 1123 Validator**
 
 ```go
 // fqdn/validator.go
@@ -3820,7 +3816,7 @@ func isAlphanumeric(r rune) bool {
 }
 ```
 
-### Sanitizer Implementation
+**Sanitizer Implementation**
 
 ```go
 // fqdn/sanitizer.go
@@ -3901,7 +3897,7 @@ func containsUnicode(s string) bool {
 
 ## Enhancement 4: Auto-Generated Documentation
 
-### Source Interfaces
+**Source Interfaces**
 
 ```go
 // source/source.go
@@ -3923,7 +3919,7 @@ func (s *serviceSource) SupportsHostnameAnnotation() bool {
 }
 ```
 
-### Godoc-Style Comments
+**Godoc-Style Comments**
 
 ```go
 // source/fqdn/functions.go
@@ -3945,7 +3941,7 @@ func truncate(maxLen int, s string) string {
 }
 ```
 
-### Structured Test Tags
+**Structured Test Tags**
 
 ```go
 // source/fqdn/fqdn_test.go
@@ -3983,7 +3979,7 @@ func TestMultiZoneTemplate(t *testing.T) {
 }
 ```
 
-### Generator Tool
+**Generator Tool**
 
 ```go
 // internal/gen/docs/fqdn/main.go
@@ -4042,7 +4038,7 @@ func generateDocs(outputDir string) error {
 }
 ```
 
-### Extract Examples from Tests
+**Extract Examples from Tests**
 
 ```go
 // internal/gen/docs/fqdn/templates.go
@@ -4115,7 +4111,7 @@ func parseExampleComment(text string) Example {
 }
 ```
 
-### Scan Source Interfaces
+**Scan Source Interfaces**
 
 ```go
 // internal/gen/docs/fqdn/sources.go
@@ -4181,7 +4177,7 @@ func extractSinceTag(doc *ast.CommentGroup) string {
 }
 ```
 
-### Function Reference from Godoc
+**Function Reference from Godoc**
 
 ```go
 // internal/gen/docs/fqdn/functions.go
@@ -4224,7 +4220,7 @@ func extractFunctionDocs(file string) (string, error) {
 }
 ```
 
-### Test Enforcement
+**Test Enforcement**
 
 ```go
 // source/fqdn/doc_test.go
@@ -4260,7 +4256,7 @@ Then commit the updated files in docs/advanced/fqdn/
 
 ## Enhancement 5: Advanced Template Functions
 
-### Core Functions Module
+**Core Functions Module**
 
 ```go
 // source/fqdn/functions.go
@@ -4303,7 +4299,7 @@ func ParseTemplate(input string) (*template.Template, error) {
 }
 ```
 
-### String Functions
+**String Functions**
 
 ```go
 // source/fqdn/functions_string.go
@@ -4358,7 +4354,7 @@ func join(sep string, parts ...string) string {
 }
 ```
 
-### Conditional Functions
+**Conditional Functions**
 
 ```go
 // source/fqdn/functions_conditional.go
@@ -4421,7 +4417,7 @@ func coalesce(values ...string) string {
 }
 ```
 
-### DNS Functions
+**DNS Functions**
 
 ```go
 // source/fqdn/functions_dns.go
@@ -4495,7 +4491,7 @@ func ensureSuffix(hostname, suffix string) string {
 }
 ```
 
-### Encoding Functions
+**Encoding Functions**
 
 ```go
 // source/fqdn/functions_encoding.go
@@ -4578,7 +4574,7 @@ func sha256Hash(s string) string {
 }
 ```
 
-### Benchmarking
+**Benchmarking**
 
 ```go
 // source/fqdn/functions_bench_test.go
@@ -4602,7 +4598,7 @@ func BenchmarkSHA256(b *testing.B) {
 
 ## Enhancement 6: FQDN Template Execution in Informer SetTransform
 
-### Annotation Storage
+**Annotation Storage**
 
 ```go
 const (
@@ -4616,7 +4612,7 @@ const (
 // external-dns.alpha.kubernetes.io/generated-fqdns-1: "api-v2.prod.example.com"
 ```
 
-#### Annotation Chunking
+**Annotation Chunking**
 
 ```go
 func storeGeneratedFQDNs(annotations map[string]string, fqdns []string) {
@@ -4642,7 +4638,7 @@ func storeGeneratedFQDNs(annotations map[string]string, fqdns []string) {
 }
 ```
 
-### Transform Implementation
+**Transform Implementation**
 
 ```go
 // source/service.go
@@ -4740,7 +4736,7 @@ func NewServiceSource(
 }
 ```
 
-### Reading FQDNs in Endpoints()
+**Reading FQDNs in Endpoints()**
 
 ```go
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
@@ -4793,7 +4789,7 @@ func readGeneratedFQDNs(annotations map[string]string) []string {
 }
 ```
 
-### Helper Functions
+**Helper Functions**
 
 ```go
 // source/fqdn/transform.go
@@ -4855,7 +4851,7 @@ func IsAlreadyTransformed(annotations map[string]string) bool {
 }
 ```
 
-### Performance Testing
+**Performance Testing**
 
 ```go
 // source/fqdn/transform_bench_test.go
@@ -4943,7 +4939,7 @@ func BenchmarkComplexTemplate(b *testing.B) {
 
 ## Enhancement 7: Target FQDN Template Support
 
-### Annotation Constants
+**Annotation Constants**
 
 ```go
 // source/annotations/annotations.go
@@ -4957,7 +4953,7 @@ const (
 )
 ```
 
-### Config Structure
+**Config Structure**
 
 ```go
 // source/store.go
@@ -5000,7 +4996,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, conf
 }
 ```
 
-### Target Resolution
+**Target Resolution**
 
 ```go
 // source/service.go
@@ -5061,7 +5057,7 @@ func (sc *serviceSource) resolveTargets(svc *v1.Service) (endpoint.Targets, erro
 }
 ```
 
-### Mutual Exclusivity with Static Target
+**Mutual Exclusivity with Static Target**
 
 ```go
 // source/annotations/processors.go
@@ -5099,7 +5095,7 @@ func TargetsFromAnnotations(annotations map[string]string, obj kubeObject, targe
 }
 ```
 
-### Validation Functions
+**Validation Functions**
 
 ```go
 func validateTargetAnnotations(annotations map[string]string) error {
