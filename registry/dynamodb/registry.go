@@ -89,6 +89,7 @@ func NewDynamoDBRegistry(
 		return nil, errors.New("table cannot be empty")
 	}
 
+	// TODO: encryption logic duplicated in TXT registry; refactor into common utility function.
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {

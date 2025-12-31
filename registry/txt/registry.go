@@ -36,7 +36,6 @@ import (
 )
 
 const (
-	recordTemplate              = "%{record_type}"
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
@@ -126,6 +125,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("owner id cannot be empty")
 	}
 
+	// TODO: encryption logic duplicated in DynamoDB registry; refactor into common utility function.
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
 	} else if len(txtEncryptAESKey) != 32 {
