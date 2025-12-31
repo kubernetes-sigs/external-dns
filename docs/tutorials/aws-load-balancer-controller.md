@@ -255,8 +255,7 @@ spec:
 becomes `k8s-myapp-nlb.elb.<region>.amazonaws.com` (note the `-nlb` suffix).
 
 **ALB internal hostname pattern**: When you set `load-balancer-name: myapp-alb`, the ALB hostname
-becomes `internal-myapp-nlb.<region>.elb.amazonaws.com` (note the `-nlb` suffix).
-(note the `internal-` suffix)
+becomes `internal-myapp-nlb.<region>.elb.amazonaws.com` (note the `internal-` suffix).
 
 #### Option 2: Use the target annotation only
 
