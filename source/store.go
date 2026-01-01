@@ -354,8 +354,6 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildIstioGatewaySource(ctx, p, cfg)
 	case types.IstioVirtualService:
 		return buildIstioVirtualServiceSource(ctx, p, cfg)
-	case types.Cloudfoundry:
-		return buildCloudFoundrySource(ctx, p, cfg)
 	case types.AmbassadorHost:
 		return buildAmbassadorHostSource(ctx, p, cfg)
 	case types.ContourHTTPProxy:
@@ -483,16 +481,6 @@ func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg 
 		return nil, err
 	}
 	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
-}
-
-// buildCloudFoundrySource creates a CloudFoundry source for exposing CF applications as DNS records.
-// Uses CloudFoundry client instead of Kubernetes client. Simple constructor with minimal parameters.
-func buildCloudFoundrySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
-	cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
-	if err != nil {
-		return nil, err
-	}
-	return NewCloudFoundrySource(cfClient)
 }
 
 func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
