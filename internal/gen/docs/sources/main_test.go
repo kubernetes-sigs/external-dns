@@ -18,7 +18,11 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDiscoverSources(t *testing.T) {
@@ -34,25 +38,401 @@ func TestDiscoverSources(t *testing.T) {
 		t.Fatalf("Failed to change directory: %v", err)
 	}
 
-	sources := discoverSources()
+	sources, err := discoverSources()
+	require.NoError(t, err)
 
-	// We expect at least the core Kubernetes sources that have annotations
-	if len(sources) < 5 {
-		t.Errorf("Expected at least 5 sources with annotations, got %d", len(sources))
+	assert.GreaterOrEqual(t, len(sources), 5, "Expected at least 5 sources with annotations")
+
+	// Verify sources are sorted by category, then by name
+	for i := 1; i < len(sources); i++ {
+		prev, curr := sources[i-1], sources[i]
+		if prev.Category == curr.Category {
+			if prev.Name > curr.Name {
+				t.Errorf("Sources not sorted correctly: %s should come before %s", curr.Name, prev.Name)
+			}
+		} else if prev.Category > curr.Category {
+			t.Errorf("Categories not sorted correctly: %s should come before %s", curr.Category, prev.Category)
+		}
 	}
 }
 
-func TestGenerateMarkdownTable(t *testing.T) {
+func TestGenerateMarkdown(t *testing.T) {
 	sources := Sources{
-		{Name: "test", Type: "testSource", File: "source/test.go", Category: "Test"},
+		{
+			Name:         "test",
+			Type:         "testSource",
+			File:         "source/test.go",
+			Category:     "Test",
+			Description:  "Test source",
+			Resources:    "TestResource",
+			Filters:      "annotation,label",
+			Namespace:    "all,single",
+			FQDNTemplate: "true",
+		},
 	}
 
 	content, err := sources.generateMarkdown()
-	if err != nil {
-		t.Errorf("Failed to generate markdown table: %v", err)
+	require.NoError(t, err)
+	assert.NotEmpty(t, content)
+
+	assert.Contains(t, content, "# Supported Sources")
+	assert.Contains(t, content, "## Available Sources")
+	assert.Contains(t, content, "### Test")
+}
+
+func TestParseSourceAnnotations(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test_source.go")
+	content := `package main
+
+// testSource is a test source implementation.
+//
+// +externaldns:source:name=test-source
+// +externaldns:source:category=Testing
+// +externaldns:source:description=A test source for unit testing
+// +externaldns:source:resources=TestResource
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+type testSource struct {
+	client string
+}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		require.NoError(t, err)
 	}
 
-	if content == "" {
-		t.Error("Expected non-empty content, but got empty string")
+	sources, err := parseSourceAnnotations(tmpDir)
+	require.NoError(t, err)
+	assert.Len(t, sources, 1)
+
+	source := sources[0]
+	assert.Equal(t, "test-source", source.Name)
+	assert.Equal(t, "Testing", source.Category)
+	assert.Equal(t, "TestResource", source.Resources)
+	assert.Equal(t, "annotation,label", source.Filters)
+	assert.Equal(t, "all,single", source.Namespace)
+	assert.Equal(t, "true", source.FQDNTemplate)
+}
+
+func TestParseSourceAnnotations_SkipsTestFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a test file that should be skipped
+	testFile := filepath.Join(tmpDir, "test_source_test.go")
+	content := `package main
+
+// +externaldns:source:name=should-be-skipped
+// +externaldns:source:category=Test
+// +externaldns:source:description=Should be skipped
+type testSource struct {}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		require.NoError(t, err)
+	}
+
+	sources, err := parseSourceAnnotations(tmpDir)
+	require.NoError(t, err)
+	assert.Empty(t, sources)
+}
+
+func TestParseFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	testFile := filepath.Join(tmpDir, "sample.go")
+	content := `package main
+
+// sampleSource handles sample resources.
+//
+// +externaldns:source:name=sample
+// +externaldns:source:category=Sample Category
+// +externaldns:source:description=Handles sample resources
+// +externaldns:source:resources=SampleResource
+type sampleSource struct {
+	data string
+}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		require.NoError(t, err)
+	}
+
+	sources, err := parseFile(testFile, tmpDir)
+	require.NoError(t, err)
+	assert.Len(t, sources, 1)
+	assert.Equal(t, "sample", sources[0].Name)
+	assert.Equal(t, "sampleSource", sources[0].Type)
+	assert.Equal(t, "sample.go", sources[0].File)
+}
+
+func TestParseFile_MultipleSourcesInOneFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	testFile := filepath.Join(tmpDir, "multi.go")
+	content := `package main
+
+// firstSource is the first source.
+//
+// +externaldns:source:name=first
+// +externaldns:source:category=Testing
+// +externaldns:source:description=First source
+type firstSource struct {}
+
+// secondSource is the second source.
+//
+// +externaldns:source:name=second
+// +externaldns:source:category=Testing
+// +externaldns:source:description=Second source
+type secondSource struct {}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		require.NoError(t, err)
+	}
+
+	sources, err := parseFile(testFile, tmpDir)
+	require.NoError(t, err)
+	assert.Len(t, sources, 2)
+	assert.Equal(t, "first", sources[0].Name)
+	assert.Equal(t, "second", sources[1].Name)
+}
+
+func TestParseFile_IgnoresNonSourceTypes(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	testFile := filepath.Join(tmpDir, "nonsource.go")
+	content := `package main
+
+// regularStruct is not a source (doesn't end with "Source").
+//
+// +externaldns:source:name=should-not-parse
+// +externaldns:source:category=Test
+// +externaldns:source:description=Should not be parsed
+type regularStruct struct {}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	sources, err := parseFile(testFile, tmpDir)
+	require.NoError(t, err)
+	assert.Empty(t, sources)
+}
+
+func TestParseSourceAnnotations_ErrorOnInvalidFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a file with invalid Go syntax
+	testFile := filepath.Join(tmpDir, "invalid.go")
+	content := `package main
+
+this is not valid go syntax
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	_, err := parseSourceAnnotations(tmpDir)
+	require.Error(t, err)
+}
+
+func TestParseFile_InvalidGoFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	testFile := filepath.Join(tmpDir, "invalid.go")
+	content := `this is not valid go code`
+
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		require.NoError(t, err)
+	}
+
+	_, err := parseFile(testFile, tmpDir)
+	require.Error(t, err)
+}
+
+func TestParseSourceAnnotations_WithSubdirectories(t *testing.T) {
+	tmpDir := t.TempDir()
+	subDir := filepath.Join(tmpDir, "subdir")
+	if err := os.Mkdir(subDir, 0755); err != nil {
+		t.Fatalf("Failed to create subdirectory: %v", err)
+	}
+
+	// Create a test file in subdirectory
+	testFile := filepath.Join(subDir, "nested_source.go")
+	content := `package main
+
+// nestedSource is in a subdirectory.
+//
+// +externaldns:source:name=nested
+// +externaldns:source:category=Testing
+// +externaldns:source:description=Nested source
+type nestedSource struct {}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		require.NoError(t, err)
+	}
+
+	sources, err := parseSourceAnnotations(tmpDir)
+	require.NoError(t, err)
+	assert.Len(t, sources, 1)
+	assert.Equal(t, "nested", sources[0].Name)
+	assert.Contains(t, sources[0].File, "subdir/nested_source.go")
+}
+
+func TestGenerateMarkdown_WithMultipleCategories(t *testing.T) {
+	sources := Sources{
+		{
+			Name:         "service",
+			Category:     "Kubernetes Core",
+			Description:  "Service source",
+			Resources:    "Service",
+			Filters:      "annotation,label",
+			Namespace:    "all,single",
+			FQDNTemplate: "true",
+		},
+		{
+			Name:         "ingress",
+			Category:     "Kubernetes Core",
+			Description:  "Ingress source",
+			Resources:    "Ingress",
+			Filters:      "annotation,label",
+			Namespace:    "all,single",
+			FQDNTemplate: "true",
+		},
+		{
+			Name:         "gateway-httproute",
+			Category:     "Gateway API",
+			Description:  "HTTP route source",
+			Resources:    "HTTPRoute.gateway.networking.k8s.io",
+			Filters:      "annotation,label",
+			Namespace:    "all,single",
+			FQDNTemplate: "false",
+		},
+	}
+
+	content, err := sources.generateMarkdown()
+	require.NoError(t, err)
+	assert.Contains(t, content, "### Kubernetes Core")
+	assert.Contains(t, content, "### Gateway API")
+	assert.Contains(t, content, "service")
+	assert.Contains(t, content, "ingress")
+	assert.Contains(t, content, "gateway-httproute")
+}
+
+func TestExtractSourcesFromComments(t *testing.T) {
+	tests := []struct {
+		name        string
+		comments    string
+		typeName    string
+		filePath    string
+		wantSources int
+		wantErr     bool
+		validate    func(*testing.T, Source)
+	}{
+		{
+			name: "valid single source",
+			comments: `testSource is a test implementation.
+
++externaldns:source:name=test
++externaldns:source:category=Testing
++externaldns:source:description=A test source
++externaldns:source:resources=TestResource
++externaldns:source:filters=annotation
++externaldns:source:namespace=all
++externaldns:source:fqdn-template=false
+`,
+			typeName:    "testSource",
+			filePath:    "test.go",
+			wantSources: 1,
+			validate: func(t *testing.T, s Source) {
+				assert.Equal(t, "test", s.Name)
+				assert.Equal(t, "Testing", s.Category)
+				assert.Equal(t, "A test source", s.Description)
+			},
+		},
+		{
+			name: "multiple sources in same comment block",
+			comments: `gatewaySource handles multiple gateway types.
+
++externaldns:source:name=http-route
++externaldns:source:category=Gateway
++externaldns:source:description=Handles HTTP routes
++externaldns:source:resources=HTTPRoute
+
++externaldns:source:name=tcp-route
++externaldns:source:category=Gateway
++externaldns:source:description=Handles TCP routes
++externaldns:source:resources=TCPRoute
+`,
+			typeName:    "gatewaySource",
+			filePath:    "gateway.go",
+			wantSources: 2,
+			validate: func(t *testing.T, s Source) {
+				assert.Contains(t, []string{"http-route", "tcp-route"}, s.Name)
+			},
+		},
+		{
+			name: "missing required name annotation",
+			comments: `testSource without name.
+
++externaldns:source:category=Testing
++externaldns:source:description=Missing name
+`,
+			typeName: "testSource",
+			filePath: "test.go",
+		},
+		{
+			name: "optional annotations can be missing",
+			comments: `testSource with minimal annotations.
+
++externaldns:source:name=minimal
++externaldns:source:category=Testing
++externaldns:source:description=Minimal source
+`,
+			typeName:    "testSource",
+			filePath:    "test.go",
+			wantSources: 1,
+			validate: func(t *testing.T, s Source) {
+				assert.Equal(t, "minimal", s.Name)
+				assert.Empty(t, s.Resources)
+				assert.Empty(t, s.Filters)
+			},
+		},
+		{
+			name: "missing name annotation",
+			comments: `testSource with minimal annotations.
+
++externaldns:source:name=
++externaldns:source:category=Testing
++externaldns:source:description=Minimal source
+`,
+			typeName: "testSource",
+			filePath: "test.go",
+			validate: func(t *testing.T, s Source) {
+				require.Nil(t, s)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sources, err := extractSourcesFromComments(tt.comments, tt.typeName, tt.filePath)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Len(t, sources, tt.wantSources)
+
+			if tt.validate != nil && len(sources) > 0 {
+				tt.validate(t, sources[0])
+			}
+
+			// Verify all sources have required fields
+			for _, source := range sources {
+				assert.Equal(t, source.Type, tt.typeName)
+				assert.Equal(t, source.File, tt.filePath)
+			}
+		})
 	}
 }

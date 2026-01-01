@@ -92,12 +92,6 @@ Sources are responsible for:
 | **empty** | None |  |  | false |
 | **fake** | Fake Endpoints |  |  | true |
 
-### Wrappers
-
-| **Source Name** | Resources | Filters | Namespace | FQDN Template |
-|:------------|:----------|:--------|:----------|:--------------|
-| **targetfilter** | Wrapped Source |  |  | false |
-
 ## Usage
 
 To use a specific source, configure ExternalDNS with the `--source` flag:

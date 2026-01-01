@@ -80,7 +80,6 @@ var (
 	traefikValueProcessor = regexp.MustCompile(`\x60([^,\x60]+)\x60`)
 )
 
-//
 // +externaldns:source:name=traefik-proxy
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Traefik IngressRoute, IngressRouteTCP, and IngressRouteUDP resources

@@ -48,7 +48,6 @@ const (
 	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
 )
 
-//
 // +externaldns:source:name=skipper-routegroup
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources

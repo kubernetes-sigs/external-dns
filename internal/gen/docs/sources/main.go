@@ -74,7 +74,11 @@ func main() {
 	path := fmt.Sprintf("%s/docs/sources/index.md", testPath)
 	fmt.Printf("generate file '%s' with supported sources\n", path)
 
-	sources := discoverSources()
+	sources, err := discoverSources()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "failed to discover sources: %v\n", err)
+		os.Exit(1)
+	}
 	content, err := sources.generateMarkdown()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to generate markdown file '%s': %v\n", path, err)
@@ -85,7 +89,7 @@ func main() {
 
 // discoverSources scans the source directory and discovers all source implementations
 // by parsing Go files and extracting +externaldns:source annotations
-func discoverSources() Sources {
+func discoverSources() (Sources, error) {
 	// Get the source directory path
 	testPath, _ := os.Getwd()
 	sourceDir := fmt.Sprintf("%s/source", testPath)
@@ -93,12 +97,7 @@ func discoverSources() Sources {
 	// Parse all source files for annotations
 	sources, err := parseSourceAnnotations(sourceDir)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error parsing source annotations: %v\n", err)
-		os.Exit(1)
-	}
-
-	if len(sources) == 0 {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: No sources with annotations found\n")
+		return nil, err
 	}
 
 	// Sort sources by category, then by name
@@ -109,7 +108,7 @@ func discoverSources() Sources {
 		return sources[i].Category < sources[j].Category
 	})
 
-	return sources
+	return sources, nil
 }
 
 func (s *Sources) generateMarkdown() (string, error) {
@@ -287,21 +286,5 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 		sources = append(sources, *currentSource)
 	}
 
-	// Validate and set defaults for each source
-	var validSources Sources
-	for _, source := range sources {
-		if source.Name == "" {
-			return nil, fmt.Errorf("source %s in %s is missing %s annotation", typeName, filePath, annotationName)
-		}
-		if source.Category == "" {
-			return nil, fmt.Errorf("source %s in %s is missing %s annotation", typeName, filePath, annotationCategory)
-		}
-		if source.Description == "" {
-			return nil, fmt.Errorf("source %s in %s is missing %s annotation", typeName, filePath, annotationDesc)
-		}
-
-		validSources = append(validSources, source)
-	}
-
-	return validSources, nil
+	return sources, nil
 }

@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-//
 // +externaldns:source:name=cloudfoundry
 // +externaldns:source:category=Cloud Platforms
 // +externaldns:source:description=Creates DNS entries from Cloud Foundry routes
