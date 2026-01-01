@@ -65,7 +65,6 @@ var (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
-
 type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface

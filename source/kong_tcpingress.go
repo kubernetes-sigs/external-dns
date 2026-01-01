@@ -56,7 +56,6 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
-
 type kongTCPIngressSource struct {
 	annotationFilter         string
 	ignoreHostnameAnnotation bool

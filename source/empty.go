@@ -33,11 +33,11 @@ import (
 // +externaldns:source:fqdn-template=false
 type emptySource struct{}
 
-func (e *emptySource) AddEventHandler(ctx context.Context, handler func()) {
+func (e *emptySource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
-func (e *emptySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (e *emptySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return []*endpoint.Endpoint{}, nil
 }
 

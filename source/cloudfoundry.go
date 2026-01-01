@@ -33,7 +33,6 @@ import (
 // +externaldns:source:filters=
 // +externaldns:source:namespace=
 // +externaldns:source:fqdn-template=false
-
 type cloudfoundrySource struct {
 	client *cfclient.Client
 }
