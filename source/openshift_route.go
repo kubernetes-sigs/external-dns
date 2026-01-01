@@ -51,7 +51,6 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
-
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string

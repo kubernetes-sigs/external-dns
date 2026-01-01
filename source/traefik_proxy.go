@@ -88,7 +88,6 @@ var (
 // +externaldns:source:filters=annotation
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
-
 type traefikSource struct {
 	dynamicKubeClient          dynamic.Interface
 	kubeClient                 kubernetes.Interface
