@@ -291,17 +291,13 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 	var validSources Sources
 	for _, source := range sources {
 		if source.Name == "" {
-			// TODO: correct annotations
-			return nil, fmt.Errorf("Warning: source %s in %s is missing %s annotation\n", typeName, filePath, annotationName)
+			return nil, fmt.Errorf("source %s in %s is missing %s annotation", typeName, filePath, annotationName)
 		}
-
-		// Set defaults for optional fields
 		if source.Category == "" {
-			source.Category = "Uncategorized"
-			return nil, fmt.Errorf("Warning: source %s in %s is missing %s annotation\n", typeName, filePath, annotationCategory)
+			return nil, fmt.Errorf("source %s in %s is missing %s annotation", typeName, filePath, annotationCategory)
 		}
 		if source.Description == "" {
-			return nil, fmt.Errorf("Warning: source %s in %s is missing %s annotation\n", typeName, filePath, annotationDesc)
+			return nil, fmt.Errorf("source %s in %s is missing %s annotation", typeName, filePath, annotationDesc)
 		}
 
 		validSources = append(validSources, source)

@@ -28,10 +28,10 @@ Sources are responsible for:
 
 ### {{ .Category }}
 
-| **Source Name** | Description | Resources | Filters | Namespace | FQDN Template |
-|:------------|:------------|:----------|:--------|:----------|:--------------|
+| **Source Name** | Resources | Filters | Namespace | FQDN Template |
+|:------------|:----------|:--------|:----------|:--------------|
 {{- end }}
-| **{{ .Name }}** | {{ .Description }} | {{ .Resources }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} |
+| **{{ .Name }}** | {{ .Resources }} | {{ .Filters }} | {{ .Namespace }} | {{ .FQDNTemplate }} |
 {{- end }}
 
 ## Usage
